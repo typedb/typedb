@@ -18,22 +18,22 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.Var;
+import com.google.common.collect.Sets;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
-import grakn.core.graql.internal.reasoner.query.QueryAnswers;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-
+import grakn.core.graql.query.Var;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -48,43 +48,33 @@ import javax.annotation.Nullable;
  *
  * @param <Q> the type of query that is being cached
  *
+ * @author Kasper Piskorski
  *
  */
-public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends QueryCacheBase<Q, QueryAnswers> {
+public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCacheBase<Q, Set<ConceptMap>> {
 
     public SimpleQueryCache(){
         super();
     }
 
     @Override
-    public QueryAnswers record(Q query, QueryAnswers answers) {
-        CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
+    public CacheEntry<Q, Set<ConceptMap>> record(Q query, Set<ConceptMap> answers) {
+        CacheEntry<Q, Set<ConceptMap>> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
-            QueryAnswers unifiedAnswers = answers.unify(query.getMultiUnifier(equivalentQuery));
+            MultiUnifier multiUnifier = query.getMultiUnifier(equivalentQuery, unifierType());
+            Set<ConceptMap> unifiedAnswers = answers.stream().flatMap(ans -> ans.unify(multiUnifier)).collect(toSet());
             this.getEntry(query).cachedElement().addAll(unifiedAnswers);
-            return getAnswers(query);
+            return match;
         }
-        this.putEntry(query, answers);
-        return answers;
+        return putEntry(query, answers);
     }
 
     @Override
-    public Stream<ConceptMap> record(Q query, Stream<ConceptMap> answerStream) {
+    public CacheEntry<Q, Set<ConceptMap>> record(Q query, Stream<ConceptMap> answerStream) {
         //NB: stream collection!
-        QueryAnswers newAnswers = new QueryAnswers(answerStream.collect(Collectors.toSet()));
-        return record(query, newAnswers).stream();
-    }
-
-    /**
-     * record a specific answer to a given query
-     * @param query to which an answer is to be recorded
-     * @param answer specific answer to the query
-     * @return recorded answer
-     */
-    @Override
-    public ConceptMap record(Q query, ConceptMap answer){
-        return record(query, answer, null);
+        Set<ConceptMap> newAnswers = answerStream.collect(toSet());
+        return record(query, newAnswers);
     }
 
     /**
@@ -94,34 +84,33 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends QueryCacheBas
      * @param unifier between the cached and input query
      * @return recorded answer
      */
-    public ConceptMap record(Q query, ConceptMap answer, @Nullable MultiUnifier unifier){
-        if(answer.isEmpty()) return answer;
-        CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
+    public CacheEntry<Q, Set<ConceptMap>> record(Q query, ConceptMap answer, @Nullable CacheEntry<Q, Set<ConceptMap>> entry, @Nullable MultiUnifier unifier){
+        CacheEntry<Q, Set<ConceptMap>> match =  entry != null? entry : this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
-            QueryAnswers answers = match.cachedElement();
-            MultiUnifier multiUnifier = unifier == null? query.getMultiUnifier(equivalentQuery) : unifier;
+            Set<ConceptMap> answers = match.cachedElement();
+            MultiUnifier multiUnifier = unifier == null? query.getMultiUnifier(equivalentQuery, unifierType()) : unifier;
 
             Set<Var> cacheVars = answers.isEmpty()? new HashSet<>() : answers.iterator().next().vars();
             multiUnifier.stream()
                     .map(answer::unify)
                     .peek(ans -> {
                         if (!ans.vars().containsAll(cacheVars)){
-                            throw GraqlQueryException.invalidQueryCacheEntry(equivalentQuery);
+                            throw GraqlQueryException.invalidQueryCacheEntry(equivalentQuery, ans);
                         }
                     })
                     .forEach(answers::add);
+            return match;
         } else {
             if (!answer.vars().containsAll(query.getVarNames())){
-                throw GraqlQueryException.invalidQueryCacheEntry(query);
+                throw GraqlQueryException.invalidQueryCacheEntry(query, answer);
             }
-            this.putEntry(query, new QueryAnswers(answer));
+            return putEntry(query, Sets.newHashSet(answer));
         }
-        return answer;
     }
 
     @Override
-    public QueryAnswers getAnswers(Q query) {
+    public Set<ConceptMap> getAnswers(Q query) {
         return getAnswersWithUnifier(query).getKey();
     }
 
@@ -131,25 +120,26 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends QueryCacheBas
     }
 
     @Override
-    public Pair<QueryAnswers, MultiUnifier> getAnswersWithUnifier(Q query) {
+    public Pair<Set<ConceptMap>, MultiUnifier> getAnswersWithUnifier(Q query) {
         Pair<Stream<ConceptMap>, MultiUnifier> answerStreamWithUnifier = getAnswerStreamWithUnifier(query);
         return new Pair<>(
-                new QueryAnswers(answerStreamWithUnifier.getKey().collect(Collectors.toSet())),
+                answerStreamWithUnifier.getKey().collect(toSet()),
                 answerStreamWithUnifier.getValue()
         );
     }
 
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(Q query) {
-        CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
+        CacheEntry<Q, Set<ConceptMap>> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
-            QueryAnswers answers = match.cachedElement();
-            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
+            Set<ConceptMap> answers = match.cachedElement();
+            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query, unifierType());
 
             //NB: this is not lazy
             //lazy version would be answers.stream().flatMap(ans -> ans.unify(multiUnifier))
-            return new Pair<>(answers.unify(multiUnifier).stream(), multiUnifier);
+            //NB: Concurrent modification exception if lazy
+            return new Pair<>(answers.stream().flatMap(ans -> ans.unify(multiUnifier)).collect(toSet()).stream(), multiUnifier);
         }
         return new Pair<>(
                 structuralCache().get(query),
@@ -157,18 +147,13 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends QueryCacheBas
         );
     }
 
-    /**
-     * find specific answer to a query in the cache
-     * @param query input query
-     * @param ans sought specific answer to the query
-     * @return found answer if any, otherwise empty answer
-     */
-    public ConceptMap getAnswer(Q query, ConceptMap ans){
+    @Override
+    public ConceptMap findAnswer(Q query, ConceptMap ans){
         if(ans.isEmpty()) return ans;
-        CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
+        CacheEntry<Q, Set<ConceptMap>> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
-            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
+            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query, unifierType());
 
             //NB: only used when checking for materialised answer duplicates
             ConceptMap answer = match.cachedElement().stream()

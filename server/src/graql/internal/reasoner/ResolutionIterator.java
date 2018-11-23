@@ -19,19 +19,16 @@
 package grakn.core.graql.internal.reasoner;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
-import grakn.core.graql.internal.reasoner.iterator.ReasonerQueryIterator;
-import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -48,7 +45,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final ReasonerQueryImpl query;
     private final Set<ConceptMap> answers = new HashSet<>();
 
-    private final SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
+    private final MultilevelSemanticCache cache = new MultilevelSemanticCache();
     private final Stack<ResolutionState> states = new Stack<>();
 
     private ConceptMap nextAnswer = null;

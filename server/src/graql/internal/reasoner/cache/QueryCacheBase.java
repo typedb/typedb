@@ -21,12 +21,12 @@ package grakn.core.graql.internal.reasoner.cache;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.graql.internal.reasoner.utils.Pair;
-
+import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -38,28 +38,29 @@ import java.util.stream.Stream;
  * </p>
  *
  * @param <Q> the type of query that is being cached
- * @param <S> the type of answer being cached
+ * @param <R> the type of answer being cached
+ * @param <QE> query cache key type
+ * @param <SE> query cache answer container type
  *
+ * @author Kasper Piskorski
  *
  */
-public abstract class QueryCacheBase<Q extends ReasonerQueryImpl, S extends Iterable<ConceptMap>> implements QueryCache<Q, S>{
+public abstract class QueryCacheBase<
+        Q extends ReasonerQueryImpl,
+        R extends Iterable<ConceptMap>,
+        QE,
+        SE extends Collection<ConceptMap>> implements QueryCache<Q, R, SE>{
 
-    private final Map<Q, CacheEntry<Q, S>> cache = new HashMap<>();
+    private final Map<QE, CacheEntry<Q, SE>> cache = new HashMap<>();
     private final StructuralCache<Q> sCache = new StructuralCache<>();
     private final RuleCache ruleCache = new RuleCache();
 
     QueryCacheBase(){ }
 
-    @Override
-    public boolean contains(Q query){ return cache.containsKey(query);}
+    abstract UnifierType unifierType();
 
-    @Override
-    public Set<Q> getQueries(){ return cache.keySet();}
-
-    @Override
-    public void merge(QueryCacheBase<Q, S> c2){
-        c2.cache.keySet().forEach( q -> this.record(q, c2.getAnswers(q)));
-    }
+    abstract QE queryToKey(Q query);
+    abstract Q keyToQuery(QE key);
 
     @Override
     public void clear(){ cache.clear();}
@@ -71,15 +72,49 @@ public abstract class QueryCacheBase<Q extends ReasonerQueryImpl, S extends Iter
 
     public RuleCache ruleCache(){ return ruleCache;}
 
-    public abstract Pair<S, MultiUnifier> getAnswersWithUnifier(Q query);
+    @Override
+    public CacheEntry<Q, SE> record(Q query, ConceptMap answer) {
+        return record(query, answer, null, null);
+    }
 
-    public abstract Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(Q query);
+    @Override
+    public CacheEntry<Q, SE> record(Q query, ConceptMap answer, @Nullable MultiUnifier unifier) {
+        return record(query, answer, null, unifier);
+    }
+
+    @Override
+    public R getAnswers(Q query) { return getAnswersWithUnifier(query).getKey(); }
+
+    @Override
+    public Stream<ConceptMap> getAnswerStream(Q query) { return getAnswerStreamWithUnifier(query).getKey(); }
+
+    @Override
+    public boolean contains(Q query) { return getEntry(query) != null; }
+
+    /**
+     * @param query to find unifier for
+     * @return unifier that unifies this query with the cache equivalent
+     */
+    public MultiUnifier getCacheUnifier(Q query){
+        CacheEntry<Q, SE> entry = getEntry(query);
+        return entry != null? query.getMultiUnifier(entry.query(), unifierType()) : null;
+    }
+
+    /**
+     * find specific answer to a query in the cache
+     * @param query input query
+     * @param ans sought specific answer to the query
+     * @return found answer if any, otherwise empty answer
+     */
+    public abstract ConceptMap findAnswer(Q query, ConceptMap ans);
 
     /**
      * @param query for which the entry is to be retrieved
      * @return corresponding cache entry if any or null
      */
-    CacheEntry<Q, S> getEntry(Q query){ return cache.get(query);}
+    CacheEntry<Q, SE> getEntry(Q query){
+        return cache.get(queryToKey(query));
+    }
 
     /**
      * Associates the specified answers with the specified query in this cache adding an (query) -> (answers) entry
@@ -87,5 +122,12 @@ public abstract class QueryCacheBase<Q extends ReasonerQueryImpl, S extends Iter
      * @param answers of the association
      * @return previous value if any or null
      */
-    CacheEntry<Q, S> putEntry(Q query, S answers){ return cache.put(query, new CacheEntry<>(query, answers));}
+    CacheEntry<Q, SE> putEntry(Q query, SE answers){
+        return putEntry(new CacheEntry<>(query, answers));
+    }
+
+    CacheEntry<Q, SE> putEntry(CacheEntry<Q, SE> cacheEntry) {
+        cache.put(queryToKey(cacheEntry.query()), cacheEntry);
+        return cacheEntry;
+    }
 }

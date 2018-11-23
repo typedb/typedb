@@ -54,6 +54,9 @@ public abstract class SubExplicitProperty extends AbstractSubProperty implements
     }
 
     @Override
+    public boolean isExplicit() { return true;}
+
+    @Override
     public String getName() {
         return NAME;
     }

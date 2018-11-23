@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
-import grakn.core.graql.concept.Rule;
 import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.concept.Rule;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.utils.Pair;
@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 /**
  * Introduces rule cache that wraps around the atom matching rule retrieval to ensure resolution of fruitless rules is not pursued.
  *
+ * @author Kasper Piskorski
  *
  */
 public class RuleCache {
@@ -41,7 +42,7 @@ public class RuleCache {
      * @param atom of interest
      * @return stream of rules applicable to this atom
      */
-    public Stream<InferenceRule> getApplicableRules(Atom atom){
+    private Stream<InferenceRule> getApplicableRules(Atom atom){
         return atom.getApplicableRules()
                 .filter( r -> {
                     if (fruitlessRules.contains(r.getRule())) return false;

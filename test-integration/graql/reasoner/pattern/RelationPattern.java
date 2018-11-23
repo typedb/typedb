@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.query.pattern;
+package grakn.core.graql.reasoner.pattern;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class RelationPattern extends TestQueryPattern {
+public abstract class RelationPattern extends QueryPattern {
 
     private final List<Pattern> patterns;
 

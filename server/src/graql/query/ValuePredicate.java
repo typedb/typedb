@@ -44,11 +44,18 @@ public interface ValuePredicate {
     }
 
     /**
-     * @param predicate to be compared in terms of compatibility
+     * @param predicate to be compared in terms of compatibility (non-zero overlap of answer sets)
      * @return true if compatible
      */
     @CheckReturnValue
     boolean isCompatibleWith(ValuePredicate predicate);
+
+    /**
+     * @param predicate to be compared in terms of subsumption
+     * @return true if this predicate subsumes (specialises) the predicate
+     */
+    @CheckReturnValue
+    boolean subsumes(ValuePredicate predicate);
 
     /**
      * @return the value comparing against, if this is an "equality" predicate, otherwise nothing

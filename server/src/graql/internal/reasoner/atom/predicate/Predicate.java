@@ -17,6 +17,7 @@
  */
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
+import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import grakn.core.common.exception.ErrorMessage;
@@ -67,6 +68,9 @@ public abstract class Predicate<T> extends AtomicBase {
     public int structuralEquivalenceHashCode() {
         return alphaEquivalenceHashCode();
     }
+
+    @Override
+    public boolean subsumes(Atomic atom) { return this.isAlphaEquivalent(atom); }
 
     @Override
     public final boolean equals(Object o) {

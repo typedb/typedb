@@ -18,6 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom.binary;
 
+import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.query.Var;
@@ -49,6 +50,9 @@ public abstract class OntologicalAtom extends TypeAtom {
     public boolean isSelectable() {
         return true;
     }
+
+    @Override
+    public boolean subsumes(Atomic atom) { return this.isAlphaEquivalent(atom); }
 
     @Override
     public Stream<Rule> getPotentialRules(){ return Stream.empty();}

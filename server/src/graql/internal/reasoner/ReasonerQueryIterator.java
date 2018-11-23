@@ -16,10 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.reasoner.iterator;
+package grakn.core.graql.internal.reasoner;
 
 import grakn.core.graql.answer.ConceptMap;
-
 import java.util.Iterator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -30,6 +29,7 @@ import java.util.stream.StreamSupport;
  * Convenience base class for reasoner iterators.
  * </p>
   *
+ * @author Kasper Piskorski
  *
  */
 public abstract class ReasonerQueryIterator implements Iterator<ConceptMap> {

@@ -16,33 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.reasoner.iterator;
+package grakn.core.graql.internal.reasoner.cache;
 
-import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
-
-import java.util.Iterator;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- *
- * <p>
- * Specific iterator for iterating over graql answers.
- * </p>
- *
- *
+ * Interface for classes storing query answer sets.
  */
-public class LazyAnswerIterator extends LazyIterator<ConceptMap> {
+public interface AnswerSet extends Iterable<ConceptMap>, Set<ConceptMap>{
 
-    public LazyAnswerIterator(Stream<ConceptMap> stream){ super(stream);}
-    private LazyAnswerIterator(Iterator<ConceptMap> iterator){ super(iterator);}
+    Set<ConceptMap> get(ConceptMap partialAnswer);
 
-    public LazyAnswerIterator unify(MultiUnifier unifier){
-        if (unifier.isEmpty()) return this;
-        return new LazyAnswerIterator(stream().flatMap(a -> a.unify(unifier)).iterator());
-    }
+    Set<ConceptMap> getAll();
 
-    public LazyAnswerIterator merge (Stream<ConceptMap> stream){
-        return new LazyAnswerIterator(Stream.concat(this.stream(), stream));
-    }
+    boolean add(ConceptMap answer);
+
+    Stream<ConceptMap> stream();
+
+    boolean isEmpty();
 }

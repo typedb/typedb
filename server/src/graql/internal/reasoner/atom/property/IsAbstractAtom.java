@@ -68,4 +68,7 @@ public abstract class IsAbstractAtom extends AtomicBase {
         return alphaEquivalenceHashCode();
     }
 
+    @Override
+    public boolean subsumes(Atomic atom) { return this.isAlphaEquivalent(atom); }
+
 }

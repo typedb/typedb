@@ -25,6 +25,8 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.UnifierComparison;
 import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
+import grakn.core.graql.internal.reasoner.cache.QueryCache;
+import grakn.core.graql.internal.reasoner.cache.StructuralCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,6 +41,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalen
  * Class defining different unifier types.
  * </p>
  *
+ * @author Kasper Piskorski
  *
  */
 public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
@@ -46,8 +49,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
     /**
      *
      * Exact unifier, requires type and id predicate bindings to match.
-     * Used in {@link grakn.core.graql.internal.reasoner.cache.QueryCache} comparisons.
-     * An EXACT unifier between two queries can only exists iff they are alpha-equivalent {@link grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence}.
+     * Used in {@link QueryCache} comparisons.
+     * An EXACT unifier between two queries can only exists iff they are alpha-equivalent {@link ReasonerQueryEquivalence}.
      * .
      */
     EXACT {
@@ -55,6 +58,14 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         @Override
         public ReasonerQueryEquivalence equivalence(){
             return ReasonerQueryEquivalence.AlphaEquivalence;
+        }
+
+        @Override
+        public boolean inferTypes() { return true; }
+
+        @Override
+        public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) {
+            return parent.isDirect() == child.isDirect();
         }
 
         @Override
@@ -89,8 +100,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
     /**
      *
      * Similar to the exact one with addition to allowing id predicates to differ.
-     * Used in {@link grakn.core.graql.internal.reasoner.cache.StructuralCache} comparisons.
-     * A STRUCTURAL unifier between two queries can only exists iff they are structurally-equivalent {@link grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence}.
+     * Used in {@link StructuralCache} comparisons.
+     * A STRUCTURAL unifier between two queries can only exists iff they are structurally-equivalent {@link ReasonerQueryEquivalence}.
      *
      */
     STRUCTURAL {
@@ -98,6 +109,14 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         @Override
         public ReasonerQueryEquivalence equivalence(){
             return ReasonerQueryEquivalence.StructuralEquivalence;
+        }
+
+        @Override
+        public boolean inferTypes() { return false; }
+
+        @Override
+        public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) {
+            return parent.isDirect() == child.isDirect();
         }
 
         @Override
@@ -151,6 +170,12 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         public ReasonerQueryEquivalence equivalence() { return null; }
 
         @Override
+        public boolean inferTypes() { return true; }
+
+        @Override
+        public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) { return true; }
+
+        @Override
         public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
             return query.isTypeRoleCompatible(var, type);
         }
@@ -162,7 +187,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override
         public boolean idCompatibility(Atomic parent, Atomic child) {
-            return child == null || parent == null || parent.isCompatibleWith(child);
+            return child == null || parent == null || parent.isAlphaEquivalent(child);
         }
 
         @Override
@@ -172,12 +197,82 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override
         public boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
-            return child.stream().allMatch(cp -> child.stream().allMatch(pp -> valueCompatibility(pp, cp)))
-                    && parent.stream().allMatch(cp -> parent.stream().allMatch(pp -> valueCompatibility(pp, cp)))
+            return super.attributeValueCompatibility(parent, child)
+                    //inter-vp compatibility
                     && (
-                            parent.isEmpty()
-                                    || child.stream().allMatch(cp -> parent.stream().allMatch(pp -> valueCompatibility(pp, cp)))
-                    );
+                    parent.isEmpty()
+                            || child.stream().allMatch(cp -> parent.stream().allMatch(pp -> valueCompatibility(pp, cp)))
+            );
+        }
+
+        @Override
+        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Var parentVar, Var childVar){
+            Map<SchemaConcept, ResourceAtom> parentRes = new HashMap<>();
+            parent.getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
+            Map<SchemaConcept, ResourceAtom> childRes = new HashMap<>();
+            child.getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(childVar)).forEach(r -> childRes.put(r.getSchemaConcept(), r));
+            return childRes.values().stream()
+                    .allMatch(r -> !parentRes.containsKey(r.getSchemaConcept()) || r.isUnifiableWith(parentRes.get(r.getSchemaConcept())));
+        }
+    },
+
+    /**
+     * Unifier type used to determine whether two queries are in a subsumption relation.
+     * Subsumption can be regarded as a stricter version of the semantic overlap requirement seen in RULE {@link UnifierType}.
+     * Defining queries Q and P and their respective answer sets A(Q) and A(P) we say that:
+     *
+     * Q subsumes P iff
+     * P >= Q (Q specialises P) iff
+     * A(Q) is a subset of A(P)
+     *
+     * Subsumption relation is NOT symmetric.
+     *
+     */
+    SUBSUMPTIVE {
+        @Override
+        public ReasonerQueryEquivalence equivalence() { return null; }
+
+        @Override
+        public boolean inferTypes() { return false; }
+
+        @Override
+        public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) {
+            return !parent.isDirect()
+                    || (parent.isDirect() == child.isDirect());
+        }
+
+        @Override
+        public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
+            return query.isTypeRoleCompatible(var, type);
+        }
+
+        @Override
+        public boolean typeCompatibility(SchemaConcept parent, SchemaConcept child) {
+            return (child == null && parent == null)
+                    || (child != null && parent == null)
+                    || (child != null && parent.subs().anyMatch(child::equals));
+        }
+
+        @Override
+        public boolean idCompatibility(Atomic parent, Atomic child) {
+            return parent == null
+                    || child != null && child.subsumes(parent);
+        }
+
+        @Override
+        public boolean valueCompatibility(Atomic parent, Atomic child) {
+            return parent == null
+                    || child != null && child.subsumes(parent);
+        }
+
+        @Override
+        public boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
+            //check both ways to eliminate contradictions
+            boolean parentToChild = parent.stream().allMatch(pp -> child.stream().anyMatch(cp -> cp.subsumes(pp)));
+            boolean childToParent = child.stream().allMatch(cp -> parent.stream().anyMatch(pp -> cp.isCompatibleWith(pp)));
+            return super.attributeValueCompatibility(parent, child)
+                    && (parent.isEmpty()
+                    || (!child.isEmpty() && parentToChild && childToParent));
         }
 
         @Override

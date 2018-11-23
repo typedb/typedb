@@ -54,6 +54,9 @@ public abstract class IsaExplicitProperty extends AbstractIsaProperty {
     }
 
     @Override
+    public boolean isExplicit() { return true;}
+
+    @Override
     public String getName() {
         return NAME;
     }

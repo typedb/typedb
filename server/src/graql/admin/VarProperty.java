@@ -72,6 +72,12 @@ public interface VarProperty {
     }
 
     /**
+     * True if this property only considers direct types when dealing with type hierarchies
+     */
+    @CheckReturnValue
+    default boolean isExplicit(){ return false;}
+
+    /**
      * maps this var property to a reasoner atom
      * @param var {@link VarPatternAdmin} this property belongs to
      * @param vars VarAdmins constituting the pattern this property belongs to

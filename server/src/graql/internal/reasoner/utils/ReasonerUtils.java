@@ -249,6 +249,16 @@ public class ReasonerUtils {
 
     /**
      * @param schemaConcepts entry {@link SchemaConcept} set
+     * @return bottom non-meta {@link SchemaConcept}s from within the provided set
+     */
+    public static <T extends SchemaConcept> Set<T> bottom(Set<T> schemaConcepts) {
+        return schemaConcepts.stream()
+                .filter(t -> Sets.intersection(t.subs().filter(t2 -> !t.equals(t2)).collect(toSet()), schemaConcepts).isEmpty())
+                .collect(toSet());
+    }
+
+    /**
+     * @param schemaConcepts entry {@link SchemaConcept} set
      * @return top {@link SchemaConcept}s from within the provided set or meta concept if it exists
      */
     public static <T extends SchemaConcept> Set<T> topOrMeta(Set<T> schemaConcepts) {
@@ -309,7 +319,6 @@ public class ReasonerUtils {
         return parent != null && child == null || !typesCompatible(parent, child, direct) && !typesCompatible(child, parent, direct);
     }
 
-
     /**
      * @param a first operand
      * @param b second operand
@@ -325,16 +334,8 @@ public class ReasonerUtils {
 
     private static <B, S extends B> Map<Equivalence.Wrapper<B>, Integer> getCardinalityMap(Collection<S> coll, Equivalence<B> equiv) {
         Map<Equivalence.Wrapper<B>, Integer> count = new HashMap<>();
-
-        for (S obj : coll) {
-            count.merge(equiv.wrap(obj), 1, (a, b) -> a + b);
-        }
+        for (S obj : coll) count.merge(equiv.wrap(obj), 1, (a, b) -> a + b);
         return count;
-    }
-
-    private static <T> int getFreq(T obj, Map<T, Integer> freqMap) {
-        Integer count = freqMap.get(obj);
-        return count != null ? count : 0;
     }
 
     /**
@@ -349,23 +350,12 @@ public class ReasonerUtils {
         if (a.size() != b.size()) {
             return false;
         } else {
-            Map<Equivalence.Wrapper<B>, Integer> mapa = getCardinalityMap(a, equiv);
-            Map<Equivalence.Wrapper<B>, Integer>  mapb = getCardinalityMap(b, equiv);
-            if (mapa.size() != mapb.size()) {
+            Map<Equivalence.Wrapper<B>, Integer> mapA = getCardinalityMap(a, equiv);
+            Map<Equivalence.Wrapper<B>, Integer> mapB = getCardinalityMap(b, equiv);
+            if (mapA.size() != mapB.size()) {
                 return false;
             } else {
-                Iterator<Equivalence.Wrapper<B>> it = mapa.keySet().iterator();
-
-                Equivalence.Wrapper<B> obj;
-                do {
-                    if (!it.hasNext()) {
-                        return true;
-                    }
-
-                    obj = it.next();
-                } while (getFreq(obj, mapa) == getFreq(obj, mapb));
-
-                return false;
+                return mapA.keySet().stream().allMatch(k -> mapA.get(k).equals(mapB.get(k)));
             }
         }
     }

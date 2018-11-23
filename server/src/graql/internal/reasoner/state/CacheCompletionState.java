@@ -18,46 +18,30 @@
 
 package grakn.core.graql.internal.reasoner.state;
 
-import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import java.util.Iterator;
-import java.util.Set;
 
 /**
- *
- * <p>
- * Specialised class for resolution states corresponding to different forms of queries.
- * </p>
- *
- * @param <Q> the type of query that this state is corresponding to
+ * State used to acknowledge db completion of a query in the cache - all db answers to the query are cached.
  *
  * @author Kasper Piskorski
- *
  */
-public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryStateBase{
+public class CacheCompletionState extends ResolutionState {
 
-    private final Q query;
-    private final Iterator<ResolutionState> subGoalIterator;
+    final private ReasonerAtomicQuery query;
+    final private MultilevelSemanticCache cache;
 
-    QueryState(Q query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache) {
-        super(sub, u, parent, subGoals, cache);
+    public CacheCompletionState(ReasonerAtomicQuery query, ConceptMap sub, QueryStateBase parent, MultilevelSemanticCache cache){
+        super(sub, parent);
         this.query = query;
-        this.subGoalIterator = query.queryStateIterator(this, subGoals, cache);
+        this.cache = cache;
     }
-
-    @Override
-    public String toString(){ return super.toString() + "\n" + getQuery() + "\n"; }
 
     @Override
     public ResolutionState generateSubGoal() {
-        return subGoalIterator.hasNext()? subGoalIterator.next() : null;
+        cache.ackDBCompleteness(query);
+        return null;
     }
 
-    /**
-     * @return query corresponding to this query state
-     */
-    Q getQuery(){ return query;}
 }

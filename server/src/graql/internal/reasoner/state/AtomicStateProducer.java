@@ -21,7 +21,7 @@ package grakn.core.graql.internal.reasoner.state;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
+import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import com.google.common.collect.Iterators;
 import java.util.Iterator;
@@ -42,7 +42,7 @@ public class AtomicStateProducer extends QueryStateBase {
 
     private final Iterator<ResolutionState> subGoalIterator;
 
-    public AtomicStateProducer(ReasonerAtomicQuery query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache) {
+    public AtomicStateProducer(ReasonerAtomicQuery query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache) {
         super(sub, u, parent, subGoals, cache);
 
         if(query.getAtom().getSchemaConcept() == null){

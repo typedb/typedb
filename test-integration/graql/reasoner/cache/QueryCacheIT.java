@@ -1,5 +1,5 @@
 package grakn.core.graql.reasoner.cache;
-
+/*
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Entity;
@@ -38,6 +38,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("CheckReturnValue")
+
 public class QueryCacheIT {
 
     @ClassRule
@@ -201,3 +202,4 @@ public class QueryCacheIT {
         return Patterns.conjunction(vars);
     }
 }
+*/

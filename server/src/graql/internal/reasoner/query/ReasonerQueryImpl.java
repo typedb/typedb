@@ -29,9 +29,11 @@ import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.ResolutionIterator;
@@ -43,7 +45,8 @@ import grakn.core.graql.internal.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
+import grakn.core.graql.internal.reasoner.cache.Index;
+import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.internal.reasoner.plan.ResolutionQueryPlan;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
@@ -57,11 +60,7 @@ import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Var;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
-
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -73,6 +72,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static grakn.core.graql.query.Graql.var;
 
@@ -490,7 +490,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return resolution subGoal formed from this query
      */
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache){
+    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
         return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
     }
 
@@ -502,7 +502,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return resolution subGoals formed from this query obtained by expanding the inferred types contained in the query
      */
-    public Stream<ResolutionState> subGoals(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache){
+    public Stream<ResolutionState> subGoals(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
         return getQueryStream(sub)
                 .map(q -> q.subGoal(sub, u, parent, subGoals, cache));
     }
@@ -520,7 +520,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return query state iterator (db iter + unifier + state iter) for this query
      */
-    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache){
+    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
         Iterator<AnswerState> dbIterator;
         Iterator<QueryStateBase> subGoalIterator;
 
@@ -549,5 +549,29 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
         return RuleUtils.subGraphIsCyclical(dependentRules)
                || RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
+    }
+
+    /**
+     *
+     * @return
+     */
+    private Set<Var> subbedVars(){
+        return getAtoms(IdPredicate.class).map(Atomic::getVarName).collect(Collectors.toSet());
+    }
+
+    /**
+     *
+     * @return
+     */
+    public ConceptMap getAnswerIndex(){
+        return getSubstitution().project(subbedVars());
+    }
+
+    /**
+     *
+     * @return
+     */
+    public Index index(){
+        return Index.of(subbedVars());
     }
 }

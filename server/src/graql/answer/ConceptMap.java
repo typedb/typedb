@@ -28,16 +28,15 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Role;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Var;
-import grakn.core.graql.exception.GraqlQueryException;
-
-import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,6 +48,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.CheckReturnValue;
+
 
 /**
  * <p>
@@ -163,8 +164,8 @@ public class ConceptMap implements Answer<ConceptMap> {
      * perform an answer merge with optional explanation
      * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
      *
-     * @param a2          answer to be merged with
-     * @param explanation flag for providing explanation
+     * @param map          answer to be merged with
+     * @param mergeExplanation flag for providing explanation
      * @return merged answer
      */
     @CheckReturnValue
@@ -251,6 +252,26 @@ public class ConceptMap implements Answer<ConceptMap> {
                         .collect(Collectors.toSet()),
                 this.explanation()
         );
+    }
+
+    /**
+     * @param partialSub partial child substitution that needs to be incorporated
+     * @param vars child vars
+     * @param unifier parent-child unifier
+     * @param diff parent-child semantic difference
+     * @return projected answer (empty if semantic difference not satisfied)
+     */
+    @CheckReturnValue
+    public ConceptMap projectToChild(ConceptMap partialSub, Set<Var> vars, Unifier unifier, SemanticDifference diff) {
+        ConceptMap unified = this.unify(unifier);
+        if (unified.isEmpty()) return unified;
+        Set<Var> varsToRetain = Sets.difference(unified.vars(), partialSub.vars());
+        return diff.satisfiedBy(unified)?
+                unified
+                        .project(varsToRetain)
+                        .merge(partialSub)
+                        .project(vars) :
+                new ConceptMap();
     }
 
     /**

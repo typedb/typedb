@@ -17,6 +17,8 @@
  */
 package grakn.core.graql.internal.reasoner.atom.binary;
 
+import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
+import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Concept;
@@ -56,6 +58,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import com.google.common.collect.Iterables;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 import java.util.HashSet;
 import java.util.Objects;
@@ -289,16 +293,14 @@ public abstract class ResourceAtom extends Binary{
         //unify attribute vars
         Var childAttributeVarName = this.getAttributeVariable();
         Var parentAttributeVarName = parent.getAttributeVariable();
-        if (parentAttributeVarName.isUserDefinedName()
-                && !childAttributeVarName.equals(parentAttributeVarName)){
+        if (parentAttributeVarName.isUserDefinedName()){
             unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childAttributeVarName, parentAttributeVarName)));
         }
 
         //unify relation vars
         Var childRelationVarName = this.getRelationVariable();
         Var parentRelationVarName = parent.getRelationVariable();
-        if (parentRelationVarName.isUserDefinedName()
-                && !childRelationVarName.equals(parentRelationVarName)){
+        if (parentRelationVarName.isUserDefinedName()){
             unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
         }
         return unifier;
@@ -320,6 +322,22 @@ public abstract class ResourceAtom extends Binary{
                 AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
             }
         }
+    }
+
+    @Override
+    public SemanticDifference semanticDifference(Atom p, Unifier unifier) {
+        SemanticDifference baseDiff = super.semanticDifference(p, unifier);
+        if (!p.isResource()) return baseDiff;
+        ResourceAtom parentAtom = (ResourceAtom) p;
+        Set<VariableDefinition> diff = new HashSet<>();
+        Unifier unifierInverse = unifier.inverse();
+        Var childVar = getAttributeVariable();
+        Set<ValuePredicate> predicates = new HashSet<>(getMultiPredicate());
+        parentAtom.getMultiPredicate().stream()
+                .flatMap(vp -> vp.unify(unifierInverse).stream())
+                .forEach(predicates::remove);
+        diff.add(new VariableDefinition(childVar, null, null, new HashSet<>(), predicates));
+        return baseDiff.merge(new SemanticDifference(diff));
     }
 
     @Override
