@@ -1031,12 +1031,16 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         RelationshipAtom parentAtom = (RelationshipAtom) p;
         Map<Var, VariableDefinition> diff = new HashMap<>();
 
+        /*
         Set<Var> parentRoleVars = parentAtom.getRelationPlayers().stream()
                 .map(RelationPlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
                 .filter(pattern -> pattern.var().isUserDefinedName())
                 .map(VarPatternAdmin::var)
                 .collect(Collectors.toSet());
+        */
+
+        Set<Var> parentRoleVars= parentAtom.getRoleExpansionVariables();
 
         HashMultimap<Var, Role> childVarRoleMap = this.getVarRoleMap();
         HashMultimap<Var, Role> parentVarRoleMap = parentAtom.getVarRoleMap();

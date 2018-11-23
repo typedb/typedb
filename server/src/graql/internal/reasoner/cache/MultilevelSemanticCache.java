@@ -99,13 +99,14 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
          * * apply constraints from the difference
          */
         Set<Var> childVars = child.getVarNames();
-        parentToChildUnifierDelta.stream()
-                .flatMap(unifierDelta -> parentAnswersToPropagate.stream()
-                        .map(ans -> ans.unify(unifierDelta.getKey()))
-                        .filter(ans -> unifierDelta.getValue().satisfiedBy(ans)))
+        ConceptMap partialSub = child.getRoleSubstitution();
+
+        parentAnswersToPropagate.stream()
+                .flatMap(ans -> parentToChildUnifierDelta.stream()
+                                .map(unifierDelta ->
+                                        ans.projectToChild(partialSub, childVars, unifierDelta.getKey(), unifierDelta.getValue()))
+                )
                 .filter(ans -> !ans.isEmpty())
-                .map(ans -> ans.merge(child.getRoleSubstitution()))
-                .map(ans -> ans.project(childVars))
                 .peek(ans -> {
                     if (!ans.vars().containsAll(childVars)){
                         throw GraqlQueryException.invalidQueryCacheEntry(child, ans);
@@ -114,7 +115,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                 .filter(childAnswers::add)
                 .forEach(newAnswers::add);
 
-        LOG.trace(newAnswers.size() + " new answers propagated: " + newAnswers);
+        LOG.trace(newAnswers.size() + " new out of " + parentAnswersToPropagate.size() + " parent aanswers propagated: " + newAnswers);
     }
 
     @Override

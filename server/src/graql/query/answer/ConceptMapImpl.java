@@ -19,6 +19,7 @@
 package grakn.core.graql.query.answer;
 
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Var;
@@ -228,6 +229,19 @@ public class ConceptMapImpl implements ConceptMap {
                         .collect(Collectors.toSet()),
                 this.explanation()
         );
+    }
+
+    @Override
+    public ConceptMap projectToChild(ConceptMap partialSub, Set<Var> vars, Unifier unifier, SemanticDifference diff) {
+        ConceptMap unified = this.unify(unifier);
+        if (unified.isEmpty()) return unified;
+        Set<Var> varsToRetain = Sets.difference(unified.vars(), partialSub.vars());
+        return diff.satisfiedBy(unified)?
+                unified
+                        .project(varsToRetain)
+                        .merge(partialSub)
+                        .project(vars) :
+                new ConceptMapImpl();
     }
 
     @Override

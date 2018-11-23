@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
  */
 public class SemanticDifference {
 
-    //can define as a set of VariableDefinitions with def holding var
+    //TODO define as a set of VariableDefinitions with def holding var
     final private ImmutableMap<Var, VariableDefinition> definition;
 
     public SemanticDifference(Map<Var, VariableDefinition> m){
@@ -85,8 +85,9 @@ public class SemanticDifference {
 
     private Set<Relationship> rolesToRels(Var var, Set<Role> roles, ConceptMap answer){
         if(!answer.containsVar(var)) return new HashSet<>();
+        Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
         return answer.get(var).asThing()
-                .relationships(roles.toArray(new Role[roles.size()]))
+                .relationships(roleAndTheirSubs.toArray(new Role[roleAndTheirSubs.size()]))
                 .collect(Collectors.toSet());
     }
 

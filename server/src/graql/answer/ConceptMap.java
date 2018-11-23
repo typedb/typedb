@@ -26,6 +26,7 @@ import grakn.core.graql.admin.Explanation;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.server.exception.GraqlQueryException;
 
 import javax.annotation.CheckReturnValue;
@@ -114,6 +115,16 @@ public interface ConceptMap extends Answer<ConceptMap> {
      */
     @CheckReturnValue
     ConceptMap project(Set<Var> vars);
+
+    /**
+     * @param partialSub partial child substitution that needs to be incorporated
+     * @param vars child vars
+     * @param unifier parent-child unifier
+     * @param diff parent-child semantic difference
+     * @return projected answer (empty if semantic difference not satisfied)
+     */
+    @CheckReturnValue
+    ConceptMap projectToChild(ConceptMap partialSub, Set<Var> vars, Unifier unifier, SemanticDifference diff);
 
     /**
      * @param unifier set of mappings between variables
