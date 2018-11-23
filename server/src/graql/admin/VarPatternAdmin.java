@@ -30,7 +30,6 @@ import java.util.stream.Stream;
 
 /**
  * Admin class for inspecting a {@link VarPattern}
- *
  */
 public interface VarPatternAdmin extends PatternAdmin, VarPattern {
     @Override
@@ -57,24 +56,27 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
 
     /**
      * Get a stream of all properties of a particular type on this variable
+     *
      * @param type the class of {@link VarProperty} to return
-     * @param <T> the type of {@link VarProperty} to return
+     * @param <T>  the type of {@link VarProperty} to return
      */
     @CheckReturnValue
     <T extends VarProperty> Stream<T> getProperties(Class<T> type);
 
     /**
      * Get a unique property of a particular type on this variable, if it exists
+     *
      * @param type the class of {@link VarProperty} to return
-     * @param <T> the type of {@link VarProperty} to return
+     * @param <T>  the type of {@link VarProperty} to return
      */
     @CheckReturnValue
     <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type);
 
     /**
      * Get whether this {@link VarPattern} has a {@link VarProperty} of the given type
+     *
      * @param type the type of the {@link VarProperty}
-     * @param <T> the type of the {@link VarProperty}
+     * @param <T>  the type of the {@link VarProperty}
      * @return whether this {@link VarPattern} has a {@link VarProperty} of the given type
      */
     @CheckReturnValue

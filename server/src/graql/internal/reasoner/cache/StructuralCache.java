@@ -37,20 +37,12 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- *
- * <p>
  * Container class allowing to store similar graql traversals with similarity measure based on structural query equivalence.
- *
  * On cache hit a concept map between provided query and the one contained in the cache is constructed. Based on that mapping,
  * id predicates of the cached query are transformed.
- *
  * The returned stream is a stream of the transformed cached query unified with the provided query.
- * </p>
  *
  * @param <Q> the type of query that is being cached
- *
- * @author Kasper Piskorski
- *
  */
 public class StructuralCache<Q extends ReasonerQueryImpl>{
 

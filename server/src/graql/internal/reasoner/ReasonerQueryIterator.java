@@ -19,22 +19,17 @@
 package grakn.core.graql.internal.reasoner;
 
 import grakn.core.graql.answer.ConceptMap;
+
 import java.util.Iterator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- *
- * <p>
  * Convenience base class for reasoner iterators.
- * </p>
-  *
- * @author Kasper Piskorski
- *
  */
 public abstract class ReasonerQueryIterator implements Iterator<ConceptMap> {
 
-    public Stream<ConceptMap> hasStream(){
+    public Stream<ConceptMap> hasStream() {
         Iterable<ConceptMap> iterable = () -> this;
         return StreamSupport.stream(iterable.spliterator(), false).distinct();
     }
