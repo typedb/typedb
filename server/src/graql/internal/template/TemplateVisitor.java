@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.template;
 
-import grakn.core.server.exception.GraqlSyntaxException;
-import grakn.core.graql.Var;
+import grakn.core.graql.exception.GraqlSyntaxException;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.grammar.GraqlTemplateBaseVisitor;
 import grakn.core.graql.grammar.GraqlTemplateParser;
 import grakn.core.graql.macro.Macro;
@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 

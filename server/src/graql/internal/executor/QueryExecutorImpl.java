@@ -18,27 +18,27 @@
 
 package grakn.core.graql.internal.executor;
 
-import grakn.core.server.ComputeExecutor;
-import grakn.core.server.QueryExecutor;
-import grakn.core.graql.concept.Concept;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.AggregateQuery;
-import grakn.core.graql.ComputeQuery;
-import grakn.core.graql.DefineQuery;
-import grakn.core.graql.DeleteQuery;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.InsertQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.UndefineQuery;
-import grakn.core.graql.Var;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.concept.Concept;
 import grakn.core.graql.internal.util.AdminConverter;
+import grakn.core.graql.query.AggregateQuery;
+import grakn.core.graql.query.ComputeQuery;
+import grakn.core.graql.query.DefineQuery;
+import grakn.core.graql.query.DeleteQuery;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.Match;
+import grakn.core.graql.query.UndefineQuery;
+import grakn.core.graql.query.Var;
+import grakn.core.server.ComputeExecutor;
+import grakn.core.server.QueryExecutor;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.Set;

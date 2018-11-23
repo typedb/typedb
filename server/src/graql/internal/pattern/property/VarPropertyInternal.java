@@ -19,9 +19,9 @@
 package grakn.core.graql.internal.pattern.property;
 
 import grakn.core.server.Transaction;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Match;
-import grakn.core.graql.Var;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.Match;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;

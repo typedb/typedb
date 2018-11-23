@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.reasoner.utils.conversion;
 
 import grakn.core.graql.concept.Concept;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Pattern;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.Pattern;
 import grakn.core.common.util.CommonUtil;
 
 /**

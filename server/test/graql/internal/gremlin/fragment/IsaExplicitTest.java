@@ -18,15 +18,14 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.InsertQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.QueryBuilder;
-import grakn.core.graql.Var;
-import grakn.core.graql.query.QueryBuilderImpl;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.Match;
+import grakn.core.graql.query.Var;
+import grakn.core.graql.query.QueryBuilder;
 import org.junit.Test;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 public class IsaExplicitTest {
@@ -39,7 +38,7 @@ public class IsaExplicitTest {
 
     @Test
     public void testInsertSyntax() {
-        QueryBuilder queryBuilder = new QueryBuilderImpl();
+        QueryBuilder queryBuilder = new QueryBuilder();
         InsertQuery insertQuery;
 
         insertQuery = queryBuilder.insert(x.isaExplicit(thingy));
@@ -53,7 +52,7 @@ public class IsaExplicitTest {
 
     @Test
     public void testMatchSyntax() {
-        QueryBuilder queryBuilder = new QueryBuilderImpl();
+        QueryBuilder queryBuilder = new QueryBuilder();
         Match matchQuery;
         GetQuery getQuery;
 

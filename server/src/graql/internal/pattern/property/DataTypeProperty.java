@@ -18,16 +18,16 @@
 
 package grakn.core.graql.internal.pattern.property;
 
+import com.google.common.collect.ImmutableBiMap;
 import grakn.core.graql.concept.AttributeType;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Var;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.UniqueVarProperty;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.internal.parser.QueryParserImpl;
 import grakn.core.graql.internal.reasoner.atom.property.DataTypeAtom;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -45,6 +45,13 @@ import java.util.Set;
 public abstract class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
     public static final String NAME = "datatype";
+    private static final ImmutableBiMap<String, AttributeType.DataType<?>> DATA_TYPES = ImmutableBiMap.of(
+            "long", AttributeType.DataType.LONG,
+            "double", AttributeType.DataType.DOUBLE,
+            "string", AttributeType.DataType.STRING,
+            "boolean", AttributeType.DataType.BOOLEAN,
+            "date", AttributeType.DataType.DATE
+    );
 
     public static DataTypeProperty of(AttributeType.DataType<?> datatype) {
         return new AutoValue_DataTypeProperty(datatype);
@@ -59,7 +66,7 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
 
     @Override
     public String getProperty() {
-        return QueryParserImpl.DATA_TYPES.inverse().get(dataType());
+        return DATA_TYPES.inverse().get(dataType());
     }
 
     @Override

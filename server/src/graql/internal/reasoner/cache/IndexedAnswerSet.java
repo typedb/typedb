@@ -22,7 +22,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.answer.ConceptMapImpl;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -104,7 +103,7 @@ public class IndexedAnswerSet implements AnswerSet{
 
     @Override
     public Set<ConceptMap> getAll() {
-        if (index.equals(Index.empty())) return indexedAnswers.get(new ConceptMapImpl());
+        if (index.equals(Index.empty())) return indexedAnswers.get(new ConceptMap());
         return new HashSet<>(indexedAnswers.values());
     }
 

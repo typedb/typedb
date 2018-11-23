@@ -18,10 +18,8 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.graql.Var;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
@@ -30,8 +28,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import java.util.Collection;
-import java.util.HashMap;
+import grakn.core.graql.query.Var;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;

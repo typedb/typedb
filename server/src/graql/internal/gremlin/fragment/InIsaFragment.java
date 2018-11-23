@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
@@ -37,7 +37,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
 import static grakn.core.graql.internal.Schema.EdgeLabel.ATTRIBUTE;
 import static grakn.core.graql.internal.Schema.EdgeLabel.ISA;

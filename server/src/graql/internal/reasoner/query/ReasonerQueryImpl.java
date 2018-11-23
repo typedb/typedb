@@ -18,15 +18,10 @@
 
 package grakn.core.graql.internal.reasoner.query;
 
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.reasoner.cache.Index;
-import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Var;
-import grakn.core.graql.answer.ConceptMap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
@@ -34,18 +29,24 @@ import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Type;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.ResolutionIterator;
-import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
+import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.internal.reasoner.cache.Index;
+import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.internal.reasoner.plan.ResolutionQueryPlan;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
@@ -55,15 +56,11 @@ import grakn.core.graql.internal.reasoner.state.ConjunctiveState;
 import grakn.core.graql.internal.reasoner.state.CumulativeState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
+import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Var;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.graql.internal.Schema;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Sets;
-
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -75,8 +72,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 
 /**
  *
@@ -348,7 +346,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public ImmutableMap<Var, Type> getVarTypeMap() {
         if (varTypeMap == null) {
-            this.varTypeMap = getVarTypeMap(new ConceptMapImpl());
+            this.varTypeMap = getVarTypeMap(new ConceptMap());
         }
         return varTypeMap;
     }
@@ -436,7 +434,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
                 answerMap.put(p.getVarName(), concept);
             });
-            substitution = new ConceptMapImpl(answerMap);
+            substitution = new ConceptMap(answerMap);
         }
         return substitution;
     }
@@ -450,7 +448,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
                     roleSub.put(p.getVarName(), concept);
                 });
-        return new ConceptMapImpl(roleSub);
+        return new ConceptMap(roleSub);
     }
 
     /**
@@ -536,7 +534,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             dbIterator = Collections.emptyIterator();
 
             ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(this);
-            subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new ConceptMapImpl(), parent.getUnifier(), parent, subGoals, cache));
+            subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new ConceptMap(), parent.getUnifier(), parent, subGoals, cache));
         }
         return Iterators.concat(dbIterator, subGoalIterator);
     }

@@ -18,12 +18,12 @@
 
 package grakn.core.graql.internal.reasoner.state;
 
-import grakn.core.graql.answer.ConceptMap;
+import com.google.common.collect.Iterators;
 import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import com.google.common.collect.Iterators;
 import java.util.Iterator;
 import java.util.Set;
 

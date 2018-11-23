@@ -18,8 +18,7 @@
 
 package grakn.core.graql.query.predicate;
 
-import grakn.core.graql.Graql;
-import grakn.core.graql.query.predicate.EqPredicate;
+import grakn.core.graql.query.Graql;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

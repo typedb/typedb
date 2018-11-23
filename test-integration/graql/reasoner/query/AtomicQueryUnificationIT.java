@@ -22,40 +22,38 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.Graql;
-import grakn.core.graql.Var;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.Concept;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
-import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
-import grakn.core.server.session.SessionImpl;
 import grakn.core.rule.GraknTestServer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
+import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subList;
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -63,6 +61,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.collections.CollectionUtils.isEqualCollection;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 
 @SuppressWarnings("CheckReturnValue")
 public class AtomicQueryUnificationIT {
@@ -100,11 +99,11 @@ public class AtomicQueryUnificationIT {
             ReasonerAtomicQuery xbaseQuery = ReasonerQueries.atomic(conjunction("{($x1, $x2) isa binary;}"), tx);
             ReasonerAtomicQuery ybaseQuery = ReasonerQueries.atomic(conjunction("{($y1, $y2) isa binary;}"), tx);
 
-            ConceptMap xAnswer = new ConceptMapImpl(ImmutableMap.of(var("x1"), x1, var("x2"), x2));
-            ConceptMap flippedXAnswer = new ConceptMapImpl(ImmutableMap.of(var("x1"), x2, var("x2"), x1));
+            ConceptMap xAnswer = new ConceptMap(ImmutableMap.of(var("x1"), x1, var("x2"), x2));
+            ConceptMap flippedXAnswer = new ConceptMap(ImmutableMap.of(var("x1"), x2, var("x2"), x1));
 
-            ConceptMap yAnswer = new ConceptMapImpl(ImmutableMap.of(var("y1"), x1, var("y2"), x2));
-            ConceptMap flippedYAnswer = new ConceptMapImpl(ImmutableMap.of(var("y1"), x2, var("y2"), x1));
+            ConceptMap yAnswer = new ConceptMap(ImmutableMap.of(var("y1"), x1, var("y2"), x2));
+            ConceptMap flippedYAnswer = new ConceptMap(ImmutableMap.of(var("y1"), x2, var("y2"), x1));
 
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(xbaseQuery, xAnswer);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(xbaseQuery, flippedXAnswer);

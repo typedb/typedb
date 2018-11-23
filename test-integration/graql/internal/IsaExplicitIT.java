@@ -18,16 +18,12 @@
 
 package grakn.core.graql.internal;
 
-import grakn.core.server.Transaction;
+import com.google.common.collect.ImmutableList;
+import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.AggregateQuery;
-import grakn.core.graql.Pattern;
-import grakn.core.graql.QueryBuilder;
-import grakn.core.graql.Var;
-import grakn.core.graql.answer.Value;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.InIsaFragment;
@@ -37,16 +33,20 @@ import grakn.core.graql.internal.gremlin.fragment.NeqFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutIsaFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutSubFragment;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.graql.query.AggregateQuery;
+import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.Var;
 import grakn.core.rule.GraknTestServer;
-import com.google.common.collect.ImmutableList;
+import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.graql.Graql.and;
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.var;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;

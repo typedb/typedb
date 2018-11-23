@@ -20,10 +20,10 @@ package grakn.core.graql.reasoner;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Graql;
-import grakn.core.graql.QueryBuilder;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;

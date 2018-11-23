@@ -18,14 +18,14 @@
 
 package grakn.core.graql.internal.template.macro;
 
-import grakn.core.graql.Graql;
-import grakn.core.graql.Query;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Query;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.Graql.parse;
+import static grakn.core.graql.query.Graql.parse;
 import static junit.framework.TestCase.assertEquals;
 
 public class MacroTestUtilities {

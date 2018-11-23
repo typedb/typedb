@@ -1,6 +1,7 @@
 <template>
     <div class="top-bar-container">
         <div class="left">
+            <router-link to="/design/schema"><button class="btn"><vue-icon icon="diagram-tree" className="vue-icon"></vue-icon></button></router-link>
             <img src="static/img/logo-text.png" class="grakn-icon">
         </div>
 

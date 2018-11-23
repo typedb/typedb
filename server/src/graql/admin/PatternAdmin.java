@@ -18,8 +18,8 @@
 
 package grakn.core.graql.admin;
 
-import grakn.core.graql.Pattern;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;

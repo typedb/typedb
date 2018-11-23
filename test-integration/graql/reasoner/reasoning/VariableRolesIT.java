@@ -18,9 +18,9 @@
 
 package grakn.core.graql.reasoner.reasoning;
 
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.QueryBuilder;
-import grakn.core.graql.VarPattern;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -34,7 +34,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static org.junit.Assert.assertEquals;

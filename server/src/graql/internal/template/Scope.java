@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.template;
 
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import com.google.common.collect.Sets;
 
 import java.util.HashSet;

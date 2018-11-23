@@ -18,20 +18,20 @@
 
 package grakn.core.server.rpc;
 
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.server.exception.GraqlSyntaxException;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.graql.admin.Explanation;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Value;

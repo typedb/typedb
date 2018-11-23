@@ -33,7 +33,8 @@ export default {
   name: 'GraphCanvas',
   props: ['tabId'],
   beforeCreate() {
-    const { mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+    const namespace = (this.$route.path === '/develop/data') ? `tab-${this.$options.propsData.tabId}` : 'schema-design';
+    const { mapActions } = createNamespacedHelpers(namespace);
 
     // methods
     this.$options.methods = {

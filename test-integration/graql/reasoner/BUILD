@@ -17,7 +17,7 @@ java_test(
 
 java_test(
     name = "geo-inference-it",
-    size = "small",
+    size = "medium",
     srcs = ["GeoInferenceIT.java"],
     classpath_resources = [
         "//test-integration/resources:logback-test",

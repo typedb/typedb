@@ -168,13 +168,25 @@ function computeNodeStyle(node) {
   };
 }
 
-
 function computeEdgeStyle() {
   return {
     font: {
       color: '#00eca2',
       background: '#1B1B1B',
       strokeWidth: 0,
+    },
+    color: {
+      color: 'rgba(0, 236, 162, 1)',
+      highlight: '#56fd92',
+      hover: '#56fd92',
+    },
+    hoverWidth: 2,
+    selectionWidth: 2,
+    arrowStrikethrough: false,
+    arrows: { to: { enabled: false } },
+    smooth: {
+      enabled: false,
+      forceDirection: 'none',
     },
   };
 }

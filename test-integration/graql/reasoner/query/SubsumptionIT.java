@@ -18,7 +18,6 @@
 
 package grakn.core.graql.reasoner.query;
 
-import grakn.core.graql.Graql;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.VarPatternAdmin;
@@ -26,6 +25,7 @@ import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.rule.GraknTestServer;

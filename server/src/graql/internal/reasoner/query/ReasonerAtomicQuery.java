@@ -18,7 +18,6 @@
 
 package grakn.core.graql.internal.reasoner.query;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
@@ -28,6 +27,7 @@ import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.state.CacheCompletionState;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -38,7 +38,6 @@ import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.server.session.TransactionImpl;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
@@ -223,7 +222,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .iterator();
 
         Iterator<ResolutionState> dbCompletionIterator =
-                Iterators.singletonIterator(new CacheCompletionState(this, new ConceptMapImpl(), null, cache));
+                Iterators.singletonIterator(new CacheCompletionState(this, new ConceptMap(), null, cache));
 
         Iterator<ResolutionState> subGoalIterator;
         //if this is ground and exists in the db then do not resolve further

@@ -19,14 +19,7 @@
 package grakn.core.graql.query;
 
 import grakn.core.server.Transaction;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Aggregate;
-import grakn.core.graql.AggregateQuery;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.Var;
-import grakn.core.graql.admin.DeleteQueryAdmin;
-import grakn.core.graql.admin.InsertQueryAdmin;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.answer.Answer;
@@ -46,29 +39,29 @@ public class Queries {
 
     public static GetQuery get(MatchAdmin match, ImmutableSet<Var> vars) {
         validateMatchVars(match, vars);
-        return GetQueryImpl.of(match, vars);
+        return GetQuery.of(match, vars);
     }
 
-    public static InsertQueryAdmin insert(Transaction tx, Collection<VarPatternAdmin> vars) {
-        return InsertQueryImpl.create(tx, null, vars);
+    public static InsertQuery insert(Transaction tx, Collection<VarPatternAdmin> vars) {
+        return InsertQuery.create(tx, null, vars);
     }
 
     /**
      * @param match the {@link Match} to insert for each result
      * @param varPattern  a collection of Vars to insert
      */
-    public static InsertQueryAdmin insert(MatchAdmin match, Collection<VarPatternAdmin> varPattern) {
-        return InsertQueryImpl.create(match.tx(), match, varPattern);
+    public static InsertQuery insert(MatchAdmin match, Collection<VarPatternAdmin> varPattern) {
+        return InsertQuery.create(match.tx(), match, varPattern);
     }
 
-    public static DeleteQueryAdmin delete(MatchAdmin match, Set<Var> vars) {
+    public static DeleteQuery delete(MatchAdmin match, Set<Var> vars) {
         validateMatchVars(match, vars);
-        return DeleteQueryImpl.of(vars, match);
+        return DeleteQuery.of(vars, match);
     }
 
     public static <T extends Answer> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {
         //TODO: validate vars in aggregate query
-        return AggregateQueryImpl.of(match, aggregate);
+        return AggregateQuery.of(match, aggregate);
     }
 
     private static void validateMatchVars(MatchAdmin match, Set<Var> vars) {

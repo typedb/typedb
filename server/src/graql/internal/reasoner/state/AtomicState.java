@@ -18,20 +18,18 @@
 
 package grakn.core.graql.internal.reasoner.state;
 
-import grakn.core.graql.Var;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.cache.CacheEntry;
 import grakn.core.graql.internal.reasoner.cache.IndexedAnswerSet;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import grakn.core.graql.query.Var;
 import java.util.Set;
 
 /**
@@ -147,7 +145,7 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
         //if not and query different than rule head do the same with the query
         ConceptMap queryAnswer = headAnswer.isEmpty() && queryEquivalentToHead?
                 cache.findAnswer(query, answer) :
-                new ConceptMapImpl();
+                new ConceptMap();
 
         //ensure no duplicates created - only materialise answer if it doesn't exist in the db
         if (headAnswer.isEmpty()

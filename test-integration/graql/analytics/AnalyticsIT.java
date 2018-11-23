@@ -26,7 +26,7 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.graql.internal.Schema;
@@ -41,9 +41,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.Syntax.Compute.Algorithm.DEGREE;
-import static grakn.core.graql.Syntax.Compute.Method.CENTRALITY;
-import static grakn.core.graql.Syntax.Compute.Method.COUNT;
+import static grakn.core.graql.query.Syntax.Compute.Algorithm.DEGREE;
+import static grakn.core.graql.query.Syntax.Compute.Method.CENTRALITY;
+import static grakn.core.graql.query.Syntax.Compute.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 

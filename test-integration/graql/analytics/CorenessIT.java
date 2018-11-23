@@ -27,9 +27,9 @@ import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.graql.Graql;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.rule.GraknTestServer;
 import org.junit.After;
@@ -42,9 +42,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.Syntax.Compute.Algorithm.K_CORE;
-import static grakn.core.graql.Syntax.Compute.Argument.min_k;
-import static grakn.core.graql.Syntax.Compute.Method.CENTRALITY;
+import static grakn.core.graql.query.Syntax.Compute.Algorithm.K_CORE;
+import static grakn.core.graql.query.Syntax.Compute.Argument.min_k;
+import static grakn.core.graql.query.Syntax.Compute.Method.CENTRALITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

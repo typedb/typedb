@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query.pattern;
 
-import grakn.core.graql.Graql;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.Disjunction;
 import grakn.core.graql.admin.PatternAdmin;

@@ -21,7 +21,7 @@ package grakn.core.server.kb.concept;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.Pattern;
+import grakn.core.graql.query.Pattern;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;

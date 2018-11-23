@@ -20,18 +20,17 @@ package grakn.core.graql.internal.reasoner.cache;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.Var;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.query.answer.ConceptMapImpl;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.query.Var;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -291,6 +290,6 @@ public abstract class SemanticCache<
 
         //TODO should it create a cache entry?
         List<ConceptMap> answers = ReasonerQueries.create(query, ans).getQuery().execute();
-        return answers.isEmpty()? new ConceptMapImpl() : answers.iterator().next();
+        return answers.isEmpty()? new ConceptMap() : answers.iterator().next();
     }
 }

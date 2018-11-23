@@ -19,9 +19,9 @@
 package grakn.core.graql.internal.pattern.property;
 
 import grakn.core.graql.concept.Rule;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Pattern;
-import grakn.core.graql.Var;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.Var;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 

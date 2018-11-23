@@ -18,9 +18,9 @@
 
 package grakn.core.graql.reasoner;
 
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.QueryBuilder;
-import grakn.core.graql.VarPattern;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.reasoner.graph.GeoGraph;
@@ -35,7 +35,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;

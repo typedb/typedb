@@ -1,7 +1,7 @@
 java_test(
     name = "aggregate-query-impl-test",
-    test_class = "grakn.core.graql.query.AggregateQueryImplTest",
-    srcs = ["AggregateQueryImplTest.java"],
+    test_class = "grakn.core.graql.query.AggregateQueryTest",
+    srcs = ["AggregateQueryTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//server"],
@@ -21,8 +21,8 @@ java_test(
 
 java_test(
     name = "delete-query-impl-test",
-    test_class = "grakn.core.graql.query.DeleteQueryImplTest",
-    srcs = ["DeleteQueryImplTest.java"],
+    test_class = "grakn.core.graql.query.DeleteQueryTest",
+    srcs = ["DeleteQueryTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//server"],
@@ -31,8 +31,8 @@ java_test(
 
 java_test(
     name = "insert-query-impl-test",
-    test_class = "grakn.core.graql.query.InsertQueryImplTest",
-    srcs = ["InsertQueryImplTest.java"],
+    test_class = "grakn.core.graql.query.InsertQueryTest",
+    srcs = ["InsertQueryTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",

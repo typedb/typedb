@@ -19,7 +19,7 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.Graql;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.pattern.Patterns;

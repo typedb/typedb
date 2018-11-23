@@ -21,9 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
@@ -34,9 +32,8 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.pattern.property.IsaExplicitProperty;
-import grakn.core.graql.query.answer.ConceptMapImpl;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -50,12 +47,11 @@ import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.server.exception.GraqlQueryException;
-import java.util.HashMap;
+import grakn.core.graql.query.Var;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -129,16 +125,6 @@ public abstract class Atom extends AtomicBase {
 
     public boolean isRuleResolvable() {
         return getApplicableRules().findFirst().isPresent();
-    }
-
-    public boolean isRecursive(){
-        if (isResource() || getSchemaConcept() == null) return false;
-        SchemaConcept schemaConcept = getSchemaConcept();
-        return getApplicableRules()
-                .filter(rule -> rule.getBody().selectAtoms()
-                        .filter(at -> Objects.nonNull(at.getSchemaConcept()))
-                        .anyMatch(at -> typesCompatible(schemaConcept, at.getSchemaConcept(), false)))
-                .anyMatch(this::isRuleApplicable);
     }
 
     /**
@@ -336,7 +322,7 @@ public abstract class Atom extends AtomicBase {
     }
 
     @Override
-    public Atom inferTypes(){ return inferTypes(new ConceptMapImpl()); }
+    public Atom inferTypes(){ return inferTypes(new ConceptMap()); }
 
     @Override
     public Atom inferTypes(ConceptMap sub){ return this; }
