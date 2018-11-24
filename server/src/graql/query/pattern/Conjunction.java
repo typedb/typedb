@@ -38,7 +38,6 @@ import static java.util.stream.Collectors.toSet;
  * A class representing a conjunction (and) of patterns. All inner patterns must match in a query
  *
  * @param <T> the type of patterns in this conjunction
- *
  */
 public class Conjunction<T extends PatternAdmin> extends AbstractPattern implements PatternAdmin {
 

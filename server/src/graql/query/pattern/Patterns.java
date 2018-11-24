@@ -43,7 +43,7 @@ public class Patterns {
     }
 
     public static <T extends PatternAdmin> Disjunction<T> disjunction(Set<T> patterns) {
-        return new DisjunctionImpl<>(patterns);
+        return new Disjunction<>(patterns);
     }
 
     public static Var var() {
