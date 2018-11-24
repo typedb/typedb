@@ -53,7 +53,7 @@ public interface Pattern {
     Set<Var> commonVars();
 
     /**
-     * @return true if this Pattern.Admin is a Conjunction
+     * @return true if this Pattern is a Conjunction
      */
     @CheckReturnValue
     default boolean isDisjunction() {
@@ -61,7 +61,7 @@ public interface Pattern {
     }
 
     /**
-     * @return true if this Pattern.Admin is a Disjunction
+     * @return true if this Pattern is a Disjunction
      */
     @CheckReturnValue
     default boolean isConjunction() {

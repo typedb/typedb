@@ -84,7 +84,7 @@ public interface VarProperty {
     /**
      * maps this var property to a reasoner atom
      * @param var {@link VarPattern} this property belongs to
-     * @param vars VarAdmins constituting the pattern this property belongs to
+     * @param vars Vars constituting the pattern this property belongs to
      * @param parent reasoner query this atom should belong to
      * @return created atom
      */

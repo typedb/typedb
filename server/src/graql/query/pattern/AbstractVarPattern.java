@@ -62,8 +62,15 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Abstract implementation of {@link VarPattern}.
- *
+ * A variable together with its properties in one Graql statement.
+ * A VarPattern may be given a variable, or use an "anonymous" variable.
+ * Graql provides static methods for constructing VarPattern objects.
+ * The methods in VarPattern are used to set its properties. A VarPattern
+ * behaves differently depending on the type of query its used in.
+ * In a Match clause, a VarPattern describes the properties any matching
+ * concept must have. In an InsertQuery, it describes the properties that
+ * should be set on the inserted concept. In a DeleteQuery, it describes the
+ * properties that should be deleted.
  */
 public abstract class AbstractVarPattern implements VarPattern {
 

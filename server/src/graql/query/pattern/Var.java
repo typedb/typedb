@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 /**
  * A variable in a Graql query
  */
-public class Var extends AbstractVarPattern implements VarPattern {
+public class Var extends AbstractVarPattern {
 
     private static final Pattern VALID_VAR = Pattern.compile("[a-zA-Z0-9_-]+");
 
