@@ -39,7 +39,7 @@ public class Patterns {
     private Patterns() {}
 
     public static <T extends PatternAdmin> Conjunction<T> conjunction(Set<T> patterns) {
-        return new ConjunctionImpl<>(patterns);
+        return new Conjunction<>(patterns);
     }
 
     public static <T extends PatternAdmin> Disjunction<T> disjunction(Set<T> patterns) {
