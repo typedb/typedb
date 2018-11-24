@@ -36,10 +36,10 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
  */
 public class StringUtil {
 
-    public static final ImmutableSet<String> GRAQL_KEYWORDS = getKeywords().collect(toImmutableSet());
     private static final ImmutableSet<String> ALLOWED_ID_KEYWORDS = ImmutableSet.of(
             "min", "max", "median", "mean", "std", "sum", "count", "path", "cluster", "degrees", "members", "persist"
     );
+    public static final ImmutableSet<String> GRAQL_KEYWORDS = getKeywords().collect(toImmutableSet());
 
     /**
      * @param string the string to unescape
