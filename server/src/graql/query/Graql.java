@@ -28,7 +28,6 @@ import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.parser.QueryParser;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.aggregate.CountAggregate;
 import grakn.core.graql.query.aggregate.GroupAggregate;
 import grakn.core.graql.query.aggregate.ListAggregate;
@@ -51,6 +50,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static grakn.core.graql.query.Syntax.Compute.Method;
 import static java.util.stream.Collectors.toSet;
@@ -62,6 +62,8 @@ import static java.util.stream.Collectors.toSet;
  *
  */
 public class Graql {
+
+    private static final AtomicLong counter = new AtomicLong(System.currentTimeMillis() * 1000);
 
     // QUERY BUILDING
 
@@ -166,7 +168,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Var var(String name) {
-        return Patterns.var(name);
+        return new Var(name, Var.Kind.UserDefined);
     }
 
     /**
@@ -174,7 +176,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Var var() {
-        return Patterns.var();
+        return new Var(Long.toString(counter.getAndIncrement()), Var.Kind.Generated);
     }
 
     /**
@@ -559,4 +561,5 @@ public class Graql {
         Objects.requireNonNull(varPattern);
         return Predicates.contains(varPattern);
     }
+
 }

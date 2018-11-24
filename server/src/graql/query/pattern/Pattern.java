@@ -69,14 +69,6 @@ public interface Pattern {
     }
 
     /**
-     * @return true if this {@link Pattern} is a {@link VarPattern}
-     */
-    @CheckReturnValue
-    default boolean isVarPattern() {
-        return false;
-    }
-
-    /**
      * @return this {@link Pattern} as a {@link VarPattern}, if it is one.
      */
     @CheckReturnValue

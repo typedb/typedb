@@ -47,10 +47,6 @@ import java.util.stream.Stream;
  * properties that should be deleted.
  */
 public interface VarPattern extends Pattern {
-    @Override
-    default boolean isVarPattern() {
-        return true;
-    }
 
     @Override
     default VarPattern asVarPattern() {
