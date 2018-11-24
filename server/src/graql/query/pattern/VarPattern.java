@@ -46,7 +46,7 @@ import java.util.stream.Stream;
  * should be set on the inserted concept. In a DeleteQuery, it describes the
  * properties that should be deleted.
  */
-public interface VarPattern extends PatternAdmin, Pattern {
+public interface VarPattern extends Pattern {
     @Override
     default boolean isVarPattern() {
         return true;

@@ -24,7 +24,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
@@ -83,7 +83,7 @@ public class GreedyTraversalPlan {
      * @param pattern a pattern to find a query plan for
      * @return a semi-optimal traversal plan
      */
-    public static GraqlTraversal createTraversal(PatternAdmin pattern, TransactionImpl<?> tx) {
+    public static GraqlTraversal createTraversal(Pattern pattern, TransactionImpl<?> tx) {
         Collection<Conjunction<VarPattern>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         Set<? extends List<Fragment>> fragments = patterns.stream()

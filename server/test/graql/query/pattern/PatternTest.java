@@ -28,7 +28,7 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("unchecked")
-public class PatternImplTest {
+public class PatternTest {
 
     private final VarPattern x = Graql.var("x").admin();
     private final VarPattern y = Graql.var("y").admin();
@@ -100,19 +100,19 @@ public class PatternImplTest {
         assertHasDNF(dnf, cnf);
     }
 
-    private <T extends PatternAdmin> Conjunction<T> conjunction(T... patterns) {
+    private <T extends Pattern> Conjunction<T> conjunction(T... patterns) {
         return Patterns.conjunction(Sets.newHashSet(patterns));
     }
 
-    private <T extends PatternAdmin> Disjunction<T> disjunction(T... patterns) {
+    private <T extends Pattern> Disjunction<T> disjunction(T... patterns) {
         return Patterns.disjunction(Sets.newHashSet(patterns));
     }
 
-    private <T extends PatternAdmin> Set<T> set(T... patterns) {
+    private <T extends Pattern> Set<T> set(T... patterns) {
         return Sets.newHashSet(patterns);
     }
 
-    private void assertHasDNF(Set<Conjunction<VarPattern>> expected, PatternAdmin pattern) {
+    private void assertHasDNF(Set<Conjunction<VarPattern>> expected, Pattern pattern) {
         HashSet<Conjunction<VarPattern>> dnf = new HashSet<>(pattern.getDisjunctiveNormalForm().getPatterns());
         assertEquals(expected, dnf);
     }

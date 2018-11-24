@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.PatternAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.match.MatchBase;
@@ -86,7 +85,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public Match match(Collection<? extends Pattern> patterns) {
-        Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
+        Conjunction<Pattern> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
         MatchBase base = new MatchBase(conjunction);
         Match match = infer ? base.infer().admin() : base;
         return (tx != null) ? match.withTx(tx) : match;

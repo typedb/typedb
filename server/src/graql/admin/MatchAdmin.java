@@ -19,7 +19,7 @@
 package grakn.core.graql.admin;
 
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.Match;
@@ -51,7 +51,7 @@ public interface MatchAdmin extends Match {
      * @return the pattern to match in the graph
      */
     @CheckReturnValue
-    Conjunction<PatternAdmin> getPattern();
+    Conjunction<Pattern> getPattern();
 
     /**
      * @return the graph the query operates on, if one was provided

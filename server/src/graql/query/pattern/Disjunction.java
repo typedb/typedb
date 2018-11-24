@@ -32,7 +32,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @param <T> the type of patterns in this disjunction
  */
-public class Disjunction<T extends PatternAdmin> extends AbstractPattern implements PatternAdmin {
+public class Disjunction<T extends Pattern> extends AbstractPattern implements Pattern {
 
     private final Set<T> patterns;
 
@@ -64,7 +64,7 @@ public class Disjunction<T extends PatternAdmin> extends AbstractPattern impleme
 
     @Override
     public Set<Var> commonVars() {
-        return getPatterns().stream().map(PatternAdmin::commonVars).reduce(Sets::intersection).orElse(ImmutableSet.of());
+        return getPatterns().stream().map(Pattern::commonVars).reduce(Sets::intersection).orElse(ImmutableSet.of());
     }
 
     @Override
@@ -73,17 +73,12 @@ public class Disjunction<T extends PatternAdmin> extends AbstractPattern impleme
     }
 
     @Override
-    public Disjunction<?> asDisjunction() {
-        return this;
-    }
-
-    @Override
     public String toString() {
         return getPatterns().stream().map(Object::toString).collect(Collectors.joining(" or "));
     }
 
     @Override
-    public PatternAdmin admin() {
+    public Pattern admin() {
         return this;
     }
 

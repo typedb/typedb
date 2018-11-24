@@ -20,7 +20,7 @@ package grakn.core.graql.admin;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Var;
@@ -74,7 +74,7 @@ public interface ReasonerQuery{
     /**
      * @return the conjunction pattern that represent this query
      */
-    Conjunction<PatternAdmin> getPattern();
+    Conjunction<Pattern> getPattern();
 
     /**
      * @param type the class of {@link Atomic} to return

@@ -21,12 +21,12 @@ package grakn.core.graql.query.pattern;
 import grakn.core.graql.query.Graql;
 
 /**
- * The abstract implementation of {@link PatternAdmin}.
+ * The abstract implementation of {@link Pattern}.
  *
- * All implementations of {@link PatternAdmin} should extend this class to inherit certain default behaviours.
+ * All implementations of {@link Pattern} should extend this class to inherit certain default behaviours.
  *
  */
-public abstract class AbstractPattern implements PatternAdmin {
+public abstract class AbstractPattern implements Pattern {
 
     @Override
     public final Pattern and(Pattern pattern) {

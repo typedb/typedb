@@ -22,10 +22,9 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
 import grakn.core.graql.query.pattern.Patterns;
@@ -163,7 +162,7 @@ public abstract class Binary extends Atom {
 
     @Override
     protected Pattern createCombinedPattern(){
-        Set<PatternAdmin> vars = Sets.newHashSet(getPattern().admin());
+        Set<Pattern> vars = Sets.newHashSet(getPattern().admin());
         if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern().admin());
         return Patterns.conjunction(vars);
     }

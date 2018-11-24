@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.match;
 
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Patterns;
 import com.google.common.collect.Sets;
 import org.junit.Test;
@@ -30,12 +30,12 @@ import static org.junit.Assert.assertNotEquals;
 
 public class MatchBaseTest {
 
-    private final Conjunction<PatternAdmin> pattern1 = Patterns.conjunction(Sets.newHashSet(
+    private final Conjunction<Pattern> pattern1 = Patterns.conjunction(Sets.newHashSet(
             var("x").isa("movie").admin(),
             var().rel("x").rel("y").admin()
     ));
 
-    private final Conjunction<PatternAdmin> pattern2 = Patterns.conjunction(Sets.newHashSet(
+    private final Conjunction<Pattern> pattern2 = Patterns.conjunction(Sets.newHashSet(
             var("x").isa("movie").has("title", var("y")).admin()
     ));
 

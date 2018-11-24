@@ -23,7 +23,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 
 import java.util.Set;
 
@@ -49,7 +49,7 @@ abstract class MatchModifier extends AbstractMatch {
     }
 
     @Override
-    public final Conjunction<PatternAdmin> getPattern() {
+    public final Conjunction<Pattern> getPattern() {
         return inner.getPattern();
     }
 

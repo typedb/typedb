@@ -25,7 +25,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.query.pattern.VarPattern;
@@ -211,7 +211,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public void checkValid() { getAtoms().forEach(Atomic::checkValid);}
 
-    public Conjunction<PatternAdmin> getPattern() {
+    public Conjunction<Pattern> getPattern() {
         return Patterns.conjunction(
                 getAtoms().stream()
                         .map(Atomic::getCombinedPattern)

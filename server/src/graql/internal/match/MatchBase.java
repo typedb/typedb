@@ -25,7 +25,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.answer.ConceptMap;
@@ -55,12 +55,12 @@ public class MatchBase extends AbstractMatch {
 
     protected final Logger LOG = LoggerFactory.getLogger(MatchBase.class);
 
-    private final Conjunction<PatternAdmin> pattern;
+    private final Conjunction<Pattern> pattern;
 
     /**
      * @param pattern a pattern to match in the graph
      */
-    public MatchBase(Conjunction<PatternAdmin> pattern) {
+    public MatchBase(Conjunction<Pattern> pattern) {
         if (pattern.getPatterns().size() == 0) {
             throw GraqlQueryException.noPatterns();
         }
@@ -145,7 +145,7 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Conjunction<PatternAdmin> getPattern() {
+    public Conjunction<Pattern> getPattern() {
         return pattern;
     }
 

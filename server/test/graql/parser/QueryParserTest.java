@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
@@ -40,7 +40,6 @@ import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Var;
@@ -1097,9 +1096,9 @@ public class QueryParserTest {
         parser.defineAllVars(true);
         GetQuery query = parser.parseQuery("match ($x, $y) isa foo; get;");
 
-        Conjunction<PatternAdmin> conjunction = query.match().admin().getPattern();
+        Conjunction<Pattern> conjunction = query.match().admin().getPattern();
 
-        Set<PatternAdmin> patterns = conjunction.getPatterns();
+        Set<Pattern> patterns = conjunction.getPatterns();
 
         VarPattern pattern = Iterables.getOnlyElement(patterns).asVarPattern();
 

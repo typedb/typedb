@@ -22,7 +22,6 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.PatternAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.Value;
@@ -210,7 +209,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Pattern and(Collection<? extends Pattern> patterns) {
-        Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
+        Collection<Pattern> patternAdmins = AdminConverter.getPatternAdmins(patterns);
         return Patterns.conjunction(Sets.newHashSet(patternAdmins));
     }
 
@@ -234,7 +233,7 @@ public class Graql {
             return Iterables.getOnlyElement(patterns);
         }
 
-        Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
+        Collection<Pattern> patternAdmins = AdminConverter.getPatternAdmins(patterns);
         return Patterns.disjunction(Sets.newHashSet(patternAdmins));
     }
 

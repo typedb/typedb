@@ -39,7 +39,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @param <T> the type of patterns in this conjunction
  */
-public class Conjunction<T extends PatternAdmin> extends AbstractPattern implements PatternAdmin {
+public class Conjunction<T extends Pattern> extends AbstractPattern implements Pattern {
 
     private final Set<T> patterns;
 
@@ -81,17 +81,12 @@ public class Conjunction<T extends PatternAdmin> extends AbstractPattern impleme
 
     @Override
     public Set<Var> commonVars() {
-        return getPatterns().stream().map(PatternAdmin::commonVars).reduce(ImmutableSet.of(), Sets::union);
+        return getPatterns().stream().map(Pattern::commonVars).reduce(ImmutableSet.of(), Sets::union);
     }
 
     @Override
     public boolean isConjunction() {
         return true;
-    }
-
-    @Override
-    public Conjunction<?> asConjunction() {
-        return this;
     }
 
     /**
@@ -104,7 +99,7 @@ public class Conjunction<T extends PatternAdmin> extends AbstractPattern impleme
         return ReasonerQueries.create(pattern, (TransactionImpl<?>) tx);
     }
 
-    private static <U extends PatternAdmin> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {
+    private static <U extends Pattern> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {
         Set<U> patterns = conjunctions.stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(patterns);
     }
@@ -115,7 +110,7 @@ public class Conjunction<T extends PatternAdmin> extends AbstractPattern impleme
     }
 
     @Override
-    public PatternAdmin admin() {
+    public Pattern admin() {
         return this;
     }
 
