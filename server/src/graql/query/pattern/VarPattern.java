@@ -58,12 +58,6 @@ public interface VarPattern extends Pattern {
     }
 
     /**
-     * @return an Admin class to allow inspection of this {@link VarPattern}
-     */
-    @CheckReturnValue
-    VarPattern admin();
-
-    /**
      * @param id a ConceptId that this variable's ID must match
      * @return this
      */

@@ -73,11 +73,6 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     protected abstract Set<VarProperty> properties();
 
     @Override
-    public final VarPattern admin() {
-        return this;
-    }
-
-    @Override
     public final Optional<grakn.core.graql.concept.Label> getTypeLabel() {
         return getProperty(LabelProperty.class).map(LabelProperty::label);
     }
@@ -199,7 +194,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern has(grakn.core.graql.concept.Label type, VarPattern attribute, VarPattern relationship) {
-        return addProperty(HasAttributeProperty.of(type, attribute.admin(), relationship.admin()));
+        return addProperty(HasAttributeProperty.of(type, attribute, relationship));
     }
 
     @Override
@@ -209,7 +204,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern isaExplicit(VarPattern type) {
-        return addProperty(IsaExplicitProperty.of(type.admin()));
+        return addProperty(IsaExplicitProperty.of(type));
     }
 
     @Override
@@ -219,7 +214,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern isa(VarPattern type) {
-        return addProperty(IsaProperty.of(type.admin()));
+        return addProperty(IsaProperty.of(type));
     }
 
     @Override
@@ -229,7 +224,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern sub(VarPattern type) {
-        return addProperty(SubProperty.of(type.admin()));
+        return addProperty(SubProperty.of(type));
     }
 
     @Override
@@ -239,7 +234,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern subExplicit(VarPattern type) {
-        return addProperty(SubExplicitProperty.of(type.admin()));
+        return addProperty(SubExplicitProperty.of(type));
     }
 
     @Override
@@ -259,7 +254,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public VarPattern relates(VarPattern roleType, VarPattern superRoleType) {
-        return addProperty(RelatesProperty.of(roleType.admin(), superRoleType == null ? null : superRoleType.admin()));
+        return addProperty(RelatesProperty.of(roleType, superRoleType));
     }
 
     @Override
@@ -269,7 +264,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern plays(VarPattern type) {
-        return addProperty(PlaysProperty.of(type.admin(), false));
+        return addProperty(PlaysProperty.of(type, false));
     }
 
     @Override
@@ -279,7 +274,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern has(VarPattern type) {
-        return addProperty(HasAttributeTypeProperty.of(type.admin(), false));
+        return addProperty(HasAttributeTypeProperty.of(type, false));
     }
 
     @Override
@@ -289,7 +284,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern key(VarPattern type) {
-        return addProperty(HasAttributeTypeProperty.of(type.admin(), true));
+        return addProperty(HasAttributeTypeProperty.of(type, true));
     }
 
     @Override
@@ -299,7 +294,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern rel(VarPattern roleplayer) {
-        return addCasting(RelationPlayer.of(roleplayer.admin()));
+        return addCasting(RelationPlayer.of(roleplayer));
     }
 
     @Override
@@ -319,7 +314,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern rel(VarPattern role, VarPattern roleplayer) {
-        return addCasting(RelationPlayer.of(role.admin(), roleplayer.admin()));
+        return addCasting(RelationPlayer.of(role, roleplayer));
     }
 
     @Override
@@ -354,7 +349,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern neq(VarPattern varPattern) {
-        return addProperty(NeqProperty.of(varPattern.admin()));
+        return addProperty(NeqProperty.of(varPattern));
     }
 
     @Override

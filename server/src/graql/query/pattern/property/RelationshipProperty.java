@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -222,7 +223,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
             VarPattern rolePattern = rp.getRole().orElse(null);
             VarPattern rolePlayer = rp.getRolePlayer();
             if (rolePattern != null){
-                Var roleVar = rolePattern.admin().var();
+                Var roleVar = rolePattern.var();
                 //look for indirect role definitions
                 IdPredicate roleId = getUserDefinedIdPredicate(roleVar, vars, parent);
                 if (roleId != null){
@@ -263,6 +264,6 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         relVar = isaProp instanceof IsaExplicitProperty ?
                 relVar.isaExplicit(typeVariable.asUserDefined()) :
                 relVar.isa(typeVariable.asUserDefined());
-        return RelationshipAtom.create(relVar.admin(), typeVariable, predicateId, parent);
+        return RelationshipAtom.create(relVar, typeVariable, predicateId, parent);
     }
 }

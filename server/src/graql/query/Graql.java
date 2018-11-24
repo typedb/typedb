@@ -550,6 +550,6 @@ public class Graql {
     @CheckReturnValue
     public static ValuePredicate contains(VarPattern varPattern) {
         Objects.requireNonNull(varPattern);
-        return Predicates.contains(varPattern.admin());
+        return Predicates.contains(varPattern);
     }
 }

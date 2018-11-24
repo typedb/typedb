@@ -215,7 +215,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return Patterns.conjunction(
                 getAtoms().stream()
                         .map(Atomic::getCombinedPattern)
-                        .flatMap(p -> p.admin().varPatterns().stream())
+                        .flatMap(p -> p.varPatterns().stream())
                         .collect(Collectors.toSet())
         );
     }

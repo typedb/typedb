@@ -34,12 +34,6 @@ import static java.util.stream.Collectors.toSet;
 public interface Pattern {
 
     /**
-     * @return an Admin class that allows inspecting or manipulating this pattern
-     */
-    @CheckReturnValue
-    Pattern admin();
-
-    /**
      * Join patterns in a conjunction
      */
     @CheckReturnValue

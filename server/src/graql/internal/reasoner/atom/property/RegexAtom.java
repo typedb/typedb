@@ -27,12 +27,7 @@ import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import com.google.auto.value.AutoValue;
 
 /**
- *
- * <p>
  * Atomic corresponding to {@link RegexProperty}.
- * </p>
- *
- *
  */
 @AutoValue
 public abstract class RegexAtom extends AtomicBase {
@@ -42,7 +37,7 @@ public abstract class RegexAtom extends AtomicBase {
     public abstract String getRegex();
 
     public static RegexAtom create(Var varName, RegexProperty prop, ReasonerQuery parent) {
-        return new AutoValue_RegexAtom(varName, varName.regex(prop.regex()).admin(), parent, prop.regex());
+        return new AutoValue_RegexAtom(varName, varName.regex(prop.regex()), parent, prop.regex());
     }
 
     private static RegexAtom create(RegexAtom a, ReasonerQuery parent) {

@@ -385,8 +385,7 @@ public class AtomicUnificationIT {
         VarPattern basePattern = var()
                 .rel(var("baseRole1").label("subRole1"), var("y1"))
                 .rel(var("baseRole2").label("subSubRole2"), var("y2"))
-                .isa("binary")
-                .admin();
+                .isa("binary");
 
         ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Patterns.conjunction(Sets.newHashSet(basePattern)), tx);
         ReasonerAtomicQuery childQuery = ReasonerQueries
@@ -410,8 +409,7 @@ public class AtomicUnificationIT {
     public void testUnification_IndirectRoles_NoRelationType(){
         VarPattern basePattern = var()
                 .rel(var("baseRole1").label("subRole1"), var("y1"))
-                .rel(var("baseRole2").label("subSubRole2"), var("y2"))
-                .admin();
+                .rel(var("baseRole2").label("subSubRole2"), var("y2"));
 
         ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Patterns.conjunction(Sets.newHashSet(basePattern)), tx);
         ReasonerAtomicQuery childQuery = ReasonerQueries
@@ -511,7 +509,7 @@ public class AtomicUnificationIT {
     }
 
     private Conjunction<VarPattern> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<VarPattern> vars = tx.graql().parser().parsePattern(patternString).admin()
+        Set<VarPattern> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

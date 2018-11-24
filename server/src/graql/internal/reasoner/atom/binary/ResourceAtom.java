@@ -91,7 +91,7 @@ public abstract class ResourceAtom extends Binary{
     public abstract ImmutableSet<ValuePredicate> getMultiPredicate();
 
     public static ResourceAtom create(VarPattern pattern, Var attributeVariable, Var relationVariable, Var predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
-        return new AutoValue_ResourceAtom(pattern.admin().var(), pattern, parent, predicateVariable, predicateId, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
+        return new AutoValue_ResourceAtom(pattern.var(), pattern, parent, predicateVariable, predicateId, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
     }
     private static ResourceAtom create(ResourceAtom a, ReasonerQuery parent) {
         ResourceAtom atom = create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
@@ -115,8 +115,7 @@ public abstract class ResourceAtom extends Binary{
                 Graql.var()
                         .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), getVarName())
                         .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), getAttributeVariable())
-                        .isa(typeLabel.getValue())
-                .admin(),
+                        .isa(typeLabel.getValue()),
                 getPredicateVariable(),
                 tx.getSchemaConcept(typeLabel).id(),
                 getParentQuery()
@@ -193,9 +192,9 @@ public abstract class ResourceAtom extends Binary{
     protected Pattern createCombinedPattern(){
         Set<VarPattern> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
-                .map(VarPattern::admin)
+                .map(varPattern -> varPattern)
                 .collect(Collectors.toSet());
-        vars.add(getPattern().admin());
+        vars.add(getPattern());
         return Patterns.conjunction(vars);
     }
 
@@ -378,7 +377,7 @@ public abstract class ResourceAtom extends Binary{
         Var attributeVariable = getAttributeVariable();
         Var relationVariable = getRelationVariable().asUserDefined();
         VarPattern newVar = getVarName().has(getSchemaConcept().label(), attributeVariable, relationVariable);
-        return create(newVar.admin(), attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
+        return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 
     @Override

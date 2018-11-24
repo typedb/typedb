@@ -412,7 +412,7 @@ public class SubsumptionIT {
     }
 
     private Conjunction<VarPattern> conjunction(String patternString){
-        Set<VarPattern> vars = Graql.parser().parsePattern(patternString).admin()
+        Set<VarPattern> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

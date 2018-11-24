@@ -92,7 +92,7 @@ public abstract class Binary extends Atom {
     }
 
     public boolean isDirect(){
-        return getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
+        return getPattern().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
     }
 
     @Override
@@ -162,8 +162,8 @@ public abstract class Binary extends Atom {
 
     @Override
     protected Pattern createCombinedPattern(){
-        Set<Pattern> vars = Sets.newHashSet(getPattern().admin());
-        if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern().admin());
+        Set<Pattern> vars = Sets.newHashSet((Pattern) getPattern());
+        if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern());
         return Patterns.conjunction(vars);
     }
 

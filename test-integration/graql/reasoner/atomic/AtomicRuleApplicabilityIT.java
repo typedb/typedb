@@ -1,5 +1,6 @@
 package grakn.core.graql.reasoner.atomic;
 
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
@@ -722,7 +723,7 @@ public class AtomicRuleApplicabilityIT {
     }
 
     private Conjunction<VarPattern> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<VarPattern> vars = tx.graql().parser().parsePattern(patternString).admin()
+        Set<VarPattern> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);
@@ -735,7 +736,7 @@ public class AtomicRuleApplicabilityIT {
     }
 
     private Concept getConcept(TransactionImpl<?> graph, String typeName, Object val){
-        return graph.graql().match(var("x").has(typeName, val).admin()).get("x")
+        return graph.graql().match((Pattern) var("x").has(typeName, val)).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().orElse(null);
     }
 }

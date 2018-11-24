@@ -22,6 +22,7 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
@@ -374,7 +375,7 @@ public class GeoInferenceIT {
     }
 
     private Concept getConcept(Transaction graph, String typeName, Object val){
-        return graph.graql().match(var("x").has(typeName, val).admin()).get("x")
+        return graph.graql().match((Pattern) var("x").has(typeName, val)).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().orElse(null);
     }
 

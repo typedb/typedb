@@ -137,7 +137,7 @@ public class GraqlTraversalPlanner {
                         subs.stream()
                 )
                         .map(Atomic::getCombinedPattern)
-                        .flatMap(p -> p.admin().varPatterns().stream())
+                        .flatMap(p -> p.varPatterns().stream())
                         .collect(Collectors.toSet())
         );
     }

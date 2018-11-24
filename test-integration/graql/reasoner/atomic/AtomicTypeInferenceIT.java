@@ -443,7 +443,7 @@ public class AtomicTypeInferenceIT {
     }
 
     private Conjunction<VarPattern> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<VarPattern> vars = tx.graql().parser().parsePattern(patternString).admin()
+        Set<VarPattern> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

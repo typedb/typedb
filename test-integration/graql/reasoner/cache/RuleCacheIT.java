@@ -168,7 +168,7 @@ public class RuleCacheIT {
 
 
     private Conjunction<VarPattern> conjunction(String patternString, Transaction graph){
-        Set<VarPattern> vars = graph.graql().parser().parsePattern(patternString).admin()
+        Set<VarPattern> vars = graph.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

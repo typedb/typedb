@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -73,7 +74,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     public static final String NAME = "has";
 
     public static HasAttributeProperty of(Label attributeType, VarPattern attribute, VarPattern relationship) {
-        attribute = attribute.isa(label(attributeType)).admin();
+        attribute = attribute.isa(label(attributeType));
         return new AutoValue_HasAttributeProperty(attributeType, attribute, relationship);
     }
 
@@ -163,7 +164,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
 
     @Override
     public Stream<VarPattern> getTypes() {
-        return Stream.of(label(type()).admin());
+        return Stream.of(label(type()));
     }
 
     private boolean hasReifiedRelationship() {
@@ -217,8 +218,8 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
 
         //add resource atom
         VarPattern resVar = relationVariable.isUserDefinedName()?
-                varName.has(type(), attributeVariable, relationVariable).admin() :
-                varName.has(type(), attributeVariable).admin();
+                varName.has(type(), attributeVariable, relationVariable) :
+                varName.has(type(), attributeVariable);
         ResourceAtom atom = ResourceAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);
         return atom;
     }

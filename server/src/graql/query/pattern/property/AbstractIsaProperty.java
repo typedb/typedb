@@ -94,7 +94,7 @@ abstract class AbstractIsaProperty extends AbstractVarProperty implements Unique
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
 
         //isa part
-        VarPattern isaVar = varPatternForAtom(varName, typeVariable).admin();
+        VarPattern isaVar = varPatternForAtom(varName, typeVariable);
         return IsaAtom.create(varName, typeVariable, isaVar, predicateId, parent);
     }
 

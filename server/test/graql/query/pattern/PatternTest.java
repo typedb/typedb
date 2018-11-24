@@ -30,12 +30,12 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("unchecked")
 public class PatternTest {
 
-    private final VarPattern x = Graql.var("x").admin();
-    private final VarPattern y = Graql.var("y").admin();
-    private final VarPattern z = Graql.var("z").admin();
-    private final VarPattern a = Graql.var("a").admin();
-    private final VarPattern b = Graql.var("b").admin();
-    private final VarPattern c = Graql.var("c").admin();
+    private final VarPattern x = Graql.var("x");
+    private final VarPattern y = Graql.var("y");
+    private final VarPattern z = Graql.var("z");
+    private final VarPattern a = Graql.var("a");
+    private final VarPattern b = Graql.var("b");
+    private final VarPattern c = Graql.var("c");
 
     @Test
     public void testVarDNF() {

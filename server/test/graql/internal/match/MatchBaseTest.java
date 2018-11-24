@@ -31,12 +31,12 @@ import static org.junit.Assert.assertNotEquals;
 public class MatchBaseTest {
 
     private final Conjunction<Pattern> pattern1 = Patterns.conjunction(Sets.newHashSet(
-            var("x").isa("movie").admin(),
-            var().rel("x").rel("y").admin()
+            var("x").isa("movie"),
+            var().rel("x").rel("y")
     ));
 
     private final Conjunction<Pattern> pattern2 = Patterns.conjunction(Sets.newHashSet(
-            var("x").isa("movie").has("title", var("y")).admin()
+            (Pattern) var("x").isa("movie").has("title", var("y"))
     ));
 
     @Test

@@ -27,12 +27,7 @@ import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import com.google.auto.value.AutoValue;
 
 /**
- *
- * <p>
  * Atomic corresponding to {@link IsAbstractProperty}.
- * </p>
- *
- *
  */
 @AutoValue
 public abstract class IsAbstractAtom extends AtomicBase {
@@ -41,7 +36,7 @@ public abstract class IsAbstractAtom extends AtomicBase {
     @Override public abstract ReasonerQuery getParentQuery();
 
     public static IsAbstractAtom create(Var varName, ReasonerQuery parent) {
-        return new AutoValue_IsAbstractAtom(varName, varName.isAbstract().admin(), parent);
+        return new AutoValue_IsAbstractAtom(varName, varName.isAbstract(), parent);
     }
 
     private static IsAbstractAtom create(IsAbstractAtom a, ReasonerQuery parent) {

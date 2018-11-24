@@ -124,8 +124,8 @@ public abstract class RelationPattern extends QueryPattern {
                 //filter trivial patterns
                 .map(l -> l.stream()
                         .filter(
-                                p -> p.admin().isConjunction()
-                                        || p.admin().asVarPattern().getProperties().findFirst().isPresent()
+                                p -> p.isConjunction()
+                                        || p.asVarPattern().getProperties().findFirst().isPresent()
                         )
                         .collect(Collectors.toList()))
                 .forEach(product -> {

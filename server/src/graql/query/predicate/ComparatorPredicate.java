@@ -20,6 +20,7 @@ package grakn.core.graql.query.predicate;
 
 import grakn.core.graql.concept.AttributeType.DataType;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.Schema;
@@ -55,7 +56,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
     ComparatorPredicate(Object value) {
         if (value instanceof VarPattern) {
             this.value = Optional.empty();
-            this.var = Optional.of(((VarPattern) value).admin());
+            this.var = Optional.of(((VarPattern) value));
         } else {
             // Convert integers to longs for consistency
             if (value instanceof Integer) {
@@ -73,7 +74,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
      */
     ComparatorPredicate(VarPattern var) {
         this.value = Optional.empty();
-        this.var = Optional.of(var.admin());
+        this.var = Optional.of(var);
     }
 
     protected abstract String getSymbol();

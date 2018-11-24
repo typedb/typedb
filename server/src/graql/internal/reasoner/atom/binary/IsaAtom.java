@@ -73,12 +73,12 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     public static IsaAtom create(Var var, Var predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent) {
-        VarPattern pattern = isDirect ? var.isaExplicit(predicateVar).admin() : var.isa(predicateVar).admin();
+        VarPattern pattern = isDirect ? var.isaExplicit(predicateVar) : var.isa(predicateVar);
         return new AutoValue_IsaAtom(var, predicateId, predicateVar, pattern, parent);
     }
 
     public static IsaAtom create(Var var, Var predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent) {
-        VarPattern pattern = isDirect ? var.isaExplicit(predicateVar).admin() : var.isa(predicateVar).admin();
+        VarPattern pattern = isDirect ? var.isaExplicit(predicateVar) : var.isa(predicateVar);
         return new AutoValue_IsaAtom(var, type.id(), predicateVar, pattern, parent);
     }
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {

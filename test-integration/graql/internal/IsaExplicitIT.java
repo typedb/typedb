@@ -207,6 +207,6 @@ public class IsaExplicitIT {
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {
-        return GreedyTraversalPlan.createTraversal(pattern.admin(), tx).fragments().iterator().next();
+        return GreedyTraversalPlan.createTraversal(pattern, tx).fragments().iterator().next();
     }
 }

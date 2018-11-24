@@ -56,7 +56,7 @@ public class Patterns {
 
     public static VarPattern varPattern(Var name, Set<VarProperty> properties) {
         if (properties.isEmpty()) {
-            return name.admin();
+            return name;
         } else {
             return new VarPatternImpl(name, properties);
         }

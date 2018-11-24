@@ -19,6 +19,7 @@
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
@@ -52,7 +53,7 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.pr
     public abstract grakn.core.graql.query.predicate.ValuePredicate getPredicate();
 
     public static ValuePredicate create(VarPattern pattern, ReasonerQuery parent) {
-        return new AutoValue_ValuePredicate(pattern.admin().var(), pattern, parent, extractPredicate(pattern));
+        return new AutoValue_ValuePredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
     public static ValuePredicate create(Var varName, grakn.core.graql.query.predicate.ValuePredicate pred, ReasonerQuery parent) {
         return create(createValueVar(varName, pred), parent);
@@ -64,7 +65,7 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.pr
     public static VarPattern createValueVar(Var name, grakn.core.graql.query.predicate.ValuePredicate pred) { return name.val(pred);}
 
     private static grakn.core.graql.query.predicate.ValuePredicate extractPredicate(VarPattern pattern) {
-        Iterator<ValueProperty> properties = pattern.admin().getProperties(ValueProperty.class).iterator();
+        Iterator<ValueProperty> properties = pattern.getProperties(ValueProperty.class).iterator();
         ValueProperty property = properties.next();
         if (properties.hasNext()) {
             throw GraqlQueryException.valuePredicateAtomWithMultiplePredicates();

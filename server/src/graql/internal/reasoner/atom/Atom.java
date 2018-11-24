@@ -26,6 +26,7 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.ConceptId;
@@ -182,12 +183,12 @@ public abstract class Atom extends AtomicBase {
      * @return var properties this atom (its pattern) contains
      */
     public Stream<VarProperty> getVarProperties() {
-        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(getVarPropertyClass()));
+        return getCombinedPattern().varPatterns().stream().flatMap(vp -> vp.getProperties(getVarPropertyClass()));
     }
 
     @Override
     public boolean isDirect() {
-        return getPattern().admin().getProperties().anyMatch(VarProperty::isExplicit);
+        return getPattern().getProperties().anyMatch(VarProperty::isExplicit);
     }
 
     /**
@@ -211,7 +212,7 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     public Stream<Rule> getPotentialRules() {
-        boolean isDirect = getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
+        boolean isDirect = getPattern().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
         return getPossibleTypes().stream()
                 .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
                 .distinct();

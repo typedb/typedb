@@ -158,7 +158,7 @@ public class ConjunctionQueryTest {
         Fragment resourceIndexFragment = Fragments.attributeIndex(null, varName, resourceTypeWithoutSubTypesLabel, value);
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
-            Conjunction<VarPattern> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();
+            Conjunction<VarPattern> conjunction = pattern.getDisjunctiveNormalForm().getPatterns().iterator().next();
             return new ConjunctionQuery(conjunction, tx).getEquivalentFragmentSets();
         });
     }

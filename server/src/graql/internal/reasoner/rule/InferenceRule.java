@@ -76,8 +76,8 @@ public class InferenceRule {
         this.tx = tx;
         this.rule = rule;
         //TODO simplify once changes propagated to rule objects
-        this.body = ReasonerQueries.create(conjunction(rule.when().admin()), tx);
-        this.head = ReasonerQueries.atomic(conjunction(rule.then().admin()), tx);
+        this.body = ReasonerQueries.create(conjunction(rule.when()), tx);
+        this.head = ReasonerQueries.atomic(conjunction(rule.then()), tx);
     }
 
     private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, Rule rule, TransactionImpl<?> tx){

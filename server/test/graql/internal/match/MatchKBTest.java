@@ -19,6 +19,7 @@
 package grakn.core.graql.internal.match;
 
 import com.google.common.collect.Sets;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.server.Transaction;
 import org.junit.Test;
@@ -31,7 +32,7 @@ import static org.mockito.Mockito.mock;
 public class MatchKBTest {
 
     private final AbstractMatch query =
-            new MatchBase(Patterns.conjunction(Sets.newHashSet(var("x").admin())));
+            new MatchBase(Patterns.conjunction(Sets.newHashSet(var("x"))));
 
     @Test
     public void matchesContainingTheSameGraphAndMatchBaseAreEqual() {

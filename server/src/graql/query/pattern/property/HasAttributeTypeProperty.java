@@ -28,6 +28,7 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Match;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
@@ -84,19 +85,19 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
 
         VarPattern role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
 
-        VarPattern ownerRole = var().sub(role).admin();
-        VarPattern valueRole = var().sub(role).admin();
+        VarPattern ownerRole = var().sub(role);
+        VarPattern valueRole = var().sub(role);
         VarPattern relationType = var().sub(Graql.label(Schema.MetaSchema.RELATIONSHIP.getLabel()));
 
         // If a key, limit only to the implicit key type
         if(required){
-            ownerRole = ownerRole.label(KEY_OWNER.getLabel(resourceLabel)).admin();
-            valueRole = valueRole.label(KEY_VALUE.getLabel(resourceLabel)).admin();
+            ownerRole = ownerRole.label(KEY_OWNER.getLabel(resourceLabel));
+            valueRole = valueRole.label(KEY_VALUE.getLabel(resourceLabel));
             relationType = relationType.label(KEY.getLabel(resourceLabel));
         }
 
-        VarPattern relationOwner = relationType.relates(ownerRole).admin();
-        VarPattern relationValue = relationType.admin().var().relates(valueRole).admin();
+        VarPattern relationOwner = relationType.relates(ownerRole);
+        VarPattern relationValue = relationType.var().relates(valueRole);
 
         return new AutoValue_HasAttributeTypeProperty(
                 resourceType, ownerRole, valueRole, relationOwner, relationValue, required);
@@ -183,7 +184,7 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         ConceptId predicateId = schemaConcept != null? schemaConcept.id() : null;
         //isa part
-        VarPattern resVar = varName.has(Graql.label(label)).admin();
+        VarPattern resVar = varName.has(Graql.label(label));
         return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 }

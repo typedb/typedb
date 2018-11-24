@@ -21,6 +21,7 @@ package grakn.core.graql.internal.util;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.VarPattern;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import static java.util.stream.Collectors.toList;
@@ -36,7 +37,7 @@ public class AdminConverter {
      * @return a collection of Pattern.Admin from the given patterns
      */
     public static Collection<Pattern> getPatternAdmins(Collection<? extends Pattern> patterns) {
-        return patterns.stream().map(Pattern::admin).collect(toList());
+        return new ArrayList<>(patterns);
     }
 
     /**
@@ -44,6 +45,6 @@ public class AdminConverter {
      * @return a collection of {@link VarPattern} from the given patterns
      */
     public static Collection<VarPattern> getVarAdmins(Collection<? extends VarPattern> patterns) {
-        return patterns.stream().map(VarPattern::admin).collect(toList());
+        return new ArrayList<>(patterns);
     }
 }

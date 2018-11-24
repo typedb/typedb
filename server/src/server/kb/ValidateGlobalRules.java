@@ -277,7 +277,7 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleIsValidHornClause(Transaction graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        if (rule.when().admin().isDisjunction()){
+        if (rule.when().isDisjunction()){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
         }
         if (errors.isEmpty()){
@@ -287,8 +287,8 @@ class ValidateGlobalRules {
     }
 
     private static ReasonerQuery combinedRuleQuery(Transaction graph, Rule rule){
-        ReasonerQuery bodyQuery = rule.when().admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
-        ReasonerQuery headQuery =  rule.then().admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
+        ReasonerQuery bodyQuery = rule.when().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
+        ReasonerQuery headQuery =  rule.then().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
         return headQuery.conjunction(bodyQuery);
     }
 
@@ -316,12 +316,12 @@ class ValidateGlobalRules {
      */
     private static Set<String> validateRuleHead(Transaction graph, Rule rule) {
         Set<String> errors = new HashSet<>();
-        Set<Conjunction<VarPattern>> headPatterns = rule.then().admin().getDisjunctiveNormalForm().getPatterns();
+        Set<Conjunction<VarPattern>> headPatterns = rule.then().getDisjunctiveNormalForm().getPatterns();
 
         if (headPatterns.size() != 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.label()));
         } else {
-            ReasonerQuery bodyQuery = Iterables.getOnlyElement(rule.when().admin().getDisjunctiveNormalForm().getPatterns()).toReasonerQuery(graph);
+            ReasonerQuery bodyQuery = Iterables.getOnlyElement(rule.when().getDisjunctiveNormalForm().getPatterns()).toReasonerQuery(graph);
             ReasonerQuery headQuery = Iterables.getOnlyElement(headPatterns).toReasonerQuery(graph);
             ReasonerQuery combinedQuery = headQuery.conjunction(bodyQuery);
 
@@ -365,7 +365,7 @@ class ValidateGlobalRules {
     private static Set<String> checkRuleSideInvalid(Transaction graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
-        pattern.admin().varPatterns().stream()
+        pattern.varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
                     SchemaConcept schemaConcept = graph.getSchemaConcept(typeLabel);

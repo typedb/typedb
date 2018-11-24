@@ -78,11 +78,6 @@ public class Disjunction<T extends Pattern> extends AbstractPattern implements P
     }
 
     @Override
-    public Pattern admin() {
-        return this;
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (o == this) {
             return true;

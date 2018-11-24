@@ -18,6 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
@@ -48,7 +49,7 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
     public abstract ConceptId getPredicate();
 
     public static IdPredicate create(VarPattern pattern, ReasonerQuery parent) {
-        return new AutoValue_IdPredicate(pattern.admin().var(), pattern, parent, extractPredicate(pattern));
+        return new AutoValue_IdPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
     public static IdPredicate create(Var varName, Label label, ReasonerQuery parent) {
         return create(createIdVar(varName.asUserDefined(), label, parent.tx()), parent);
@@ -64,7 +65,7 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
     }
 
     private static ConceptId extractPredicate(VarPattern var){
-        return var.admin().getProperty(IdProperty.class).map(IdProperty::id).orElse(null);
+        return var.getProperty(IdProperty.class).map(IdProperty::id).orElse(null);
     }
 
     private static VarPattern createIdVar(Var varName, ConceptId typeId){

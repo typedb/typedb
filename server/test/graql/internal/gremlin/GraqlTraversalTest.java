@@ -279,7 +279,7 @@ public class GraqlTraversalTest {
     }
 
     private static GraqlTraversal semiOptimal(Pattern pattern) {
-        return GreedyTraversalPlan.createTraversal(pattern.admin(), tx);
+        return GreedyTraversalPlan.createTraversal(pattern, tx);
     }
 
     private static GraqlTraversal traversal(Fragment... fragments) {
@@ -293,7 +293,7 @@ public class GraqlTraversalTest {
     }
 
     private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
-        Collection<Conjunction<VarPattern>> patterns = pattern.admin().getDisjunctiveNormalForm().getPatterns();
+        Collection<Conjunction<VarPattern>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         List<Set<List<Fragment>>> collect = patterns.stream()
                 .map(conjunction -> new ConjunctionQuery(conjunction, tx))

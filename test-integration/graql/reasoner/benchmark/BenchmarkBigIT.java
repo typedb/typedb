@@ -115,7 +115,7 @@ public class BenchmarkBigIT {
                         .isa(Graql.label(relationType.label()))
                         .and(fromRolePlayer.asUserDefined().id(instances[from]))
                         .and(toRolePlayer.asUserDefined().id(instances[to]));
-                transaction.query(Graql.insert(relationInsert.admin().varPatterns()));
+                transaction.query(Graql.insert(relationInsert.varPatterns()));
             }
 
             transaction.commit();
@@ -216,9 +216,9 @@ public class BenchmarkBigIT {
                 transaction.query(
                         Graql.insert(
                                 Graql.var().asUserDefined()
-                                .has(attributeLabel, "first")
-                                .id(instances[0])
-                                .admin().varPatterns()
+                                        .has(attributeLabel, "first")
+                                        .id(instances[0])
+                                        .varPatterns()
                         )
                 );
 
@@ -232,12 +232,12 @@ public class BenchmarkBigIT {
                             .isa(Graql.label(baseRelation.label()))
                             .and(fromRolePlayer.asUserDefined().id(instances[i - 1]))
                             .and(toRolePlayer.asUserDefined().id(instances[i]));
-                    transaction.query(Graql.insert(relationInsert.admin().varPatterns()));
+                    transaction.query(Graql.insert(relationInsert.varPatterns()));
 
                     Pattern resourceInsert = Graql.var().asUserDefined()
                             .has(attributeLabel, String.valueOf(i))
                             .id(instances[i]);
-                    transaction.query(Graql.insert(resourceInsert.admin().varPatterns()));
+                    transaction.query(Graql.insert(resourceInsert.varPatterns()));
                 }
 
                 transaction.commit();

@@ -21,6 +21,7 @@ package grakn.core.graql.internal.reasoner.atom.binary;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
@@ -45,7 +46,7 @@ public abstract class HasAtom extends OntologicalAtom {
     @Override public abstract ReasonerQuery getParentQuery();
 
     public static HasAtom create(VarPattern pattern, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return new AutoValue_HasAtom(pattern.admin().var(), predicateId, predicateVar, pattern, parent);
+        return new AutoValue_HasAtom(pattern.var(), predicateId, predicateVar, pattern, parent);
     }
 
     public static HasAtom create(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
