@@ -21,6 +21,7 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.util.StringUtil;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
@@ -28,7 +29,6 @@ import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.internal.util.StringConverter;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -60,7 +60,7 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
 
     @Override
     public String getProperty() {
-        return StringConverter.typeLabelToString(label());
+        return StringUtil.typeLabelToString(label());
     }
 
     @Override

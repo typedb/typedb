@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.internal.util.StringConverter;
+import grakn.core.graql.util.StringUtil;
 import grakn.core.server.ComputeExecutor;
 import grakn.core.server.Transaction;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -351,10 +351,10 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
         StringBuilder inTypesString = new StringBuilder();
 
         if (!types.isEmpty()) {
-            if (types.size() == 1) inTypesString.append(StringConverter.typeLabelToString(types.iterator().next()));
+            if (types.size() == 1) inTypesString.append(StringUtil.typeLabelToString(types.iterator().next()));
             else {
                 inTypesString.append(SQUARE_OPEN);
-                inTypesString.append(inTypes.stream().map(StringConverter::typeLabelToString).collect(joining(COMMA_SPACE.toString())));
+                inTypesString.append(inTypes.stream().map(StringUtil::typeLabelToString).collect(joining(COMMA_SPACE.toString())));
                 inTypesString.append(SQUARE_CLOSE);
             }
         }

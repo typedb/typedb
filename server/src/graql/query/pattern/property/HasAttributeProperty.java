@@ -49,7 +49,7 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
-import static grakn.core.graql.internal.util.StringConverter.typeLabelToString;
+import static grakn.core.graql.util.StringUtil.typeLabelToString;
 import static java.util.stream.Collectors.joining;
 
 /**

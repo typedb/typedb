@@ -23,7 +23,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.internal.util.StringUtil;
+import grakn.core.graql.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

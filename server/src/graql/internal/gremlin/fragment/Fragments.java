@@ -21,11 +21,11 @@ package grakn.core.graql.internal.gremlin.fragment;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
+import grakn.core.graql.util.StringUtil;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.internal.util.StringConverter;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -237,7 +237,7 @@ public class Fragments {
 
     static String displayOptionalTypeLabels(String name, @Nullable Set<Label> typeLabels) {
         if (typeLabels != null) {
-            return " " + name + ":" + typeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(","));
+            return " " + name + ":" + typeLabels.stream().map(StringUtil::typeLabelToString).collect(joining(","));
         } else {
             return "";
         }

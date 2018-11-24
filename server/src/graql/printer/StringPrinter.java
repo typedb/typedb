@@ -27,8 +27,7 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.internal.util.ANSI;
-import grakn.core.graql.internal.util.StringUtil;
+import grakn.core.graql.util.StringUtil;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -38,8 +37,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.internal.util.StringConverter.idToString;
-import static grakn.core.graql.internal.util.StringConverter.typeLabelToString;
+import static grakn.core.graql.util.StringUtil.idToString;
+import static grakn.core.graql.util.StringUtil.typeLabelToString;
 
 /**
  * Default printer that prints results in Graql syntax
@@ -212,6 +211,33 @@ class StringPrinter extends Printer<StringBuilder> {
             return ANSI.color(typeLabelToString(schemaConcept.label()), ANSI.PURPLE);
         } else {
             return typeLabelToString(schemaConcept.label());
+        }
+    }
+
+    /**
+     * Includes ANSI unicode commands for different colours
+     *
+     */
+    @SuppressWarnings("unused")
+    public static class ANSI {
+
+        private static final String RESET = "\u001B[0m";
+        public static final String BLACK = "\u001B[30m";
+        public static final String RED = "\u001B[31m";
+        public static final String GREEN = "\u001B[32m";
+        public static final String YELLOW = "\u001B[33m";
+        public static final String BLUE = "\u001B[34m";
+        public static final String PURPLE = "\u001B[35m";
+        public static final String CYAN = "\u001B[36m";
+        public static final String WHITE = "\u001B[37m";
+
+        /**
+         * @param string the string to set the color on
+         * @param color the color to set on the string
+         * @return a new string with the color set
+         */
+        public static String color(String string, String color) {
+            return color + string + RESET;
         }
     }
 }

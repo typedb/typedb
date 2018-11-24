@@ -23,6 +23,7 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.util.StringUtil;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.admin.RelationPlayer;
@@ -46,7 +47,6 @@ import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.ThenProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
-import grakn.core.graql.internal.util.StringConverter;
 import grakn.core.common.util.CommonUtil;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
@@ -617,7 +617,7 @@ public abstract class VarPattern implements Pattern {
             // If there is only a label, we display that
             Optional<grakn.core.graql.concept.Label> label = getTypeLabel();
             if (label.isPresent()) {
-                return StringConverter.typeLabelToString(label.get());
+                return StringUtil.typeLabelToString(label.get());
             }
         }
 

@@ -33,7 +33,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static grakn.core.graql.internal.util.StringConverter.idToString;
+import static grakn.core.graql.util.StringUtil.idToString;
 
 @AutoValue
 abstract class IdFragment extends Fragment {

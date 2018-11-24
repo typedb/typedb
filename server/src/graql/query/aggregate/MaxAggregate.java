@@ -23,7 +23,7 @@ import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.answer.Value;
-import grakn.core.graql.internal.util.PrimitiveNumberComparator;
+import grakn.core.graql.util.PrimitiveNumberComparator;
 
 import java.util.Collections;
 import java.util.List;

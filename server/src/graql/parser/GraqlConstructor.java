@@ -25,7 +25,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.grammar.GraqlBaseVisitor;
 import grakn.core.graql.grammar.GraqlParser;
-import grakn.core.graql.internal.util.StringUtil;
+import grakn.core.graql.util.StringUtil;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
