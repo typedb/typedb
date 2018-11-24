@@ -135,8 +135,8 @@ public abstract class AbstractVarPattern implements VarPattern {
     @Override
     public final Disjunction<Conjunction<VarPattern>> getDisjunctiveNormalForm() {
         // a disjunction containing only one option
-        Conjunction<VarPattern> conjunction = Patterns.conjunction(Collections.singleton(this));
-        return Patterns.disjunction(Collections.singleton(conjunction));
+        Conjunction<VarPattern> conjunction = Graql.and(Collections.singleton(this));
+        return Graql.or(Collections.singleton(conjunction));
     }
 
     @Override

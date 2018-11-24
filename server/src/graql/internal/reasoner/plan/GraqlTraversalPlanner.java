@@ -20,13 +20,13 @@ package grakn.core.graql.internal.reasoner.plan;
 
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -131,7 +131,7 @@ public class GraqlTraversalPlanner {
      * @return conjunctive pattern composed of atoms + their constraints + subs
      */
     private static Conjunction<Pattern> atomsToPattern(List<Atom> atoms, Set<IdPredicate> subs){
-        return Patterns.conjunction(
+        return Graql.and(
                 Stream.concat(
                         atoms.stream().flatMap(at -> Stream.concat(Stream.of(at), at.getNonSelectableConstraints())),
                         subs.stream()

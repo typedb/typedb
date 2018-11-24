@@ -35,14 +35,6 @@ public class Patterns {
 
     private Patterns() {}
 
-    public static <T extends Pattern> Conjunction<T> conjunction(Set<T> patterns) {
-        return new Conjunction<>(patterns);
-    }
-
-    public static <T extends Pattern> Disjunction<T> disjunction(Set<T> patterns) {
-        return new Disjunction<>(patterns);
-    }
-
     public static Var var() {
         return new Var(Long.toString(counter.getAndIncrement()), Var.Kind.Generated);
     }
@@ -58,5 +50,4 @@ public class Patterns {
             return new VarPatternImpl(name, properties);
         }
     }
-
 }

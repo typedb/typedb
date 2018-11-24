@@ -37,7 +37,6 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
@@ -195,7 +194,7 @@ public abstract class ResourceAtom extends Binary{
                 .map(varPattern -> varPattern)
                 .collect(Collectors.toSet());
         vars.add(getPattern());
-        return Patterns.conjunction(vars);
+        return Graql.and(vars);
     }
 
     @Override

@@ -7,7 +7,6 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.VarPattern;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
@@ -438,7 +437,7 @@ public class AtomicQueryEquivalenceIT {
         Set<VarPattern> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Graql.and(vars);
     }
 
 }

@@ -21,6 +21,8 @@ package grakn.core.graql.query;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
@@ -44,7 +46,6 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
 import javax.annotation.CheckReturnValue;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -209,7 +210,11 @@ public class Graql {
      */
     @CheckReturnValue
     public static Pattern and(Collection<? extends Pattern> patterns) {
-        return Patterns.conjunction(Sets.newHashSet(patterns));
+        return and(Sets.newHashSet(patterns));
+    }
+
+    public static <T extends Pattern> Conjunction<T> and(Set<T> patterns) {
+        return new Conjunction<>(patterns);
     }
 
     /**
@@ -232,7 +237,11 @@ public class Graql {
             return Iterables.getOnlyElement(patterns);
         }
 
-        return Patterns.disjunction(Sets.newHashSet(patterns));
+        return or(Sets.newHashSet(patterns));
+    }
+
+    public static <T extends Pattern> Disjunction<T> or(Set<T> patterns) {
+        return new Disjunction<>(patterns);
     }
 
 

@@ -27,7 +27,6 @@ import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
@@ -269,6 +268,6 @@ public class SemanticDifferenceIT {
         Set<VarPattern> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Graql.and(vars);
     }
 }

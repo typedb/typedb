@@ -20,6 +20,7 @@ package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import grakn.core.graql.query.Graql;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -36,7 +37,7 @@ public class Disjunction<T extends Pattern> implements Pattern {
 
     private final Set<T> patterns;
 
-    Disjunction(
+    public Disjunction(
             Set<T> patterns) {
         if (patterns == null) {
             throw new NullPointerException("Null patterns");
@@ -59,7 +60,7 @@ public class Disjunction<T extends Pattern> implements Pattern {
                 .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
                 .collect(toSet());
 
-        return Patterns.disjunction(dnf);
+        return Graql.or(dnf);
     }
 
     @Override

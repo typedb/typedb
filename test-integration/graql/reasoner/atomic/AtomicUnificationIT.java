@@ -1,6 +1,7 @@
 package grakn.core.graql.reasoner.atomic;
 
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
@@ -13,7 +14,6 @@ import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -387,7 +387,7 @@ public class AtomicUnificationIT {
                 .rel(var("baseRole2").label("subSubRole2"), var("y2"))
                 .isa("binary");
 
-        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Patterns.conjunction(Sets.newHashSet(basePattern)), tx);
+        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Graql.and(Sets.newHashSet(basePattern)), tx);
         ReasonerAtomicQuery childQuery = ReasonerQueries
                 .atomic(conjunction(
                         "{($r1: $x1, $r2: $x2) isa binary;" +
@@ -411,7 +411,7 @@ public class AtomicUnificationIT {
                 .rel(var("baseRole1").label("subRole1"), var("y1"))
                 .rel(var("baseRole2").label("subSubRole2"), var("y2"));
 
-        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Patterns.conjunction(Sets.newHashSet(basePattern)), tx);
+        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Graql.and(Sets.newHashSet(basePattern)), tx);
         ReasonerAtomicQuery childQuery = ReasonerQueries
                 .atomic(conjunction(
                         "{($r1: $x1, $r2: $x2);" +
@@ -512,6 +512,6 @@ public class AtomicUnificationIT {
         Set<VarPattern> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Graql.and(vars);
     }
 }

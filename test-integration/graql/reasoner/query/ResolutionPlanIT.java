@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.query.Graql;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
@@ -29,7 +30,6 @@ import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.query.pattern.VarPattern;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.plan.ResolutionPlan;
@@ -722,7 +722,7 @@ public class ResolutionPlanIT {
         Set<VarPattern> vars = graph.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Graql.and(vars);
     }
 }
 

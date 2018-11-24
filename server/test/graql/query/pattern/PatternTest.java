@@ -85,7 +85,7 @@ public class PatternTest {
     @Test
     public void testDNFIdentity() {
         Set disjunction = set(conjunction(x, y, z), conjunction(a, b, c));
-        assertHasDNF(disjunction, Patterns.disjunction(disjunction));
+        assertHasDNF(disjunction, Graql.or(disjunction));
     }
 
     @Test
@@ -101,11 +101,11 @@ public class PatternTest {
     }
 
     private <T extends Pattern> Conjunction<T> conjunction(T... patterns) {
-        return Patterns.conjunction(Sets.newHashSet(patterns));
+        return Graql.and(Sets.newHashSet(patterns));
     }
 
     private <T extends Pattern> Disjunction<T> disjunction(T... patterns) {
-        return Patterns.disjunction(Sets.newHashSet(patterns));
+        return Graql.or(Sets.newHashSet(patterns));
     }
 
     private <T extends Pattern> Set<T> set(T... patterns) {

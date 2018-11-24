@@ -26,14 +26,12 @@ import grakn.core.graql.answer.Answer;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.parser.QueryParser;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -85,7 +83,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public Match match(Collection<? extends Pattern> patterns) {
-        Conjunction<Pattern> conjunction = Patterns.conjunction(Sets.newHashSet(patterns));
+        Conjunction<Pattern> conjunction = Graql.and(Sets.newHashSet(patterns));
         MatchBase base = new MatchBase(conjunction);
         Match match = infer ? base.infer().admin() : base;
         return (tx != null) ? match.withTx(tx) : match;

@@ -29,7 +29,6 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.VarPattern;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -250,14 +249,14 @@ public class AtomicQueryIT {
         Set<VarPattern> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Graql.and(vars);
     }
 
     private Conjunction<VarPattern> conjunction(Conjunction<Pattern> pattern){
         Set<VarPattern> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Graql.and(vars);
     }
 
 

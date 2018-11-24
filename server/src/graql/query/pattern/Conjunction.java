@@ -23,6 +23,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.query.Graql;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 
@@ -43,7 +44,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
 
     private final Set<T> patterns;
 
-    Conjunction(
+    public Conjunction(
             Set<T> patterns) {
         if (patterns == null) {
             throw new NullPointerException("Null patterns");
@@ -73,7 +74,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
                 .map(Conjunction::fromConjunctions)
                 .collect(toSet());
 
-        return Patterns.disjunction(dnf);
+        return Graql.or(dnf);
 
         // Wasn't that a horrible function? Here it is in Haskell:
         //     dnf = map fromConjunctions . sequence . map getDisjunctiveNormalForm . patterns
@@ -101,7 +102,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
 
     private static <U extends Pattern> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {
         Set<U> patterns = conjunctions.stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(patterns);
+        return Graql.and(patterns);
     }
 
     @Override
