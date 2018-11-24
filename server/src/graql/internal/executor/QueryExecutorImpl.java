@@ -25,7 +25,6 @@ import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.internal.util.AdminConverter;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -40,6 +39,7 @@ import grakn.core.server.QueryExecutor;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -112,7 +112,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(DefineQuery query) {
-        ImmutableList<VarPattern> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
+        ImmutableList<VarPattern> allPatterns = query.varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 
@@ -122,7 +122,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(UndefineQuery query) {
-        ImmutableList<VarPattern> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
+        ImmutableList<VarPattern> allPatterns = query.varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 

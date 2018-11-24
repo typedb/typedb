@@ -27,13 +27,13 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.parser.QueryParser;
 import grakn.core.graql.query.pattern.Patterns;
-import grakn.core.graql.internal.util.AdminConverter;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -85,7 +85,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public Match match(Collection<? extends Pattern> patterns) {
-        Conjunction<Pattern> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
+        Conjunction<Pattern> conjunction = Patterns.conjunction(Sets.newHashSet(patterns));
         MatchBase base = new MatchBase(conjunction);
         Match match = infer ? base.infer().admin() : base;
         return (tx != null) ? match.withTx(tx) : match;
@@ -106,7 +106,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public InsertQuery insert(Collection<? extends VarPattern> vars) {
-        ImmutableList<VarPattern> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
+        ImmutableList<VarPattern> varAdmins = ImmutableList.copyOf(vars);
         return Queries.insert(tx, varAdmins);
     }
 
@@ -125,7 +125,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public DefineQuery define(Collection<? extends VarPattern> varPatterns) {
-        ImmutableList<VarPattern> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
+        ImmutableList<VarPattern> admins = ImmutableList.copyOf(varPatterns);
         return DefineQuery.of(admins, tx);
     }
 
@@ -144,7 +144,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
-        ImmutableList<VarPattern> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
+        ImmutableList<VarPattern> admins = ImmutableList.copyOf(varPatterns);
         return UndefineQuery.of(admins, tx);
     }
 

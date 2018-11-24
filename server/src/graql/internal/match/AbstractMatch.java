@@ -25,7 +25,6 @@ import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.property.VarPropertyInternal;
-import grakn.core.graql.internal.util.AdminConverter;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.DeleteQuery;
@@ -39,6 +38,7 @@ import grakn.core.graql.query.pattern.Var;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -127,7 +127,7 @@ abstract class AbstractMatch implements MatchAdmin {
 
     @Override
     public final InsertQuery insert(Collection<? extends VarPattern> vars) {
-        ImmutableMultiset<VarPattern> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
+        ImmutableMultiset<VarPattern> varAdmins = ImmutableMultiset.copyOf(vars);
         return Queries.insert(admin(), varAdmins);
     }
 

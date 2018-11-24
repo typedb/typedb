@@ -39,12 +39,12 @@ import grakn.core.graql.query.aggregate.SumAggregate;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.predicate.Predicates;
-import grakn.core.graql.internal.util.AdminConverter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
 import javax.annotation.CheckReturnValue;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -209,8 +209,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Pattern and(Collection<? extends Pattern> patterns) {
-        Collection<Pattern> patternAdmins = AdminConverter.getPatternAdmins(patterns);
-        return Patterns.conjunction(Sets.newHashSet(patternAdmins));
+        return Patterns.conjunction(Sets.newHashSet(patterns));
     }
 
     /**
@@ -233,8 +232,7 @@ public class Graql {
             return Iterables.getOnlyElement(patterns);
         }
 
-        Collection<Pattern> patternAdmins = AdminConverter.getPatternAdmins(patterns);
-        return Patterns.disjunction(Sets.newHashSet(patternAdmins));
+        return Patterns.disjunction(Sets.newHashSet(patterns));
     }
 
 
