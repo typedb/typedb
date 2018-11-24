@@ -47,11 +47,11 @@ public class Patterns {
     }
 
     public static Var var() {
-        return new VarImpl(Long.toString(counter.getAndIncrement()), Var.Kind.Generated);
+        return new Var(Long.toString(counter.getAndIncrement()), Var.Kind.Generated);
     }
 
     public static Var var(String value) {
-        return new VarImpl(value, Var.Kind.UserDefined);
+        return new Var(value, Var.Kind.UserDefined);
     }
 
     public static VarPatternAdmin varPattern(Var name, Set<VarProperty> properties) {
@@ -63,6 +63,6 @@ public class Patterns {
     }
 
     private static Var reservedVar(String value) {
-        return new VarImpl(value, Var.Kind.Reserved);
+        return new Var(value, Var.Kind.Reserved);
     }
 }
