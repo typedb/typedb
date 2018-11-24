@@ -28,7 +28,7 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
-import grakn.core.graql.query.pattern.Patterns;
+import grakn.core.graql.query.pattern.VarPatternImpl;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.server.session.TransactionImpl;
@@ -157,9 +157,9 @@ public class GraqlTraversalTest {
     public void testAllTraversalsSimpleQuery() {
         IdProperty titanicId = IdProperty.of(ConceptId.of("Titanic"));
         IdProperty movieId = IdProperty.of(ConceptId.of("movie"));
-        SubProperty subProperty = SubProperty.of(Patterns.varPattern(y, ImmutableSet.of(movieId)));
+        SubProperty subProperty = SubProperty.of(new VarPatternImpl(y, ImmutableSet.of(movieId)));
 
-        VarPattern pattern = Patterns.varPattern(x, ImmutableSet.of(titanicId, subProperty));
+        VarPattern pattern = new VarPatternImpl(x, ImmutableSet.of(titanicId, subProperty));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());

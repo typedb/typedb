@@ -30,14 +30,14 @@ import java.util.Set;
 /**
  * Implementation of {@link VarPattern} interface
  */
-class VarPatternImpl extends AbstractVarPattern {
+public class VarPatternImpl extends AbstractVarPattern {
 
     private final Var var;
     private final Set<VarProperty> properties;
     protected final Logger LOG = LoggerFactory.getLogger(VarPatternImpl.class);
     private int hashCode = 0;
 
-    VarPatternImpl(Var var, Set<VarProperty> properties) {
+    public VarPatternImpl(Var var, Set<VarProperty> properties) {
         if (var == null) {
             throw new NullPointerException("Null var");
         }

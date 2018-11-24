@@ -18,6 +18,7 @@
 
 package grakn.core.graql.internal.executor;
 
+import grakn.core.graql.query.pattern.VarPatternImpl;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -26,7 +27,6 @@ import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.property.PropertyExecutor;
 import grakn.core.graql.query.pattern.property.VarPropertyInternal;
 import grakn.core.graql.answer.ConceptMap;
@@ -420,7 +420,7 @@ public class QueryOperationExecutor {
             }
         }
 
-        return Patterns.varPattern(var, propertiesOfVar.build());
+        return new VarPatternImpl(var, propertiesOfVar.build());
     }
 
     Transaction tx() {

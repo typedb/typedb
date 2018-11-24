@@ -18,9 +18,6 @@
 
 package grakn.core.graql.query.pattern;
 
-import grakn.core.graql.query.pattern.property.VarProperty;
-
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -41,13 +38,5 @@ public class Patterns {
 
     public static Var var(String value) {
         return new Var(value, Var.Kind.UserDefined);
-    }
-
-    public static VarPattern varPattern(Var name, Set<VarProperty> properties) {
-        if (properties.isEmpty()) {
-            return name;
-        } else {
-            return new VarPatternImpl(name, properties);
-        }
     }
 }

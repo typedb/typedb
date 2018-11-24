@@ -393,11 +393,11 @@ public abstract class AbstractVarPattern implements VarPattern {
         if (property.isUnique()) {
             testUniqueProperty((UniqueVarProperty) property);
         }
-        return Patterns.varPattern(var(), Sets.union(properties(), ImmutableSet.of(property)));
+        return new VarPatternImpl(var(), Sets.union(properties(), ImmutableSet.of(property)));
     }
 
     private AbstractVarPattern removeProperty(VarProperty property) {
-        return (AbstractVarPattern) Patterns.varPattern(var(), Sets.difference(properties(), ImmutableSet.of(property)));
+        return new VarPatternImpl(var(), Sets.difference(properties(), ImmutableSet.of(property)));
     }
 
     /**
