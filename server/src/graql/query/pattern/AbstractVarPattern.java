@@ -62,10 +62,10 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Abstract implementation of {@link VarPatternAdmin}.
+ * Abstract implementation of {@link VarPattern}.
  *
  */
-public abstract class AbstractVarPattern extends AbstractPattern implements VarPatternAdmin {
+public abstract class AbstractVarPattern extends AbstractPattern implements VarPattern {
 
     @Override
     public abstract Var var();
@@ -73,7 +73,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     protected abstract Set<VarProperty> properties();
 
     @Override
-    public final VarPatternAdmin admin() {
+    public final VarPattern admin() {
         return this;
     }
 
@@ -98,14 +98,14 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final Collection<VarPatternAdmin> innerVarPatterns() {
-        Stack<VarPatternAdmin> newVars = new Stack<>();
-        List<VarPatternAdmin> vars = new ArrayList<>();
+    public final Collection<VarPattern> innerVarPatterns() {
+        Stack<VarPattern> newVars = new Stack<>();
+        List<VarPattern> vars = new ArrayList<>();
 
         newVars.add(this);
 
         while (!newVars.isEmpty()) {
-            VarPatternAdmin var = newVars.pop();
+            VarPattern var = newVars.pop();
             vars.add(var);
             var.getProperties().flatMap(VarProperty::innerVarPatterns).forEach(newVars::add);
         }
@@ -114,14 +114,14 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final Collection<VarPatternAdmin> implicitInnerVarPatterns() {
-        Stack<VarPatternAdmin> newVars = new Stack<>();
-        List<VarPatternAdmin> vars = new ArrayList<>();
+    public final Collection<VarPattern> implicitInnerVarPatterns() {
+        Stack<VarPattern> newVars = new Stack<>();
+        List<VarPattern> vars = new ArrayList<>();
 
         newVars.add(this);
 
         while (!newVars.isEmpty()) {
-            VarPatternAdmin var = newVars.pop();
+            VarPattern var = newVars.pop();
             vars.add(var);
             var.getProperties().flatMap(VarProperty::implicitInnerVarPatterns).forEach(newVars::add);
         }
@@ -133,14 +133,14 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     public final Set<grakn.core.graql.concept.Label> getTypeLabels() {
         return getProperties()
                 .flatMap(VarProperty::getTypes)
-                .map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
+                .map(VarPattern::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
     }
 
     @Override
-    public final Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
+    public final Disjunction<Conjunction<VarPattern>> getDisjunctiveNormalForm() {
         // a disjunction containing only one option
-        Conjunction<VarPatternAdmin> conjunction = Patterns.conjunction(Collections.singleton(this));
+        Conjunction<VarPattern> conjunction = Patterns.conjunction(Collections.singleton(this));
         return Patterns.disjunction(Collections.singleton(conjunction));
     }
 
@@ -148,7 +148,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     public final Set<Var> commonVars() {
         return innerVarPatterns().stream()
                 .filter(v -> v.var().isUserDefinedName())
-                .map(VarPatternAdmin::var)
+                .map(VarPattern::var)
                 .collect(toSet());
     }
 
@@ -394,7 +394,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }
 
-    private VarPatternAdmin addProperty(VarProperty property) {
+    private VarPattern addProperty(VarProperty property) {
         if (property.isUnique()) {
             testUniqueProperty((UniqueVarProperty) property);
         }

@@ -30,12 +30,12 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("unchecked")
 public class PatternImplTest {
 
-    private final VarPatternAdmin x = Graql.var("x").admin();
-    private final VarPatternAdmin y = Graql.var("y").admin();
-    private final VarPatternAdmin z = Graql.var("z").admin();
-    private final VarPatternAdmin a = Graql.var("a").admin();
-    private final VarPatternAdmin b = Graql.var("b").admin();
-    private final VarPatternAdmin c = Graql.var("c").admin();
+    private final VarPattern x = Graql.var("x").admin();
+    private final VarPattern y = Graql.var("y").admin();
+    private final VarPattern z = Graql.var("z").admin();
+    private final VarPattern a = Graql.var("a").admin();
+    private final VarPattern b = Graql.var("b").admin();
+    private final VarPattern c = Graql.var("c").admin();
 
     @Test
     public void testVarDNF() {
@@ -91,7 +91,7 @@ public class PatternImplTest {
     @Test
     public void testCNFToDNF() {
         Conjunction cnf = conjunction(disjunction(x, y, z), disjunction(a, b, c));
-        Set<Conjunction<VarPatternAdmin>> dnf = set(
+        Set<Conjunction<VarPattern>> dnf = set(
                 conjunction(x, a), conjunction(x, b), conjunction(x, c),
                 conjunction(y, a), conjunction(y, b), conjunction(y, c),
                 conjunction(z, a), conjunction(z, b), conjunction(z, c)
@@ -112,8 +112,8 @@ public class PatternImplTest {
         return Sets.newHashSet(patterns);
     }
 
-    private void assertHasDNF(Set<Conjunction<VarPatternAdmin>> expected, PatternAdmin pattern) {
-        HashSet<Conjunction<VarPatternAdmin>> dnf = new HashSet<>(pattern.getDisjunctiveNormalForm().getPatterns());
+    private void assertHasDNF(Set<Conjunction<VarPattern>> expected, PatternAdmin pattern) {
+        HashSet<Conjunction<VarPattern>> dnf = new HashSet<>(pattern.getDisjunctiveNormalForm().getPatterns());
         assertEquals(expected, dnf);
     }
 }

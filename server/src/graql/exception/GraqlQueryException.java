@@ -24,7 +24,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.query.pattern.property.UniqueVarProperty;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -32,7 +32,6 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
@@ -101,7 +100,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException conflictingProperties(
-            VarPatternAdmin varPattern, UniqueVarProperty property, UniqueVarProperty other) {
+            VarPattern varPattern, UniqueVarProperty property, UniqueVarProperty other) {
         String message = ErrorMessage.CONFLICTING_PROPERTIES.getMessage(
                 varPattern.getPrintableName(), property.graqlString(), other.graqlString()
         );
@@ -152,11 +151,11 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.INSERT_PREDICATE.getMessage());
     }
 
-    public static GraqlQueryException insertRecursive(VarPatternAdmin var) {
+    public static GraqlQueryException insertRecursive(VarPattern var) {
         return new GraqlQueryException(INSERT_RECURSIVE.getMessage(var.getPrintableName()));
     }
 
-    public static GraqlQueryException insertUndefinedVariable(VarPatternAdmin var) {
+    public static GraqlQueryException insertUndefinedVariable(VarPattern var) {
         return new GraqlQueryException(INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
     }
 
@@ -203,7 +202,7 @@ public class GraqlQueryException extends GraknException {
      * For example, an attribute without a value: {@code insert $x isa name;}
      * </p>
      */
-    public static GraqlQueryException insertNoExpectedProperty(String property, VarPatternAdmin var) {
+    public static GraqlQueryException insertNoExpectedProperty(String property, VarPattern var) {
         return create("missing expected property `%s` in `%s`", property, var);
     }
 
@@ -213,7 +212,7 @@ public class GraqlQueryException extends GraknException {
      * For example: {@code match $x isa movie; insert $x isa name, val "Bob";}
      * </p>
      */
-    public static GraqlQueryException insertExistingConcept(VarPatternAdmin pattern, Concept concept) {
+    public static GraqlQueryException insertExistingConcept(VarPattern pattern, Concept concept) {
         return create("cannot overwrite properties `%s` on  concept `%s`", pattern, concept);
     }
 
@@ -314,7 +313,7 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.CONCEPT_NOT_THING.getMessage(value));
     }
 
-    public static GraqlQueryException nonRoleIdAssignedToRoleVariable(VarPatternAdmin var) {
+    public static GraqlQueryException nonRoleIdAssignedToRoleVariable(VarPattern var) {
         return new GraqlQueryException(ErrorMessage.ROLE_ID_IS_NOT_ROLE.getMessage(var.toString()));
     }
 

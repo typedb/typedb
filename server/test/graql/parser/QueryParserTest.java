@@ -24,7 +24,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.PatternAdmin;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
@@ -798,7 +798,7 @@ public class QueryParserTest {
     public void testParseBooleanType() {
         GetQuery query = parse("match $x datatype boolean; get;");
 
-        VarPatternAdmin var = query.match().admin().getPattern().varPatterns().iterator().next();
+        VarPattern var = query.match().admin().getPattern().varPatterns().iterator().next();
 
         //noinspection OptionalGetWithoutIsPresent
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
@@ -1101,7 +1101,7 @@ public class QueryParserTest {
 
         Set<PatternAdmin> patterns = conjunction.getPatterns();
 
-        VarPatternAdmin pattern = Iterables.getOnlyElement(patterns).asVarPattern();
+        VarPattern pattern = Iterables.getOnlyElement(patterns).asVarPattern();
 
         assertTrue(pattern.var().isUserDefinedName());
 

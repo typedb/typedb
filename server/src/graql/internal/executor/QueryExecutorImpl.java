@@ -20,7 +20,7 @@ package grakn.core.graql.internal.executor;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
@@ -73,7 +73,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(InsertQuery query) {
-        Collection<VarPatternAdmin> varPatterns = query.admin().varPatterns().stream()
+        Collection<VarPattern> varPatterns = query.admin().varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 
@@ -84,9 +84,9 @@ public class QueryExecutorImpl implements QueryExecutor {
         }
     }
 
-    private Stream<ConceptMap> runMatchInsert(Match match, Collection<VarPatternAdmin> varPatterns) {
+    private Stream<ConceptMap> runMatchInsert(Match match, Collection<VarPattern> varPatterns) {
         Set<Var> varsInMatch = match.admin().getSelectedNames();
-        Set<Var> varsInInsert = varPatterns.stream().map(VarPatternAdmin::var).collect(toImmutableSet());
+        Set<Var> varsInInsert = varPatterns.stream().map(VarPattern::var).collect(toImmutableSet());
         Set<Var> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
 
         Stream<ConceptMap> answers = match.get(projectedVars).stream();
@@ -112,7 +112,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(DefineQuery query) {
-        ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
+        ImmutableList<VarPattern> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 
@@ -122,7 +122,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(UndefineQuery query) {
-        ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
+        ImmutableList<VarPattern> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 

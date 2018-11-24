@@ -18,8 +18,6 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.query.pattern.VarPattern;
-
 import javax.annotation.CheckReturnValue;
 
 /**

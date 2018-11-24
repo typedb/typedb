@@ -20,10 +20,9 @@ package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
@@ -51,7 +50,7 @@ public abstract class NeqPredicate extends Predicate<Var> {
         return new AutoValue_NeqPredicate(pattern.admin().var(), pattern, parent, extractPredicate(pattern));
     }
     public static NeqPredicate create(Var varName, NeqProperty prop, ReasonerQuery parent) {
-        VarPatternAdmin pattern = varName.neq(prop.var().var()).admin();
+        VarPattern pattern = varName.neq(prop.var().var()).admin();
         return create(pattern, parent);
     }
     public static NeqPredicate create(NeqPredicate a, ReasonerQuery parent) {

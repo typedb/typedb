@@ -21,37 +21,47 @@ package grakn.core.graql.query.pattern;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.query.DeleteQuery;
-import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Match;
+import grakn.core.graql.query.pattern.property.UniqueVarProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /**
- * A variable together with its properties.
- * <p>
- * A {@link VarPattern} may be given a variable, or use an "anonymous" variable. {@code Graql} provides
- * static methods for constructing {@link VarPattern} objects.
- * <p>
- * The methods on {@link VarPattern} are used to set its properties. A {@link VarPattern} behaves differently depending
- * on the type of query its used in. In a {@link Match}, a {@link VarPattern} describes the properties any matching
- * concept must have. In an {@link InsertQuery}, it describes the properties that should be set on the inserted concept.
- * In a {@link DeleteQuery}, it describes the properties that should be deleted.
- *
+ * A variable together with its properties in one Graql statement.
+ * A VarPattern may be given a variable, or use an "anonymous" variable.
+ * Graql provides static methods for constructing VarPattern objects.
+ * The methods in VarPattern are used to set its properties. A VarPattern
+ * behaves differently depending on the type of query its used in.
+ * In a Match clause, a VarPattern describes the properties any matching
+ * concept must have. In an InsertQuery, it describes the properties that
+ * should be set on the inserted concept. In a DeleteQuery, it describes the
+ * properties that should be deleted.
  */
-@SuppressWarnings("UnusedReturnValue")
-public interface VarPattern extends Pattern {
+public interface VarPattern extends PatternAdmin, Pattern {
+    @Override
+    default boolean isVarPattern() {
+        return true;
+    }
+
+    @Override
+    default VarPattern asVarPattern() {
+        return this;
+    }
 
     /**
      * @return an Admin class to allow inspection of this {@link VarPattern}
      */
     @CheckReturnValue
-    VarPatternAdmin admin();
+    VarPattern admin();
 
     /**
      * @param id a ConceptId that this variable's ID must match
@@ -195,8 +205,6 @@ public interface VarPattern extends Pattern {
      */
     @CheckReturnValue
     VarPattern subExplicit(VarPattern type);
-
-
 
     /**
      * @param type a {@link Role} id that this relation type variable must have
@@ -381,4 +389,74 @@ public interface VarPattern extends Pattern {
      */
     @CheckReturnValue
     VarPattern neq(VarPattern varPattern);
+
+    /**
+     * @return the variable name of this variable
+     */
+    @CheckReturnValue
+    Var var();
+
+    /**
+     * Get a stream of all properties on this variable
+     */
+    @CheckReturnValue
+    Stream<VarProperty> getProperties();
+
+    /**
+     * Get a stream of all properties of a particular type on this variable
+     *
+     * @param type the class of {@link VarProperty} to return
+     * @param <T>  the type of {@link VarProperty} to return
+     */
+    @CheckReturnValue
+    <T extends VarProperty> Stream<T> getProperties(Class<T> type);
+
+    /**
+     * Get a unique property of a particular type on this variable, if it exists
+     *
+     * @param type the class of {@link VarProperty} to return
+     * @param <T>  the type of {@link VarProperty} to return
+     */
+    @CheckReturnValue
+    <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type);
+
+    /**
+     * Get whether this {@link VarPattern} has a {@link VarProperty} of the given type
+     *
+     * @param type the type of the {@link VarProperty}
+     * @param <T>  the type of the {@link VarProperty}
+     * @return whether this {@link VarPattern} has a {@link VarProperty} of the given type
+     */
+    @CheckReturnValue
+    <T extends VarProperty> boolean hasProperty(Class<T> type);
+
+    /**
+     * @return the name this variable represents, if it represents something with a specific name
+     */
+    @CheckReturnValue
+    Optional<Label> getTypeLabel();
+
+    /**
+     * @return all variables that this variable references
+     */
+    @CheckReturnValue
+    Collection<VarPattern> innerVarPatterns();
+
+    /**
+     * Get all inner variables, including implicit variables such as in a has property
+     */
+    @CheckReturnValue
+    Collection<VarPattern> implicitInnerVarPatterns();
+
+    /**
+     * @return all type names that this variable refers to
+     */
+    @CheckReturnValue
+    Set<Label> getTypeLabels();
+
+    /**
+     * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')
+     */
+    @CheckReturnValue
+    String getPrintableName();
 }

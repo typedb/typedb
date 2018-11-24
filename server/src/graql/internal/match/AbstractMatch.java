@@ -21,7 +21,7 @@ package grakn.core.graql.internal.match;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.MatchAdmin;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.property.VarPropertyInternal;
@@ -36,7 +36,6 @@ import grakn.core.graql.query.Match;
 import grakn.core.graql.query.Order;
 import grakn.core.graql.query.Queries;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 
@@ -73,7 +72,7 @@ abstract class AbstractMatch implements MatchAdmin {
      * @param tx the {@link Transaction} against which the pattern should be validated
      */
     void validatePattern(Transaction tx){
-        for (VarPatternAdmin var : getPattern().varPatterns()) {
+        for (VarPattern var : getPattern().varPatterns()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(tx, var));}
     }
 
@@ -128,7 +127,7 @@ abstract class AbstractMatch implements MatchAdmin {
 
     @Override
     public final InsertQuery insert(Collection<? extends VarPattern> vars) {
-        ImmutableMultiset<VarPatternAdmin> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
+        ImmutableMultiset<VarPattern> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(admin(), varAdmins);
     }
 

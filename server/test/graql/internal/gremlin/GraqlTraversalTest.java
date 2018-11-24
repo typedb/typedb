@@ -24,9 +24,8 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import grakn.core.graql.query.pattern.Patterns;
@@ -294,7 +293,7 @@ public class GraqlTraversalTest {
     }
 
     private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
-        Collection<Conjunction<VarPatternAdmin>> patterns = pattern.admin().getDisjunctiveNormalForm().getPatterns();
+        Collection<Conjunction<VarPattern>> patterns = pattern.admin().getDisjunctiveNormalForm().getPatterns();
 
         List<Set<List<Fragment>>> collect = patterns.stream()
                 .map(conjunction -> new ConjunctionQuery(conjunction, tx))

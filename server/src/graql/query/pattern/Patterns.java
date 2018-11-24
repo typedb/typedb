@@ -54,7 +54,7 @@ public class Patterns {
         return new Var(value, Var.Kind.UserDefined);
     }
 
-    public static VarPatternAdmin varPattern(Var name, Set<VarProperty> properties) {
+    public static VarPattern varPattern(Var name, Set<VarProperty> properties) {
         if (properties.isEmpty()) {
             return name.admin();
         } else {

@@ -25,7 +25,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Concept;
@@ -861,8 +861,8 @@ public class AtomicQueryUnificationIT {
         return instances.iterator().next();
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString){
-        Set<VarPatternAdmin> vars = Graql.parser().parsePattern(patternString).admin()
+    private Conjunction<VarPattern> conjunction(String patternString){
+        Set<VarPattern> vars = Graql.parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

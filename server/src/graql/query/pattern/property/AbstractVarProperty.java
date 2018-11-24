@@ -21,7 +21,7 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.server.Transaction;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.common.util.CommonUtil;
 
 import java.util.Collection;
@@ -30,17 +30,17 @@ import java.util.stream.Stream;
 abstract class AbstractVarProperty implements VarPropertyInternal {
 
     @Override
-    public final void checkValid(Transaction graph, VarPatternAdmin var) throws GraqlQueryException {
+    public final void checkValid(Transaction graph, VarPattern var) throws GraqlQueryException {
         checkValidProperty(graph, var);
 
-        innerVarPatterns().map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
+        innerVarPatterns().map(VarPattern::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
             if (graph.getSchemaConcept(label) == null) {
                 throw GraqlQueryException.labelNotFound(label);
             }
         });
     }
 
-    void checkValidProperty(Transaction graph, VarPatternAdmin var) {
+    void checkValidProperty(Transaction graph, VarPattern var) {
 
     }
 
@@ -62,12 +62,12 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     }
 
     @Override
-    public Stream<VarPatternAdmin> getTypes() {
+    public Stream<VarPattern> getTypes() {
         return Stream.empty();
     }
 
     @Override
-    public Stream<VarPatternAdmin> implicitInnerVarPatterns() {
+    public Stream<VarPattern> implicitInnerVarPatterns() {
         return innerVarPatterns();
     }
 

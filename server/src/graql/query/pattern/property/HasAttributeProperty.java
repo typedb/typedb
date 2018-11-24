@@ -31,7 +31,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -72,14 +72,14 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
 
     public static final String NAME = "has";
 
-    public static HasAttributeProperty of(Label attributeType, VarPatternAdmin attribute, VarPatternAdmin relationship) {
+    public static HasAttributeProperty of(Label attributeType, VarPattern attribute, VarPattern relationship) {
         attribute = attribute.isa(label(attributeType)).admin();
         return new AutoValue_HasAttributeProperty(attributeType, attribute, relationship);
     }
 
     public abstract Label type();
-    public abstract VarPatternAdmin attribute();
-    public abstract VarPatternAdmin relationship();
+    public abstract VarPattern attribute();
+    public abstract VarPattern relationship();
 
     @Override
     public String getName() {
@@ -129,12 +129,12 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public Stream<VarPatternAdmin> innerVarPatterns() {
+    public Stream<VarPattern> innerVarPatterns() {
         return Stream.of(attribute(), relationship());
     }
 
     @Override
-    void checkValidProperty(Transaction graph, VarPatternAdmin var) {
+    void checkValidProperty(Transaction graph, VarPattern var) {
         SchemaConcept schemaConcept = graph.getSchemaConcept(type());
         if (schemaConcept == null) {
             throw GraqlQueryException.labelNotFound(type());
@@ -162,7 +162,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public Stream<VarPatternAdmin> getTypes() {
+    public Stream<VarPattern> getTypes() {
         return Stream.of(label(type()).admin());
     }
 
@@ -201,7 +201,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPattern var, Set<VarPattern> vars, ReasonerQuery parent) {
         //NB: HasAttributeProperty always has (type) label specified
         Var varName = var.var().asUserDefined();
 
@@ -211,12 +211,12 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent);
 
         IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
-        VarPatternAdmin typeVar = isaProp != null? isaProp.type() : null;
+        VarPattern typeVar = isaProp != null? isaProp.type() : null;
         IdPredicate predicate = typeVar != null? getIdPredicate(predicateVariable, typeVar, vars, parent) : null;
         ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
 
         //add resource atom
-        VarPatternAdmin resVar = relationVariable.isUserDefinedName()?
+        VarPattern resVar = relationVariable.isUserDefinedName()?
                 varName.has(type(), attributeVariable, relationVariable).admin() :
                 varName.has(type(), attributeVariable).admin();
         ResourceAtom atom = ResourceAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);

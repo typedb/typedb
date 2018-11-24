@@ -19,9 +19,9 @@
 package grakn.core.graql.internal.reasoner.atom.property;
 
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import com.google.auto.value.AutoValue;

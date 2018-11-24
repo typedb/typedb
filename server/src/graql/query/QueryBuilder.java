@@ -30,7 +30,6 @@ import grakn.core.graql.parser.QueryParser;
 import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.util.AdminConverter;
 import grakn.core.graql.query.pattern.VarPattern;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 
@@ -108,7 +107,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public InsertQuery insert(Collection<? extends VarPattern> vars) {
-        ImmutableList<VarPatternAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
+        ImmutableList<VarPattern> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(tx, varAdmins);
     }
 
@@ -127,7 +126,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public DefineQuery define(Collection<? extends VarPattern> varPatterns) {
-        ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
+        ImmutableList<VarPattern> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
         return DefineQuery.of(admins, tx);
     }
 
@@ -146,7 +145,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
-        ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
+        ImmutableList<VarPattern> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
         return UndefineQuery.of(admins, tx);
     }
 

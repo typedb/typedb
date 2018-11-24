@@ -19,7 +19,7 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.admin.MatchAdmin;
@@ -43,7 +43,7 @@ public class Queries {
         return GetQuery.of(match, vars);
     }
 
-    public static InsertQuery insert(Transaction tx, Collection<VarPatternAdmin> vars) {
+    public static InsertQuery insert(Transaction tx, Collection<VarPattern> vars) {
         return InsertQuery.create(tx, null, vars);
     }
 
@@ -51,7 +51,7 @@ public class Queries {
      * @param match the {@link Match} to insert for each result
      * @param varPattern  a collection of Vars to insert
      */
-    public static InsertQuery insert(MatchAdmin match, Collection<VarPatternAdmin> varPattern) {
+    public static InsertQuery insert(MatchAdmin match, Collection<VarPattern> varPattern) {
         return InsertQuery.create(match.tx(), match, varPattern);
     }
 

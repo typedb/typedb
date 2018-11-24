@@ -20,9 +20,9 @@ package grakn.core.graql.internal.reasoner.atom.binary;
 
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;

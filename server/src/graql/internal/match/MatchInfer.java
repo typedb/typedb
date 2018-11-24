@@ -23,7 +23,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.server.session.TransactionImpl;
@@ -60,8 +60,8 @@ class MatchInfer extends MatchModifier {
         validatePattern(embeddedTx);
 
         try {
-            Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
-            Conjunction<VarPatternAdmin> conj = conjIt.next();
+            Iterator<Conjunction<VarPattern>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
+            Conjunction<VarPattern> conj = conjIt.next();
 
             ReasonerQuery conjQuery = ReasonerQueries.create(conj, embeddedTx).rewrite();
             conjQuery.checkValid();

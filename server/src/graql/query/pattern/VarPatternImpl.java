@@ -89,7 +89,7 @@ class VarPatternImpl extends AbstractVarPattern {
 
     @Override
     public final String toString() {
-        Collection<VarPatternAdmin> innerVars = innerVarPatterns();
+        Collection<VarPattern> innerVars = innerVarPatterns();
         innerVars.remove(this);
         getProperties(HasAttributeProperty.class)
                 .map(HasAttributeProperty::attribute)
@@ -124,7 +124,7 @@ class VarPatternImpl extends AbstractVarPattern {
         return builder.toString();
     }
 
-    private static boolean invalidInnerVariable(VarPatternAdmin var) {
+    private static boolean invalidInnerVariable(VarPattern var) {
         return var.getProperties().anyMatch(p -> !(p instanceof LabelProperty));
     }
 }

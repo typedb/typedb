@@ -22,7 +22,7 @@ import grakn.core.server.Transaction;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 
 import java.util.Collection;
@@ -37,7 +37,7 @@ public interface VarPropertyInternal extends VarProperty {
     /**
      * Check if the given property can be used in a {@link Match}
      */
-    void checkValid(Transaction graph, VarPatternAdmin var) throws GraqlQueryException;
+    void checkValid(Transaction graph, VarPattern var) throws GraqlQueryException;
 
     /**
      * Return a collection of {@link EquivalentFragmentSet} to match the given property in the graph
@@ -64,7 +64,7 @@ public interface VarPropertyInternal extends VarProperty {
     }
 
     @Override
-    default Stream<VarPatternAdmin> innerVarPatterns() {
+    default Stream<VarPattern> innerVarPatterns() {
         return Stream.empty();
     }
 

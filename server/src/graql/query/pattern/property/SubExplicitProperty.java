@@ -19,7 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
@@ -48,7 +48,7 @@ public abstract class SubExplicitProperty extends AbstractSubProperty implements
 
     public static final String NAME = "sub!";
 
-    public static SubExplicitProperty of(VarPatternAdmin superType) {
+    public static SubExplicitProperty of(VarPattern superType) {
         return new AutoValue_SubExplicitProperty(superType);
     }
 

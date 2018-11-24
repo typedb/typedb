@@ -26,7 +26,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.PlaysAtom;
@@ -53,11 +53,11 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
 
     public static final String NAME = "plays";
 
-    public static PlaysProperty of(VarPatternAdmin role, boolean required) {
+    public static PlaysProperty of(VarPattern role, boolean required) {
         return new AutoValue_PlaysProperty(role, required);
     }
 
-    abstract VarPatternAdmin role();
+    abstract VarPattern role();
 
     abstract boolean required();
 
@@ -77,12 +77,12 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Stream<VarPatternAdmin> getTypes() {
+    public Stream<VarPattern> getTypes() {
         return Stream.of(role());
     }
 
     @Override
-    public Stream<VarPatternAdmin> innerVarPatterns() {
+    public Stream<VarPattern> innerVarPatterns() {
         return Stream.of(role());
     }
 
@@ -111,9 +111,9 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPattern var, Set<VarPattern> vars, ReasonerQuery parent) {
         Var varName = var.var().asUserDefined();
-        VarPatternAdmin typeVar = this.role();
+        VarPattern typeVar = this.role();
         Var typeVariable = typeVar.var();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
         ConceptId predicateId = predicate == null? null : predicate.getPredicate();

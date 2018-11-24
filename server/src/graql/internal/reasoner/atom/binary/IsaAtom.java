@@ -26,7 +26,6 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.VarPattern;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -74,12 +73,12 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     public static IsaAtom create(Var var, Var predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent) {
-        VarPatternAdmin pattern = isDirect ? var.isaExplicit(predicateVar).admin() : var.isa(predicateVar).admin();
+        VarPattern pattern = isDirect ? var.isaExplicit(predicateVar).admin() : var.isa(predicateVar).admin();
         return new AutoValue_IsaAtom(var, predicateId, predicateVar, pattern, parent);
     }
 
     public static IsaAtom create(Var var, Var predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent) {
-        VarPatternAdmin pattern = isDirect ? var.isaExplicit(predicateVar).admin() : var.isa(predicateVar).admin();
+        VarPattern pattern = isDirect ? var.isaExplicit(predicateVar).admin() : var.isa(predicateVar).admin();
         return new AutoValue_IsaAtom(var, type.id(), predicateVar, pattern, parent);
     }
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {

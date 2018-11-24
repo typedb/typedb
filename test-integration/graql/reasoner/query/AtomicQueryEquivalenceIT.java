@@ -6,7 +6,7 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -434,8 +434,8 @@ public class AtomicQueryEquivalenceIT {
         }
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString){
-        Set<VarPatternAdmin> vars = Graql.parser().parsePattern(patternString).admin()
+    private Conjunction<VarPattern> conjunction(String patternString){
+        Set<VarPattern> vars = Graql.parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

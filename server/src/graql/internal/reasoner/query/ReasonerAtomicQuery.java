@@ -23,7 +23,7 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.state.CacheCompletionState;
@@ -67,7 +67,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private final Atom atom;
 
-    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, TransactionImpl<?> tx) {
+    ReasonerAtomicQuery(Conjunction<VarPattern> pattern, TransactionImpl<?> tx) {
         super(pattern, tx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }

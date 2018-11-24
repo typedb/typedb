@@ -29,10 +29,9 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
 import grakn.core.graql.internal.Schema;
@@ -66,27 +65,27 @@ import static grakn.core.graql.internal.Schema.ImplicitType.KEY_VALUE;
 @AutoValue
 public abstract class HasAttributeTypeProperty extends AbstractVarProperty implements NamedProperty {
 
-    abstract VarPatternAdmin resourceType();
+    abstract VarPattern resourceType();
 
-    abstract VarPatternAdmin ownerRole();
-    abstract VarPatternAdmin valueRole();
-    abstract VarPatternAdmin relationOwner();
-    abstract VarPatternAdmin relationValue();
+    abstract VarPattern ownerRole();
+    abstract VarPattern valueRole();
+    abstract VarPattern relationOwner();
+    abstract VarPattern relationValue();
 
     abstract boolean required();
 
     /**
      * @throws GraqlQueryException if no label is specified on {@code resourceType}
      */
-    public static HasAttributeTypeProperty of(VarPatternAdmin resourceType, boolean required) {
+    public static HasAttributeTypeProperty of(VarPattern resourceType, boolean required) {
         Label resourceLabel = resourceType.getTypeLabel().orElseThrow(() ->
                 GraqlQueryException.noLabelSpecifiedForHas(resourceType)
         );
 
         VarPattern role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
 
-        VarPatternAdmin ownerRole = var().sub(role).admin();
-        VarPatternAdmin valueRole = var().sub(role).admin();
+        VarPattern ownerRole = var().sub(role).admin();
+        VarPattern valueRole = var().sub(role).admin();
         VarPattern relationType = var().sub(Graql.label(Schema.MetaSchema.RELATIONSHIP.getLabel()));
 
         // If a key, limit only to the implicit key type
@@ -96,8 +95,8 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
             relationType = relationType.label(KEY.getLabel(resourceLabel));
         }
 
-        VarPatternAdmin relationOwner = relationType.relates(ownerRole).admin();
-        VarPatternAdmin relationValue = relationType.admin().var().relates(valueRole).admin();
+        VarPattern relationOwner = relationType.relates(ownerRole).admin();
+        VarPattern relationValue = relationType.admin().var().relates(valueRole).admin();
 
         return new AutoValue_HasAttributeTypeProperty(
                 resourceType, ownerRole, valueRole, relationOwner, relationValue, required);
@@ -126,17 +125,17 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
     }
 
     @Override
-    public Stream<VarPatternAdmin> getTypes() {
+    public Stream<VarPattern> getTypes() {
         return Stream.of(resourceType());
     }
 
     @Override
-    public Stream<VarPatternAdmin> innerVarPatterns() {
+    public Stream<VarPattern> innerVarPatterns() {
         return Stream.of(resourceType());
     }
 
     @Override
-    public Stream<VarPatternAdmin> implicitInnerVarPatterns() {
+    public Stream<VarPattern> implicitInnerVarPatterns() {
         return Stream.of(resourceType(), ownerRole(), valueRole(), relationOwner(), relationValue());
     }
 
@@ -175,7 +174,7 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPattern var, Set<VarPattern> vars, ReasonerQuery parent) {
         //NB: HasResourceType is a special case and it doesn't allow variables as resource types
         Var varName = var.var().asUserDefined();
         Label label = this.resourceType().getTypeLabel().orElse(null);
@@ -184,7 +183,7 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         ConceptId predicateId = schemaConcept != null? schemaConcept.id() : null;
         //isa part
-        VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();
+        VarPattern resVar = varName.has(Graql.label(label)).admin();
         return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 }

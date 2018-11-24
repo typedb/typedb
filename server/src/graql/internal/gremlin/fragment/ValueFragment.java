@@ -20,7 +20,7 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.server.session.TransactionImpl;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -67,6 +67,6 @@ abstract class ValueFragment extends Fragment {
 
     @Override
     public Set<Var> dependencies() {
-        return optionalToStream(predicate().getInnerVar()).map(VarPatternAdmin::var).collect(toSet());
+        return optionalToStream(predicate().getInnerVar()).map(VarPattern::var).collect(toSet());
     }
 }

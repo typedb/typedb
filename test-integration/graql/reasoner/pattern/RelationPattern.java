@@ -25,10 +25,11 @@ import com.google.common.collect.Multimap;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.reasoner.utils.Pair;
+import grakn.core.graql.query.pattern.VarPattern;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

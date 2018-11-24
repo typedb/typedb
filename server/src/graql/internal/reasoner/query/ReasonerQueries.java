@@ -20,7 +20,7 @@ package grakn.core.graql.internal.reasoner.query;
 
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.server.session.TransactionImpl;
@@ -45,7 +45,7 @@ public class ReasonerQueries {
      * @param tx corresponding transaction
      * @return reasoner query constructed from provided conjunctive pattern
      */
-    public static ReasonerQueryImpl create(Conjunction<VarPatternAdmin> pattern, TransactionImpl<?> tx) {
+    public static ReasonerQueryImpl create(Conjunction<VarPattern> pattern, TransactionImpl<?> tx) {
         ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, tx).inferTypes();
         return query.isAtomic()?
                 new ReasonerAtomicQuery(query.getAtoms(), tx) :
@@ -94,7 +94,7 @@ public class ReasonerQueries {
      * @param tx corresponding transaction
      * @return atomic query defined by the provided pattern with inferred types
      */
-    public static ReasonerAtomicQuery atomic(Conjunction<VarPatternAdmin> pattern, TransactionImpl<?> tx){
+    public static ReasonerAtomicQuery atomic(Conjunction<VarPattern> pattern, TransactionImpl<?> tx){
         return new ReasonerAtomicQuery(pattern, tx).inferTypes();
     }
 

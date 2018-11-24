@@ -26,7 +26,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.RelatesAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -54,18 +54,18 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
 @AutoValue
 public abstract class RelatesProperty extends AbstractVarProperty {
 
-    public static RelatesProperty of(VarPatternAdmin role, @Nullable VarPatternAdmin superRole) {
+    public static RelatesProperty of(VarPattern role, @Nullable VarPattern superRole) {
         return new AutoValue_RelatesProperty(role, superRole);
     }
 
-    public static RelatesProperty of(VarPatternAdmin role) {
+    public static RelatesProperty of(VarPattern role) {
         return RelatesProperty.of(role, null);
     }
 
-    abstract VarPatternAdmin role();
+    abstract VarPattern role();
 
     @Nullable
-    abstract VarPatternAdmin superRole();
+    abstract VarPattern superRole();
 
     @Override
     public String getName() {
@@ -74,7 +74,7 @@ public abstract class RelatesProperty extends AbstractVarProperty {
 
     @Override
     public void buildString(StringBuilder builder) {
-        VarPatternAdmin superRole = superRole();
+        VarPattern superRole = superRole();
         builder.append("relates").append(" ").append(role().getPrintableName());
         if (superRole != null) {
             builder.append(" as ").append(superRole.getPrintableName());
@@ -83,7 +83,7 @@ public abstract class RelatesProperty extends AbstractVarProperty {
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        VarPatternAdmin superRole = superRole();
+        VarPattern superRole = superRole();
         EquivalentFragmentSet relates = relates(this, start, role().var());
         if (superRole == null) {
             return ImmutableSet.of(relates);
@@ -93,12 +93,12 @@ public abstract class RelatesProperty extends AbstractVarProperty {
     }
 
     @Override
-    public Stream<VarPatternAdmin> getTypes() {
+    public Stream<VarPattern> getTypes() {
         return Stream.of(role());
     }
 
     @Override
-    public Stream<VarPatternAdmin> innerVarPatterns() {
+    public Stream<VarPattern> innerVarPatterns() {
         return superRole() == null ? Stream.of(role()) : Stream.of(superRole(), role());
     }
 
@@ -118,7 +118,7 @@ public abstract class RelatesProperty extends AbstractVarProperty {
 
         PropertyExecutor isRoleExecutor = PropertyExecutor.builder(isRoleMethod).produces(roleVar).build();
 
-        VarPatternAdmin superRoleVarPattern = superRole();
+        VarPattern superRoleVarPattern = superRole();
         if (superRoleVarPattern != null) {
             Var superRoleVar = superRoleVarPattern.var();
             PropertyExecutor.Method subMethod = executor -> {
@@ -150,9 +150,9 @@ public abstract class RelatesProperty extends AbstractVarProperty {
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPattern var, Set<VarPattern> vars, ReasonerQuery parent) {
         Var varName = var.var().asUserDefined();
-        VarPatternAdmin roleVar = this.role();
+        VarPattern roleVar = this.role();
         Var roleVariable = roleVar.var();
         IdPredicate predicate = getIdPredicate(roleVariable, roleVar, vars, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;

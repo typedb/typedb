@@ -20,11 +20,10 @@ package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -130,7 +129,7 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.pr
     @Override
     public Set<Var> getVarNames(){
         Set<Var> vars = super.getVarNames();
-        VarPatternAdmin innerVar = getPredicate().getInnerVar().orElse(null);
+        VarPattern innerVar = getPredicate().getInnerVar().orElse(null);
         if(innerVar != null && innerVar.var().isUserDefinedName()) vars.add(innerVar.var());
         return vars;
     }

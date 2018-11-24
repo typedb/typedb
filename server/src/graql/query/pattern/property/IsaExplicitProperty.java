@@ -22,7 +22,6 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.VarPattern;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import com.google.auto.value.AutoValue;
@@ -49,7 +48,7 @@ public abstract class IsaExplicitProperty extends AbstractIsaProperty {
 
     public static final String NAME = "isa!";
 
-    public static IsaExplicitProperty of(VarPatternAdmin directType) {
+    public static IsaExplicitProperty of(VarPattern directType) {
         return new AutoValue_IsaExplicitProperty(directType);
     }
 

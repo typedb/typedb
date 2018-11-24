@@ -24,7 +24,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.property.PropertyExecutor;
@@ -96,7 +96,7 @@ public class QueryOperationExecutor {
     /**
      * Insert all the Vars
      */
-    static ConceptMap insertAll(Collection<VarPatternAdmin> patterns, Transaction graph) {
+    static ConceptMap insertAll(Collection<VarPattern> patterns, Transaction graph) {
         return create(patterns, graph, ExecutionType.INSERT).insertAll(new ConceptMap());
     }
 
@@ -104,20 +104,20 @@ public class QueryOperationExecutor {
      * Insert all the Vars
      * @param results the result after inserting
      */
-    static ConceptMap insertAll(Collection<VarPatternAdmin> patterns, Transaction graph, ConceptMap results) {
+    static ConceptMap insertAll(Collection<VarPattern> patterns, Transaction graph, ConceptMap results) {
         return create(patterns, graph, ExecutionType.INSERT).insertAll(results);
     }
 
-    static ConceptMap defineAll(Collection<VarPatternAdmin> patterns, Transaction graph) {
+    static ConceptMap defineAll(Collection<VarPattern> patterns, Transaction graph) {
         return create(patterns, graph, ExecutionType.DEFINE).insertAll(new ConceptMap());
     }
 
-    static ConceptMap undefineAll(ImmutableList<VarPatternAdmin> patterns, Transaction tx) {
+    static ConceptMap undefineAll(ImmutableList<VarPattern> patterns, Transaction tx) {
         return create(patterns, tx, ExecutionType.UNDEFINE).insertAll(new ConceptMap());
     }
 
     private static QueryOperationExecutor create(
-            Collection<VarPatternAdmin> patterns, Transaction graph, ExecutionType executionType
+            Collection<VarPattern> patterns, Transaction graph, ExecutionType executionType
     ) {
         ImmutableSet<VarAndProperty> properties = patterns.stream()
                 .flatMap(pattern -> VarAndProperty.fromPattern(pattern, executionType))
@@ -409,7 +409,7 @@ public class QueryOperationExecutor {
         throw GraqlQueryException.insertUndefinedVariable(printableRepresentation(var));
     }
 
-    VarPatternAdmin printableRepresentation(Var var) {
+    VarPattern printableRepresentation(Var var) {
         ImmutableSet.Builder<VarProperty> propertiesOfVar = ImmutableSet.builder();
 
         // This could be faster if we built a dedicated map Var -> VarPattern
@@ -451,7 +451,7 @@ public class QueryOperationExecutor {
                     .map(executor -> VarAndProperty.of(var, property, executor));
         }
 
-        static Stream<VarAndProperty> fromPattern(VarPatternAdmin pattern, ExecutionType executionType) {
+        static Stream<VarAndProperty> fromPattern(VarPattern pattern, ExecutionType executionType) {
             return pattern.getProperties().flatMap(prop -> VarAndProperty.all(pattern.var(), prop, executionType));
         }
 

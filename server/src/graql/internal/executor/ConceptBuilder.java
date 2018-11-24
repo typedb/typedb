@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.executor;
 
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -360,7 +360,7 @@ public class ConceptBuilder {
 
     private <T> ConceptBuilder set(BuilderParam<T> param, T value) {
         if (preProvidedParams.containsKey(param) && !preProvidedParams.get(param).equals(value)) {
-            VarPatternAdmin varPattern = executor.printableRepresentation(var);
+            VarPattern varPattern = executor.printableRepresentation(var);
             Object otherValue = preProvidedParams.get(param);
             throw GraqlQueryException.insertMultipleProperties(varPattern, param.name(), value, otherValue);
         }

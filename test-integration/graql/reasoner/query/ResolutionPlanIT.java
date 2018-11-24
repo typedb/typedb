@@ -28,7 +28,7 @@ import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -718,8 +718,8 @@ public class ResolutionPlanIT {
         assertEquals(query.selectAtoms().collect(toSet()), plan.queries().stream().flatMap(ReasonerQueryImpl::selectAtoms).collect(toSet()));
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, Transaction graph){
-        Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
+    private Conjunction<VarPattern> conjunction(String patternString, Transaction graph){
+        Set<VarPattern> vars = graph.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

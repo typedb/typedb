@@ -25,9 +25,8 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import org.hamcrest.Matcher;
@@ -159,7 +158,7 @@ public class ConjunctionQueryTest {
         Fragment resourceIndexFragment = Fragments.attributeIndex(null, varName, resourceTypeWithoutSubTypesLabel, value);
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
-            Conjunction<VarPatternAdmin> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();
+            Conjunction<VarPattern> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();
             return new ConjunctionQuery(conjunction, tx).getEquivalentFragmentSets();
         });
     }

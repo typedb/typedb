@@ -28,7 +28,7 @@ import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.query.pattern.PatternAdmin;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -91,7 +91,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private ConceptMap substitution = null;
     private ImmutableMap<Var, Type> varTypeMap = null;
 
-    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, TransactionImpl<?> tx) {
+    ReasonerQueryImpl(Conjunction<VarPattern> pattern, TransactionImpl<?> tx) {
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())

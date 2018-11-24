@@ -19,7 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
@@ -42,7 +42,7 @@ public abstract class SubProperty extends AbstractSubProperty implements NamedPr
 
     public static final String NAME = "sub";
 
-    public static SubProperty of(VarPatternAdmin superType) {
+    public static SubProperty of(VarPattern superType) {
         return new AutoValue_SubProperty(superType);
     }
 

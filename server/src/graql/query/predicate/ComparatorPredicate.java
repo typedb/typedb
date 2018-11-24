@@ -22,7 +22,6 @@ import grakn.core.graql.concept.AttributeType.DataType;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.VarPattern;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -41,7 +40,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
 
     // Exactly one of these fields will be present
     private final Optional<Object> value;
-    private final Optional<VarPatternAdmin> var;
+    private final Optional<VarPattern> var;
 
     private static final String[] VALUE_PROPERTIES =
             DataType.SUPPORTED_TYPES.values().stream()
@@ -175,7 +174,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
     }
 
     @Override
-    public Optional<VarPatternAdmin> getInnerVar() {
+    public Optional<VarPattern> getInnerVar() {
         return var;
     }
 

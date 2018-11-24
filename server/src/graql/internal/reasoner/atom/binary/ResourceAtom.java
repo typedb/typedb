@@ -31,12 +31,11 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.UnifierComparison;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
@@ -192,7 +191,7 @@ public abstract class ResourceAtom extends Binary{
 
     @Override
     protected Pattern createCombinedPattern(){
-        Set<VarPatternAdmin> vars = getMultiPredicate().stream()
+        Set<VarPattern> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
                 .map(VarPattern::admin)
                 .collect(Collectors.toSet());

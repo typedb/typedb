@@ -25,7 +25,7 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.PatternAdmin;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import grakn.core.graql.internal.gremlin.fragment.InIsaFragment;
@@ -84,7 +84,7 @@ public class GreedyTraversalPlan {
      * @return a semi-optimal traversal plan
      */
     public static GraqlTraversal createTraversal(PatternAdmin pattern, TransactionImpl<?> tx) {
-        Collection<Conjunction<VarPatternAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
+        Collection<Conjunction<VarPattern>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         Set<? extends List<Fragment>> fragments = patterns.stream()
                 .map(conjunction -> new ConjunctionQuery(conjunction, tx))

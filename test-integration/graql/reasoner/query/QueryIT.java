@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.query;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -203,13 +203,13 @@ public class QueryIT {
         String patternString5 = "{(entity-location: $x, geo-entity: $y);$x id 'V666';$y id 'V667';}";
         String patternString6 = "{(entity-location: $x, geo-entity: $y);$y id 'V666';$x id 'V667';}";
         String patternString7 = "{(role: $x, role: $y);$x id 'V666';$y id 'V666';}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, tx);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, tx);
-        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, tx);
-        Conjunction<VarPatternAdmin> pattern4 = conjunction(patternString4, tx);
-        Conjunction<VarPatternAdmin> pattern5 = conjunction(patternString5, tx);
-        Conjunction<VarPatternAdmin> pattern6 = conjunction(patternString6, tx);
-        Conjunction<VarPatternAdmin> pattern7 = conjunction(patternString7, tx);
+        Conjunction<VarPattern> pattern = conjunction(patternString, tx);
+        Conjunction<VarPattern> pattern2 = conjunction(patternString2, tx);
+        Conjunction<VarPattern> pattern3 = conjunction(patternString3, tx);
+        Conjunction<VarPattern> pattern4 = conjunction(patternString4, tx);
+        Conjunction<VarPattern> pattern5 = conjunction(patternString5, tx);
+        Conjunction<VarPattern> pattern6 = conjunction(patternString6, tx);
+        Conjunction<VarPattern> pattern7 = conjunction(patternString7, tx);
 
         ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, tx);
         ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, tx);
@@ -264,8 +264,8 @@ public class QueryIT {
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{($x, $y) relates geo-entity;}";
 
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, tx);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, tx);
+        Conjunction<VarPattern> pattern = conjunction(patternString, tx);
+        Conjunction<VarPattern> pattern2 = conjunction(patternString2, tx);
         ReasonerQueryImpl query = ReasonerQueries.create(pattern, tx);
         ReasonerQueryImpl query2 = ReasonerQueries.create(pattern2, tx);
         assertEquals(query.getAtoms(RelationshipAtom.class).findFirst().orElse(null).isUserDefined(), false);
@@ -283,8 +283,8 @@ public class QueryIT {
         }
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<VarPatternAdmin> vars = tx.graql().parser().parsePattern(patternString).admin()
+    private Conjunction<VarPattern> conjunction(String patternString, TransactionImpl<?> tx){
+        Set<VarPattern> vars = tx.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

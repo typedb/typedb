@@ -39,7 +39,7 @@ public interface PatternAdmin extends Pattern {
      * @return the pattern group in disjunctive normal form
      */
     @CheckReturnValue
-    Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm();
+    Disjunction<Conjunction<VarPattern>> getDisjunctiveNormalForm();
 
     /**
      * Get all common, user-defined variable names in the pattern.
@@ -64,7 +64,7 @@ public interface PatternAdmin extends Pattern {
     }
 
     /**
-     * @return true if this {@link PatternAdmin} is a {@link VarPatternAdmin}
+     * @return true if this {@link PatternAdmin} is a {@link VarPattern}
      */
     @CheckReturnValue
     default boolean isVarPattern() {
@@ -88,17 +88,17 @@ public interface PatternAdmin extends Pattern {
     }
 
     /**
-     * @return this {@link PatternAdmin} as a {@link VarPatternAdmin}, if it is one.
+     * @return this {@link PatternAdmin} as a {@link VarPattern}, if it is one.
      */
     @CheckReturnValue
-    default VarPatternAdmin asVarPattern() {
+    default VarPattern asVarPattern() {
         throw new UnsupportedOperationException();
     }
     /**
      * @return all variables referenced in the pattern
      */
     @CheckReturnValue
-    default Set<VarPatternAdmin> varPatterns() {
+    default Set<VarPattern> varPatterns() {
         return getDisjunctiveNormalForm().getPatterns().stream()
                 .flatMap(conj -> conj.getPatterns().stream())
                 .collect(toSet());

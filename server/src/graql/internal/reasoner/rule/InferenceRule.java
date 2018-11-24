@@ -27,7 +27,7 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.query.pattern.PatternAdmin;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
@@ -119,8 +119,8 @@ public class InferenceRule {
         return priority;
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(PatternAdmin pattern){
-        Set<VarPatternAdmin> vars = pattern
+    private Conjunction<VarPattern> conjunction(PatternAdmin pattern){
+        Set<VarPattern> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

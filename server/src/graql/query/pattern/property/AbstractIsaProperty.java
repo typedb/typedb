@@ -24,10 +24,9 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.ImmutableSet;
@@ -44,7 +43,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
 
 abstract class AbstractIsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
-    public abstract VarPatternAdmin type();
+    public abstract VarPattern type();
 
     @Override
     public final String getProperty() {
@@ -52,12 +51,12 @@ abstract class AbstractIsaProperty extends AbstractVarProperty implements Unique
     }
 
     @Override
-    public final Stream<VarPatternAdmin> getTypes() {
+    public final Stream<VarPattern> getTypes() {
         return Stream.of(type());
     }
 
     @Override
-    public final Stream<VarPatternAdmin> innerVarPatterns() {
+    public final Stream<VarPattern> innerVarPatterns() {
         return Stream.of(type());
     }
 
@@ -72,7 +71,7 @@ abstract class AbstractIsaProperty extends AbstractVarProperty implements Unique
     }
 
     @Override
-    public final void checkValidProperty(Transaction graph, VarPatternAdmin var) throws GraqlQueryException {
+    public final void checkValidProperty(Transaction graph, VarPattern var) throws GraqlQueryException {
         type().getTypeLabel().ifPresent(typeLabel -> {
             SchemaConcept theSchemaConcept = graph.getSchemaConcept(typeLabel);
             if (theSchemaConcept != null && !theSchemaConcept.isType()) {
@@ -83,19 +82,19 @@ abstract class AbstractIsaProperty extends AbstractVarProperty implements Unique
 
     @Nullable
     @Override
-    public final Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+    public final Atomic mapToAtom(VarPattern var, Set<VarPattern> vars, ReasonerQuery parent) {
         //IsaProperty is unique within a var, so skip if this is a relation
         if (var.hasProperty(RelationshipProperty.class)) return null;
 
         Var varName = var.var().asUserDefined();
-        VarPatternAdmin typePattern = this.type();
+        VarPattern typePattern = this.type();
         Var typeVariable = typePattern.var();
 
         IdPredicate predicate = getIdPredicate(typeVariable, typePattern, vars, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
 
         //isa part
-        VarPatternAdmin isaVar = varPatternForAtom(varName, typeVariable).admin();
+        VarPattern isaVar = varPatternForAtom(varName, typeVariable).admin();
         return IsaAtom.create(varName, typeVariable, isaVar, predicateId, parent);
     }
 

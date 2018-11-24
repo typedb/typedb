@@ -22,7 +22,7 @@ import grakn.core.server.Transaction;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.property.VarPropertyInternal;
@@ -43,7 +43,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * A query that does not contain any disjunctions, so it can be represented as a single gremlin traversal.
  * <p>
- * The {@code ConjunctionQuery} is passed a {@link Conjunction<VarPatternAdmin>}.
+ * The {@code ConjunctionQuery} is passed a {@link Conjunction< VarPattern >}.
  * {@link EquivalentFragmentSet}s can be extracted from each {@link GraqlTraversal}.
  * <p>
  * The {@link EquivalentFragmentSet}s are sorted to produce a set of lists of {@link Fragment}s. Each list of fragments
@@ -55,14 +55,14 @@ import static java.util.stream.Collectors.toSet;
  */
 class ConjunctionQuery {
 
-    private final Set<VarPatternAdmin> vars;
+    private final Set<VarPattern> vars;
 
     private final ImmutableSet<EquivalentFragmentSet> equivalentFragmentSets;
 
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(Conjunction<VarPatternAdmin> patternConjunction, Transaction tx) {
+    ConjunctionQuery(Conjunction<VarPattern> patternConjunction, Transaction tx) {
         vars = patternConjunction.getPatterns();
 
         if (vars.size() == 0) {
@@ -120,11 +120,11 @@ class ConjunctionQuery {
         return Sets.cartesianProduct(fragments).stream();
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarPatternAdmin var) {
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarPattern var) {
         return var.implicitInnerVarPatterns().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarPatternAdmin var) {
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarPattern var) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
         Var start = var.var();

@@ -28,7 +28,7 @@ import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.query.pattern.PatternAdmin;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
@@ -124,7 +124,7 @@ public class AtomicQueryIT {
         assertTrue(!qb.<GetQuery>parse(explicitQuery).iterator().hasNext());
 
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
+        Conjunction<VarPattern> pattern = conjunction(patternString);
         List<ConceptMap> answers = new ArrayList<>();
 
         answers.add(new ConceptMap(
@@ -209,7 +209,7 @@ public class AtomicQueryIT {
     public void testWhenCopying_TheCopyIsAlphaEquivalent(){
         TransactionImpl<?> tx = geoGraphSession.transaction(Transaction.Type.WRITE);
         String patternString = "{($x, $y) isa is-located-in;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
+        Conjunction<VarPattern> pattern = conjunction(patternString);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, tx);
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
         assertEquals(atomicQuery, copy);
@@ -246,15 +246,15 @@ public class AtomicQueryIT {
         tx.close();
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString){
-        Set<VarPatternAdmin> vars = Graql.parser().parsePattern(patternString).admin()
+    private Conjunction<VarPattern> conjunction(String patternString){
+        Set<VarPattern> vars = Graql.parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(Conjunction<PatternAdmin> pattern){
-        Set<VarPatternAdmin> vars = pattern
+    private Conjunction<VarPattern> conjunction(Conjunction<PatternAdmin> pattern){
+        Set<VarPattern> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

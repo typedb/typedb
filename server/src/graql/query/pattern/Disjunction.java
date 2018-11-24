@@ -53,9 +53,9 @@ public class Disjunction<T extends PatternAdmin> extends AbstractPattern impleme
     }
 
     @Override
-    public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
+    public Disjunction<Conjunction<VarPattern>> getDisjunctiveNormalForm() {
         // Concatenate all disjunctions into one big disjunction
-        Set<Conjunction<VarPatternAdmin>> dnf = getPatterns().stream()
+        Set<Conjunction<VarPattern>> dnf = getPatterns().stream()
                 .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
                 .collect(toSet());
 

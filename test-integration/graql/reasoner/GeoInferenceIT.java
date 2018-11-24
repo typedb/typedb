@@ -20,9 +20,9 @@ package grakn.core.graql.reasoner;
 
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;

@@ -25,6 +25,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.VarPattern;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;

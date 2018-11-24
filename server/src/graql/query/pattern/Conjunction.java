@@ -60,16 +60,16 @@ public class Conjunction<T extends PatternAdmin> extends AbstractPattern impleme
     }
 
     @Override
-    public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
+    public Disjunction<Conjunction<VarPattern>> getDisjunctiveNormalForm() {
         // Get all disjunctions in query
-        List<Set<Conjunction<VarPatternAdmin>>> disjunctionsOfConjunctions = getPatterns().stream()
+        List<Set<Conjunction<VarPattern>>> disjunctionsOfConjunctions = getPatterns().stream()
                 .map(p -> p.getDisjunctiveNormalForm().getPatterns())
                 .collect(toList());
 
         // Get the cartesian product.
         // in other words, this puts the 'ands' on the inside and the 'ors' on the outside
         // e.g. (A or B) and (C or D)  <=>  (A and C) or (A and D) or (B and C) or (B and D)
-        Set<Conjunction<VarPatternAdmin>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
+        Set<Conjunction<VarPattern>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
                 .map(Conjunction::fromConjunctions)
                 .collect(toSet());
 
@@ -99,7 +99,7 @@ public class Conjunction<T extends PatternAdmin> extends AbstractPattern impleme
      */
     @CheckReturnValue
     public ReasonerQuery toReasonerQuery(Transaction tx) {
-        Conjunction<VarPatternAdmin> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
+        Conjunction<VarPattern> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
         // TODO: This cast is unsafe - this method should accept an `TransactionImpl`
         return ReasonerQueries.create(pattern, (TransactionImpl<?>) tx);
     }

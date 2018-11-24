@@ -28,11 +28,10 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.RelationPlayer;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.executor.QueryOperationExecutor;
@@ -106,14 +105,14 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public Stream<VarPatternAdmin> getTypes() {
+    public Stream<VarPattern> getTypes() {
         return relationPlayers().stream().map(RelationPlayer::getRole).flatMap(CommonUtil::optionalToStream);
     }
 
     @Override
-    public Stream<VarPatternAdmin> innerVarPatterns() {
+    public Stream<VarPattern> innerVarPatterns() {
         return relationPlayers().stream().flatMap(relationPlayer -> {
-            Stream.Builder<VarPatternAdmin> builder = Stream.builder();
+            Stream.Builder<VarPattern> builder = Stream.builder();
             builder.add(relationPlayer.getRolePlayer());
             relationPlayer.getRole().ifPresent(builder::add);
             return builder.build();
@@ -121,7 +120,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
     }
 
     private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(Var start, Var castingName, RelationPlayer relationPlayer) {
-        Optional<VarPatternAdmin> roleType = relationPlayer.getRole();
+        Optional<VarPattern> roleType = relationPlayer.getRole();
 
         if (roleType.isPresent()) {
             return addRelatesPattern(start, castingName, roleType.get(), relationPlayer.getRolePlayer());
@@ -134,7 +133,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
      * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relationship
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
-    private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin rolePlayer) {
+    private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPattern rolePlayer) {
         return Stream.of(rolePlayer(this, start, casting, rolePlayer.var(), null));
     }
 
@@ -143,20 +142,20 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
      * @param roleType a variable that is the roletype of the given roleplayer
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
-    private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
+    private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPattern roleType, VarPattern rolePlayer) {
         return Stream.of(rolePlayer(this, start, casting, rolePlayer.var(), roleType.var()));
     }
 
     @Override
-    public void checkValidProperty(Transaction graph, VarPatternAdmin var) throws GraqlQueryException {
+    public void checkValidProperty(Transaction graph, VarPattern var) throws GraqlQueryException {
 
         Set<Label> roleTypes = relationPlayers().stream()
                 .map(RelationPlayer::getRole).flatMap(CommonUtil::optionalToStream)
-                .map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
+                .map(VarPattern::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
         Optional<Label> maybeLabel =
-                var.getProperty(IsaProperty.class).map(IsaProperty::type).flatMap(VarPatternAdmin::getTypeLabel);
+                var.getProperty(IsaProperty.class).map(IsaProperty::type).flatMap(VarPattern::getTypeLabel);
 
         maybeLabel.ifPresent(label -> {
             SchemaConcept schemaConcept = graph.getSchemaConcept(label);
@@ -191,7 +190,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
      * @param relationPlayer a casting between a role type and role player
      */
     private void addRoleplayer(QueryOperationExecutor executor, grakn.core.graql.concept.Relationship relationship, RelationPlayer relationPlayer) {
-        VarPatternAdmin roleVar = getRole(relationPlayer);
+        VarPattern roleVar = getRole(relationPlayer);
 
         Role role = executor.get(roleVar.var()).asRole();
         Thing roleplayer = executor.get(relationPlayer.getRolePlayer().var()).asThing();
@@ -201,17 +200,17 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
     private Set<Var> requiredVars(Var var) {
         Stream<Var> relationPlayers = this.relationPlayers().stream()
                 .flatMap(relationPlayer -> Stream.of(relationPlayer.getRolePlayer(), getRole(relationPlayer)))
-                .map(VarPatternAdmin::var);
+                .map(VarPattern::var);
 
         return Stream.concat(relationPlayers, Stream.of(var)).collect(toImmutableSet());
     }
 
-    private VarPatternAdmin getRole(RelationPlayer relationPlayer) {
+    private VarPattern getRole(RelationPlayer relationPlayer) {
         return relationPlayer.getRole().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPattern var, Set<VarPattern> vars, ReasonerQuery parent) {
         //set varName as user defined if reified
         //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
@@ -251,7 +250,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
 
         //Isa present
         if (isaProp != null) {
-            VarPatternAdmin isaVar = isaProp.type();
+            VarPattern isaVar = isaProp.type();
             Label label = isaVar.getTypeLabel().orElse(null);
             if (label != null) {
                 predicate = IdPredicate.create(typeVariable, label, parent);
