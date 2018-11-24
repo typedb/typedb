@@ -48,6 +48,13 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class AbstractRolePlayerFragment extends Fragment {
 
+    static final Var RELATION_EDGE = reservedVar("RELATION_EDGE");
+    static final Var RELATION_DIRECTION = reservedVar("RELATION_DIRECTION");
+
+    private static Var reservedVar(String value) {
+        return new Var(value, Var.Kind.Reserved);
+    }
+
     @Override
     public abstract Var end();
 

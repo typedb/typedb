@@ -33,9 +33,6 @@ public class Patterns {
 
     private static final AtomicLong counter = new AtomicLong(System.currentTimeMillis() * 1000);
 
-    public static final Var RELATION_EDGE = reservedVar("RELATION_EDGE");
-    public static final Var RELATION_DIRECTION = reservedVar("RELATION_DIRECTION");
-
     private Patterns() {}
 
     public static <T extends Pattern> Conjunction<T> conjunction(Set<T> patterns) {
@@ -62,7 +59,4 @@ public class Patterns {
         }
     }
 
-    private static Var reservedVar(String value) {
-        return new Var(value, Var.Kind.Reserved);
-    }
 }

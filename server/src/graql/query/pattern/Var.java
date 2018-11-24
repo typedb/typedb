@@ -37,7 +37,7 @@ public class Var extends AbstractVarPattern implements VarPattern {
     private final Kind kind;
     private volatile String name;
 
-    Var(String value, Kind kind) {
+    public Var(String value, Kind kind) {
         if (value == null) {
             throw new NullPointerException("Null getValue");
         }
