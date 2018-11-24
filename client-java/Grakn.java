@@ -30,7 +30,7 @@ import grakn.core.client.rpc.Transceiver;
 import grakn.core.common.exception.Validator;
 import grakn.core.common.http.SimpleURI;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;

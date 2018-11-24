@@ -1,15 +1,13 @@
 package grakn.core.graql.reasoner.query;
 
 
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Query;
 import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.Conjunction;
-import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
@@ -26,15 +24,11 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;

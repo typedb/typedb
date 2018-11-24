@@ -22,7 +22,8 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
+
 import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -33,9 +34,6 @@ import javax.annotation.Nullable;
  * - role (if corresponds to role variable
  * - roles it plays (if corresponds to roleplayer variable)
  * - valuePredicates it has
- *
- * @author Kasper Piskorski
- *
  */
 public class VariableDefinition {
 
@@ -45,7 +43,7 @@ public class VariableDefinition {
     final private Set<Role> playedRoles;
     final private Set<ValuePredicate> vps;
 
-    public VariableDefinition(Var var, @Nullable Type type, @Nullable Role role, Set<Role> playedRoles, Set<ValuePredicate> vps){
+    public VariableDefinition(Var var, @Nullable Type type, @Nullable Role role, Set<Role> playedRoles, Set<ValuePredicate> vps) {
         this.var = var;
         this.type = type;
         this.role = role;
@@ -54,7 +52,7 @@ public class VariableDefinition {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "{" + var + ":{" +
                 "type: " + type + ", " +
                 "role: " + role + ", " +
@@ -80,26 +78,30 @@ public class VariableDefinition {
         return Objects.hash(var, type, role, playedRoles, vps);
     }
 
-    public Var var(){ return var;}
-    public Type type(){ return type;}
-    public Role role(){ return role;}
-    public Set<Role> playedRoles(){ return playedRoles;}
-    public Set<ValuePredicate> valuePredicates(){ return vps;}
+    public Var var() { return var;}
 
-    public VariableDefinition merge(VariableDefinition def){
-        if (!var().equals(def.var())){
+    public Type type() { return type;}
+
+    public Role role() { return role;}
+
+    public Set<Role> playedRoles() { return playedRoles;}
+
+    public Set<ValuePredicate> valuePredicates() { return vps;}
+
+    public VariableDefinition merge(VariableDefinition def) {
+        if (!var().equals(def.var())) {
             throw new IllegalStateException("Illegal variable definition merge between:\n" + this + "and\n" + def);
         }
         return new VariableDefinition(
                 var,
-                def.type() != null? def.type() : this.type(),
-                def.role() != null? def.role() : this.role(),
+                def.type() != null ? def.type() : this.type(),
+                def.role() != null ? def.role() : this.role(),
                 Sets.union(def.playedRoles(), this.playedRoles()),
                 Sets.union(def.valuePredicates(), this.valuePredicates())
         );
     }
 
-    public boolean isTrivial(){
+    public boolean isTrivial() {
         return type == null
                 && role == null
                 && playedRoles.isEmpty()

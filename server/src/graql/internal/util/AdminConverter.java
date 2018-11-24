@@ -18,10 +18,10 @@
 
 package grakn.core.graql.internal.util;
 
-import grakn.core.graql.query.Pattern;
-import grakn.core.graql.query.VarPattern;
-import grakn.core.graql.admin.PatternAdmin;
-import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
 
 import java.util.Collection;
 

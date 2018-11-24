@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.predicate;
 
-import grakn.core.graql.query.ValuePredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 class NeqPredicate extends ComparatorPredicate {

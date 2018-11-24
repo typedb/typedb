@@ -30,7 +30,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

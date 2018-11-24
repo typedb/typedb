@@ -22,6 +22,7 @@ import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,48 +30,42 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /**
- *
- * <p>
  * Base class for storing query resolutions based on alpha-equivalence.
  * A one-to-one mapping is ensured between queries and entries.
  * On retrieval, a relevant entry is identified by means of a query alpha-equivalence check.
  *
- * </p>
- *
- * @param <Q> the type of query that is being cached
- * @param <R> the type of answer being cached
+ * @param <Q>  the type of query that is being cached
+ * @param <R>  the type of answer being cached
  * @param <QE> query cache key type
  * @param <SE> query cache answer container type
- *
- * @author Kasper Piskorski
- *
  */
 public abstract class QueryCacheBase<
         Q extends ReasonerQueryImpl,
         R extends Iterable<ConceptMap>,
         QE,
-        SE extends Collection<ConceptMap>> implements QueryCache<Q, R, SE>{
+        SE extends Collection<ConceptMap>> implements QueryCache<Q, R, SE> {
 
     private final Map<QE, CacheEntry<Q, SE>> cache = new HashMap<>();
     private final StructuralCache<Q> sCache = new StructuralCache<>();
     private final RuleCache ruleCache = new RuleCache();
 
-    QueryCacheBase(){ }
+    QueryCacheBase() { }
 
     abstract UnifierType unifierType();
 
     abstract QE queryToKey(Q query);
+
     abstract Q keyToQuery(QE key);
 
     @Override
-    public void clear(){ cache.clear();}
+    public void clear() { cache.clear();}
 
     /**
      * @return structural cache of this cache
      */
-    StructuralCache<Q> structuralCache(){ return sCache;}
+    StructuralCache<Q> structuralCache() { return sCache;}
 
-    public RuleCache ruleCache(){ return ruleCache;}
+    public RuleCache ruleCache() { return ruleCache;}
 
     @Override
     public CacheEntry<Q, SE> record(Q query, ConceptMap answer) {
@@ -95,15 +90,16 @@ public abstract class QueryCacheBase<
      * @param query to find unifier for
      * @return unifier that unifies this query with the cache equivalent
      */
-    public MultiUnifier getCacheUnifier(Q query){
+    public MultiUnifier getCacheUnifier(Q query) {
         CacheEntry<Q, SE> entry = getEntry(query);
-        return entry != null? query.getMultiUnifier(entry.query(), unifierType()) : null;
+        return entry != null ? query.getMultiUnifier(entry.query(), unifierType()) : null;
     }
 
     /**
      * find specific answer to a query in the cache
+     *
      * @param query input query
-     * @param ans sought specific answer to the query
+     * @param ans   sought specific answer to the query
      * @return found answer if any, otherwise empty answer
      */
     public abstract ConceptMap findAnswer(Q query, ConceptMap ans);
@@ -112,17 +108,18 @@ public abstract class QueryCacheBase<
      * @param query for which the entry is to be retrieved
      * @return corresponding cache entry if any or null
      */
-    CacheEntry<Q, SE> getEntry(Q query){
+    CacheEntry<Q, SE> getEntry(Q query) {
         return cache.get(queryToKey(query));
     }
 
     /**
      * Associates the specified answers with the specified query in this cache adding an (query) -> (answers) entry
-     * @param query of the association
+     *
+     * @param query   of the association
      * @param answers of the association
      * @return previous value if any or null
      */
-    CacheEntry<Q, SE> putEntry(Q query, SE answers){
+    CacheEntry<Q, SE> putEntry(Q query, SE answers) {
         return putEntry(new CacheEntry<>(query, answers));
     }
 

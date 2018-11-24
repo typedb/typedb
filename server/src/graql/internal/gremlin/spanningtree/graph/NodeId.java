@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.spanningtree.graph;
 
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 
 import java.util.Collections;
 import java.util.Set;

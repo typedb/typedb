@@ -22,36 +22,32 @@ import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.utils.Pair;
+
 import java.util.Collection;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 
 /**
- *
- * <p>
  * Generic interface query caches.
- *
+ * <p>
  * Defines two basic operations:
  * - GET(Query)
  * - RECORD(Query, Answer).
  *
- * </p>
- *
- * @param <Q> the type of query that is being cached
- * @param <S> the type of answer being cached
+ * @param <Q>  the type of query that is being cached
+ * @param <S>  the type of answer being cached
  * @param <SE> the type of answer being cached
- * @author Kasper Piskorski
- *
  */
 public interface QueryCache<
         Q extends ReasonerQueryImpl,
         S extends Iterable<ConceptMap>,
-        SE extends Collection<ConceptMap>>{
+        SE extends Collection<ConceptMap>> {
 
     /**
      * record answer iterable for a specific query and retrieve the updated answers
-     * @param query to be recorded
+     *
+     * @param query   to be recorded
      * @param answers to this query
      * @return updated entry
      */
@@ -59,7 +55,8 @@ public interface QueryCache<
 
     /**
      * record answer stream for a specific query and retrieve the updated stream
-     * @param query to be recorded
+     *
+     * @param query   to be recorded
      * @param answers answer stream of the query
      * @return updated entry
      */
@@ -67,7 +64,8 @@ public interface QueryCache<
 
     /**
      * record single answer to a specific query
-     * @param query of interest
+     *
+     * @param query  of interest
      * @param answer to this query
      * @return updated entry
      */
@@ -79,6 +77,7 @@ public interface QueryCache<
 
     /**
      * retrieve (possibly) cached answers for provided query
+     *
      * @param query for which to retrieve answers
      * @return unified cached answers
      */
@@ -93,6 +92,7 @@ public interface QueryCache<
 
     /**
      * Query cache containment check
+     *
      * @param query to be checked for containment
      * @return true if cache contains the query
      */

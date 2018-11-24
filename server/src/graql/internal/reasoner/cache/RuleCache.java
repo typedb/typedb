@@ -23,16 +23,15 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.utils.Pair;
+
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Introduces rule cache that wraps around the atom matching rule retrieval to ensure resolution of fruitless rules is not pursued.
- *
- * @author Kasper Piskorski
- *
+ * Introduces rule cache that wraps around the atom matching rule retrieval to
+ * ensure resolution of fruitless rules is not pursued.
  */
 public class RuleCache {
     private final Set<Rule> fruitlessRules = new HashSet<>();
@@ -42,9 +41,9 @@ public class RuleCache {
      * @param atom of interest
      * @return stream of rules applicable to this atom
      */
-    private Stream<InferenceRule> getApplicableRules(Atom atom){
+    private Stream<InferenceRule> getApplicableRules(Atom atom) {
         return atom.getApplicableRules()
-                .filter( r -> {
+                .filter(r -> {
                     if (fruitlessRules.contains(r.getRule())) return false;
                     if (r.getBody().isRuleResolvable() || checkedRules.contains(r.getRule())) return true;
                     boolean fruitless = !r.getBody().getQuery().stream().findFirst().isPresent();
@@ -61,7 +60,7 @@ public class RuleCache {
      * @param atom of interest
      * @return stream of all rules applicable to this atom including permuted cases when the role types are meta roles
      */
-    public Stream<Pair<InferenceRule, Unifier>> getRuleStream(Atom atom){
+    public Stream<Pair<InferenceRule, Unifier>> getRuleStream(Atom atom) {
         return getApplicableRules(atom)
                 .flatMap(r -> r.getMultiUnifier(atom).stream().map(unifier -> new Pair<>(r, unifier)))
                 .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));

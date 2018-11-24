@@ -20,9 +20,9 @@ package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.admin.Conjunction;
-import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;

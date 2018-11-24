@@ -28,7 +28,8 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -38,31 +39,26 @@ import java.util.stream.Collectors;
 /**
  * Quantifies semantic difference between two queries provided they are in a subsumption relation, i. e. there exists
  * a {@link Unifier} of {@link UnifierType#SUBSUMPTIVE} between them.
- *
  * Semantic difference between query C and P defines a specialisation operation
  * required to transform query P into a query equivalent to C.
- *
  * In that way we can check whether answers to the parent (more generic) query are also answers
  * to the child query (more specific).
- *
- * @author Kasper Piskorski
- *
  */
 public class SemanticDifference {
 
     final private ImmutableSet<VariableDefinition> definition;
 
-    public SemanticDifference(Set<VariableDefinition> definition){
+    public SemanticDifference(Set<VariableDefinition> definition) {
         this.definition = ImmutableSet.copyOf(definition.stream().filter(vd -> !vd.isTrivial()).iterator());
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return definition.toString();
     }
 
     @Override
-    public boolean equals(Object obj){
+    public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         SemanticDifference that = (SemanticDifference) obj;
@@ -70,19 +66,19 @@ public class SemanticDifference {
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         return definition.hashCode();
     }
 
-    private Set<Relationship> rolesToRels(Var var, Set<Role> roles, ConceptMap answer){
-        if(!answer.containsVar(var)) return new HashSet<>();
+    private Set<Relationship> rolesToRels(Var var, Set<Role> roles, ConceptMap answer) {
+        if (!answer.containsVar(var)) return new HashSet<>();
         Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
         return answer.get(var).asThing()
                 .relationships(roleAndTheirSubs.toArray(new Role[0]))
                 .collect(Collectors.toSet());
     }
 
-    public boolean satisfiedBy(ConceptMap answer){
+    public boolean satisfiedBy(ConceptMap answer) {
         if (isEmpty()) return true;
 
         Map<Var, Set<Role>> roleRequirements = this.definition.stream()
@@ -92,17 +88,17 @@ public class SemanticDifference {
         //check for role compatibility
         Iterator<Map.Entry<Var, Set<Role>>> reqIterator = roleRequirements.entrySet().iterator();
         Set<Relationship> relationships;
-        if (reqIterator.hasNext()){
+        if (reqIterator.hasNext()) {
             Map.Entry<Var, Set<Role>> req = reqIterator.next();
             relationships = rolesToRels(req.getKey(), req.getValue(), answer);
         } else {
             relationships = new HashSet<>();
         }
-        while(!relationships.isEmpty() && reqIterator.hasNext()){
+        while (!relationships.isEmpty() && reqIterator.hasNext()) {
             Map.Entry<Var, Set<Role>> req = reqIterator.next();
             relationships = Sets.intersection(relationships, rolesToRels(req.getKey(), req.getValue(), answer));
         }
-        if(relationships.isEmpty() && !roleRequirements.isEmpty()) return false;
+        if (relationships.isEmpty() && !roleRequirements.isEmpty()) return false;
 
         return definition.stream().allMatch(vd -> {
             Var var = vd.var();
@@ -117,7 +113,7 @@ public class SemanticDifference {
         });
     }
 
-    public SemanticDifference merge(SemanticDifference diff){
+    public SemanticDifference merge(SemanticDifference diff) {
         Map<Var, VariableDefinition> mergedDefinition = definition.stream().collect(Collectors.toMap(VariableDefinition::var, vd -> vd));
         diff.definition.forEach(varDefToMerge -> {
             Var var = varDefToMerge.var();
@@ -127,6 +123,6 @@ public class SemanticDifference {
         return new SemanticDifference(new HashSet<>(mergedDefinition.values()));
     }
 
-    boolean isEmpty(){ return definition.stream().allMatch(VariableDefinition::isTrivial);}
+    boolean isEmpty() { return definition.stream().allMatch(VariableDefinition::isTrivial);}
 
 }

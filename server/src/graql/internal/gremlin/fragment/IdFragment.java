@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.query.Var;
-import grakn.core.graql.internal.pattern.property.IdProperty;
+import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.property.ID;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
@@ -43,7 +43,7 @@ abstract class IdFragment extends Fragment {
     public Fragment transform(Map<Var, ConceptId> transform) {
         ConceptId toId = transform.get(start());
         if (toId == null) return this;
-        return new AutoValue_IdFragment(IdProperty.of(toId), start(), toId);
+        return new AutoValue_IdFragment(ID.of(toId), start(), toId);
     }
 
     @Override

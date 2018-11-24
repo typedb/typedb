@@ -19,11 +19,11 @@
 package grakn.core.graql.internal.reasoner.query;
 
 import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.state.CacheCompletionState;

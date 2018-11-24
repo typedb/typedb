@@ -19,6 +19,7 @@
 package grakn.core.graql.admin;
 
 import com.google.auto.value.AutoValue;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Optional;

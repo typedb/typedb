@@ -26,7 +26,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;

@@ -22,17 +22,17 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.admin.Conjunction;
-import grakn.core.graql.admin.PatternAdmin;
-import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.internal.pattern.property.DataTypeProperty;
-import grakn.core.graql.internal.pattern.property.IsaProperty;
+import grakn.core.graql.query.pattern.property.DataType;
+import grakn.core.graql.query.pattern.property.Isa;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -40,10 +40,10 @@ import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSyntaxException;
 import org.junit.Assert;
@@ -801,7 +801,7 @@ public class QueryParserTest {
         VarPatternAdmin var = query.match().admin().getPattern().varPatterns().iterator().next();
 
         //noinspection OptionalGetWithoutIsPresent
-        DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
+        DataType property = var.getProperty(DataType.class).get();
 
         Assert.assertEquals(AttributeType.DataType.BOOLEAN, property.dataType());
     }
@@ -1105,7 +1105,7 @@ public class QueryParserTest {
 
         assertTrue(pattern.var().isUserDefinedName());
 
-        IsaProperty property = pattern.getProperty(IsaProperty.class).get();
+        Isa property = pattern.getProperty(Isa.class).get();
 
         assertFalse(property.type().var().isUserDefinedName());
     }

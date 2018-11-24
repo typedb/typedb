@@ -36,7 +36,7 @@ import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

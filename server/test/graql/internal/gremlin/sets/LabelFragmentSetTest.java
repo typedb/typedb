@@ -22,7 +22,7 @@ import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;

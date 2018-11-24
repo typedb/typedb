@@ -23,15 +23,15 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.Pattern;
-import grakn.core.graql.query.Var;
-import grakn.core.graql.query.VarPattern;
-import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.admin.VarProperty;
-import grakn.core.graql.internal.pattern.property.IsaExplicitProperty;
-import grakn.core.graql.internal.pattern.property.IsaProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.property.IsaExplicit;
+import grakn.core.graql.query.pattern.property.Isa;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
@@ -57,7 +57,7 @@ import static grakn.core.common.util.CommonUtil.toImmutableList;
 /**
  *
  * <p>
- * TypeAtom corresponding to graql a {@link grakn.core.graql.internal.pattern.property.IsaProperty} property.
+ * TypeAtom corresponding to graql a {@link Isa} property.
  * </p>
  *
  *
@@ -97,7 +97,7 @@ public abstract class IsaAtom extends IsaAtomBase {
     public IsaAtom toIsaAtom(){ return this; }
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass() { return isDirect()? IsaExplicitProperty.class : IsaProperty.class;}
+    public Class<? extends VarProperty> getVarPropertyClass() { return isDirect()? IsaExplicit.class : Isa.class;}
 
     //NB: overriding as these require a derived property
     @Override

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
@@ -33,8 +33,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static grakn.core.graql.internal.pattern.Patterns.RELATION_DIRECTION;
-import static grakn.core.graql.internal.pattern.Patterns.RELATION_EDGE;
+import static grakn.core.graql.query.pattern.Patterns.RELATION_DIRECTION;
+import static grakn.core.graql.query.pattern.Patterns.RELATION_EDGE;
 import static grakn.core.graql.internal.Schema.EdgeLabel.ROLE_PLAYER;
 import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
 import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;

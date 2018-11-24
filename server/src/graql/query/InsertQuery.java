@@ -19,12 +19,12 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.admin.MatchAdmin;
-import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.common.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;

@@ -20,7 +20,7 @@ package grakn.core.graql.internal.gremlin;
 
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.graql.internal.Schema;

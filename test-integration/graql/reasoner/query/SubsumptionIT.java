@@ -18,10 +18,10 @@
 
 package grakn.core.graql.reasoner.query;
 
-import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;

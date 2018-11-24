@@ -27,7 +27,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
-import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.pattern.Pattern;
 
 public class GeoGraph {
 

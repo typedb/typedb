@@ -18,9 +18,9 @@
 
 package grakn.core.graql.internal.match;
 
-import grakn.core.graql.admin.Conjunction;
-import grakn.core.graql.admin.PatternAdmin;
-import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Patterns;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 

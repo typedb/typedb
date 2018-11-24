@@ -20,8 +20,8 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.query.Var;
-import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;

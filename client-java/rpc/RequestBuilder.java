@@ -22,7 +22,7 @@ package grakn.core.client.rpc;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;

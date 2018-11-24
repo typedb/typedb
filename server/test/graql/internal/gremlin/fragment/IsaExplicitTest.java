@@ -21,7 +21,7 @@ package grakn.core.graql.internal.gremlin.fragment;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.QueryBuilder;
 import org.junit.Test;
 

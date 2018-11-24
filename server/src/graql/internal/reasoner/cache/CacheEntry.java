@@ -21,27 +21,22 @@ package grakn.core.graql.internal.reasoner.cache;
 import grakn.core.graql.admin.ReasonerQuery;
 
 /**
- *
- * <p>
  * Simple class for defining query entries.
- * </p>
  *
  * @param <Q> query type the entry corresponds to
  * @param <T> corresponding element to be cached
- *
- * @author Kasper Piskorski
- *
  */
 public class CacheEntry<Q extends ReasonerQuery, T> {
 
     private final Q query;
     private final T cachedElement;
 
-    CacheEntry(Q query, T element){
+    CacheEntry(Q query, T element) {
         this.query = query;
         this.cachedElement = element;
     }
 
-    public Q query(){ return query;}
-    public T cachedElement(){ return cachedElement;}
+    public Q query() { return query;}
+
+    public T cachedElement() { return cachedElement;}
 }

@@ -31,9 +31,6 @@ import static grakn.core.util.GraqlTestUtil.getInstance;
 
 /**
  * Defines a KB based on test 6.10 from Cao p. 82, but arranged in a matrix instead of a tree.
- *
- * @author Kasper Piskorski
- *
  */
 @SuppressWarnings("CheckReturnValue")
 public class PathMatrixGraph {

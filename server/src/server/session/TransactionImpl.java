@@ -21,7 +21,7 @@ package grakn.core.server.session;
 import com.google.auto.value.AutoValue;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;

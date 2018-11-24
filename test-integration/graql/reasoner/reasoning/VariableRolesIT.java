@@ -20,14 +20,14 @@ package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.query.VarPattern;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
 import java.util.List;
-import org.apache.commons.collections.CollectionUtils;
+
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

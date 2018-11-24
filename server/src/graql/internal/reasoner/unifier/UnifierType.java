@@ -20,7 +20,7 @@ package grakn.core.graql.internal.reasoner.unifier;
 
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.UnifierComparison;
@@ -28,6 +28,7 @@ import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
 import grakn.core.graql.internal.reasoner.cache.QueryCache;
 import grakn.core.graql.internal.reasoner.cache.StructuralCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -36,27 +37,19 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.areDisjoint
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 
 /**
- *
- * <p>
  * Class defining different unifier types.
- * </p>
- *
- * @author Kasper Piskorski
- *
  */
 public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
     /**
-     *
      * Exact unifier, requires type and id predicate bindings to match.
      * Used in {@link QueryCache} comparisons.
      * An EXACT unifier between two queries can only exists iff they are alpha-equivalent {@link ReasonerQueryEquivalence}.
      * .
      */
     EXACT {
-
         @Override
-        public ReasonerQueryEquivalence equivalence(){
+        public ReasonerQueryEquivalence equivalence() {
             return ReasonerQueryEquivalence.AlphaEquivalence;
         }
 
@@ -98,16 +91,13 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
     },
 
     /**
-     *
      * Similar to the exact one with addition to allowing id predicates to differ.
      * Used in {@link StructuralCache} comparisons.
      * A STRUCTURAL unifier between two queries can only exists iff they are structurally-equivalent {@link ReasonerQueryEquivalence}.
-     *
      */
     STRUCTURAL {
-
         @Override
-        public ReasonerQueryEquivalence equivalence(){
+        public ReasonerQueryEquivalence equivalence() {
             return ReasonerQueryEquivalence.StructuralEquivalence;
         }
 
@@ -148,22 +138,20 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
     },
 
     /**
-     *
      * Rule unifier, found between queries and rule heads, allows rule heads to be more specific than matched queries.
      * Used in rule matching.
-     *
+     * <p>
      * If two queries are alpha-equivalent they are rule-unifiable.
      * Rule unification relaxes restrictions of exact unification in that it merely
      * requires an existence of a semantic overlap between the parent and child queries, i. e.
      * the answer set of the child and the parent queries need to have a non-zero intersection.
-     *
+     * <p>
      * For predicates it corresponds to changing the alpha-equivalence requirement to compatibility.
-     *
+     * <p>
      * As a result, two queries may be rule-unifiable and not alpha-equivalent, e.q.
-     *
+     * <p>
      * P: $x has age >= 10
      * Q: $x has age 10
-     *
      */
     RULE {
         @Override
@@ -206,7 +194,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Var parentVar, Var childVar){
+        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Var parentVar, Var childVar) {
             Map<SchemaConcept, ResourceAtom> parentRes = new HashMap<>();
             parent.getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
             Map<SchemaConcept, ResourceAtom> childRes = new HashMap<>();
@@ -220,13 +208,12 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
      * Unifier type used to determine whether two queries are in a subsumption relation.
      * Subsumption can be regarded as a stricter version of the semantic overlap requirement seen in RULE {@link UnifierType}.
      * Defining queries Q and P and their respective answer sets A(Q) and A(P) we say that:
-     *
+     * <p>
      * Q subsumes P iff
      * P >= Q (Q specialises P) iff
      * A(Q) is a subset of A(P)
-     *
+     * <p>
      * Subsumption relation is NOT symmetric.
-     *
      */
     SUBSUMPTIVE {
         @Override
@@ -276,7 +263,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Var parentVar, Var childVar){
+        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Var parentVar, Var childVar) {
             Map<SchemaConcept, ResourceAtom> parentRes = new HashMap<>();
             parent.getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
             Map<SchemaConcept, ResourceAtom> childRes = new HashMap<>();

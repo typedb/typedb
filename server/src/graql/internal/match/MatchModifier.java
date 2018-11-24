@@ -21,9 +21,9 @@ package grakn.core.graql.internal.match;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.Var;
-import grakn.core.graql.admin.Conjunction;
-import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.PatternAdmin;
 
 import java.util.Set;
 

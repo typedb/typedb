@@ -24,16 +24,11 @@ import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+
 import java.util.Set;
 
 /**
- *
- * <p>
  * Query state corresponding to a conjunctive query ({@link ReasonerQueryImpl}) in the resolution tree.
- * </p>
- *
- * @author Kasper Piskorski
- *
  */
 public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
 
@@ -47,9 +42,9 @@ public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
     }
 
     @Override
-    ResolutionState propagateAnswer(AnswerState state){
+    ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap answer = state.getAnswer();
-        return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
+        return !answer.isEmpty() ? new AnswerState(answer, getUnifier(), getParentState()) : null;
     }
 
     @Override

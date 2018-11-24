@@ -27,15 +27,9 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- *
- * <p>
  * Specialised class for resolution states corresponding to different forms of queries.
- * </p>
  *
  * @param <Q> the type of query that this state is corresponding to
- *
- * @author Kasper Piskorski
- *
  */
 public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryStateBase{
 
