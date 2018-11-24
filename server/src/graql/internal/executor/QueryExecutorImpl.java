@@ -39,7 +39,6 @@ import grakn.core.server.QueryExecutor;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;

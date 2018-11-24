@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.admin.MatchAdmin;

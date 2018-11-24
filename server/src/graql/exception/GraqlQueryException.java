@@ -20,11 +20,9 @@ package grakn.core.graql.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.property.UniqueVarProperty;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -32,6 +30,8 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.property.UniqueVarProperty;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
@@ -58,14 +58,9 @@ import static grakn.core.graql.query.Syntax.Compute.CONDITIONS_REQUIRED;
 import static grakn.core.graql.query.Syntax.Compute.METHODS_ACCEPTED;
 
 /**
- * <p>
  * Graql Query Exception
- * </p>
- * <p>
  * Occurs when the query is syntactically correct but semantically incorrect.
  * For example limiting the results of a query -1
- * </p>
- *
  */
 public class GraqlQueryException extends GraknException {
 
@@ -245,8 +240,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException maxIterationsReached(Class<?> clazz) {
-        return new GraqlQueryException(ErrorMessage.MAX_ITERATION_REACHED
-                .getMessage(clazz.toString()));
+        return new GraqlQueryException(ErrorMessage.MAX_ITERATION_REACHED.getMessage(clazz.toString()));
     }
 
     public static GraqlQueryException statisticsAttributeTypesNotSpecified() {

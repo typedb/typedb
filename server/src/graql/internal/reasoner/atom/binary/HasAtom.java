@@ -21,7 +21,6 @@ package grakn.core.graql.internal.reasoner.atom.binary;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;

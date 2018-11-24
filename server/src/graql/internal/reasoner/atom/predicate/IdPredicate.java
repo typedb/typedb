@@ -18,7 +18,6 @@
 
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;

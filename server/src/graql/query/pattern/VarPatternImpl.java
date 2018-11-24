@@ -30,7 +30,7 @@ import java.util.Set;
 /**
  * Implementation of {@link VarPattern} interface
  */
-public class VarPatternImpl extends AbstractVarPattern {
+public class VarPatternImpl extends VarPattern {
 
     private final Var var;
     private final Set<VarProperty> properties;
@@ -64,7 +64,7 @@ public class VarPatternImpl extends AbstractVarPattern {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        AbstractVarPattern var = (AbstractVarPattern) o;
+        VarPattern var = (VarPattern) o;
 
         if (var().isUserDefinedName() != var.var().isUserDefinedName()) return false;
 

@@ -18,19 +18,6 @@
 
 package grakn.core.graql.internal.executor;
 
-import grakn.core.graql.query.pattern.VarPatternImpl;
-import grakn.core.server.Transaction;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.DefineQuery;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
-import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.property.PropertyExecutor;
-import grakn.core.graql.query.pattern.property.VarPropertyInternal;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.util.Partition;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -42,6 +29,17 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.util.Partition;
+import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.VarPatternImpl;
+import grakn.core.graql.query.pattern.property.PropertyExecutor;
+import grakn.core.graql.query.pattern.property.VarPropertyInternal;
+import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.server.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,8 +58,8 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 
 /**
- * A class for executing {@link PropertyExecutor}s on {@link VarProperty}s within {@link Query}s.
- * Multiple query types share this class, such as {@link InsertQuery} and {@link DefineQuery}.
+ * A class for executing {@link PropertyExecutor}s on {@link VarProperty}s within Graql queries.
+ * Multiple query types share this class, such as InsertQuery and DefineQuery.
  */
 public class QueryOperationExecutor {
 
