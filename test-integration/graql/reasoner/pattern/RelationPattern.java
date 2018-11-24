@@ -113,7 +113,7 @@ public abstract class RelationPattern extends QueryPattern {
             rpTypePatterns.add(typePattern);
         });
         List<Pattern> relIdPatterns = new ArrayList<>();
-        relationIds.forEach(relId -> relIdPatterns.add(basePattern[0].and(relationVar.id(relId))));
+        relationIds.forEach(relId -> relIdPatterns.add(Graql.and(basePattern[0], relationVar.id(relId))));
 
         List<Pattern> patterns = new ArrayList<>();
 
@@ -130,7 +130,7 @@ public abstract class RelationPattern extends QueryPattern {
                         .collect(Collectors.toList()))
                 .forEach(product -> {
                     Pattern[] pattern = {basePattern[0]};
-                    product.forEach(p -> pattern[0] = pattern[0].and(p));
+                    product.forEach(p -> pattern[0] = Graql.and(pattern[0], p));
                     if (!patterns.contains(pattern[0])) patterns.add(pattern[0]);
                 });
         return Stream.concat(

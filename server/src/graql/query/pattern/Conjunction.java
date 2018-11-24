@@ -39,7 +39,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @param <T> the type of patterns in this conjunction
  */
-public class Conjunction<T extends Pattern> extends AbstractPattern implements Pattern {
+public class Conjunction<T extends Pattern> implements Pattern {
 
     private final Set<T> patterns;
 

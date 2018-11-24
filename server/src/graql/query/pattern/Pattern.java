@@ -34,18 +34,6 @@ import static java.util.stream.Collectors.toSet;
 public interface Pattern {
 
     /**
-     * Join patterns in a conjunction
-     */
-    @CheckReturnValue
-    Pattern and(Pattern pattern);
-
-    /**
-     * Join patterns in a disjunction
-     */
-    @CheckReturnValue
-    Pattern or(Pattern pattern);
-
-    /**
      * Get the disjunctive normal form of this pattern group.
      * This means the pattern group will be transformed into a number of conjunctive patterns, where each is disjunct.
      *

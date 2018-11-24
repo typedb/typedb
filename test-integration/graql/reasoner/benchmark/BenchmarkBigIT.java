@@ -109,12 +109,13 @@ public class BenchmarkBigIT {
 
                 Var fromRolePlayer = Graql.var();
                 Var toRolePlayer = Graql.var();
-                Pattern relationInsert = Graql.var()
-                        .rel(Graql.label(fromRole.label()), fromRolePlayer)
-                        .rel(Graql.label(toRole.label()), toRolePlayer)
-                        .isa(Graql.label(relationType.label()))
-                        .and(fromRolePlayer.asUserDefined().id(instances[from]))
-                        .and(toRolePlayer.asUserDefined().id(instances[to]));
+                Pattern relationInsert = Graql.and(
+                        var().rel(Graql.label(fromRole.label()), fromRolePlayer)
+                                .rel(Graql.label(toRole.label()), toRolePlayer)
+                                .isa(Graql.label(relationType.label())),
+                        fromRolePlayer.asUserDefined().id(instances[from]),
+                        toRolePlayer.asUserDefined().id(instances[to])
+                );
                 transaction.query(Graql.insert(relationInsert.varPatterns()));
             }
 
@@ -226,12 +227,13 @@ public class BenchmarkBigIT {
                     Var fromRolePlayer = Graql.var();
                     Var toRolePlayer = Graql.var();
 
-                    Pattern relationInsert = Graql.var()
-                            .rel(Graql.label(fromRole.label()), fromRolePlayer)
-                            .rel(Graql.label(toRole.label()), toRolePlayer)
-                            .isa(Graql.label(baseRelation.label()))
-                            .and(fromRolePlayer.asUserDefined().id(instances[i - 1]))
-                            .and(toRolePlayer.asUserDefined().id(instances[i]));
+                    Pattern relationInsert = Graql.and(
+                            var().rel(Graql.label(fromRole.label()), fromRolePlayer)
+                                    .rel(Graql.label(toRole.label()), toRolePlayer)
+                                    .isa(Graql.label(baseRelation.label())),
+                            fromRolePlayer.asUserDefined().id(instances[i - 1]),
+                            toRolePlayer.asUserDefined().id(instances[i])
+                    );
                     transaction.query(Graql.insert(relationInsert.varPatterns()));
 
                     Pattern resourceInsert = Graql.var().asUserDefined()

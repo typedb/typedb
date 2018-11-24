@@ -203,7 +203,7 @@ public class VariableRolesIT {
             for (int i = 2; i <= arity; i++) pattern = pattern.rel(var("r" + i), "a" + i);
             pattern = pattern.isa(label);
 
-            List<ConceptMap> answers = qb.match(pattern.and(resourcePattern)).get().execute();
+            List<ConceptMap> answers = qb.match(pattern, resourcePattern).get().execute();
             assertEquals(answerCombinations(arity - 1, conceptDOF), answers.size());
 
             //We get extra conceptDOF degrees of freedom by removing the resource constraint on $a1 and the set is symmetric.

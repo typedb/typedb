@@ -65,7 +65,7 @@ import static java.util.stream.Collectors.toSet;
  * Abstract implementation of {@link VarPattern}.
  *
  */
-public abstract class AbstractVarPattern extends AbstractPattern implements VarPattern {
+public abstract class AbstractVarPattern implements VarPattern {
 
     @Override
     public abstract Var var();

@@ -52,7 +52,7 @@ class RelationshipConverter implements ConceptConverter<Relationship> {
 
         Pattern pattern = relationPattern;
         for (Pattern idPattern : idPatterns) {
-            pattern = pattern.and(idPattern);
+            pattern = Graql.and(pattern, idPattern);
         }
         return pattern;
     }
