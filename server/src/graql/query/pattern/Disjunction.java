@@ -20,7 +20,6 @@ package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.Graql;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -60,12 +59,12 @@ public class Disjunction<T extends Pattern> implements Pattern {
                 .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
                 .collect(toSet());
 
-        return Graql.or(dnf);
+        return Pattern.or(dnf);
     }
 
     @Override
-    public Set<Variable> commonVars() {
-        return getPatterns().stream().map(Pattern::commonVars).reduce(Sets::intersection).orElse(ImmutableSet.of());
+    public Set<Variable> variables() {
+        return getPatterns().stream().map(Pattern::variables).reduce(Sets::intersection).orElse(ImmutableSet.of());
     }
 
     @Override

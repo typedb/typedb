@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
@@ -414,6 +415,6 @@ public class SubsumptionIT {
         Set<Statement> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+        return Pattern.and(vars);
     }
 }

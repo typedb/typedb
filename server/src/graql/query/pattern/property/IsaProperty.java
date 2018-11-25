@@ -20,7 +20,7 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
@@ -50,7 +50,7 @@ public abstract class IsaProperty extends AbstractIsaProperty {
     public static final String NAME = "isa";
 
     public static IsaProperty of(Statement type) {
-        return new AutoValue_IsaProperty(type, Graql.var());
+        return new AutoValue_IsaProperty(type, Pattern.var());
     }
 
     public abstract Variable directTypeVar();

@@ -78,14 +78,14 @@ import java.util.stream.Stream;
 
 import static grakn.core.graql.query.Graql.count;
 import static grakn.core.graql.query.Graql.group;
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.Graql.max;
 import static grakn.core.graql.query.Graql.mean;
 import static grakn.core.graql.query.Graql.median;
 import static grakn.core.graql.query.Graql.min;
 import static grakn.core.graql.query.Graql.std;
 import static grakn.core.graql.query.Graql.sum;
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.query.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static grakn.core.graql.query.Syntax.Compute.Algorithm.DEGREE;
 import static grakn.core.graql.query.Syntax.Compute.Algorithm.K_CORE;

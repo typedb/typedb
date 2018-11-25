@@ -19,6 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -27,7 +28,6 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
@@ -90,7 +90,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
 
         ImmutableSet<EquivalentFragmentSet> traversals = relationPlayers().stream().flatMap(relationPlayer -> {
 
-            Variable castingName = Graql.var();
+            Variable castingName = Pattern.var();
             castingNames.add(castingName);
 
             return equivalentFragmentSetFromCasting(start, castingName, relationPlayer);
@@ -247,7 +247,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         IdPredicate predicate = null;
 
         //if no isa property present generate type variable
-        Variable typeVariable = isaProp != null? isaProp.type().var() : Graql.var();
+        Variable typeVariable = isaProp != null? isaProp.type().var() : Pattern.var();
 
         //Isa present
         if (isaProp != null) {

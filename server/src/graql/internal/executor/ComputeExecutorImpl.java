@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.ComputeQuery;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Syntax;
 import grakn.core.graql.answer.Answer;
@@ -696,8 +695,8 @@ class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
         for (Label attributeType : targetTypeLabels()) {
             for (Label type : scopeTypeLabels()) {
                 Boolean patternExist = tx.graql().infer(false).match(
-                        Graql.var("x").has(attributeType, Graql.var()),
-                        Graql.var("x").isa(Graql.label(type))
+                        Pattern.var("x").has(attributeType, Pattern.var()),
+                        Pattern.var("x").isa(Pattern.label(type))
                 ).iterator().hasNext();
                 if (patternExist) return true;
             }
@@ -779,9 +778,9 @@ class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
     private boolean scopeContainsInstance() {
         if (scopeTypeLabels().isEmpty()) return false;
         List<Pattern> checkSubtypes = scopeTypeLabels().stream()
-                .map(type -> Graql.var("x").isa(Graql.label(type))).collect(Collectors.toList());
+                .map(type -> Pattern.var("x").isa(Pattern.label(type))).collect(Collectors.toList());
 
-        return tx.graql().infer(false).match(Graql.or(checkSubtypes)).iterator().hasNext();
+        return tx.graql().infer(false).match(Pattern.or(checkSubtypes)).iterator().hasNext();
     }
 
     /**

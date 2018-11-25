@@ -75,7 +75,7 @@ public class MatchBase extends AbstractMatch {
         validatePattern(tx);
 
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, tx);
-        return streamWithTraversal(this.getPattern().commonVars(), tx, graqlTraversal);
+        return streamWithTraversal(this.getPattern().variables(), tx, graqlTraversal);
     }
 
     /**
@@ -131,7 +131,7 @@ public class MatchBase extends AbstractMatch {
 
     @Override
     public Set<SchemaConcept> getSchemaConcepts(Transaction tx) {
-        return pattern.varPatterns().stream()
+        return pattern.statements().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
                 .map(tx::<SchemaConcept>getSchemaConcept)
@@ -156,7 +156,7 @@ public class MatchBase extends AbstractMatch {
 
     @Override
     public final Set<Variable> getSelectedNames() {
-        return pattern.commonVars();
+        return pattern.variables();
     }
 
     @Override

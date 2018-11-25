@@ -66,7 +66,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.Graql.contains;
 import static grakn.core.graql.query.Graql.count;
 import static grakn.core.graql.query.Graql.define;
@@ -75,17 +75,17 @@ import static grakn.core.graql.query.Graql.group;
 import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.query.Graql.gte;
 import static grakn.core.graql.query.Graql.insert;
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.Graql.lt;
 import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
 import static grakn.core.graql.query.Graql.neq;
-import static grakn.core.graql.query.Graql.or;
+import static grakn.core.graql.query.pattern.Pattern.or;
 import static grakn.core.graql.query.Graql.parse;
 import static grakn.core.graql.query.Graql.regex;
 import static grakn.core.graql.query.Graql.std;
 import static grakn.core.graql.query.Graql.undefine;
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.query.Order.desc;
 import static grakn.core.graql.query.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static grakn.core.graql.query.Syntax.Compute.Algorithm.K_CORE;
@@ -797,7 +797,7 @@ public class QueryParserTest {
     public void testParseBooleanType() {
         GetQuery query = parse("match $x datatype boolean; get;");
 
-        Statement var = query.match().admin().getPattern().varPatterns().iterator().next();
+        Statement var = query.match().admin().getPattern().statements().iterator().next();
 
         //noinspection OptionalGetWithoutIsPresent
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
@@ -1100,7 +1100,7 @@ public class QueryParserTest {
 
         Set<Pattern> patterns = conjunction.getPatterns();
 
-        Statement pattern = Iterables.getOnlyElement(patterns).asVarPattern();
+        Statement pattern = Iterables.getOnlyElement(patterns).asStatement();
 
         assertTrue(pattern.var().isUserDefinedName());
 

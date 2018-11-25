@@ -21,8 +21,8 @@ package grakn.core.graql.internal.gremlin.fragment;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.util.StringUtil;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -247,7 +247,7 @@ public class Fragments {
             GraphTraversal<S, Edge> traversal, Schema.EdgeProperty edgeProperty) {
 
         // Access label ID from edge
-        Variable labelId = Graql.var();
+        Variable labelId = Pattern.var();
         traversal.values(edgeProperty.name()).as(labelId.label());
 
         // Look up schema concept using ID

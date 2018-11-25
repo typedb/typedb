@@ -31,7 +31,6 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
@@ -789,7 +788,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     RelationPlayer rp = entry.getKey();
                     Variable varName = rp.getRolePlayer().var();
                     Role role = Iterables.getOnlyElement(entry.getValue());
-                    Statement rolePattern = Graql.var().label(role.label());
+                    Statement rolePattern = Pattern.var().label(role.label());
                     inferredRelationPlayers.add(RelationPlayer.of(rolePattern, varName));
                     allocatedRelationPlayers.add(rp);
                 });
@@ -803,7 +802,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
                     rolePattern = rolePattern != null ?
                             rolePattern.var().label(metaRole.label()) :
-                            Graql.var().label(metaRole.label());
+                            Pattern.var().label(metaRole.label());
                     inferredRelationPlayers.add(RelationPlayer.of(rolePattern, varName));
                 });
 
@@ -1105,7 +1104,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Override
     public RelationshipAtom rewriteWithRelationVariable(){
-        Statement newVar = Graql.var().asUserDefined();
+        Statement newVar = Pattern.var().asUserDefined();
         Statement relVar = getPattern().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.type()))
                 .orElse(newVar);

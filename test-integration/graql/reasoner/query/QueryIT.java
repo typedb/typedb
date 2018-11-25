@@ -19,7 +19,6 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
@@ -287,11 +286,11 @@ public class QueryIT {
         Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+        return Pattern.and(vars);
     }
 
     private static Concept getConcept(TransactionImpl<?> tx, String typeLabel, Object val){
-        return tx.graql().match((Pattern) Graql.var("x").has(typeLabel, val)).get("x")
+        return tx.graql().match((Pattern) Pattern.var("x").has(typeLabel, val)).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().get();
     }
 }

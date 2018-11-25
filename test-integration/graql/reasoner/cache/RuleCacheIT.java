@@ -1,6 +1,5 @@
 package grakn.core.graql.reasoner.cache;
 
-import grakn.core.graql.query.Graql;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Entity;
@@ -36,7 +35,7 @@ import java.io.InputStreamReader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -171,6 +170,6 @@ public class RuleCacheIT {
         Set<Statement> vars = graph.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+        return Pattern.and(vars);
     }
 }

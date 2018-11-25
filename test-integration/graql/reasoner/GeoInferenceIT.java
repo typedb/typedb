@@ -36,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;

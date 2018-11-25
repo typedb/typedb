@@ -19,7 +19,7 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
@@ -64,7 +64,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -721,7 +721,7 @@ public class ResolutionPlanIT {
         Set<Statement> vars = graph.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+        return Pattern.and(vars);
     }
 }
 

@@ -37,7 +37,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
 import static grakn.core.graql.internal.Schema.EdgeLabel.ATTRIBUTE;
 import static grakn.core.graql.internal.Schema.EdgeLabel.ISA;

@@ -21,7 +21,6 @@ package grakn.core.graql.internal.gremlin;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
@@ -49,9 +48,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.Graql.gt;
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.internal.gremlin.GraqlMatchers.feature;
 import static grakn.core.graql.internal.gremlin.GraqlMatchers.satisfies;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.id;
@@ -74,13 +73,13 @@ import static org.mockito.Mockito.when;
 
 public class GraqlTraversalTest {
 
-    private static final Variable a = Graql.var("a");
-    private static final Variable b = Graql.var("b");
-    private static final Variable c = Graql.var("c");
-    private static final Variable x = Graql.var("x");
-    private static final Variable y = Graql.var("y");
-    private static final Variable z = Graql.var("z");
-    private static final Variable xx = Graql.var("xx");
+    private static final Variable a = Pattern.var("a");
+    private static final Variable b = Pattern.var("b");
+    private static final Variable c = Pattern.var("c");
+    private static final Variable x = Pattern.var("x");
+    private static final Variable y = Pattern.var("y");
+    private static final Variable z = Pattern.var("z");
+    private static final Variable xx = Pattern.var("xx");
     private static final Fragment xId = id(null, x, ConceptId.of("Titanic"));
     private static final Fragment yId = id(null, y, ConceptId.of("movie"));
     private static final Fragment xIsaY = outIsa(null, x, y);

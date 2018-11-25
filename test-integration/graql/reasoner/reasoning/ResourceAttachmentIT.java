@@ -36,8 +36,8 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static grakn.core.graql.query.Graql.label;
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.label;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;

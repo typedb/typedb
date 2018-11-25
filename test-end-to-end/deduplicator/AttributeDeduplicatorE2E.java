@@ -35,8 +35,8 @@ import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGr
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertZipExists;
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.unzipGrakn;
 import static grakn.core.graql.query.Graql.count;
-import static grakn.core.graql.query.Graql.label;
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.label;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 

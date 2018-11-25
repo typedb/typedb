@@ -55,7 +55,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static java.util.stream.Collectors.toSet;
@@ -249,14 +249,14 @@ public class AtomicQueryIT {
         Set<Statement> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+        return Pattern.and(vars);
     }
 
     private Conjunction<Statement> conjunction(Conjunction<Pattern> pattern){
         Set<Statement> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+        return Pattern.and(vars);
     }
 
 

@@ -1,7 +1,7 @@
 package grakn.core.graql.reasoner.atomic;
 
 import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -387,7 +387,7 @@ public class AtomicUnificationIT {
                 .rel(var("baseRole2").label("subSubRole2"), var("y2"))
                 .isa("binary");
 
-        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Graql.and(Sets.newHashSet(basePattern)), tx);
+        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Pattern.and(Sets.newHashSet(basePattern)), tx);
         ReasonerAtomicQuery childQuery = ReasonerQueries
                 .atomic(conjunction(
                         "{($r1: $x1, $r2: $x2) isa binary;" +
@@ -411,7 +411,7 @@ public class AtomicUnificationIT {
                 .rel(var("baseRole1").label("subRole1"), var("y1"))
                 .rel(var("baseRole2").label("subSubRole2"), var("y2"));
 
-        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Graql.and(Sets.newHashSet(basePattern)), tx);
+        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Pattern.and(Sets.newHashSet(basePattern)), tx);
         ReasonerAtomicQuery childQuery = ReasonerQueries
                 .atomic(conjunction(
                         "{($r1: $x1, $r2: $x2);" +
@@ -512,6 +512,6 @@ public class AtomicUnificationIT {
         Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+        return Pattern.and(vars);
     }
 }

@@ -21,7 +21,6 @@ package grakn.core.graql.internal.reasoner.rule;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Conjunction;
@@ -123,7 +122,7 @@ public class InferenceRule {
         Set<Statement> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+        return Pattern.and(vars);
     }
 
     public Rule getRule(){ return rule;}

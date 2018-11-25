@@ -44,9 +44,9 @@ public class AtomicFactory {
      * @return set of atoms
      */
     public static Stream<Atomic> createAtoms(Conjunction<Statement> pattern, ReasonerQuery parent) {
-        Set<Atomic> atoms = pattern.varPatterns().stream()
+        Set<Atomic> atoms = pattern.statements().stream()
                 .flatMap(var -> var.getProperties()
-                        .map(vp -> vp.mapToAtom(var, pattern.varPatterns(), parent))
+                        .map(vp -> vp.mapToAtom(var, pattern.statements(), parent))
                         .filter(Objects::nonNull))
                 .collect(Collectors.toSet());
 

@@ -182,7 +182,7 @@ public abstract class Atom extends AtomicBase {
      * @return var properties this atom (its pattern) contains
      */
     public Stream<VarProperty> getVarProperties() {
-        return getCombinedPattern().varPatterns().stream().flatMap(vp -> vp.getProperties(getVarPropertyClass()));
+        return getCombinedPattern().statements().stream().flatMap(vp -> vp.getProperties(getVarPropertyClass()));
     }
 
     @Override

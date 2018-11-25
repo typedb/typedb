@@ -20,7 +20,7 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
@@ -111,7 +111,7 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
             GraphTraversal<?, Edge> traversal, @Nullable Variable role, Schema.EdgeProperty edgeProperty,
             Collection<Variable> vars) {
         if (role != null) {
-            Variable edge = Graql.var();
+            Variable edge = Pattern.var();
             traversal.as(edge.label());
             Fragments.outSubs(Fragments.traverseSchemaConceptFromEdge(traversal, edgeProperty));
             assignVar(traversal, role, vars).select(edge.label());

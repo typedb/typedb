@@ -60,9 +60,9 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.Graql.eq;
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.Syntax.Compute.Algorithm;
 import static grakn.core.graql.query.Syntax.Compute.Argument;
 import static grakn.core.graql.query.Syntax.Compute.Method;
@@ -222,7 +222,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
 
     @Override
     public Pattern visitOrPattern(GraqlParser.OrPatternContext ctx) {
-        return Graql.or(ctx.pattern().stream().map(this::visitPattern).collect(toList()));
+        return Pattern.or(ctx.pattern().stream().map(this::visitPattern).collect(toList()));
     }
 
     @Override
@@ -275,8 +275,8 @@ class GraqlConstructor extends GraqlBaseVisitor {
     public UnaryOperator<Statement> visitPropHas(GraqlParser.PropHasContext ctx) {
         Label type = visitLabel(ctx.label());
 
-        Statement relation = Optional.ofNullable(ctx.relation).map(this::getVariable).orElseGet(Graql::var);
-        Statement resource = Optional.ofNullable(ctx.resource).map(this::getVariable).orElseGet(Graql::var);
+        Statement relation = Optional.ofNullable(ctx.relation).map(this::getVariable).orElseGet(Pattern::var);
+        Statement resource = Optional.ofNullable(ctx.resource).map(this::getVariable).orElseGet(Pattern::var);
 
         if (ctx.predicate() != null) {
             resource = resource.val(visitPredicate(ctx.predicate()));
@@ -553,7 +553,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
 
     private Variable getVariable(Token variable) {
         // Remove '$' prefix
-        return Graql.var(variable.getText().substring(1));
+        return Pattern.var(variable.getText().substring(1));
     }
 
     private String getRegex(TerminalNode string) {
@@ -605,7 +605,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     private Variable var() {
-        Variable var = Graql.var();
+        Variable var = Pattern.var();
 
         if (defineAllVars) {
             return var.asUserDefined();

@@ -83,7 +83,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public Match match(Collection<? extends Pattern> patterns) {
-        Conjunction<Pattern> conjunction = Graql.and(Sets.newHashSet(patterns));
+        Conjunction<Pattern> conjunction = Pattern.and(Sets.newHashSet(patterns));
         MatchBase base = new MatchBase(conjunction);
         Match match = infer ? base.infer().admin() : base;
         return (tx != null) ? match.withTx(tx) : match;

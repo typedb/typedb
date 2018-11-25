@@ -19,8 +19,8 @@
 package grakn.core.graql.reasoner.atomic;
 
 import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
@@ -62,7 +62,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 
@@ -446,6 +446,6 @@ public class AtomicTypeInferenceIT {
         Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+        return Pattern.and(vars);
     }
 }

@@ -26,8 +26,8 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Match;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
@@ -43,7 +43,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY;
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY_OWNER;
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY_VALUE;
@@ -82,11 +82,11 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
                 GraqlQueryException.noLabelSpecifiedForHas(resourceType)
         );
 
-        Statement role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
+        Statement role = Pattern.label(Schema.MetaSchema.ROLE.getLabel());
 
         Statement ownerRole = var().sub(role);
         Statement valueRole = var().sub(role);
-        Statement relationType = var().sub(Graql.label(Schema.MetaSchema.RELATIONSHIP.getLabel()));
+        Statement relationType = var().sub(Pattern.label(Schema.MetaSchema.RELATIONSHIP.getLabel()));
 
         // If a key, limit only to the implicit key type
         if(required){
@@ -183,7 +183,7 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         ConceptId predicateId = schemaConcept != null? schemaConcept.id() : null;
         //isa part
-        Statement resVar = varName.has(Graql.label(label));
+        Statement resVar = varName.has(Pattern.label(label));
         return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 }

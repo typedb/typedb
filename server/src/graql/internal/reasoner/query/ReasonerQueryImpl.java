@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.query.pattern.Pattern;
@@ -74,7 +73,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 
 /**
  *
@@ -212,10 +211,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public void checkValid() { getAtoms().forEach(Atomic::checkValid);}
 
     public Conjunction<Pattern> getPattern() {
-        return Graql.and(
+        return Pattern.and(
                 getAtoms().stream()
                         .map(Atomic::getCombinedPattern)
-                        .flatMap(p -> p.varPatterns().stream())
+                        .flatMap(p -> p.statements().stream())
                         .collect(Collectors.toSet())
         );
     }

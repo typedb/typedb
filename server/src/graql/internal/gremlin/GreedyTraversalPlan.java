@@ -66,7 +66,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.internal.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 

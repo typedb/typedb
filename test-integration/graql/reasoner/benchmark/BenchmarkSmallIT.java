@@ -24,8 +24,8 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.Statement;
@@ -91,23 +91,23 @@ public class BenchmarkSmallIT {
                     .assign(toRole, toEntity);
 
             for (int i = 1; i <= N; i++) {
-                Variable fromVar = Graql.var().asUserDefined();
-                Variable toVar = Graql.var().asUserDefined();
-                Statement rulePattern = Graql
+                Variable fromVar = Pattern.var().asUserDefined();
+                Variable toVar = Pattern.var().asUserDefined();
+                Statement rulePattern = Pattern
                         .label("rule" + i)
                         .when(
-                                Graql.and(
-                                        Graql.var()
-                                                .rel(Graql.label(fromRole.label()), fromVar)
-                                                .rel(Graql.label(toRole.label()), toVar)
+                                Pattern.and(
+                                        Pattern.var()
+                                                .rel(Pattern.label(fromRole.label()), fromVar)
+                                                .rel(Pattern.label(toRole.label()), toVar)
                                                 .isa("relation" + (i - 1))
                                 )
                         )
                         .then(
-                                Graql.and(
-                                        Graql.var()
-                                                .rel(Graql.label(fromRole.label()), fromVar)
-                                                .rel(Graql.label(toRole.label()), toVar)
+                                Pattern.and(
+                                        Pattern.var()
+                                                .rel(Pattern.label(fromRole.label()), fromVar)
+                                                .rel(Pattern.label(toRole.label()), toVar)
                                                 .isa("relation" + i)
                                 )
                         );

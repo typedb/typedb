@@ -1,6 +1,5 @@
 package grakn.core.graql.reasoner.atomic;
 
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -37,7 +36,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -726,7 +725,7 @@ public class AtomicRuleApplicabilityIT {
         Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+        return Pattern.and(vars);
     }
 
     private Multimap<Role, Variable> roleSetMap(Multimap<Role, Variable> roleVarMap) {

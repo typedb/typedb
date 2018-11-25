@@ -18,8 +18,15 @@
 
 package grakn.core.graql.query.pattern;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import grakn.core.graql.concept.Label;
+
 import javax.annotation.CheckReturnValue;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -33,6 +40,132 @@ import static java.util.stream.Collectors.toSet;
  */
 public interface Pattern {
 
+    AtomicLong counter = new AtomicLong(System.currentTimeMillis() * 1000);
+
+    /**
+     * @param name the name of the variable
+     * @return a new query variable
+     */
+    @CheckReturnValue
+    static Variable var(String name) {
+        return new Variable(name, Variable.Type.UserDefined);
+    }
+
+    /**
+     * @return a new, anonymous query variable
+     */
+    @CheckReturnValue
+    static Variable var() {
+        return new Variable(Long.toString(counter.getAndIncrement()), Variable.Type.Generated);
+    }
+
+    /**
+     * @param label the label of a concept
+     * @return a variable pattern that identifies a concept by label
+     */
+    @CheckReturnValue
+    static Statement label(String label) {
+        return var().label(label);
+    }
+
+    /**
+     * @param label the label of a concept
+     * @return a variable pattern that identifies a concept by label
+     */
+    @CheckReturnValue
+    static Statement label(Label label) {
+        return var().label(label);
+    }
+
+    /**
+     * @param patterns an array of patterns to match
+     * @return a pattern that will match only when all contained patterns match
+     */
+    @CheckReturnValue
+    static Pattern and(Pattern... patterns) {
+        return and(Arrays.asList(patterns));
+    }
+
+    /**
+     * @param patterns a collection of patterns to match
+     * @return a pattern that will match only when all contained patterns match
+     */
+    @CheckReturnValue
+    static Pattern and(Collection<? extends Pattern> patterns) {
+        return and(Sets.newHashSet(patterns));
+    }
+
+    static <T extends Pattern> Conjunction<T> and(Set<T> patterns) {
+        return new Conjunction<>(patterns);
+    }
+
+    /**
+     * @param patterns an array of patterns to match
+     * @return a pattern that will match when any contained pattern matches
+     */
+    @CheckReturnValue
+    static Pattern or(Pattern... patterns) {
+        return or(Arrays.asList(patterns));
+    }
+
+    /**
+     * @param patterns a collection of patterns to match
+     * @return a pattern that will match when any contained pattern matches
+     */
+    @CheckReturnValue
+    static Pattern or(Collection<? extends Pattern> patterns) {
+        // Simplify representation when there is only one alternative
+        if (patterns.size() == 1) {
+            return Iterables.getOnlyElement(patterns);
+        }
+
+        return or(Sets.newHashSet(patterns));
+    }
+
+    static <T extends Pattern> Disjunction<T> or(Set<T> patterns) {
+        return new Disjunction<>(patterns);
+    }
+
+    /**
+     * Get all common, user-defined {@link Variable}s in the {@link Pattern}.
+     */
+    @CheckReturnValue
+    Set<Variable> variables();
+
+    /**
+     * @return all variables referenced in the pattern
+     */
+    @CheckReturnValue
+    default Set<Statement> statements() {
+        return getDisjunctiveNormalForm().getPatterns().stream()
+                .flatMap(conj -> conj.getPatterns().stream())
+                .collect(toSet());
+    }
+
+    /**
+     * @return this {@link Pattern} as a {@link Statement}, if it is one.
+     */
+    @CheckReturnValue
+    default Statement asStatement() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return true if this {@link Pattern}  is a {@link Conjunction}
+     */
+    @CheckReturnValue
+    default boolean isDisjunction() {
+        return false;
+    }
+
+    /**
+     * @return true if this {@link Pattern}  is a {@link Disjunction}
+     */
+    @CheckReturnValue
+    default boolean isConjunction() {
+        return false;
+    }
+
     /**
      * Get the disjunctive normal form of this pattern group.
      * This means the pattern group will be transformed into a number of conjunctive patterns, where each is disjunct.
@@ -45,43 +178,4 @@ public interface Pattern {
      */
     @CheckReturnValue
     Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm();
-
-    /**
-     * Get all common, user-defined variable names in the pattern.
-     */
-    @CheckReturnValue
-    Set<Variable> commonVars();
-
-    /**
-     * @return true if this Pattern is a Conjunction
-     */
-    @CheckReturnValue
-    default boolean isDisjunction() {
-        return false;
-    }
-
-    /**
-     * @return true if this Pattern is a Disjunction
-     */
-    @CheckReturnValue
-    default boolean isConjunction() {
-        return false;
-    }
-
-    /**
-     * @return this {@link Pattern} as a {@link Statement}, if it is one.
-     */
-    @CheckReturnValue
-    default Statement asVarPattern() {
-        throw new UnsupportedOperationException();
-    }
-    /**
-     * @return all variables referenced in the pattern
-     */
-    @CheckReturnValue
-    default Set<Statement> varPatterns() {
-        return getDisjunctiveNormalForm().getPatterns().stream()
-                .flatMap(conj -> conj.getPatterns().stream())
-                .collect(toSet());
-    }
 }

@@ -365,7 +365,7 @@ class ValidateGlobalRules {
     private static Set<String> checkRuleSideInvalid(Transaction graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
-        pattern.varPatterns().stream()
+        pattern.statements().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
                     SchemaConcept schemaConcept = graph.getSchemaConcept(typeLabel);

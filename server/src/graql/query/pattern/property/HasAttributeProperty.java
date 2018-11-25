@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -27,7 +28,6 @@ import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
@@ -44,7 +44,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
@@ -116,8 +116,8 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         Label hasValueRole= Schema.ImplicitType.HAS_VALUE.getLabel(type);
         Label keyValueRole = Schema.ImplicitType.KEY_VALUE.getLabel(type);
 
-        Variable edge1 = Graql.var();
-        Variable edge2 = Graql.var();
+        Variable edge1 = Pattern.var();
+        Variable edge2 = Pattern.var();
 
         return ImmutableSet.of(
                 //owner rolePlayer edge
@@ -207,7 +207,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
 
         Variable relationVariable = relationship().var();
         Variable attributeVariable = attribute().var().asUserDefined();
-        Variable predicateVariable = Graql.var();
+        Variable predicateVariable = Pattern.var();
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent);
 
         IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);

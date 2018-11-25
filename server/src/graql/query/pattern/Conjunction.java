@@ -23,7 +23,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.query.Graql;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 
@@ -73,15 +72,15 @@ public class Conjunction<T extends Pattern> implements Pattern {
                 .map(Conjunction::fromConjunctions)
                 .collect(toSet());
 
-        return Graql.or(dnf);
+        return Pattern.or(dnf);
 
         // Wasn't that a horrible function? Here it is in Haskell:
         //     dnf = map fromConjunctions . sequence . map getDisjunctiveNormalForm . patterns
     }
 
     @Override
-    public Set<Variable> commonVars() {
-        return getPatterns().stream().map(Pattern::commonVars).reduce(ImmutableSet.of(), Sets::union);
+    public Set<Variable> variables() {
+        return getPatterns().stream().map(Pattern::variables).reduce(ImmutableSet.of(), Sets::union);
     }
 
     @Override
@@ -101,7 +100,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
 
     private static <U extends Pattern> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {
         Set<U> patterns = conjunctions.stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(patterns);
+        return Pattern.and(patterns);
     }
 
     @Override

@@ -22,7 +22,6 @@ import grakn.core.server.Transaction;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
@@ -35,7 +34,7 @@ import org.junit.Test;
 
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.Graql.eq;
 import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.internal.gremlin.GraqlMatchers.feature;
@@ -51,12 +50,12 @@ import static org.mockito.Mockito.when;
 public class ConjunctionQueryTest {
     private Label resourceTypeWithoutSubTypesLabel = Label.of("name");
     private Label resourceTypeWithSubTypesLabel = Label.of("resource");
-    private Statement resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
-    private Statement resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
+    private Statement resourceTypeWithoutSubTypes = Pattern.label(resourceTypeWithoutSubTypesLabel);
+    private Statement resourceTypeWithSubTypes = Pattern.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
     private Transaction tx;
-    private Variable x = Graql.var("x");
-    private Variable y = Graql.var("y");
+    private Variable x = Pattern.var("x");
+    private Variable y = Pattern.var("y");
 
     @SuppressWarnings("ResultOfMethodCallIgnored") // Mockito confuses IntelliJ
     @Before

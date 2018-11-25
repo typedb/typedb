@@ -25,6 +25,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Attribute;
@@ -52,7 +53,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subList;
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -864,6 +865,6 @@ public class AtomicQueryUnificationIT {
         Set<Statement> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+        return Pattern.and(vars);
     }
 }

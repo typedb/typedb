@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import java.util.Collection;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 

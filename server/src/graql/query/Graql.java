@@ -19,10 +19,7 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
@@ -40,8 +37,6 @@ import grakn.core.graql.query.aggregate.SumAggregate;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.predicate.Predicates;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
 import javax.annotation.CheckReturnValue;
@@ -50,7 +45,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static grakn.core.graql.query.Syntax.Compute.Method;
 import static java.util.stream.Collectors.toSet;
@@ -62,8 +56,6 @@ import static java.util.stream.Collectors.toSet;
  *
  */
 public class Graql {
-
-    private static final AtomicLong counter = new AtomicLong(System.currentTimeMillis() * 1000);
 
     // QUERY BUILDING
 
@@ -162,90 +154,6 @@ public class Graql {
 
     // PATTERNS AND VARS
 
-    /**
-     * @param name the name of the variable
-     * @return a new query variable
-     */
-    @CheckReturnValue
-    public static Variable var(String name) {
-        return new Variable(name, Variable.Type.UserDefined);
-    }
-
-    /**
-     * @return a new, anonymous query variable
-     */
-    @CheckReturnValue
-    public static Variable var() {
-        return new Variable(Long.toString(counter.getAndIncrement()), Variable.Type.Generated);
-    }
-
-    /**
-     * @param label the label of a concept
-     * @return a variable pattern that identifies a concept by label
-     */
-    @CheckReturnValue
-    public static Statement label(Label label) {
-        return var().label(label);
-    }
-
-    /**
-     * @param label the label of a concept
-     * @return a variable pattern that identifies a concept by label
-     */
-    @CheckReturnValue
-    public static Statement label(String label) {
-        return var().label(label);
-    }
-
-    /**
-     * @param patterns an array of patterns to match
-     * @return a pattern that will match only when all contained patterns match
-     */
-    @CheckReturnValue
-    public static Pattern and(Pattern... patterns) {
-        return and(Arrays.asList(patterns));
-    }
-
-    /**
-     * @param patterns a collection of patterns to match
-     * @return a pattern that will match only when all contained patterns match
-     */
-    @CheckReturnValue
-    public static Pattern and(Collection<? extends Pattern> patterns) {
-        return and(Sets.newHashSet(patterns));
-    }
-
-    public static <T extends Pattern> Conjunction<T> and(Set<T> patterns) {
-        return new Conjunction<>(patterns);
-    }
-
-    /**
-     * @param patterns an array of patterns to match
-     * @return a pattern that will match when any contained pattern matches
-     */
-    @CheckReturnValue
-    public static Pattern or(Pattern... patterns) {
-        return or(Arrays.asList(patterns));
-    }
-
-    /**
-     * @param patterns a collection of patterns to match
-     * @return a pattern that will match when any contained pattern matches
-     */
-    @CheckReturnValue
-    public static Pattern or(Collection<? extends Pattern> patterns) {
-        // Simplify representation when there is only one alternative
-        if (patterns.size() == 1) {
-            return Iterables.getOnlyElement(patterns);
-        }
-
-        return or(Sets.newHashSet(patterns));
-    }
-
-    public static <T extends Pattern> Disjunction<T> or(Set<T> patterns) {
-        return new Disjunction<>(patterns);
-    }
-
 
     // AGGREGATES
 
@@ -254,7 +162,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> count(String... vars) {
-        return new CountAggregate(Arrays.stream(vars).map(Graql::var).collect(toSet()));
+        return new CountAggregate(Arrays.stream(vars).map(Pattern::var).collect(toSet()));
     }
 
     /**
@@ -272,7 +180,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> sum(String var) {
-        return new SumAggregate(Graql.var(var));
+        return new SumAggregate(Pattern.var(var));
     }
 
     /**
@@ -289,7 +197,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> min(String var) {
-        return new MinAggregate(Graql.var(var));
+        return new MinAggregate(Pattern.var(var));
     }
 
     /**
@@ -307,7 +215,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> max(String var) {
-        return new MaxAggregate(Graql.var(var));
+        return new MaxAggregate(Pattern.var(var));
     }
 
     /**
@@ -325,7 +233,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> mean(String var) {
-        return new MeanAggregate(Graql.var(var));
+        return new MeanAggregate(Pattern.var(var));
     }
 
     /**
@@ -343,7 +251,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> median(String var) {
-        return new MedianAggregate(Graql.var(var));
+        return new MedianAggregate(Pattern.var(var));
     }
 
     /**
@@ -361,7 +269,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> std(String var) {
-        return new StdAggregate(Graql.var(var));
+        return new StdAggregate(Pattern.var(var));
     }
 
     /**
@@ -398,7 +306,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static <T extends Answer> Aggregate<AnswerGroup<T>> group(String var, Aggregate<T> aggregate) {
-        return group(Graql.var(var), aggregate);
+        return group(Pattern.var(var), aggregate);
     }
 
     /**

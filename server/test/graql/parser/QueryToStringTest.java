@@ -28,14 +28,14 @@ import grakn.core.graql.query.QueryBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
-import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.Graql.contains;
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
 import static grakn.core.graql.query.Graql.neq;
-import static grakn.core.graql.query.Graql.or;
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.or;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.query.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static grakn.core.graql.query.Syntax.Compute.Algorithm.DEGREE;
 import static grakn.core.graql.query.Syntax.Compute.Algorithm.K_CORE;

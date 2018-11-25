@@ -1,6 +1,7 @@
 package grakn.core.graql.reasoner.query;
 
 
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Graql;
@@ -437,7 +438,7 @@ public class AtomicQueryEquivalenceIT {
         Set<Statement> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+        return Pattern.and(vars);
     }
 
 }
