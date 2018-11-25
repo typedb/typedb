@@ -23,12 +23,12 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
-import grakn.core.graql.query.pattern.VarPatternImpl;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.server.session.TransactionImpl;
@@ -74,13 +74,13 @@ import static org.mockito.Mockito.when;
 
 public class GraqlTraversalTest {
 
-    private static final Var a = Graql.var("a");
-    private static final Var b = Graql.var("b");
-    private static final Var c = Graql.var("c");
-    private static final Var x = Graql.var("x");
-    private static final Var y = Graql.var("y");
-    private static final Var z = Graql.var("z");
-    private static final Var xx = Graql.var("xx");
+    private static final Variable a = Graql.var("a");
+    private static final Variable b = Graql.var("b");
+    private static final Variable c = Graql.var("c");
+    private static final Variable x = Graql.var("x");
+    private static final Variable y = Graql.var("y");
+    private static final Variable z = Graql.var("z");
+    private static final Variable xx = Graql.var("xx");
     private static final Fragment xId = id(null, x, ConceptId.of("Titanic"));
     private static final Fragment yId = id(null, y, ConceptId.of("movie"));
     private static final Fragment xIsaY = outIsa(null, x, y);
@@ -157,9 +157,9 @@ public class GraqlTraversalTest {
     public void testAllTraversalsSimpleQuery() {
         IdProperty titanicId = IdProperty.of(ConceptId.of("Titanic"));
         IdProperty movieId = IdProperty.of(ConceptId.of("movie"));
-        SubProperty subProperty = SubProperty.of(new VarPatternImpl(y, ImmutableSet.of(movieId)));
+        SubProperty subProperty = SubProperty.of(new StatementImpl(y, ImmutableSet.of(movieId)));
 
-        VarPattern pattern = new VarPatternImpl(x, ImmutableSet.of(titanicId, subProperty));
+        Statement pattern = new StatementImpl(x, ImmutableSet.of(titanicId, subProperty));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
@@ -224,7 +224,7 @@ public class GraqlTraversalTest {
     @Ignore("Need to build proper mocks")
     @Test
     public void whenPlanningSimpleUnaryRelation_ApplyRolePlayerOptimisation() {
-        VarPattern rel = var("x").rel("y");
+        Statement rel = var("x").rel("y");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
@@ -242,7 +242,7 @@ public class GraqlTraversalTest {
     @Ignore("Need to build proper mocks")
     @Test
     public void whenPlanningSimpleBinaryRelationQuery_ApplyRolePlayerOptimisation() {
-        VarPattern rel = var("x").rel("y").rel("z");
+        Statement rel = var("x").rel("y").rel("z");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
@@ -255,7 +255,7 @@ public class GraqlTraversalTest {
     @Ignore("Need to build proper mocks")
     @Test
     public void whenPlanningBinaryRelationQueryWithType_ApplyRolePlayerOptimisation() {
-        VarPattern rel = var("x").rel("y").rel("z").isa("marriage");
+        Statement rel = var("x").rel("y").rel("z").isa("marriage");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
@@ -268,7 +268,7 @@ public class GraqlTraversalTest {
     @Ignore("Need to build proper mocks")
     @Test
     public void testRolePlayerOptimisationWithRoles() {
-        VarPattern rel = var("x").rel("y").rel("wife", "z");
+        Statement rel = var("x").rel("y").rel("wife", "z");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
@@ -293,7 +293,7 @@ public class GraqlTraversalTest {
     }
 
     private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
-        Collection<Conjunction<VarPattern>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
+        Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         List<Set<List<Fragment>>> collect = patterns.stream()
                 .map(conjunction -> new ConjunctionQuery(conjunction, tx))
@@ -313,7 +313,7 @@ public class GraqlTraversalTest {
 
         // Make sure all dependencies are met
         for (List<Fragment> fragmentList : fragments) {
-            Set<Var> visited = new HashSet<>();
+            Set<Variable> visited = new HashSet<>();
 
             for (Fragment fragment : fragmentList) {
                 if (!visited.containsAll(fragment.dependencies())) {
@@ -327,11 +327,11 @@ public class GraqlTraversalTest {
         return Optional.of(GraqlTraversal.create(fragments));
     }
 
-    private static Fragment outRolePlayer(Var relation, Var rolePlayer) {
+    private static Fragment outRolePlayer(Variable relation, Variable rolePlayer) {
         return Fragments.outRolePlayer(null, relation, a, rolePlayer, null, null, null);
     }
 
-    private static Fragment inRolePlayer(Var rolePlayer, Var relation) {
+    private static Fragment inRolePlayer(Variable rolePlayer, Variable relation) {
         return Fragments.inRolePlayer(null, rolePlayer, c, relation, null, null, null);
     }
 

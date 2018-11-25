@@ -23,7 +23,7 @@ import grakn.core.client.Grakn;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptList;
@@ -73,7 +73,7 @@ public class ResponseReader {
         );
     }
     static ConceptMap conceptMap(AnswerProto.ConceptMap res, Grakn.Transaction tx) {
-        ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
+        ImmutableMap.Builder<Variable, Concept> map = ImmutableMap.builder();
         res.getMapMap().forEach((resVar, resConcept) -> {
             map.put(Graql.var(resVar), RemoteConcept.of(resConcept, tx));
         });

@@ -21,10 +21,10 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.executor.ConceptBuilder;
 import grakn.core.graql.internal.reasoner.atom.binary.SubAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -44,15 +44,15 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
 public abstract class AbstractSubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
 
-    public abstract VarPattern superType();
+    public abstract Statement superType();
 
     @Override
-    public Stream<VarPattern> getTypes() {
+    public Stream<Statement> getTypes() {
         return Stream.of(superType());
     }
 
     @Override
-    public Stream<VarPattern> innerVarPatterns() {
+    public Stream<Statement> innerVarPatterns() {
         return Stream.of(superType());
     }
 
@@ -62,7 +62,7 @@ public abstract class AbstractSubProperty extends AbstractVarProperty implements
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             SchemaConcept superConcept = executor.get(superType().var()).asSchemaConcept();
 
@@ -79,7 +79,7 @@ public abstract class AbstractSubProperty extends AbstractVarProperty implements
     }
 
     @Override
-    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             SchemaConcept concept = executor.get(var).asSchemaConcept();
 
@@ -95,10 +95,10 @@ public abstract class AbstractSubProperty extends AbstractVarProperty implements
     }
 
     @Override
-    public Atomic mapToAtom(VarPattern var, Set<VarPattern> vars, ReasonerQuery parent) {
-        Var varName = var.var().asUserDefined();
-        VarPattern typeVar = this.superType();
-        Var typeVariable = typeVar.var();
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        Variable varName = var.var().asUserDefined();
+        Statement typeVar = this.superType();
+        Variable typeVariable = typeVar.var();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         return SubAtom.create(varName, typeVariable, predicateId, parent);

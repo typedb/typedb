@@ -30,12 +30,12 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.UnifierComparison;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.answer.ConceptMap;
@@ -85,11 +85,11 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalen
 @AutoValue
 public abstract class ResourceAtom extends Binary{
 
-    public abstract Var getRelationVariable();
-    public abstract Var getAttributeVariable();
+    public abstract Variable getRelationVariable();
+    public abstract Variable getAttributeVariable();
     public abstract ImmutableSet<ValuePredicate> getMultiPredicate();
 
-    public static ResourceAtom create(VarPattern pattern, Var attributeVariable, Var relationVariable, Var predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
+    public static ResourceAtom create(Statement pattern, Variable attributeVariable, Variable relationVariable, Variable predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
         return new AutoValue_ResourceAtom(pattern.var(), pattern, parent, predicateVariable, predicateId, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
     }
     private static ResourceAtom create(ResourceAtom a, ReasonerQuery parent) {
@@ -189,7 +189,7 @@ public abstract class ResourceAtom extends Binary{
 
     @Override
     protected Pattern createCombinedPattern(){
-        Set<VarPattern> vars = getMultiPredicate().stream()
+        Set<Statement> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
                 .map(varPattern -> varPattern)
                 .collect(Collectors.toSet());
@@ -241,8 +241,8 @@ public abstract class ResourceAtom extends Binary{
     }
 
     @Override
-    public Set<Var> getVarNames() {
-        Set<Var> varNames = super.getVarNames();
+    public Set<Variable> getVarNames() {
+        Set<Variable> varNames = super.getVarNames();
         varNames.add(getAttributeVariable());
         if (getRelationVariable().isUserDefinedName()) varNames.add(getRelationVariable());
         return varNames;
@@ -287,15 +287,15 @@ public abstract class ResourceAtom extends Binary{
         }
 
         //unify attribute vars
-        Var childAttributeVarName = this.getAttributeVariable();
-        Var parentAttributeVarName = parent.getAttributeVariable();
+        Variable childAttributeVarName = this.getAttributeVariable();
+        Variable parentAttributeVarName = parent.getAttributeVariable();
         if (parentAttributeVarName.isUserDefinedName()){
             unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childAttributeVarName, parentAttributeVarName)));
         }
 
         //unify relation vars
-        Var childRelationVarName = this.getRelationVariable();
-        Var parentRelationVarName = parent.getRelationVariable();
+        Variable childRelationVarName = this.getRelationVariable();
+        Variable parentRelationVarName = parent.getRelationVariable();
         if (parentRelationVarName.isUserDefinedName()){
             unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
         }
@@ -327,7 +327,7 @@ public abstract class ResourceAtom extends Binary{
         ResourceAtom parentAtom = (ResourceAtom) p;
         Set<VariableDefinition> diff = new HashSet<>();
         Unifier unifierInverse = unifier.inverse();
-        Var childVar = getAttributeVariable();
+        Variable childVar = getAttributeVariable();
         Set<ValuePredicate> predicates = new HashSet<>(getMultiPredicate());
         parentAtom.getMultiPredicate().stream()
                 .flatMap(vp -> vp.unify(unifierInverse).stream())
@@ -342,7 +342,7 @@ public abstract class ResourceAtom extends Binary{
         AttributeTypeImpl attributeType = AttributeTypeImpl.from(getSchemaConcept().asAttributeType());
 
         Concept owner = substitution.get(getVarName());
-        Var resourceVariable = getAttributeVariable();
+        Variable resourceVariable = getAttributeVariable();
 
         //if the attribute already exists, only attach a new link to the owner, otherwise create a new attribute
         Attribute attribute;
@@ -373,9 +373,9 @@ public abstract class ResourceAtom extends Binary{
 
     @Override
     public ResourceAtom rewriteWithRelationVariable(){
-        Var attributeVariable = getAttributeVariable();
-        Var relationVariable = getRelationVariable().asUserDefined();
-        VarPattern newVar = getVarName().has(getSchemaConcept().label(), attributeVariable, relationVariable);
+        Variable attributeVariable = getAttributeVariable();
+        Variable relationVariable = getRelationVariable().asUserDefined();
+        Statement newVar = getVarName().has(getSchemaConcept().label(), attributeVariable, relationVariable);
         return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 

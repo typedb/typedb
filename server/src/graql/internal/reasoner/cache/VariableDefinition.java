@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Objects;
 import java.util.Set;
@@ -37,13 +37,13 @@ import javax.annotation.Nullable;
  */
 public class VariableDefinition {
 
-    final private Var var;
+    final private Variable var;
     final private Type type;
     final private Role role;
     final private Set<Role> playedRoles;
     final private Set<ValuePredicate> vps;
 
-    public VariableDefinition(Var var, @Nullable Type type, @Nullable Role role, Set<Role> playedRoles, Set<ValuePredicate> vps) {
+    public VariableDefinition(Variable var, @Nullable Type type, @Nullable Role role, Set<Role> playedRoles, Set<ValuePredicate> vps) {
         this.var = var;
         this.type = type;
         this.role = role;
@@ -78,7 +78,7 @@ public class VariableDefinition {
         return Objects.hash(var, type, role, playedRoles, vps);
     }
 
-    public Var var() { return var;}
+    public Variable var() { return var;}
 
     public Type type() { return type;}
 

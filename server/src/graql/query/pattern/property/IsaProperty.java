@@ -21,8 +21,8 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import com.google.auto.value.AutoValue;
@@ -49,11 +49,11 @@ public abstract class IsaProperty extends AbstractIsaProperty {
 
     public static final String NAME = "isa";
 
-    public static IsaProperty of(VarPattern type) {
+    public static IsaProperty of(Statement type) {
         return new AutoValue_IsaProperty(type, Graql.var());
     }
 
-    public abstract Var directTypeVar();
+    public abstract Variable directTypeVar();
 
     @Override
     public String getName() {
@@ -61,7 +61,7 @@ public abstract class IsaProperty extends AbstractIsaProperty {
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Var start) {
+    public Collection<EquivalentFragmentSet> match(Variable start) {
         return ImmutableSet.of(
                 EquivalentFragmentSets.isa(this, start, directTypeVar(), true),
                 EquivalentFragmentSets.sub(this, directTypeVar(), type().var())
@@ -69,7 +69,7 @@ public abstract class IsaProperty extends AbstractIsaProperty {
     }
 
     @Override
-    protected final VarPattern varPatternForAtom(Var varName, Var typeVariable) {
+    protected final Statement varPatternForAtom(Variable varName, Variable typeVariable) {
         return varName.isa(typeVariable);
     }
 

@@ -23,7 +23,7 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -154,7 +154,7 @@ public class ResourceAttachmentIT {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
             QueryBuilder qb = tx.graql().infer(true);
 
-            VarPattern has = var("x").has(Label.of("reattachable-resource-string"), var("y"), var("r"));
+            Statement has = var("x").has(Label.of("reattachable-resource-string"), var("y"), var("r"));
             List<ConceptMap> answers = qb.match(has).get().execute();
             assertEquals(3, answers.size());
             answers.forEach(a -> assertTrue(a.vars().contains(var("r"))));
@@ -167,9 +167,9 @@ public class ResourceAttachmentIT {
             QueryBuilder withInference = tx.graql().infer(true);
             QueryBuilder withoutInference = tx.graql().infer(false);
 
-            VarPattern owner = label(HAS_OWNER.getLabel("reattachable-resource-string"));
-            VarPattern value = label(HAS_VALUE.getLabel("reattachable-resource-string"));
-            VarPattern hasRes = label(HAS.getLabel("reattachable-resource-string"));
+            Statement owner = label(HAS_OWNER.getLabel("reattachable-resource-string"));
+            Statement value = label(HAS_VALUE.getLabel("reattachable-resource-string"));
+            Statement hasRes = label(HAS.getLabel("reattachable-resource-string"));
 
             Function<QueryBuilder, GetQuery> query = qb -> qb.match(
                     var().rel(owner, "x").rel(value, "y").isa(hasRes),

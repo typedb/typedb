@@ -19,7 +19,7 @@
 package grakn.core.graql.admin;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Optional;
@@ -35,7 +35,7 @@ public abstract class RelationPlayer {
      * A role - role player pair without a role specified
      * @param rolePlayer the role player of the role - role player pair
      */
-    public static RelationPlayer of(VarPattern rolePlayer) {
+    public static RelationPlayer of(Statement rolePlayer) {
         return new AutoValue_RelationPlayer(Optional.empty(), rolePlayer);
     }
 
@@ -43,7 +43,7 @@ public abstract class RelationPlayer {
      * @param role the role of the role - role player pair
      * @param rolePlayer the role player of the role - role player pair
      */
-    public static RelationPlayer of(VarPattern role, VarPattern rolePlayer) {
+    public static RelationPlayer of(Statement role, Statement rolePlayer) {
         return new AutoValue_RelationPlayer(Optional.of(role), rolePlayer);
     }
 
@@ -51,13 +51,13 @@ public abstract class RelationPlayer {
      * @return the role, if specified
      */
     @CheckReturnValue
-    public abstract Optional<VarPattern> getRole();
+    public abstract Optional<Statement> getRole();
 
     /**
      * @return the role player
      */
     @CheckReturnValue
-    public abstract VarPattern getRolePlayer();
+    public abstract Statement getRolePlayer();
 
     @Override
     public String toString() {

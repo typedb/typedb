@@ -44,13 +44,13 @@ public interface Pattern {
      * @return the pattern group in disjunctive normal form
      */
     @CheckReturnValue
-    Disjunction<Conjunction<VarPattern>> getDisjunctiveNormalForm();
+    Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm();
 
     /**
      * Get all common, user-defined variable names in the pattern.
      */
     @CheckReturnValue
-    Set<Var> commonVars();
+    Set<Variable> commonVars();
 
     /**
      * @return true if this Pattern is a Conjunction
@@ -69,17 +69,17 @@ public interface Pattern {
     }
 
     /**
-     * @return this {@link Pattern} as a {@link VarPattern}, if it is one.
+     * @return this {@link Pattern} as a {@link Statement}, if it is one.
      */
     @CheckReturnValue
-    default VarPattern asVarPattern() {
+    default Statement asVarPattern() {
         throw new UnsupportedOperationException();
     }
     /**
      * @return all variables referenced in the pattern
      */
     @CheckReturnValue
-    default Set<VarPattern> varPatterns() {
+    default Set<Statement> varPatterns() {
         return getDisjunctiveNormalForm().getPatterns().stream()
                 .flatMap(conj -> conj.getPatterns().stream())
                 .collect(toSet());

@@ -20,7 +20,7 @@ package grakn.core.graql.internal.executor;
 
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -42,7 +42,7 @@ import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.exception.InvalidKBException;
 
 import javax.annotation.Nullable;
@@ -83,7 +83,7 @@ public class ConceptBuilder {
 
     private final QueryOperationExecutor executor;
 
-    private final Var var;
+    private final Variable var;
 
     /**
      * A map of parameters that have been specified for this concept.
@@ -164,7 +164,7 @@ public class ConceptBuilder {
         return set(THEN, then);
     }
 
-    static ConceptBuilder of(QueryOperationExecutor executor, Var var) {
+    static ConceptBuilder of(QueryOperationExecutor executor, Variable var) {
         return new ConceptBuilder(executor, var);
     }
 
@@ -321,7 +321,7 @@ public class ConceptBuilder {
         }
     }
 
-    private ConceptBuilder(QueryOperationExecutor executor, Var var) {
+    private ConceptBuilder(QueryOperationExecutor executor, Variable var) {
         this.executor = executor;
         this.var = var;
     }
@@ -361,7 +361,7 @@ public class ConceptBuilder {
 
     private <T> ConceptBuilder set(BuilderParam<T> param, T value) {
         if (preProvidedParams.containsKey(param) && !preProvidedParams.get(param).equals(value)) {
-            VarPattern varPattern = executor.printableRepresentation(var);
+            Statement varPattern = executor.printableRepresentation(var);
             Object otherValue = preProvidedParams.get(param);
             throw GraqlQueryException.insertMultipleProperties(varPattern, param.name(), value, otherValue);
         }

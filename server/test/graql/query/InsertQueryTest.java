@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
 import grakn.core.graql.admin.MatchAdmin;
 import com.google.common.collect.ImmutableCollection;
@@ -35,8 +35,8 @@ public class InsertQueryTest {
     private final MatchAdmin match1 = Graql.match(var("x").isa("movie")).admin();
     private final MatchAdmin match2 = Graql.match(var("y").isa("movie")).admin();
 
-    private final ImmutableCollection<VarPattern> vars1 = ImmutableSet.of(var("x"));
-    private final ImmutableCollection<VarPattern> vars2 = ImmutableSet.of(var("y"));
+    private final ImmutableCollection<Statement> vars1 = ImmutableSet.of(var("x"));
+    private final ImmutableCollection<Statement> vars2 = ImmutableSet.of(var("y"));
 
     @Test
     public void insertQueriesWithTheSameVarsAndQueryAreEqual() {

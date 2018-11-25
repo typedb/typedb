@@ -30,11 +30,11 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -331,7 +331,7 @@ public class AtomicTypeInferenceIT {
         tx.close();
     }
 
-    private <T extends Atomic> T getAtom(ReasonerQuery q, Class<T> type, Set<Var> vars){
+    private <T extends Atomic> T getAtom(ReasonerQuery q, Class<T> type, Set<Variable> vars){
         return q.getAtoms(type)
                 .filter(at -> at.getVarNames().containsAll(vars))
                 .findFirst().get();
@@ -442,8 +442,8 @@ public class AtomicTypeInferenceIT {
         return tx.getEntityType(type).instances().map(Concept::id).findFirst().orElse(null);
     }
 
-    private Conjunction<VarPattern> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<VarPattern> vars = tx.graql().parser().parsePattern(patternString)
+    private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
+        Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Graql.and(vars);

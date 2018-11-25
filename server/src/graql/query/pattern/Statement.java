@@ -76,18 +76,18 @@ import static java.util.stream.Collectors.toSet;
  * should be set on the inserted concept. In a DeleteQuery, it describes the
  * properties that should be deleted.
  */
-public abstract class VarPattern implements Pattern {
+public abstract class Statement implements Pattern {
 
     /**
      * @return the variable name of this variable
      */
     @CheckReturnValue
-    public abstract Var var();
+    public abstract Variable var();
 
     protected abstract Set<VarProperty> properties();
 
     @Override
-    public VarPattern asVarPattern() {
+    public Statement asVarPattern() {
         return this;
     }
 
@@ -122,11 +122,11 @@ public abstract class VarPattern implements Pattern {
     }
 
     /**
-     * Get whether this {@link VarPattern} has a {@link VarProperty} of the given type
+     * Get whether this {@link Statement} has a {@link VarProperty} of the given type
      *
      * @param type the type of the {@link VarProperty}
      * @param <T>  the type of the {@link VarProperty}
-     * @return whether this {@link VarPattern} has a {@link VarProperty} of the given type
+     * @return whether this {@link Statement} has a {@link VarProperty} of the given type
      */
     @CheckReturnValue
     public final <T extends VarProperty> boolean hasProperty(Class<T> type) {
@@ -137,14 +137,14 @@ public abstract class VarPattern implements Pattern {
      * @return all variables that this variable references
      */
     @CheckReturnValue
-    public final Collection<VarPattern> innerVarPatterns() {
-        Stack<VarPattern> newVars = new Stack<>();
-        List<VarPattern> vars = new ArrayList<>();
+    public final Collection<Statement> innerVarPatterns() {
+        Stack<Statement> newVars = new Stack<>();
+        List<Statement> vars = new ArrayList<>();
 
         newVars.add(this);
 
         while (!newVars.isEmpty()) {
-            VarPattern var = newVars.pop();
+            Statement var = newVars.pop();
             vars.add(var);
             var.getProperties().flatMap(VarProperty::innerVarPatterns).forEach(newVars::add);
         }
@@ -156,14 +156,14 @@ public abstract class VarPattern implements Pattern {
      * Get all inner variables, including implicit variables such as in a has property
      */
     @CheckReturnValue
-    public final Collection<VarPattern> implicitInnerVarPatterns() {
-        Stack<VarPattern> newVars = new Stack<>();
-        List<VarPattern> vars = new ArrayList<>();
+    public final Collection<Statement> implicitInnerVarPatterns() {
+        Stack<Statement> newVars = new Stack<>();
+        List<Statement> vars = new ArrayList<>();
 
         newVars.add(this);
 
         while (!newVars.isEmpty()) {
-            VarPattern var = newVars.pop();
+            Statement var = newVars.pop();
             vars.add(var);
             var.getProperties().flatMap(VarProperty::implicitInnerVarPatterns).forEach(newVars::add);
         }
@@ -178,22 +178,22 @@ public abstract class VarPattern implements Pattern {
     public final Set<Label> getTypeLabels() {
         return getProperties()
                 .flatMap(VarProperty::getTypes)
-                .map(VarPattern::getTypeLabel).flatMap(CommonUtil::optionalToStream)
+                .map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
     }
 
     @Override
-    public final Disjunction<Conjunction<VarPattern>> getDisjunctiveNormalForm() {
+    public final Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
         // a disjunction containing only one option
-        Conjunction<VarPattern> conjunction = Graql.and(Collections.singleton(this));
+        Conjunction<Statement> conjunction = Graql.and(Collections.singleton(this));
         return Graql.or(Collections.singleton(conjunction));
     }
 
     @Override
-    public final Set<Var> commonVars() {
+    public final Set<Variable> commonVars() {
         return innerVarPatterns().stream()
                 .filter(v -> v.var().isUserDefinedName())
-                .map(VarPattern::var)
+                .map(Statement::var)
                 .collect(toSet());
     }
 
@@ -202,7 +202,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern id(ConceptId id) {
+    public final Statement id(ConceptId id) {
         return addProperty(IdProperty.of(id));
     }
 
@@ -211,7 +211,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern label(String label) {
+    public final Statement label(String label) {
         return label(Label.of(label));
     }
 
@@ -220,7 +220,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern label(Label label) {
+    public final Statement label(Label label) {
         return addProperty(LabelProperty.of(label));
     }
 
@@ -229,7 +229,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern val(Object value) {
+    public final Statement val(Object value) {
         return val(Graql.eq(value));
     }
 
@@ -238,7 +238,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern val(ValuePredicate predicate) {
+    public final Statement val(ValuePredicate predicate) {
         return addProperty(ValueProperty.of(predicate));
     }
 
@@ -250,7 +250,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern has(String type, Object value) {
+    public final Statement has(String type, Object value) {
         return has(type, Graql.eq(value));
     }
 
@@ -262,7 +262,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern has(String type, ValuePredicate predicate) {
+    public final Statement has(String type, ValuePredicate predicate) {
         return has(type, Graql.var().val(predicate));
     }
 
@@ -274,7 +274,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern has(String type, VarPattern attribute) {
+    public final Statement has(String type, Statement attribute) {
         return has(Label.of(type), attribute);
     }
 
@@ -286,7 +286,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern has(Label type, VarPattern attribute) {
+    public final Statement has(Label type, Statement attribute) {
         return has(type, attribute, Graql.var());
     }
 
@@ -300,7 +300,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern has(Label type, VarPattern attribute, VarPattern relationship) {
+    public final Statement has(Label type, Statement attribute, Statement relationship) {
         return addProperty(HasAttributeProperty.of(type, attribute, relationship));
     }
 
@@ -309,7 +309,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern isaExplicit(String type) {
+    public final Statement isaExplicit(String type) {
         return isaExplicit(Graql.label(type));
     }
 
@@ -318,7 +318,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern isaExplicit(VarPattern type) {
+    public final Statement isaExplicit(Statement type) {
         return addProperty(IsaExplicitProperty.of(type));
     }
 
@@ -327,7 +327,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern isa(String type) {
+    public final Statement isa(String type) {
         return isa(Graql.label(type));
     }
 
@@ -336,7 +336,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern isa(VarPattern type) {
+    public final Statement isa(Statement type) {
         return addProperty(IsaProperty.of(type));
     }
 
@@ -345,7 +345,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern sub(String type) {
+    public final Statement sub(String type) {
         return sub(Graql.label(type));
     }
 
@@ -354,7 +354,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern sub(VarPattern type) {
+    public final Statement sub(Statement type) {
         return addProperty(SubProperty.of(type));
     }
 
@@ -363,7 +363,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern subExplicit(String type) {
+    public final Statement subExplicit(String type) {
         return subExplicit(Graql.label(type));
     }
 
@@ -372,7 +372,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern subExplicit(VarPattern type) {
+    public final Statement subExplicit(Statement type) {
         return addProperty(SubExplicitProperty.of(type));
     }
 
@@ -381,7 +381,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern relates(String type) {
+    public final Statement relates(String type) {
         return relates(type, null);
     }
 
@@ -390,7 +390,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern relates(VarPattern type) {
+    public final Statement relates(Statement type) {
         return relates(type, null);
     }
 
@@ -399,7 +399,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public VarPattern relates(String roleType, @javax.annotation.Nullable String superRoleType) {
+    public Statement relates(String roleType, @javax.annotation.Nullable String superRoleType) {
         return relates(Graql.label(roleType), superRoleType == null ? null : Graql.label(superRoleType));
     }
 
@@ -408,7 +408,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public VarPattern relates(VarPattern roleType, @javax.annotation.Nullable VarPattern superRoleType) {
+    public Statement relates(Statement roleType, @javax.annotation.Nullable Statement superRoleType) {
         return addProperty(RelatesProperty.of(roleType, superRoleType));
     }
 
@@ -417,7 +417,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern plays(String type) {
+    public final Statement plays(String type) {
         return plays(Graql.label(type));
     }
 
@@ -426,7 +426,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern plays(VarPattern type) {
+    public final Statement plays(Statement type) {
         return addProperty(PlaysProperty.of(type, false));
     }
 
@@ -435,7 +435,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern has(String type) {
+    public final Statement has(String type) {
         return has(Graql.label(type));
     }
 
@@ -444,7 +444,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern has(VarPattern type) {
+    public final Statement has(Statement type) {
         return addProperty(HasAttributeTypeProperty.of(type, false));
     }
 
@@ -453,7 +453,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern key(String type) {
+    public final Statement key(String type) {
         return key(Graql.var().label(type));
     }
 
@@ -462,7 +462,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern key(VarPattern type) {
+    public final Statement key(Statement type) {
         return addProperty(HasAttributeTypeProperty.of(type, true));
     }
 
@@ -473,7 +473,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern rel(String roleplayer) {
+    public final Statement rel(String roleplayer) {
         return rel(Graql.var(roleplayer));
     }
 
@@ -484,7 +484,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern rel(VarPattern roleplayer) {
+    public final Statement rel(Statement roleplayer) {
         return addCasting(RelationPlayer.of(roleplayer));
     }
 
@@ -496,7 +496,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern rel(String role, String roleplayer) {
+    public final Statement rel(String role, String roleplayer) {
         return rel(Graql.label(role), Graql.var(roleplayer));
     }
 
@@ -508,7 +508,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern rel(VarPattern role, String roleplayer) {
+    public final Statement rel(Statement role, String roleplayer) {
         return rel(role, Graql.var(roleplayer));
     }
 
@@ -520,7 +520,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern rel(String role, VarPattern roleplayer) {
+    public final Statement rel(String role, Statement roleplayer) {
         return rel(Graql.label(role), roleplayer);
     }
 
@@ -532,7 +532,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern rel(VarPattern role, VarPattern roleplayer) {
+    public final Statement rel(Statement role, Statement roleplayer) {
         return addCasting(RelationPlayer.of(role, roleplayer));
     }
 
@@ -542,7 +542,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern isAbstract() {
+    public final Statement isAbstract() {
         return addProperty(IsAbstractProperty.get());
     }
 
@@ -551,7 +551,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern datatype(AttributeType.DataType<?> datatype) {
+    public final Statement datatype(AttributeType.DataType<?> datatype) {
         return addProperty(DataTypeProperty.of(datatype));
     }
 
@@ -562,7 +562,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern regex(String regex) {
+    public final Statement regex(String regex) {
         return addProperty(RegexProperty.of(regex));
     }
 
@@ -571,7 +571,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern when(Pattern when) {
+    public final Statement when(Pattern when) {
         return addProperty(WhenProperty.of(when));
     }
 
@@ -580,7 +580,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern then(Pattern then) {
+    public final Statement then(Pattern then) {
         return addProperty(ThenProperty.of(then));
     }
 
@@ -591,7 +591,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern neq(String var) {
+    public final Statement neq(String var) {
         return neq(Graql.var(var));
     }
 
@@ -602,7 +602,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern neq(VarPattern varPattern) {
+    public final Statement neq(Statement varPattern) {
         return addProperty(NeqProperty.of(varPattern));
     }
 
@@ -634,7 +634,7 @@ public abstract class VarPattern implements Pattern {
         return properties().stream();
     }
 
-    private VarPattern addCasting(RelationPlayer relationPlayer) {
+    private Statement addCasting(RelationPlayer relationPlayer) {
         Optional<RelationshipProperty> relationProperty = getProperty(RelationshipProperty.class);
 
         ImmutableMultiset<RelationPlayer> oldCastings = relationProperty
@@ -649,15 +649,15 @@ public abstract class VarPattern implements Pattern {
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }
 
-    private VarPattern addProperty(VarProperty property) {
+    private Statement addProperty(VarProperty property) {
         if (property.isUnique()) {
             testUniqueProperty((UniqueVarProperty) property);
         }
-        return new VarPatternImpl(var(), Sets.union(properties(), ImmutableSet.of(property)));
+        return new StatementImpl(var(), Sets.union(properties(), ImmutableSet.of(property)));
     }
 
-    private VarPattern removeProperty(VarProperty property) {
-        return new VarPatternImpl(var(), Sets.difference(properties(), ImmutableSet.of(property)));
+    private Statement removeProperty(VarProperty property) {
+        return new StatementImpl(var(), Sets.difference(properties(), ImmutableSet.of(property)));
     }
 
     /**

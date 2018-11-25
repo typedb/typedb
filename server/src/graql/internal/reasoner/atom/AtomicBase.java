@@ -20,7 +20,7 @@ package grakn.core.graql.internal.reasoner.atom;
 
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -54,7 +54,7 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public String toString(){ return getPattern().toString(); }
 
-    boolean containsVar(Var name){ return getVarNames().contains(name);}
+    boolean containsVar(Variable name){ return getVarNames().contains(name);}
 
     public boolean isUserDefined(){ return getVarName().isUserDefinedName();}
 
@@ -80,7 +80,7 @@ public abstract class AtomicBase implements Atomic {
      * @param <T> predicate type generic
      * @return specific predicates referring to provided variable
      */
-    public <T extends Predicate> Stream<T> getPredicates(Var var, Class<T> type){
+    public <T extends Predicate> Stream<T> getPredicates(Variable var, Class<T> type){
         return getPredicates(type).filter(p -> p.getVarName().equals(var));
     }
 
@@ -89,13 +89,13 @@ public abstract class AtomicBase implements Atomic {
      * @return id predicate referring to prescribed variable
      */
     @Nullable
-    public IdPredicate getIdPredicate(Var var){
+    public IdPredicate getIdPredicate(Variable var){
         return getPredicates(var, IdPredicate.class).findFirst().orElse(null);
     }
 
     @Override
-    public Set<Var> getVarNames(){
-        Var varName = getVarName();
+    public Set<Variable> getVarNames(){
+        Variable varName = getVarName();
         return varName.isUserDefinedName()? Sets.newHashSet(varName) : Collections.emptySet();
     }
 

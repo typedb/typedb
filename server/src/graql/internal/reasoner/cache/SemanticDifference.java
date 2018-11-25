@@ -28,7 +28,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -70,7 +70,7 @@ public class SemanticDifference {
         return definition.hashCode();
     }
 
-    private Set<Relationship> rolesToRels(Var var, Set<Role> roles, ConceptMap answer) {
+    private Set<Relationship> rolesToRels(Variable var, Set<Role> roles, ConceptMap answer) {
         if (!answer.containsVar(var)) return new HashSet<>();
         Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
         return answer.get(var).asThing()
@@ -81,27 +81,27 @@ public class SemanticDifference {
     public boolean satisfiedBy(ConceptMap answer) {
         if (isEmpty()) return true;
 
-        Map<Var, Set<Role>> roleRequirements = this.definition.stream()
+        Map<Variable, Set<Role>> roleRequirements = this.definition.stream()
                 .filter(vd -> !vd.playedRoles().isEmpty())
                 .collect(Collectors.toMap(VariableDefinition::var, VariableDefinition::playedRoles));
 
         //check for role compatibility
-        Iterator<Map.Entry<Var, Set<Role>>> reqIterator = roleRequirements.entrySet().iterator();
+        Iterator<Map.Entry<Variable, Set<Role>>> reqIterator = roleRequirements.entrySet().iterator();
         Set<Relationship> relationships;
         if (reqIterator.hasNext()) {
-            Map.Entry<Var, Set<Role>> req = reqIterator.next();
+            Map.Entry<Variable, Set<Role>> req = reqIterator.next();
             relationships = rolesToRels(req.getKey(), req.getValue(), answer);
         } else {
             relationships = new HashSet<>();
         }
         while (!relationships.isEmpty() && reqIterator.hasNext()) {
-            Map.Entry<Var, Set<Role>> req = reqIterator.next();
+            Map.Entry<Variable, Set<Role>> req = reqIterator.next();
             relationships = Sets.intersection(relationships, rolesToRels(req.getKey(), req.getValue(), answer));
         }
         if (relationships.isEmpty() && !roleRequirements.isEmpty()) return false;
 
         return definition.stream().allMatch(vd -> {
-            Var var = vd.var();
+            Variable var = vd.var();
             Concept concept = answer.get(var);
             if (concept == null) return false;
             Type type = vd.type();
@@ -114,9 +114,9 @@ public class SemanticDifference {
     }
 
     public SemanticDifference merge(SemanticDifference diff) {
-        Map<Var, VariableDefinition> mergedDefinition = definition.stream().collect(Collectors.toMap(VariableDefinition::var, vd -> vd));
+        Map<Variable, VariableDefinition> mergedDefinition = definition.stream().collect(Collectors.toMap(VariableDefinition::var, vd -> vd));
         diff.definition.forEach(varDefToMerge -> {
-            Var var = varDefToMerge.var();
+            Variable var = varDefToMerge.var();
             VariableDefinition varDef = mergedDefinition.get(var);
             mergedDefinition.put(var, varDef != null ? varDef.merge(varDefToMerge) : varDefToMerge);
         });

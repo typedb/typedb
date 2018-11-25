@@ -19,10 +19,10 @@
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
@@ -39,25 +39,25 @@ import java.util.Set;
  *
  */
 @AutoValue
-public abstract class NeqPredicate extends Predicate<Var> {
+public abstract class NeqPredicate extends Predicate<Variable> {
 
-    @Override public abstract VarPattern getPattern();
+    @Override public abstract Statement getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
     //need to have it explicitly here cause autovalue gets confused with the generic
-    public abstract Var getPredicate();
+    public abstract Variable getPredicate();
 
-    public static NeqPredicate create(VarPattern pattern, ReasonerQuery parent) {
+    public static NeqPredicate create(Statement pattern, ReasonerQuery parent) {
         return new AutoValue_NeqPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
-    public static NeqPredicate create(Var varName, NeqProperty prop, ReasonerQuery parent) {
-        VarPattern pattern = varName.neq(prop.var().var());
+    public static NeqPredicate create(Variable varName, NeqProperty prop, ReasonerQuery parent) {
+        Statement pattern = varName.neq(prop.var().var());
         return create(pattern, parent);
     }
     public static NeqPredicate create(NeqPredicate a, ReasonerQuery parent) {
         return create(a.getPattern(), parent);
     }
 
-    private static Var extractPredicate(VarPattern pattern) {
+    private static Variable extractPredicate(Statement pattern) {
         return pattern.getProperties(NeqProperty.class).iterator().next().var().var();
     }
 
@@ -123,8 +123,8 @@ public abstract class NeqPredicate extends Predicate<Var> {
     }
 
     @Override
-    public Set<Var> getVarNames(){
-        Set<Var> vars = super.getVarNames();
+    public Set<Variable> getVarNames(){
+        Set<Variable> vars = super.getVarNames();
         vars.add(getPredicate());
         return vars;
     }

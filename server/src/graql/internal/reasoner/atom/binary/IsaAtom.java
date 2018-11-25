@@ -24,8 +24,8 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -64,21 +64,21 @@ import static grakn.core.common.util.CommonUtil.toImmutableList;
 @AutoValue
 public abstract class IsaAtom extends IsaAtomBase {
 
-    @Override public abstract Var getPredicateVariable();
-    @Override public abstract VarPattern getPattern();
+    @Override public abstract Variable getPredicateVariable();
+    @Override public abstract Statement getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
 
-    public static IsaAtom create(Var var, Var predicateVar, VarPattern pattern, @Nullable ConceptId predicateId, ReasonerQuery parent) {
+    public static IsaAtom create(Variable var, Variable predicateVar, Statement pattern, @Nullable ConceptId predicateId, ReasonerQuery parent) {
         return new AutoValue_IsaAtom(var, predicateId, predicateVar, pattern, parent);
     }
 
-    public static IsaAtom create(Var var, Var predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent) {
-        VarPattern pattern = isDirect ? var.isaExplicit(predicateVar) : var.isa(predicateVar);
+    public static IsaAtom create(Variable var, Variable predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent) {
+        Statement pattern = isDirect ? var.isaExplicit(predicateVar) : var.isa(predicateVar);
         return new AutoValue_IsaAtom(var, predicateId, predicateVar, pattern, parent);
     }
 
-    public static IsaAtom create(Var var, Var predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent) {
-        VarPattern pattern = isDirect ? var.isaExplicit(predicateVar) : var.isa(predicateVar);
+    public static IsaAtom create(Variable var, Variable predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent) {
+        Statement pattern = isDirect ? var.isaExplicit(predicateVar) : var.isa(predicateVar);
         return new AutoValue_IsaAtom(var, type.id(), predicateVar, pattern, parent);
     }
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {

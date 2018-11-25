@@ -21,7 +21,7 @@ package grakn.core.graql.query.aggregate;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.answer.Value;
 
 import java.util.Collections;
@@ -34,9 +34,9 @@ import java.util.stream.Stream;
  */
 public class CountAggregate implements Aggregate<Value> {
 
-    private final Set<Var> vars;
+    private final Set<Variable> vars;
 
-    public CountAggregate(Set<Var> vars) {
+    public CountAggregate(Set<Variable> vars) {
         this.vars = vars;
     }
 

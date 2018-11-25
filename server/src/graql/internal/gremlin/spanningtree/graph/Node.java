@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.spanningtree.graph;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 
 import java.util.HashSet;
@@ -47,7 +47,7 @@ public class Node {
         this.nodeId = nodeId;
     }
 
-    public static Node addIfAbsent(NodeId.NodeType nodeType, Var var, Map<NodeId, Node> nodes) {
+    public static Node addIfAbsent(NodeId.NodeType nodeType, Variable var, Map<NodeId, Node> nodes) {
         NodeId nodeId = new NodeId(nodeType, var);
         if (!nodes.containsKey(nodeId)) {
             nodes.put(nodeId, new Node(nodeId));
@@ -55,7 +55,7 @@ public class Node {
         return nodes.get(nodeId);
     }
 
-    public static Node addIfAbsent(NodeId.NodeType nodeType, Set<Var> vars, Map<NodeId, Node> nodes) {
+    public static Node addIfAbsent(NodeId.NodeType nodeType, Set<Variable> vars, Map<NodeId, Node> nodes) {
         NodeId nodeId = new NodeId(nodeType, vars);
         if (!nodes.containsKey(nodeId)) {
             nodes.put(nodeId, new Node(nodeId));

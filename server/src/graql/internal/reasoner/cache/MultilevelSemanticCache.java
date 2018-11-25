@@ -26,7 +26,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -98,7 +98,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
          * * calculate constraint difference
          * * apply constraints from the difference
          */
-        Set<Var> childVars = child.getVarNames();
+        Set<Variable> childVars = child.getVarNames();
         ConceptMap partialSub = child.getRoleSubstitution();
 
         parentAnswersToPropagate.stream()

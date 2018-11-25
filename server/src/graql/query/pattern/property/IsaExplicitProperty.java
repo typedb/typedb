@@ -20,8 +20,8 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import com.google.auto.value.AutoValue;
@@ -48,7 +48,7 @@ public abstract class IsaExplicitProperty extends AbstractIsaProperty {
 
     public static final String NAME = "isa!";
 
-    public static IsaExplicitProperty of(VarPattern directType) {
+    public static IsaExplicitProperty of(Statement directType) {
         return new AutoValue_IsaExplicitProperty(directType);
     }
 
@@ -61,14 +61,14 @@ public abstract class IsaExplicitProperty extends AbstractIsaProperty {
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Var start) {
+    public Collection<EquivalentFragmentSet> match(Variable start) {
         return ImmutableSet.of(
                 EquivalentFragmentSets.isa(this, start, type().var(), true)
         );
     }
 
     @Override
-    protected final VarPattern varPatternForAtom(Var varName, Var typeVariable) {
+    protected final Statement varPatternForAtom(Variable varName, Variable typeVariable) {
         return varName.isaExplicit(typeVariable);
     }
 }

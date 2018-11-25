@@ -30,7 +30,7 @@ import grakn.core.graql.internal.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionImpl;
 import java.util.HashMap;
 import java.util.Map;
@@ -67,7 +67,7 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
             GraqlTraversal traversal = match.cachedElement();
             MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query, UnifierType.STRUCTURAL);
             Unifier unifier = multiUnifier.getAny();
-            Map<Var, ConceptId> idTransform = equivalentQuery.idTransform(query, unifier);
+            Map<Variable, ConceptId> idTransform = equivalentQuery.idTransform(query, unifier);
 
             ReasonerQueryImpl transformedQuery = equivalentQuery.transformIds(idTransform);
 

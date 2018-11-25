@@ -33,9 +33,9 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.util.Partition;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
-import grakn.core.graql.query.pattern.VarPatternImpl;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.property.PropertyExecutor;
 import grakn.core.graql.query.pattern.property.VarPropertyInternal;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -68,22 +68,22 @@ public class QueryOperationExecutor {
     private final Transaction tx;
 
     // A mutable map associating each `Var` to the `Concept` in the graph it refers to.
-    private final Map<Var, Concept> concepts = new HashMap<>();
+    private final Map<Variable, Concept> concepts = new HashMap<>();
 
     // A mutable map of concepts "under construction" that require more information before they can be built
-    private final Map<Var, ConceptBuilder> conceptBuilders = new HashMap<>();
+    private final Map<Variable, ConceptBuilder> conceptBuilders = new HashMap<>();
 
     // An immutable set of all properties
     private final ImmutableSet<VarAndProperty> properties;
 
     // A partition (disjoint set) indicating which `Var`s should refer to the same concept
-    private final Partition<Var> equivalentVars;
+    private final Partition<Variable> equivalentVars;
 
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
     private QueryOperationExecutor(Transaction tx, ImmutableSet<VarAndProperty> properties,
-                                   Partition<Var> equivalentVars,
+                                   Partition<Variable> equivalentVars,
                                    ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies) {
         this.tx = tx;
         this.properties = properties;
@@ -94,7 +94,7 @@ public class QueryOperationExecutor {
     /**
      * Insert all the Vars
      */
-    static ConceptMap insertAll(Collection<VarPattern> patterns, Transaction graph) {
+    static ConceptMap insertAll(Collection<Statement> patterns, Transaction graph) {
         return create(patterns, graph, ExecutionType.INSERT).insertAll(new ConceptMap());
     }
 
@@ -102,20 +102,20 @@ public class QueryOperationExecutor {
      * Insert all the Vars
      * @param results the result after inserting
      */
-    static ConceptMap insertAll(Collection<VarPattern> patterns, Transaction graph, ConceptMap results) {
+    static ConceptMap insertAll(Collection<Statement> patterns, Transaction graph, ConceptMap results) {
         return create(patterns, graph, ExecutionType.INSERT).insertAll(results);
     }
 
-    static ConceptMap defineAll(Collection<VarPattern> patterns, Transaction graph) {
+    static ConceptMap defineAll(Collection<Statement> patterns, Transaction graph) {
         return create(patterns, graph, ExecutionType.DEFINE).insertAll(new ConceptMap());
     }
 
-    static ConceptMap undefineAll(ImmutableList<VarPattern> patterns, Transaction tx) {
+    static ConceptMap undefineAll(ImmutableList<Statement> patterns, Transaction tx) {
         return create(patterns, tx, ExecutionType.UNDEFINE).insertAll(new ConceptMap());
     }
 
     private static QueryOperationExecutor create(
-            Collection<VarPattern> patterns, Transaction graph, ExecutionType executionType
+            Collection<Statement> patterns, Transaction graph, ExecutionType executionType
     ) {
         ImmutableSet<VarAndProperty> properties = patterns.stream()
                 .flatMap(pattern -> VarAndProperty.fromPattern(pattern, executionType))
@@ -130,10 +130,10 @@ public class QueryOperationExecutor {
 
             For example, the property `$x isa $y` depends on the existence of the concept represented by `$y`.
          */
-        Multimap<VarAndProperty, Var> propDependencies = HashMultimap.create();
+        Multimap<VarAndProperty, Variable> propDependencies = HashMultimap.create();
 
         for (VarAndProperty property : properties) {
-            for (Var requiredVar : property.executor().requiredVars()) {
+            for (Variable requiredVar : property.executor().requiredVars()) {
                 propDependencies.put(property, requiredVar);
             }
         }
@@ -144,10 +144,10 @@ public class QueryOperationExecutor {
 
             For example, the concept represented by `$x` will not exist before the property `$x isa $y` is inserted.
          */
-        Multimap<Var, VarAndProperty> varDependencies = HashMultimap.create();
+        Multimap<Variable, VarAndProperty> varDependencies = HashMultimap.create();
 
         for (VarAndProperty property : properties) {
-            for (Var producedVar : property.executor().producedVars()) {
+            for (Variable producedVar : property.executor().producedVars()) {
                 varDependencies.put(producedVar, property);
             }
         }
@@ -175,14 +175,14 @@ public class QueryOperationExecutor {
             insert the type!
          */
 
-        Partition<Var> equivalentVars = Partition.singletons(Collections.emptyList());
+        Partition<Variable> equivalentVars = Partition.singletons(Collections.emptyList());
 
         equivalentProperties(properties).asMap().values().forEach(vars -> {
             // These vars must refer to the same concept, so share their dependencies
             Collection<VarAndProperty> producers =
                     vars.stream().flatMap(var -> varDependencies.get(var).stream()).collect(toList());
 
-            Var first = vars.iterator().next();
+            Variable first = vars.iterator().next();
 
             vars.forEach(var -> {
                 varDependencies.replaceValues(var, producers);
@@ -211,8 +211,8 @@ public class QueryOperationExecutor {
         return new QueryOperationExecutor(graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies));
     }
 
-    private static Multimap<VarProperty, Var> equivalentProperties(Set<VarAndProperty> properties) {
-        Multimap<VarProperty, Var> equivalentProperties = HashMultimap.create();
+    private static Multimap<VarProperty, Variable> equivalentProperties(Set<VarAndProperty> properties) {
+        Multimap<VarProperty, Variable> equivalentProperties = HashMultimap.create();
 
         for (VarAndProperty varAndProperty : properties) {
             if (varAndProperty.uniquelyIdentifiesConcept()) {
@@ -251,18 +251,18 @@ public class QueryOperationExecutor {
 
         conceptBuilders.forEach(this::buildConcept);
 
-        ImmutableMap.Builder<Var, Concept> allConcepts = ImmutableMap.<Var, Concept>builder().putAll(concepts);
+        ImmutableMap.Builder<Variable, Concept> allConcepts = ImmutableMap.<Variable, Concept>builder().putAll(concepts);
 
         // Make sure to include all equivalent vars in the result
-        for (Var var: equivalentVars.getNodes()) {
+        for (Variable var: equivalentVars.getNodes()) {
             allConcepts.put(var, concepts.get(equivalentVars.componentOf(var)));
         }
 
-        Map<Var, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Var::isUserDefinedName);
+        Map<Variable, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Variable::isUserDefinedName);
         return new ConceptMap(namedConcepts);
     }
 
-    private Concept buildConcept(Var var, ConceptBuilder builder) {
+    private Concept buildConcept(Variable var, ConceptBuilder builder) {
         Concept concept = builder.build();
         assert concept != null : String.format("build() should never return null. var: %s", var);
         concepts.put(var, concept);
@@ -312,7 +312,7 @@ public class QueryOperationExecutor {
 
         if (!dependencies.isEmpty()) {
             // This means there must have been a loop. Pick an arbitrary remaining var to display
-            Var var = dependencies.keys().iterator().next().var();
+            Variable var = dependencies.keys().iterator().next().var();
             throw GraqlQueryException.insertRecursive(printableRepresentation(var));
         }
 
@@ -320,12 +320,12 @@ public class QueryOperationExecutor {
     }
 
     /**
-     * Return a {@link ConceptBuilder} for given {@link Var}. This can be used to provide information for how to create
+     * Return a {@link ConceptBuilder} for given {@link Variable}. This can be used to provide information for how to create
      * the concept that the variable represents.
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
+     * {@link VarPropertyInternal#insert(Variable)}, provided they return the given {@link Variable} in the
      * response to {@link PropertyExecutor#producedVars()}.
      * </p>
      * <p>
@@ -334,7 +334,7 @@ public class QueryOperationExecutor {
      *
      * @throws GraqlQueryException if the concept in question has already been created
      */
-    public ConceptBuilder builder(Var var) {
+    public ConceptBuilder builder(Variable var) {
         return tryBuilder(var).orElseThrow(() -> {
             Concept concept = concepts.get(equivalentVars.componentOf(var));
             return GraqlQueryException.insertExistingConcept(printableRepresentation(var), concept);
@@ -342,12 +342,12 @@ public class QueryOperationExecutor {
     }
 
     /**
-     * Return a {@link ConceptBuilder} for given {@link Var}. This can be used to provide information for how to create
+     * Return a {@link ConceptBuilder} for given {@link Variable}. This can be used to provide information for how to create
      * the concept that the variable represents.
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
+     * {@link VarPropertyInternal#insert(Variable)}, provided they return the given {@link Variable} in the
      * response to {@link PropertyExecutor#producedVars()}.
      * </p>
      * <p>
@@ -357,7 +357,7 @@ public class QueryOperationExecutor {
      *     If the concept has already been created, this will return empty.
      * </p>
      */
-    public Optional<ConceptBuilder> tryBuilder(Var var) {
+    public Optional<ConceptBuilder> tryBuilder(Variable var) {
         var = equivalentVars.componentOf(var);
 
         if (concepts.containsKey(var)) {
@@ -376,15 +376,15 @@ public class QueryOperationExecutor {
     }
 
     /**
-     * Return a {@link Concept} for a given {@link Var}.
+     * Return a {@link Concept} for a given {@link Variable}.
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
+     * {@link VarPropertyInternal#insert(Variable)}, provided they return the given {@link Variable} in the
      * response to {@link PropertyExecutor#requiredVars()}.
      * </p>
      */
-    public Concept get(Var var) {
+    public Concept get(Variable var) {
         var = equivalentVars.componentOf(var);
         assert var != null;
 
@@ -407,7 +407,7 @@ public class QueryOperationExecutor {
         throw GraqlQueryException.insertUndefinedVariable(printableRepresentation(var));
     }
 
-    VarPattern printableRepresentation(Var var) {
+    Statement printableRepresentation(Variable var) {
         ImmutableSet.Builder<VarProperty> propertiesOfVar = ImmutableSet.builder();
 
         // This could be faster if we built a dedicated map Var -> VarPattern
@@ -418,7 +418,7 @@ public class QueryOperationExecutor {
             }
         }
 
-        return new VarPatternImpl(var, propertiesOfVar.build());
+        return new StatementImpl(var, propertiesOfVar.build());
     }
 
     Transaction tx() {
@@ -426,7 +426,7 @@ public class QueryOperationExecutor {
     }
 
     /**
-     * Represents a pairing of a {@link VarProperty} and its subject {@link Var}.
+     * Represents a pairing of a {@link VarProperty} and its subject {@link Variable}.
      * <p>
      *     e.g. {@code $x} and {@code isa $y}, together are {@code $x isa $y}.
      * </p>
@@ -434,22 +434,22 @@ public class QueryOperationExecutor {
     @AutoValue
     static abstract class VarAndProperty {
 
-        abstract Var var();
+        abstract Variable var();
         abstract VarPropertyInternal property();
         abstract PropertyExecutor executor();
 
-        private static VarAndProperty of(Var var, VarProperty property, PropertyExecutor executor) {
+        private static VarAndProperty of(Variable var, VarProperty property, PropertyExecutor executor) {
             VarPropertyInternal propertyInternal = VarPropertyInternal.from(property);
             return new AutoValue_QueryOperationExecutor_VarAndProperty(var, propertyInternal, executor);
         }
 
-        private static Stream<VarAndProperty> all(Var var, VarProperty property, ExecutionType executionType) {
+        private static Stream<VarAndProperty> all(Variable var, VarProperty property, ExecutionType executionType) {
             VarPropertyInternal propertyInternal = VarPropertyInternal.from(property);
             return executionType.executors(propertyInternal, var).stream()
                     .map(executor -> VarAndProperty.of(var, property, executor));
         }
 
-        static Stream<VarAndProperty> fromPattern(VarPattern pattern, ExecutionType executionType) {
+        static Stream<VarAndProperty> fromPattern(Statement pattern, ExecutionType executionType) {
             return pattern.getProperties().flatMap(prop -> VarAndProperty.all(pattern.var(), prop, executionType));
         }
 
@@ -460,21 +460,21 @@ public class QueryOperationExecutor {
 
     private enum ExecutionType {
         INSERT {
-            Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var) {
+            Collection<PropertyExecutor> executors(VarPropertyInternal property, Variable var) {
                 return property.insert(var);
             }
         },
         DEFINE {
-            Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var) {
+            Collection<PropertyExecutor> executors(VarPropertyInternal property, Variable var) {
                 return property.define(var);
             }
         },
         UNDEFINE {
-            Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var) {
+            Collection<PropertyExecutor> executors(VarPropertyInternal property, Variable var) {
                 return property.undefine(var);
             }
         };
 
-        abstract Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var);
+        abstract Collection<PropertyExecutor> executors(VarPropertyInternal property, Variable var);
     }
 }

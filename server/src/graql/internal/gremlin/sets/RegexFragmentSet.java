@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -29,7 +29,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 
 /**
- * @see EquivalentFragmentSets#regex(VarProperty, Var, String)
+ * @see EquivalentFragmentSets#regex(VarProperty, Variable, String)
  *
  */
 @AutoValue
@@ -40,6 +40,6 @@ abstract class RegexFragmentSet extends EquivalentFragmentSet {
         return ImmutableSet.of(Fragments.regex(varProperty(), attributeType(), regex()));
     }
 
-    abstract Var attributeType();
+    abstract Variable attributeType();
     abstract String regex();
 }

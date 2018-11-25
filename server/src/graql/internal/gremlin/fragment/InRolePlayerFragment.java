@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
@@ -51,7 +51,7 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> tx, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> tx, Collection<Variable> vars) {
 
         return Fragments.union(Fragments.isVertex(traversal), ImmutableSet.of(
                 reifiedRelationTraversal(tx, vars),
@@ -60,7 +60,7 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
         ));
     }
 
-    private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(TransactionImpl<?> tx, Collection<Var> vars) {
+    private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(TransactionImpl<?> tx, Collection<Variable> vars) {
         GraphTraversal<Vertex, Edge> edgeTraversal = __.inE(ROLE_PLAYER.getLabel()).as(edge().label());
 
         // Filter by any provided type labels
@@ -73,7 +73,7 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     private GraphTraversal<Vertex, Edge> edgeRelationTraversal(
-            TransactionImpl<?> tx, Direction direction, Schema.EdgeProperty roleProperty, Collection<Var> vars) {
+            TransactionImpl<?> tx, Direction direction, Schema.EdgeProperty roleProperty, Collection<Variable> vars) {
 
         GraphTraversal<Vertex, Edge> edgeTraversal = __.toE(direction, Schema.EdgeLabel.ATTRIBUTE.getLabel());
 

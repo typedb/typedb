@@ -23,7 +23,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.admin.Unifier;
@@ -61,7 +61,7 @@ import java.util.Set;
  */
 public abstract class Binary extends Atom {
 
-    public abstract Var getPredicateVariable();
+    public abstract Variable getPredicateVariable();
     @Nullable @Override public abstract ConceptId getTypeId();
 
     private SchemaConcept type = null;
@@ -168,8 +168,8 @@ public abstract class Binary extends Atom {
     }
 
     @Override
-    public Set<Var> getVarNames() {
-        Set<Var> vars = new HashSet<>();
+    public Set<Variable> getVarNames() {
+        Set<Variable> vars = new HashSet<>();
         if (getVarName().isUserDefinedName()) vars.add(getVarName());
         if (getPredicateVariable().isUserDefinedName()) vars.add(getPredicateVariable());
         return vars;
@@ -187,10 +187,10 @@ public abstract class Binary extends Atom {
         }
 
         boolean inferTypes = unifierType == UnifierType.RULE;
-        Var childVarName = this.getVarName();
-        Var parentVarName = parentAtom.getVarName();
-        Var childPredicateVarName = this.getPredicateVariable();
-        Var parentPredicateVarName = parentAtom.getPredicateVariable();
+        Variable childVarName = this.getVarName();
+        Variable parentVarName = parentAtom.getVarName();
+        Variable childPredicateVarName = this.getPredicateVariable();
+        Variable parentPredicateVarName = parentAtom.getPredicateVariable();
         Type parentType = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentAtom.getVarName());
         Type childType = this.getParentQuery().getVarTypeMap(inferTypes).get(this.getVarName());
         Set<Atomic> parentPredicate = parentAtom.getPredicates(parentVarName, ValuePredicate.class).collect(Collectors.toSet());
@@ -210,7 +210,7 @@ public abstract class Binary extends Atom {
                      return UnifierImpl.nonExistent();
         }
 
-        Multimap<Var, Var> varMappings = HashMultimap.create();
+        Multimap<Variable, Variable> varMappings = HashMultimap.create();
 
         if (parentVarName.isUserDefinedName()
                 && childVarName.isUserDefinedName()) {

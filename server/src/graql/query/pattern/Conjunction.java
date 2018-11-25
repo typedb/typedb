@@ -44,8 +44,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
 
     private final Set<T> patterns;
 
-    public Conjunction(
-            Set<T> patterns) {
+    public Conjunction(Set<T> patterns) {
         if (patterns == null) {
             throw new NullPointerException("Null patterns");
         }
@@ -61,16 +60,16 @@ public class Conjunction<T extends Pattern> implements Pattern {
     }
 
     @Override
-    public Disjunction<Conjunction<VarPattern>> getDisjunctiveNormalForm() {
+    public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
         // Get all disjunctions in query
-        List<Set<Conjunction<VarPattern>>> disjunctionsOfConjunctions = getPatterns().stream()
+        List<Set<Conjunction<Statement>>> disjunctionsOfConjunctions = getPatterns().stream()
                 .map(p -> p.getDisjunctiveNormalForm().getPatterns())
                 .collect(toList());
 
         // Get the cartesian product.
         // in other words, this puts the 'ands' on the inside and the 'ors' on the outside
         // e.g. (A or B) and (C or D)  <=>  (A and C) or (A and D) or (B and C) or (B and D)
-        Set<Conjunction<VarPattern>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
+        Set<Conjunction<Statement>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
                 .map(Conjunction::fromConjunctions)
                 .collect(toSet());
 
@@ -81,7 +80,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
     }
 
     @Override
-    public Set<Var> commonVars() {
+    public Set<Variable> commonVars() {
         return getPatterns().stream().map(Pattern::commonVars).reduce(ImmutableSet.of(), Sets::union);
     }
 
@@ -95,7 +94,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
      */
     @CheckReturnValue
     public ReasonerQuery toReasonerQuery(Transaction tx) {
-        Conjunction<VarPattern> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
+        Conjunction<Statement> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
         // TODO: This cast is unsafe - this method should accept an `TransactionImpl`
         return ReasonerQueries.create(pattern, (TransactionImpl<?>) tx);
     }

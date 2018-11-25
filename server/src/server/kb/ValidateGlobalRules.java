@@ -33,7 +33,7 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.kb.concept.RelationshipTypeImpl;
 import grakn.core.server.kb.concept.RuleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
@@ -316,7 +316,7 @@ class ValidateGlobalRules {
      */
     private static Set<String> validateRuleHead(Transaction graph, Rule rule) {
         Set<String> errors = new HashSet<>();
-        Set<Conjunction<VarPattern>> headPatterns = rule.then().getDisjunctiveNormalForm().getPatterns();
+        Set<Conjunction<Statement>> headPatterns = rule.then().getDisjunctiveNormalForm().getPatterns();
 
         if (headPatterns.size() != 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.label()));

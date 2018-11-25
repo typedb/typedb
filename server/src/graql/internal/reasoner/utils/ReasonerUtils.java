@@ -22,11 +22,11 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.LabelProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
@@ -77,7 +77,7 @@ public class ReasonerUtils {
      * @param parent reasoner query the mapped predicate should belong to
      * @return mapped IdPredicate
      */
-    public static IdPredicate getUserDefinedIdPredicate(Var typeVariable, Set<VarPattern> vars, ReasonerQuery parent){
+    public static IdPredicate getUserDefinedIdPredicate(Variable typeVariable, Set<Statement> vars, ReasonerQuery parent){
         return  vars.stream()
                 .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(LabelProperty.class)?
@@ -90,13 +90,13 @@ public class ReasonerUtils {
      * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
      * covers both the cases when variable is and isn't user defined
      * @param typeVariable variable name of interest
-     * @param typeVar {@link VarPattern} to look for in case the variable name is not user defined
+     * @param typeVar {@link Statement} to look for in case the variable name is not user defined
      * @param vars VarAdmins to look for properties
      * @param parent reasoner query the mapped predicate should belong to
      * @return mapped IdPredicate
      */
     @Nullable
-    public static IdPredicate getIdPredicate(Var typeVariable, VarPattern typeVar, Set<VarPattern> vars, ReasonerQuery parent){
+    public static IdPredicate getIdPredicate(Variable typeVariable, Statement typeVar, Set<Statement> vars, ReasonerQuery parent){
         IdPredicate predicate = null;
         //look for id predicate among vars
         if(typeVar.var().isUserDefinedName()) {
@@ -112,12 +112,12 @@ public class ReasonerUtils {
      * looks for appropriate var properties with a specified name among the vars and maps them to ValuePredicates,
      * covers both the case when variable is and isn't user defined
      * @param valueVariable variable name of interest
-     * @param valueVar {@link VarPattern} to look for in case the variable name is not user defined
+     * @param valueVar {@link Statement} to look for in case the variable name is not user defined
      * @param vars VarAdmins to look for properties
      * @param parent reasoner query the mapped predicate should belong to
      * @return set of mapped ValuePredicates
      */
-    public static Set<ValuePredicate> getValuePredicates(Var valueVariable, VarPattern valueVar, Set<VarPattern> vars, ReasonerQuery parent){
+    public static Set<ValuePredicate> getValuePredicates(Variable valueVariable, Statement valueVar, Set<Statement> vars, ReasonerQuery parent){
         Set<ValuePredicate> predicates = new HashSet<>();
         if(valueVar.var().isUserDefinedName()){
             vars.stream()
@@ -278,8 +278,8 @@ public class ReasonerUtils {
     public static Unifier typeUnifier(Set<TypeAtom> childTypes, Set<TypeAtom> parentTypes, Unifier childParentUnifier, UnifierComparison unifierType){
         Unifier unifier = childParentUnifier;
         for(TypeAtom childType : childTypes){
-            Var childVarName = childType.getVarName();
-            Var parentVarName = childParentUnifier.containsKey(childVarName)? Iterables.getOnlyElement(childParentUnifier.get(childVarName)) : childVarName;
+            Variable childVarName = childType.getVarName();
+            Variable parentVarName = childParentUnifier.containsKey(childVarName)? Iterables.getOnlyElement(childParentUnifier.get(childVarName)) : childVarName;
 
             //types are unique so getting one is fine
             TypeAtom parentType = parentTypes.stream().filter(pt -> pt.getVarName().equals(parentVarName)).findFirst().orElse(null);

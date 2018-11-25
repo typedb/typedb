@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionImpl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -36,11 +36,11 @@ import java.util.Collection;
 @AutoValue
 public abstract class NeqFragment extends Fragment {
 
-    public abstract Var other();
+    public abstract Variable other();
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Variable> vars) {
         return traversal.where(P.neq(other().label()));
     }
 
@@ -61,7 +61,7 @@ public abstract class NeqFragment extends Fragment {
     }
 
     @Override
-    public ImmutableSet<Var> dependencies() {
+    public ImmutableSet<Variable> dependencies() {
         return ImmutableSet.of(other());
     }
 }

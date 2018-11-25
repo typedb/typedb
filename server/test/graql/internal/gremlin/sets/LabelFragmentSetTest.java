@@ -22,7 +22,7 @@ import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -41,9 +41,9 @@ import static org.mockito.Mockito.when;
 
 public class LabelFragmentSetTest {
 
-    private static final Var generatedVar = Graql.var();
-    private static final Var otherGeneratedVar = Graql.var();
-    private static final Var userDefinedVar = Graql.var("x");
+    private static final Variable generatedVar = Graql.var();
+    private static final Variable otherGeneratedVar = Graql.var();
+    private static final Variable userDefinedVar = Graql.var("x");
     private static final Label EXISTING_LABEL = Label.of("something");
     private static final Label NON_EXISTENT_LABEL = Label.of("doesn't exist");
 

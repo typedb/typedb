@@ -23,7 +23,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
@@ -85,9 +85,9 @@ public class MatchBase extends AbstractMatch {
      * @return resulting answer stream
      */
     public static Stream<ConceptMap> streamWithTraversal(
-            Set<Var> commonVars, TransactionImpl<?> tx, GraqlTraversal graqlTraversal
+            Set<Variable> commonVars, TransactionImpl<?> tx, GraqlTraversal graqlTraversal
     ) {
-        Set<Var> vars = Sets.filter(commonVars, Var::isUserDefinedName);
+        Set<Variable> vars = Sets.filter(commonVars, Variable::isUserDefinedName);
 
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(tx, vars);
 
@@ -104,11 +104,11 @@ public class MatchBase extends AbstractMatch {
      * @param elements a map of vertices and edges where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private static Map<Var, Concept> makeResults(
-            Set<Var> vars, TransactionImpl<?> tx, Map<String, Element> elements) {
+    private static Map<Variable, Concept> makeResults(
+            Set<Variable> vars, TransactionImpl<?> tx, Map<String, Element> elements) {
 
-        Map<Var, Concept> map = new HashMap<>();
-        for (Var var : vars) {
+        Map<Variable, Concept> map = new HashMap<>();
+        for (Variable var : vars) {
             Element element = elements.get(var.label());
             if (element == null) {
                 throw GraqlQueryException.unexpectedResult(var);
@@ -155,7 +155,7 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public final Set<Var> getSelectedNames() {
+    public final Set<Variable> getSelectedNames() {
         return pattern.commonVars();
     }
 

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
@@ -57,13 +57,13 @@ import static grakn.core.graql.internal.Schema.VertexProperty.LABEL_ID;
 public abstract class InIsaFragment extends Fragment {
 
     @Override
-    public abstract Var end();
+    public abstract Variable end();
 
     abstract boolean mayHaveEdgeInstances();
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Variable> vars) {
 
         GraphTraversal<Vertex, Vertex> vertexTraversal = Fragments.isVertex(traversal);
 
@@ -104,8 +104,8 @@ public abstract class InIsaFragment extends Fragment {
     }
 
     private GraphTraversal<Vertex, Edge> toEdgeInstances() {
-        Var type = var();
-        Var labelId = var();
+        Variable type = var();
+        Variable labelId = var();
 
         // There is no fast way to retrieve all edge instances, because edges cannot be globally indexed.
         // This is a best-effort, that uses the schema to limit the search space...

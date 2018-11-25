@@ -20,7 +20,7 @@ package grakn.core.graql.internal.gremlin;
 
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.graql.internal.Schema;
@@ -70,7 +70,7 @@ public abstract class GraqlTraversal {
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(TransactionImpl<?> tx, Set<Var> vars) {
+    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(TransactionImpl<?> tx, Set<Variable> vars) {
 
         if (fragments().size() == 1) {
             // If there are no disjunctions, we don't need to union them and get a performance boost
@@ -100,7 +100,7 @@ public abstract class GraqlTraversal {
      * @param transform map defining id transform var -> new id
      * @return graql traversal with concept id transformed according to the provided transform
      */
-    public GraqlTraversal transform(Map<Var, ConceptId> transform){
+    public GraqlTraversal transform(Map<Variable, ConceptId> transform){
         ImmutableList<Fragment> fragments = ImmutableList.copyOf(
                 Iterables.getOnlyElement(fragments()).stream().map(f -> f.transform(transform)).collect(Collectors.toList())
         );
@@ -111,7 +111,7 @@ public abstract class GraqlTraversal {
      * @return a gremlin traversal that represents this inner query
      */
     private GraphTraversal<Vertex, Map<String, Element>> getConjunctionTraversal(
-            TransactionImpl<?> tx, GraphTraversal<Vertex, Vertex> traversal, Set<Var> vars,
+            TransactionImpl<?> tx, GraphTraversal<Vertex, Vertex> traversal, Set<Variable> vars,
             ImmutableList<Fragment> fragmentList
     ) {
         GraphTraversal<Vertex, ? extends Element> newTraversal = traversal;
@@ -125,13 +125,13 @@ public abstract class GraqlTraversal {
     }
 
     private GraphTraversal<Vertex, Map<String, Element>> applyFragments(
-            TransactionImpl<?> tx, Set<Var> vars, ImmutableList<Fragment> fragmentList,
+            TransactionImpl<?> tx, Set<Variable> vars, ImmutableList<Fragment> fragmentList,
             GraphTraversal<Vertex, ? extends Element> traversal
     ) {
-        Set<Var> foundVars = new HashSet<>();
+        Set<Variable> foundVars = new HashSet<>();
 
         // Apply fragments in order into one single traversal
-        Var currentName = null;
+        Variable currentName = null;
 
         for (Fragment fragment : fragmentList) {
             // Apply fragment to traversal
@@ -158,7 +158,7 @@ public abstract class GraqlTraversal {
     }
 
     static double fragmentListCost(List<Fragment> fragments) {
-        Set<Var> names = new HashSet<>();
+        Set<Variable> names = new HashSet<>();
 
         double listCost = 0;
 
@@ -170,7 +170,7 @@ public abstract class GraqlTraversal {
         return listCost;
     }
 
-    static double fragmentCost(Fragment fragment, Collection<Var> names) {
+    static double fragmentCost(Fragment fragment, Collection<Variable> names) {
         if (names.contains(fragment.start()) || fragment.hasFixedFragmentCost()) {
             return fragment.fragmentCost();
         } else {
@@ -179,7 +179,7 @@ public abstract class GraqlTraversal {
         }
     }
 
-    private static <S, E> GraphTraversal<S, Map<String, E>> selectVars(GraphTraversal<S, ?> traversal, Set<Var> vars) {
+    private static <S, E> GraphTraversal<S, Map<String, E>> selectVars(GraphTraversal<S, ?> traversal, Set<Variable> vars) {
         if (vars.isEmpty()) {
             // Produce an empty result
             return traversal.constant(ImmutableMap.of());
@@ -187,7 +187,7 @@ public abstract class GraqlTraversal {
             String label = vars.iterator().next().label();
             return traversal.select(label, label);
         } else {
-            String[] labelArray = vars.stream().map(Var::label).toArray(String[]::new);
+            String[] labelArray = vars.stream().map(Variable::label).toArray(String[]::new);
             return traversal.asAdmin().addStep(new SelectStep<>(traversal.asAdmin(), null, labelArray));
         }
     }
@@ -196,7 +196,7 @@ public abstract class GraqlTraversal {
     public String toString() {
         return "{" + fragments().stream().map(list -> {
             StringBuilder sb = new StringBuilder();
-            Var currentName = null;
+            Variable currentName = null;
 
             for (Fragment fragment : list) {
                 if (!fragment.start().equals(currentName)) {
@@ -208,7 +208,7 @@ public abstract class GraqlTraversal {
 
                 sb.append(fragment.name());
 
-                Var end = fragment.end();
+                Variable end = fragment.end();
                 if (end != null) {
                     sb.append(end.shortName());
                     currentName = end;

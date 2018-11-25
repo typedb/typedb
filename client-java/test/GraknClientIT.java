@@ -32,7 +32,7 @@ import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptList;
@@ -327,7 +327,7 @@ public class GraknClientIT {
 
     private boolean explanationConsistentWithAnswer(ConceptMap ans) {
         ReasonerQuery query = ans.explanation().getQuery();
-        Set<Var> vars = query != null ? query.getVarNames() : new HashSet<>();
+        Set<Variable> vars = query != null ? query.getVarNames() : new HashSet<>();
         return vars.containsAll(ans.map().keySet());
     }
 
@@ -1026,8 +1026,8 @@ public class GraknClientIT {
             person.create();
 
             QueryBuilder qb = tx.graql();
-            Var x = var("x");
-            Var y = var("y");
+            Variable x = var("x");
+            Variable y = var("y");
 
             Collection<ConceptMap> result = qb.match(x.isa("company-123"), y.isa("person-123")).get(x, y).execute();
             assertEquals(6, result.size());

@@ -19,7 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.executor.QueryOperationExecutor;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -75,25 +75,25 @@ public abstract class PropertyExecutor {
     }
 
     /**
-     * Get all {@link Var}s whose {@link Concept} must exist for the subject {@link Var} to be applied.
+     * Get all {@link Variable}s whose {@link Concept} must exist for the subject {@link Variable} to be applied.
      * For example, for {@link IsaProperty} the type must already be present before an instance can be created.
      *
      * <p>
-     *     When calling {@link #execute}, the method can expect any {@link Var} returned here to be available by calling
+     *     When calling {@link #execute}, the method can expect any {@link Variable} returned here to be available by calling
      *     {@link QueryOperationExecutor#get}.
      * </p>
      */
-    public abstract ImmutableSet<Var> requiredVars();
+    public abstract ImmutableSet<Variable> requiredVars();
 
     /**
-     * Get all {@link Var}s whose {@link Concept} can only be created after this property is applied.
+     * Get all {@link Variable}s whose {@link Concept} can only be created after this property is applied.
      *
      * <p>
-     *     When calling {@link #execute}, the method must help build a {@link Concept} for every {@link Var} returned
+     *     When calling {@link #execute}, the method must help build a {@link Concept} for every {@link Variable} returned
      *     from this method, using {@link QueryOperationExecutor#builder}.
      * </p>
      */
-    public abstract ImmutableSet<Var> producedVars();
+    public abstract ImmutableSet<Variable> producedVars();
 
     abstract Method executeMethod();
 
@@ -101,21 +101,21 @@ public abstract class PropertyExecutor {
     abstract static class Builder {
         abstract Builder executeMethod(Method value);
 
-        abstract ImmutableSet.Builder<Var> requiredVarsBuilder();
+        abstract ImmutableSet.Builder<Variable> requiredVarsBuilder();
 
-        public Builder requires(Var... values) {
+        public Builder requires(Variable... values) {
             requiredVarsBuilder().add(values);
             return this;
         }
 
-        public Builder requires(Iterable<Var> values) {
+        public Builder requires(Iterable<Variable> values) {
             requiredVarsBuilder().addAll(values);
             return this;
         }
 
-        abstract ImmutableSet.Builder<Var> producedVarsBuilder();
+        abstract ImmutableSet.Builder<Variable> producedVarsBuilder();
 
-        public Builder produces(Var... values) {
+        public Builder produces(Variable... values) {
             producedVarsBuilder().add(values);
             return this;
         }

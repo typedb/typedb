@@ -26,13 +26,13 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import org.junit.Before;
@@ -90,7 +90,7 @@ public class BenchmarkBigIT {
     private void loadRandomisedRelationInstances(String entityLabel, String fromRoleLabel, String toRoleLabel,
                                                  String relationLabel, int N, Grakn.Session session){
         try(Grakn.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
-            Var entityVar = var().asUserDefined();
+            Variable entityVar = var().asUserDefined();
             ConceptId[] instances = transaction.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
                     .map(ans -> ans.get(entityVar).id())
                     .toArray(ConceptId[]::new);
@@ -107,8 +107,8 @@ public class BenchmarkBigIT {
                 int to = rand.nextInt(N - 1);
                 while (to == from && assignmentMap.get(from).contains(to)) to = rand.nextInt(N - 1);
 
-                Var fromRolePlayer = Graql.var();
-                Var toRolePlayer = Graql.var();
+                Variable fromRolePlayer = Graql.var();
+                Variable toRolePlayer = Graql.var();
                 Pattern relationInsert = Graql.and(
                         var().rel(Graql.label(fromRole.label()), fromRolePlayer)
                                 .rel(Graql.label(toRole.label()), toRolePlayer)
@@ -172,10 +172,10 @@ public class BenchmarkBigIT {
 
                 //define N rules
                 for (int i = 2; i <= N; i++) {
-                    Var fromVar = Graql.var().asUserDefined();
-                    Var intermedVar = Graql.var().asUserDefined();
-                    Var toVar = Graql.var().asUserDefined();
-                    VarPattern rulePattern = Graql
+                    Variable fromVar = Graql.var().asUserDefined();
+                    Variable intermedVar = Graql.var().asUserDefined();
+                    Variable toVar = Graql.var().asUserDefined();
+                    Statement rulePattern = Graql
                             .label("rule" + i)
                             .when(
                                     Graql.and(
@@ -206,7 +206,7 @@ public class BenchmarkBigIT {
             loadEntities(entityLabel, N+1, session);
 
             try (Grakn.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
-                Var entityVar = var().asUserDefined();
+                Variable entityVar = var().asUserDefined();
                 ConceptId[] instances = transaction.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
                         .map(ans -> ans.get(entityVar).id())
                         .toArray(ConceptId[]::new);
@@ -224,8 +224,8 @@ public class BenchmarkBigIT {
                 );
 
                 for(int i = 1; i < instances.length; i++){
-                    Var fromRolePlayer = Graql.var();
-                    Var toRolePlayer = Graql.var();
+                    Variable fromRolePlayer = Graql.var();
+                    Variable toRolePlayer = Graql.var();
 
                     Pattern relationInsert = Graql.and(
                             var().rel(Graql.label(fromRole.label()), fromRolePlayer)

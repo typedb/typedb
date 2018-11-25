@@ -23,10 +23,10 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.util.StringUtil;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -65,18 +65,18 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Var start) {
+    public Collection<EquivalentFragmentSet> match(Variable start) {
         return ImmutableSet.of(EquivalentFragmentSets.label(this, start, ImmutableSet.of(label())));
     }
 
     @Override
-    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
         // This is supported in insert queries in order to allow looking up schema concepts by label
         return define(var);
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             executor.builder(var).label(label());
         };
@@ -85,7 +85,7 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         // This is supported in undefine queries in order to allow looking up schema concepts by label
         return define(var);
     }
@@ -96,7 +96,7 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Atomic mapToAtom(VarPattern var, Set<VarPattern> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label());
         if (schemaConcept == null)  throw GraqlQueryException.labelNotFound(label());
         return IdPredicate.create(var.var().asUserDefined(), label(), parent);

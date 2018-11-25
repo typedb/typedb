@@ -12,7 +12,7 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
@@ -87,8 +87,8 @@ public class RuleCacheIT {
         tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
         String recordPatternString = "{(someRole: $x, subRole: $y) isa reifiable-relation;}";
         String retrievePatternString = "{(someRole: $p1, subRole: $p2) isa reifiable-relation;}";
-        Conjunction<VarPattern> recordPattern = conjunction(recordPatternString, tx);
-        Conjunction<VarPattern> retrievePattern = conjunction(retrievePatternString, tx);
+        Conjunction<Statement> recordPattern = conjunction(recordPatternString, tx);
+        Conjunction<Statement> retrievePattern = conjunction(retrievePatternString, tx);
         recordQuery = ReasonerQueries.atomic(recordPattern, tx);
         retrieveQuery = ReasonerQueries.atomic(retrievePattern, tx);
         retrieveToRecordUnifier = retrieveQuery.getMultiUnifier(recordQuery).getUnifier();
@@ -167,8 +167,8 @@ public class RuleCacheIT {
     }
 
 
-    private Conjunction<VarPattern> conjunction(String patternString, Transaction graph){
-        Set<VarPattern> vars = graph.graql().parser().parsePattern(patternString)
+    private Conjunction<Statement> conjunction(String patternString, Transaction graph){
+        Set<Statement> vars = graph.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Graql.and(vars);

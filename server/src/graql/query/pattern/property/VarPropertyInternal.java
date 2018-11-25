@@ -21,8 +21,8 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.server.Transaction;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 
 import java.util.Collection;
@@ -37,23 +37,23 @@ public interface VarPropertyInternal extends VarProperty {
     /**
      * Check if the given property can be used in a {@link Match}
      */
-    void checkValid(Transaction graph, VarPattern var) throws GraqlQueryException;
+    void checkValid(Transaction graph, Statement var) throws GraqlQueryException;
 
     /**
      * Return a collection of {@link EquivalentFragmentSet} to match the given property in the graph
      */
-    Collection<EquivalentFragmentSet> match(Var start);
+    Collection<EquivalentFragmentSet> match(Variable start);
 
     /**
      * Returns a {@link PropertyExecutor} that describes how to insert the given {@link VarProperty} into.
      *
      * @throws GraqlQueryException if this {@link VarProperty} cannot be inserted
      */
-    Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException;
+    Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException;
 
-    Collection<PropertyExecutor> define(Var var) throws GraqlQueryException;
+    Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException;
 
-    Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException;
+    Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException;
 
     /**
      * Whether this property will uniquely identify a concept in the graph, if one exists.
@@ -64,7 +64,7 @@ public interface VarPropertyInternal extends VarProperty {
     }
 
     @Override
-    default Stream<VarPattern> innerVarPatterns() {
+    default Stream<Statement> innerVarPatterns() {
         return Stream.empty();
     }
 

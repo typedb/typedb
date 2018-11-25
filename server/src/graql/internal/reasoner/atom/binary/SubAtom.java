@@ -19,10 +19,10 @@
 package grakn.core.graql.internal.reasoner.atom.binary;
 
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
@@ -41,11 +41,11 @@ import java.util.stream.Collectors;
 @AutoValue
 public abstract class SubAtom extends OntologicalAtom {
 
-    @Override public abstract Var getPredicateVariable();
-    @Override public abstract VarPattern getPattern();
+    @Override public abstract Variable getPredicateVariable();
+    @Override public abstract Statement getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
 
-    public static SubAtom create(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
+    public static SubAtom create(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
         return new AutoValue_SubAtom(var, predicateId, predicateVar, var.sub(predicateVar), parent);
     }
 
@@ -54,7 +54,7 @@ public abstract class SubAtom extends OntologicalAtom {
     }
 
     @Override
-    OntologicalAtom createSelf(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
+    OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
         return SubAtom.create(var, predicateVar, predicateId, parent);
     }
 

@@ -24,7 +24,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.util.StringUtil;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableSet;
@@ -57,7 +57,7 @@ public class Fragments {
     }
 
     public static Fragment inRolePlayer(VarProperty varProperty,
-                                        Var rolePlayer, Var edge, Var relation, @Nullable Var role,
+                                        Variable rolePlayer, Variable edge, Variable relation, @Nullable Variable role,
                                         @Nullable ImmutableSet<Label> roleLabels,
                                         @Nullable ImmutableSet<Label> relationTypeLabels) {
         return new AutoValue_InRolePlayerFragment(
@@ -65,74 +65,74 @@ public class Fragments {
     }
 
     public static Fragment outRolePlayer(VarProperty varProperty,
-                                         Var relation, Var edge, Var rolePlayer, @Nullable Var role,
+                                         Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role,
                                          @Nullable ImmutableSet<Label> roleLabels,
                                          @Nullable ImmutableSet<Label> relationTypeLabels) {
         return new AutoValue_OutRolePlayerFragment(
                 varProperty, relation, rolePlayer, edge, role, roleLabels, relationTypeLabels);
     }
 
-    public static Fragment inSub(VarProperty varProperty, Var start, Var end, int subTraversalDepthlimit) {
+    public static Fragment inSub(VarProperty varProperty, Variable start, Variable end, int subTraversalDepthlimit) {
         return new AutoValue_InSubFragment(varProperty, start, end, subTraversalDepthlimit);
     }
 
-    public static Fragment outSub(VarProperty varProperty, Var start, Var end, int subTraversalDepthLimit) {
+    public static Fragment outSub(VarProperty varProperty, Variable start, Variable end, int subTraversalDepthLimit) {
         return new AutoValue_OutSubFragment(varProperty, start, end, subTraversalDepthLimit);
     }
 
-    public static InRelatesFragment inRelates(VarProperty varProperty, Var start, Var end) {
+    public static InRelatesFragment inRelates(VarProperty varProperty, Variable start, Variable end) {
         return new AutoValue_InRelatesFragment(varProperty, start, end);
     }
 
-    public static Fragment outRelates(VarProperty varProperty, Var start, Var end) {
+    public static Fragment outRelates(VarProperty varProperty, Variable start, Variable end) {
         return new AutoValue_OutRelatesFragment(varProperty, start, end);
     }
 
-    public static Fragment inIsa(VarProperty varProperty, Var start, Var end, boolean mayHaveEdgeInstances) {
+    public static Fragment inIsa(VarProperty varProperty, Variable start, Variable end, boolean mayHaveEdgeInstances) {
         return new AutoValue_InIsaFragment(varProperty, start, end, mayHaveEdgeInstances);
     }
 
-    public static Fragment outIsa(VarProperty varProperty, Var start, Var end) {
+    public static Fragment outIsa(VarProperty varProperty, Variable start, Variable end) {
         return new AutoValue_OutIsaFragment(varProperty, start, end);
     }
 
-    public static Fragment dataType(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
+    public static Fragment dataType(VarProperty varProperty, Variable start, AttributeType.DataType dataType) {
         return new AutoValue_DataTypeFragment(varProperty, start, dataType);
     }
 
-    public static Fragment inPlays(VarProperty varProperty, Var start, Var end, boolean required) {
+    public static Fragment inPlays(VarProperty varProperty, Variable start, Variable end, boolean required) {
         return new AutoValue_InPlaysFragment(varProperty, start, end, required);
     }
 
-    public static Fragment outPlays(VarProperty varProperty, Var start, Var end, boolean required) {
+    public static Fragment outPlays(VarProperty varProperty, Variable start, Variable end, boolean required) {
         return new AutoValue_OutPlaysFragment(varProperty, start, end, required);
     }
 
-    public static Fragment id(VarProperty varProperty, Var start, ConceptId id) {
+    public static Fragment id(VarProperty varProperty, Variable start, ConceptId id) {
         return new AutoValue_IdFragment(varProperty, start, id);
     }
 
-    public static Fragment label(VarProperty varProperty, Var start, ImmutableSet<Label> labels) {
+    public static Fragment label(VarProperty varProperty, Variable start, ImmutableSet<Label> labels) {
         return new AutoValue_LabelFragment(varProperty, start, labels);
     }
 
-    public static Fragment value(VarProperty varProperty, Var start, ValuePredicate predicate) {
+    public static Fragment value(VarProperty varProperty, Variable start, ValuePredicate predicate) {
         return new AutoValue_ValueFragment(varProperty, start, predicate);
     }
 
-    public static Fragment isAbstract(VarProperty varProperty, Var start) {
+    public static Fragment isAbstract(VarProperty varProperty, Variable start) {
         return new AutoValue_IsAbstractFragment(varProperty, start);
     }
 
-    public static Fragment regex(VarProperty varProperty, Var start, String regex) {
+    public static Fragment regex(VarProperty varProperty, Variable start, String regex) {
         return new AutoValue_RegexFragment(varProperty, start, regex);
     }
 
-    public static Fragment notInternal(VarProperty varProperty, Var start) {
+    public static Fragment notInternal(VarProperty varProperty, Variable start) {
         return new AutoValue_NotInternalFragment(varProperty, start);
     }
 
-    public static Fragment neq(VarProperty varProperty, Var start, Var other) {
+    public static Fragment neq(VarProperty varProperty, Variable start, Variable other) {
         return new AutoValue_NeqFragment(varProperty, start, other);
     }
 
@@ -140,7 +140,7 @@ public class Fragments {
      * A {@link Fragment} that uses an index stored on each attribute. Attributes are indexed by direct type and value.
      */
     public static Fragment attributeIndex(
-            @Nullable VarProperty varProperty, Var start, Label label, Object attributeValue) {
+            @Nullable VarProperty varProperty, Variable start, Label label, Object attributeValue) {
         String attributeIndex = Schema.generateAttributeIndex(label, attributeValue.toString());
         return new AutoValue_AttributeIndexFragment(varProperty, start, attributeIndex);
     }
@@ -247,7 +247,7 @@ public class Fragments {
             GraphTraversal<S, Edge> traversal, Schema.EdgeProperty edgeProperty) {
 
         // Access label ID from edge
-        Var labelId = Graql.var();
+        Variable labelId = Graql.var();
         traversal.values(edgeProperty.name()).as(labelId.label());
 
         // Look up schema concept using ID

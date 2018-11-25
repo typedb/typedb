@@ -20,7 +20,7 @@ package grakn.core.graql.internal.gremlin.sets;
 
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -40,8 +40,8 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.frag
 /**
  * A query can use a more-efficient attribute index traversal when the following criteria are met:
  * <p>
- * 1. There is an {@link IsaFragmentSet} and a {@link ValueFragmentSet} referring to the same instance {@link Var}.
- * 2. The {@link IsaFragmentSet} refers to a type {@link Var} with a {@link LabelFragmentSet}.
+ * 1. There is an {@link IsaFragmentSet} and a {@link ValueFragmentSet} referring to the same instance {@link Variable}.
+ * 2. The {@link IsaFragmentSet} refers to a type {@link Variable} with a {@link LabelFragmentSet}.
  * 3. The {@link LabelFragmentSet} refers to one type in the knowledge base.
  * 4. The {@link ValueFragmentSet} is an equality predicate referring to a literal value.
  * <p>
@@ -53,7 +53,7 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.frag
 @AutoValue
 abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
 
-    static AttributeIndexFragmentSet of(Var var, Label label, Object value) {
+    static AttributeIndexFragmentSet of(Variable var, Label label, Object value) {
         return new AutoValue_AttributeIndexFragmentSet(var, label, value);
     }
 
@@ -68,7 +68,7 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
         return ImmutableSet.of(Fragments.attributeIndex(varProperty(), var(), label(), value()));
     }
 
-    abstract Var var();
+    abstract Variable var();
     abstract Label label();
     abstract Object value();
 
@@ -76,12 +76,12 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
         Iterable<ValueFragmentSet> valueSets = equalsValueFragments(fragmentSets)::iterator;
 
         for (ValueFragmentSet valueSet : valueSets) {
-            Var attribute = valueSet.var();
+            Variable attribute = valueSet.var();
 
             IsaFragmentSet isaSet = EquivalentFragmentSets.typeInformationOf(attribute, fragmentSets);
             if (isaSet == null) continue;
 
-            Var type = isaSet.type();
+            Variable type = isaSet.type();
 
             LabelFragmentSet nameSet = EquivalentFragmentSets.labelOf(type, fragmentSets);
             if (nameSet == null) continue;
@@ -107,7 +107,7 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
         fragmentSets.remove(isaSet);
 
         // Add a new fragment set to replace the old ones
-        Var attribute = valueSet.var();
+        Variable attribute = valueSet.var();
 
         Optional<Object> maybeValue = valueSet.predicate().equalsValue();
         assert maybeValue.isPresent() : "This is filtered to only ones with equalValues in equalValueFragments method";

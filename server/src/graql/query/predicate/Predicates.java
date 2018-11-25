@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query.predicate;
 
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 
 /**
  * Factory method for {@link ValuePredicate} implementations.
@@ -60,7 +60,7 @@ public class Predicates {
         return new ContainsPredicate(substring);
     }
 
-    public static ValuePredicate contains(VarPattern var) {
+    public static ValuePredicate contains(Statement var) {
         return new ContainsPredicate(var);
     }
 }

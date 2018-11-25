@@ -28,10 +28,10 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -72,14 +72,14 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
 
     public static final String NAME = "has";
 
-    public static HasAttributeProperty of(Label attributeType, VarPattern attribute, VarPattern relationship) {
+    public static HasAttributeProperty of(Label attributeType, Statement attribute, Statement relationship) {
         attribute = attribute.isa(label(attributeType));
         return new AutoValue_HasAttributeProperty(attributeType, attribute, relationship);
     }
 
     public abstract Label type();
-    public abstract VarPattern attribute();
-    public abstract VarPattern relationship();
+    public abstract Statement attribute();
+    public abstract Statement relationship();
 
     @Override
     public String getName() {
@@ -106,7 +106,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Var start) {
+    public Collection<EquivalentFragmentSet> match(Variable start) {
         Label type = type();
         Label has = Schema.ImplicitType.HAS.getLabel(type);
         Label key = Schema.ImplicitType.KEY.getLabel(type);
@@ -116,8 +116,8 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         Label hasValueRole= Schema.ImplicitType.HAS_VALUE.getLabel(type);
         Label keyValueRole = Schema.ImplicitType.KEY_VALUE.getLabel(type);
 
-        Var edge1 = Graql.var();
-        Var edge2 = Graql.var();
+        Variable edge1 = Graql.var();
+        Variable edge2 = Graql.var();
 
         return ImmutableSet.of(
                 //owner rolePlayer edge
@@ -129,12 +129,12 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public Stream<VarPattern> innerVarPatterns() {
+    public Stream<Statement> innerVarPatterns() {
         return Stream.of(attribute(), relationship());
     }
 
     @Override
-    void checkValidProperty(Transaction graph, VarPattern var) {
+    void checkValidProperty(Transaction graph, Statement var) {
         SchemaConcept schemaConcept = graph.getSchemaConcept(type());
         if (schemaConcept == null) {
             throw GraqlQueryException.labelNotFound(type());
@@ -145,7 +145,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Attribute attributeConcept = executor.get(attribute().var()).asAttribute();
             Thing thing = executor.get(var).asThing();
@@ -162,7 +162,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public Stream<VarPattern> getTypes() {
+    public Stream<Statement> getTypes() {
         return Stream.of(label(type()));
     }
 
@@ -201,22 +201,22 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public Atomic mapToAtom(VarPattern var, Set<VarPattern> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
         //NB: HasAttributeProperty always has (type) label specified
-        Var varName = var.var().asUserDefined();
+        Variable varName = var.var().asUserDefined();
 
-        Var relationVariable = relationship().var();
-        Var attributeVariable = attribute().var().asUserDefined();
-        Var predicateVariable = Graql.var();
+        Variable relationVariable = relationship().var();
+        Variable attributeVariable = attribute().var().asUserDefined();
+        Variable predicateVariable = Graql.var();
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent);
 
         IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
-        VarPattern typeVar = isaProp != null? isaProp.type() : null;
+        Statement typeVar = isaProp != null? isaProp.type() : null;
         IdPredicate predicate = typeVar != null? getIdPredicate(predicateVariable, typeVar, vars, parent) : null;
         ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
 
         //add resource atom
-        VarPattern resVar = relationVariable.isUserDefinedName()?
+        Statement resVar = relationVariable.isUserDefinedName()?
                 varName.has(type(), attributeVariable, relationVariable) :
                 varName.has(type(), attributeVariable);
         ResourceAtom atom = ResourceAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);

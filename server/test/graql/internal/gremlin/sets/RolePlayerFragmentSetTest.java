@@ -23,7 +23,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 
 public class RolePlayerFragmentSetTest {
 
-    private final Var a = Graql.var("a"), b = Graql.var("b"), c = Graql.var("c"), d = Graql.var("d");
+    private final Variable a = Graql.var("a"), b = Graql.var("b"), c = Graql.var("c"), d = Graql.var("d");
     private Transaction tx;
 
     @Before

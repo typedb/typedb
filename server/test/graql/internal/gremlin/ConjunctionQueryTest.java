@@ -24,9 +24,9 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import org.hamcrest.Matcher;
@@ -51,12 +51,12 @@ import static org.mockito.Mockito.when;
 public class ConjunctionQueryTest {
     private Label resourceTypeWithoutSubTypesLabel = Label.of("name");
     private Label resourceTypeWithSubTypesLabel = Label.of("resource");
-    private VarPattern resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
-    private VarPattern resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
+    private Statement resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
+    private Statement resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
     private Transaction tx;
-    private Var x = Graql.var("x");
-    private Var y = Graql.var("y");
+    private Variable x = Graql.var("x");
+    private Variable y = Graql.var("y");
 
     @SuppressWarnings("ResultOfMethodCallIgnored") // Mockito confuses IntelliJ
     @Before
@@ -154,11 +154,11 @@ public class ConjunctionQueryTest {
         return usesResourceIndex(x, literalValue);
     }
 
-    private Matcher<Pattern> usesResourceIndex(Var varName, Object value) {
+    private Matcher<Pattern> usesResourceIndex(Variable varName, Object value) {
         Fragment resourceIndexFragment = Fragments.attributeIndex(null, varName, resourceTypeWithoutSubTypesLabel, value);
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
-            Conjunction<VarPattern> conjunction = pattern.getDisjunctiveNormalForm().getPatterns().iterator().next();
+            Conjunction<Statement> conjunction = pattern.getDisjunctiveNormalForm().getPatterns().iterator().next();
             return new ConjunctionQuery(conjunction, tx).getEquivalentFragmentSets();
         });
     }

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
@@ -41,14 +41,14 @@ import java.util.Set;
 @AutoValue
 public abstract class OutSubFragment extends Fragment {
     @Override
-    public abstract Var end();
+    public abstract Variable end();
 
     // -1 implies no depth limit
     public abstract int subTraversalDepthLimit();
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Variable> vars) {
         return Fragments.outSubs(Fragments.isVertex(traversal), this.subTraversalDepthLimit());
     }
 

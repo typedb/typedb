@@ -37,8 +37,8 @@ import grakn.core.graql.query.aggregate.MedianAggregate;
 import grakn.core.graql.query.aggregate.MinAggregate;
 import grakn.core.graql.query.aggregate.StdAggregate;
 import grakn.core.graql.query.aggregate.SumAggregate;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.predicate.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -90,7 +90,7 @@ public class Graql {
      * @return an insert query that will insert the given variable patterns into the graph
      */
     @CheckReturnValue
-    public static InsertQuery insert(VarPattern... varPatterns) {
+    public static InsertQuery insert(Statement... varPatterns) {
         return new QueryBuilder().insert(varPatterns);
     }
 
@@ -99,43 +99,43 @@ public class Graql {
      * @return an insert query that will insert the given variable patterns into the graph
      */
     @CheckReturnValue
-    public static InsertQuery insert(Collection<? extends VarPattern> varPatterns) {
+    public static InsertQuery insert(Collection<? extends Statement> varPatterns) {
         return new QueryBuilder().insert(varPatterns);
     }
 
     /**
-     * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @param varPatterns an array of {@link Statement}s defining {@link SchemaConcept}s
      * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public static DefineQuery define(VarPattern... varPatterns) {
+    public static DefineQuery define(Statement... varPatterns) {
         return new QueryBuilder().define(varPatterns);
     }
 
     /**
-     * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @param varPatterns a collection of {@link Statement}s defining {@link SchemaConcept}s
      * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public static DefineQuery define(Collection<? extends VarPattern> varPatterns) {
+    public static DefineQuery define(Collection<? extends Statement> varPatterns) {
         return new QueryBuilder().define(varPatterns);
     }
 
     /**
-     * @param varPatterns an array of {@link VarPattern}s undefining {@link SchemaConcept}s
+     * @param varPatterns an array of {@link Statement}s undefining {@link SchemaConcept}s
      * @return a {@link UndefineQuery} that will remove the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public static UndefineQuery undefine(VarPattern... varPatterns) {
+    public static UndefineQuery undefine(Statement... varPatterns) {
         return new QueryBuilder().undefine(varPatterns);
     }
 
     /**
-     * @param varPatterns a collection of {@link VarPattern}s undefining {@link SchemaConcept}s
+     * @param varPatterns a collection of {@link Statement}s undefining {@link SchemaConcept}s
      * @return a {@link UndefineQuery} that will remove the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public static UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
+    public static UndefineQuery undefine(Collection<? extends Statement> varPatterns) {
         return new QueryBuilder().undefine(varPatterns);
     }
 
@@ -167,16 +167,16 @@ public class Graql {
      * @return a new query variable
      */
     @CheckReturnValue
-    public static Var var(String name) {
-        return new Var(name, Var.Type.UserDefined);
+    public static Variable var(String name) {
+        return new Variable(name, Variable.Type.UserDefined);
     }
 
     /**
      * @return a new, anonymous query variable
      */
     @CheckReturnValue
-    public static Var var() {
-        return new Var(Long.toString(counter.getAndIncrement()), Var.Type.Generated);
+    public static Variable var() {
+        return new Variable(Long.toString(counter.getAndIncrement()), Variable.Type.Generated);
     }
 
     /**
@@ -184,7 +184,7 @@ public class Graql {
      * @return a variable pattern that identifies a concept by label
      */
     @CheckReturnValue
-    public static VarPattern label(Label label) {
+    public static Statement label(Label label) {
         return var().label(label);
     }
 
@@ -193,7 +193,7 @@ public class Graql {
      * @return a variable pattern that identifies a concept by label
      */
     @CheckReturnValue
-    public static VarPattern label(String label) {
+    public static Statement label(String label) {
         return var().label(label);
     }
 
@@ -260,8 +260,8 @@ public class Graql {
     /**
      * Aggregate that counts results of a {@link Match}.
      */
-    public static Aggregate<Value> count(Var var, Var... vars) {
-        Set<Var> varSet = new HashSet<>(vars.length + 1);
+    public static Aggregate<Value> count(Variable var, Variable... vars) {
+        Set<Variable> varSet = new HashSet<>(vars.length + 1);
         varSet.add(var);
         varSet.addAll(Arrays.asList(vars));
         return new CountAggregate(varSet);
@@ -279,7 +279,7 @@ public class Graql {
      * Create an aggregate that will sum the values of a variable.
      */
     @CheckReturnValue
-    public static Aggregate<Value> sum(Var var) {
+    public static Aggregate<Value> sum(Variable var) {
         return new SumAggregate(var);
     }
 
@@ -297,7 +297,7 @@ public class Graql {
      * @param var the variable to find the maximum of
      */
     @CheckReturnValue
-    public static Aggregate<Value> min(Var var) {
+    public static Aggregate<Value> min(Variable var) {
         return new MinAggregate(var);
     }
 
@@ -315,7 +315,7 @@ public class Graql {
      * @param var the variable to find the maximum of
      */
     @CheckReturnValue
-    public static Aggregate<Value> max(Var var) {
+    public static Aggregate<Value> max(Variable var) {
         return new MaxAggregate(var);
     }
 
@@ -333,7 +333,7 @@ public class Graql {
      * @param var the variable to find the mean of
      */
     @CheckReturnValue
-    public static Aggregate<Value> mean(Var var) {
+    public static Aggregate<Value> mean(Variable var) {
         return new MeanAggregate(var);
     }
 
@@ -351,7 +351,7 @@ public class Graql {
      * @param var the variable to find the median of
      */
     @CheckReturnValue
-    public static Aggregate<Value> median(Var var) {
+    public static Aggregate<Value> median(Variable var) {
         return new MedianAggregate(var);
     }
 
@@ -369,7 +369,7 @@ public class Graql {
      * @param var the variable to find the standard deviation of
      */
     @CheckReturnValue
-    public static Aggregate<Value> std(Var var) {
+    public static Aggregate<Value> std(Variable var) {
         return new StdAggregate(var);
     }
 
@@ -386,7 +386,7 @@ public class Graql {
      * Aggregate that groups results of a {@link Match} by variable name
      * @param varName the variable name to group results by
      */
-    public static Aggregate<AnswerGroup<ConceptMap>> group(Var varName) {
+    public static Aggregate<AnswerGroup<ConceptMap>> group(Variable varName) {
         return group(varName, new ListAggregate());
     }
 
@@ -405,7 +405,7 @@ public class Graql {
      * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
      * @param <T> the type of each group
      */
-    public static <T extends Answer> Aggregate<AnswerGroup<T>> group(Var varName, Aggregate<T> innerAggregate) {
+    public static <T extends Answer> Aggregate<AnswerGroup<T>> group(Variable varName, Aggregate<T> innerAggregate) {
         return new GroupAggregate<>(varName, innerAggregate);
     }
 
@@ -427,7 +427,7 @@ public class Graql {
      * @return a predicate that is true when a value equals the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate eq(VarPattern varPattern) {
+    public static ValuePredicate eq(Statement varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.eq(varPattern);
     }
@@ -447,7 +447,7 @@ public class Graql {
      * @return a predicate that is true when a value does not equal the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate neq(VarPattern varPattern) {
+    public static ValuePredicate neq(Statement varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.neq(varPattern);
     }
@@ -467,7 +467,7 @@ public class Graql {
      * @return a predicate that is true when a value is strictly greater than the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate gt(VarPattern varPattern) {
+    public static ValuePredicate gt(Statement varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.gt(varPattern);
     }
@@ -487,7 +487,7 @@ public class Graql {
      * @return a predicate that is true when a value is greater or equal to the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate gte(VarPattern varPattern) {
+    public static ValuePredicate gte(Statement varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.gte(varPattern);
     }
@@ -507,7 +507,7 @@ public class Graql {
      * @return a predicate that is true when a value is strictly less than the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate lt(VarPattern varPattern) {
+    public static ValuePredicate lt(Statement varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.lt(varPattern);
     }
@@ -527,7 +527,7 @@ public class Graql {
      * @return a predicate that is true when a value is less or equal to the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate lte(VarPattern varPattern) {
+    public static ValuePredicate lte(Statement varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.lte(varPattern);
     }
@@ -557,7 +557,7 @@ public class Graql {
      * @return a predicate that returns true when a value contains the given substring
      */
     @CheckReturnValue
-    public static ValuePredicate contains(VarPattern varPattern) {
+    public static ValuePredicate contains(Statement varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.contains(varPattern);
     }

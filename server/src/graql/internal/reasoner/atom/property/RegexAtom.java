@@ -18,10 +18,10 @@
 
 package grakn.core.graql.internal.reasoner.atom.property;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import com.google.auto.value.AutoValue;
@@ -32,11 +32,11 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class RegexAtom extends AtomicBase {
 
-    @Override public abstract VarPattern getPattern();
+    @Override public abstract Statement getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
     public abstract String getRegex();
 
-    public static RegexAtom create(Var varName, RegexProperty prop, ReasonerQuery parent) {
+    public static RegexAtom create(Variable varName, RegexProperty prop, ReasonerQuery parent) {
         return new AutoValue_RegexAtom(varName, varName.regex(prop.regex()), parent, prop.regex());
     }
 

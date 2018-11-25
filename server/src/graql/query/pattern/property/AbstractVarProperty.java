@@ -20,8 +20,8 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.server.Transaction;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.common.util.CommonUtil;
 
 import java.util.Collection;
@@ -30,44 +30,44 @@ import java.util.stream.Stream;
 abstract class AbstractVarProperty implements VarPropertyInternal {
 
     @Override
-    public final void checkValid(Transaction graph, VarPattern var) throws GraqlQueryException {
+    public final void checkValid(Transaction graph, Statement var) throws GraqlQueryException {
         checkValidProperty(graph, var);
 
-        innerVarPatterns().map(VarPattern::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
+        innerVarPatterns().map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
             if (graph.getSchemaConcept(label) == null) {
                 throw GraqlQueryException.labelNotFound(label);
             }
         });
     }
 
-    void checkValidProperty(Transaction graph, VarPattern var) {
+    void checkValidProperty(Transaction graph, Statement var) {
 
     }
 
     abstract String getName();
 
     @Override
-    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
         throw GraqlQueryException.insertUnsupportedProperty(getName());
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
         throw GraqlQueryException.defineUnsupportedProperty(getName());
     }
 
     @Override
-    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         throw GraqlQueryException.defineUnsupportedProperty(getName());
     }
 
     @Override
-    public Stream<VarPattern> getTypes() {
+    public Stream<Statement> getTypes() {
         return Stream.empty();
     }
 
     @Override
-    public Stream<VarPattern> implicitInnerVarPatterns() {
+    public Stream<Statement> implicitInnerVarPatterns() {
         return innerVarPatterns();
     }
 

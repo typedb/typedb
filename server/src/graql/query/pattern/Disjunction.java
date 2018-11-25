@@ -54,9 +54,9 @@ public class Disjunction<T extends Pattern> implements Pattern {
     }
 
     @Override
-    public Disjunction<Conjunction<VarPattern>> getDisjunctiveNormalForm() {
+    public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
         // Concatenate all disjunctions into one big disjunction
-        Set<Conjunction<VarPattern>> dnf = getPatterns().stream()
+        Set<Conjunction<Statement>> dnf = getPatterns().stream()
                 .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
                 .collect(toSet());
 
@@ -64,7 +64,7 @@ public class Disjunction<T extends Pattern> implements Pattern {
     }
 
     @Override
-    public Set<Var> commonVars() {
+    public Set<Variable> commonVars() {
         return getPatterns().stream().map(Pattern::commonVars).reduce(Sets::intersection).orElse(ImmutableSet.of());
     }
 

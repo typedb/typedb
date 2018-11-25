@@ -20,9 +20,9 @@ package grakn.core.graql.internal.gremlin;
 
 import grakn.core.server.Transaction;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.property.VarPropertyInternal;
@@ -43,7 +43,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * A query that does not contain any disjunctions, so it can be represented as a single gremlin traversal.
  * <p>
- * The {@code ConjunctionQuery} is passed a {@link Conjunction< VarPattern >}.
+ * The {@code ConjunctionQuery} is passed a {@link Conjunction<  Statement  >}.
  * {@link EquivalentFragmentSet}s can be extracted from each {@link GraqlTraversal}.
  * <p>
  * The {@link EquivalentFragmentSet}s are sorted to produce a set of lists of {@link Fragment}s. Each list of fragments
@@ -55,14 +55,14 @@ import static java.util.stream.Collectors.toSet;
  */
 class ConjunctionQuery {
 
-    private final Set<VarPattern> vars;
+    private final Set<Statement> vars;
 
     private final ImmutableSet<EquivalentFragmentSet> equivalentFragmentSets;
 
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(Conjunction<VarPattern> patternConjunction, Transaction tx) {
+    ConjunctionQuery(Conjunction<Statement> patternConjunction, Transaction tx) {
         vars = patternConjunction.getPatterns();
 
         if (vars.size() == 0) {
@@ -73,19 +73,19 @@ class ConjunctionQuery {
                 vars.stream().flatMap(ConjunctionQuery::equivalentFragmentSetsRecursive).collect(toImmutableSet());
 
         // Get all variable names mentioned in non-starting fragments
-        Set<Var> names = fragmentSets.stream()
+        Set<Variable> names = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
                 .filter(fragment -> !fragment.isStartingFragment())
                 .flatMap(fragment -> fragment.vars().stream())
                 .collect(toImmutableSet());
 
         // Get all dependencies fragments have on certain variables existing
-        Set<Var> dependencies = fragmentSets.stream()
+        Set<Variable> dependencies = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
                 .flatMap(fragment -> fragment.dependencies().stream())
                 .collect(toImmutableSet());
 
-        Set<Var> validNames = Sets.difference(names, dependencies);
+        Set<Variable> validNames = Sets.difference(names, dependencies);
 
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
         Set<EquivalentFragmentSet> initialEquivalentFragmentSets = fragmentSets.stream()
@@ -120,14 +120,14 @@ class ConjunctionQuery {
         return Sets.cartesianProduct(fragments).stream();
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarPattern var) {
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(Statement var) {
         return var.implicitInnerVarPatterns().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarPattern var) {
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(Statement var) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        Var start = var.var();
+        Variable start = var.var();
 
         var.getProperties().forEach(property -> {
             VarPropertyInternal propertyInternal = (VarPropertyInternal) property;

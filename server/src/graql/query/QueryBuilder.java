@@ -26,7 +26,7 @@ import grakn.core.graql.answer.Answer;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.parser.QueryParser;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 
@@ -94,7 +94,7 @@ public class QueryBuilder {
      * @return an insert query that will insert the given variables into the graph
      */
     @CheckReturnValue
-    public InsertQuery insert(VarPattern... vars) {
+    public InsertQuery insert(Statement... vars) {
         return insert(Arrays.asList(vars));
     }
 
@@ -103,46 +103,46 @@ public class QueryBuilder {
      * @return an insert query that will insert the given variables into the graph
      */
     @CheckReturnValue
-    public InsertQuery insert(Collection<? extends VarPattern> vars) {
-        ImmutableList<VarPattern> varAdmins = ImmutableList.copyOf(vars);
+    public InsertQuery insert(Collection<? extends Statement> vars) {
+        ImmutableList<Statement> varAdmins = ImmutableList.copyOf(vars);
         return Queries.insert(tx, varAdmins);
     }
 
     /**
-     * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @param varPatterns an array of {@link Statement}s defining {@link SchemaConcept}s
      * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public DefineQuery define(VarPattern... varPatterns) {
+    public DefineQuery define(Statement... varPatterns) {
         return define(Arrays.asList(varPatterns));
     }
 
     /**
-     * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @param varPatterns a collection of {@link Statement}s defining {@link SchemaConcept}s
      * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public DefineQuery define(Collection<? extends VarPattern> varPatterns) {
-        ImmutableList<VarPattern> admins = ImmutableList.copyOf(varPatterns);
+    public DefineQuery define(Collection<? extends Statement> varPatterns) {
+        ImmutableList<Statement> admins = ImmutableList.copyOf(varPatterns);
         return DefineQuery.of(admins, tx);
     }
 
     /**
-     * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s to undefine
+     * @param varPatterns an array of {@link Statement}s defining {@link SchemaConcept}s to undefine
      * @return an {@link UndefineQuery} that will remove the changes described in the {@code varPatterns}
      */
     @CheckReturnValue
-    public UndefineQuery undefine(VarPattern... varPatterns) {
+    public UndefineQuery undefine(Statement... varPatterns) {
         return undefine(Arrays.asList(varPatterns));
     }
 
     /**
-     * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s to undefine
+     * @param varPatterns a collection of {@link Statement}s defining {@link SchemaConcept}s to undefine
      * @return an {@link UndefineQuery} that will remove the changes described in the {@code varPatterns}
      */
     @CheckReturnValue
-    public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
-        ImmutableList<VarPattern> admins = ImmutableList.copyOf(varPatterns);
+    public UndefineQuery undefine(Collection<? extends Statement> varPatterns) {
+        ImmutableList<Statement> admins = ImmutableList.copyOf(varPatterns);
         return UndefineQuery.of(admins, tx);
     }
 

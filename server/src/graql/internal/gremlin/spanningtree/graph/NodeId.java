@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.spanningtree.graph;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collections;
 import java.util.Set;
@@ -39,14 +39,14 @@ public class NodeId {
     }
 
     private final NodeType nodeType;
-    private final Set<Var> vars;
+    private final Set<Variable> vars;
 
-    public NodeId(NodeType nodeType, Set<Var> vars) {
+    public NodeId(NodeType nodeType, Set<Variable> vars) {
         this.nodeType = nodeType;
         this.vars = vars;
     }
 
-    public NodeId(NodeType nodeType, Var var) {
+    public NodeId(NodeType nodeType, Variable var) {
         this(nodeType, Collections.singleton(var));
     }
 

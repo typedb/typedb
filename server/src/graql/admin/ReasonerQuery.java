@@ -23,7 +23,7 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.CheckReturnValue;
@@ -63,7 +63,7 @@ public interface ReasonerQuery{
      * @return set of variable names present in this reasoner query
      */
     @CheckReturnValue
-    Set<Var> getVarNames();
+    Set<Variable> getVarNames();
 
     /**
      * @return atom set defining this reasoner query
@@ -108,7 +108,7 @@ public interface ReasonerQuery{
      * @return true if typing the typeVar with type is compatible with role configuration of this query
      */
     @CheckReturnValue
-    boolean isTypeRoleCompatible(Var typedVar, Type parentType);
+    boolean isTypeRoleCompatible(Variable typedVar, Type parentType);
 
     /**
      * @param parent query we want to unify this query with
@@ -129,14 +129,14 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    ImmutableMap<Var, Type> getVarTypeMap();
+    ImmutableMap<Variable, Type> getVarTypeMap();
 
     /**
      * @param inferTypes whether types should be inferred from ids
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    ImmutableMap<Var, Type> getVarTypeMap(boolean inferTypes);
+    ImmutableMap<Variable, Type> getVarTypeMap(boolean inferTypes);
 
     /**
      * Returns a var-type of this query with possible additions coming from supplied partial answer.
@@ -144,6 +144,6 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    ImmutableMap<Var, Type> getVarTypeMap(ConceptMap sub);
+    ImmutableMap<Variable, Type> getVarTypeMap(ConceptMap sub);
 
 }

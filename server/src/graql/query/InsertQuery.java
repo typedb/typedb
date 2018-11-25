@@ -19,7 +19,7 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
@@ -52,7 +52,7 @@ public abstract class InsertQuery implements Query<ConceptMap> {
      * @param match the {@link Match} to insert for each result
      * @param vars a collection of Vars to insert
      */
-    static InsertQuery create(Transaction tx, MatchAdmin match, Collection<VarPattern> vars) {
+    static InsertQuery create(Transaction tx, MatchAdmin match, Collection<Statement> vars) {
         if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
 
         if (vars.isEmpty()) {
@@ -73,7 +73,7 @@ public abstract class InsertQuery implements Query<ConceptMap> {
      * @return the variables to insert in the insert query
      */
     @CheckReturnValue
-    public abstract Collection<VarPattern> varPatterns();
+    public abstract Collection<Statement> varPatterns();
 
     @Override
     public final InsertQuery withTx(Transaction tx) {
@@ -105,7 +105,7 @@ public abstract class InsertQuery implements Query<ConceptMap> {
         Transaction theGraph = getTx();
 
         Set<SchemaConcept> types = allVarPatterns()
-                .map(VarPattern::getTypeLabel)
+                .map(Statement::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(theGraph::<Type>getSchemaConcept)
                 .collect(Collectors.toSet());
@@ -115,7 +115,7 @@ public abstract class InsertQuery implements Query<ConceptMap> {
         return types;
     }
 
-    private Stream<VarPattern> allVarPatterns() {
+    private Stream<Statement> allVarPatterns() {
         return varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream());
     }
 

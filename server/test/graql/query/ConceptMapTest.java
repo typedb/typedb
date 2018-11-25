@@ -22,7 +22,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableMap;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.mock;
 
 public class ConceptMapTest {
 
-    private final Var varInAnswer = var("x");
+    private final Variable varInAnswer = var("x");
     private final Concept conceptInAnswer = mock(Concept.class);
 
     private final ConceptMap answer = new ConceptMap(ImmutableMap.of(varInAnswer, conceptInAnswer));
@@ -49,7 +49,7 @@ public class ConceptMapTest {
 
     @Test
     public void whenGettingAConceptThatIsNotInTheAnswer_Throw() {
-        Var varNotInAnswer = var("y");
+        Variable varNotInAnswer = var("y");
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.varNotInQuery(varNotInAnswer).getMessage());

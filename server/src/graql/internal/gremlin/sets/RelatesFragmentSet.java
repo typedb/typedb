@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -29,7 +29,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 
 /**
- * @see EquivalentFragmentSets#relates(VarProperty, Var, Var)
+ * @see EquivalentFragmentSets#relates(VarProperty, Variable, Variable)
  *
  */
 @AutoValue
@@ -43,6 +43,6 @@ abstract class RelatesFragmentSet extends EquivalentFragmentSet {
         );
     }
 
-    abstract Var relationshipType();
-    abstract Var role();
+    abstract Variable relationshipType();
+    abstract Variable role();
 }

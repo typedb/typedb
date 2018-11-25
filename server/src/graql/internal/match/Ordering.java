@@ -21,7 +21,7 @@ package grakn.core.graql.internal.match;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.Order;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import com.google.auto.value.AutoValue;
 
 import java.util.Comparator;
@@ -34,10 +34,10 @@ import java.util.stream.Stream;
 @AutoValue
 abstract class Ordering {
 
-    abstract Var var();
+    abstract Variable var();
     abstract Order order();
 
-    static Ordering of(Var var, Order order) {
+    static Ordering of(Variable var, Order order) {
         return new AutoValue_Ordering(var, order);
     }
 

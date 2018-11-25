@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.reasoning;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -196,10 +196,10 @@ public class VariableRolesIT {
             QueryBuilder qb = tx.graql().infer(true);
             final int arity = (int) tx.getRelationshipType(label).roles().count();
 
-            VarPattern resourcePattern = var("a1").has("name", "a");
+            Statement resourcePattern = var("a1").has("name", "a");
 
             //This query generalises all roles but the first one.
-            VarPattern pattern = var().rel("role1", "a1");
+            Statement pattern = var().rel("role1", "a1");
             for (int i = 2; i <= arity; i++) pattern = pattern.rel(var("r" + i), "a" + i);
             pattern = pattern.isa(label);
 
@@ -212,7 +212,7 @@ public class VariableRolesIT {
 
 
             //The general case of mapping all available Rps
-            VarPattern generalPattern = var();
+            Statement generalPattern = var();
             for (int i = 1; i <= arity; i++) generalPattern = generalPattern.rel(var("r" + i), "a" + i);
             generalPattern = generalPattern.isa(label);
 

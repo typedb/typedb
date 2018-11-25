@@ -24,7 +24,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
@@ -42,7 +42,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSyntaxException;
 import org.junit.Assert;
@@ -378,8 +378,8 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingDeleteQuery_ResultIsSameAsJavaGraql() {
-        Var x = var("x");
-        Var y = var("y");
+        Variable x = var("x");
+        Variable y = var("y");
 
         DeleteQuery expected = match(x.isa("movie").has("title", "The Title"), y.isa("movie")).delete(x, y);
         DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; $y isa movie; delete $x, $y;");
@@ -797,7 +797,7 @@ public class QueryParserTest {
     public void testParseBooleanType() {
         GetQuery query = parse("match $x datatype boolean; get;");
 
-        VarPattern var = query.match().admin().getPattern().varPatterns().iterator().next();
+        Statement var = query.match().admin().getPattern().varPatterns().iterator().next();
 
         //noinspection OptionalGetWithoutIsPresent
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
@@ -1100,7 +1100,7 @@ public class QueryParserTest {
 
         Set<Pattern> patterns = conjunction.getPatterns();
 
-        VarPattern pattern = Iterables.getOnlyElement(patterns).asVarPattern();
+        Statement pattern = Iterables.getOnlyElement(patterns).asVarPattern();
 
         assertTrue(pattern.var().isUserDefinedName());
 

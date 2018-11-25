@@ -23,10 +23,10 @@ import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.RelatesAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -54,18 +54,18 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
 @AutoValue
 public abstract class RelatesProperty extends AbstractVarProperty {
 
-    public static RelatesProperty of(VarPattern role, @Nullable VarPattern superRole) {
+    public static RelatesProperty of(Statement role, @Nullable Statement superRole) {
         return new AutoValue_RelatesProperty(role, superRole);
     }
 
-    public static RelatesProperty of(VarPattern role) {
+    public static RelatesProperty of(Statement role) {
         return RelatesProperty.of(role, null);
     }
 
-    abstract VarPattern role();
+    abstract Statement role();
 
     @Nullable
-    abstract VarPattern superRole();
+    abstract Statement superRole();
 
     @Override
     public String getName() {
@@ -74,7 +74,7 @@ public abstract class RelatesProperty extends AbstractVarProperty {
 
     @Override
     public void buildString(StringBuilder builder) {
-        VarPattern superRole = superRole();
+        Statement superRole = superRole();
         builder.append("relates").append(" ").append(role().getPrintableName());
         if (superRole != null) {
             builder.append(" as ").append(superRole.getPrintableName());
@@ -82,8 +82,8 @@ public abstract class RelatesProperty extends AbstractVarProperty {
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Var start) {
-        VarPattern superRole = superRole();
+    public Collection<EquivalentFragmentSet> match(Variable start) {
+        Statement superRole = superRole();
         EquivalentFragmentSet relates = relates(this, start, role().var());
         if (superRole == null) {
             return ImmutableSet.of(relates);
@@ -93,18 +93,18 @@ public abstract class RelatesProperty extends AbstractVarProperty {
     }
 
     @Override
-    public Stream<VarPattern> getTypes() {
+    public Stream<Statement> getTypes() {
         return Stream.of(role());
     }
 
     @Override
-    public Stream<VarPattern> innerVarPatterns() {
+    public Stream<Statement> innerVarPatterns() {
         return superRole() == null ? Stream.of(role()) : Stream.of(superRole(), role());
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
-        Var roleVar = role().var();
+    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
+        Variable roleVar = role().var();
 
         PropertyExecutor.Method relatesMethod = executor -> {
             Role role = executor.get(roleVar).asRole();
@@ -118,9 +118,9 @@ public abstract class RelatesProperty extends AbstractVarProperty {
 
         PropertyExecutor isRoleExecutor = PropertyExecutor.builder(isRoleMethod).produces(roleVar).build();
 
-        VarPattern superRoleVarPattern = superRole();
+        Statement superRoleVarPattern = superRole();
         if (superRoleVarPattern != null) {
-            Var superRoleVar = superRoleVarPattern.var();
+            Variable superRoleVar = superRoleVarPattern.var();
             PropertyExecutor.Method subMethod = executor -> {
                 Role superRole = executor.get(superRoleVar).asRole();
                 executor.builder(roleVar).sub(superRole);
@@ -136,7 +136,7 @@ public abstract class RelatesProperty extends AbstractVarProperty {
     }
 
     @Override
-    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             RelationshipType relationshipType = executor.get(var).asRelationshipType();
             Role role = executor.get(this.role().var()).asRole();
@@ -150,10 +150,10 @@ public abstract class RelatesProperty extends AbstractVarProperty {
     }
 
     @Override
-    public Atomic mapToAtom(VarPattern var, Set<VarPattern> vars, ReasonerQuery parent) {
-        Var varName = var.var().asUserDefined();
-        VarPattern roleVar = this.role();
-        Var roleVariable = roleVar.var();
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        Variable varName = var.var().asUserDefined();
+        Statement roleVar = this.role();
+        Variable roleVariable = roleVar.var();
         IdPredicate predicate = getIdPredicate(roleVariable, roleVar, vars, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         return RelatesAtom.create(varName, roleVariable, predicateId, parent);

@@ -24,11 +24,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -88,13 +88,13 @@ public abstract class RelationPattern extends QueryPattern {
     private static List<Pattern> generateRelationPatterns(
             Multimap<Label, Pair<Label, List<ConceptId>>> spec,
             List<ConceptId> relationIds){
-        Var relationVar = !relationIds.isEmpty()? Graql.var().asUserDefined() : Graql.var();
-        VarPattern[] basePattern = {relationVar};
+        Variable relationVar = !relationIds.isEmpty()? Graql.var().asUserDefined() : Graql.var();
+        Statement[] basePattern = {relationVar};
         List<List<Pattern>> rpTypePatterns = new ArrayList<>();
         List<List<Pattern>> rpIdPatterns = new ArrayList<>();
-        Multimap<Label, VarPattern> rps = HashMultimap.create();
+        Multimap<Label, Statement> rps = HashMultimap.create();
         spec.entries().forEach(entry -> {
-            VarPattern rolePlayer = Graql.var().asUserDefined();
+            Statement rolePlayer = Graql.var().asUserDefined();
             Label role = entry.getKey();
             Label type = entry.getValue().getKey();
             List<ConceptId> ids = entry.getValue().getValue();
@@ -105,7 +105,7 @@ public abstract class RelationPattern extends QueryPattern {
             if(type != null) typePattern.add(rolePlayer.isa(type.getValue()));
 
             ids.forEach(id -> {
-                VarPattern idPattern = rolePlayer.id(id);
+                Statement idPattern = rolePlayer.id(id);
                 rpPattern.add(idPattern);
             });
 

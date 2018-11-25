@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 /**
  * A variable in a Graql query
  */
-public class Var extends VarPattern {
+public class Variable extends Statement {
 
     private static final Pattern VALID_VAR = Pattern.compile("[a-zA-Z0-9_-]+");
 
@@ -37,7 +37,7 @@ public class Var extends VarPattern {
     private final Type type;
     private volatile String label;
 
-    public Var(String name, Type type) {
+    public Variable(String name, Type type) {
         if (name == null) {
             throw new NullPointerException("Null name");
         }
@@ -60,7 +60,7 @@ public class Var extends VarPattern {
     }
 
     /**
-     * The {@link Type} of the {@link Var}, such as whether it is user-defined.
+     * The {@link Type} of the {@link Variable}, such as whether it is user-defined.
      */
     public Type type() {
         return type;
@@ -81,11 +81,11 @@ public class Var extends VarPattern {
      *
      * @return a new variable with the same label as the previous, but set as user-defined.
      */
-    public Var asUserDefined() {
+    public Variable asUserDefined() {
         if (isUserDefinedName()) {
             return this;
         } else {
-            return new Var(name(), Type.UserDefined);
+            return new Variable(name(), Type.UserDefined);
         }
     }
 
@@ -111,7 +111,7 @@ public class Var extends VarPattern {
     }
 
     @Override
-    public Var var() {
+    public Variable var() {
         return this;
     }
 
@@ -131,7 +131,7 @@ public class Var extends VarPattern {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Var varName = (Var) o;
+        Variable varName = (Variable) o;
 
         return name().equals(varName.name());
     }
@@ -143,7 +143,7 @@ public class Var extends VarPattern {
     }
 
     /**
-     * The {@link Type} of a {@link Var}, such as whether it is user-defined.
+     * The {@link Type} of a {@link Variable}, such as whether it is user-defined.
      */
     public enum Type {
 

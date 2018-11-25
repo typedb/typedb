@@ -23,7 +23,7 @@ import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -291,7 +291,7 @@ public class GeoInferenceIT {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
             QueryBuilder iqb = tx.graql().infer(true);
 
-            VarPattern rolePattern = var()
+            Statement rolePattern = var()
                     .rel(var("r1").label("geo-entity"), var("x"))
                     .rel(var("r2").label("entity-location"), var("y"));
 

@@ -30,12 +30,12 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("unchecked")
 public class PatternTest {
 
-    private final VarPattern x = Graql.var("x");
-    private final VarPattern y = Graql.var("y");
-    private final VarPattern z = Graql.var("z");
-    private final VarPattern a = Graql.var("a");
-    private final VarPattern b = Graql.var("b");
-    private final VarPattern c = Graql.var("c");
+    private final Statement x = Graql.var("x");
+    private final Statement y = Graql.var("y");
+    private final Statement z = Graql.var("z");
+    private final Statement a = Graql.var("a");
+    private final Statement b = Graql.var("b");
+    private final Statement c = Graql.var("c");
 
     @Test
     public void testVarDNF() {
@@ -91,7 +91,7 @@ public class PatternTest {
     @Test
     public void testCNFToDNF() {
         Conjunction cnf = conjunction(disjunction(x, y, z), disjunction(a, b, c));
-        Set<Conjunction<VarPattern>> dnf = set(
+        Set<Conjunction<Statement>> dnf = set(
                 conjunction(x, a), conjunction(x, b), conjunction(x, c),
                 conjunction(y, a), conjunction(y, b), conjunction(y, c),
                 conjunction(z, a), conjunction(z, b), conjunction(z, c)
@@ -112,8 +112,8 @@ public class PatternTest {
         return Sets.newHashSet(patterns);
     }
 
-    private void assertHasDNF(Set<Conjunction<VarPattern>> expected, Pattern pattern) {
-        HashSet<Conjunction<VarPattern>> dnf = new HashSet<>(pattern.getDisjunctiveNormalForm().getPatterns());
+    private void assertHasDNF(Set<Conjunction<Statement>> expected, Pattern pattern) {
+        HashSet<Conjunction<Statement>> dnf = new HashSet<>(pattern.getDisjunctiveNormalForm().getPatterns());
         assertEquals(expected, dnf);
     }
 }

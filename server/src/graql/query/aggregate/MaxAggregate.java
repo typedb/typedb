@@ -21,7 +21,7 @@ package grakn.core.graql.query.aggregate;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.util.PrimitiveNumberComparator;
 
@@ -34,9 +34,9 @@ import java.util.stream.Stream;
  */
 public class MaxAggregate implements Aggregate<Value> {
 
-    private final Var varName;
+    private final Variable varName;
 
-    public MaxAggregate(Var varName) {
+    public MaxAggregate(Variable varName) {
         this.varName = varName;
     }
 

@@ -8,11 +8,11 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -328,7 +328,7 @@ public class AtomicUnificationIT {
     public void testRewriteAndUnification(){
         String parentString = "{$r (subRole1: $x) isa binary;}";
         Atom parentAtom = ReasonerQueries.atomic(conjunction(parentString, tx), tx).getAtom();
-        Var parentVarName = parentAtom.getVarName();
+        Variable parentVarName = parentAtom.getVarName();
 
         String childPatternString = "(subRole1: $x, subRole2: $y) isa binary";
         InferenceRule testRule = new InferenceRule(
@@ -339,7 +339,7 @@ public class AtomicUnificationIT {
                 .rewrite(parentAtom);
 
         RelationshipAtom headAtom = (RelationshipAtom) testRule.getHead().getAtom();
-        Var headVarName = headAtom.getVarName();
+        Variable headVarName = headAtom.getVarName();
 
         Unifier unifier = Iterables.getOnlyElement(testRule.getMultiUnifier(parentAtom));
         Unifier correctUnifier = new UnifierImpl(
@@ -350,8 +350,8 @@ public class AtomicUnificationIT {
 
         assertTrue(unifier.containsAll(correctUnifier));
 
-        Multimap<Role, Var> roleMap = roleSetMap(headAtom.getRoleVarMap());
-        Collection<Var> wifeEntry = roleMap.get(tx.getRole("subRole1"));
+        Multimap<Role, Variable> roleMap = roleSetMap(headAtom.getRoleVarMap());
+        Collection<Variable> wifeEntry = roleMap.get(tx.getRole("subRole1"));
         assertEquals(wifeEntry.size(), 1);
         assertEquals(wifeEntry.iterator().next(), var("x"));
     }
@@ -382,7 +382,7 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_IndirectRoles(){
-        VarPattern basePattern = var()
+        Statement basePattern = var()
                 .rel(var("baseRole1").label("subRole1"), var("y1"))
                 .rel(var("baseRole2").label("subSubRole2"), var("y2"))
                 .isa("binary");
@@ -407,7 +407,7 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_IndirectRoles_NoRelationType(){
-        VarPattern basePattern = var()
+        Statement basePattern = var()
                 .rel(var("baseRole1").label("subRole1"), var("y1"))
                 .rel(var("baseRole2").label("subSubRole2"), var("y2"));
 
@@ -429,9 +429,9 @@ public class AtomicUnificationIT {
         exactUnification(baseQuery, childQuery, true, true);
     }
 
-    private void roleInference(String patternString, ImmutableSetMultimap<Role, Var> expectedRoleMAp, TransactionImpl<?> tx){
+    private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMAp, TransactionImpl<?> tx){
         RelationshipAtom atom = (RelationshipAtom) ReasonerQueries.atomic(conjunction(patternString, tx), tx).getAtom();
-        Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
+        Multimap<Role, Variable> roleMap = roleSetMap(atom.getRoleVarMap());
         assertEquals(expectedRoleMAp, roleMap);
 
     }
@@ -502,14 +502,14 @@ public class AtomicUnificationIT {
                 checkEquality);
     }
 
-    private Multimap<Role, Var> roleSetMap(Multimap<Role, Var> roleVarMap) {
-        Multimap<Role, Var> roleMap = HashMultimap.create();
+    private Multimap<Role, Variable> roleSetMap(Multimap<Role, Variable> roleVarMap) {
+        Multimap<Role, Variable> roleMap = HashMultimap.create();
         roleVarMap.entries().forEach(e -> roleMap.put(e.getKey(), e.getValue()));
         return roleMap;
     }
 
-    private Conjunction<VarPattern> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<VarPattern> vars = tx.graql().parser().parsePattern(patternString)
+    private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
+        Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Graql.and(vars);

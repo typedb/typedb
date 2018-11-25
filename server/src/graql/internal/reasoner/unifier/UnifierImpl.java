@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.unifier;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Unifier;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  */
 public class UnifierImpl implements Unifier {
     
-    private final ImmutableSetMultimap<Var, Var> unifier;
+    private final ImmutableSetMultimap<Variable, Variable> unifier;
 
     /**
      * Identity unifier.
@@ -50,11 +50,11 @@ public class UnifierImpl implements Unifier {
     public UnifierImpl(){
         this.unifier = ImmutableSetMultimap.of();
     }
-    public UnifierImpl(ImmutableMultimap<Var, Var> map){ this(map.entries());}
-    public UnifierImpl(Multimap<Var, Var> map){ this(map.entries());}
-    public UnifierImpl(Map<Var, Var> map){ this(map.entrySet());}
-    private UnifierImpl(Collection<Map.Entry<Var, Var>> mappings){
-        this.unifier = ImmutableSetMultimap.<Var, Var>builder().putAll(mappings).build();
+    public UnifierImpl(ImmutableMultimap<Variable, Variable> map){ this(map.entries());}
+    public UnifierImpl(Multimap<Variable, Variable> map){ this(map.entries());}
+    public UnifierImpl(Map<Variable, Variable> map){ this(map.entrySet());}
+    private UnifierImpl(Collection<Map.Entry<Variable, Variable>> mappings){
+        this.unifier = ImmutableSetMultimap.<Variable, Variable>builder().putAll(mappings).build();
     }
 
     public static UnifierImpl trivial(){return new UnifierImpl();}
@@ -84,25 +84,25 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Set<Var> keySet() {
+    public Set<Variable> keySet() {
         return unifier.keySet();
     }
 
     @Override
-    public Collection<Var> values() {
+    public Collection<Variable> values() {
         return unifier.values();
     }
 
     @Override
-    public ImmutableSet<Map.Entry<Var, Var>> mappings(){ return unifier.entries();}
+    public ImmutableSet<Map.Entry<Variable, Variable>> mappings(){ return unifier.entries();}
 
     @Override
-    public Collection<Var> get(Var key) {
+    public Collection<Variable> get(Variable key) {
         return unifier.get(key);
     }
 
     @Override
-    public boolean containsKey(Var key) {
+    public boolean containsKey(Variable key) {
         return unifier.containsKey(key);
     }
 

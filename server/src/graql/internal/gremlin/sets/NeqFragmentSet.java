@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -29,7 +29,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 
 /**
- * @see EquivalentFragmentSets#neq(VarProperty, Var, Var)
+ * @see EquivalentFragmentSets#neq(VarProperty, Variable, Variable)
  *
  */
 @AutoValue
@@ -42,6 +42,6 @@ abstract class NeqFragmentSet extends EquivalentFragmentSet {
         );
     }
 
-    abstract Var varA();
-    abstract Var varB();
+    abstract Variable varA();
+    abstract Variable varB();
 }

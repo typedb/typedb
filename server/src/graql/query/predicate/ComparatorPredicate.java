@@ -20,8 +20,8 @@ package grakn.core.graql.query.predicate;
 
 import grakn.core.graql.concept.AttributeType.DataType;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.VarPattern;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -40,7 +40,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
 
     // Exactly one of these fields will be present
     private final Optional<Object> value;
-    private final Optional<VarPattern> var;
+    private final Optional<Statement> var;
 
     private static final String[] VALUE_PROPERTIES =
             DataType.SUPPORTED_TYPES.values().stream()
@@ -53,9 +53,9 @@ public abstract class ComparatorPredicate implements ValuePredicate {
      * @param value the value that this predicate is testing against
      */
     ComparatorPredicate(Object value) {
-        if (value instanceof VarPattern) {
+        if (value instanceof Statement) {
             this.value = Optional.empty();
-            this.var = Optional.of(((VarPattern) value));
+            this.var = Optional.of(((Statement) value));
         } else {
             // Convert integers to longs for consistency
             if (value instanceof Integer) {
@@ -71,7 +71,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
     /**
      * @param var the variable that this predicate is testing against
      */
-    ComparatorPredicate(VarPattern var) {
+    ComparatorPredicate(Statement var) {
         this.value = Optional.empty();
         this.var = Optional.of(var);
     }
@@ -174,7 +174,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
     }
 
     @Override
-    public Optional<VarPattern> getInnerVar() {
+    public Optional<Statement> getInnerVar() {
         return var;
     }
 
@@ -183,7 +183,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
         var.ifPresent(theVar -> {
             // Compare to another variable
             String thisVar = UUID.randomUUID().toString();
-            Var otherVar = theVar.var();
+            Variable otherVar = theVar.var();
             String otherValue = UUID.randomUUID().toString();
 
             Traversal[] traversals = Stream.of(VALUE_PROPERTIES)

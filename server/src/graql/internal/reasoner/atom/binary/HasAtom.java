@@ -21,10 +21,10 @@ package grakn.core.graql.internal.reasoner.atom.binary;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import com.google.auto.value.AutoValue;
@@ -40,15 +40,15 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class HasAtom extends OntologicalAtom {
 
-    @Override public abstract Var getPredicateVariable();
-    @Override public abstract VarPattern getPattern();
+    @Override public abstract Variable getPredicateVariable();
+    @Override public abstract Statement getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
 
-    public static HasAtom create(VarPattern pattern, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
+    public static HasAtom create(Statement pattern, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
         return new AutoValue_HasAtom(pattern.var(), predicateId, predicateVar, pattern, parent);
     }
 
-    public static HasAtom create(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
+    public static HasAtom create(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
         Label label = parent.tx().getConcept(predicateId).asType().label();
         return create(var.has(Graql.label(label)), predicateVar, predicateId, parent);
     }
@@ -58,7 +58,7 @@ public abstract class HasAtom extends OntologicalAtom {
     }
 
     @Override
-    OntologicalAtom createSelf(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
+    OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
         return HasAtom.create(var, predicateVar, predicateId, parent);
     }
 
