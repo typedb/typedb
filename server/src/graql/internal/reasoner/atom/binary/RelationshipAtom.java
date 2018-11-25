@@ -36,7 +36,7 @@ import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.admin.RelationPlayer;
+import grakn.core.graql.query.pattern.property.RelationPlayerProperty;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
 import grakn.core.graql.query.pattern.Statement;
@@ -111,19 +111,19 @@ import static java.util.stream.Collectors.toSet;
 @AutoValue
 public abstract class RelationshipAtom extends IsaAtomBase {
 
-    abstract ImmutableList<RelationPlayer> getRelationPlayers();
+    abstract ImmutableList<RelationPlayerProperty> getRelationPlayers();
     abstract ImmutableSet<Label> getRoleLabels();
 
     private ImmutableList<SchemaConcept> possibleTypes = null;
 
     public static RelationshipAtom create(Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
-        List<RelationPlayer> rps = new ArrayList<>();
+        List<RelationPlayerProperty> rps = new ArrayList<>();
         pattern.getProperty(RelationshipProperty.class)
                 .ifPresent(prop -> prop.relationPlayers().stream().sorted(Comparator.comparing(Object::hashCode)).forEach(rps::add));
-        ImmutableList<RelationPlayer> relationPlayers = ImmutableList.copyOf(rps);
+        ImmutableList<RelationPlayerProperty> relationPlayers = ImmutableList.copyOf(rps);
         ImmutableSet<Label> roleLabels = ImmutableSet.<Label>builder().addAll(
                 relationPlayers.stream()
-                        .map(RelationPlayer::getRole)
+                        .map(RelationPlayerProperty::getRole)
                         .flatMap(CommonUtil::optionalToStream)
                         .map(Statement::getTypeLabel)
                         .flatMap(CommonUtil::optionalToStream)
@@ -228,7 +228,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      */
     private Set<Variable> getRoleVariables(){
         return getRelationPlayers().stream()
-                .map(RelationPlayer::getRole)
+                .map(RelationPlayerProperty::getRole)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(statement -> statement.var())
                 .filter(Variable::isUserDefinedName)
@@ -266,9 +266,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * @param relationPlayers collection of rolePlayer-roleType mappings
      * @return corresponding {@link Statement}
      */
-    private Statement relationPattern(Variable varName, Collection<RelationPlayer> relationPlayers) {
+    private Statement relationPattern(Variable varName, Collection<RelationPlayerProperty> relationPlayers) {
         Statement var = varName;
-        for (RelationPlayer rp : relationPlayers) {
+        for (RelationPlayerProperty rp : relationPlayers) {
             Statement rolePattern = rp.getRole().orElse(null);
             var = rolePattern != null? var.rel(rolePattern, rp.getRolePlayer()) : var.rel(rp.getRolePlayer());
         }
@@ -459,7 +459,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     public Stream<IdPredicate> getRolePredicates(){
         return getRelationPlayers().stream()
-                .map(RelationPlayer::getRole)
+                .map(RelationPlayerProperty::getRole)
                 .flatMap(CommonUtil::optionalToStream)
                 .filter(var -> var.var().isUserDefinedName())
                 .filter(vp -> vp.getTypeLabel().isPresent())
@@ -541,7 +541,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Transaction graph = parent.tx();
 
         return getRelationPlayers().stream()
-                .map(RelationPlayer::getRole)
+                .map(RelationPlayerProperty::getRole)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(Statement::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
@@ -706,7 +706,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public Set<Variable> getRoleExpansionVariables(){
         return getRelationPlayers().stream()
-                .map(RelationPlayer::getRole)
+                .map(RelationPlayerProperty::getRole)
                 .flatMap(CommonUtil::optionalToStream)
                 .filter(p -> p.var().isUserDefinedName())
                 .filter(p -> !p.getTypeLabel().isPresent())
@@ -719,7 +719,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return Stream.concat(
                 super.getInnerPredicates(),
                 getRelationPlayers().stream()
-                        .map(RelationPlayer::getRole)
+                        .map(RelationPlayerProperty::getRole)
                         .flatMap(CommonUtil::optionalToStream)
                         .filter(vp -> vp.var().isUserDefinedName())
                         .map(vp -> new Pair<>(vp.var(), vp.getTypeLabel().orElse(null)))
@@ -742,11 +742,11 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
         Transaction graph = getParentQuery().tx();
         Role metaRole = graph.getMetaRole();
-        List<RelationPlayer> allocatedRelationPlayers = new ArrayList<>();
+        List<RelationPlayerProperty> allocatedRelationPlayers = new ArrayList<>();
         RelationshipType relType = getSchemaConcept() != null? getSchemaConcept().asRelationshipType() : null;
 
         //explicit role types from castings
-        List<RelationPlayer> inferredRelationPlayers = new ArrayList<>();
+        List<RelationPlayerProperty> inferredRelationPlayers = new ArrayList<>();
         getRelationPlayers().forEach(rp -> {
             Variable varName = rp.getRolePlayer().var();
             Statement rolePattern = rp.getRole().orElse(null);
@@ -754,7 +754,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 Label roleLabel = rolePattern.getTypeLabel().orElse(null);
                 //allocate if variable role or if label non meta
                 if (roleLabel == null || !Schema.MetaSchema.isMetaLabel(roleLabel)) {
-                    inferredRelationPlayers.add(RelationPlayer.of(rolePattern, varName));
+                    inferredRelationPlayers.add(RelationPlayerProperty.of(rolePattern, varName));
                     allocatedRelationPlayers.add(rp);
                 }
             }
@@ -771,7 +771,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                         .flatMap(RelationshipType::roles).collect(toSet());
 
         //possible role types for each casting based on its type
-        Map<RelationPlayer, Set<Role>> mappings = new HashMap<>();
+        Map<RelationPlayerProperty, Set<Role>> mappings = new HashMap<>();
         getRelationPlayers().stream()
                 .filter(rp -> !allocatedRelationPlayers.contains(rp))
                 .forEach(rp -> {
@@ -785,11 +785,11 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         mappings.entrySet().stream()
                 .filter(entry -> entry.getValue().size() == 1)
                 .forEach(entry -> {
-                    RelationPlayer rp = entry.getKey();
+                    RelationPlayerProperty rp = entry.getKey();
                     Variable varName = rp.getRolePlayer().var();
                     Role role = Iterables.getOnlyElement(entry.getValue());
                     Statement rolePattern = Pattern.var().label(role.label());
-                    inferredRelationPlayers.add(RelationPlayer.of(rolePattern, varName));
+                    inferredRelationPlayers.add(RelationPlayerProperty.of(rolePattern, varName));
                     allocatedRelationPlayers.add(rp);
                 });
 
@@ -803,7 +803,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     rolePattern = rolePattern != null ?
                             rolePattern.var().label(metaRole.label()) :
                             Pattern.var().label(metaRole.label());
-                    inferredRelationPlayers.add(RelationPlayer.of(rolePattern, varName));
+                    inferredRelationPlayers.add(RelationPlayerProperty.of(rolePattern, varName));
                 });
 
         Statement relationPattern = relationPattern(getVarName(), inferredRelationPlayers);
@@ -845,10 +845,10 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return builder.build();
     }
 
-    private Multimap<Role, RelationPlayer> getRoleRelationPlayerMap(){
-        Multimap<Role, RelationPlayer> roleRelationPlayerMap = ArrayListMultimap.create();
+    private Multimap<Role, RelationPlayerProperty> getRoleRelationPlayerMap(){
+        Multimap<Role, RelationPlayerProperty> roleRelationPlayerMap = ArrayListMultimap.create();
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
-        List<RelationPlayer> relationPlayers = getRelationPlayers();
+        List<RelationPlayerProperty> relationPlayers = getRelationPlayers();
         roleVarMap.asMap().forEach((role, value) -> {
             Label roleLabel = role.label();
             relationPlayers.stream()
@@ -869,13 +869,13 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * @param matchType type of match to be performed
      * @return set of possible COMPLETE mappings between this (child) and parent relation players
      */
-    private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom, UnifierComparison matchType) {
-        Multimap<Role, RelationPlayer> childRoleRPMap = this.getRoleRelationPlayerMap();
+    private Set<List<Pair<RelationPlayerProperty, RelationPlayerProperty>>> getRelationPlayerMappings(RelationshipAtom parentAtom, UnifierComparison matchType) {
+        Multimap<Role, RelationPlayerProperty> childRoleRPMap = this.getRoleRelationPlayerMap();
         Map<Variable, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(matchType.inferTypes());
         Map<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(matchType.inferTypes());
 
         //establish compatible castings for each parent casting
-        List<Set<Pair<RelationPlayer, RelationPlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
+        List<Set<Pair<RelationPlayerProperty, RelationPlayerProperty>>> compatibleMappingsPerParentRP = new ArrayList<>();
         if (parentAtom.getRelationPlayers().size() > this.getRelationPlayers().size()) return new HashSet<>();
 
         ReasonerQueryImpl childQuery = (ReasonerQueryImpl) getParentQuery();
@@ -898,7 +898,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                                 parentType,
                                 childRoles);
 
-                        List<RelationPlayer> compatibleRelationPlayers = new ArrayList<>();
+                        List<RelationPlayerProperty> compatibleRelationPlayers = new ArrayList<>();
                         compatibleRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
                                 .forEach(role ->
@@ -950,13 +950,13 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .filter(list -> !list.isEmpty())
                 //check the same child rp is not mapped to multiple parent rps
                 .filter(list -> {
-                    List<RelationPlayer> listChildRps = list.stream().map(Pair::getKey).collect(Collectors.toList());
+                    List<RelationPlayerProperty> listChildRps = list.stream().map(Pair::getKey).collect(Collectors.toList());
                     //NB: this preserves cardinality instead of removing all occuring instances which is what we want
                     return ReasonerUtils.subtract(listChildRps, this.getRelationPlayers()).isEmpty();
                 })
                 //check all parent rps mapped
                 .filter(list -> {
-                    List<RelationPlayer> listParentRps = list.stream().map(Pair::getValue).collect(Collectors.toList());
+                    List<RelationPlayerProperty> listParentRps = list.stream().map(Pair::getValue).collect(Collectors.toList());
                     return listParentRps.containsAll(parentAtom.getRelationPlayers());
                 })
                 .collect(toSet());
@@ -986,7 +986,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
             }
 
             boolean unifyRoleVariables = parentAtom.getRelationPlayers().stream()
-                    .map(RelationPlayer::getRole)
+                    .map(RelationPlayerProperty::getRole)
                     .flatMap(CommonUtil::optionalToStream)
                     .anyMatch(rp -> rp.var().isUserDefinedName());
             getRelationPlayerMappings(parentAtom, unifierType)
@@ -1080,7 +1080,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Statement relVar = getPattern().getProperty(IsaProperty.class)
                 .map(prop -> getVarName().isa(prop.type())).orElse(getVarName());
 
-        for (RelationPlayer rp: getRelationPlayers()) {
+        for (RelationPlayerProperty rp: getRelationPlayers()) {
             Statement rolePattern = rp.getRole().orElse(null);
             if (rolePattern != null) {
                 Variable roleVar = rolePattern.var();
@@ -1109,7 +1109,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .map(prop -> newVar.isa(prop.type()))
                 .orElse(newVar);
 
-        for (RelationPlayer c: getRelationPlayers()) {
+        for (RelationPlayerProperty c: getRelationPlayers()) {
             Statement roleType = c.getRole().orElse(null);
             if (roleType != null) {
                 relVar = relVar.rel(roleType, c.getRolePlayer());

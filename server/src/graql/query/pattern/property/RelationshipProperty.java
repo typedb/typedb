@@ -31,7 +31,6 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.admin.RelationPlayer;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
@@ -61,18 +60,18 @@ import static java.util.stream.Collectors.toSet;
  *
  * This property can be queried and inserted.
  *
- * This propert is comprised of instances of {@link RelationPlayer}, which represents associations between a
+ * This propert is comprised of instances of {@link RelationPlayerProperty}, which represents associations between a
  * role-player {@link Thing} and an optional {@link Role}.
  *
  */
 @AutoValue
 public abstract class RelationshipProperty extends AbstractVarProperty implements UniqueVarProperty {
 
-    public static RelationshipProperty of(ImmutableMultiset<RelationPlayer> relationPlayers) {
+    public static RelationshipProperty of(ImmutableMultiset<RelationPlayerProperty> relationPlayers) {
         return new AutoValue_RelationshipProperty(relationPlayers);
     }
 
-    public abstract ImmutableMultiset<RelationPlayer> relationPlayers();
+    public abstract ImmutableMultiset<RelationPlayerProperty> relationPlayers();
 
     @Override
     String getName() {
@@ -107,7 +106,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
 
     @Override
     public Stream<Statement> getTypes() {
-        return relationPlayers().stream().map(RelationPlayer::getRole).flatMap(CommonUtil::optionalToStream);
+        return relationPlayers().stream().map(RelationPlayerProperty::getRole).flatMap(CommonUtil::optionalToStream);
     }
 
     @Override
@@ -120,7 +119,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         });
     }
 
-    private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(Variable start, Variable castingName, RelationPlayer relationPlayer) {
+    private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(Variable start, Variable castingName, RelationPlayerProperty relationPlayer) {
         Optional<Statement> roleType = relationPlayer.getRole();
 
         if (roleType.isPresent()) {
@@ -151,7 +150,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
     public void checkValidProperty(Transaction graph, Statement var) throws GraqlQueryException {
 
         Set<Label> roleTypes = relationPlayers().stream()
-                .map(RelationPlayer::getRole).flatMap(CommonUtil::optionalToStream)
+                .map(RelationPlayerProperty::getRole).flatMap(CommonUtil::optionalToStream)
                 .map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
@@ -190,7 +189,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
      * @param relationship the concept representing the {@link grakn.core.graql.concept.Relationship}
      * @param relationPlayer a casting between a role type and role player
      */
-    private void addRoleplayer(QueryOperationExecutor executor, grakn.core.graql.concept.Relationship relationship, RelationPlayer relationPlayer) {
+    private void addRoleplayer(QueryOperationExecutor executor, grakn.core.graql.concept.Relationship relationship, RelationPlayerProperty relationPlayer) {
         Statement roleVar = getRole(relationPlayer);
 
         Role role = executor.get(roleVar.var()).asRole();
@@ -206,7 +205,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         return Stream.concat(relationPlayers, Stream.of(var)).collect(toImmutableSet());
     }
 
-    private Statement getRole(RelationPlayer relationPlayer) {
+    private Statement getRole(RelationPlayerProperty relationPlayer) {
         return relationPlayer.getRole().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
     }
 
@@ -219,7 +218,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
                 .anyMatch(prop -> !AbstractIsaProperty.class.isInstance(prop));
         Statement relVar = isReified? var.var().asUserDefined() : var.var();
 
-        for (RelationPlayer rp : relationPlayers()) {
+        for (RelationPlayerProperty rp : relationPlayers()) {
             Statement rolePattern = rp.getRole().orElse(null);
             Statement rolePlayer = rp.getRolePlayer();
             if (rolePattern != null){

@@ -27,7 +27,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.util.StringUtil;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.predicate.ValuePredicate;
-import grakn.core.graql.admin.RelationPlayer;
+import grakn.core.graql.query.pattern.property.RelationPlayerProperty;
 import grakn.core.graql.query.pattern.property.UniqueVarProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
@@ -485,7 +485,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement roleplayer) {
-        return addCasting(RelationPlayer.of(roleplayer));
+        return addCasting(RelationPlayerProperty.of(roleplayer));
     }
 
     /**
@@ -533,7 +533,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement role, Statement roleplayer) {
-        return addCasting(RelationPlayer.of(role, roleplayer));
+        return addCasting(RelationPlayerProperty.of(role, roleplayer));
     }
 
     /**
@@ -634,14 +634,14 @@ public abstract class Statement implements Pattern {
         return properties().stream();
     }
 
-    private Statement addCasting(RelationPlayer relationPlayer) {
+    private Statement addCasting(RelationPlayerProperty relationPlayer) {
         Optional<RelationshipProperty> relationProperty = getProperty(RelationshipProperty.class);
 
-        ImmutableMultiset<RelationPlayer> oldCastings = relationProperty
+        ImmutableMultiset<RelationPlayerProperty> oldCastings = relationProperty
                 .map(RelationshipProperty::relationPlayers)
                 .orElse(ImmutableMultiset.of());
 
-        ImmutableMultiset<RelationPlayer> relationPlayers =
+        ImmutableMultiset<RelationPlayerProperty> relationPlayers =
                 Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
         RelationshipProperty newProperty = RelationshipProperty.of(relationPlayers);
