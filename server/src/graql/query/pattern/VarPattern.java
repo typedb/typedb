@@ -21,6 +21,7 @@ package grakn.core.graql.query.pattern;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.util.StringUtil;
@@ -94,7 +95,7 @@ public abstract class VarPattern implements Pattern {
      * @return the name this variable represents, if it represents something with a specific name
      */
     @CheckReturnValue
-    public final Optional<grakn.core.graql.concept.Label> getTypeLabel() {
+    public final Optional<Label> getTypeLabel() {
         return getProperty(LabelProperty.class).map(LabelProperty::label);
     }
 
@@ -174,7 +175,7 @@ public abstract class VarPattern implements Pattern {
      * @return all type names that this variable refers to
      */
     @CheckReturnValue
-    public final Set<grakn.core.graql.concept.Label> getTypeLabels() {
+    public final Set<Label> getTypeLabels() {
         return getProperties()
                 .flatMap(VarProperty::getTypes)
                 .map(VarPattern::getTypeLabel).flatMap(CommonUtil::optionalToStream)
@@ -211,7 +212,7 @@ public abstract class VarPattern implements Pattern {
      */
     @CheckReturnValue
     public final VarPattern label(String label) {
-        return label(grakn.core.graql.concept.Label.of(label));
+        return label(Label.of(label));
     }
 
     /**
@@ -219,7 +220,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern label(grakn.core.graql.concept.Label label) {
+    public final VarPattern label(Label label) {
         return addProperty(LabelProperty.of(label));
     }
 
@@ -274,7 +275,7 @@ public abstract class VarPattern implements Pattern {
      */
     @CheckReturnValue
     public final VarPattern has(String type, VarPattern attribute) {
-        return has(grakn.core.graql.concept.Label.of(type), attribute);
+        return has(Label.of(type), attribute);
     }
 
     /**
@@ -285,7 +286,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern has(grakn.core.graql.concept.Label type, VarPattern attribute) {
+    public final VarPattern has(Label type, VarPattern attribute) {
         return has(type, attribute, Graql.var());
     }
 
@@ -299,7 +300,7 @@ public abstract class VarPattern implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final VarPattern has(grakn.core.graql.concept.Label type, VarPattern attribute, VarPattern relationship) {
+    public final VarPattern has(Label type, VarPattern attribute, VarPattern relationship) {
         return addProperty(HasAttributeProperty.of(type, attribute, relationship));
     }
 
@@ -615,7 +616,7 @@ public abstract class VarPattern implements Pattern {
             return var().toString();
         } else if (properties().size() == 1) {
             // If there is only a label, we display that
-            Optional<grakn.core.graql.concept.Label> label = getTypeLabel();
+            Optional<Label> label = getTypeLabel();
             if (label.isPresent()) {
                 return StringUtil.typeLabelToString(label.get());
             }

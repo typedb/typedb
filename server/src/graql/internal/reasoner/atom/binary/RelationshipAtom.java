@@ -17,6 +17,7 @@
  */
 package grakn.core.graql.internal.reasoner.atom.binary;
 
+import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
 import grakn.core.server.Transaction;
@@ -1053,7 +1054,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         ConceptMap substitution = getParentQuery().getSubstitution();
 
         //if the relation already exists, only assign roleplayers, otherwise create a new relation
-        grakn.core.graql.concept.Relationship relationship = substitution.containsVar(getVarName())?
+        Relationship relationship = substitution.containsVar(getVarName())?
                 substitution.get(getVarName()).asRelationship() :
                 RelationshipTypeImpl.from(relationType).addRelationshipInferred();
 

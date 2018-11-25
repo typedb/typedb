@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -47,11 +48,11 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
 
     public static final String NAME = "label";
 
-    public static LabelProperty of(grakn.core.graql.concept.Label label) {
+    public static LabelProperty of(Label label) {
         return new AutoValue_LabelProperty(label);
     }
 
-    public abstract grakn.core.graql.concept.Label label();
+    public abstract Label label();
 
     @Override
     public String getName() {

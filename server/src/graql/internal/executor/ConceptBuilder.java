@@ -19,6 +19,7 @@
 package grakn.core.graql.internal.executor;
 
 import grakn.core.common.util.CommonUtil;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -139,7 +140,7 @@ public class ConceptBuilder {
         return set(IS_RULE, Unit.INSTANCE);
     }
 
-    public ConceptBuilder label(grakn.core.graql.concept.Label label) {
+    public ConceptBuilder label(Label label) {
         return set(LABEL, label);
     }
 
@@ -219,7 +220,7 @@ public class ConceptBuilder {
         if (has(IS_ROLE)) {
             use(IS_ROLE);
 
-            grakn.core.graql.concept.Label label = use(LABEL);
+            Label label = use(LABEL);
             Role role = executor.tx().putRole(label);
 
             if (has(SUPER_CONCEPT)) {
@@ -230,7 +231,7 @@ public class ConceptBuilder {
         } else if (has(IS_RULE)) {
             use(IS_RULE);
 
-            grakn.core.graql.concept.Label label = use(LABEL);
+            Label label = use(LABEL);
             Pattern when = use(WHEN);
             Pattern then = use(THEN);
             Rule rule = executor.tx().putRule(label, when, then);
@@ -291,7 +292,7 @@ public class ConceptBuilder {
 
     private static final BuilderParam<Type> TYPE = BuilderParam.of(IsaProperty.NAME);
     private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(SubProperty.NAME);
-    private static final BuilderParam<grakn.core.graql.concept.Label> LABEL = BuilderParam.of(LabelProperty.NAME);
+    private static final BuilderParam<Label> LABEL = BuilderParam.of(LabelProperty.NAME);
     private static final BuilderParam<ConceptId> ID = BuilderParam.of(IdProperty.NAME);
     private static final BuilderParam<Object> VALUE = BuilderParam.of(ValueProperty.NAME);
     private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(DataTypeProperty.NAME);
@@ -421,7 +422,7 @@ public class ConceptBuilder {
 
     private SchemaConcept putSchemaConcept() {
         SchemaConcept superConcept = use(SUPER_CONCEPT);
-        grakn.core.graql.concept.Label label = use(LABEL);
+        Label label = use(LABEL);
 
         SchemaConcept concept;
 
