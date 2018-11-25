@@ -61,7 +61,7 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(TransactionImpl<?> tx, Collection<Var> vars) {
-        GraphTraversal<Vertex, Edge> edgeTraversal = __.inE(ROLE_PLAYER.getLabel()).as(edge().name());
+        GraphTraversal<Vertex, Edge> edgeTraversal = __.inE(ROLE_PLAYER.getLabel()).as(edge().label());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), tx);
@@ -78,8 +78,8 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
         GraphTraversal<Vertex, Edge> edgeTraversal = __.toE(direction, Schema.EdgeLabel.ATTRIBUTE.getLabel());
 
         // Identify the relation - role-player pair by combining the relationship edge and direction into a map
-        edgeTraversal.as(RELATION_EDGE.name()).constant(direction).as(RELATION_DIRECTION.name());
-        edgeTraversal.select(Pop.last, RELATION_EDGE.name(), RELATION_DIRECTION.name()).as(edge().name()).select(RELATION_EDGE.name());
+        edgeTraversal.as(RELATION_EDGE.label()).constant(direction).as(RELATION_DIRECTION.label());
+        edgeTraversal.select(Pop.last, RELATION_EDGE.label(), RELATION_DIRECTION.label()).as(edge().label()).select(RELATION_EDGE.label());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), tx);

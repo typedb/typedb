@@ -248,10 +248,10 @@ public class Fragments {
 
         // Access label ID from edge
         Var labelId = Graql.var();
-        traversal.values(edgeProperty.name()).as(labelId.name());
+        traversal.values(edgeProperty.name()).as(labelId.label());
 
         // Look up schema concept using ID
-        return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.name())));
+        return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.label())));
     }
 
 }

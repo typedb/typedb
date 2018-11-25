@@ -168,7 +168,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Var var(String name) {
-        return new Var(name, Var.Kind.UserDefined);
+        return new Var(name, Var.Type.UserDefined);
     }
 
     /**
@@ -176,7 +176,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Var var() {
-        return new Var(Long.toString(counter.getAndIncrement()), Var.Kind.Generated);
+        return new Var(Long.toString(counter.getAndIncrement()), Var.Type.Generated);
     }
 
     /**

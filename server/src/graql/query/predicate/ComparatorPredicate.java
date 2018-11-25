@@ -190,7 +190,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
                     .map(prop -> __.values(prop).as(otherValue).select(thisVar).values(prop).where(gremlinPredicate(otherValue)))
                     .toArray(Traversal[]::new);
 
-            traversal.as(thisVar).select(otherVar.name()).or(traversals).select(thisVar);
+            traversal.as(thisVar).select(otherVar.label()).or(traversals).select(thisVar);
         });
 
         persistedValue().ifPresent(theValue -> {

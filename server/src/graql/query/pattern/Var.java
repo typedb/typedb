@@ -33,37 +33,37 @@ public class Var extends VarPattern {
 
     private static final Pattern VALID_VAR = Pattern.compile("[a-zA-Z0-9_-]+");
 
-    private final String getValue;
-    private final Kind kind;
-    private volatile String name;
+    private final String name;
+    private final Type type;
+    private volatile String label;
 
-    public Var(String value, Kind kind) {
-        if (value == null) {
-            throw new NullPointerException("Null getValue");
+    public Var(String name, Type type) {
+        if (name == null) {
+            throw new NullPointerException("Null name");
         }
         Preconditions.checkArgument(
-                VALID_VAR.matcher(value).matches(),
-                "Var value [%s] is invalid. Must match regex %s", value, VALID_VAR
+                VALID_VAR.matcher(name).matches(),
+                "Var value [%s] is invalid. Must match regex %s", name, VALID_VAR
         );
-        this.getValue = value;
-        if (kind == null) {
+        this.name = name;
+        if (type == null) {
             throw new NullPointerException("Null kind");
         }
-        this.kind = kind;
+        this.type = type;
     }
 
     /**
-     * Get the string name of the variable (without prefixed "$")
+     * Get the name of the variable (without prefixed "$")
      */
-    public String getValue() {
-        return getValue;
+    public String name() {
+        return name;
     }
 
     /**
-     * The {@link Kind} of the {@link Var}, such as whether it is user-defined.
+     * The {@link Type} of the {@link Var}, such as whether it is user-defined.
      */
-    public Kind kind() {
-        return kind;
+    public Type type() {
+        return type;
     }
 
     /**
@@ -72,43 +72,42 @@ public class Var extends VarPattern {
      * @return whether the variable has been manually defined or automatically generated.
      */
     public boolean isUserDefinedName() {
-        return kind() == Kind.UserDefined;
+        return type() == Type.UserDefined;
     }
 
     /**
-     * Transform the variable into a user-defined one, retaining the generated name.
-     * <p>
+     * Transform the variable into a user-defined one, retaining the generated label.
      * This is useful for "reifying" an existing variable.
      *
-     * @return a new variable with the same name as the previous, but set as user-defined.
+     * @return a new variable with the same label as the previous, but set as user-defined.
      */
     public Var asUserDefined() {
         if (isUserDefinedName()) {
             return this;
         } else {
-            return new Var(getValue(), Kind.UserDefined);
+            return new Var(name(), Type.UserDefined);
         }
     }
 
     /**
-     * Get a unique name identifying the variable, differentiating user-defined variables from generated ones.
+     * Get a unique label identifying the variable, differentiating user-defined variables from generated ones.
      */
-    public String name() {
-        if (name == null) {
+    public String label() {
+        if (label == null) {
             synchronized (this) {
-                if (name == null) {
-                    name = kind().prefix() + getValue();
+                if (label == null) {
+                    label = type().prefix() + name();
                 }
             }
         }
-        return name;
+        return label;
     }
 
     /**
      * Get a shorter representation of the variable (with prefixed "$")
      */
     public String shortName() {
-        return kind().prefix() + StringUtils.right(getValue(), 3);
+        return type().prefix() + StringUtils.right(name(), 3);
     }
 
     @Override
@@ -123,7 +122,7 @@ public class Var extends VarPattern {
 
     @Override
     public String toString() {
-        return "$" + getValue();
+        return "$" + name();
     }
 
     @Override
@@ -134,19 +133,19 @@ public class Var extends VarPattern {
 
         Var varName = (Var) o;
 
-        return getValue().equals(varName.getValue());
+        return name().equals(varName.name());
     }
 
     @Override
     public final int hashCode() {
         // This hashCode implementation is special: it ignores whether a variable is user-defined
-        return getValue().hashCode();
+        return name().hashCode();
     }
 
     /**
-     * The {@link Var.Kind} of a {@link Var}, such as whether it is user-defined.
+     * The {@link Type} of a {@link Var}, such as whether it is user-defined.
      */
-    public enum Kind {
+    public enum Type {
 
         UserDefined {
             @Override

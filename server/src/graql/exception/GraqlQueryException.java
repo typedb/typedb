@@ -332,7 +332,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException unexpectedResult(Var var) {
-        return new GraqlQueryException(UNEXPECTED_RESULT.getMessage(var.getValue()));
+        return new GraqlQueryException(UNEXPECTED_RESULT.getMessage(var.name()));
     }
 
     public static GraqlQueryException invalidComputeQuery_invalidMethod() {

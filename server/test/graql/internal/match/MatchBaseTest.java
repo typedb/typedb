@@ -36,7 +36,7 @@ public class MatchBaseTest {
     ));
 
     private final Conjunction<Pattern> pattern2 = Graql.and(Sets.newHashSet(
-            (Pattern) var("x").isa("movie").has("title", var("y"))
+            var("x").isa("movie").has("title", var("y"))
     ));
 
     @Test

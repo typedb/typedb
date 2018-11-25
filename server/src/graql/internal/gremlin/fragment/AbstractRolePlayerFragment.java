@@ -52,7 +52,7 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
     static final Var RELATION_DIRECTION = reservedVar("RELATION_DIRECTION");
 
     private static Var reservedVar(String value) {
-        return new Var(value, Var.Kind.Reserved);
+        return new Var(value, Var.Type.Reserved);
     }
 
     @Override
@@ -111,9 +111,9 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
             Collection<Var> vars) {
         if (role != null) {
             Var edge = Graql.var();
-            traversal.as(edge.name());
+            traversal.as(edge.label());
             Fragments.outSubs(Fragments.traverseSchemaConceptFromEdge(traversal, edgeProperty));
-            assignVar(traversal, role, vars).select(edge.name());
+            assignVar(traversal, role, vars).select(edge.label());
         }
     }
 }

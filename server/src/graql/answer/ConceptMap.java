@@ -141,7 +141,7 @@ public class ConceptMap implements Answer<ConceptMap> {
     @Override
     public String toString() {
         return map.entrySet().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().getValue()))
+                .sorted(Comparator.comparing(e -> e.getKey().name()))
                 .map(e -> "[" + e.getKey() + "/" + e.getValue().id() + "]").collect(Collectors.joining());
     }
 

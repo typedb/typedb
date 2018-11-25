@@ -119,7 +119,7 @@ public abstract class NeqPredicate extends Predicate<Var> {
 
     @Override
     public String getPredicateValue() {
-        return getPredicate().getValue();
+        return getPredicate().name();
     }
 
     @Override

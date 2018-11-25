@@ -310,7 +310,7 @@ public class ResponseBuilder {
             AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             answer.map().forEach((var, concept) -> {
                 ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
-                conceptMapProto.putMap(var.getValue(), conceptProto);
+                conceptMapProto.putMap(var.name(), conceptProto);
             });
 
             // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
