@@ -193,7 +193,7 @@ public abstract class Statement implements Pattern {
     public final Set<Variable> variables() {
         return innerVarPatterns().stream()
                 .filter(v -> v.var().isUserDefinedName())
-                .map(Statement::var)
+                .map(statement -> statement.var())
                 .collect(toSet());
     }
 

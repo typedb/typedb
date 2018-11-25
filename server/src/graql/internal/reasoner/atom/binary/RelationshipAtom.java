@@ -230,7 +230,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return getRelationPlayers().stream()
                 .map(RelationPlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(Statement::var)
+                .map(statement -> statement.var())
                 .filter(Variable::isUserDefinedName)
                 .collect(Collectors.toSet());
     }
@@ -710,7 +710,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .flatMap(CommonUtil::optionalToStream)
                 .filter(p -> p.var().isUserDefinedName())
                 .filter(p -> !p.getTypeLabel().isPresent())
-                .map(Statement::var)
+                .map(statement -> statement.var())
                 .collect(Collectors.toSet());
     }
 

@@ -67,6 +67,6 @@ abstract class ValueFragment extends Fragment {
 
     @Override
     public Set<Variable> dependencies() {
-        return optionalToStream(predicate().getInnerVar()).map(Statement::var).collect(toSet());
+        return optionalToStream(predicate().getInnerVar()).map(statement -> statement.var()).collect(toSet());
     }
 }

@@ -85,7 +85,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     private Stream<ConceptMap> runMatchInsert(Match match, Collection<Statement> varPatterns) {
         Set<Variable> varsInMatch = match.admin().getSelectedNames();
-        Set<Variable> varsInInsert = varPatterns.stream().map(Statement::var).collect(toImmutableSet());
+        Set<Variable> varsInInsert = varPatterns.stream().map(statement -> statement.var()).collect(toImmutableSet());
         Set<Variable> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
 
         Stream<ConceptMap> answers = match.get(projectedVars).stream();

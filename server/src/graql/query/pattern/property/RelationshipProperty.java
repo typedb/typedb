@@ -201,7 +201,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
     private Set<Variable> requiredVars(Variable var) {
         Stream<Variable> relationPlayers = this.relationPlayers().stream()
                 .flatMap(relationPlayer -> Stream.of(relationPlayer.getRolePlayer(), getRole(relationPlayer)))
-                .map(Statement::var);
+                .map(statement -> statement.var());
 
         return Stream.concat(relationPlayers, Stream.of(var)).collect(toImmutableSet());
     }
