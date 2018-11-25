@@ -27,8 +27,8 @@ import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.Patterns;
-import grakn.core.graql.query.pattern.property.Executor;
-import grakn.core.graql.query.pattern.property.VarInternal;
+import grakn.core.graql.query.pattern.property.PropertyExecutor;
+import grakn.core.graql.query.pattern.property.VarPropertyInternal;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.util.Partition;
 import com.google.auto.value.AutoValue;
@@ -60,7 +60,7 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 
 /**
- * A class for executing {@link Executor}s on {@link VarProperty}s within {@link Query}s.
+ * A class for executing {@link PropertyExecutor}s on {@link VarProperty}s within {@link Query}s.
  * Multiple query types share this class, such as {@link InsertQuery} and {@link DefineQuery}.
  */
 public class QueryOperationExecutor {
@@ -327,8 +327,8 @@ public class QueryOperationExecutor {
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarInternal#insert(Var)}, provided they return the given {@link Var} in the
-     * response to {@link Executor#producedVars()}.
+     * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
+     * response to {@link PropertyExecutor#producedVars()}.
      * </p>
      * <p>
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
@@ -349,8 +349,8 @@ public class QueryOperationExecutor {
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarInternal#insert(Var)}, provided they return the given {@link Var} in the
-     * response to {@link Executor#producedVars()}.
+     * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
+     * response to {@link PropertyExecutor#producedVars()}.
      * </p>
      * <p>
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
@@ -382,8 +382,8 @@ public class QueryOperationExecutor {
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarInternal#insert(Var)}, provided they return the given {@link Var} in the
-     * response to {@link Executor#requiredVars()}.
+     * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
+     * response to {@link PropertyExecutor#requiredVars()}.
      * </p>
      */
     public Concept get(Var var) {
@@ -437,16 +437,16 @@ public class QueryOperationExecutor {
     static abstract class VarAndProperty {
 
         abstract Var var();
-        abstract VarInternal property();
-        abstract Executor executor();
+        abstract VarPropertyInternal property();
+        abstract PropertyExecutor executor();
 
-        private static VarAndProperty of(Var var, VarProperty property, Executor executor) {
-            VarInternal propertyInternal = VarInternal.from(property);
+        private static VarAndProperty of(Var var, VarProperty property, PropertyExecutor executor) {
+            VarPropertyInternal propertyInternal = VarPropertyInternal.from(property);
             return new AutoValue_QueryOperationExecutor_VarAndProperty(var, propertyInternal, executor);
         }
 
         private static Stream<VarAndProperty> all(Var var, VarProperty property, ExecutionType executionType) {
-            VarInternal propertyInternal = VarInternal.from(property);
+            VarPropertyInternal propertyInternal = VarPropertyInternal.from(property);
             return executionType.executors(propertyInternal, var).stream()
                     .map(executor -> VarAndProperty.of(var, property, executor));
         }
@@ -462,21 +462,21 @@ public class QueryOperationExecutor {
 
     private enum ExecutionType {
         INSERT {
-            Collection<Executor> executors(VarInternal property, Var var) {
+            Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var) {
                 return property.insert(var);
             }
         },
         DEFINE {
-            Collection<Executor> executors(VarInternal property, Var var) {
+            Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var) {
                 return property.define(var);
             }
         },
         UNDEFINE {
-            Collection<Executor> executors(VarInternal property, Var var) {
+            Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var) {
                 return property.undefine(var);
             }
         };
 
-        abstract Collection<Executor> executors(VarInternal property, Var var);
+        abstract Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var);
     }
 }

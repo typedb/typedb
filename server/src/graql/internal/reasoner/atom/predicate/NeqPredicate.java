@@ -24,7 +24,7 @@ import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.query.pattern.VarPatternAdmin;
-import grakn.core.graql.query.pattern.property.Neq;
+import grakn.core.graql.query.pattern.property.NeqProperty;
 
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import com.google.auto.value.AutoValue;
@@ -34,7 +34,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * Predicate implementation specialising it to be an inequality predicate. Corresponds to graql {@link Neq}.
+ * Predicate implementation specialising it to be an inequality predicate. Corresponds to graql {@link NeqProperty}.
  * </p>
  *
  *
@@ -50,7 +50,7 @@ public abstract class NeqPredicate extends Predicate<Var> {
     public static NeqPredicate create(VarPattern pattern, ReasonerQuery parent) {
         return new AutoValue_NeqPredicate(pattern.admin().var(), pattern, parent, extractPredicate(pattern));
     }
-    public static NeqPredicate create(Var varName, Neq prop, ReasonerQuery parent) {
+    public static NeqPredicate create(Var varName, NeqProperty prop, ReasonerQuery parent) {
         VarPatternAdmin pattern = varName.neq(prop.var().var()).admin();
         return create(pattern, parent);
     }
@@ -59,7 +59,7 @@ public abstract class NeqPredicate extends Predicate<Var> {
     }
 
     private static Var extractPredicate(VarPattern pattern) {
-        return pattern.admin().getProperties(Neq.class).iterator().next().var().var();
+        return pattern.admin().getProperties(NeqProperty.class).iterator().next().var().var();
     }
 
     private boolean predicateBindingsEquivalent(NeqPredicate that, Equivalence<Atomic> equiv){

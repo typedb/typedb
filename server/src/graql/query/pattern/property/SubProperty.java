@@ -18,31 +18,32 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 
-
 /**
- * Represents the {@code then} (right-hand side) property on a {@link grakn.core.graql.concept.Rule}.
+ * Represents the {@code sub} property on a {@link Type}.
  *
- * This property can be inserted and not queried.
+ * This property can be queried or inserted.
  *
- * The then side describes the right-hand of an implication, stating that when the when side of a rule is
- * true the then side must hold.
+ * This property relates a {@link Type} and another {@link Type}. It indicates
+ * that every instance of the left type is also an instance of the right type.
  *
  */
 @AutoValue
-public abstract class Then extends Rule {
+public abstract class SubProperty extends AbstractSubProperty implements NamedProperty, UniqueVarProperty {
 
-    public static final String NAME = "then";
+    public static final String NAME = "sub";
 
-    public static Then of(Pattern then) {
-        return new AutoValue_Then(then);
+    public static SubProperty of(VarPatternAdmin superType) {
+        return new AutoValue_SubProperty(superType);
     }
 
     @Override
@@ -51,12 +52,7 @@ public abstract class Then extends Rule {
     }
 
     @Override
-    public Collection<Executor> define(Var var) throws GraqlQueryException {
-        Executor.Method method = executor -> {
-            // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar then { ... }`
-            executor.builder(var).isRule().then(pattern());
-        };
-
-        return ImmutableSet.of(Executor.builder(method).produces(var).build());
+    public Collection<EquivalentFragmentSet> match(Var start) {
+        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType().var()));
     }
 }

@@ -31,7 +31,7 @@ import com.google.common.collect.ImmutableSet;
  * <p>
  *     The behaviour is executed via a {@link QueryOperationExecutor} using {@link #execute}. The class also
  *     report its {@link #requiredVars} before it can run and its {@link #producedVars()}, that will be available to
- *     other {@link Executor}s after it has run.
+ *     other {@link PropertyExecutor}s after it has run.
  * </p>
  * <p>
  *     For example:
@@ -50,14 +50,14 @@ import com.google.common.collect.ImmutableSet;
  *
  */
 @AutoValue
-public abstract class Executor {
+public abstract class PropertyExecutor {
 
-    public static Executor.Builder builder(Method executeMethod) {
+    public static PropertyExecutor.Builder builder(Method executeMethod) {
         return builder().executeMethod(executeMethod);
     }
 
-    private static Executor.Builder builder() {
-        return new AutoValue_Executor.Builder();
+    private static PropertyExecutor.Builder builder() {
+        return new AutoValue_PropertyExecutor.Builder();
     }
 
     /**
@@ -76,7 +76,7 @@ public abstract class Executor {
 
     /**
      * Get all {@link Var}s whose {@link Concept} must exist for the subject {@link Var} to be applied.
-     * For example, for {@link Isa} the type must already be present before an instance can be created.
+     * For example, for {@link IsaProperty} the type must already be present before an instance can be created.
      *
      * <p>
      *     When calling {@link #execute}, the method can expect any {@link Var} returned here to be available by calling
@@ -120,7 +120,7 @@ public abstract class Executor {
             return this;
         }
 
-        abstract Executor build();
+        abstract PropertyExecutor build();
     }
 
     @FunctionalInterface

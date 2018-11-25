@@ -18,41 +18,39 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.query.pattern.VarPatternAdmin;
-import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.common.exception.ErrorMessage;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Set;
 
 /**
- * Represents the {@code sub} property on a {@link Type}.
- *
- * This property can be queried or inserted.
- *
- * This property relates a {@link Type} and another {@link Type}. It indicates
- * that every instance of the left type is also an instance of the right type.
+ * Abstract property for the patterns within rules.
  *
  */
-@AutoValue
-public abstract class Sub extends AbstractSub implements Named, UniqueVarProperty {
+public abstract class RuleProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
-    public static final String NAME = "sub";
-
-    public static Sub of(VarPatternAdmin superType) {
-        return new AutoValue_Sub(superType);
-    }
+    public abstract Pattern pattern();
 
     @Override
-    public String getName() {
-        return NAME;
+    public String getProperty() {
+        return pattern().toString();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType().var()));
+        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getName()));
+    }
+
+    @Nullable
+    @Override
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+        return null;
     }
 }

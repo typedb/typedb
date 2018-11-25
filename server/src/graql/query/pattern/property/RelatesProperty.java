@@ -52,14 +52,14 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
  *
  */
 @AutoValue
-public abstract class Relates extends AbstractVar {
+public abstract class RelatesProperty extends AbstractVarProperty {
 
-    public static Relates of(VarPatternAdmin role, @Nullable VarPatternAdmin superRole) {
-        return new AutoValue_Relates(role, superRole);
+    public static RelatesProperty of(VarPatternAdmin role, @Nullable VarPatternAdmin superRole) {
+        return new AutoValue_RelatesProperty(role, superRole);
     }
 
-    public static Relates of(VarPatternAdmin role) {
-        return Relates.of(role, null);
+    public static RelatesProperty of(VarPatternAdmin role) {
+        return RelatesProperty.of(role, null);
     }
 
     abstract VarPatternAdmin role();
@@ -103,30 +103,30 @@ public abstract class Relates extends AbstractVar {
     }
 
     @Override
-    public Collection<Executor> define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         Var roleVar = role().var();
 
-        Executor.Method relatesMethod = executor -> {
+        PropertyExecutor.Method relatesMethod = executor -> {
             Role role = executor.get(roleVar).asRole();
             executor.get(var).asRelationshipType().relates(role);
         };
 
-        Executor relatesExecutor = Executor.builder(relatesMethod).requires(var, roleVar).build();
+        PropertyExecutor relatesExecutor = PropertyExecutor.builder(relatesMethod).requires(var, roleVar).build();
 
         // This allows users to skip stating `$roleVar sub role` when they say `$var relates $roleVar`
-        Executor.Method isRoleMethod = executor -> executor.builder(roleVar).isRole();
+        PropertyExecutor.Method isRoleMethod = executor -> executor.builder(roleVar).isRole();
 
-        Executor isRoleExecutor = Executor.builder(isRoleMethod).produces(roleVar).build();
+        PropertyExecutor isRoleExecutor = PropertyExecutor.builder(isRoleMethod).produces(roleVar).build();
 
         VarPatternAdmin superRoleVarPattern = superRole();
         if (superRoleVarPattern != null) {
             Var superRoleVar = superRoleVarPattern.var();
-            Executor.Method subMethod = executor -> {
+            PropertyExecutor.Method subMethod = executor -> {
                 Role superRole = executor.get(superRoleVar).asRole();
                 executor.builder(roleVar).sub(superRole);
             };
 
-            Executor subExecutor = Executor.builder(subMethod)
+            PropertyExecutor subExecutor = PropertyExecutor.builder(subMethod)
                     .requires(superRoleVar).produces(roleVar).build();
 
             return ImmutableSet.of(relatesExecutor, isRoleExecutor, subExecutor);
@@ -136,8 +136,8 @@ public abstract class Relates extends AbstractVar {
     }
 
     @Override
-    public Collection<Executor> undefine(Var var) throws GraqlQueryException {
-        Executor.Method method = executor -> {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
             RelationshipType relationshipType = executor.get(var).asRelationshipType();
             Role role = executor.get(this.role().var()).asRole();
 
@@ -146,7 +146,7 @@ public abstract class Relates extends AbstractVar {
             }
         };
 
-        return ImmutableSet.of(Executor.builder(method).requires(var, role().var()).build());
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role().var()).build());
     }
 
     @Override

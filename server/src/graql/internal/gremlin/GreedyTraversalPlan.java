@@ -40,9 +40,9 @@ import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
-import grakn.core.graql.query.pattern.property.Isa;
-import grakn.core.graql.query.pattern.property.Label;
-import grakn.core.graql.query.pattern.property.Value;
+import grakn.core.graql.query.pattern.property.IsaProperty;
+import grakn.core.graql.query.pattern.property.LabelProperty;
+import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.server.session.TransactionImpl;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -230,13 +230,13 @@ public class GreedyTraversalPlan {
                 if (!inferredLabels.containsKey(label)) {
                     Var labelVar = var();
                     inferredLabels.put(label, labelVar);
-                    Fragment labelFragment = Fragments.label(Label.of(label), labelVar, ImmutableSet.of(label));
+                    Fragment labelFragment = Fragments.label(LabelProperty.of(label), labelVar, ImmutableSet.of(label));
                     allFragments.add(labelFragment);
                 }
 
                 // finally, add inferred isa fragments
                 Var labelVar = inferredLabels.get(label);
-                Isa isaProperty = Isa.of(labelVar.admin());
+                IsaProperty isaProperty = IsaProperty.of(labelVar.admin());
                 EquivalentFragmentSet isaEquivalentFragmentSet = EquivalentFragmentSets.isa(isaProperty,
                         relationshipVar, labelVar, relationshipType.isImplicit());
                 allFragments.addAll(isaEquivalentFragmentSet.fragments());
@@ -425,7 +425,7 @@ public class GreedyTraversalPlan {
         other.getDependants().add(fragment);
 
         // check whether it's value fragment
-        if (fragment.varProperty() instanceof Value) {
+        if (fragment.varProperty() instanceof ValueProperty) {
             // as value fragment is not symmetric, we need to add it again
             other.getFragmentsWithDependency().add(fragment);
             start.getDependants().add(fragment);

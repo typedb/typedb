@@ -31,8 +31,8 @@ import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.property.DataType;
-import grakn.core.graql.query.pattern.property.Isa;
+import grakn.core.graql.query.pattern.property.DataTypeProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -801,7 +801,7 @@ public class QueryParserTest {
         VarPatternAdmin var = query.match().admin().getPattern().varPatterns().iterator().next();
 
         //noinspection OptionalGetWithoutIsPresent
-        DataType property = var.getProperty(DataType.class).get();
+        DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
 
         Assert.assertEquals(AttributeType.DataType.BOOLEAN, property.dataType());
     }
@@ -1105,7 +1105,7 @@ public class QueryParserTest {
 
         assertTrue(pattern.var().isUserDefinedName());
 
-        Isa property = pattern.getProperty(Isa.class).get();
+        IsaProperty property = pattern.getProperty(IsaProperty.class).get();
 
         assertFalse(property.type().var().isUserDefinedName());
     }

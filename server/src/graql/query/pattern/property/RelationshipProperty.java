@@ -66,10 +66,10 @@ import static java.util.stream.Collectors.toSet;
  *
  */
 @AutoValue
-public abstract class Relationship extends AbstractVar implements UniqueVarProperty {
+public abstract class RelationshipProperty extends AbstractVarProperty implements UniqueVarProperty {
 
-    public static Relationship of(ImmutableMultiset<RelationPlayer> relationPlayers) {
-        return new AutoValue_Relationship(relationPlayers);
+    public static RelationshipProperty of(ImmutableMultiset<RelationPlayer> relationPlayers) {
+        return new AutoValue_RelationshipProperty(relationPlayers);
     }
 
     public abstract ImmutableMultiset<RelationPlayer> relationPlayers();
@@ -156,7 +156,7 @@ public abstract class Relationship extends AbstractVar implements UniqueVarPrope
                 .collect(toSet());
 
         Optional<Label> maybeLabel =
-                var.getProperty(Isa.class).map(Isa::type).flatMap(VarPatternAdmin::getTypeLabel);
+                var.getProperty(IsaProperty.class).map(IsaProperty::type).flatMap(VarPatternAdmin::getTypeLabel);
 
         maybeLabel.ifPresent(label -> {
             SchemaConcept schemaConcept = graph.getSchemaConcept(label);
@@ -176,13 +176,13 @@ public abstract class Relationship extends AbstractVar implements UniqueVarPrope
     }
 
     @Override
-    public Collection<Executor> insert(Var var) throws GraqlQueryException {
-        Executor.Method method = executor -> {
+    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
             grakn.core.graql.concept.Relationship relationship = executor.get(var).asRelationship();
             relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relationship, relationPlayer));
         };
 
-        return ImmutableSet.of(Executor.builder(method).requires(requiredVars(var)).build());
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(requiredVars(var)).build());
     }
 
     /**
@@ -215,8 +215,8 @@ public abstract class Relationship extends AbstractVar implements UniqueVarPrope
         //set varName as user defined if reified
         //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
-                .filter(prop -> !Relationship.class.isInstance(prop))
-                .anyMatch(prop -> !AbstractIsa.class.isInstance(prop));
+                .filter(prop -> !RelationshipProperty.class.isInstance(prop))
+                .anyMatch(prop -> !AbstractIsaProperty.class.isInstance(prop));
         VarPattern relVar = isReified? var.var().asUserDefined() : var.var();
 
         for (RelationPlayer rp : relationPlayers()) {
@@ -243,7 +243,7 @@ public abstract class Relationship extends AbstractVar implements UniqueVarPrope
         }
 
         //isa part
-        AbstractIsa isaProp = var.getProperty(AbstractIsa.class).orElse(null);
+        AbstractIsaProperty isaProp = var.getProperty(AbstractIsaProperty.class).orElse(null);
         IdPredicate predicate = null;
 
         //if no isa property present generate type variable
@@ -261,7 +261,7 @@ public abstract class Relationship extends AbstractVar implements UniqueVarPrope
             }
         }
         ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
-        relVar = isaProp instanceof IsaExplicit ?
+        relVar = isaProp instanceof IsaExplicitProperty ?
                 relVar.isaExplicit(typeVariable.asUserDefined()) :
                 relVar.isa(typeVariable.asUserDefined());
         return RelationshipAtom.create(relVar.admin(), typeVariable, predicateId, parent);

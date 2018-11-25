@@ -18,8 +18,8 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
@@ -36,22 +36,22 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code label} property on a {@link Type}.
+ * Represents the {@code id} property on a {@link Concept}.
  *
- * This property can be queried and inserted. If used in an insert query and there is an existing type with the give
- * label, then that type will be retrieved.
+ * This property can be queried. While this property cannot be inserted, if used in an insert query any existing concept
+ * with the given ID will be retrieved.
  *
  */
 @AutoValue
-public abstract class Label extends AbstractVar implements Named, UniqueVarProperty {
+public abstract class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
-    public static final String NAME = "label";
+    public static final String NAME = "id";
 
-    public static Label of(grakn.core.graql.concept.Label label) {
-        return new AutoValue_Label(label);
+    public static IdProperty of(ConceptId id) {
+        return new AutoValue_IdProperty(id);
     }
 
-    public abstract grakn.core.graql.concept.Label label();
+    public abstract ConceptId id();
 
     @Override
     public String getName() {
@@ -60,33 +60,33 @@ public abstract class Label extends AbstractVar implements Named, UniqueVarPrope
 
     @Override
     public String getProperty() {
-        return StringConverter.typeLabelToString(label());
+        return StringConverter.idToString(id());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.label(this, start, ImmutableSet.of(label())));
+        return ImmutableSet.of(EquivalentFragmentSets.id(this, start, id()));
     }
 
     @Override
-    public Collection<Executor> insert(Var var) throws GraqlQueryException {
-        // This is supported in insert queries in order to allow looking up schema concepts by label
-        return define(var);
-    }
-
-    @Override
-    public Collection<Executor> define(Var var) throws GraqlQueryException {
-        Executor.Method method = executor -> {
-            executor.builder(var).label(label());
+    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).id(id());
         };
 
-        return ImmutableSet.of(Executor.builder(method).produces(var).build());
+        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
     }
 
     @Override
-    public Collection<Executor> undefine(Var var) throws GraqlQueryException {
-        // This is supported in undefine queries in order to allow looking up schema concepts by label
-        return define(var);
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+        // This property works in both insert and define queries, because it is only for look-ups
+        return insert(var);
+    }
+
+    @Override
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+        // This property works in undefine queries, because it is only for look-ups
+        return insert(var);
     }
 
     @Override
@@ -96,8 +96,6 @@ public abstract class Label extends AbstractVar implements Named, UniqueVarPrope
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label());
-        if (schemaConcept == null)  throw GraqlQueryException.labelNotFound(label());
-        return IdPredicate.create(var.var().asUserDefined(), label(), parent);
+        return IdPredicate.create(var.var(), id(), parent);
     }
 }

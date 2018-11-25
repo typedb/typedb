@@ -32,7 +32,7 @@ import java.util.stream.Stream;
  * Internal interface for {@link VarProperty}, providing additional methods to match, insert or define the property.
  *
  */
-public interface VarInternal extends VarProperty {
+public interface VarPropertyInternal extends VarProperty {
 
     /**
      * Check if the given property can be used in a {@link Match}
@@ -45,15 +45,15 @@ public interface VarInternal extends VarProperty {
     Collection<EquivalentFragmentSet> match(Var start);
 
     /**
-     * Returns a {@link Executor} that describes how to insert the given {@link VarProperty} into.
+     * Returns a {@link PropertyExecutor} that describes how to insert the given {@link VarProperty} into.
      *
      * @throws GraqlQueryException if this {@link VarProperty} cannot be inserted
      */
-    Collection<Executor> insert(Var var) throws GraqlQueryException;
+    Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException;
 
-    Collection<Executor> define(Var var) throws GraqlQueryException;
+    Collection<PropertyExecutor> define(Var var) throws GraqlQueryException;
 
-    Collection<Executor> undefine(Var var) throws GraqlQueryException;
+    Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException;
 
     /**
      * Whether this property will uniquely identify a concept in the graph, if one exists.
@@ -71,7 +71,7 @@ public interface VarInternal extends VarProperty {
     /**
      * Helper method to perform the safe cast into this internal type
      */
-    static VarInternal from(VarProperty varProperty) {
-        return (VarInternal) varProperty;
+    static VarPropertyInternal from(VarProperty varProperty) {
+        return (VarPropertyInternal) varProperty;
     }
 }
