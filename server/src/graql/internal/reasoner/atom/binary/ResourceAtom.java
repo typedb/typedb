@@ -39,7 +39,7 @@ import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.Patterns;
-import grakn.core.graql.query.pattern.property.HasAttribute;
+import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.atom.Atom;
@@ -70,7 +70,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalen
 /**
  *
  * <p>
- * Atom implementation defining a resource atom corresponding to a {@link HasAttribute}.
+ * Atom implementation defining a resource atom corresponding to a {@link HasAttributeProperty}.
  * The resource structure is the following:
  *
  * has($varName, $attributeVariable), type($attributeVariable)
@@ -104,7 +104,7 @@ public abstract class ResourceAtom extends Binary{
     public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttribute.class;}
+    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
 
     @Override
     public RelationshipAtom toRelationshipAtom(){

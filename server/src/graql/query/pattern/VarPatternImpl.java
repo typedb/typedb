@@ -19,8 +19,8 @@
 package grakn.core.graql.query.pattern;
 
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.property.HasAttribute;
-import grakn.core.graql.query.pattern.property.Label;
+import grakn.core.graql.query.pattern.property.HasAttributeProperty;
+import grakn.core.graql.query.pattern.property.LabelProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,8 +91,8 @@ class VarPatternImpl extends AbstractVarPattern {
     public final String toString() {
         Collection<VarPatternAdmin> innerVars = innerVarPatterns();
         innerVars.remove(this);
-        getProperties(HasAttribute.class)
-                .map(HasAttribute::attribute)
+        getProperties(HasAttributeProperty.class)
+                .map(HasAttributeProperty::attribute)
                 .flatMap(r -> r.innerVarPatterns().stream())
                 .forEach(innerVars::remove);
 
@@ -125,6 +125,6 @@ class VarPatternImpl extends AbstractVarPattern {
     }
 
     private static boolean invalidInnerVariable(VarPatternAdmin var) {
-        return var.getProperties().anyMatch(p -> !(p instanceof Label));
+        return var.getProperties().anyMatch(p -> !(p instanceof LabelProperty));
     }
 }

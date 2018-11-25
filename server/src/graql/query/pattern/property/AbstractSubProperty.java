@@ -41,7 +41,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
 /**
  *
  */
-public abstract class AbstractSub extends AbstractVar implements Named, UniqueVarProperty {
+public abstract class AbstractSubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
 
     public abstract VarPatternAdmin superType();
@@ -62,8 +62,8 @@ public abstract class AbstractSub extends AbstractVar implements Named, UniqueVa
     }
 
     @Override
-    public Collection<Executor> define(Var var) throws GraqlQueryException {
-        Executor.Method method = executor -> {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
             SchemaConcept superConcept = executor.get(superType().var()).asSchemaConcept();
 
             Optional<ConceptBuilder> builder = executor.tryBuilder(var);
@@ -75,12 +75,12 @@ public abstract class AbstractSub extends AbstractVar implements Named, UniqueVa
             }
         };
 
-        return ImmutableSet.of(Executor.builder(method).requires(superType().var()).produces(var).build());
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(superType().var()).produces(var).build());
     }
 
     @Override
-    public Collection<Executor> undefine(Var var) throws GraqlQueryException {
-        Executor.Method method = executor -> {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
             SchemaConcept concept = executor.get(var).asSchemaConcept();
 
             SchemaConcept expectedSuperConcept = executor.get(superType().var()).asSchemaConcept();
@@ -91,7 +91,7 @@ public abstract class AbstractSub extends AbstractVar implements Named, UniqueVa
             }
         };
 
-        return ImmutableSet.of(Executor.builder(method).requires(var, superType().var()).build());
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, superType().var()).build());
     }
 
     @Override

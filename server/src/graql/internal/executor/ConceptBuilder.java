@@ -31,14 +31,15 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.property.DataType;
-import grakn.core.graql.query.pattern.property.Isa;
-import grakn.core.graql.query.pattern.property.Label;
-import grakn.core.graql.query.pattern.property.Sub;
-import grakn.core.graql.query.pattern.property.Then;
-import grakn.core.graql.query.pattern.property.Value;
+import grakn.core.graql.query.pattern.property.DataTypeProperty;
+import grakn.core.graql.query.pattern.property.IdProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
+import grakn.core.graql.query.pattern.property.LabelProperty;
+import grakn.core.graql.query.pattern.property.SubProperty;
+import grakn.core.graql.query.pattern.property.ThenProperty;
+import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.property.When;
+import grakn.core.graql.query.pattern.property.WhenProperty;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.server.exception.InvalidKBException;
@@ -59,7 +60,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <p>
  * A {@link VarProperty} is responsible for inserting itself into the graph. However,
  * some properties can only operate in <i>combination</i>. For example, to create a {@link Attribute} you need both
- * an {@link Isa} and a {@link Value}.
+ * an {@link IsaProperty} and a {@link ValueProperty}.
  * </p>
  * <p>
  * Therefore, these properties do not create the {@link Concept} themselves.
@@ -288,14 +289,14 @@ public class ConceptBuilder {
         }
     }
 
-    private static final BuilderParam<Type> TYPE = BuilderParam.of(Isa.NAME);
-    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(Sub.NAME);
-    private static final BuilderParam<grakn.core.graql.concept.Label> LABEL = BuilderParam.of(Label.NAME);
-    private static final BuilderParam<ConceptId> ID = BuilderParam.of(grakn.core.graql.query.pattern.property.ID.NAME);
-    private static final BuilderParam<Object> VALUE = BuilderParam.of(Value.NAME);
-    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(DataType.NAME);
-    private static final BuilderParam<Pattern> WHEN = BuilderParam.of(When.NAME);
-    private static final BuilderParam<Pattern> THEN = BuilderParam.of(Then.NAME);
+    private static final BuilderParam<Type> TYPE = BuilderParam.of(IsaProperty.NAME);
+    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(SubProperty.NAME);
+    private static final BuilderParam<grakn.core.graql.concept.Label> LABEL = BuilderParam.of(LabelProperty.NAME);
+    private static final BuilderParam<ConceptId> ID = BuilderParam.of(IdProperty.NAME);
+    private static final BuilderParam<Object> VALUE = BuilderParam.of(ValueProperty.NAME);
+    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(DataTypeProperty.NAME);
+    private static final BuilderParam<Pattern> WHEN = BuilderParam.of(WhenProperty.NAME);
+    private static final BuilderParam<Pattern> THEN = BuilderParam.of(ThenProperty.NAME);
     private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role");
     private static final BuilderParam<Unit> IS_RULE = BuilderParam.of("rule");
 

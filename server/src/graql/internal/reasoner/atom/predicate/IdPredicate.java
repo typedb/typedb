@@ -28,13 +28,13 @@ import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.property.ID;
+import grakn.core.graql.query.pattern.property.IdProperty;
 import com.google.auto.value.AutoValue;
 
 /**
  *
  * <p>
- * Predicate implementation specialising it to be an id predicate. Corresponds to {@link ID}.
+ * Predicate implementation specialising it to be an id predicate. Corresponds to {@link IdProperty}.
  * </p>
  *
  *
@@ -64,7 +64,7 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
     }
 
     private static ConceptId extractPredicate(VarPattern var){
-        return var.admin().getProperty(ID.class).map(ID::id).orElse(null);
+        return var.admin().getProperty(IdProperty.class).map(IdProperty::id).orElse(null);
     }
 
     private static VarPattern createIdVar(Var varName, ConceptId typeId){

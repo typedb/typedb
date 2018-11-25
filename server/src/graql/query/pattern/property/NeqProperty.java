@@ -18,79 +18,64 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.concept.Concept;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.common.util.CommonUtil;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Represents the {@code value} property on a {@link Attribute}.
+ * Represents the {@code !=} property on a {@link Concept}.
  *
- * This property can be queried or inserted.
- *
- * This property matches only resources whose value matches the given {@link ValuePredicate}.
+ * This property can be queried. It asserts identity inequality between two concepts. Concepts may have shared
+ * properties but still be distinct. For example, two instances of a type without any resources are still considered
+ * unequal. Similarly, two resources with the same value but of different types are considered unequal.
  *
  */
 @AutoValue
-public abstract class Value extends AbstractVar implements Named {
+public abstract class NeqProperty extends AbstractVarProperty implements NamedProperty {
 
-    public static final String NAME = "";
-
-    public static Value of(ValuePredicate predicate) {
-        return new AutoValue_Value(predicate);
+    public static NeqProperty of(VarPatternAdmin var) {
+        return new AutoValue_NeqProperty(var);
     }
 
-    public abstract ValuePredicate predicate();
+    public abstract VarPatternAdmin var();
 
     @Override
     public String getName() {
-        return NAME;
+        return "!=";
     }
 
     @Override
     public String getProperty() {
-        return predicate().toString();
-    }
-
-    @Override
-    public void buildString(StringBuilder builder) {
-        builder.append(getProperty());
+        return var().getPrintableName();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.value(this, start, predicate()));
-    }
-
-    @Override
-    public Collection<Executor> insert(Var var) throws GraqlQueryException {
-        Executor.Method method = executor -> {
-            Object value = predicate().equalsValue().orElseThrow(GraqlQueryException::insertPredicate);
-            executor.builder(var).value(value);
-        };
-
-        return ImmutableSet.of(Executor.builder(method).produces(var).build());
+        return Sets.newHashSet(
+                EquivalentFragmentSets.notInternalFragmentSet(this, start),
+                EquivalentFragmentSets.notInternalFragmentSet(this, var().var()),
+                EquivalentFragmentSets.neq(this, start, var().var())
+        );
     }
 
     @Override
     public Stream<VarPatternAdmin> innerVarPatterns() {
-        return CommonUtil.optionalToStream(predicate().getInnerVar());
+        return Stream.of(var());
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var.var(), this.predicate(), parent);
+        return NeqPredicate.create(var.var(), this, parent);
     }
 }

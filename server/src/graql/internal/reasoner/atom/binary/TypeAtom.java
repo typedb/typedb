@@ -18,11 +18,11 @@
 package grakn.core.graql.internal.reasoner.atom.binary;
 
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.property.HasAttributeType;
-import grakn.core.graql.query.pattern.property.Isa;
-import grakn.core.graql.query.pattern.property.Plays;
-import grakn.core.graql.query.pattern.property.Relates;
-import grakn.core.graql.query.pattern.property.Sub;
+import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
+import grakn.core.graql.query.pattern.property.PlaysProperty;
+import grakn.core.graql.query.pattern.property.RelatesProperty;
+import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 
 import java.util.Set;
@@ -35,11 +35,11 @@ import java.util.Set;
  * {isa|sub|plays|relates|has}($varName, $predicateVariable)
  *
  * Type atoms correspond to the following respective graql properties:
- * {@link Isa},
- * {@link Sub},
- * {@link Plays}
- * {@link Relates}
- * {@link HasAttributeType}
+ * {@link IsaProperty},
+ * {@link SubProperty},
+ * {@link PlaysProperty}
+ * {@link RelatesProperty}
+ * {@link HasAttributeTypeProperty}
  * </p>
  *
  *

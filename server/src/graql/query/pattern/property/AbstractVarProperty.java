@@ -27,7 +27,7 @@ import grakn.core.common.util.CommonUtil;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-abstract class AbstractVar implements VarInternal {
+abstract class AbstractVarProperty implements VarPropertyInternal {
 
     @Override
     public final void checkValid(Transaction graph, VarPatternAdmin var) throws GraqlQueryException {
@@ -47,17 +47,17 @@ abstract class AbstractVar implements VarInternal {
     abstract String getName();
 
     @Override
-    public Collection<Executor> insert(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
         throw GraqlQueryException.insertUnsupportedProperty(getName());
     }
 
     @Override
-    public Collection<Executor> define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         throw GraqlQueryException.defineUnsupportedProperty(getName());
     }
 
     @Override
-    public Collection<Executor> undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
         throw GraqlQueryException.defineUnsupportedProperty(getName());
     }
 

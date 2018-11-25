@@ -42,17 +42,17 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAb
  * This property states that a type cannot have direct instances.
  *
  */
-public class IsAbstract extends AbstractVar implements UniqueVarProperty {
+public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty {
 
-    private static final IsAbstract INSTANCE = new IsAbstract();
+    private static final IsAbstractProperty INSTANCE = new IsAbstractProperty();
 
     public static final String NAME = "is-abstract";
 
-    private IsAbstract() {
+    private IsAbstractProperty() {
 
     }
 
-    public static IsAbstract get() {
+    public static IsAbstractProperty get() {
         return INSTANCE;
     }
 
@@ -72,8 +72,8 @@ public class IsAbstract extends AbstractVar implements UniqueVarProperty {
     }
 
     @Override
-    public Collection<Executor> define(Var var) throws GraqlQueryException {
-        Executor.Method method = executor -> {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
             Concept concept = executor.get(var);
             if (concept.isType()) {
                 concept.asType().isAbstract(true);
@@ -82,19 +82,19 @@ public class IsAbstract extends AbstractVar implements UniqueVarProperty {
             }
         };
 
-        return ImmutableSet.of(Executor.builder(method).requires(var).build());
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
     }
 
     @Override
-    public Collection<Executor> undefine(Var var) throws GraqlQueryException {
-        Executor.Method method = executor -> {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
             if (!type.isDeleted()) {
                 type.isAbstract(false);
             }
         };
 
-        return ImmutableSet.of(Executor.builder(method).requires(var).build());
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
     }
 
     @Override

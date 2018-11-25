@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom.property;
 
-import grakn.core.graql.query.pattern.property.IsAbstract;
+import grakn.core.graql.query.pattern.property.IsAbstractProperty;
 import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
@@ -29,7 +29,7 @@ import com.google.auto.value.AutoValue;
 /**
  *
  * <p>
- * Atomic corresponding to {@link IsAbstract}.
+ * Atomic corresponding to {@link IsAbstractProperty}.
  * </p>
  *
  *

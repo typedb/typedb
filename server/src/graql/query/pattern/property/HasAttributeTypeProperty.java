@@ -53,18 +53,18 @@ import static grakn.core.graql.internal.Schema.ImplicitType.KEY_VALUE;
  * Represents the {@code has} and {@code key} properties on a {@link Type}.
  *
  * This property can be queried or inserted. Whether this is a key is indicated by the
- * {@link HasAttributeType#required} field.
+ * {@link HasAttributeTypeProperty#required} field.
  *
  * This property is defined as an implicit ontological structure between a {@link Type} and a {@link AttributeType},
  * including one implicit {@link RelationshipType} and two implicit {@link Role}s. The labels of these types are derived
  * from the label of the {@link AttributeType}.
  *
- * Like {@link HasAttribute}, if this is not a key and is used in a {@link Match} it will not use the implicit
+ * Like {@link HasAttributeProperty}, if this is not a key and is used in a {@link Match} it will not use the implicit
  * structure - instead, it will match if there is any kind of relation type connecting the two types.
  *
  */
 @AutoValue
-public abstract class HasAttributeType extends AbstractVar implements Named {
+public abstract class HasAttributeTypeProperty extends AbstractVarProperty implements NamedProperty {
 
     abstract VarPatternAdmin resourceType();
 
@@ -78,7 +78,7 @@ public abstract class HasAttributeType extends AbstractVar implements Named {
     /**
      * @throws GraqlQueryException if no label is specified on {@code resourceType}
      */
-    public static HasAttributeType of(VarPatternAdmin resourceType, boolean required) {
+    public static HasAttributeTypeProperty of(VarPatternAdmin resourceType, boolean required) {
         Label resourceLabel = resourceType.getTypeLabel().orElseThrow(() ->
                 GraqlQueryException.noLabelSpecifiedForHas(resourceType)
         );
@@ -99,7 +99,7 @@ public abstract class HasAttributeType extends AbstractVar implements Named {
         VarPatternAdmin relationOwner = relationType.relates(ownerRole).admin();
         VarPatternAdmin relationValue = relationType.admin().var().relates(valueRole).admin();
 
-        return new AutoValue_HasAttributeType(
+        return new AutoValue_HasAttributeTypeProperty(
                 resourceType, ownerRole, valueRole, relationOwner, relationValue, required);
     }
 
@@ -117,10 +117,10 @@ public abstract class HasAttributeType extends AbstractVar implements Named {
     public Collection<EquivalentFragmentSet> match(Var start) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        traversals.addAll(Plays.of(ownerRole(), required()).match(start));
+        traversals.addAll(PlaysProperty.of(ownerRole(), required()).match(start));
         //TODO: Get this to use real constraints no just the required flag
-        traversals.addAll(Plays.of(valueRole(), false).match(resourceType().var()));
-        traversals.addAll(Neq.of(ownerRole()).match(valueRole().var()));
+        traversals.addAll(PlaysProperty.of(valueRole(), false).match(resourceType().var()));
+        traversals.addAll(NeqProperty.of(ownerRole()).match(valueRole().var()));
 
         return traversals;
     }
@@ -141,8 +141,8 @@ public abstract class HasAttributeType extends AbstractVar implements Named {
     }
 
     @Override
-    public Collection<Executor> define(Var var) throws GraqlQueryException {
-        Executor.Method method = executor -> {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
             Type entityTypeConcept = executor.get(var).asType();
             AttributeType attributeTypeConcept = executor.get(resourceType().var()).asAttributeType();
 
@@ -153,12 +153,12 @@ public abstract class HasAttributeType extends AbstractVar implements Named {
             }
         };
 
-        return ImmutableSet.of(Executor.builder(method).requires(var, resourceType().var()).build());
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, resourceType().var()).build());
     }
 
     @Override
-    public Collection<Executor> undefine(Var var) throws GraqlQueryException {
-        Executor.Method method = executor -> {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
             AttributeType<?> attributeType = executor.get(resourceType().var()).asAttributeType();
 
@@ -171,7 +171,7 @@ public abstract class HasAttributeType extends AbstractVar implements Named {
             }
         };
 
-        return ImmutableSet.of(Executor.builder(method).requires(var, resourceType().var()).build());
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, resourceType().var()).build());
     }
 
     @Override

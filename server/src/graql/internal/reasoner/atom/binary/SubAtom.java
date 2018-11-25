@@ -24,7 +24,7 @@ import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.property.Sub;
+import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import com.google.auto.value.AutoValue;
 
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * TypeAtom corresponding to graql a {@link Sub} property.
+ * TypeAtom corresponding to graql a {@link SubProperty} property.
  * </p>
  *
  *
@@ -64,7 +64,7 @@ public abstract class SubAtom extends OntologicalAtom {
     }
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass() {return Sub.class;}
+    public Class<? extends VarProperty> getVarPropertyClass() {return SubProperty.class;}
 
     @Override
     public String toString(){
