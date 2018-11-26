@@ -19,7 +19,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
-load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
+load("@rules_deployment//maven:rules.bzl", "deploy_maven_jar")
 
 java_grpc_compile(
     name = "protocol-java-src",
@@ -48,6 +48,7 @@ deploy_maven_jar(
     name = "deploy-maven-jar",
     targets = [":protocol-java"],
     version_file = "//:VERSION",
+    deployment_properties = "//:deployment.properties",
 )
 
 

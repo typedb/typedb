@@ -119,8 +119,14 @@ node_grpc_compile()
 #     Load Deployment Dependencies     #
 ########################################
 
-load("//dependencies/deployment/github:dependencies.bzl", "dependencies_for_github_deployment")
+git_repository(
+    name="rules_deployment",
+    remote="https://github.com/graknlabs/deployment",
+    commit="31112a8f2d3d9bc04d8c6117ac4f0dc752ab45d5",
+)
+
+load("@rules_deployment//github:dependencies.bzl", "dependencies_for_github_deployment")
 dependencies_for_github_deployment()
 
-load("//dependencies/deployment/maven:dependencies.bzl", maven_dependencies_for_deployment = "maven_dependencies")
+load("@rules_deployment//maven:dependencies.bzl", maven_dependencies_for_deployment = "maven_dependencies")
 maven_dependencies_for_deployment()

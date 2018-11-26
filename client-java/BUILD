@@ -18,7 +18,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
+load("@rules_deployment//maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
     name = "client-java",
@@ -57,4 +57,5 @@ deploy_maven_jar(
     name = "deploy-maven-jar",
     targets = [":client-java"],
     version_file = "//:VERSION",
+    deployment_properties = "//:deployment.properties",
 )
