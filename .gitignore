@@ -19,7 +19,6 @@ bazel-*
 # Compiled files #
 dist/
 out/
-target/
 *.class
 
 # Mobile Tools for Java (J2ME) files #
