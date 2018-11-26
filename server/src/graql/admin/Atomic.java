@@ -20,8 +20,8 @@ package grakn.core.graql.admin;
 
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
 
 import javax.annotation.CheckReturnValue;
 import java.util.HashSet;
@@ -44,13 +44,13 @@ public interface Atomic {
      * @return variable name of this atomic
      */
     @CheckReturnValue
-    Var getVarName();
+    Variable getVarName();
 
     /**
      * @return the corresponding base pattern
      * */
     @CheckReturnValue
-    VarPattern getPattern();
+    Statement getPattern();
 
     /**
      * @return the {@link ReasonerQuery} this atomic belongs to
@@ -168,7 +168,7 @@ public interface Atomic {
      * @return all addressable variable names in this atomic
      */
     @CheckReturnValue
-    Set<Var> getVarNames();
+    Set<Variable> getVarNames();
 
     /**
      * infers types (type, role types) for the atom if applicable/possible

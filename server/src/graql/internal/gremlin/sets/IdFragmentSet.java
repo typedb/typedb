@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.gremlin.sets;
 
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 
 /**
- * @see EquivalentFragmentSets#id(VarProperty, Var, ConceptId)
+ * @see EquivalentFragmentSets#id(VarProperty, Variable, ConceptId)
  *
  */
 @AutoValue
@@ -41,6 +41,6 @@ abstract class IdFragmentSet extends EquivalentFragmentSet {
         return ImmutableSet.of(Fragments.id(varProperty(), var(), id()));
     }
 
-    abstract Var var();
+    abstract Variable var();
     abstract ConceptId id();
 }

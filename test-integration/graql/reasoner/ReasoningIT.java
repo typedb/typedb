@@ -23,7 +23,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;
@@ -439,7 +439,7 @@ public class ReasoningIT {
                         "$rel2 (role1: $c, role2: $b) isa relation1; get;";
                 List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
                 assertEquals(2, answers2.size());
-                Set<Var> vars = Sets.newHashSet(var("b"), var("p"), var("c"), var("rel1"), var("rel2"));
+                Set<Variable> vars = Sets.newHashSet(var("b"), var("p"), var("c"), var("rel1"), var("rel2"));
                 answers2.forEach(ans -> assertTrue(ans.vars().containsAll(vars)));
             }
         }

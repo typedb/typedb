@@ -20,7 +20,7 @@ package grakn.core.graql.admin;
 
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Set;
 
@@ -68,7 +68,7 @@ public interface UnifierComparison {
      * @param type  which playability is toto be checked
      * @return true if typing the typeVar with type is compatible with role configuration of the provided query
      */
-    boolean typePlayability(ReasonerQuery query, Var var, Type type);
+    boolean typePlayability(ReasonerQuery query, Variable var, Type type);
 
     /**
      * @param parent multipredicate of parent attribute
@@ -88,5 +88,5 @@ public interface UnifierComparison {
      * @param childVar  variable of interest in the child query
      * @return true if attributes attached to child var are compatible with attributes attached to parent var
      */
-    default boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Var parentVar, Var childVar) { return true;}
+    default boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Variable parentVar, Variable childVar) { return true;}
 }

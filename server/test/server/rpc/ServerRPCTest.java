@@ -34,8 +34,8 @@ import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
@@ -290,8 +290,8 @@ public class ServerRPCTest {
         when(conceptY.asAttribute().type().label()).thenReturn(Label.of("L456"));
 
         ImmutableList<ConceptMap> answers = ImmutableList.of(
-                new ConceptMap(ImmutableMap.of(Graql.var("x"), conceptX)),
-                new ConceptMap(ImmutableMap.of(Graql.var("y"), conceptY))
+                new ConceptMap(ImmutableMap.of(Pattern.var("x"), conceptX)),
+                new ConceptMap(ImmutableMap.of(Pattern.var("y"), conceptY))
         );
 
         when(query.stream()).thenAnswer(params -> answers.stream());
@@ -350,8 +350,8 @@ public class ServerRPCTest {
         when(conceptY.asEntity().type().label()).thenReturn(Label.of("L456"));
 
         ImmutableList<ConceptMap> answers = ImmutableList.of(
-                new ConceptMap(ImmutableMap.of(Graql.var("x"), conceptX)),
-                new ConceptMap(ImmutableMap.of(Graql.var("y"), conceptY))
+                new ConceptMap(ImmutableMap.of(Pattern.var("x"), conceptX)),
+                new ConceptMap(ImmutableMap.of(Pattern.var("y"), conceptY))
         );
 
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate

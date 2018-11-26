@@ -19,11 +19,11 @@
 package grakn.core.graql.admin;
 
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -51,7 +51,7 @@ public interface MatchAdmin extends Match {
      * @return the pattern to match in the graph
      */
     @CheckReturnValue
-    Conjunction<PatternAdmin> getPattern();
+    Conjunction<Pattern> getPattern();
 
     /**
      * @return the graph the query operates on, if one was provided
@@ -63,7 +63,7 @@ public interface MatchAdmin extends Match {
      * @return all selected variable names in the query
      */
     @CheckReturnValue
-    Set<Var> getSelectedNames();
+    Set<Variable> getSelectedNames();
 
     /**
      * @return true if query will involve / set to performing inference

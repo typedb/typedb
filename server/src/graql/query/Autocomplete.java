@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.util.StringConverter.GRAQL_KEYWORDS;
+import static grakn.core.graql.util.StringUtil.GRAQL_KEYWORDS;
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 
 /**

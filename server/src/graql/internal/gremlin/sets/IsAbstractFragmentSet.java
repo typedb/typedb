@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -30,7 +30,7 @@ import java.util.Set;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.isAbstract;
 
 /**
- * @see EquivalentFragmentSets#isAbstract(VarProperty, Var)
+ * @see EquivalentFragmentSets#isAbstract(VarProperty, Variable)
  *
  */
 @AutoValue
@@ -41,5 +41,5 @@ abstract class IsAbstractFragmentSet extends EquivalentFragmentSet {
         return ImmutableSet.of(isAbstract(varProperty(), var()));
     }
 
-    abstract Var var();
+    abstract Variable var();
 }

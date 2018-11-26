@@ -23,7 +23,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
 
@@ -43,10 +43,10 @@ import static java.util.stream.Collectors.toList;
  */
 public class GroupAggregate<T extends Answer> implements Aggregate<AnswerGroup<T>> {
 
-    private final Var varName;
+    private final Variable varName;
     private final Aggregate<T> innerAggregate;
 
-    public GroupAggregate(Var varName, Aggregate<T> innerAggregate) {
+    public GroupAggregate(Variable varName, Aggregate<T> innerAggregate) {
         this.varName = varName;
         this.innerAggregate = innerAggregate;
     }

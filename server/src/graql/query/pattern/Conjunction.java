@@ -18,28 +18,113 @@
 
 package grakn.core.graql.query.pattern;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionImpl;
 
 import javax.annotation.CheckReturnValue;
+import java.util.List;
 import java.util.Set;
+
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * A class representing a conjunction (and) of patterns. All inner patterns must match in a query
  *
  * @param <T> the type of patterns in this conjunction
- *
  */
-public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
+public class Conjunction<T extends Pattern> implements Pattern {
+
+    private final Set<T> patterns;
+
+    public Conjunction(Set<T> patterns) {
+        if (patterns == null) {
+            throw new NullPointerException("Null patterns");
+        }
+        this.patterns = patterns;
+    }
+
     /**
      * @return the patterns within this conjunction
      */
     @CheckReturnValue
-    Set<T> getPatterns();
+    public Set<T> getPatterns() {
+        return patterns;
+    }
+
+    @Override
+    public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
+        // Get all disjunctions in query
+        List<Set<Conjunction<Statement>>> disjunctionsOfConjunctions = getPatterns().stream()
+                .map(p -> p.getDisjunctiveNormalForm().getPatterns())
+                .collect(toList());
+
+        // Get the cartesian product.
+        // in other words, this puts the 'ands' on the inside and the 'ors' on the outside
+        // e.g. (A or B) and (C or D)  <=>  (A and C) or (A and D) or (B and C) or (B and D)
+        Set<Conjunction<Statement>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
+                .map(Conjunction::fromConjunctions)
+                .collect(toSet());
+
+        return Pattern.or(dnf);
+
+        // Wasn't that a horrible function? Here it is in Haskell:
+        //     dnf = map fromConjunctions . sequence . map getDisjunctiveNormalForm . patterns
+    }
+
+    @Override
+    public Set<Variable> variables() {
+        return getPatterns().stream().map(Pattern::variables).reduce(ImmutableSet.of(), Sets::union);
+    }
+
+    @Override
+    public boolean isConjunction() {
+        return true;
+    }
 
     /**
      * @return the corresponding reasoner query
      */
     @CheckReturnValue
-    ReasonerQuery toReasonerQuery(Transaction tx);
+    public ReasonerQuery toReasonerQuery(Transaction tx) {
+        Conjunction<Statement> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
+        // TODO: This cast is unsafe - this method should accept an `TransactionImpl`
+        return ReasonerQueries.create(pattern, (TransactionImpl<?>) tx);
+    }
+
+    private static <U extends Pattern> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {
+        Set<U> patterns = conjunctions.stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
+        return Pattern.and(patterns);
+    }
+
+    @Override
+    public String toString() {
+        return "{" + getPatterns().stream().map(s -> s + ";").collect(joining(" ")) + "}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof Conjunction) {
+            Conjunction<?> that = (Conjunction<?>) o;
+            return (this.patterns.equals(that.getPatterns()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.patterns.hashCode();
+        return h;
+    }
 }

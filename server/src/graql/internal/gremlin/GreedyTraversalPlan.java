@@ -18,14 +18,15 @@
 
 package grakn.core.graql.internal.gremlin;
 
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.PatternAdmin;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import grakn.core.graql.internal.gremlin.fragment.InIsaFragment;
@@ -65,7 +66,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.internal.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 
@@ -83,8 +84,8 @@ public class GreedyTraversalPlan {
      * @param pattern a pattern to find a query plan for
      * @return a semi-optimal traversal plan
      */
-    public static GraqlTraversal createTraversal(PatternAdmin pattern, TransactionImpl<?> tx) {
-        Collection<Conjunction<VarPatternAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
+    public static GraqlTraversal createTraversal(Pattern pattern, TransactionImpl<?> tx) {
+        Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         Set<? extends List<Fragment>> fragments = patterns.stream()
                 .map(conjunction -> new ConjunctionQuery(conjunction, tx))
@@ -197,12 +198,12 @@ public class GreedyTraversalPlan {
     // add label fragment and isa fragment if we can infer any
     private static void inferRelationshipTypes(TransactionImpl<?> tx, Set<Fragment> allFragments) {
 
-        Map<Var, Type> labelVarTypeMap = getLabelVarTypeMap(tx, allFragments);
+        Map<Variable, Type> labelVarTypeMap = getLabelVarTypeMap(tx, allFragments);
         if (labelVarTypeMap.isEmpty()) return;
 
-        Multimap<Var, Type> instanceVarTypeMap = getInstanceVarTypeMap(allFragments, labelVarTypeMap);
+        Multimap<Variable, Type> instanceVarTypeMap = getInstanceVarTypeMap(allFragments, labelVarTypeMap);
 
-        Multimap<Var, Var> relationshipRolePlayerMap = getRelationshipRolePlayerMap(allFragments, instanceVarTypeMap);
+        Multimap<Variable, Variable> relationshipRolePlayerMap = getRelationshipRolePlayerMap(allFragments, instanceVarTypeMap);
         if (relationshipRolePlayerMap.isEmpty()) return;
 
         // for each type, get all possible relationship type it could be in
@@ -211,7 +212,7 @@ public class GreedyTraversalPlan {
                 type -> addAllPossibleRelationships(relationshipMap, type));
 
         // inferred labels should be kept separately, even if they are already in allFragments set
-        Map<grakn.core.graql.concept.Label, Var> inferredLabels = new HashMap<>();
+        Map<Label, Variable> inferredLabels = new HashMap<>();
         relationshipRolePlayerMap.asMap().forEach((relationshipVar, rolePlayerVars) -> {
 
             Set<Type> possibleRelationshipTypes = rolePlayerVars.stream()
@@ -224,19 +225,19 @@ public class GreedyTraversalPlan {
             if (possibleRelationshipTypes.size() == 1) {
 
                 Type relationshipType = possibleRelationshipTypes.iterator().next();
-                grakn.core.graql.concept.Label label = relationshipType.label();
+                Label label = relationshipType.label();
 
                 // add label fragment if this label has not been inferred
                 if (!inferredLabels.containsKey(label)) {
-                    Var labelVar = var();
+                    Variable labelVar = var();
                     inferredLabels.put(label, labelVar);
                     Fragment labelFragment = Fragments.label(LabelProperty.of(label), labelVar, ImmutableSet.of(label));
                     allFragments.add(labelFragment);
                 }
 
                 // finally, add inferred isa fragments
-                Var labelVar = inferredLabels.get(label);
-                IsaProperty isaProperty = IsaProperty.of(labelVar.admin());
+                Variable labelVar = inferredLabels.get(label);
+                IsaProperty isaProperty = IsaProperty.of(labelVar);
                 EquivalentFragmentSet isaEquivalentFragmentSet = EquivalentFragmentSets.isa(isaProperty,
                         relationshipVar, labelVar, relationshipType.isImplicit());
                 allFragments.addAll(isaEquivalentFragmentSet.fragments());
@@ -244,17 +245,17 @@ public class GreedyTraversalPlan {
         });
     }
 
-    private static Multimap<Var, Var> getRelationshipRolePlayerMap(
-            Set<Fragment> allFragments, Multimap<Var, Type> instanceVarTypeMap) {
+    private static Multimap<Variable, Variable> getRelationshipRolePlayerMap(
+            Set<Fragment> allFragments, Multimap<Variable, Type> instanceVarTypeMap) {
         // relationship vars and its role player vars
-        Multimap<Var, Var> relationshipRolePlayerMap = HashMultimap.create();
+        Multimap<Variable, Variable> relationshipRolePlayerMap = HashMultimap.create();
         allFragments.stream().filter(OutRolePlayerFragment.class::isInstance)
                 .forEach(fragment -> relationshipRolePlayerMap.put(fragment.start(), fragment.end()));
 
         // find all the relationships requiring type inference
-        Iterator<Var> iterator = relationshipRolePlayerMap.keySet().iterator();
+        Iterator<Variable> iterator = relationshipRolePlayerMap.keySet().iterator();
         while (iterator.hasNext()) {
-            Var relationship = iterator.next();
+            Variable relationship = iterator.next();
 
             // the relation should have at least 2 known role players so we can infer something useful
             if (instanceVarTypeMap.containsKey(relationship) ||
@@ -262,7 +263,7 @@ public class GreedyTraversalPlan {
                 iterator.remove();
             } else {
                 int numRolePlayersHaveType = 0;
-                for (Var rolePlayer : relationshipRolePlayerMap.get(relationship)) {
+                for (Variable rolePlayer : relationshipRolePlayerMap.get(relationship)) {
                     if (instanceVarTypeMap.containsKey(rolePlayer)) {
                         numRolePlayersHaveType++;
                     }
@@ -276,9 +277,9 @@ public class GreedyTraversalPlan {
     }
 
     // find all vars with direct or indirect out isa edges
-    private static Multimap<Var, Type> getInstanceVarTypeMap(
-            Set<Fragment> allFragments, Map<Var, Type> labelVarTypeMap) {
-        Multimap<Var, Type> instanceVarTypeMap = HashMultimap.create();
+    private static Multimap<Variable, Type> getInstanceVarTypeMap(
+            Set<Fragment> allFragments, Map<Variable, Type> labelVarTypeMap) {
+        Multimap<Variable, Type> instanceVarTypeMap = HashMultimap.create();
         int oldSize;
         do {
             oldSize = instanceVarTypeMap.size();
@@ -291,8 +292,8 @@ public class GreedyTraversalPlan {
     }
 
     // find all vars representing types
-    private static Map<Var, Type> getLabelVarTypeMap(TransactionImpl<?> tx, Set<Fragment> allFragments) {
-        Map<Var, Type> labelVarTypeMap = new HashMap<>();
+    private static Map<Variable, Type> getLabelVarTypeMap(TransactionImpl<?> tx, Set<Fragment> allFragments) {
+        Map<Variable, Type> labelVarTypeMap = new HashMap<>();
         allFragments.stream()
                 .filter(LabelFragment.class::isInstance)
                 .forEach(fragment -> {
@@ -357,11 +358,11 @@ public class GreedyTraversalPlan {
         // process sub fragments here as we probably need to break the query tree
         processSubFragment(allNodes, nodesWithFixedCost, allFragments);
 
-        final Map<Integer, Set<Var>> varSetMap = new HashMap<>();
+        final Map<Integer, Set<Variable>> varSetMap = new HashMap<>();
         final Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
         final int[] index = {0};
         allFragments.forEach(fragment -> {
-            Set<Var> fragmentVarNameSet = Sets.newHashSet(fragment.vars());
+            Set<Variable> fragmentVarNameSet = Sets.newHashSet(fragment.vars());
             List<Integer> setsWithVarInCommon = new ArrayList<>();
             varSetMap.forEach((setIndex, varNameSet) -> {
                 if (!Collections.disjoint(varNameSet, fragmentVarNameSet)) {

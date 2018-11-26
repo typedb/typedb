@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
@@ -37,7 +37,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
 import static grakn.core.graql.internal.Schema.EdgeLabel.ATTRIBUTE;
 import static grakn.core.graql.internal.Schema.EdgeLabel.ISA;
@@ -57,13 +57,13 @@ import static grakn.core.graql.internal.Schema.VertexProperty.LABEL_ID;
 public abstract class InIsaFragment extends Fragment {
 
     @Override
-    public abstract Var end();
+    public abstract Variable end();
 
     abstract boolean mayHaveEdgeInstances();
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Variable> vars) {
 
         GraphTraversal<Vertex, Vertex> vertexTraversal = Fragments.isVertex(traversal);
 
@@ -104,15 +104,15 @@ public abstract class InIsaFragment extends Fragment {
     }
 
     private GraphTraversal<Vertex, Edge> toEdgeInstances() {
-        Var type = var();
-        Var labelId = var();
+        Variable type = var();
+        Variable labelId = var();
 
         // There is no fast way to retrieve all edge instances, because edges cannot be globally indexed.
         // This is a best-effort, that uses the schema to limit the search space...
 
         // First retrieve the type ID
         GraphTraversal<Vertex, Vertex> traversal =
-                __.<Vertex>as(type.name()).values(LABEL_ID.name()).as(labelId.name()).select(type.name());
+                __.<Vertex>as(type.label()).values(LABEL_ID.name()).as(labelId.label()).select(type.label());
 
         // Next, navigate the schema to all possible types whose instances can be in this relation
         traversal = Fragments.inSubs(traversal.out(RELATES.getLabel()).in(PLAYS.getLabel()));
@@ -123,7 +123,7 @@ public abstract class InIsaFragment extends Fragment {
 
         // Finally, navigate to all relation edges with the correct type attached to these instances
         return traversal.outE(ATTRIBUTE.getLabel())
-                .has(RELATIONSHIP_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.name())));
+                .has(RELATIONSHIP_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.label())));
     }
 
     @Override

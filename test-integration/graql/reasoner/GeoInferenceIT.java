@@ -20,9 +20,10 @@ package grakn.core.graql.reasoner;
 
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -35,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -290,7 +291,7 @@ public class GeoInferenceIT {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
             QueryBuilder iqb = tx.graql().infer(true);
 
-            VarPattern rolePattern = var()
+            Statement rolePattern = var()
                     .rel(var("r1").label("geo-entity"), var("x"))
                     .rel(var("r2").label("entity-location"), var("y"));
 
@@ -374,7 +375,7 @@ public class GeoInferenceIT {
     }
 
     private Concept getConcept(Transaction graph, String typeName, Object val){
-        return graph.graql().match(var("x").has(typeName, val).admin()).get("x")
+        return graph.graql().match((Pattern) var("x").has(typeName, val)).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().orElse(null);
     }
 

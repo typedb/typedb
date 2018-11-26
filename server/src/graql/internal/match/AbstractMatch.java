@@ -21,22 +21,20 @@ package grakn.core.graql.internal.match;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.MatchAdmin;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.property.VarPropertyInternal;
-import grakn.core.graql.internal.util.AdminConverter;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.Order;
 import grakn.core.graql.query.Queries;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 
@@ -73,7 +71,7 @@ abstract class AbstractMatch implements MatchAdmin {
      * @param tx the {@link Transaction} against which the pattern should be validated
      */
     void validatePattern(Transaction tx){
-        for (VarPatternAdmin var : getPattern().varPatterns()) {
+        for (Statement var : getPattern().statements()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(tx, var));}
     }
 
@@ -99,60 +97,60 @@ abstract class AbstractMatch implements MatchAdmin {
 
     @Override
     public GetQuery get() {
-        return get(getPattern().commonVars());
+        return get(getPattern().variables());
     }
 
     @Override
     public GetQuery get(String var, String... vars) {
-        Set<Var> varSet = Stream.concat(Stream.of(var), Stream.of(vars)).map(Graql::var).collect(Collectors.toSet());
+        Set<Variable> varSet = Stream.concat(Stream.of(var), Stream.of(vars)).map(Pattern::var).collect(Collectors.toSet());
         return get(varSet);
     }
 
     @Override
-    public GetQuery get(Var var, Var... vars) {
-        Set<Var> varSet = new HashSet<>(Arrays.asList(vars));
+    public GetQuery get(Variable var, Variable... vars) {
+        Set<Variable> varSet = new HashSet<>(Arrays.asList(vars));
         varSet.add(var);
         return get(varSet);
     }
 
     @Override
-    public GetQuery get(Set<Var> vars) {
-        if (vars.isEmpty()) vars = getPattern().commonVars();
+    public GetQuery get(Set<Variable> vars) {
+        if (vars.isEmpty()) vars = getPattern().variables();
         return Queries.get(this, ImmutableSet.copyOf(vars));
     }
 
     @Override
-    public final InsertQuery insert(VarPattern... vars) {
+    public final InsertQuery insert(Statement... vars) {
         return insert(Arrays.asList(vars));
     }
 
     @Override
-    public final InsertQuery insert(Collection<? extends VarPattern> vars) {
-        ImmutableMultiset<VarPatternAdmin> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
+    public final InsertQuery insert(Collection<? extends Statement> vars) {
+        ImmutableMultiset<Statement> varAdmins = ImmutableMultiset.copyOf(vars);
         return Queries.insert(admin(), varAdmins);
     }
 
     @Override
     public DeleteQuery delete() {
-        return delete(getPattern().commonVars());
+        return delete(getPattern().variables());
     }
 
     @Override
     public final DeleteQuery delete(String var, String... vars) {
-        Set<Var> varSet = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Graql::var).collect(Collectors.toSet());
+        Set<Variable> varSet = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Pattern::var).collect(Collectors.toSet());
         return delete(varSet);
     }
 
     @Override
-    public final DeleteQuery delete(Var var, Var... vars) {
-        Set<Var> varSet = new HashSet<>(Arrays.asList(vars));
+    public final DeleteQuery delete(Variable var, Variable... vars) {
+        Set<Variable> varSet = new HashSet<>(Arrays.asList(vars));
         varSet.add(var);
         return delete(varSet);
     }
 
     @Override
-    public final DeleteQuery delete(Set<Var> vars) {
-        if (vars.isEmpty()) vars = getPattern().commonVars();
+    public final DeleteQuery delete(Set<Variable> vars) {
+        if (vars.isEmpty()) vars = getPattern().variables();
         return Queries.delete(this, vars);
     }
 
@@ -162,17 +160,17 @@ abstract class AbstractMatch implements MatchAdmin {
     }
 
     @Override
-    public final Match orderBy(Var varName) {
+    public final Match orderBy(Variable varName) {
         return orderBy(varName, asc);
     }
 
     @Override
     public final Match orderBy(String varName, Order order) {
-        return orderBy(Graql.var(varName), order);
+        return orderBy(Pattern.var(varName), order);
     }
 
     @Override
-    public final Match orderBy(Var varName, Order order) {
+    public final Match orderBy(Variable varName, Order order) {
         return new MatchOrder(this, Ordering.of(varName, order));
     }
 }

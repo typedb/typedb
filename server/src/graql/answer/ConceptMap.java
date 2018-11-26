@@ -35,8 +35,8 @@ import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Variable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -58,7 +58,7 @@ import javax.annotation.CheckReturnValue;
  */
 public class ConceptMap implements Answer<ConceptMap> {
 
-    private final ImmutableMap<Var, Concept> map;
+    private final ImmutableMap<Variable, Concept> map;
     private final Explanation explanation;
 
     public ConceptMap() {
@@ -70,16 +70,16 @@ public class ConceptMap implements Answer<ConceptMap> {
         this(map.map().entrySet(), map.explanation());
     }
 
-    public ConceptMap(Collection<Map.Entry<Var, Concept>> mappings, Explanation exp) {
-        this.map = ImmutableMap.<Var, Concept>builder().putAll(mappings).build();
+    public ConceptMap(Collection<Map.Entry<Variable, Concept>> mappings, Explanation exp) {
+        this.map = ImmutableMap.<Variable, Concept>builder().putAll(mappings).build();
         this.explanation = exp;
     }
 
-    public ConceptMap(Map<Var, Concept> m, Explanation exp) {
+    public ConceptMap(Map<Variable, Concept> m, Explanation exp) {
         this(m.entrySet(), exp);
     }
 
-    public ConceptMap(Map<Var, Concept> m) {
+    public ConceptMap(Map<Variable, Concept> m) {
         this(m, new QueryExplanation());
     }
 
@@ -94,12 +94,12 @@ public class ConceptMap implements Answer<ConceptMap> {
     }
 
     @CheckReturnValue
-    public ImmutableMap<Var, Concept> map() {
+    public ImmutableMap<Variable, Concept> map() {
         return map;
     }
 
     @CheckReturnValue
-    public Set<Var> vars() { return map.keySet();}
+    public Set<Variable> vars() { return map.keySet();}
 
     @CheckReturnValue
     public Collection<Concept> concepts() { return map.values(); }
@@ -107,27 +107,27 @@ public class ConceptMap implements Answer<ConceptMap> {
     /**
      * Return the {@link Concept} bound to the given variable name.
      *
-     * @throws GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
+     * @throws GraqlQueryException if the {@link Variable} is not in this {@link ConceptMap}
      */
     @CheckReturnValue
     public Concept get(String var) {
-        return get(Graql.var(var));
+        return get(Pattern.var(var));
     }
 
     /**
-     * Return the {@link Concept} bound to the given {@link Var}.
+     * Return the {@link Concept} bound to the given {@link Variable}.
      *
-     * @throws GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
+     * @throws GraqlQueryException if the {@link Variable} is not in this {@link ConceptMap}
      */
     @CheckReturnValue
-    public Concept get(Var var) {
+    public Concept get(Variable var) {
         Concept concept = map.get(var);
         if (concept == null) throw GraqlQueryException.varNotInQuery(var);
         return concept;
     }
 
     @CheckReturnValue
-    public boolean containsVar(Var var) { return map.containsKey(var);}
+    public boolean containsVar(Variable var) { return map.containsKey(var);}
 
     @CheckReturnValue
     public boolean containsAll(ConceptMap map) { return this.map.entrySet().containsAll(map.map().entrySet());}
@@ -141,7 +141,7 @@ public class ConceptMap implements Answer<ConceptMap> {
     @Override
     public String toString() {
         return map.entrySet().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().getValue()))
+                .sorted(Comparator.comparing(e -> e.getKey().name()))
                 .map(e -> "[" + e.getKey() + "/" + e.getValue().id() + "]").collect(Collectors.joining());
     }
 
@@ -156,7 +156,7 @@ public class ConceptMap implements Answer<ConceptMap> {
     @Override
     public int hashCode() { return map.hashCode();}
 
-    public void forEach(BiConsumer<Var, Concept> consumer) {
+    public void forEach(BiConsumer<Variable, Concept> consumer) {
         map.forEach(consumer);
     }
 
@@ -173,9 +173,9 @@ public class ConceptMap implements Answer<ConceptMap> {
         if (map.isEmpty()) return this;
         if (this.isEmpty()) return map;
 
-        Sets.SetView<Var> varUnion = Sets.union(this.vars(), map.vars());
-        Set<Var> varIntersection = Sets.intersection(this.vars(), map.vars());
-        Map<Var, Concept> entryMap = Sets.union(
+        Sets.SetView<Variable> varUnion = Sets.union(this.vars(), map.vars());
+        Set<Variable> varIntersection = Sets.intersection(this.vars(), map.vars());
+        Map<Variable, Concept> entryMap = Sets.union(
                 this.map.entrySet(),
                 map.map().entrySet()
         )
@@ -245,7 +245,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      * @return project the answer retaining the requested variables
      */
     @CheckReturnValue
-    public ConceptMap project(Set<Var> vars) {
+    public ConceptMap project(Set<Variable> vars) {
         return new ConceptMap(
                 this.map.entrySet().stream()
                         .filter(e -> vars.contains(e.getKey()))
@@ -262,10 +262,10 @@ public class ConceptMap implements Answer<ConceptMap> {
      * @return projected answer (empty if semantic difference not satisfied)
      */
     @CheckReturnValue
-    public ConceptMap projectToChild(ConceptMap partialSub, Set<Var> vars, Unifier unifier, SemanticDifference diff) {
+    public ConceptMap projectToChild(ConceptMap partialSub, Set<Variable> vars, Unifier unifier, SemanticDifference diff) {
         ConceptMap unified = this.unify(unifier);
         if (unified.isEmpty()) return unified;
-        Set<Var> varsToRetain = Sets.difference(unified.vars(), partialSub.vars());
+        Set<Variable> varsToRetain = Sets.difference(unified.vars(), partialSub.vars());
         return diff.satisfiedBy(unified)?
                 unified
                         .project(varsToRetain)
@@ -281,17 +281,17 @@ public class ConceptMap implements Answer<ConceptMap> {
     @CheckReturnValue
     public ConceptMap unify(Unifier unifier) {
         if (unifier.isEmpty()) return this;
-        Map<Var, Concept> unified = new HashMap<>();
+        Map<Variable, Concept> unified = new HashMap<>();
 
-        for (Map.Entry<Var, Concept> e : this.map.entrySet()) {
-            Var var = e.getKey();
+        for (Map.Entry<Variable, Concept> e : this.map.entrySet()) {
+            Variable var = e.getKey();
             Concept con = e.getValue();
-            Collection<Var> uvars = unifier.get(var);
+            Collection<Variable> uvars = unifier.get(var);
             if (uvars.isEmpty() && !unifier.values().contains(var)) {
                 Concept put = unified.put(var, con);
                 if (put != null && !put.equals(con)) return new ConceptMap();
             } else {
-                for (Var uv : uvars) {
+                for (Variable uv : uvars) {
                     Concept put = unified.put(uv, con);
                     if (put != null && !put.equals(con)) return new ConceptMap();
                 }
@@ -314,16 +314,16 @@ public class ConceptMap implements Answer<ConceptMap> {
      * @return stream of answers with expanded role hierarchy
      */
     @CheckReturnValue
-    public Stream<ConceptMap> expandHierarchies(Set<Var> toExpand) {
+    public Stream<ConceptMap> expandHierarchies(Set<Variable> toExpand) {
         if (toExpand.isEmpty()) return Stream.of(this);
-        List<Set<Pair<Var, Concept>>> entryOptions = map.entrySet().stream()
+        List<Set<Pair<Variable, Concept>>> entryOptions = map.entrySet().stream()
                 .map(e -> {
-                    Var var = e.getKey();
+                    Variable var = e.getKey();
                     if (toExpand.contains(var)) {
                         Concept c = get(var);
                         if (c.isSchemaConcept()) {
                             return ReasonerUtils.upstreamHierarchy(c.asSchemaConcept()).stream()
-                                    .map(r -> new Pair<Var, Concept>(var, r))
+                                    .map(r -> new Pair<Variable, Concept>(var, r))
                                     .collect(Collectors.toSet());
                         }
                     }
@@ -341,7 +341,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      */
     @CheckReturnValue
     public Set<Atomic> toPredicates(ReasonerQuery parent) {
-        Set<Var> varNames = parent.getVarNames();
+        Set<Variable> varNames = parent.getVarNames();
         return map.entrySet().stream()
                 .filter(e -> varNames.contains(e.getKey()))
                 .map(e -> IdPredicate.create(e.getKey(), e.getValue(), parent))

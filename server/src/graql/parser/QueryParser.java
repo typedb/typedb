@@ -34,7 +34,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
@@ -101,7 +101,7 @@ public class QueryParser {
     }
 
     /**
-     * Set whether the parser should set all {@link Var}s as user-defined. If it does, then every variable will
+     * Set whether the parser should set all {@link Variable}s as user-defined. If it does, then every variable will
      * generate a user-defined name and be returned in results. For example:
      * <pre>
      *     match ($x, $y);
@@ -251,18 +251,18 @@ public class QueryParser {
     @SuppressWarnings("unchecked")
     private void registerDefaultAggregates() {
         registerAggregate("count", 0, Integer.MAX_VALUE, args -> Graql.count());
-        registerAggregate("sum", 1, args -> Graql.sum((Var) args.get(0)));
-        registerAggregate("max", 1, args -> Graql.max((Var) args.get(0)));
-        registerAggregate("min", 1, args -> Graql.min((Var) args.get(0)));
-        registerAggregate("mean", 1, args -> Graql.mean((Var) args.get(0)));
-        registerAggregate("median", 1, args -> Graql.median((Var) args.get(0)));
-        registerAggregate("std", 1, args -> Graql.std((Var) args.get(0)));
+        registerAggregate("sum", 1, args -> Graql.sum((Variable) args.get(0)));
+        registerAggregate("max", 1, args -> Graql.max((Variable) args.get(0)));
+        registerAggregate("min", 1, args -> Graql.min((Variable) args.get(0)));
+        registerAggregate("mean", 1, args -> Graql.mean((Variable) args.get(0)));
+        registerAggregate("median", 1, args -> Graql.median((Variable) args.get(0)));
+        registerAggregate("std", 1, args -> Graql.std((Variable) args.get(0)));
 
         registerAggregate("group", 1, 2, args -> {
             if (args.size() < 2) {
-                return Graql.group((Var) args.get(0));
+                return Graql.group((Variable) args.get(0));
             } else {
-                return Graql.group((Var) args.get(0), (Aggregate) args.get(1));
+                return Graql.group((Variable) args.get(0), (Aggregate) args.get(1));
             }
         });
     }

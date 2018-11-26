@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.gremlin.sets;
 
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -33,7 +33,7 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.frag
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
- * @see EquivalentFragmentSets#isa(VarProperty, Var, Var, boolean)
+ * @see EquivalentFragmentSets#isa(VarProperty, Variable, Variable, boolean)
  *
  */
 @AutoValue
@@ -47,8 +47,8 @@ abstract class IsaFragmentSet extends EquivalentFragmentSet {
         );
     }
 
-    abstract Var instance();
-    abstract Var type();
+    abstract Variable instance();
+    abstract Variable type();
     abstract boolean mayHaveEdgeInstances();
 
     /**

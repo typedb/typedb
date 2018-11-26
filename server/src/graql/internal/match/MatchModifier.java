@@ -21,9 +21,9 @@ package grakn.core.graql.internal.match;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 
 import java.util.Set;
 
@@ -49,7 +49,7 @@ abstract class MatchModifier extends AbstractMatch {
     }
 
     @Override
-    public final Conjunction<PatternAdmin> getPattern() {
+    public final Conjunction<Pattern> getPattern() {
         return inner.getPattern();
     }
 
@@ -64,7 +64,7 @@ abstract class MatchModifier extends AbstractMatch {
     }
 
     @Override
-    public final Set<Var> getSelectedNames() {
+    public final Set<Variable> getSelectedNames() {
         return inner.getSelectedNames();
     }
 

@@ -18,8 +18,8 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.admin.MatchAdmin;
@@ -38,12 +38,12 @@ public class Queries {
     private Queries() {
     }
 
-    public static GetQuery get(MatchAdmin match, ImmutableSet<Var> vars) {
+    public static GetQuery get(MatchAdmin match, ImmutableSet<Variable> vars) {
         validateMatchVars(match, vars);
         return GetQuery.of(match, vars);
     }
 
-    public static InsertQuery insert(Transaction tx, Collection<VarPatternAdmin> vars) {
+    public static InsertQuery insert(Transaction tx, Collection<Statement> vars) {
         return InsertQuery.create(tx, null, vars);
     }
 
@@ -51,11 +51,11 @@ public class Queries {
      * @param match the {@link Match} to insert for each result
      * @param varPattern  a collection of Vars to insert
      */
-    public static InsertQuery insert(MatchAdmin match, Collection<VarPatternAdmin> varPattern) {
+    public static InsertQuery insert(MatchAdmin match, Collection<Statement> varPattern) {
         return InsertQuery.create(match.tx(), match, varPattern);
     }
 
-    public static DeleteQuery delete(MatchAdmin match, Set<Var> vars) {
+    public static DeleteQuery delete(MatchAdmin match, Set<Variable> vars) {
         validateMatchVars(match, vars);
         return DeleteQuery.of(vars, match);
     }
@@ -65,10 +65,10 @@ public class Queries {
         return AggregateQuery.of(match, aggregate);
     }
 
-    private static void validateMatchVars(MatchAdmin match, Set<Var> vars) {
-        Set<Var> selectedVars = match.getSelectedNames();
+    private static void validateMatchVars(MatchAdmin match, Set<Variable> vars) {
+        Set<Variable> selectedVars = match.getSelectedNames();
 
-        for (Var var : vars) {
+        for (Variable var : vars) {
             if (!selectedVars.contains(var)) {
                 throw GraqlQueryException.varNotInQuery(var);
             }

@@ -21,8 +21,7 @@ package grakn.core.graql.query;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
@@ -47,7 +46,7 @@ public abstract class DeleteQuery implements Query<ConceptSet> {
      * @param vars  a collection of variables to delete
      * @param match a pattern to match and delete for each result
      */
-    static DeleteQuery of(Collection<? extends Var> vars, Match match) {
+    static DeleteQuery of(Collection<? extends Variable> vars, Match match) {
         return new AutoValue_DeleteQuery(match, ImmutableSet.copyOf(vars));
     }
 
@@ -81,7 +80,7 @@ public abstract class DeleteQuery implements Query<ConceptSet> {
         StringBuilder query = new StringBuilder();
         query.append(match()).append(" ").append("delete");
         if (!vars().isEmpty())
-            query.append(" ").append(vars().stream().map(Var::toString).collect(joining(", ")).trim());
+            query.append(" ").append(vars().stream().map(Variable::toString).collect(joining(", ")).trim());
         query.append(";");
 
         return query.toString();
@@ -99,8 +98,8 @@ public abstract class DeleteQuery implements Query<ConceptSet> {
     public abstract Match match();
 
     /**
-     * Get the {@link Var}s to delete on each result of {@link #match()}.
+     * Get the {@link Variable}s to delete on each result of {@link #match()}.
      */
     @CheckReturnValue
-    public abstract Set<Var> vars();
+    public abstract Set<Variable> vars();
 }

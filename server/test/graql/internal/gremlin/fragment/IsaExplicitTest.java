@@ -21,17 +21,17 @@ package grakn.core.graql.internal.gremlin.fragment;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.QueryBuilder;
 import org.junit.Test;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.junit.Assert.assertEquals;
 
 public class IsaExplicitTest {
 
-    private static final Var x = var("x");
-    private static final Var y = var("y");
+    private static final Variable x = var("x");
+    private static final Variable y = var("y");
 
     private static final String thingy = "thingy";
     private static final String thingy1 = "thingy1";

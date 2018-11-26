@@ -22,13 +22,11 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.atom.Atom;
@@ -62,7 +60,7 @@ import java.util.Set;
  */
 public abstract class Binary extends Atom {
 
-    public abstract Var getPredicateVariable();
+    public abstract Variable getPredicateVariable();
     @Nullable @Override public abstract ConceptId getTypeId();
 
     private SchemaConcept type = null;
@@ -93,7 +91,7 @@ public abstract class Binary extends Atom {
     }
 
     public boolean isDirect(){
-        return getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
+        return getPattern().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
     }
 
     @Override
@@ -163,14 +161,14 @@ public abstract class Binary extends Atom {
 
     @Override
     protected Pattern createCombinedPattern(){
-        Set<PatternAdmin> vars = Sets.newHashSet(getPattern().admin());
-        if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern().admin());
-        return Patterns.conjunction(vars);
+        Set<Pattern> vars = Sets.newHashSet((Pattern) getPattern());
+        if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern());
+        return Pattern.and(vars);
     }
 
     @Override
-    public Set<Var> getVarNames() {
-        Set<Var> vars = new HashSet<>();
+    public Set<Variable> getVarNames() {
+        Set<Variable> vars = new HashSet<>();
         if (getVarName().isUserDefinedName()) vars.add(getVarName());
         if (getPredicateVariable().isUserDefinedName()) vars.add(getPredicateVariable());
         return vars;
@@ -188,10 +186,10 @@ public abstract class Binary extends Atom {
         }
 
         boolean inferTypes = unifierType == UnifierType.RULE;
-        Var childVarName = this.getVarName();
-        Var parentVarName = parentAtom.getVarName();
-        Var childPredicateVarName = this.getPredicateVariable();
-        Var parentPredicateVarName = parentAtom.getPredicateVariable();
+        Variable childVarName = this.getVarName();
+        Variable parentVarName = parentAtom.getVarName();
+        Variable childPredicateVarName = this.getPredicateVariable();
+        Variable parentPredicateVarName = parentAtom.getPredicateVariable();
         Type parentType = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentAtom.getVarName());
         Type childType = this.getParentQuery().getVarTypeMap(inferTypes).get(this.getVarName());
         Set<Atomic> parentPredicate = parentAtom.getPredicates(parentVarName, ValuePredicate.class).collect(Collectors.toSet());
@@ -211,7 +209,7 @@ public abstract class Binary extends Atom {
                      return UnifierImpl.nonExistent();
         }
 
-        Multimap<Var, Var> varMappings = HashMultimap.create();
+        Multimap<Variable, Variable> varMappings = HashMultimap.create();
 
         if (parentVarName.isUserDefinedName()
                 && childVarName.isUserDefinedName()) {

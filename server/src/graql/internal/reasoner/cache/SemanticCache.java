@@ -30,7 +30,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -197,7 +197,7 @@ public abstract class SemanticCache<
             ReasonerAtomicQuery equivalentQuery = match.query();
             SE answerSet = match.cachedElement();
             MultiUnifier multiUnifier = unifier == null? query.getMultiUnifier(equivalentQuery, unifierType()) : unifier;
-            Set<Var> cacheVars = equivalentQuery.getVarNames();
+            Set<Variable> cacheVars = equivalentQuery.getVarNames();
             //NB: this indexes answer according to all indices in the set
             multiUnifier.stream()
                     .map(answer::unify)

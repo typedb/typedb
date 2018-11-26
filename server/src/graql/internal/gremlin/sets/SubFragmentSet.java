@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -32,7 +32,7 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.frag
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
- * @see EquivalentFragmentSets#sub(VarProperty, Var, Var)
+ * @see EquivalentFragmentSets#sub(VarProperty, Variable, Variable)
  *
  */
 @AutoValue
@@ -54,8 +54,8 @@ abstract class SubFragmentSet extends EquivalentFragmentSet {
         }
     }
 
-    abstract Var subConcept();
-    abstract Var superConcept();
+    abstract Variable subConcept();
+    abstract Variable superConcept();
     abstract boolean explicitSub();
 
     /**

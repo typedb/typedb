@@ -1,14 +1,14 @@
 package grakn.core.graql.reasoner.atomic;
 
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
-import grakn.core.graql.query.pattern.Patterns;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.server.session.TransactionImpl;
@@ -28,7 +28,7 @@ import java.io.InputStreamReader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -79,7 +79,7 @@ public class AtomicRoleInferenceIT {
         String patternString = "{($x, $y); $x isa entity1; $y isa entity2;}";
         String patternString2 = "{($x, $y) isa binary; $x isa entity1; $y isa entity2;}";
 
-        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
                 tx.getRole("role1"), var("x"),
                 tx.getRole("role2"), var("y"));
         roleInference(patternString, correctRoleMap, tx);
@@ -93,7 +93,7 @@ public class AtomicRoleInferenceIT {
         String patternString = "{($x, $y); $x isa entity1;}";
         String patternString2 = "{($x, $y) isa binary; $x isa entity1;}";
 
-        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
                 tx.getRole("role1"), var("x"),
                 tx.getRole("role"), var("y"));
         roleInference(patternString, correctRoleMap, tx);
@@ -107,7 +107,7 @@ public class AtomicRoleInferenceIT {
         String patternString = "{($x, $y, role3: $z);$x isa entity1;$y isa entity2;}";
         String patternString2 = "{($x, $y, role3: $z) isa ternary;$x isa entity1;$y isa entity2;}";
 
-        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
                 tx.getRole("role1"), var("x"),
                 tx.getRole("role2"), var("y"),
                 tx.getRole("role3"), var("z"));
@@ -122,7 +122,7 @@ public class AtomicRoleInferenceIT {
         String patternString = "{($x, $y, $z);$x isa entity1;$y isa entity2;}";
         String patternString2 = "{($x, $y, $z) isa ternary;$x isa entity1;$y isa entity2;}";
 
-        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
                 tx.getRole("role1"), var("x"),
                 tx.getRole("role2"), var("y"),
                 tx.getRole("role"), var("z"));
@@ -137,7 +137,7 @@ public class AtomicRoleInferenceIT {
         String patternString = "{(role1: $x, role2: $y, $y);}";
         String patternString2 = "{(role1: $x, role2: $y, $y) isa ternary;}";
 
-        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
                 tx.getRole("role1"), var("x"),
                 tx.getRole("role2"), var("y"),
                 tx.getRole("role"), var("y"));
@@ -152,7 +152,7 @@ public class AtomicRoleInferenceIT {
         String patternString = "{(role: $x, role: $y, role: $z); $x isa anotherEntity1; $y isa anotherEntity2; $z isa anotherEntity3;}";
         String patternString2 = "{(role: $x, role: $y, role: $z) isa ternary; $x isa anotherEntity1; $y isa anotherEntity2; $z isa anotherEntity3;}";
 
-        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
                 tx.getRole("subRole1"), var("x"),
                 tx.getRole("subRole2"), var("y"),
                 tx.getRole("subRole3"), var("z"));
@@ -167,7 +167,7 @@ public class AtomicRoleInferenceIT {
         String patternString = "{(role: $x, role: $y, role: $z); $x isa entity1; $y isa entity2; $z isa entity3;}";
         String patternString2 = "{(role: $x, role: $y, role: $z) isa ternary; $x isa entity1; $y isa entity2; $z isa entity3;}";
 
-        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
                 tx.getRole("role1"), var("x"),
                 tx.getRole("role2"), var("y"),
                 tx.getRole("role3"), var("z"));
@@ -182,7 +182,7 @@ public class AtomicRoleInferenceIT {
         String patternString = "{(role: $x, role: $y, role: $z); $x isa subEntity1; $y isa subEntity2; $z isa subEntity3;}";
         String patternString2 = "{(role: $x, role: $y, role: $z) isa ternary; $x isa subEntity1; $y isa subEntity2; $z isa subEntity3;}";
 
-        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
                 tx.getRole("role1"), var("x"),
                 tx.getRole("role2"), var("y"),
                 tx.getRole("role3"), var("z"));
@@ -197,7 +197,7 @@ public class AtomicRoleInferenceIT {
         String patternString = "{($x, $y, $z); $x isa genericEntity; $y isa genericEntity; $z isa genericEntity;}";
         String patternString2 = "{($x, $y, $z) isa ternary; $x isa genericEntity; $y isa genericEntity; $z isa genericEntity;}";
 
-        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
                 tx.getRole("role"), var("x"),
                 tx.getRole("role"), var("y"),
                 tx.getRole("role"), var("z"));
@@ -231,13 +231,13 @@ public class AtomicRoleInferenceIT {
         String relationString2 = "{(subRole1: $gp, $p) isa binary;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         RelationshipAtom relation2 = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString2, tx), tx).getAtom();
-        Multimap<Role, Var> roleMap = roleSetMap(relation.getRoleVarMap());
-        Multimap<Role, Var> roleMap2 = roleSetMap(relation2.getRoleVarMap());
+        Multimap<Role, Variable> roleMap = roleSetMap(relation.getRoleVarMap());
+        Multimap<Role, Variable> roleMap2 = roleSetMap(relation2.getRoleVarMap());
 
-        ImmutableSetMultimap<Role, Var> correctRoleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
                 tx.getRole("role"), var("p"),
                 tx.getRole("subRole2"), var("gc"));
-        ImmutableSetMultimap<Role, Var> correctRoleMap2 = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> correctRoleMap2 = ImmutableSetMultimap.of(
                 tx.getRole("role"), var("p"),
                 tx.getRole("subRole1"), var("gp"));
         assertEquals(correctRoleMap, roleMap);
@@ -250,7 +250,7 @@ public class AtomicRoleInferenceIT {
         TransactionImpl<?> tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{($x, $y, $z) isa ternary;$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa entity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
-        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("someRole"), var("x"),
                 tx.getRole("role"), var("y"),
                 tx.getRole("role"), var("z"));
@@ -263,7 +263,7 @@ public class AtomicRoleInferenceIT {
         TransactionImpl<?> tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{($x, $y, $z) isa ternary;$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
-        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("someRole"), var("x"),
                 tx.getRole("role"), var("y"),
                 tx.getRole("role"), var("z"));
@@ -285,29 +285,29 @@ public class AtomicRoleInferenceIT {
         TransactionImpl<?> tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{($x, $y) isa reifying-relation;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
-        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("someRole"), var("x"),
                 tx.getRole("someRole"), var("y"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
         tx.close();
     }
 
-    private void roleInference(String patternString, ImmutableSetMultimap<Role, Var> expectedRoleMAp, TransactionImpl<?> tx){
+    private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMAp, TransactionImpl<?> tx){
         RelationshipAtom atom = (RelationshipAtom) ReasonerQueries.atomic(conjunction(patternString, tx), tx).getAtom();
-        Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
+        Multimap<Role, Variable> roleMap = roleSetMap(atom.getRoleVarMap());
         assertEquals(expectedRoleMAp, roleMap);
     }
 
-    private Multimap<Role, Var> roleSetMap(Multimap<Role, Var> roleVarMap) {
-        Multimap<Role, Var> roleMap = HashMultimap.create();
+    private Multimap<Role, Variable> roleSetMap(Multimap<Role, Variable> roleVarMap) {
+        Multimap<Role, Variable> roleMap = HashMultimap.create();
         roleVarMap.entries().forEach(e -> roleMap.put(e.getKey(), e.getValue()));
         return roleMap;
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<VarPatternAdmin> vars = tx.graql().parser().parsePattern(patternString).admin()
+    private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
+        Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Pattern.and(vars);
     }
 }

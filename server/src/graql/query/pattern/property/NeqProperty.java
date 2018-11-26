@@ -18,10 +18,10 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
@@ -44,11 +44,11 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class NeqProperty extends AbstractVarProperty implements NamedProperty {
 
-    public static NeqProperty of(VarPatternAdmin var) {
+    public static NeqProperty of(Statement var) {
         return new AutoValue_NeqProperty(var);
     }
 
-    public abstract VarPatternAdmin var();
+    public abstract Statement var();
 
     @Override
     public String getName() {
@@ -61,7 +61,7 @@ public abstract class NeqProperty extends AbstractVarProperty implements NamedPr
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Var start) {
+    public Collection<EquivalentFragmentSet> match(Variable start) {
         return Sets.newHashSet(
                 EquivalentFragmentSets.notInternalFragmentSet(this, start),
                 EquivalentFragmentSets.notInternalFragmentSet(this, var().var()),
@@ -70,12 +70,12 @@ public abstract class NeqProperty extends AbstractVarProperty implements NamedPr
     }
 
     @Override
-    public Stream<VarPatternAdmin> innerVarPatterns() {
+    public Stream<Statement> innerVarPatterns() {
         return Stream.of(var());
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
         return NeqPredicate.create(var.var(), this, parent);
     }
 }

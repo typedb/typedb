@@ -21,7 +21,7 @@ package grakn.core.graql.internal.reasoner.atom.binary;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Rule;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.internal.reasoner.atom.Atom;
@@ -44,7 +44,7 @@ import java.util.stream.Stream;
  */
 public abstract class OntologicalAtom extends TypeAtom {
 
-    abstract OntologicalAtom createSelf(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent);
+    abstract OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent);
 
     @Override
     public boolean isSelectable() {
@@ -67,7 +67,7 @@ public abstract class OntologicalAtom extends TypeAtom {
 
     @Override
     public Set<TypeAtom> unify(Unifier u){
-        Collection<Var> vars = u.get(getVarName());
+        Collection<Variable> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
                 vars.stream().map(v -> createSelf(v, getPredicateVariable(), getTypeId(), this.getParentQuery())).collect(Collectors.toSet());

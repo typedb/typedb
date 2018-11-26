@@ -23,8 +23,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.PatternAdmin;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
@@ -40,10 +40,9 @@ import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSyntaxException;
 import org.junit.Assert;
@@ -67,7 +66,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.Graql.contains;
 import static grakn.core.graql.query.Graql.count;
 import static grakn.core.graql.query.Graql.define;
@@ -76,17 +75,17 @@ import static grakn.core.graql.query.Graql.group;
 import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.query.Graql.gte;
 import static grakn.core.graql.query.Graql.insert;
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.Graql.lt;
 import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
 import static grakn.core.graql.query.Graql.neq;
-import static grakn.core.graql.query.Graql.or;
+import static grakn.core.graql.query.pattern.Pattern.or;
 import static grakn.core.graql.query.Graql.parse;
 import static grakn.core.graql.query.Graql.regex;
 import static grakn.core.graql.query.Graql.std;
 import static grakn.core.graql.query.Graql.undefine;
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.query.Order.desc;
 import static grakn.core.graql.query.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static grakn.core.graql.query.Syntax.Compute.Algorithm.K_CORE;
@@ -379,8 +378,8 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingDeleteQuery_ResultIsSameAsJavaGraql() {
-        Var x = var("x");
-        Var y = var("y");
+        Variable x = var("x");
+        Variable y = var("y");
 
         DeleteQuery expected = match(x.isa("movie").has("title", "The Title"), y.isa("movie")).delete(x, y);
         DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; $y isa movie; delete $x, $y;");
@@ -798,7 +797,7 @@ public class QueryParserTest {
     public void testParseBooleanType() {
         GetQuery query = parse("match $x datatype boolean; get;");
 
-        VarPatternAdmin var = query.match().admin().getPattern().varPatterns().iterator().next();
+        Statement var = query.match().admin().getPattern().statements().iterator().next();
 
         //noinspection OptionalGetWithoutIsPresent
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
@@ -1097,11 +1096,11 @@ public class QueryParserTest {
         parser.defineAllVars(true);
         GetQuery query = parser.parseQuery("match ($x, $y) isa foo; get;");
 
-        Conjunction<PatternAdmin> conjunction = query.match().admin().getPattern();
+        Conjunction<Pattern> conjunction = query.match().admin().getPattern();
 
-        Set<PatternAdmin> patterns = conjunction.getPatterns();
+        Set<Pattern> patterns = conjunction.getPatterns();
 
-        VarPatternAdmin pattern = Iterables.getOnlyElement(patterns).asVarPattern();
+        Statement pattern = Iterables.getOnlyElement(patterns).asStatement();
 
         assertTrue(pattern.var().isUserDefinedName());
 

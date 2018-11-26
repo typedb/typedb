@@ -23,11 +23,11 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
@@ -88,7 +88,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(Graql.var("x"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
+                            new VariableDefinition(Pattern.var("x"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -114,7 +114,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(Graql.var("x"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
+                            new VariableDefinition(Pattern.var("x"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -139,8 +139,8 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(Graql.var("role"),null, role, new HashSet<>(), new HashSet<>()),
-                            new VariableDefinition( Graql.var("x"),null, null, Sets.newHashSet(role), new HashSet<>())
+                            new VariableDefinition(Pattern.var("role"), null, role, new HashSet<>(), new HashSet<>()),
+                            new VariableDefinition(Pattern.var("x"), null, null, Sets.newHashSet(role), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -166,7 +166,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(Graql.var("x"),null, null, Sets.newHashSet(subRole), new HashSet<>())
+                            new VariableDefinition(Pattern.var("x"), null, null, Sets.newHashSet(subRole), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -191,8 +191,8 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(Graql.var("x"),null, null, Sets.newHashSet(subRole1), new HashSet<>()),
-                            new VariableDefinition(Graql.var("y"),null, null, Sets.newHashSet(subRole2), new HashSet<>())
+                            new VariableDefinition(Pattern.var("x"), null, null, Sets.newHashSet(subRole1), new HashSet<>()),
+                            new VariableDefinition(Pattern.var("y"), null, null, Sets.newHashSet(subRole2), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -265,10 +265,10 @@ public class SemanticDifferenceIT {
         return "{" + String.join("", Sets.newHashSet(patterns)) + "}";
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString){
-        Set<VarPatternAdmin> vars = Graql.parser().parsePattern(patternString).admin()
+    private Conjunction<Statement> conjunction(String patternString){
+        Set<Statement> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Pattern.and(vars);
     }
 }

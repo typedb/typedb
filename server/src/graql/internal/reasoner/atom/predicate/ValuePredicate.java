@@ -19,12 +19,11 @@
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -46,26 +45,26 @@ import java.util.stream.Collectors;
 @AutoValue
 public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.predicate.ValuePredicate> {
 
-    @Override public abstract VarPattern getPattern();
+    @Override public abstract Statement getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
 
     //need to have it explicitly here cause autovalue gets confused with the generic
     public abstract grakn.core.graql.query.predicate.ValuePredicate getPredicate();
 
-    public static ValuePredicate create(VarPattern pattern, ReasonerQuery parent) {
-        return new AutoValue_ValuePredicate(pattern.admin().var(), pattern, parent, extractPredicate(pattern));
+    public static ValuePredicate create(Statement pattern, ReasonerQuery parent) {
+        return new AutoValue_ValuePredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
-    public static ValuePredicate create(Var varName, grakn.core.graql.query.predicate.ValuePredicate pred, ReasonerQuery parent) {
+    public static ValuePredicate create(Variable varName, grakn.core.graql.query.predicate.ValuePredicate pred, ReasonerQuery parent) {
         return create(createValueVar(varName, pred), parent);
     }
     private static ValuePredicate create(ValuePredicate pred, ReasonerQuery parent) {
         return create(pred.getPattern(), parent);
     }
 
-    public static VarPattern createValueVar(Var name, grakn.core.graql.query.predicate.ValuePredicate pred) { return name.val(pred);}
+    public static Statement createValueVar(Variable name, grakn.core.graql.query.predicate.ValuePredicate pred) { return name.val(pred);}
 
-    private static grakn.core.graql.query.predicate.ValuePredicate extractPredicate(VarPattern pattern) {
-        Iterator<ValueProperty> properties = pattern.admin().getProperties(ValueProperty.class).iterator();
+    private static grakn.core.graql.query.predicate.ValuePredicate extractPredicate(Statement pattern) {
+        Iterator<ValueProperty> properties = pattern.getProperties(ValueProperty.class).iterator();
         ValueProperty property = properties.next();
         if (properties.hasNext()) {
             throw GraqlQueryException.valuePredicateAtomWithMultiplePredicates();
@@ -82,7 +81,7 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.pr
     public String toString(){ return "[" + getVarName() + " val " + getPredicate() + "]"; }
 
     public Set<ValuePredicate> unify(Unifier u){
-        Collection<Var> vars = u.get(getVarName());
+        Collection<Variable> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
                 vars.stream().map(v -> create(v, getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
@@ -128,9 +127,9 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.pr
     }
 
     @Override
-    public Set<Var> getVarNames(){
-        Set<Var> vars = super.getVarNames();
-        VarPatternAdmin innerVar = getPredicate().getInnerVar().orElse(null);
+    public Set<Variable> getVarNames(){
+        Set<Variable> vars = super.getVarNames();
+        Statement innerVar = getPredicate().getInnerVar().orElse(null);
         if(innerVar != null && innerVar.var().isUserDefinedName()) vars.add(innerVar.var());
         return vars;
     }

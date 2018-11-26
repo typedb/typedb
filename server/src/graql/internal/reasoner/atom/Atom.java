@@ -49,7 +49,7 @@ import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -120,7 +120,7 @@ public abstract class Atom extends AtomicBase {
      * @return true if the atom is ground (all variables are bound)
      */
     public boolean isGround() {
-        Set<Var> mappedVars = Stream.concat(getPredicates(), getInnerPredicates())
+        Set<Variable> mappedVars = Stream.concat(getPredicates(), getInnerPredicates())
                 .map(AtomicBase::getVarName)
                 .collect(toSet());
         return mappedVars.containsAll(getVarNames());
@@ -159,7 +159,7 @@ public abstract class Atom extends AtomicBase {
     public Set<String> validateAsRuleHead(Rule rule) {
         Set<String> errors = new HashSet<>();
         Set<Atomic> parentAtoms = getParentQuery().getAtoms(Atomic.class).filter(at -> !at.equals(this)).collect(toSet());
-        Set<Var> varNames = Sets.difference(
+        Set<Variable> varNames = Sets.difference(
                 getVarNames(),
                 this.getInnerPredicates().map(Atomic::getVarName).collect(toSet())
         );
@@ -182,12 +182,12 @@ public abstract class Atom extends AtomicBase {
      * @return var properties this atom (its pattern) contains
      */
     public Stream<VarProperty> getVarProperties() {
-        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(getVarPropertyClass()));
+        return getCombinedPattern().statements().stream().flatMap(vp -> vp.getProperties(getVarPropertyClass()));
     }
 
     @Override
     public boolean isDirect() {
-        return getPattern().admin().getProperties().anyMatch(VarProperty::isExplicit);
+        return getPattern().getProperties().anyMatch(VarProperty::isExplicit);
     }
 
     /**
@@ -198,7 +198,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of variables that need to be have their roles expanded
      */
-    public Set<Var> getRoleExpansionVariables() { return new HashSet<>();}
+    public Set<Variable> getRoleExpansionVariables() { return new HashSet<>();}
 
     private boolean isRuleApplicable(InferenceRule child) {
         return (getIdPredicate(getVarName()) == null || child.isAppendRule())
@@ -211,7 +211,7 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     public Stream<Rule> getPotentialRules() {
-        boolean isDirect = getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
+        boolean isDirect = getPattern().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
         return getPossibleTypes().stream()
                 .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
                 .distinct();
@@ -264,7 +264,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return value variable name
      */
-    public abstract Var getPredicateVariable();
+    public abstract Variable getPredicateVariable();
 
     public abstract Stream<Predicate> getInnerPredicates();
 
@@ -406,13 +406,13 @@ public abstract class Atom extends AtomicBase {
      */
     public SemanticDifference semanticDifference(Atom parentAtom, Unifier unifier) {
         Set<VariableDefinition> diff = new HashSet<>();
-        ImmutableMap<Var, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(false);
-        ImmutableMap<Var, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(false);
+        ImmutableMap<Variable, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(false);
+        ImmutableMap<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(false);
         Unifier unifierInverse = unifier.inverse();
 
         unifier.mappings().forEach(m -> {
-            Var childVar = m.getKey();
-            Var parentVar = m.getValue();
+            Variable childVar = m.getKey();
+            Variable parentVar = m.getValue();
             Type childType = childVarTypeMap.get(childVar);
             Type parentType = parentVarTypeMap.get(parentVar);
             Type type = childType != null ?

@@ -23,7 +23,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -42,14 +42,14 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * @see EquivalentFragmentSets#rolePlayer(VarProperty, Var, Var, Var, Var)
+ * @see EquivalentFragmentSets#rolePlayer(VarProperty, Variable, Variable, Variable, Variable)
  *
  */
 @AutoValue
 abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
 
     public static RolePlayerFragmentSet of(
-            VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role,
+            VarProperty varProperty, Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role,
             @Nullable ImmutableSet<Label> roleLabels, @Nullable ImmutableSet<Label> relationTypeLabels
     ) {
         return new AutoValue_RolePlayerFragmentSet(
@@ -65,10 +65,11 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
         );
     }
 
-    abstract Var relation();
-    abstract Var edge();
-    abstract Var rolePlayer();
-    abstract @Nullable Var role();
+    abstract Variable relation();
+    abstract Variable edge();
+    abstract Variable rolePlayer();
+    abstract @Nullable
+    Variable role();
     abstract @Nullable ImmutableSet<Label> roleLabels();
     abstract @Nullable ImmutableSet<Label> relationshipTypeLabels();
 
@@ -95,7 +96,7 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
                 EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
 
         for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
-            Var roleVar = rolePlayer.role();
+            Variable roleVar = rolePlayer.role();
 
             if (roleVar == null) continue;
 

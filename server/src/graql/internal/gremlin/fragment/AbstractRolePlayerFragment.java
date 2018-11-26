@@ -20,8 +20,8 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
@@ -48,19 +48,27 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class AbstractRolePlayerFragment extends Fragment {
 
+    static final Variable RELATION_EDGE = reservedVar("RELATION_EDGE");
+    static final Variable RELATION_DIRECTION = reservedVar("RELATION_DIRECTION");
+
+    private static Variable reservedVar(String value) {
+        return new Variable(value, Variable.Type.Reserved);
+    }
+
     @Override
-    public abstract Var end();
+    public abstract Variable end();
 
-    abstract Var edge();
+    abstract Variable edge();
 
-    abstract @Nullable Var role();
+    abstract @Nullable
+    Variable role();
 
     abstract @Nullable ImmutableSet<Label> roleLabels();
 
     abstract @Nullable ImmutableSet<Label> relationTypeLabels();
 
     final String innerName() {
-        Var role = role();
+        Variable role = role();
         String roleString = role != null ? " role:" + role.shortName() : "";
         String rels = displayOptionalTypeLabels("rels", relationTypeLabels());
         String roles = displayOptionalTypeLabels("roles", roleLabels());
@@ -68,9 +76,9 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
     }
 
     @Override
-    final ImmutableSet<Var> otherVars() {
-        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(edge());
-        Var role = role();
+    final ImmutableSet<Variable> otherVars() {
+        ImmutableSet.Builder<Variable> builder = ImmutableSet.<Variable>builder().add(edge());
+        Variable role = role();
         if (role != null) builder.add(role);
         return builder.build();
     }
@@ -100,13 +108,13 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
      * @param edgeProperty the edge property to look up the role label ID
      */
     static void traverseToRole(
-            GraphTraversal<?, Edge> traversal, @Nullable Var role, Schema.EdgeProperty edgeProperty,
-            Collection<Var> vars) {
+            GraphTraversal<?, Edge> traversal, @Nullable Variable role, Schema.EdgeProperty edgeProperty,
+            Collection<Variable> vars) {
         if (role != null) {
-            Var edge = Graql.var();
-            traversal.as(edge.name());
+            Variable edge = Pattern.var();
+            traversal.as(edge.label());
             Fragments.outSubs(Fragments.traverseSchemaConceptFromEdge(traversal, edgeProperty));
-            assignVar(traversal, role, vars).select(edge.name());
+            assignVar(traversal, role, vars).select(edge.label());
         }
     }
 }

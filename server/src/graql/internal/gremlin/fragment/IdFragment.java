@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.graql.internal.Schema;
@@ -33,14 +33,14 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static grakn.core.graql.internal.util.StringConverter.idToString;
+import static grakn.core.graql.util.StringUtil.idToString;
 
 @AutoValue
 abstract class IdFragment extends Fragment {
 
     abstract ConceptId id();
 
-    public Fragment transform(Map<Var, ConceptId> transform) {
+    public Fragment transform(Map<Variable, ConceptId> transform) {
         ConceptId toId = transform.get(start());
         if (toId == null) return this;
         return new AutoValue_IdFragment(IdProperty.of(toId), start(), toId);
@@ -48,7 +48,7 @@ abstract class IdFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Variable> vars) {
         if (canOperateOnEdges()) {
             // Handle both edges and vertices
             return traversal.or(

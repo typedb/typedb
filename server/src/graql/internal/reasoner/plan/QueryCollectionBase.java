@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.plan;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.base.Equivalence;
@@ -70,7 +70,7 @@ public abstract class QueryCollectionBase{
 
     private Set<Equivalence.Wrapper<ReasonerQueryImpl>> getImmediateNeighbours(Equivalence.Wrapper<ReasonerQueryImpl> query){
         ReasonerQueryImpl unwrappedQuery = query.get();
-        Set<Var> vars = unwrappedQuery != null? unwrappedQuery.getVarNames() : new HashSet<>();
+        Set<Variable> vars = unwrappedQuery != null? unwrappedQuery.getVarNames() : new HashSet<>();
         return this.wrappedStream()
                 .filter(q2 -> !query.equals(q2))
                 .map(Equivalence.Wrapper::get)
@@ -91,7 +91,7 @@ public abstract class QueryCollectionBase{
     }
 
     private boolean isQueryReachable(ReasonerQueryImpl query, Collection<ReasonerQueryImpl> target){
-        Set<Var> queryVars = getAllNeighbours(query).stream()
+        Set<Variable> queryVars = getAllNeighbours(query).stream()
                 .flatMap(q -> q.getVarNames().stream())
                 .collect(Collectors.toSet());
         return target.stream()
@@ -138,7 +138,7 @@ public abstract class QueryCollectionBase{
                 .filter(availableQueries::contains)
                 .collect(Collectors.toSet());
 
-        Set<Var> subbedVars = plan.stream()
+        Set<Variable> subbedVars = plan.stream()
                 .flatMap(q -> q.getVarNames().stream())
                 .collect(Collectors.toSet());
 

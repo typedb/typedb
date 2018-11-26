@@ -27,9 +27,8 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.query.pattern.PatternAdmin;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
-import grakn.core.graql.query.pattern.Patterns;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -56,7 +55,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static java.util.stream.Collectors.toSet;
@@ -124,7 +123,7 @@ public class AtomicQueryIT {
         assertTrue(!qb.<GetQuery>parse(explicitQuery).iterator().hasNext());
 
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
+        Conjunction<Statement> pattern = conjunction(patternString);
         List<ConceptMap> answers = new ArrayList<>();
 
         answers.add(new ConceptMap(
@@ -209,7 +208,7 @@ public class AtomicQueryIT {
     public void testWhenCopying_TheCopyIsAlphaEquivalent(){
         TransactionImpl<?> tx = geoGraphSession.transaction(Transaction.Type.WRITE);
         String patternString = "{($x, $y) isa is-located-in;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
+        Conjunction<Statement> pattern = conjunction(patternString);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, tx);
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
         assertEquals(atomicQuery, copy);
@@ -246,18 +245,18 @@ public class AtomicQueryIT {
         tx.close();
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString){
-        Set<VarPatternAdmin> vars = Graql.parser().parsePattern(patternString).admin()
+    private Conjunction<Statement> conjunction(String patternString){
+        Set<Statement> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Pattern.and(vars);
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(Conjunction<PatternAdmin> pattern){
-        Set<VarPatternAdmin> vars = pattern
+    private Conjunction<Statement> conjunction(Conjunction<Pattern> pattern){
+        Set<Statement> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Pattern.and(vars);
     }
 
 

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query.predicate;
 
-import grakn.core.graql.internal.util.StringUtil;
+import grakn.core.graql.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Optional;

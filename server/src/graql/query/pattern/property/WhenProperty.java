@@ -20,7 +20,7 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -50,7 +50,7 @@ public abstract class WhenProperty extends RuleProperty {
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar when { ... }`
             executor.builder(var).isRule().when(pattern());

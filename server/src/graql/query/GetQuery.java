@@ -19,7 +19,7 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -38,11 +38,11 @@ import static java.util.stream.Collectors.joining;
 public abstract class GetQuery implements Query<ConceptMap> {
 
     @CheckReturnValue
-    public abstract ImmutableSet<Var> vars();
+    public abstract ImmutableSet<Variable> vars();
     @CheckReturnValue
     public abstract Match match();
 
-    public static GetQuery of(Match match, ImmutableSet<Var> vars) {
+    public static GetQuery of(Match match, ImmutableSet<Variable> vars) {
         return new AutoValue_GetQuery(vars, match);
     }
 

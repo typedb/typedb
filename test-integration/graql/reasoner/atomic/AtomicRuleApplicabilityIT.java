@@ -1,5 +1,6 @@
 package grakn.core.graql.reasoner.atomic;
 
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
@@ -7,10 +8,9 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
-import grakn.core.graql.query.pattern.Patterns;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -106,7 +106,7 @@ public class AtomicRuleApplicabilityIT {
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{($x, $y, $z);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity; $z isa twoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
-        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("role"), var("x"),
                 tx.getRole("role"), var("y"),
                 tx.getRole("role"), var("z"));
@@ -121,7 +121,7 @@ public class AtomicRuleApplicabilityIT {
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{($x, $y, $z);$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
-        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("role"), var("x"),
                 tx.getRole("role"), var("y"),
                 tx.getRole("role"), var("z"));
@@ -248,7 +248,7 @@ public class AtomicRuleApplicabilityIT {
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{($x, $y, $z);$y isa singleRoleEntity; $z isa twoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
-        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("role"), var("x"),
                 tx.getRole("role"), var("y"),
                 tx.getRole("role"), var("z"));
@@ -356,7 +356,7 @@ public class AtomicRuleApplicabilityIT {
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{($x, $y, $z);$y isa singleRoleEntity; $z isa singleRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
-        ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
+        ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("role"), var("x"),
                 tx.getRole("role"), var("y"),
                 tx.getRole("role"), var("z"));
@@ -721,21 +721,21 @@ public class AtomicRuleApplicabilityIT {
         tx.close();
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<VarPatternAdmin> vars = tx.graql().parser().parsePattern(patternString).admin()
+    private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
+        Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Pattern.and(vars);
     }
 
-    private Multimap<Role, Var> roleSetMap(Multimap<Role, Var> roleVarMap) {
-        Multimap<Role, Var> roleMap = HashMultimap.create();
+    private Multimap<Role, Variable> roleSetMap(Multimap<Role, Variable> roleVarMap) {
+        Multimap<Role, Variable> roleMap = HashMultimap.create();
         roleVarMap.entries().forEach(e -> roleMap.put(e.getKey(), e.getValue()));
         return roleMap;
     }
 
     private Concept getConcept(TransactionImpl<?> graph, String typeName, Object val){
-        return graph.graql().match(var("x").has(typeName, val).admin()).get("x")
+        return graph.graql().match((Pattern) var("x").has(typeName, val)).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().orElse(null);
     }
 }

@@ -21,12 +21,11 @@ package grakn.core.graql.internal.reasoner.plan;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -130,14 +129,14 @@ public class GraqlTraversalPlanner {
      * @param subs extra substitutions in the form of id predicates
      * @return conjunctive pattern composed of atoms + their constraints + subs
      */
-    private static Conjunction<PatternAdmin> atomsToPattern(List<Atom> atoms, Set<IdPredicate> subs){
-        return Patterns.conjunction(
+    private static Conjunction<Pattern> atomsToPattern(List<Atom> atoms, Set<IdPredicate> subs){
+        return Pattern.and(
                 Stream.concat(
                         atoms.stream().flatMap(at -> Stream.concat(Stream.of(at), at.getNonSelectableConstraints())),
                         subs.stream()
                 )
                         .map(Atomic::getCombinedPattern)
-                        .flatMap(p -> p.admin().varPatterns().stream())
+                        .flatMap(p -> p.statements().stream())
                         .collect(Collectors.toSet())
         );
     }
@@ -148,7 +147,7 @@ public class GraqlTraversalPlanner {
      * @param queryPattern corresponding pattern
      * @return an optimally ordered list of provided atoms
      */
-    private static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, TransactionImpl<?> tx){
+    private static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, Pattern queryPattern, TransactionImpl<?> tx){
         Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
         atoms.stream()
                 .filter(at -> !(at instanceof OntologicalAtom))

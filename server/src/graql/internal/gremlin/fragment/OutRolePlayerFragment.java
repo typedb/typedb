@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
@@ -33,8 +33,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static grakn.core.graql.query.pattern.Patterns.RELATION_DIRECTION;
-import static grakn.core.graql.query.pattern.Patterns.RELATION_EDGE;
 import static grakn.core.graql.internal.Schema.EdgeLabel.ROLE_PLAYER;
 import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
 import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
@@ -53,7 +51,7 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Variable> vars) {
 
         return Fragments.union(traversal, ImmutableSet.of(
                 reifiedRelationTraversal(graph, vars),
@@ -62,10 +60,10 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
         ));
     }
 
-    private GraphTraversal<Element, Vertex> reifiedRelationTraversal(TransactionImpl<?> tx, Collection<Var> vars) {
+    private GraphTraversal<Element, Vertex> reifiedRelationTraversal(TransactionImpl<?> tx, Collection<Variable> vars) {
         GraphTraversal<Element, Vertex> traversal = Fragments.isVertex(__.identity());
 
-        GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(edge().name());
+        GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(edge().label());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), tx);
@@ -77,7 +75,7 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     private GraphTraversal<Element, Vertex> edgeRelationTraversal(
-            TransactionImpl<?> tx, Direction direction, Schema.EdgeProperty roleProperty, Collection<Var> vars) {
+            TransactionImpl<?> tx, Direction direction, Schema.EdgeProperty roleProperty, Collection<Variable> vars) {
         GraphTraversal<Element, Edge> edgeTraversal = Fragments.isEdge(__.identity());
 
         // Filter by any provided type labels
@@ -87,8 +85,8 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
         traverseToRole(edgeTraversal, role(), roleProperty, vars);
 
         // Identify the relation - role-player pair by combining the relationship edge and direction into a map
-        edgeTraversal.as(RELATION_EDGE.name()).constant(direction).as(RELATION_DIRECTION.name());
-        edgeTraversal.select(Pop.last, RELATION_EDGE.name(), RELATION_DIRECTION.name()).as(edge().name()).select(RELATION_EDGE.name());
+        edgeTraversal.as(RELATION_EDGE.label()).constant(direction).as(RELATION_DIRECTION.label());
+        edgeTraversal.select(Pop.last, RELATION_EDGE.label(), RELATION_DIRECTION.label()).as(edge().label()).select(RELATION_EDGE.label());
 
         return edgeTraversal.toV(direction);
     }

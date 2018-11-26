@@ -21,14 +21,13 @@ package grakn.core.graql.internal.reasoner.rule;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
-import grakn.core.graql.query.pattern.Patterns;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.atom.Atom;
@@ -76,8 +75,8 @@ public class InferenceRule {
         this.tx = tx;
         this.rule = rule;
         //TODO simplify once changes propagated to rule objects
-        this.body = ReasonerQueries.create(conjunction(rule.when().admin()), tx);
-        this.head = ReasonerQueries.atomic(conjunction(rule.then().admin()), tx);
+        this.body = ReasonerQueries.create(conjunction(rule.when()), tx);
+        this.head = ReasonerQueries.atomic(conjunction(rule.then()), tx);
     }
 
     private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, Rule rule, TransactionImpl<?> tx){
@@ -119,11 +118,11 @@ public class InferenceRule {
         return priority;
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(PatternAdmin pattern){
-        Set<VarPatternAdmin> vars = pattern
+    private Conjunction<Statement> conjunction(Pattern pattern){
+        Set<Statement> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Pattern.and(vars);
     }
 
     public Rule getRule(){ return rule;}
@@ -140,7 +139,7 @@ public class InferenceRule {
      */
     boolean headSatisfiesBody(){
         Set<Atomic> atoms = new HashSet<>(getHead().getAtoms());
-        Set<Var> headVars = getHead().getVarNames();
+        Set<Variable> headVars = getHead().getVarNames();
         getBody().getAtoms(TypeAtom.class)
                 .filter(t -> !t.isRelation())
                 .filter(t -> !Sets.intersection(t.getVarNames(), headVars).isEmpty())

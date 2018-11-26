@@ -26,7 +26,7 @@ import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.query.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableCollection;
@@ -59,7 +59,7 @@ public class EquivalentFragmentSets {
      * @param role a role variable label
      * @param required whether the plays must be constrained to be "required"
      */
-    public static EquivalentFragmentSet plays(VarProperty varProperty, Var type, Var role, boolean required) {
+    public static EquivalentFragmentSet plays(VarProperty varProperty, Variable type, Variable role, boolean required) {
         return new AutoValue_PlaysFragmentSet(varProperty, type, role, required);
     }
 
@@ -69,18 +69,18 @@ public class EquivalentFragmentSets {
      * Can be constrained with information about the possible {@link Role}s or {@link RelationshipType}s.
      *
          */
-    public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role, @Nullable ImmutableSet<Label> roleLabels, @Nullable ImmutableSet<Label> relTypeLabels) {
+    public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role, @Nullable ImmutableSet<Label> roleLabels, @Nullable ImmutableSet<Label> relTypeLabels) {
         return new AutoValue_RolePlayerFragmentSet(varProperty, relation, edge, rolePlayer, role, roleLabels, relTypeLabels);
     }
 
-    public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role) {
+    public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role) {
         return rolePlayer(varProperty, relation, edge, rolePlayer, role, null, null);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a sub-type of another variable.
      */
-    public static EquivalentFragmentSet sub(VarProperty varProperty, Var subType, Var superType, boolean explicitSub) {
+    public static EquivalentFragmentSet sub(VarProperty varProperty, Variable subType, Variable superType, boolean explicitSub) {
         return new AutoValue_SubFragmentSet(varProperty, subType, superType, explicitSub);
     }
 
@@ -88,7 +88,7 @@ public class EquivalentFragmentSets {
      * An {@link EquivalentFragmentSet} that indicates a variable is a sub-type of another variable.
      *
      */
-    public static EquivalentFragmentSet sub(VarProperty varProperty, Var subType, Var superType) {
+    public static EquivalentFragmentSet sub(VarProperty varProperty, Variable subType, Variable superType) {
         return new AutoValue_SubFragmentSet(varProperty, subType, superType, false);
     }
 
@@ -96,14 +96,14 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a relation type which involves a role.
      */
-    public static EquivalentFragmentSet relates(VarProperty varProperty, Var relationType, Var role) {
+    public static EquivalentFragmentSet relates(VarProperty varProperty, Variable relationType, Variable role) {
         return new AutoValue_RelatesFragmentSet(varProperty, relationType, role);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is not a casting or a shard.
      */
-    public static EquivalentFragmentSet notInternalFragmentSet(VarProperty varProperty, Var start) {
+    public static EquivalentFragmentSet notInternalFragmentSet(VarProperty varProperty, Variable start) {
         return new AutoValue_NotInternalFragmentSet(varProperty, start);
     }
 
@@ -111,35 +111,35 @@ public class EquivalentFragmentSets {
      * An {@link EquivalentFragmentSet} that indicates a variable is a direct instance of a type.
      */
     public static EquivalentFragmentSet isa(
-            VarProperty varProperty, Var instance, Var type, boolean mayHaveEdgeInstances) {
+            VarProperty varProperty, Variable instance, Variable type, boolean mayHaveEdgeInstances) {
         return new AutoValue_IsaFragmentSet(varProperty, instance, type, mayHaveEdgeInstances);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is not equal to another variable.
      */
-    public static EquivalentFragmentSet neq(VarProperty varProperty, Var varA, Var varB) {
+    public static EquivalentFragmentSet neq(VarProperty varProperty, Variable varA, Variable varB) {
         return new AutoValue_NeqFragmentSet(varProperty, varA, varB);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable represents a resource with value matching a predicate.
      */
-    public static EquivalentFragmentSet value(VarProperty varProperty, Var resource, ValuePredicate predicate) {
+    public static EquivalentFragmentSet value(VarProperty varProperty, Variable resource, ValuePredicate predicate) {
         return new AutoValue_ValueFragmentSet(varProperty, resource, predicate);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a concept with a particular ID.
      */
-    public static EquivalentFragmentSet id(VarProperty varProperty, Var start, ConceptId id) {
+    public static EquivalentFragmentSet id(VarProperty varProperty, Variable start, ConceptId id) {
         return new AutoValue_IdFragmentSet(varProperty, start, id);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable represents an abstract type.
      */
-    public static EquivalentFragmentSet isAbstract(VarProperty varProperty, Var start) {
+    public static EquivalentFragmentSet isAbstract(VarProperty varProperty, Variable start) {
         return new AutoValue_IsAbstractFragmentSet(varProperty, start);
     }
 
@@ -147,21 +147,21 @@ public class EquivalentFragmentSets {
      * An {@link EquivalentFragmentSet} that indicates a variable representing a schema concept with one of the
      * specified labels.
      */
-    public static EquivalentFragmentSet label(VarProperty varProperty, Var type, ImmutableSet<Label> labels) {
+    public static EquivalentFragmentSet label(VarProperty varProperty, Variable type, ImmutableSet<Label> labels) {
         return new AutoValue_LabelFragmentSet(varProperty, type, labels);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a resource type with a data-type.
      */
-    public static EquivalentFragmentSet dataType(VarProperty varProperty, Var resourceType, AttributeType.DataType<?> dataType) {
+    public static EquivalentFragmentSet dataType(VarProperty varProperty, Variable resourceType, AttributeType.DataType<?> dataType) {
         return new AutoValue_DataTypeFragmentSet(varProperty, resourceType, dataType);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a resource type whose instances must conform to a given regex.
      */
-    public static EquivalentFragmentSet regex(VarProperty varProperty, Var resourceType, String regex) {
+    public static EquivalentFragmentSet regex(VarProperty varProperty, Variable resourceType, String regex) {
         return new AutoValue_RegexFragmentSet(varProperty, resourceType, regex);
     }
 
@@ -190,7 +190,7 @@ public class EquivalentFragmentSets {
         return fragmentSets.stream().filter(clazz::isInstance).map(clazz::cast);
     }
 
-    static @Nullable LabelFragmentSet labelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
+    static @Nullable LabelFragmentSet labelOf(Variable type, Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
                 .filter(labelFragmentSet -> labelFragmentSet.var().equals(type))
                 .findAny()
@@ -198,7 +198,7 @@ public class EquivalentFragmentSets {
     }
 
     @Nullable
-    static IsaFragmentSet typeInformationOf(Var instance, Collection<EquivalentFragmentSet> fragmentSets) {
+    static IsaFragmentSet typeInformationOf(Variable instance, Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(IsaFragmentSet.class, fragmentSets)
                 .filter(isaFragmentSet -> isaFragmentSet.instance().equals(instance))
                 .findAny()

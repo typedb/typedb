@@ -25,17 +25,16 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.ResolutionIterator;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
@@ -59,7 +58,7 @@ import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionImpl;
 import java.util.Collection;
 import java.util.Collections;
@@ -74,7 +73,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 
 /**
  *
@@ -89,9 +88,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private final TransactionImpl<?> tx;
     private final ImmutableSet<Atomic> atomSet;
     private ConceptMap substitution = null;
-    private ImmutableMap<Var, Type> varTypeMap = null;
+    private ImmutableMap<Variable, Type> varTypeMap = null;
 
-    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, TransactionImpl<?> tx) {
+    ReasonerQueryImpl(Conjunction<Statement> pattern, TransactionImpl<?> tx) {
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
@@ -160,7 +159,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param transform map defining id transform: var -> new id
      * @return new query with id predicates transformed according to the transform
      */
-    public ReasonerQueryImpl transformIds(Map<Var, ConceptId> transform){
+    public ReasonerQueryImpl transformIds(Map<Variable, ConceptId> transform){
         Set<Atomic> atoms = this.getAtoms(IdPredicate.class).map(p -> {
             ConceptId conceptId = transform.get(p.getVarName());
             if (conceptId != null) return IdPredicate.create(p.getVarName(), conceptId, p.getParentQuery());
@@ -211,11 +210,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public void checkValid() { getAtoms().forEach(Atomic::checkValid);}
 
-    public Conjunction<PatternAdmin> getPattern() {
-        return Patterns.conjunction(
+    public Conjunction<Pattern> getPattern() {
+        return Pattern.and(
                 getAtoms().stream()
                         .map(Atomic::getCombinedPattern)
-                        .flatMap(p -> p.admin().varPatterns().stream())
+                        .flatMap(p -> p.statements().stream())
                         .collect(Collectors.toSet())
         );
     }
@@ -260,7 +259,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if typing the typeVar with type is compatible with role configuration of this query
      */
     @Override
-    public boolean isTypeRoleCompatible(Var typedVar, Type parentType){
+    public boolean isTypeRoleCompatible(Variable typedVar, Type parentType){
         if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
 
         Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
@@ -287,8 +286,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getAtoms().stream().filter(type::isInstance).map(type::cast);}
 
     @Override
-    public Set<Var> getVarNames() {
-        Set<Var> vars = new HashSet<>();
+    public Set<Variable> getVarNames() {
+        Set<Variable> vars = new HashSet<>();
         getAtoms().forEach(atom -> vars.addAll(atom.getVarNames()));
         return vars;
     }
@@ -312,7 +311,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private Stream<IsaAtom> inferEntityTypes(ConceptMap sub) {
-        Set<Var> typedVars = getAtoms(IsaAtomBase.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
+        Set<Variable> typedVars = getAtoms(IsaAtomBase.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
         return Stream.concat(
                 getAtoms(IdPredicate.class),
                 sub.toPredicates(this).stream().map(IdPredicate.class::cast)
@@ -324,14 +323,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(p -> IsaAtom.create(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), false,this));
     }
 
-    private Map<Var, Type> getVarTypeMap(Stream<IsaAtomBase> isas){
-        HashMap<Var, Type> map = new HashMap<>();
+    private Map<Variable, Type> getVarTypeMap(Stream<IsaAtomBase> isas){
+        HashMap<Variable, Type> map = new HashMap<>();
         isas
                 .map(at -> new Pair<>(at.getVarName(), at.getSchemaConcept()))
                 .filter(p -> Objects.nonNull(p.getValue()))
                 .filter(p -> p.getValue().isType())
                 .forEach(p -> {
-                    Var var = p.getKey();
+                    Variable var = p.getKey();
                     Type newType = p.getValue().asType();
                     Type type = map.get(var);
                     if (type == null) map.put(var, newType);
@@ -344,14 +343,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public ImmutableMap<Var, Type> getVarTypeMap() {
+    public ImmutableMap<Variable, Type> getVarTypeMap() {
         if (varTypeMap == null) {
             this.varTypeMap = getVarTypeMap(new ConceptMap());
         }
         return varTypeMap;
     }
 
-    public ImmutableMap<Var, Type> getVarTypeMap(boolean inferTypes) {
+    public ImmutableMap<Variable, Type> getVarTypeMap(boolean inferTypes) {
         Set<IsaAtomBase> isas = getAtoms(IsaAtomBase.class).collect(Collectors.toSet());
         return ImmutableMap.copyOf(
                 getVarTypeMap()
@@ -367,7 +366,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public ImmutableMap<Var, Type> getVarTypeMap(ConceptMap sub) {
+    public ImmutableMap<Variable, Type> getVarTypeMap(ConceptMap sub) {
         return ImmutableMap.copyOf(
                 getVarTypeMap(
                         Stream.concat(
@@ -383,7 +382,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return id predicate for the specified var name if any
      */
     @Nullable
-    private IdPredicate getIdPredicate(Var var) {
+    private IdPredicate getIdPredicate(Variable var) {
         return getAtoms(IdPredicate.class)
                 .filter(sub -> sub.getVarName().equals(var))
                 .findFirst().orElse(null);
@@ -396,12 +395,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param unifier between this query and provided query
      * @return id transform
      */
-    public Map<Var, ConceptId> idTransform(ReasonerQueryImpl query, Unifier unifier){
-        Map<Var, ConceptId> transform = new HashMap<>();
+    public Map<Variable, ConceptId> idTransform(ReasonerQueryImpl query, Unifier unifier){
+        Map<Variable, ConceptId> transform = new HashMap<>();
         this.getAtoms(IdPredicate.class)
                 .forEach(thisP -> {
-                    Collection<Var> vars = unifier.get(thisP.getVarName());
-                    Var var = !vars.isEmpty()? Iterators.getOnlyElement(vars.iterator()) : thisP.getVarName();
+                    Collection<Variable> vars = unifier.get(thisP.getVarName());
+                    Variable var = !vars.isEmpty()? Iterators.getOnlyElement(vars.iterator()) : thisP.getVarName();
                     IdPredicate p2 = query.getIdPredicate(var);
                     if ( p2 != null) transform.put(thisP.getVarName(), p2.getPredicate());
                 });
@@ -420,7 +419,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public ConceptMap getSubstitution(){
         if (substitution == null) {
-            Set<Var> varNames = getVarNames();
+            Set<Variable> varNames = getVarNames();
             Set<IdPredicate> predicates = getAtoms(IsaAtomBase.class)
                     .map(IsaAtomBase::getTypePredicate)
                     .filter(Objects::nonNull)
@@ -428,7 +427,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     .collect(Collectors.toSet());
             getAtoms(IdPredicate.class).forEach(predicates::add);
 
-            HashMap<Var, Concept> answerMap = new HashMap<>();
+            HashMap<Variable, Concept> answerMap = new HashMap<>();
             predicates.forEach(p -> {
                 Concept concept = tx().getConcept(p.getPredicate());
                 if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
@@ -440,7 +439,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     public ConceptMap getRoleSubstitution(){
-        Map<Var, Concept> roleSub = new HashMap<>();
+        Map<Variable, Concept> roleSub = new HashMap<>();
         getAtoms(RelationshipAtom.class)
                 .flatMap(RelationshipAtom::getRolePredicates)
                 .forEach(p -> {
@@ -555,7 +554,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      *
      * @return
      */
-    private Set<Var> subbedVars(){
+    private Set<Variable> subbedVars(){
         return getAtoms(IdPredicate.class).map(Atomic::getVarName).collect(Collectors.toSet());
     }
 

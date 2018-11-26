@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.admin;
+package grakn.core.graql.query.pattern.property;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Statement;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Optional;
@@ -29,35 +29,35 @@ import java.util.Optional;
  *
  */
 @AutoValue
-public abstract class RelationPlayer {
+public abstract class RelationPlayerProperty {
 
     /**
      * A role - role player pair without a role specified
      * @param rolePlayer the role player of the role - role player pair
      */
-    public static RelationPlayer of(VarPatternAdmin rolePlayer) {
-        return new AutoValue_RelationPlayer(Optional.empty(), rolePlayer);
+    public static RelationPlayerProperty of(Statement rolePlayer) {
+        return new AutoValue_RelationPlayerProperty(Optional.empty(), rolePlayer);
     }
 
     /**
      * @param role the role of the role - role player pair
      * @param rolePlayer the role player of the role - role player pair
      */
-    public static RelationPlayer of(VarPatternAdmin role, VarPatternAdmin rolePlayer) {
-        return new AutoValue_RelationPlayer(Optional.of(role), rolePlayer);
+    public static RelationPlayerProperty of(Statement role, Statement rolePlayer) {
+        return new AutoValue_RelationPlayerProperty(Optional.of(role), rolePlayer);
     }
 
     /**
      * @return the role, if specified
      */
     @CheckReturnValue
-    public abstract Optional<VarPatternAdmin> getRole();
+    public abstract Optional<Statement> getRole();
 
     /**
      * @return the role player
      */
     @CheckReturnValue
-    public abstract VarPatternAdmin getRolePlayer();
+    public abstract Statement getRolePlayer();
 
     @Override
     public String toString() {

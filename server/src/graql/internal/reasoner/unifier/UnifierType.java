@@ -20,7 +20,7 @@ package grakn.core.graql.internal.reasoner.unifier;
 
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.UnifierComparison;
@@ -62,7 +62,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
+        public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
             return true;
         }
 
@@ -110,7 +110,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
+        public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
             return true;
         }
 
@@ -164,7 +164,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) { return true; }
 
         @Override
-        public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
+        public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
             return query.isTypeRoleCompatible(var, type);
         }
 
@@ -194,7 +194,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Var parentVar, Var childVar) {
+        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Variable parentVar, Variable childVar) {
             Map<SchemaConcept, ResourceAtom> parentRes = new HashMap<>();
             parent.getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
             Map<SchemaConcept, ResourceAtom> childRes = new HashMap<>();
@@ -229,7 +229,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
+        public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
             return query.isTypeRoleCompatible(var, type);
         }
 
@@ -263,7 +263,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Var parentVar, Var childVar) {
+        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Variable parentVar, Variable childVar) {
             Map<SchemaConcept, ResourceAtom> parentRes = new HashMap<>();
             parent.getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
             Map<SchemaConcept, ResourceAtom> childRes = new HashMap<>();

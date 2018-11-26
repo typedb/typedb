@@ -18,14 +18,14 @@
 
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.query.pattern.property.IdProperty;
@@ -42,36 +42,36 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class IdPredicate extends Predicate<ConceptId>{
 
-    @Override public abstract VarPattern getPattern();
+    @Override public abstract Statement getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
     //need to have it explicitly here cause autovalue gets confused with the generic
     public abstract ConceptId getPredicate();
 
-    public static IdPredicate create(VarPattern pattern, ReasonerQuery parent) {
-        return new AutoValue_IdPredicate(pattern.admin().var(), pattern, parent, extractPredicate(pattern));
+    public static IdPredicate create(Statement pattern, ReasonerQuery parent) {
+        return new AutoValue_IdPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
-    public static IdPredicate create(Var varName, Label label, ReasonerQuery parent) {
+    public static IdPredicate create(Variable varName, Label label, ReasonerQuery parent) {
         return create(createIdVar(varName.asUserDefined(), label, parent.tx()), parent);
     }
-    public static IdPredicate create(Var varName, ConceptId id, ReasonerQuery parent) {
+    public static IdPredicate create(Variable varName, ConceptId id, ReasonerQuery parent) {
         return create(createIdVar(varName.asUserDefined(), id), parent);
     }
-    public static IdPredicate create(Var varName, Concept con, ReasonerQuery parent) {
+    public static IdPredicate create(Variable varName, Concept con, ReasonerQuery parent) {
         return create(createIdVar(varName.asUserDefined(), con.id()), parent);
     }
     private static IdPredicate create(IdPredicate a, ReasonerQuery parent) {
         return create(a.getPattern(), parent);
     }
 
-    private static ConceptId extractPredicate(VarPattern var){
-        return var.admin().getProperty(IdProperty.class).map(IdProperty::id).orElse(null);
+    private static ConceptId extractPredicate(Statement var){
+        return var.getProperty(IdProperty.class).map(IdProperty::id).orElse(null);
     }
 
-    private static VarPattern createIdVar(Var varName, ConceptId typeId){
+    private static Statement createIdVar(Variable varName, ConceptId typeId){
         return varName.id(typeId);
     }
 
-    private static VarPattern createIdVar(Var varName, Label label, Transaction graph){
+    private static Statement createIdVar(Variable varName, Label label, Transaction graph){
         SchemaConcept schemaConcept = graph.getSchemaConcept(label);
         if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label);
         return varName.id(schemaConcept.id());

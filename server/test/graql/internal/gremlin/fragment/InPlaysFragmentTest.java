@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -35,8 +35,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class InPlaysFragmentTest {
 
-    private final Var start = Graql.var();
-    private final Var end = Graql.var();
+    private final Variable start = Pattern.var();
+    private final Variable end = Pattern.var();
     private final Fragment fragment = Fragments.inPlays(null, start, end, false);
 
     @Test

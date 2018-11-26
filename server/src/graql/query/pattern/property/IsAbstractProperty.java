@@ -21,10 +21,10 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.property.IsAbstractAtom;
 import com.google.common.collect.ImmutableSet;
@@ -62,7 +62,7 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Var start) {
+    public Collection<EquivalentFragmentSet> match(Variable start) {
         return ImmutableSet.of(isAbstract(this, start));
     }
 
@@ -72,7 +72,7 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Concept concept = executor.get(var);
             if (concept.isType()) {
@@ -86,7 +86,7 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
             if (!type.isDeleted()) {
@@ -98,7 +98,7 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
         return IsAbstractAtom.create(var.var(), parent);
     }
 }

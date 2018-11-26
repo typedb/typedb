@@ -19,10 +19,9 @@
 package grakn.core.graql.internal.reasoner.utils.conversion;
 
 import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
 
 /**
  * <p>
@@ -32,8 +31,8 @@ import grakn.core.graql.query.pattern.VarPattern;
 class AttributeConverter implements ConceptConverter<Attribute> {
 
     public Pattern pattern(Attribute concept) {
-        Var owner = Graql.var().asUserDefined();
-        VarPattern resourceVar = Graql.var().asUserDefined().val(concept.value());
+        Variable owner = Pattern.var().asUserDefined();
+        Statement resourceVar = Pattern.var().asUserDefined().val(concept.value());
         return owner
                 .has(concept.type().label(),resourceVar)
                 .id(concept.owner().id());

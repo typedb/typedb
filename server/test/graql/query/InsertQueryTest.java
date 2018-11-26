@@ -18,14 +18,14 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
 import grakn.core.graql.admin.MatchAdmin;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;
@@ -35,8 +35,8 @@ public class InsertQueryTest {
     private final MatchAdmin match1 = Graql.match(var("x").isa("movie")).admin();
     private final MatchAdmin match2 = Graql.match(var("y").isa("movie")).admin();
 
-    private final ImmutableCollection<VarPatternAdmin> vars1 = ImmutableSet.of(var("x").admin());
-    private final ImmutableCollection<VarPatternAdmin> vars2 = ImmutableSet.of(var("y").admin());
+    private final ImmutableCollection<Statement> vars1 = ImmutableSet.of(var("x"));
+    private final ImmutableCollection<Statement> vars2 = ImmutableSet.of(var("y"));
 
     @Test
     public void insertQueriesWithTheSameVarsAndQueryAreEqual() {

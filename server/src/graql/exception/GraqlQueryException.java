@@ -20,19 +20,18 @@ package grakn.core.graql.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.property.UniqueVarProperty;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.property.UniqueVarProperty;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
@@ -59,14 +58,9 @@ import static grakn.core.graql.query.Syntax.Compute.CONDITIONS_REQUIRED;
 import static grakn.core.graql.query.Syntax.Compute.METHODS_ACCEPTED;
 
 /**
- * <p>
  * Graql Query Exception
- * </p>
- * <p>
  * Occurs when the query is syntactically correct but semantically incorrect.
  * For example limiting the results of a query -1
- * </p>
- *
  */
 public class GraqlQueryException extends GraknException {
 
@@ -101,7 +95,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException conflictingProperties(
-            VarPatternAdmin varPattern, UniqueVarProperty property, UniqueVarProperty other) {
+            Statement varPattern, UniqueVarProperty property, UniqueVarProperty other) {
         String message = ErrorMessage.CONFLICTING_PROPERTIES.getMessage(
                 varPattern.getPrintableName(), property.graqlString(), other.graqlString()
         );
@@ -152,15 +146,15 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.INSERT_PREDICATE.getMessage());
     }
 
-    public static GraqlQueryException insertRecursive(VarPatternAdmin var) {
+    public static GraqlQueryException insertRecursive(Statement var) {
         return new GraqlQueryException(INSERT_RECURSIVE.getMessage(var.getPrintableName()));
     }
 
-    public static GraqlQueryException insertUndefinedVariable(VarPatternAdmin var) {
+    public static GraqlQueryException insertUndefinedVariable(Statement var) {
         return new GraqlQueryException(INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
     }
 
-    public static GraqlQueryException createInstanceOfMetaConcept(Var var, Type type) {
+    public static GraqlQueryException createInstanceOfMetaConcept(Variable var, Type type) {
         return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.label());
     }
 
@@ -171,7 +165,7 @@ public class GraqlQueryException extends GraknException {
      * </p>
      */
     public static GraqlQueryException insertMultipleProperties(
-            VarPattern varPattern, String property, Object value1, Object value2
+            Statement varPattern, String property, Object value1, Object value2
     ) {
         String message = "a concept `%s` cannot have multiple properties `%s` and `%s` for `%s`";
         return create(message, varPattern, value1, value2, property);
@@ -203,7 +197,7 @@ public class GraqlQueryException extends GraknException {
      * For example, an attribute without a value: {@code insert $x isa name;}
      * </p>
      */
-    public static GraqlQueryException insertNoExpectedProperty(String property, VarPatternAdmin var) {
+    public static GraqlQueryException insertNoExpectedProperty(String property, Statement var) {
         return create("missing expected property `%s` in `%s`", property, var);
     }
 
@@ -213,11 +207,11 @@ public class GraqlQueryException extends GraknException {
      * For example: {@code match $x isa movie; insert $x isa name, val "Bob";}
      * </p>
      */
-    public static GraqlQueryException insertExistingConcept(VarPatternAdmin pattern, Concept concept) {
+    public static GraqlQueryException insertExistingConcept(Statement pattern, Concept concept) {
         return create("cannot overwrite properties `%s` on  concept `%s`", pattern, concept);
     }
 
-    public static GraqlQueryException varNotInQuery(Var var) {
+    public static GraqlQueryException varNotInQuery(Variable var) {
         return new GraqlQueryException(VARIABLE_NOT_IN_QUERY.getMessage(var));
     }
 
@@ -246,8 +240,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException maxIterationsReached(Class<?> clazz) {
-        return new GraqlQueryException(ErrorMessage.MAX_ITERATION_REACHED
-                .getMessage(clazz.toString()));
+        return new GraqlQueryException(ErrorMessage.MAX_ITERATION_REACHED.getMessage(clazz.toString()));
     }
 
     public static GraqlQueryException statisticsAttributeTypesNotSpecified() {
@@ -314,7 +307,7 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.CONCEPT_NOT_THING.getMessage(value));
     }
 
-    public static GraqlQueryException nonRoleIdAssignedToRoleVariable(VarPatternAdmin var) {
+    public static GraqlQueryException nonRoleIdAssignedToRoleVariable(Statement var) {
         return new GraqlQueryException(ErrorMessage.ROLE_ID_IS_NOT_ROLE.getMessage(var.toString()));
     }
 
@@ -326,7 +319,7 @@ public class GraqlQueryException extends GraknException {
         throw new GraqlQueryException("Cannot parse date value " + originalDate + " with format " + originalFormat, cause);
     }
 
-    public static GraqlQueryException noLabelSpecifiedForHas(VarPattern varPattern) {
+    public static GraqlQueryException noLabelSpecifiedForHas(Statement varPattern) {
         return create("'has' argument '%s' requires a label", varPattern);
     }
 
@@ -338,8 +331,8 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.label()));
     }
 
-    public static GraqlQueryException unexpectedResult(Var var) {
-        return new GraqlQueryException(UNEXPECTED_RESULT.getMessage(var.getValue()));
+    public static GraqlQueryException unexpectedResult(Variable var) {
+        return new GraqlQueryException(UNEXPECTED_RESULT.getMessage(var.name()));
     }
 
     public static GraqlQueryException invalidComputeQuery_invalidMethod() {

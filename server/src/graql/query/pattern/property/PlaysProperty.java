@@ -23,10 +23,10 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.PlaysAtom;
@@ -53,11 +53,11 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
 
     public static final String NAME = "plays";
 
-    public static PlaysProperty of(VarPatternAdmin role, boolean required) {
+    public static PlaysProperty of(Statement role, boolean required) {
         return new AutoValue_PlaysProperty(role, required);
     }
 
-    abstract VarPatternAdmin role();
+    abstract Statement role();
 
     abstract boolean required();
 
@@ -72,22 +72,22 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Var start) {
+    public Collection<EquivalentFragmentSet> match(Variable start) {
         return ImmutableSet.of(EquivalentFragmentSets.plays(this, start, role().var(), required()));
     }
 
     @Override
-    public Stream<VarPatternAdmin> getTypes() {
+    public Stream<Statement> getTypes() {
         return Stream.of(role());
     }
 
     @Override
-    public Stream<VarPatternAdmin> innerVarPatterns() {
+    public Stream<Statement> innerVarPatterns() {
         return Stream.of(role());
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Role role = executor.get(this.role().var()).asRole();
             executor.get(var).asType().plays(role);
@@ -97,7 +97,7 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
             Role role = executor.get(this.role().var()).asRole();
@@ -111,10 +111,10 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.var().asUserDefined();
-        VarPatternAdmin typeVar = this.role();
-        Var typeVariable = typeVar.var();
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        Variable varName = var.var().asUserDefined();
+        Statement typeVar = this.role();
+        Variable typeVariable = typeVar.var();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
         ConceptId predicateId = predicate == null? null : predicate.getPredicate();
         return PlaysAtom.create(varName, typeVariable, predicateId, parent);

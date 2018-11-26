@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom.binary;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Unifier;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,7 +37,7 @@ public abstract class IsaAtomBase extends TypeAtom{
 
     @Override
     public Set<TypeAtom> unify(Unifier u){
-        Collection<Var> vars = u.get(getVarName());
+        Collection<Variable> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
                 vars.stream().map(v -> IsaAtom.create(v, getPredicateVariable(), getTypeId(), this.isDirect(), this.getParentQuery())).collect(Collectors.toSet());

@@ -26,7 +26,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -85,7 +85,7 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCa
             Set<ConceptMap> answers = match.cachedElement();
             MultiUnifier multiUnifier = unifier == null ? query.getMultiUnifier(equivalentQuery, unifierType()) : unifier;
 
-            Set<Var> cacheVars = answers.isEmpty() ? new HashSet<>() : answers.iterator().next().vars();
+            Set<Variable> cacheVars = answers.isEmpty() ? new HashSet<>() : answers.iterator().next().vars();
             multiUnifier.stream()
                     .map(answer::unify)
                     .peek(ans -> {

@@ -19,8 +19,8 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.answer.Answer;
@@ -58,7 +58,7 @@ public interface Match extends Iterable<ConceptMap> {
     Stream<ConceptMap> stream();
 
     /**
-     * Construct a get query with all all {@link Var}s mentioned in the query
+     * Construct a get query with all all {@link Variable}s mentioned in the query
      */
     @CheckReturnValue
     GetQuery get();
@@ -71,35 +71,35 @@ public interface Match extends Iterable<ConceptMap> {
     GetQuery get(String var, String... vars);
 
     /**
-     * @param vars an array of {@link Var}s to select
+     * @param vars an array of {@link Variable}s to select
      * @return a {@link GetQuery} that selects the given variables
      */
     @CheckReturnValue
-    GetQuery get(Var var, Var... vars);
+    GetQuery get(Variable var, Variable... vars);
 
     /**
-     * @param vars a set of {@link Var}s to select
+     * @param vars a set of {@link Variable}s to select
      * @return a {@link GetQuery} that selects the given variables
      */
     @CheckReturnValue
-    GetQuery get(Set<Var> vars);
+    GetQuery get(Set<Variable> vars);
 
     /**
      * @param vars an array of variables to insert for each result of this {@link Match}
      * @return an insert query that will insert the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
-    InsertQuery insert(VarPattern... vars);
+    InsertQuery insert(Statement... vars);
 
     /**
      * @param vars a collection of variables to insert for each result of this {@link Match}
      * @return an insert query that will insert the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
-    InsertQuery insert(Collection<? extends VarPattern> vars);
+    InsertQuery insert(Collection<? extends Statement> vars);
 
     /**
-     * Construct a delete query with all all {@link Var}s mentioned in the query
+     * Construct a delete query with all all {@link Variable}s mentioned in the query
      */
     @CheckReturnValue
     DeleteQuery delete();
@@ -116,14 +116,14 @@ public interface Match extends Iterable<ConceptMap> {
      * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
-    DeleteQuery delete(Var var, Var... vars);
+    DeleteQuery delete(Variable var, Variable... vars);
 
     /**
      * @param vars a collection of variables to delete for each result of this {@link Match}
      * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
-    DeleteQuery delete(Set<Var> vars);
+    DeleteQuery delete(Set<Variable> vars);
 
     /**
      * Order the results by degree in ascending order
@@ -139,7 +139,7 @@ public interface Match extends Iterable<ConceptMap> {
      * @return a new {@link Match} with the given ordering
      */
     @CheckReturnValue
-    Match orderBy(Var varName);
+    Match orderBy(Variable varName);
 
     /**
      * Order the results by degree
@@ -157,7 +157,7 @@ public interface Match extends Iterable<ConceptMap> {
      * @return a new {@link Match} with the given ordering
      */
     @CheckReturnValue
-    Match orderBy(Var varName, Order order);
+    Match orderBy(Variable varName, Order order);
 
     /**
      * @param tx the graph to execute the query on

@@ -28,16 +28,16 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Implementation of {@link VarPattern} interface
+ * Implementation of {@link Statement} interface
  */
-class VarPatternImpl extends AbstractVarPattern {
+public class StatementImpl extends Statement {
 
-    private final Var var;
+    private final Variable var;
     private final Set<VarProperty> properties;
-    protected final Logger LOG = LoggerFactory.getLogger(VarPatternImpl.class);
+    protected final Logger LOG = LoggerFactory.getLogger(StatementImpl.class);
     private int hashCode = 0;
 
-    VarPatternImpl(Var var, Set<VarProperty> properties) {
+    public StatementImpl(Variable var, Set<VarProperty> properties) {
         if (var == null) {
             throw new NullPointerException("Null var");
         }
@@ -49,7 +49,7 @@ class VarPatternImpl extends AbstractVarPattern {
     }
 
     @Override
-    public Var var() {
+    public Variable var() {
         return var;
     }
 
@@ -64,7 +64,7 @@ class VarPatternImpl extends AbstractVarPattern {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        AbstractVarPattern var = (AbstractVarPattern) o;
+        Statement var = (Statement) o;
 
         if (var().isUserDefinedName() != var.var().isUserDefinedName()) return false;
 
@@ -89,14 +89,14 @@ class VarPatternImpl extends AbstractVarPattern {
 
     @Override
     public final String toString() {
-        Collection<VarPatternAdmin> innerVars = innerVarPatterns();
+        Collection<Statement> innerVars = innerVarPatterns();
         innerVars.remove(this);
         getProperties(HasAttributeProperty.class)
                 .map(HasAttributeProperty::attribute)
                 .flatMap(r -> r.innerVarPatterns().stream())
                 .forEach(innerVars::remove);
 
-        if (innerVars.stream().anyMatch(VarPatternImpl::invalidInnerVariable)) {
+        if (innerVars.stream().anyMatch(StatementImpl::invalidInnerVariable)) {
             LOG.warn("printing a query with inner variables, which is not supported in native Graql");
         }
 
@@ -124,7 +124,7 @@ class VarPatternImpl extends AbstractVarPattern {
         return builder.toString();
     }
 
-    private static boolean invalidInnerVariable(VarPatternAdmin var) {
+    private static boolean invalidInnerVariable(Statement var) {
         return var.getProperties().anyMatch(p -> !(p instanceof LabelProperty));
     }
 }

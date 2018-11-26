@@ -11,8 +11,7 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
-import grakn.core.graql.query.pattern.Patterns;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
@@ -36,7 +35,7 @@ import java.io.InputStreamReader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -87,8 +86,8 @@ public class RuleCacheIT {
         tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
         String recordPatternString = "{(someRole: $x, subRole: $y) isa reifiable-relation;}";
         String retrievePatternString = "{(someRole: $p1, subRole: $p2) isa reifiable-relation;}";
-        Conjunction<VarPatternAdmin> recordPattern = conjunction(recordPatternString, tx);
-        Conjunction<VarPatternAdmin> retrievePattern = conjunction(retrievePatternString, tx);
+        Conjunction<Statement> recordPattern = conjunction(recordPatternString, tx);
+        Conjunction<Statement> retrievePattern = conjunction(retrievePatternString, tx);
         recordQuery = ReasonerQueries.atomic(recordPattern, tx);
         retrieveQuery = ReasonerQueries.atomic(retrievePattern, tx);
         retrieveToRecordUnifier = retrieveQuery.getMultiUnifier(recordQuery).getUnifier();
@@ -167,10 +166,10 @@ public class RuleCacheIT {
     }
 
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, Transaction graph){
-        Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
+    private Conjunction<Statement> conjunction(String patternString, Transaction graph){
+        Set<Statement> vars = graph.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Pattern.and(vars);
     }
 }

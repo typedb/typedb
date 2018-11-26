@@ -514,7 +514,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         //NB: thenTypes() will be empty as type edges added on commit
         //NB: this will cache also non-committed rules
         if (rule.then() != null){
-            rule.then().admin().varPatterns().stream()
+            rule.then().statements().stream()
                     .flatMap(v -> v.getTypeLabels().stream())
                     .map(vl -> this.<SchemaConcept>getSchemaConcept(vl))
                     .filter(Objects::nonNull)

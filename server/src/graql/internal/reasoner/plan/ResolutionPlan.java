@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.plan;
 
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.reasoner.atom.Atom;
@@ -75,7 +75,7 @@ public final class ResolutionPlan {
      */
     private boolean isNeqGround(){
         Set<NeqPredicate> nonGroundPredicates = new HashSet<>();
-        Set<Var> mappedVars = this.query.getAtoms(IdPredicate.class).map(Atomic::getVarName).collect(Collectors.toSet());
+        Set<Variable> mappedVars = this.query.getAtoms(IdPredicate.class).map(Atomic::getVarName).collect(Collectors.toSet());
         for(Atom atom : this.plan){
             mappedVars.addAll(atom.getVarNames());
             atom.getPredicates(NeqPredicate.class)

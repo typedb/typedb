@@ -18,7 +18,7 @@
 
 package grakn.core.graql.admin;
 
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 
 import com.google.common.collect.ImmutableSet;
 import javax.annotation.CheckReturnValue;
@@ -47,7 +47,7 @@ public interface Unifier{
      * @return corresponding terms
      */
     @CheckReturnValue
-    Collection<Var> get(Var key);
+    Collection<Variable> get(Variable key);
 
     /**
      * @return true if the set of mappings is empty
@@ -59,26 +59,26 @@ public interface Unifier{
      * @return variables present in this unifier
      */
     @CheckReturnValue
-    Set<Var> keySet();
+    Set<Variable> keySet();
 
     /**
      * @return terms present in this unifier
      */
     @CheckReturnValue
-    Collection<Var> values();
+    Collection<Variable> values();
 
     /**
      * @return set of mappings constituting this unifier
      */
     @CheckReturnValue
-    ImmutableSet<Map.Entry<Var, Var>> mappings();
+    ImmutableSet<Map.Entry<Variable, Variable>> mappings();
 
     /**
      * @param key variable to be inspected for presence
      * @return true if specified key is part of a mapping
      */
     @CheckReturnValue
-    boolean containsKey(Var key);
+    boolean containsKey(Variable key);
 
     /**
      * @param u unifier to be compared with

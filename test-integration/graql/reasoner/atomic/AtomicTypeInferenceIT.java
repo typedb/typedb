@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.atomic;
 
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
@@ -29,13 +30,12 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -62,7 +62,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 
@@ -331,7 +331,7 @@ public class AtomicTypeInferenceIT {
         tx.close();
     }
 
-    private <T extends Atomic> T getAtom(ReasonerQuery q, Class<T> type, Set<Var> vars){
+    private <T extends Atomic> T getAtom(ReasonerQuery q, Class<T> type, Set<Variable> vars){
         return q.getAtoms(type)
                 .filter(at -> at.getVarNames().containsAll(vars))
                 .findFirst().get();
@@ -442,10 +442,10 @@ public class AtomicTypeInferenceIT {
         return tx.getEntityType(type).instances().map(Concept::id).findFirst().orElse(null);
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<VarPatternAdmin> vars = tx.graql().parser().parsePattern(patternString).admin()
+    private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
+        Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Pattern.and(vars);
     }
 }

@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.cache;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -30,13 +30,13 @@ import java.util.Set;
  *
  */
 public class Index{
-    final private ImmutableSet<Var> vars;
+    final private ImmutableSet<Variable> vars;
 
-    private Index(Var var){
+    private Index(Variable var){
         this.vars = ImmutableSet.of(var);
     }
 
-    private Index(Set<Var> vars){
+    private Index(Set<Variable> vars){
         this.vars = ImmutableSet.copyOf(vars);
     }
 
@@ -44,15 +44,15 @@ public class Index{
         return new Index(new HashSet<>());
     }
 
-    public static Index of(Var var){
+    public static Index of(Variable var){
         return new Index(var);
     }
 
-    public static Index of (Set<Var> vars){
+    public static Index of (Set<Variable> vars){
         return new Index(vars);
     }
 
-    Set<Var> vars(){return vars;}
+    Set<Variable> vars(){return vars;}
 
     @Override
     public String toString(){ return vars.toString(); }

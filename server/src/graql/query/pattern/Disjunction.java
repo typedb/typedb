@@ -18,19 +18,82 @@
 
 package grakn.core.graql.query.pattern;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * A class representing a disjunction (or) of patterns. Any inner pattern must match in a query
  *
  * @param <T> the type of patterns in this disjunction
- *
  */
-public interface Disjunction<T extends PatternAdmin> extends PatternAdmin {
+public class Disjunction<T extends Pattern> implements Pattern {
+
+    private final Set<T> patterns;
+
+    public Disjunction(
+            Set<T> patterns) {
+        if (patterns == null) {
+            throw new NullPointerException("Null patterns");
+        }
+        this.patterns = patterns;
+    }
+
     /**
      * @return the patterns within this disjunction
      */
     @CheckReturnValue
-    Set<T> getPatterns();
+    public Set<T> getPatterns() {
+        return patterns;
+    }
+
+    @Override
+    public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
+        // Concatenate all disjunctions into one big disjunction
+        Set<Conjunction<Statement>> dnf = getPatterns().stream()
+                .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
+                .collect(toSet());
+
+        return Pattern.or(dnf);
+    }
+
+    @Override
+    public Set<Variable> variables() {
+        return getPatterns().stream().map(Pattern::variables).reduce(Sets::intersection).orElse(ImmutableSet.of());
+    }
+
+    @Override
+    public boolean isDisjunction() {
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return getPatterns().stream().map(Object::toString).collect(Collectors.joining(" or "));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof Disjunction) {
+            Disjunction<?> that = (Disjunction<?>) o;
+            return (this.patterns.equals(that.getPatterns()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.patterns.hashCode();
+        return h;
+    }
 }

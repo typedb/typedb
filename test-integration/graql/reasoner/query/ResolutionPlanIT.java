@@ -19,17 +19,17 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Label;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
-import grakn.core.graql.query.pattern.Patterns;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.plan.ResolutionPlan;
@@ -51,7 +51,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -65,7 +64,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -649,7 +648,7 @@ public class ResolutionPlanIT {
         //todo
     }
 
-    private Atom getAtomWithVariables(ReasonerQuery query, Set<Var> vars){
+    private Atom getAtomWithVariables(ReasonerQuery query, Set<Variable> vars){
         return query.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(vars)).findFirst().orElse(null);
     }
 
@@ -687,10 +686,10 @@ public class ResolutionPlanIT {
         ImmutableList<Atom> atomList = plan.plan();
 
         UnmodifiableIterator<Atom> iterator = atomList.iterator();
-        Set<Var> vars = new HashSet<>(iterator.next().getVarNames());
+        Set<Variable> vars = new HashSet<>(iterator.next().getVarNames());
         while(iterator.hasNext()){
             Atom next = iterator.next();
-            Set<Var> varNames = next.getVarNames();
+            Set<Variable> varNames = next.getVarNames();
             assertTrue("Disconnected plan produced:\n" + plan, !Sets.intersection(varNames, vars).isEmpty());
             vars.addAll(varNames);
         }
@@ -700,10 +699,10 @@ public class ResolutionPlanIT {
         List<ReasonerQueryImpl> atomList = plan.queries();
 
         Iterator<ReasonerQueryImpl> iterator = atomList.iterator();
-        Set<Var> vars = new HashSet<>(iterator.next().getVarNames());
+        Set<Variable> vars = new HashSet<>(iterator.next().getVarNames());
         while(iterator.hasNext()){
             ReasonerQueryImpl next = iterator.next();
-            Set<Var> varNames = next.getVarNames();
+            Set<Variable> varNames = next.getVarNames();
             boolean isDisconnected = Sets.intersection(varNames, vars).isEmpty();
             assertTrue("Disconnected query plan produced:\n" + plan, !isDisconnected);
             vars.addAll(varNames);
@@ -718,11 +717,11 @@ public class ResolutionPlanIT {
         assertEquals(query.selectAtoms().collect(toSet()), plan.queries().stream().flatMap(ReasonerQueryImpl::selectAtoms).collect(toSet()));
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, Transaction graph){
-        Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
+    private Conjunction<Statement> conjunction(String patternString, Transaction graph){
+        Set<Statement> vars = graph.graql().parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Pattern.and(vars);
     }
 }
 
@@ -734,12 +733,12 @@ public class ResolutionPlanIT {
 
 class RepeatRule implements TestRule {
 
-    private static class RepeatStatement extends Statement {
+    private static class RepeatStatement extends org.junit.runners.model.Statement {
 
         private final int times;
-        private final Statement statement;
+        private final org.junit.runners.model.Statement statement;
 
-        private RepeatStatement(int times, Statement statement) {
+        private RepeatStatement(int times, org.junit.runners.model.Statement statement) {
             this.times = times;
             this.statement = statement;
         }
@@ -753,8 +752,8 @@ class RepeatRule implements TestRule {
     }
 
     @Override
-    public Statement apply(Statement statement, Description description) {
-        Statement result = statement;
+    public org.junit.runners.model.Statement apply(org.junit.runners.model.Statement statement, Description description) {
+        org.junit.runners.model.Statement result = statement;
         Repeat repeat = description.getAnnotation(Repeat.class);
         if( repeat != null ) {
             int times = repeat.times();

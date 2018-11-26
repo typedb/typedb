@@ -21,10 +21,10 @@ package grakn.core.graql.query.pattern.property;
 import com.google.common.collect.ImmutableBiMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.property.DataTypeAtom;
@@ -69,12 +69,12 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Var start) {
+    public Collection<EquivalentFragmentSet> match(Variable start) {
         return ImmutableSet.of(EquivalentFragmentSets.dataType(this, start, dataType()));
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             executor.builder(var).dataType(dataType());
         };
@@ -83,7 +83,7 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
     }
 
     @Override
-    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         // TODO: resolve the below issue correctly
         // undefine for datatype must be supported, because it is supported in define.
         // However, making it do the right thing is difficult. Ideally we want the same as define:
@@ -99,7 +99,7 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
         return DataTypeAtom.create(var.var(), this, parent);
     }
 }

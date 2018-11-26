@@ -22,12 +22,10 @@ import grakn.core.server.Transaction;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Var;
-import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import org.hamcrest.Matcher;
@@ -36,7 +34,7 @@ import org.junit.Test;
 
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.Graql.eq;
 import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.internal.gremlin.GraqlMatchers.feature;
@@ -52,12 +50,12 @@ import static org.mockito.Mockito.when;
 public class ConjunctionQueryTest {
     private Label resourceTypeWithoutSubTypesLabel = Label.of("name");
     private Label resourceTypeWithSubTypesLabel = Label.of("resource");
-    private VarPattern resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
-    private VarPattern resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
+    private Statement resourceTypeWithoutSubTypes = Pattern.label(resourceTypeWithoutSubTypesLabel);
+    private Statement resourceTypeWithSubTypes = Pattern.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
     private Transaction tx;
-    private Var x = Graql.var("x");
-    private Var y = Graql.var("y");
+    private Variable x = Pattern.var("x");
+    private Variable y = Pattern.var("y");
 
     @SuppressWarnings("ResultOfMethodCallIgnored") // Mockito confuses IntelliJ
     @Before
@@ -155,11 +153,11 @@ public class ConjunctionQueryTest {
         return usesResourceIndex(x, literalValue);
     }
 
-    private Matcher<Pattern> usesResourceIndex(Var varName, Object value) {
+    private Matcher<Pattern> usesResourceIndex(Variable varName, Object value) {
         Fragment resourceIndexFragment = Fragments.attributeIndex(null, varName, resourceTypeWithoutSubTypesLabel, value);
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
-            Conjunction<VarPatternAdmin> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();
+            Conjunction<Statement> conjunction = pattern.getDisjunctiveNormalForm().getPatterns().iterator().next();
             return new ConjunctionQuery(conjunction, tx).getEquivalentFragmentSets();
         });
     }

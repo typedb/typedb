@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query.predicate;
 
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Statement;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 
@@ -76,7 +76,7 @@ public interface ValuePredicate {
      * @return the inner variable that this predicate refers to, if one is present
      */
     @CheckReturnValue
-    Optional<VarPatternAdmin> getInnerVar();
+    Optional<Statement> getInnerVar();
 
     /**
      * Apply the predicate to the gremlin traversal, so the traversal will filter things that don't meet the predicate

@@ -20,12 +20,11 @@ package grakn.core.graql.internal.executor;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.internal.util.AdminConverter;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -34,7 +33,7 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.UndefineQuery;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.ComputeExecutor;
 import grakn.core.server.QueryExecutor;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -73,7 +72,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(InsertQuery query) {
-        Collection<VarPatternAdmin> varPatterns = query.admin().varPatterns().stream()
+        Collection<Statement> varPatterns = query.admin().varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 
@@ -84,10 +83,10 @@ public class QueryExecutorImpl implements QueryExecutor {
         }
     }
 
-    private Stream<ConceptMap> runMatchInsert(Match match, Collection<VarPatternAdmin> varPatterns) {
-        Set<Var> varsInMatch = match.admin().getSelectedNames();
-        Set<Var> varsInInsert = varPatterns.stream().map(VarPatternAdmin::var).collect(toImmutableSet());
-        Set<Var> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
+    private Stream<ConceptMap> runMatchInsert(Match match, Collection<Statement> varPatterns) {
+        Set<Variable> varsInMatch = match.admin().getSelectedNames();
+        Set<Variable> varsInInsert = varPatterns.stream().map(statement -> statement.var()).collect(toImmutableSet());
+        Set<Variable> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
 
         Stream<ConceptMap> answers = match.get(projectedVars).stream();
         return answers.map(answer -> QueryOperationExecutor.insertAll(varPatterns, tx, answer)).collect(toList()).stream();
@@ -112,7 +111,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(DefineQuery query) {
-        ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
+        ImmutableList<Statement> allPatterns = query.varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 
@@ -122,7 +121,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(UndefineQuery query) {
-        ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
+        ImmutableList<Statement> allPatterns = query.varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 

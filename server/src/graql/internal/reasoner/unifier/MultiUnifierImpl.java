@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.unifier;
 
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
 import com.google.common.collect.ImmutableMultimap;
@@ -64,7 +64,7 @@ public class MultiUnifierImpl implements MultiUnifier{
     public MultiUnifierImpl(){ this.multiUnifier = ImmutableSet.of(new UnifierImpl()); }
 
     @SafeVarargs
-    public MultiUnifierImpl(ImmutableMultimap<Var, Var>... maps){
+    public MultiUnifierImpl(ImmutableMultimap<Variable, Variable>... maps){
         this.multiUnifier = ImmutableSet.<Unifier>builder()
                 .addAll(Stream.of(maps).map(UnifierImpl::new).iterator())
                 .build();

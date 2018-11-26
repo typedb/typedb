@@ -20,8 +20,8 @@ package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
-import grakn.core.graql.query.pattern.Patterns;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
@@ -411,10 +411,10 @@ public class SubsumptionIT {
         }
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString){
-        Set<VarPatternAdmin> vars = Graql.parser().parsePattern(patternString).admin()
+    private Conjunction<Statement> conjunction(String patternString){
+        Set<Statement> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Pattern.and(vars);
     }
 }

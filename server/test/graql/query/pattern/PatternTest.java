@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.pattern;
 
-import grakn.core.graql.query.Graql;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
@@ -28,14 +27,14 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("unchecked")
-public class PatternImplTest {
+public class PatternTest {
 
-    private final VarPatternAdmin x = Graql.var("x").admin();
-    private final VarPatternAdmin y = Graql.var("y").admin();
-    private final VarPatternAdmin z = Graql.var("z").admin();
-    private final VarPatternAdmin a = Graql.var("a").admin();
-    private final VarPatternAdmin b = Graql.var("b").admin();
-    private final VarPatternAdmin c = Graql.var("c").admin();
+    private final Statement x = Pattern.var("x");
+    private final Statement y = Pattern.var("y");
+    private final Statement z = Pattern.var("z");
+    private final Statement a = Pattern.var("a");
+    private final Statement b = Pattern.var("b");
+    private final Statement c = Pattern.var("c");
 
     @Test
     public void testVarDNF() {
@@ -85,13 +84,13 @@ public class PatternImplTest {
     @Test
     public void testDNFIdentity() {
         Set disjunction = set(conjunction(x, y, z), conjunction(a, b, c));
-        assertHasDNF(disjunction, Patterns.disjunction(disjunction));
+        assertHasDNF(disjunction, Pattern.or(disjunction));
     }
 
     @Test
     public void testCNFToDNF() {
         Conjunction cnf = conjunction(disjunction(x, y, z), disjunction(a, b, c));
-        Set<Conjunction<VarPatternAdmin>> dnf = set(
+        Set<Conjunction<Statement>> dnf = set(
                 conjunction(x, a), conjunction(x, b), conjunction(x, c),
                 conjunction(y, a), conjunction(y, b), conjunction(y, c),
                 conjunction(z, a), conjunction(z, b), conjunction(z, c)
@@ -100,20 +99,20 @@ public class PatternImplTest {
         assertHasDNF(dnf, cnf);
     }
 
-    private <T extends PatternAdmin> Conjunction<T> conjunction(T... patterns) {
-        return Patterns.conjunction(Sets.newHashSet(patterns));
+    private <T extends Pattern> Conjunction<T> conjunction(T... patterns) {
+        return Pattern.and(Sets.newHashSet(patterns));
     }
 
-    private <T extends PatternAdmin> Disjunction<T> disjunction(T... patterns) {
-        return Patterns.disjunction(Sets.newHashSet(patterns));
+    private <T extends Pattern> Disjunction<T> disjunction(T... patterns) {
+        return Pattern.or(Sets.newHashSet(patterns));
     }
 
-    private <T extends PatternAdmin> Set<T> set(T... patterns) {
+    private <T extends Pattern> Set<T> set(T... patterns) {
         return Sets.newHashSet(patterns);
     }
 
-    private void assertHasDNF(Set<Conjunction<VarPatternAdmin>> expected, PatternAdmin pattern) {
-        HashSet<Conjunction<VarPatternAdmin>> dnf = new HashSet<>(pattern.getDisjunctiveNormalForm().getPatterns());
+    private void assertHasDNF(Set<Conjunction<Statement>> expected, Pattern pattern) {
+        HashSet<Conjunction<Statement>> dnf = new HashSet<>(pattern.getDisjunctiveNormalForm().getPatterns());
         assertEquals(expected, dnf);
     }
 }

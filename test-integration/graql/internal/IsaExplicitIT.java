@@ -36,7 +36,7 @@ import grakn.core.graql.internal.gremlin.fragment.OutSubFragment;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
@@ -45,8 +45,8 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.graql.query.Graql.and;
-import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.pattern.Pattern.and;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
@@ -102,8 +102,8 @@ public class IsaExplicitIT {
 
     @Test
     public void testMatchIsaAndIsaExplicitReturnDifferentPlans() {
-        Var x = var("x");
-        Var y = var("y");
+        Variable x = var("x");
+        Variable y = var("y");
 
         String superType1 = "superType1";
         String entityType1 = "entityType1";
@@ -207,6 +207,6 @@ public class IsaExplicitIT {
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {
-        return GreedyTraversalPlan.createTraversal(pattern.admin(), tx).fragments().iterator().next();
+        return GreedyTraversalPlan.createTraversal(pattern, tx).fragments().iterator().next();
     }
 }

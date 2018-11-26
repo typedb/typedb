@@ -21,7 +21,7 @@ package grakn.core.graql.internal.gremlin.sets;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -36,7 +36,7 @@ import java.util.Set;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * @see EquivalentFragmentSets#label(VarProperty, Var, ImmutableSet)
+ * @see EquivalentFragmentSets#label(VarProperty, Variable, ImmutableSet)
  *
  */
 @AutoValue
@@ -47,7 +47,7 @@ abstract class LabelFragmentSet extends EquivalentFragmentSet {
         return ImmutableSet.of(Fragments.label(varProperty(), var(), labels()));
     }
 
-    abstract Var var();
+    abstract Variable var();
     abstract ImmutableSet<Label> labels();
 
     /**
@@ -56,7 +56,7 @@ abstract class LabelFragmentSet extends EquivalentFragmentSet {
      * Returns null if there is not exactly one label any of the {@link Label}s mentioned are not in the knowledge base.
      */
     @Nullable
-    LabelFragmentSet tryExpandSubs(Var typeVar, Transaction tx) {
+    LabelFragmentSet tryExpandSubs(Variable typeVar, Transaction tx) {
         if (labels().size() != 1) return null;
 
         Label oldLabel = Iterables.getOnlyElement(labels());
@@ -73,8 +73,8 @@ abstract class LabelFragmentSet extends EquivalentFragmentSet {
      * Optimise away any redundant {@link LabelFragmentSet}s. A {@link LabelFragmentSet} is considered redundant if:
      * <ol>
      *   <li>It refers to a {@link SchemaConcept} that exists in the knowledge base
-     *   <li>It is not associated with a user-defined {@link Var}
-     *   <li>The {@link Var} it is associated with is not referred to in any other fragment
+     *   <li>It is not associated with a user-defined {@link Variable}
+     *   <li>The {@link Variable} it is associated with is not referred to in any other fragment
      *   <li>The fragment set is not the only remaining fragment set</li>
      * </ol>
      */
