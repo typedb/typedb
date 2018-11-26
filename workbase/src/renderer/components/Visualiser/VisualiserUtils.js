@@ -118,13 +118,13 @@ export function validateQuery(query) {
     throw new Error('Only get and compute path queries are supported for now.');
   }
 }
+
 export function addResetGraphListener(dispatch, action) {
   window.addEventListener('keydown', (e) => {
   // Reset canvas when metaKey(CtrlOrCmd) + G are pressed
     if ((e.keyCode === LETTER_G_KEYCODE) && e.metaKey) { dispatch(action); }
   });
 }
-
 
 /**
  * Given a Grakn Answer, this function returns the query that needs to be run in order
@@ -182,56 +182,51 @@ async function getFilteredNeighbourAnswers(node, graknTx, limit) {
   return resultAnswers;
 }
 
-async function getTypeNeighbours(node, graknTx, limit) {
-  const filteredResult = await getFilteredNeighbourAnswers(node, graknTx, limit);
-  const nodes = filteredResult.map(x => Array.from(x.map().values())).flatMap(x => x);
-  const edges = nodes.map(instance => ({ from: instance.id, to: node.id, label: ISA_INSTANCE_LABEL }));
-  return { nodes, edges };
+function getTypeNeighbourEdges(nodes, superTypeId) {
+  const edges = nodes.map(instance => ({ from: instance.id, to: superTypeId, label: ISA_INSTANCE_LABEL }));
+  return edges;
 }
 
-async function getEntityNeighbours(node, graknTx, limit) {
-  const filteredResult = await getFilteredNeighbourAnswers(node, graknTx, limit);
-  const nodes = filteredResult.map(x => Array.from(x.map().values())).flatMap(x => x);
-  const relationships = filteredResult.map(x => Array.from(x.map().values())).flatMap(x => x).filter(x => x.isRelationship());
+async function getEntityNeighbourEdges(nodes) {
+  const relationships = nodes.filter(x => x.isRelationship());
   const roleplayers = await VisualiserGraphBuilder.relationshipsRolePlayers(relationships, false);
   const edges = roleplayers.edges.flatMap(x => x);
-  return { nodes, edges };
+  return edges;
 }
 
-async function getAttributeNeighbours(node, graknTx, limit) {
-  const filteredResult = await getFilteredNeighbourAnswers(node, graknTx, limit);
-  const nodes = filteredResult.map(x => Array.from(x.map().values())).flatMap(x => x);
-  const edges = nodes.map(owner => ({ from: owner.id, to: node.id, label: HAS_ATTRIBUTE_LABEL }));
-  return { nodes, edges };
+function getAttributeNeighbourEdges(nodes, attributeId) {
+  const edges = nodes.map(owner => ({ from: owner.id, to: attributeId, label: HAS_ATTRIBUTE_LABEL }));
+  return edges;
 }
 
-async function getRelationshipNeighbours(node, graknTx, limit) {
-  const filteredResult = await getFilteredNeighbourAnswers(node, graknTx, limit);
-  const nodes = filteredResult.map(x => Array.from(x.map().values())).flatMap(x => x);
+async function getRelationshipNeighbourEdges(nodes, graknTx, relationshipId) {
   const roleplayersIds = nodes.map(x => x.id);
-  const relationshipConcept = await graknTx.getConcept(node.id);
+  const relationshipConcept = await graknTx.getConcept(relationshipId);
   const roleplayers = Array.from((await relationshipConcept.rolePlayersMap()).entries());
   const edges = (await Promise.all(Array.from(roleplayers, async ([role, setOfThings]) => {
     const roleLabel = await role.label();
     return Array.from(setOfThings.values())
       .filter(thing => roleplayersIds.includes(thing.id))
-      .map(thing => ({ from: node.id, to: thing.id, label: roleLabel }));
+      .map(thing => ({ from: relationshipId, to: thing.id, label: roleLabel }));
   }))).flatMap(x => x);
-  return { nodes, edges };
+  return edges;
 }
 
 export async function getNeighboursData(visNode, graknTx, neighboursLimit) {
+  const filteredResult = await getFilteredNeighbourAnswers(visNode, graknTx, neighboursLimit);
+  const nodes = VisualiserGraphBuilder.attachExplanation(filteredResult);
+
   switch (visNode.baseType) {
     case 'ENTITY_TYPE':
     case 'ATTRIBUTE_TYPE':
     case 'RELATIONSHIP_TYPE':
-      return getTypeNeighbours(visNode, graknTx, neighboursLimit);
+      return { nodes, edges: getTypeNeighbourEdges(nodes, visNode.id) };
     case 'ENTITY':
-      return getEntityNeighbours(visNode, graknTx, neighboursLimit);
+      return { nodes, edges: await getEntityNeighbourEdges(nodes) };
     case 'RELATIONSHIP':
-      return getRelationshipNeighbours(visNode, graknTx, neighboursLimit);
+      return { nodes, edges: await getRelationshipNeighbourEdges(nodes, graknTx, visNode.id) };
     case 'ATTRIBUTE':
-      return getAttributeNeighbours(visNode, graknTx, neighboursLimit);
+      return { nodes, edges: getAttributeNeighbourEdges(nodes, visNode.id) };
     default:
       throw new Error(`Unrecognised baseType of thing: ${visNode.baseType}`);
   }
