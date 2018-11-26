@@ -42,8 +42,11 @@ if [[ "$MAVEN_REPO_TYPE" != "snapshot" ]] && [[ "$MAVEN_REPO_TYPE" != "release" 
     exit 1
 fi
 
-
-MAVEN_URL=$(grep "maven.repository-url.$MAVEN_REPO_TYPE" deployment.properties | cut -d '=' -f 2)
+# create a temporary file for preprocessing deployment.properties
+DEPLOYMENT_PROPERTIES_STRIPPED_FILE=$(mktemp)
+# awk in the next line strips out empty and comment lines
+awk '!/^#/ && /./' deployment.properties > ${DEPLOYMENT_PROPERTIES_STRIPPED_FILE}
+MAVEN_URL=$(grep "maven.repository-url.$MAVEN_REPO_TYPE" ${DEPLOYMENT_PROPERTIES_STRIPPED_FILE} | cut -d '=' -f 2)
 
 platform=$(uname)
 
