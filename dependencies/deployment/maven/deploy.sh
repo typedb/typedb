@@ -44,11 +44,6 @@ fi
 
 # awk in the next line strips out empty and comment lines
 MAVEN_URL=$(grep "maven.repository-url.$MAVEN_REPO_TYPE" <(awk '!/^#/ && /./' deployment.properties) | cut -d '=' -f 2)
-RESULTS_COUNT=$(echo $MAVEN_URL | awk '{print NF; exit}') # count lines matching patterns
-if [[ "$RESULTS_COUNT" != "1" ]]; then
-    echo "Multiple ($RESULTS_COUNT) results found for $MAVEN_REPO_TYPE; check your deployment.properties file"
-    exit 1
-fi
 
 platform=$(uname)
 
