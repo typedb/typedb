@@ -3,7 +3,7 @@ import NodeSettings from './RightBar/SettingsTab/DisplaySettings';
 import QuerySettings from './RightBar/SettingsTab/QuerySettings';
 
 // Map graql variables and explanations to each concept
-async function attachExplanation(result) {
+function attachExplanation(result) {
   return result.map((x) => {
     const exp = x.explanation();
     const key = x.map().keys().next().value;
@@ -195,7 +195,7 @@ async function constructEdges(result) {
 }
 
 async function buildFromConceptMap(result, autoLoadRolePlayers, limitRoleplayers) {
-  const nodes = await prepareNodes(await attachExplanation(result));
+  const nodes = await prepareNodes(attachExplanation(result));
   const edges = await constructEdges(result);
 
   // Check if auto-load role players is selected
@@ -232,4 +232,5 @@ export default {
   buildFromConceptList,
   prepareNodes,
   relationshipsRolePlayers,
+  attachExplanation,
 };
