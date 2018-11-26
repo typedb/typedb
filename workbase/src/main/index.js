@@ -51,7 +51,7 @@ function buildApplicationMenu() {
         role: 'reload',
       },
       {
-        role: 'zoomin',
+        role: 'zoomin', accelerator: 'CmdOrCtrl+=',
       },
       {
         role: 'zoomout',
