@@ -84,7 +84,8 @@ export default {
     if (data.nodes.length) state.visFacade.fitGraphToWindow();
     commit('updateCanvasData');
     const labelledNodes = await VisualiserGraphBuilder.prepareNodes(data.nodes);
-    state.visFacade.updateNode(labelledNodes);
+    const styledNodes = labelledNodes.map(node => Object.assign(node, state.visStyle.computeNodeStyle(node)));
+    state.visFacade.updateNode(styledNodes);
     const nodesWithAttribtues = await computeAttributes(data.nodes);
     state.visFacade.updateNode(nodesWithAttribtues);
     graknTx.close();
