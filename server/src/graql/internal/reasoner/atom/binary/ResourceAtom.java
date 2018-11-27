@@ -19,6 +19,7 @@ package grakn.core.graql.internal.reasoner.atom.binary;
 
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
+import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Concept;
@@ -56,6 +57,7 @@ import com.google.common.collect.ImmutableSet;
 
 import com.google.common.collect.Iterables;
 
+import java.util.Collections;
 import java.util.stream.Stream;
 import java.util.HashSet;
 import java.util.Objects;
@@ -279,9 +281,17 @@ public abstract class ResourceAtom extends Binary{
         ResourceAtom parent = (ResourceAtom) parentAtom;
         Unifier unifier = super.getUnifier(parentAtom, unifierType);
 
+        IdPredicate parentAttributeId = parent.getIdPredicate(parent.getAttributeVariable());
+
+        Object parentValue = parentAttributeId != null? tx().getConcept(parentAttributeId.getPredicate()).asAttribute().value() : null;
+        ValuePredicate predicateFromParentId = parentValue != null?
+                ValuePredicate.create(parent.getAttributeVariable(), Predicates.eq(parentValue), parentAtom.getParentQuery()) :
+                null;
+
         if (unifier == null
                 || !unifierType.idCompatibility(parent.getIdPredicate(parent.getAttributeVariable()), this.getIdPredicate(this.getAttributeVariable()))
-                || !unifierType.attributeValueCompatibility(new HashSet<>(parent.getMultiPredicate()), new HashSet<>(this.getMultiPredicate())) ){
+                || !unifierType.attributeValueCompatibility(new HashSet<>(parent.getMultiPredicate()), new HashSet<>(this.getMultiPredicate()))
+                || (predicateFromParentId != null && !unifierType.attributeValueCompatibility(Collections.singleton(predicateFromParentId), new HashSet<>(this.getMultiPredicate())))){
             return UnifierImpl.nonExistent();
         }
 
