@@ -18,7 +18,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_deployment//maven:rules.bzl", "deploy_maven_jar")
+load("@graknlabs_rules_deployment//maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
     name = "client-java",

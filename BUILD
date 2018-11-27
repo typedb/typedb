@@ -18,7 +18,7 @@
 
 sh_binary(
     name = "deploy-github-zip",
-    srcs = ["@rules_deployment//github:deployment.sh"],
+    srcs = ["@graknlabs_rules_deployment//github:deployment.sh"],
     data = [":distribution", ":VERSION", ":deployment.properties", "@ghr_osx_zip//file:file", "@ghr_linux_tar//file:file"]
 )
 

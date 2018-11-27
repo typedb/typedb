@@ -17,7 +17,7 @@
 #
 
 package(default_visibility = ["//visibility:__subpackages__"])
-load("@rules_deployment//maven:rules.bzl", "deploy_maven_jar")
+load("@graknlabs_rules_deployment//maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
     name = "console",
