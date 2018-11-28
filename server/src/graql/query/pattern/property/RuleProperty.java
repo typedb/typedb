@@ -34,9 +34,14 @@ import java.util.Set;
  * Abstract property for the patterns within rules.
  *
  */
-public abstract class RuleProperty extends AbstractVarProperty implements UniqueVarProperty, VarPropertyInternal {
+public abstract class RuleProperty extends AbstractVarProperty implements VarPropertyInternal, VarProperty {
 
     public abstract Pattern pattern();
+
+    @Override
+    public boolean isUnique() {
+        return true;
+    }
 
     @Override
     public String getProperty() {

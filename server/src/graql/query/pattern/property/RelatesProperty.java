@@ -68,6 +68,11 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Var
     abstract Statement superRole();
 
     @Override
+    public boolean isUnique() {
+        return false;
+    }
+
+    @Override
     public String getName() {
         return "relates";
     }

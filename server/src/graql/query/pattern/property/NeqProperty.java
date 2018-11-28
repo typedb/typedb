@@ -51,6 +51,11 @@ public abstract class NeqProperty extends AbstractVarProperty implements VarProp
     public abstract Statement var();
 
     @Override
+    public boolean isUnique() {
+        return false;
+    }
+
+    @Override
     public String getName() {
         return "!=";
     }

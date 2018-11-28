@@ -43,7 +43,7 @@ import java.util.Set;
  *
  */
 @AutoValue
-public abstract class IdProperty extends AbstractVarProperty implements VarPropertyInternal, UniqueVarProperty {
+public abstract class IdProperty extends AbstractVarProperty implements VarPropertyInternal, VarProperty {
 
     public static final String NAME = "id";
 
@@ -52,6 +52,11 @@ public abstract class IdProperty extends AbstractVarProperty implements VarPrope
     }
 
     public abstract ConceptId id();
+
+    @Override
+    public boolean isUnique() {
+        return true;
+    }
 
     @Override
     public String getName() {

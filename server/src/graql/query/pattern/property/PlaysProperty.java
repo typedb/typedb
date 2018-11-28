@@ -62,6 +62,11 @@ public abstract class PlaysProperty extends AbstractVarProperty implements VarPr
     abstract boolean required();
 
     @Override
+    public boolean isUnique() {
+        return false;
+    }
+
+    @Override
     public String getName() {
         return NAME;
     }

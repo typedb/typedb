@@ -103,6 +103,11 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
     }
 
     @Override
+    public boolean isUnique() {
+        return false;
+    }
+
+    @Override
     public String getName() {
         return required() ? "key" : "has";
     }

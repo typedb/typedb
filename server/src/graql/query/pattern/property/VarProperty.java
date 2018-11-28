@@ -71,9 +71,7 @@ public interface VarProperty {
      * True if there is at most one of these properties for each {@link Statement}
      */
     @CheckReturnValue
-    default boolean isUnique() {
-        return false;
-    }
+    boolean isUnique();
 
     /**
      * True if this property only considers direct types when dealing with type hierarchies

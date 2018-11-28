@@ -44,7 +44,7 @@ import java.util.Set;
  *
  */
 @AutoValue
-public abstract class LabelProperty extends AbstractVarProperty implements VarPropertyInternal, UniqueVarProperty {
+public abstract class LabelProperty extends AbstractVarProperty implements VarPropertyInternal, VarProperty {
 
     public static final String NAME = "label";
 
@@ -53,6 +53,11 @@ public abstract class LabelProperty extends AbstractVarProperty implements VarPr
     }
 
     public abstract Label label();
+
+    @Override
+    public boolean isUnique() {
+        return true;
+    }
 
     @Override
     public String getName() {

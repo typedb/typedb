@@ -82,6 +82,11 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     public abstract Statement relationship();
 
     @Override
+    public boolean isUnique() {
+        return false;
+    }
+
+    @Override
     public String getName() {
         return NAME;
     }

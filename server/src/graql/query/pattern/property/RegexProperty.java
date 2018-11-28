@@ -44,13 +44,18 @@ import java.util.Set;
  *
  */
 @AutoValue
-public abstract class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, VarPropertyInternal {
+public abstract class RegexProperty extends AbstractVarProperty implements VarPropertyInternal, VarProperty {
 
     public static RegexProperty of(String regex) {
         return new AutoValue_RegexProperty(regex);
     }
 
     public abstract String regex();
+
+    @Override
+    public boolean isUnique() {
+        return true;
+    }
 
     @Override
     public String getName() {

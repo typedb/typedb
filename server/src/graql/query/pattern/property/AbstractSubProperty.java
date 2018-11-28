@@ -41,10 +41,15 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
 /**
  *
  */
-public abstract class AbstractSubProperty extends AbstractVarProperty implements VarPropertyInternal, UniqueVarProperty {
+public abstract class AbstractSubProperty extends AbstractVarProperty implements VarPropertyInternal, VarProperty {
 
 
     public abstract Statement superType();
+
+    @Override
+    public boolean isUnique() {
+        return true;
+    }
 
     @Override
     public Stream<Statement> getTypes() {
