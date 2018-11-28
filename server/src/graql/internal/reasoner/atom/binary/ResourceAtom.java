@@ -192,7 +192,6 @@ public abstract class ResourceAtom extends Binary{
     protected Pattern createCombinedPattern(){
         Set<Statement> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
-                .map(varPattern -> varPattern)
                 .collect(Collectors.toSet());
         vars.add(getPattern());
         return Pattern.and(vars);
@@ -287,8 +286,10 @@ public abstract class ResourceAtom extends Binary{
             IdPredicate parentAttributeId = parent.getIdPredicate(parent.getAttributeVariable());
             IdPredicate childAttributeId = this.getIdPredicate(this.getAttributeVariable());
 
-            Object parentValue = parentAttributeId != null? tx().getConcept(parentAttributeId.getPredicate()).asAttribute().value() : null;
-            Object childValue = childAttributeId != null? tx().getConcept(childAttributeId.getPredicate()).asAttribute().value() : null;
+            Concept parentConcept = parentAttributeId != null ? tx().getConcept(parentAttributeId.getPredicate()) : null;
+            Concept childConcept = childAttributeId != null ? tx().getConcept(childAttributeId.getPredicate()) : null;
+            Object parentValue = (parentConcept != null && parentConcept.isAttribute())? parentConcept.asAttribute().value() : null;
+            Object childValue = (childConcept != null && childConcept.isAttribute())? childConcept.asAttribute().value() : null;
             ValuePredicate parentPredicateFromId = parentValue != null?
                     ValuePredicate.create(parent.getAttributeVariable(), Predicates.eq(parentValue), parentAtom.getParentQuery()) : null;
             ValuePredicate childPredicateFromId = childValue != null?
