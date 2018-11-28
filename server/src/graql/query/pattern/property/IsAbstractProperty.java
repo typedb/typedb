@@ -42,7 +42,7 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAb
  * This property states that a type cannot have direct instances.
  *
  */
-public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty {
+public class IsAbstractProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
     private static final IsAbstractProperty INSTANCE = new IsAbstractProperty();
 
@@ -67,8 +67,13 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    String getName() {
+    public String getName() {
         return NAME;
+    }
+
+    @Override
+    public String getProperty() {
+        return null;
     }
 
     @Override

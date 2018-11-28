@@ -52,7 +52,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
  *
  */
 @AutoValue
-public abstract class RelatesProperty extends AbstractVarProperty {
+public abstract class RelatesProperty extends AbstractVarProperty implements NamedProperty {
 
     public static RelatesProperty of(Statement role, @Nullable Statement superRole) {
         return new AutoValue_RelatesProperty(role, superRole);
@@ -73,12 +73,12 @@ public abstract class RelatesProperty extends AbstractVarProperty {
     }
 
     @Override
-    public void buildString(StringBuilder builder) {
-        Statement superRole = superRole();
-        builder.append("relates").append(" ").append(role().getPrintableName());
-        if (superRole != null) {
-            builder.append(" as ").append(superRole.getPrintableName());
+    public String getProperty() {
+        StringBuilder builder = new StringBuilder(role().getPrintableName());
+        if ( superRole() != null) {
+            builder.append(" as ").append(superRole().getPrintableName());
         }
+        return builder.toString();
     }
 
     @Override

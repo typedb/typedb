@@ -54,6 +54,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -399,7 +400,7 @@ public abstract class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public Statement relates(String roleType, @javax.annotation.Nullable String superRoleType) {
+    public Statement relates(String roleType, @Nullable String superRoleType) {
         return relates(Pattern.label(roleType), superRoleType == null ? null : Pattern.label(superRoleType));
     }
 
@@ -408,7 +409,7 @@ public abstract class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public Statement relates(Statement roleType, @javax.annotation.Nullable Statement superRoleType) {
+    public Statement relates(Statement roleType, @Nullable Statement superRoleType) {
         return addProperty(RelatesProperty.of(roleType, superRoleType));
     }
 
