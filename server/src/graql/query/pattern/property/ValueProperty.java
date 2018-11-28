@@ -44,7 +44,7 @@ import java.util.stream.Stream;
  *
  */
 @AutoValue
-public abstract class ValueProperty extends AbstractVarProperty implements VarPropertyInternal {
+public abstract class ValueProperty extends VarProperty {
 
     public static final String NAME = "";
 
@@ -62,6 +62,11 @@ public abstract class ValueProperty extends AbstractVarProperty implements VarPr
     @Override
     public String getProperty() {
         return predicate().toString();
+    }
+
+    @Override
+    public boolean isUnique() {
+        return false;
     }
 
     @Override

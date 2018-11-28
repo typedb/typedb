@@ -41,7 +41,7 @@ import java.util.Set;
  *
  */
 @AutoValue
-public abstract class DataTypeProperty extends AbstractVarProperty implements VarPropertyInternal, VarProperty {
+public abstract class DataTypeProperty extends VarProperty {
 
     public static final String NAME = "datatype";
     private static final ImmutableBiMap<String, AttributeType.DataType<?>> DATA_TYPES = ImmutableBiMap.of(
@@ -59,11 +59,6 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Va
     public abstract AttributeType.DataType<?> dataType();
 
     @Override
-    public boolean isUnique() {
-        return true;
-    }
-
-    @Override
     public String getName() {
         return NAME;
     }
@@ -71,6 +66,11 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Va
     @Override
     public String getProperty() {
         return DATA_TYPES.inverse().get(dataType());
+    }
+
+    @Override
+    public boolean isUnique() {
+        return true;
     }
 
     @Override

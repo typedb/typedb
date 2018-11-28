@@ -65,18 +65,13 @@ import static java.util.stream.Collectors.toSet;
  *
  */
 @AutoValue
-public abstract class RelationshipProperty extends AbstractVarProperty implements VarPropertyInternal, VarProperty {
+public abstract class RelationshipProperty extends VarProperty {
 
     public static RelationshipProperty of(ImmutableMultiset<RelationPlayerProperty> relationPlayers) {
         return new AutoValue_RelationshipProperty(relationPlayers);
     }
 
     public abstract ImmutableMultiset<RelationPlayerProperty> relationPlayers();
-
-    @Override
-    public boolean isUnique() {
-        return true;
-    }
 
     @Override
     public String getName() {
@@ -87,6 +82,11 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         StringBuilder builder = new StringBuilder();
         builder.append("(").append(relationPlayers().stream().map(Object::toString).collect(joining(", "))).append(")");
         return builder.toString();
+    }
+
+    @Override
+    public boolean isUnique() {
+        return true;
     }
 
     @Override

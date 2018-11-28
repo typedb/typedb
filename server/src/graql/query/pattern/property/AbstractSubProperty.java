@@ -41,7 +41,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
 /**
  *
  */
-public abstract class AbstractSubProperty extends AbstractVarProperty implements VarPropertyInternal, VarProperty {
+public abstract class AbstractSubProperty extends VarProperty {
 
 
     public abstract Statement superType();

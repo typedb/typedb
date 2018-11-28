@@ -20,72 +20,153 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.query.Match;
+import grakn.core.server.Transaction;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.common.util.CommonUtil;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
 /**
  * A property of a {@link Statement}, such as "isa movie" or "has name 'Jim'"
- *
  */
-public interface VarProperty {
+public abstract class VarProperty {
 
     /**
-     * Build a Graql string representation of this property
-     * @param builder a string builder to append to
+     * Helper method to perform the safe cast into this internal type
      */
-    void buildString(StringBuilder builder);
+    public static VarProperty from(VarProperty varProperty) {
+        return varProperty;
+    }
 
     /**
-     * Get the Graql string representation of this property
+     * Check if the given property can be used in a {@link Match}
+     */
+    public final void checkValid(Transaction graph, Statement var) throws GraqlQueryException {
+        checkValidProperty(graph, var);
+
+        innerVarPatterns().map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
+            if (graph.getSchemaConcept(label) == null) {
+                throw GraqlQueryException.labelNotFound(label);
+            }
+        });
+    }
+
+    void checkValidProperty(Transaction graph, Statement var) {
+
+    }
+
+    public abstract String getName();
+
+    public abstract String getProperty();
+
+    /**
+     * True if there is at most one of these properties for each {@link Statement}
      */
     @CheckReturnValue
-    default String graqlString() {
-        StringBuilder builder = new StringBuilder();
-        buildString(builder);
-        return builder.toString();
+    public abstract boolean isUnique();
+
+    /**
+     * True if this property only considers direct types when dealing with type hierarchies
+     */
+    @CheckReturnValue
+    public boolean isExplicit() {
+        return false;
     }
 
     /**
      * Get a stream of {@link Statement} that must be types.
      */
     @CheckReturnValue
-    Stream<Statement> getTypes();
+    public Stream<Statement> getTypes() {
+        return Stream.empty();
+    }
 
     /**
      * Get a stream of any inner {@link Statement} within this `VarProperty`.
      */
     @CheckReturnValue
-    Stream<Statement> innerVarPatterns();
+    public Stream<Statement> innerVarPatterns() {
+        return Stream.empty();
+    }
 
     /**
      * Get a stream of any inner {@link Statement} within this `VarProperty`, including any that may have been
      * implicitly created (such as with "has").
      */
     @CheckReturnValue
-    Stream<Statement> implicitInnerVarPatterns();
+    public Stream<Statement> implicitInnerVarPatterns() {
+        return innerVarPatterns();
+    }
 
     /**
-     * True if there is at most one of these properties for each {@link Statement}
+     * Whether this property will uniquely identify a concept in the graph, if one exists.
+     * This is used for recognising equivalent variables in insert queries.
      */
-    @CheckReturnValue
-    boolean isUnique();
+    public boolean uniquelyIdentifiesConcept() {
+        return false;
+    }
 
     /**
-     * True if this property only considers direct types when dealing with type hierarchies
+     * Build a Graql string representation of this property
+     *
+     * @param builder a string builder to append to
+     */
+    public void buildString(StringBuilder builder) {
+        builder.append(getName()).append(" ").append(getProperty());
+    }
+
+    /**
+     * Get the Graql string representation of this property
      */
     @CheckReturnValue
-    default boolean isExplicit(){ return false;}
+    public String graqlString() {
+        StringBuilder builder = new StringBuilder();
+        buildString(builder);
+        return builder.toString();
+    }
+
+    @Override
+    public final String toString() {
+        return graqlString();
+    }
 
     /**
      * maps this var property to a reasoner atom
-     * @param var {@link Statement} this property belongs to
-     * @param vars Vars constituting the pattern this property belongs to
+     *
+     * @param var    {@link Statement} this property belongs to
+     * @param vars   Vars constituting the pattern this property belongs to
      * @param parent reasoner query this atom should belong to
      * @return created atom
      */
     @CheckReturnValue
-    Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent);
+    public abstract Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent);
+
+    /**
+     * Return a collection of {@link EquivalentFragmentSet} to match the given property in the graph
+     */
+    public abstract Collection<EquivalentFragmentSet> match(Variable start);
+
+    /**
+     * Returns a {@link PropertyExecutor} that describes how to insert the given {@link VarProperty} into.
+     *
+     * @throws GraqlQueryException if this {@link VarProperty} cannot be inserted
+     */
+    public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
+        throw GraqlQueryException.insertUnsupportedProperty(getName());
+    }
+
+    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
+        throw GraqlQueryException.defineUnsupportedProperty(getName());
+    }
+
+    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
+        throw GraqlQueryException.defineUnsupportedProperty(getName());
+    }
 }

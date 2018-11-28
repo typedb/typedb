@@ -49,7 +49,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
  *
  */
 @AutoValue
-public abstract class PlaysProperty extends AbstractVarProperty implements VarPropertyInternal {
+public abstract class PlaysProperty extends VarProperty {
 
     public static final String NAME = "plays";
 
@@ -62,11 +62,6 @@ public abstract class PlaysProperty extends AbstractVarProperty implements VarPr
     abstract boolean required();
 
     @Override
-    public boolean isUnique() {
-        return false;
-    }
-
-    @Override
     public String getName() {
         return NAME;
     }
@@ -74,6 +69,11 @@ public abstract class PlaysProperty extends AbstractVarProperty implements VarPr
     @Override
     public String getProperty() {
         return role().getPrintableName();
+    }
+
+    @Override
+    public boolean isUnique() {
+        return false;
     }
 
     @Override

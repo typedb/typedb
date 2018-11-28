@@ -38,17 +38,12 @@ import java.util.Collection;
  *
  */
 @AutoValue
-public abstract class SubProperty extends AbstractSubProperty implements VarPropertyInternal, VarProperty {
+public abstract class SubProperty extends AbstractSubProperty {
 
     public static final String NAME = "sub";
 
     public static SubProperty of(Statement superType) {
         return new AutoValue_SubProperty(superType);
-    }
-
-    @Override
-    public boolean isUnique() {
-        return true;
     }
 
     @Override

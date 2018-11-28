@@ -44,7 +44,7 @@ import java.util.Collection;
  *
  */
 @AutoValue
-public abstract class SubExplicitProperty extends AbstractSubProperty implements VarPropertyInternal, VarProperty {
+public abstract class SubExplicitProperty extends AbstractSubProperty {
 
     public static final String NAME = "sub!";
 
@@ -53,17 +53,12 @@ public abstract class SubExplicitProperty extends AbstractSubProperty implements
     }
 
     @Override
-    public boolean isUnique() {
-        return true;
+    public String getName() {
+        return NAME;
     }
 
     @Override
     public boolean isExplicit() { return true;}
-
-    @Override
-    public String getName() {
-        return NAME;
-    }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Variable start) {
