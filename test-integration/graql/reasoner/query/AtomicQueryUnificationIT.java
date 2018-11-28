@@ -54,7 +54,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static grakn.core.graql.query.pattern.Pattern.var;
-import static grakn.core.graql.reasoner.pattern.QueryPattern.subList;
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
@@ -701,7 +700,7 @@ public class AtomicQueryUnificationIT {
         for (String child : children) {
             for (String parent : parents) {
                 System.out.println("(i, j) = " + i + ", " + j);
-                if ( i == 4 && j == 7){
+                if ( i == 8 && j == 4){
                     System.out.println();
                 }
                 unification(child, parent, resultMatrix[i][j] == 1, unifierType, tx);
@@ -730,17 +729,21 @@ public class AtomicQueryUnificationIT {
 
         if (unifierType.equivalence() != null) queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
+        /*
         if (unifierExists != !multiUnifier.isEmpty()){
             System.out.println("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent + "\n");
         }
-        //assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
+        */
+        assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
         if (unifierExists && unifierType != UnifierType.RULE){
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
+            /*
             if (unifierExists != !multiUnifierInverse.isEmpty()){
                 System.out.println("Unexpected unifier inverse: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child + "\n");
             }
-            //assertEquals("Unexpected unifier inverse: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
-            //assertEquals(multiUnifierInverse, multiUnifier.inverse());
+            */
+            assertEquals("Unexpected unifier inverse: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
+            assertEquals(multiUnifierInverse, multiUnifier.inverse());
         }
         return multiUnifier;
     }

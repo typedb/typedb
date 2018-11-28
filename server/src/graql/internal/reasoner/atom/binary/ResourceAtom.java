@@ -19,6 +19,7 @@ package grakn.core.graql.internal.reasoner.atom.binary;
 
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
+import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Attribute;
@@ -57,7 +58,6 @@ import com.google.common.collect.ImmutableSet;
 
 import com.google.common.collect.Iterables;
 
-import java.util.Collections;
 import java.util.stream.Stream;
 import java.util.HashSet;
 import java.util.Objects;
@@ -281,17 +281,25 @@ public abstract class ResourceAtom extends Binary{
         ResourceAtom parent = (ResourceAtom) parentAtom;
         Unifier unifier = super.getUnifier(parentAtom, unifierType);
 
-        IdPredicate parentAttributeId = parent.getIdPredicate(parent.getAttributeVariable());
+        Set<Atomic> parentPredicates = new HashSet<>(parent.getMultiPredicate());
+        Set<Atomic> childPredicates = new HashSet<>(this.getMultiPredicate());
+        if (!unifierType.equals(UnifierType.STRUCTURAL)) {
+            IdPredicate parentAttributeId = parent.getIdPredicate(parent.getAttributeVariable());
+            IdPredicate childAttributeId = this.getIdPredicate(this.getAttributeVariable());
 
-        Object parentValue = parentAttributeId != null? tx().getConcept(parentAttributeId.getPredicate()).asAttribute().value() : null;
-        ValuePredicate predicateFromParentId = parentValue != null?
-                ValuePredicate.create(parent.getAttributeVariable(), Predicates.eq(parentValue), parentAtom.getParentQuery()) :
-                null;
+            Object parentValue = parentAttributeId != null? tx().getConcept(parentAttributeId.getPredicate()).asAttribute().value() : null;
+            Object childValue = childAttributeId != null? tx().getConcept(childAttributeId.getPredicate()).asAttribute().value() : null;
+            ValuePredicate parentPredicateFromId = parentValue != null?
+                    ValuePredicate.create(parent.getAttributeVariable(), Predicates.eq(parentValue), parentAtom.getParentQuery()) : null;
+            ValuePredicate childPredicateFromId = childValue != null?
+                    ValuePredicate.create(this.getAttributeVariable(), Predicates.eq(childValue), this.getParentQuery()) : null;
+            if (childPredicateFromId != null) childPredicates.add(childPredicateFromId);
+            if (parentPredicateFromId != null) parentPredicates.add(parentPredicateFromId);
+        }
 
         if (unifier == null
                 || !unifierType.idCompatibility(parent.getIdPredicate(parent.getAttributeVariable()), this.getIdPredicate(this.getAttributeVariable()))
-                || !unifierType.attributeValueCompatibility(new HashSet<>(parent.getMultiPredicate()), new HashSet<>(this.getMultiPredicate()))
-                || (predicateFromParentId != null && !unifierType.attributeValueCompatibility(Collections.singleton(predicateFromParentId), new HashSet<>(this.getMultiPredicate())))){
+                || !unifierType.attributeValueCompatibility(parentPredicates, childPredicates)){
             return UnifierImpl.nonExistent();
         }
 
