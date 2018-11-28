@@ -278,12 +278,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public <T extends Atomic> Stream<T> getAtoms(Class<T> type) {
-        try{
-            List<Atomic> test = getAtoms().stream().filter(type::isInstance).map(type::cast).collect(Collectors.toList());
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-        return getAtoms().stream().filter(type::isInstance).map(type::cast);}
+        return getAtoms().stream().filter(type::isInstance).map(type::cast);
+    }
 
     @Override
     public Set<Variable> getVarNames() {
