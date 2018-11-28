@@ -21,9 +21,8 @@ package grakn.core.graql.query.pattern.property;
 import javax.annotation.CheckReturnValue;
 
 /**
- * A unique property of a {@link VarPattern}.
- * This property is unique in that each {@link VarPattern} may have exactly zero or one of each
- * {@link UniqueVarProperty}.
+ * A unique property of a Statement
+ * This property is unique such that a Statement can own it once (or none)
  */
 public interface UniqueVarProperty extends VarProperty {
 
