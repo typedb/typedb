@@ -49,7 +49,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
  *
  */
 @AutoValue
-public abstract class PlaysProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class PlaysProperty extends AbstractVarProperty implements VarPropertyInternal {
 
     public static final String NAME = "plays";
 

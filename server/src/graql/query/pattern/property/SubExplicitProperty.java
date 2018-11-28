@@ -44,7 +44,7 @@ import java.util.Collection;
  *
  */
 @AutoValue
-public abstract class SubExplicitProperty extends AbstractSubProperty implements NamedProperty, UniqueVarProperty {
+public abstract class SubExplicitProperty extends AbstractSubProperty implements VarPropertyInternal, UniqueVarProperty {
 
     public static final String NAME = "sub!";
 

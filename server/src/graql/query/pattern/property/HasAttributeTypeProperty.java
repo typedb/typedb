@@ -63,7 +63,7 @@ import static grakn.core.graql.internal.Schema.ImplicitType.KEY_VALUE;
  *
  */
 @AutoValue
-public abstract class HasAttributeTypeProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class HasAttributeTypeProperty extends AbstractVarProperty implements VarPropertyInternal {
 
     abstract Statement resourceType();
 

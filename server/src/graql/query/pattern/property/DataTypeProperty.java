@@ -41,7 +41,7 @@ import java.util.Set;
  *
  */
 @AutoValue
-public abstract class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+public abstract class DataTypeProperty extends AbstractVarProperty implements VarPropertyInternal, UniqueVarProperty {
 
     public static final String NAME = "datatype";
     private static final ImmutableBiMap<String, AttributeType.DataType<?>> DATA_TYPES = ImmutableBiMap.of(

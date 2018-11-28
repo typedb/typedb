@@ -44,7 +44,7 @@ import java.util.Set;
  *
  */
 @AutoValue
-public abstract class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+public abstract class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, VarPropertyInternal {
 
     public static RegexProperty of(String regex) {
         return new AutoValue_RegexProperty(regex);

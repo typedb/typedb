@@ -68,7 +68,7 @@ import static java.util.stream.Collectors.joining;
  *
  */
 @AutoValue
-public abstract class HasAttributeProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class HasAttributeProperty extends AbstractVarProperty implements VarPropertyInternal {
 
     public static final String NAME = "has";
 

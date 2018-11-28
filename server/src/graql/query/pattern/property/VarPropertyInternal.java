@@ -18,21 +18,35 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.server.Transaction;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.Match;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.query.Match;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.server.Transaction;
 
 import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
  * Internal interface for {@link VarProperty}, providing additional methods to match, insert or define the property.
- *
  */
 public interface VarPropertyInternal extends VarProperty {
+
+    /**
+     * Helper method to perform the safe cast into this internal type
+     */
+    static VarPropertyInternal from(VarProperty varProperty) {
+        return (VarPropertyInternal) varProperty;
+    }
+
+    String getName();
+
+    String getProperty();
+
+    default void buildString(StringBuilder builder) {
+        builder.append(getName()).append(" ").append(getProperty());
+    }
 
     /**
      * Check if the given property can be used in a {@link Match}
@@ -66,12 +80,5 @@ public interface VarPropertyInternal extends VarProperty {
     @Override
     default Stream<Statement> innerVarPatterns() {
         return Stream.empty();
-    }
-
-    /**
-     * Helper method to perform the safe cast into this internal type
-     */
-    static VarPropertyInternal from(VarProperty varProperty) {
-        return (VarPropertyInternal) varProperty;
     }
 }

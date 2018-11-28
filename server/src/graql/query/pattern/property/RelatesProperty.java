@@ -52,7 +52,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
  *
  */
 @AutoValue
-public abstract class RelatesProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class RelatesProperty extends AbstractVarProperty implements VarPropertyInternal {
 
     public static RelatesProperty of(Statement role, @Nullable Statement superRole) {
         return new AutoValue_RelatesProperty(role, superRole);

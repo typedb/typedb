@@ -44,8 +44,6 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
 
     }
 
-    abstract String getName();
-
     @Override
     public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
         throw GraqlQueryException.insertUnsupportedProperty(getName());

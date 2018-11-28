@@ -44,7 +44,7 @@ import java.util.stream.Stream;
  *
  */
 @AutoValue
-public abstract class ValueProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class ValueProperty extends AbstractVarProperty implements VarPropertyInternal {
 
     public static final String NAME = "";
 

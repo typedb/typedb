@@ -43,7 +43,7 @@ import java.util.Set;
  *
  */
 @AutoValue
-public abstract class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+public abstract class IdProperty extends AbstractVarProperty implements VarPropertyInternal, UniqueVarProperty {
 
     public static final String NAME = "id";
 
