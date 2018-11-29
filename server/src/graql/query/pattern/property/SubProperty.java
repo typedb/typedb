@@ -38,7 +38,7 @@ import java.util.Collection;
  *
  */
 @AutoValue
-public abstract class SubProperty extends AbstractSubProperty implements NamedProperty, UniqueVarProperty {
+public abstract class SubProperty extends AbstractSubProperty {
 
     public static final String NAME = "sub";
 

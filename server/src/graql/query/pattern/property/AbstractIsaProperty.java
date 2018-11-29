@@ -41,13 +41,18 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
 /**
  */
 
-abstract class AbstractIsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+abstract class AbstractIsaProperty extends VarProperty {
 
     public abstract Statement type();
 
     @Override
     public final String getProperty() {
         return type().getPrintableName();
+    }
+
+    @Override
+    public final boolean isUnique() {
+        return true;
     }
 
     @Override

@@ -42,7 +42,7 @@ import java.util.stream.Stream;
  *
  */
 @AutoValue
-public abstract class NeqProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class NeqProperty extends VarProperty {
 
     public static NeqProperty of(Statement var) {
         return new AutoValue_NeqProperty(var);
@@ -58,6 +58,11 @@ public abstract class NeqProperty extends AbstractVarProperty implements NamedPr
     @Override
     public String getProperty() {
         return var().getPrintableName();
+    }
+
+    @Override
+    public boolean isUnique() {
+        return false;
     }
 
     @Override

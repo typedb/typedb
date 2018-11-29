@@ -25,7 +25,6 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.pattern.property.VarPropertyInternal;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.DeleteQuery;
@@ -72,7 +71,7 @@ abstract class AbstractMatch implements MatchAdmin {
      */
     void validatePattern(Transaction tx){
         for (Statement var : getPattern().statements()) {
-            var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(tx, var));}
+            var.getProperties().forEach(property -> property.checkValid(tx, var));}
     }
 
     @Override

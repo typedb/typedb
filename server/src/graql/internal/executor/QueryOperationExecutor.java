@@ -37,7 +37,6 @@ import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.property.PropertyExecutor;
-import grakn.core.graql.query.pattern.property.VarPropertyInternal;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.server.Transaction;
 import org.slf4j.Logger;
@@ -325,7 +324,7 @@ public class QueryOperationExecutor {
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarPropertyInternal#insert(Variable)}, provided they return the given {@link Variable} in the
+     * {@link VarProperty#insert(Variable)}, provided they return the given {@link Variable} in the
      * response to {@link PropertyExecutor#producedVars()}.
      * </p>
      * <p>
@@ -347,7 +346,7 @@ public class QueryOperationExecutor {
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarPropertyInternal#insert(Variable)}, provided they return the given {@link Variable} in the
+     * {@link VarProperty#insert(Variable)}, provided they return the given {@link Variable} in the
      * response to {@link PropertyExecutor#producedVars()}.
      * </p>
      * <p>
@@ -380,7 +379,7 @@ public class QueryOperationExecutor {
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarPropertyInternal#insert(Variable)}, provided they return the given {@link Variable} in the
+     * {@link VarProperty#insert(Variable)}, provided they return the given {@link Variable} in the
      * response to {@link PropertyExecutor#requiredVars()}.
      * </p>
      */
@@ -435,16 +434,16 @@ public class QueryOperationExecutor {
     static abstract class VarAndProperty {
 
         abstract Variable var();
-        abstract VarPropertyInternal property();
+        abstract VarProperty property();
         abstract PropertyExecutor executor();
 
         private static VarAndProperty of(Variable var, VarProperty property, PropertyExecutor executor) {
-            VarPropertyInternal propertyInternal = VarPropertyInternal.from(property);
+            VarProperty propertyInternal = VarProperty.from(property);
             return new AutoValue_QueryOperationExecutor_VarAndProperty(var, propertyInternal, executor);
         }
 
         private static Stream<VarAndProperty> all(Variable var, VarProperty property, ExecutionType executionType) {
-            VarPropertyInternal propertyInternal = VarPropertyInternal.from(property);
+            VarProperty propertyInternal = VarProperty.from(property);
             return executionType.executors(propertyInternal, var).stream()
                     .map(executor -> VarAndProperty.of(var, property, executor));
         }
@@ -460,21 +459,21 @@ public class QueryOperationExecutor {
 
     private enum ExecutionType {
         INSERT {
-            Collection<PropertyExecutor> executors(VarPropertyInternal property, Variable var) {
+            Collection<PropertyExecutor> executors(VarProperty property, Variable var) {
                 return property.insert(var);
             }
         },
         DEFINE {
-            Collection<PropertyExecutor> executors(VarPropertyInternal property, Variable var) {
+            Collection<PropertyExecutor> executors(VarProperty property, Variable var) {
                 return property.define(var);
             }
         },
         UNDEFINE {
-            Collection<PropertyExecutor> executors(VarPropertyInternal property, Variable var) {
+            Collection<PropertyExecutor> executors(VarProperty property, Variable var) {
                 return property.undefine(var);
             }
         };
 
-        abstract Collection<PropertyExecutor> executors(VarPropertyInternal property, Variable var);
+        abstract Collection<PropertyExecutor> executors(VarProperty property, Variable var);
     }
 }

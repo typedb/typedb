@@ -42,18 +42,31 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAb
  * This property states that a type cannot have direct instances.
  *
  */
-public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty {
+public class IsAbstractProperty extends VarProperty {
 
     private static final IsAbstractProperty INSTANCE = new IsAbstractProperty();
 
     public static final String NAME = "is-abstract";
 
-    private IsAbstractProperty() {
-
-    }
+    private IsAbstractProperty() {}
 
     public static IsAbstractProperty get() {
         return INSTANCE;
+    }
+
+    @Override
+    public String getName() {
+        return NAME;
+    }
+
+    @Override
+    public String getProperty() {
+        return null;
+    }
+
+    @Override
+    public boolean isUnique() {
+        return true;
     }
 
     @Override
@@ -64,11 +77,6 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     @Override
     public Collection<EquivalentFragmentSet> match(Variable start) {
         return ImmutableSet.of(isAbstract(this, start));
-    }
-
-    @Override
-    String getName() {
-        return NAME;
     }
 
     @Override
