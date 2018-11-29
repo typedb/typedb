@@ -10,7 +10,7 @@ export async function computeSubConcepts(nodes) {
     if (sup) {
       const supLabel = await sup.label();
       if (!META_CONCEPTS.has(supLabel)) {
-        edges.push({ from: concept.id, to: sup.id, label: 'isa' });
+        edges.push({ from: concept.id, to: sup.id, label: 'sub' });
         subConcepts.push(concept);
       }
     }

@@ -74,7 +74,7 @@
         width: 100%;
         margin-right: var(--element-margin);
         margin-left: var(--element-margin);
-        max-width: 392px;
+        max-width: 374px;
     }
 
     .fav-query-right {

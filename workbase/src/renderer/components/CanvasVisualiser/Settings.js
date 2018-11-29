@@ -3,7 +3,7 @@ const networkOptions = {
   physics: {
     barnesHut: {
       springLength: 100,
-      springConstant: 0.01,
+      springConstant: 0.05,
     },
     minVelocity: 1,
   },
