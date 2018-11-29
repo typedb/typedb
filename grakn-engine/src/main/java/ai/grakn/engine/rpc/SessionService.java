@@ -78,7 +78,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
      */
     static class TransactionListener implements StreamObserver<Transaction.Req> {
         final Logger LOG = LoggerFactory.getLogger(TransactionListener.class);
-        private final StreamObserver<Trantsaction.Res> responseSender;
+        private final StreamObserver<Transaction.Res> responseSender;
         private final AtomicBoolean terminated = new AtomicBoolean(false);
         private final ExecutorService threadExecutor;
         private final OpenRequest requestOpener;
