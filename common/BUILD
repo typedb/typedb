@@ -17,7 +17,7 @@
 #
 
 package(default_visibility = ["//visibility:public"])
-load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
+load("@graknlabs_rules_deployment//maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
     name = "common",
@@ -55,6 +55,7 @@ deploy_maven_jar(
     name = "deploy-maven-jar",
     targets = [":common"],
     version_file = "//:VERSION",
+    deployment_properties = "//:deployment.properties",
 )
 
 java_test(

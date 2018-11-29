@@ -54,7 +54,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static grakn.core.graql.query.pattern.Pattern.var;
-import static grakn.core.graql.reasoner.pattern.QueryPattern.subList;
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
@@ -627,48 +626,12 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_differentResourceVariants_EXACT(){
         try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
-            List<String> qs = genericSchemaGraph.differentResourceVariants().patterns();
-
-            exactUnification(qs.get(0), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(1), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(2), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(3), qs, new ArrayList<>(), tx);
-
-            exactUnification(qs.get(4), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(5), qs, new ArrayList<>(), tx);
-
-            exactUnification(qs.get(6), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(7), qs, new ArrayList<>(), tx);
-
-            exactUnification(qs.get(8), qs, Collections.singletonList(qs.get(10)), tx);
-            exactUnification(qs.get(9), qs, Collections.singletonList(qs.get(11)), tx);
-            exactUnification(qs.get(10), qs, Collections.singletonList(qs.get(8)), tx);
-            exactUnification(qs.get(11), qs, Collections.singletonList(qs.get(9)), tx);
-
-            exactUnification(qs.get(12), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(13), qs, new ArrayList<>(), tx);
-
-            exactUnification(qs.get(14), qs, Collections.singletonList(qs.get(16)), tx);
-            exactUnification(qs.get(15), qs, Collections.singletonList(qs.get(17)), tx);
-            exactUnification(qs.get(16), qs, Collections.singletonList(qs.get(14)), tx);
-            exactUnification(qs.get(17), qs, Collections.singletonList(qs.get(15)), tx);
-
-            exactUnification(qs.get(18), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(19), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(20), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(21), qs, new ArrayList<>(), tx);
-
-            exactUnification(qs.get(22), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(23), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(24), qs, new ArrayList<>(), tx);
-
-            exactUnification(qs.get(25), qs, subList(qs, Lists.newArrayList(26)), tx);
-            exactUnification(qs.get(26), qs, subList(qs, Lists.newArrayList(25)), tx);
-
-            exactUnification(qs.get(27), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(28), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(29), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(30), qs, new ArrayList<>(), tx);
+            unification(
+                    genericSchemaGraph.differentResourceVariants().patterns(),
+                    genericSchemaGraph.differentResourceVariants().patterns(),
+                    genericSchemaGraph.differentResourceVariants().exactMatrix(),
+                    UnifierType.EXACT,
+                    tx);
         }
     }
 
@@ -750,10 +713,6 @@ public class AtomicQueryUnificationIT {
 
     private void exactUnification(String child, List<String> queries, List<String> queriesWithUnifier, TransactionImpl tx){
         unification(child, queries, queriesWithUnifier, UnifierType.EXACT, tx);
-    }
-
-    private void ruleUnification(String child, List<String> queries, List<String> queriesWithUnifier, TransactionImpl tx){
-        unification(child, queries, queriesWithUnifier, UnifierType.RULE, tx);
     }
 
     private MultiUnifier unification(String childString, String parentString, boolean unifierExists, UnifierType unifierType, TransactionImpl tx){
