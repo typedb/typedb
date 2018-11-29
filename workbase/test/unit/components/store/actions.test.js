@@ -2,40 +2,35 @@
 import store from '@/store';
 
 jest.mock('@/components/shared/PersistentStorage', () => {});
-jest.mock('grakn', () => ({ txType: { WRITE: 'write' } }));
 
+jest.mock('@/components/ServerSettings', () => ({
+  getServerHost: () => '127.0.0.1',
+  getServerUri: () => '127.0.0.1:48555',
+}));
 
 describe('actions', () => {
-// TBD: fix test
-//   test('load keyspaces', async () => {
-//     const mockGrakn = { keyspaces: () => ({ retrieve: jest.fn() }) };
+  store.dispatch('initGrakn');
 
-//     store.commit('setGrakn', mockGrakn);
-//     await store.dispatch('loadKeyspaces');
-
-//     expect(mockGrakn.keyspaces().retrieve).toBeCalled();
-//   });
-
-  test('create keyspace', async () => {
-    const mockGrakn = { session: jest.fn().mockImplementation(() => ({ transaction: () => Promise.resolve() })) };
-
-    store.commit('setGrakn', mockGrakn);
-
-
-    await store.dispatch('createKeyspace', 'test');
-
-    expect(mockGrakn.session).toBeCalledWith('test');
+  test('load keyspaces', async () => {
+    expect(store.state.keyspaces).toBeUndefined();
+    await store.dispatch('loadKeyspaces');
+    expect(store.state.keyspaces).toBeDefined();
   });
 
+  test('create keyspace', async () => {
+    expect(store.state.keyspaces).not.toContain('test_keyspace');
+    await store.dispatch('createKeyspace', 'test_keyspace');
+    await store.dispatch('loadKeyspaces');
+    expect(store.state.keyspaces).toContain('test_keyspace');
+  });
 
-// TBD: fix test
-//   test('delete keyspace', async () => {
-//     const mockGrakn = { keyspaces: () => ({ delete: jest.fn().mockImplementation(() => Promise.resolve()) }) };
-
-//     store.commit('setGrakn', mockGrakn);
-//     await store.dispatch('deleteKeyspace', 'test');
-
-//     expect(mockGrakn.keyspaces().delete).toBeCalled();
-//   });
+  test('delete keyspace', async () => {
+    await store.dispatch('createKeyspace', 'test_keyspace');
+    await store.dispatch('loadKeyspaces');
+    expect(store.state.keyspaces).toContain('test_keyspace');
+    await store.dispatch('deleteKeyspace', 'test_keyspace');
+    await store.dispatch('loadKeyspaces');
+    expect(store.state.keyspaces).not.toContain('test_keyspace');
+  });
 });
 
