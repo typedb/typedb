@@ -438,13 +438,11 @@ public class QueryOperationExecutor {
         abstract PropertyExecutor executor();
 
         private static VarAndProperty of(Variable var, VarProperty property, PropertyExecutor executor) {
-            VarProperty propertyInternal = VarProperty.from(property);
-            return new AutoValue_QueryOperationExecutor_VarAndProperty(var, propertyInternal, executor);
+            return new AutoValue_QueryOperationExecutor_VarAndProperty(var, property, executor);
         }
 
         private static Stream<VarAndProperty> all(Variable var, VarProperty property, ExecutionType executionType) {
-            VarProperty propertyInternal = VarProperty.from(property);
-            return executionType.executors(propertyInternal, var).stream()
+            return executionType.executors(property, var).stream()
                     .map(executor -> VarAndProperty.of(var, property, executor));
         }
 

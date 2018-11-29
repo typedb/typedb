@@ -39,13 +39,6 @@ import java.util.stream.Stream;
 public abstract class VarProperty {
 
     /**
-     * Helper method to perform the safe cast into this internal type
-     */
-    public static VarProperty from(VarProperty varProperty) {
-        return varProperty;
-    }
-
-    /**
      * Check if the given property can be used in a {@link Match}
      */
     public final void checkValid(Transaction graph, Statement var) throws GraqlQueryException {
