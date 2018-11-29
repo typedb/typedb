@@ -146,7 +146,7 @@ public abstract class Statement implements Pattern {
         while (!newVars.isEmpty()) {
             Statement var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(VarProperty::innerVarPatterns).forEach(newVars::add);
+            var.getProperties().flatMap(VarProperty::innerStatements).forEach(newVars::add);
         }
 
         return vars;
@@ -165,7 +165,7 @@ public abstract class Statement implements Pattern {
         while (!newVars.isEmpty()) {
             Statement var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(VarProperty::implicitInnerVarPatterns).forEach(newVars::add);
+            var.getProperties().flatMap(VarProperty::implicitInnerStatements).forEach(newVars::add);
         }
 
         return vars;

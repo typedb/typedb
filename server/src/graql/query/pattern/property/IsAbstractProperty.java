@@ -70,8 +70,8 @@ public class IsAbstractProperty extends VarProperty {
     }
 
     @Override
-    public void buildString(StringBuilder builder) {
-        builder.append(NAME);
+    public String toString() {
+        return NAME;
     }
 
     @Override

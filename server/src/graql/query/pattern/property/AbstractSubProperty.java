@@ -57,7 +57,7 @@ public abstract class AbstractSubProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> innerVarPatterns() {
+    public Stream<Statement> innerStatements() {
         return Stream.of(superType());
     }
 

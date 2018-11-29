@@ -61,7 +61,7 @@ abstract class AbstractIsaProperty extends VarProperty {
     }
 
     @Override
-    public final Stream<Statement> innerVarPatterns() {
+    public final Stream<Statement> innerStatements() {
         return Stream.of(type());
     }
 

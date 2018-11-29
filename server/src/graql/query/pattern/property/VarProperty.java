@@ -44,7 +44,7 @@ public abstract class VarProperty {
     public final void checkValid(Transaction graph, Statement var) throws GraqlQueryException {
         checkValidProperty(graph, var);
 
-        innerVarPatterns().map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
+        innerStatements().map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
             if (graph.getSchemaConcept(label) == null) {
                 throw GraqlQueryException.labelNotFound(label);
             }
@@ -85,7 +85,7 @@ public abstract class VarProperty {
      * Get a stream of any inner {@link Statement} within this `VarProperty`.
      */
     @CheckReturnValue
-    public Stream<Statement> innerVarPatterns() {
+    public Stream<Statement> innerStatements() {
         return Stream.empty();
     }
 
@@ -94,8 +94,8 @@ public abstract class VarProperty {
      * implicitly created (such as with "has").
      */
     @CheckReturnValue
-    public Stream<Statement> implicitInnerVarPatterns() {
-        return innerVarPatterns();
+    public Stream<Statement> implicitInnerStatements() {
+        return innerStatements();
     }
 
     /**
@@ -107,27 +107,11 @@ public abstract class VarProperty {
     }
 
     /**
-     * Build a Graql string representation of this property
-     *
-     * @param builder a string builder to append to
-     */
-    public void buildString(StringBuilder builder) {
-        builder.append(getName()).append(" ").append(getProperty());
-    }
-
-    /**
      * Get the Graql string representation of this property
      */
-    @CheckReturnValue
-    public String graqlString() {
-        StringBuilder builder = new StringBuilder();
-        buildString(builder);
-        return builder.toString();
-    }
-
     @Override
-    public final String toString() {
-        return graqlString();
+    public String toString() {
+        return getName() + " " + getProperty();
     }
 
     /**

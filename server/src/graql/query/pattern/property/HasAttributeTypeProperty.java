@@ -135,12 +135,12 @@ public abstract class HasAttributeTypeProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> innerVarPatterns() {
+    public Stream<Statement> innerStatements() {
         return Stream.of(resourceType());
     }
 
     @Override
-    public Stream<Statement> implicitInnerVarPatterns() {
+    public Stream<Statement> implicitInnerStatements() {
         return Stream.of(resourceType(), ownerRole(), valueRole(), relationOwner(), relationValue());
     }
 

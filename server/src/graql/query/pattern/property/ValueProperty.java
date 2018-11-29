@@ -70,8 +70,8 @@ public abstract class ValueProperty extends VarProperty {
     }
 
     @Override
-    public void buildString(StringBuilder builder) {
-        builder.append(getProperty());
+    public String toString() {
+        return getProperty();
     }
 
     @Override
@@ -90,7 +90,7 @@ public abstract class ValueProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> innerVarPatterns() {
+    public Stream<Statement> innerStatements() {
         return CommonUtil.optionalToStream(predicate().getInnerVar());
     }
 

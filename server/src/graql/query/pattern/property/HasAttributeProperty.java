@@ -134,7 +134,7 @@ public abstract class HasAttributeProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> innerVarPatterns() {
+    public Stream<Statement> innerStatements() {
         return Stream.of(attribute(), relationship());
     }
 

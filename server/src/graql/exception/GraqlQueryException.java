@@ -97,7 +97,7 @@ public class GraqlQueryException extends GraknException {
     public static GraqlQueryException conflictingProperties(
             Statement varPattern, VarProperty property, VarProperty other) {
         String message = ErrorMessage.CONFLICTING_PROPERTIES.getMessage(
-                varPattern.getPrintableName(), property.graqlString(), other.graqlString()
+                varPattern.getPrintableName(), property.toString(), other.toString()
         );
         return new GraqlQueryException(message);
     }

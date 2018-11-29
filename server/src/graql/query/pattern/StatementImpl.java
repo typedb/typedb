@@ -118,7 +118,7 @@ public class StatementImpl extends Statement {
                 builder.append(" ");
             }
             first = false;
-            property.buildString(builder);
+            builder.append(property.toString());
         }
 
         return builder.toString();

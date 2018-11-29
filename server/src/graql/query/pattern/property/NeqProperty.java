@@ -75,7 +75,7 @@ public abstract class NeqProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> innerVarPatterns() {
+    public Stream<Statement> innerStatements() {
         return Stream.of(var());
     }
 
