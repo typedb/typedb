@@ -4,34 +4,103 @@
             <div class="preferences-title">Preferences</div>
             <div class="close-container" @click="$emit('close-preferences')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
         </div>
-        <div class="content">
-            <div class="left">
-                <div :class="(currentPreference === 'KeyspaceManager') ? 'item item-selected' : 'item'" @click="currentPreference = 'KeyspaceManager'">
-                    <vue-icon icon="chevron-right" className="vue-icon" iconSize="14"></vue-icon>
-                    <div class="label">Keyspaces</div>
-                </div>
-                <div :class="(currentPreference === 'ConnectionManager') ? 'item item-selected' : 'item'" @click="currentPreference = 'ConnectionManager'">
-                    <vue-icon icon="chevron-right" className="vue-icon" iconSize="14"></vue-icon>
-                    <div class="label">Connection</div>
-                </div>
-            </div>
-            <div class="right">
-                <component :is="currentPreference"></component>
-            </div>
-        </div>
+        <div class="preferences-content">
 
+
+            <div class="connection-container">
+                <div class="container-title">
+                    Connection
+                </div>
+                <div class="connection-content">
+                    <h1 class="connection-label">Host:</h1>
+                    <input class="input" v-model="serverHost">
+                    <h1 class="connection-label port">Port:</h1>
+                    <input class="input" type="number" v-model="serverPort">
+                    <button @click="testConnection" :class="connectionTest" class="btn test-btn" :disabled="(connectionTest !== 'Test')? true : false">{{connectionTest}}</button>
+                </div>
+            </div>
+
+            <div class="keyspaces-container">
+                <div class="container-title">
+                    Keyspaces
+                </div>
+                <div class="keyspaces-content">
+                    
+                    <div class="keyspaces-list">
+                        <div class="keyspace-item" :class="(index % 2) ? 'even' : 'odd'" v-for="(ks,index) in allKeyspaces" :key="index">
+                            <div class="keyspace-label">
+                                {{ks}}
+                            </div>
+                            <div class="right-side" @click="deleteKeyspace(ks)" >
+                                <vue-icon icon="trash" className="vue-icon delete-icon" iconSize="14"></vue-icon>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="new-keyspace">
+                        <input class="input keyspace-input" v-model="keyspaceName" placeholder="Keyspace name">
+                        <loading-button v-on:clicked="addNewKeyspace" text="Create New Keyspace" className="btn new-keyspace-btn" :loading="loadSpinner"></loading-button>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
     </div>
 </template>
 <style scoped>
+    .odd {
+        background-color:var(--gray-1);
+    }
+
+    .keyspace-input {
+        width: 100%;
+    }
+
+    .new-keyspace {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding-top: var(--container-padding);
+    }
+
+    .keyspaces-list {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        border: var(--container-darkest-border);
+        max-height: 400px;
+        overflow: auto;
+    }
+
+    .keyspaces-list::-webkit-scrollbar {
+        width: 2px;
+    }
+
+    .keyspaces-list::-webkit-scrollbar-thumb {
+        background: var(--green-4);
+    }
+
+    .keyspace-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--container-padding);
+        min-height: 30px;
+    }
+
+    .keyspaces-content {
+        padding: var(--container-padding);
+        display: flex;
+        flex-direction: column;
+    }
 
     .preferences-container {
         position: absolute;
-        width: 800px;
-        height: 500px;
+        width: 400px;
         background-color: var(--gray-2);
-        top: 20%;
-        right: 24.65%;
-        z-index: 1;
+        top: 10%;
+        right: 36%;
+        z-index: 2;
         border: var(--container-darkest-border);
         display: flex;
         flex-direction: column;
@@ -51,48 +120,105 @@
         right: 2px;
     }
 
-    .content {
+    .preferences-content {
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         width: 100%;
-        height: 100%;
     }
 
-    .left {
-        border-right: var(--container-darkest-border);
-        width: 100px;
+    .connection-container {
+        padding: var(--container-padding);
+        width: 100%;
+        border-bottom: var(--container-darkest-border);
     }
 
-    .item {
+    .keyspaces-container {
+        padding: var(--container-padding);
+        width: 100%;
+    }
+
+    .container-title {
+        padding: var(--container-padding);
+    }
+
+    .connection-content {
+        padding: var(--container-padding);
         display: flex;
         align-items: center;
-        padding: var(--container-padding);
-        height: 22px;
-        cursor: pointer;
+        justify-content: space-between;
     }
 
-    .item-selected {
-        background-color: var(--purple-3);
+    .test-btn {
+        margin: 0px;
+        width: 50px;
     }
 
-    .right {
-        width: 100%;
+    .Valid {
+        color: var(--green-4);
     }
 
+    .Invalid {
+        color: var(--red-4);
+    }
 
 </style>
 
 <script>
-import KeyspaceManager from './KeyspaceManager';
-import ConnectionManager from './ConnectionManager';
+import { mapGetters } from 'vuex';
+import Settings from '../ServerSettings';
+
 
 export default {
   name: 'Preferences',
-  components: { KeyspaceManager, ConnectionManager },
   data() {
     return {
-      currentPreference: 'KeyspaceManager',
+      serverHost: Settings.getServerHost(),
+      serverPort: Settings.getServerPort(),
+      connectionTest: '',
+      keyspaceName: '',
+      loadSpinner: false,
     };
+  },
+  mounted() {
+    this.$nextTick(() => {
+      this.serverHost = Settings.getServerHost();
+      this.serverPort = Settings.getServerPort();
+    });
+  },
+  computed: {
+    ...mapGetters(['isGraknRunning', 'allKeyspaces']),
+  },
+  watch: {
+    serverHost(newVal) {
+      this.connectionTest = 'Test';
+      Settings.setServerHost(newVal);
+    },
+    serverPort(newVal) {
+      this.connectionTest = 'Test';
+      Settings.setServerPort(newVal);
+    },
+    isGraknRunning(newVal) {
+      this.connectionTest = (newVal) ? 'Valid' : 'Invalid';
+    },
+  },
+  methods: {
+    testConnection() {
+      this.$store.dispatch('initGrakn');
+    },
+    addNewKeyspace() {
+      if (!this.keyspaceName.length) return;
+      this.loadSpinner = true;
+      this.$store.dispatch('createKeyspace', this.keyspaceName)
+        .then(() => { this.$notifyInfo(`New keyspace, ${this.keyspaceName}, successfully created!`); })
+        .catch((error) => { this.$notifyError(error, 'Create keyspace'); })
+        .then(() => { this.loadSpinner = false; this.keyspaceName = ''; this.showNewKeyspacePanel = false; });
+    },
+    deleteKeyspace(keyspace) {
+      this.$notifyConfirmDelete(`Are you sure you want to delete ${keyspace} keyspace?`,
+        () => this.$store.dispatch('deleteKeyspace', keyspace)
+          .then(() => this.$notifyInfo(`Keyspace, ${keyspace}, successfully deleted!`))
+          .catch((error) => { this.$notifyError(error, 'Delete keyspace'); }));
+    },
   },
 };
 </script>

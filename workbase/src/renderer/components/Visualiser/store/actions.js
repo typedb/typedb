@@ -167,7 +167,7 @@ export default {
     } else {
       queries = getters.selectedNode.explanation.answers().map(answer => mapAnswerToExplanationQuery(answer));
     }
-    queries.forEach(async (query) => {
+    queries.map(async (query) => {
       commit('loadingQuery', true);
       const graknTx = await dispatch(OPEN_GRAKN_TX);
       const result = (await (await graknTx.query(query)).collect());
