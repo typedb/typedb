@@ -167,7 +167,9 @@ export default {
     } else {
       queries = getters.selectedNode.explanation.answers().map(answer => mapAnswerToExplanationQuery(answer));
     }
-    queries.forEach(async (query) => {
+
+    /* eslint-disable no-await-in-loop */
+    for (const query of queries) { // eslint-disable-line
       commit('loadingQuery', true);
       const graknTx = await dispatch(OPEN_GRAKN_TX);
       const result = (await (await graknTx.query(query)).collect());
@@ -182,7 +184,7 @@ export default {
       const styledEdges = data.edges.map(edge => Object.assign(edge, state.visStyle.computeExplanationEdgeStyle()));
       state.visFacade.updateEdge(styledEdges);
       commit('loadingQuery', false);
-    });
+    }
   },
 
   async [DELETE_SELECTED_NODES]({ state, commit }) {
