@@ -25,7 +25,6 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.query.pattern.property.VarPropertyInternal;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -130,8 +129,7 @@ class ConjunctionQuery {
         Variable start = var.var();
 
         var.getProperties().forEach(property -> {
-            VarPropertyInternal propertyInternal = (VarPropertyInternal) property;
-            Collection<EquivalentFragmentSet> newTraversals = propertyInternal.match(start);
+            Collection<EquivalentFragmentSet> newTraversals = property.match(start);
             traversals.addAll(newTraversals);
         });
 

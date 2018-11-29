@@ -55,7 +55,7 @@ function registerNotifications() {
           class: 'confirm',
         },
       ],
-      position: 'top-center',
+      position: 'bottom-right',
     });
   };
 

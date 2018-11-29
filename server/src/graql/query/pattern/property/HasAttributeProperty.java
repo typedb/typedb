@@ -68,7 +68,7 @@ import static java.util.stream.Collectors.joining;
  *
  */
 @AutoValue
-public abstract class HasAttributeProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class HasAttributeProperty extends VarProperty {
 
     public static final String NAME = "has";
 
@@ -103,6 +103,11 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         }
 
         return repr.build().collect(joining(" "));
+    }
+
+    @Override
+    public boolean isUnique() {
+        return false;
     }
 
     @Override

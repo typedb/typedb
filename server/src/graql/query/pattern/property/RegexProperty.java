@@ -44,7 +44,7 @@ import java.util.Set;
  *
  */
 @AutoValue
-public abstract class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+public abstract class RegexProperty extends VarProperty {
 
     public static RegexProperty of(String regex) {
         return new AutoValue_RegexProperty(regex);
@@ -60,6 +60,11 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
     @Override
     public String getProperty() {
         return "/" + StringUtil.escapeString(regex()) + "/";
+    }
+
+    @Override
+    public boolean isUnique() {
+        return true;
     }
 
     @Override

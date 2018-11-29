@@ -127,7 +127,6 @@ span.bp3-icon::before {
   white-space: nowrap;
   border-radius: 0px;
   min-height: 30px;
-  min-width: 30px;
   margin: var(--element-margin);
   cursor: pointer;
 
@@ -186,6 +185,20 @@ span.bp3-icon::before {
   border: 1px solid var(--button-hover-border-color) !important;
 }
 
+.small-btn {
+  height: 22px;
+  min-height: 22px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  margin: 0px;
+}
+
+.new-keyspace-btn {
+  margin: 0px !important;
+  margin-left: 10px !important;
+}
 
 /* Input */
 
@@ -360,6 +373,11 @@ input::-webkit-inner-spin-button {
 /*toast*/
 
 .toasted.primary.info {
+  background-color: var(--purple-3) !important;
+  border: 1px solid var(--purple-1) !important;
+}
+
+.toasted.primary.default {
   background-color: var(--purple-3) !important;
   border: 1px solid var(--purple-1) !important;
 }

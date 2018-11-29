@@ -28,7 +28,6 @@ import grakn.core.graql.util.StringUtil;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.property.RelationPlayerProperty;
-import grakn.core.graql.query.pattern.property.UniqueVarProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
@@ -54,6 +53,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -117,8 +117,8 @@ public abstract class Statement implements Pattern {
      * @param <T>  the type of {@link VarProperty} to return
      */
     @CheckReturnValue
-    public final <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type) {
-        return getProperties().filter(type::isInstance).map(type::cast).findAny();
+    public final <T extends VarProperty> Optional<T> getProperty(Class<T> type) {
+        return getProperties().filter(type::isInstance).map(type::cast).findFirst();
     }
 
     /**
@@ -399,7 +399,7 @@ public abstract class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public Statement relates(String roleType, @javax.annotation.Nullable String superRoleType) {
+    public Statement relates(String roleType, @Nullable String superRoleType) {
         return relates(Pattern.label(roleType), superRoleType == null ? null : Pattern.label(superRoleType));
     }
 
@@ -408,7 +408,7 @@ public abstract class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public Statement relates(Statement roleType, @javax.annotation.Nullable Statement superRoleType) {
+    public Statement relates(Statement roleType, @Nullable Statement superRoleType) {
         return addProperty(RelatesProperty.of(roleType, superRoleType));
     }
 
@@ -651,7 +651,9 @@ public abstract class Statement implements Pattern {
 
     private Statement addProperty(VarProperty property) {
         if (property.isUnique()) {
-            testUniqueProperty((UniqueVarProperty) property);
+            getProperty(property.getClass()).filter(other -> !other.equals(property)).ifPresent(other -> {
+                throw GraqlQueryException.conflictingProperties(this, property, other);
+            });
         }
         return new StatementImpl(var(), Sets.union(properties(), ImmutableSet.of(property)));
     }
@@ -660,12 +662,4 @@ public abstract class Statement implements Pattern {
         return new StatementImpl(var(), Sets.difference(properties(), ImmutableSet.of(property)));
     }
 
-    /**
-     * Fail if there is already an equal property of this type
-     */
-    private void testUniqueProperty(UniqueVarProperty property) {
-        getProperty(property.getClass()).filter(other -> !other.equals(property)).ifPresent(other -> {
-            throw GraqlQueryException.conflictingProperties(this, property, other);
-        });
-    }
 }

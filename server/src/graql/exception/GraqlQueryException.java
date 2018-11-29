@@ -31,7 +31,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.property.UniqueVarProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
@@ -95,7 +95,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException conflictingProperties(
-            Statement varPattern, UniqueVarProperty property, UniqueVarProperty other) {
+            Statement varPattern, VarProperty property, VarProperty other) {
         String message = ErrorMessage.CONFLICTING_PROPERTIES.getMessage(
                 varPattern.getPrintableName(), property.graqlString(), other.graqlString()
         );
