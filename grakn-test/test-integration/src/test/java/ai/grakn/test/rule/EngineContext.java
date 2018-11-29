@@ -180,7 +180,7 @@ public class EngineContext extends CompositeTestRule {
                 // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
                 clearGraphs();
                 server.close();
-
+                engineGraknTxFactory.closeSessions();
                 LOG.info("engine stopped.");
 
                 // There is no way to stop the embedded Casssandra, no such API offered.

@@ -59,7 +59,6 @@ import io.grpc.ManagedChannelBuilder;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;

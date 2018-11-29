@@ -48,6 +48,10 @@ public class GraknCassandra {
         String pidString = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
         try {
             String pidFile = System.getProperty("cassandra-pidfile");
+            if (pidFile == null) {
+                LOG.warn("Directory for Cassandra PID not provided, the PID will not be persisted.");
+                return;
+            }
             PrintWriter writer = new PrintWriter(pidFile, "UTF-8");
             writer.print(pidString);
             writer.close();

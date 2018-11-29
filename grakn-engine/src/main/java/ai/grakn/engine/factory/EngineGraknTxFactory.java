@@ -114,6 +114,10 @@ public class EngineGraknTxFactory {
         return "/creating-new-keyspace-lock/" + keyspace.getValue();
     }
 
+    public void closeSessions(){
+        this.openedSessions.values().forEach(EmbeddedGraknSession::close);
+    }
+
     public GraknConfig config() {
         return engineConfig;
     }

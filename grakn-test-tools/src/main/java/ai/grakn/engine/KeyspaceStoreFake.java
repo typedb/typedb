@@ -64,6 +64,11 @@ public class KeyspaceStoreFake implements KeyspaceStore {
     @Override
     public void addKeyspace(Keyspace keyspace) { keyspaces.add(keyspace); }
 
+    @Override
+    public void closeStore() {
+
+    }
+
     public void clear() {
         keyspaces.clear();
     }
