@@ -23,7 +23,7 @@
     <!--</vue-draggable-resizable>-->
 </template>
 
-<style lang="scss">
+<style scoped lang="scss">
 
 
     .minimize-right-bar {

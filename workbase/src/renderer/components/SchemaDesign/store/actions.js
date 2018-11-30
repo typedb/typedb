@@ -18,6 +18,8 @@ import {
   DELETE_ATTRIBUTE,
   ADD_TYPE,
 } from '@/components/shared/StoresActions';
+import logger from '@/../Logger';
+
 import Grakn from 'grakn';
 import SchemaHandler from '../SchemaHandler';
 import {
@@ -27,6 +29,7 @@ import {
   updateNodePositions,
   loadMetaTypeInstances,
   typeInboundEdges,
+  computeAttributes,
 } from '../SchemaUtils';
 import SchemaCanvasEventsHandler from '../SchemaCanvasEventsHandler';
 
@@ -67,38 +70,48 @@ export default {
 
 
   async [LOAD_SCHEMA]({ state, commit, dispatch }) {
-    if (!state.visFacade) return;
-    commit('loadingSchema', true);
-
     const graknTx = await dispatch(OPEN_GRAKN_TX);
 
-    const response = (await (await graknTx.query('match $x sub thing; get;')).collect());
+    try {
+      if (!state.visFacade) return;
+      commit('loadingSchema', true);
 
-    const concepts = response.map(answer => Array.from(answer.map().values())).flatMap(x => x);
-    const explicitConcepts = await Promise.all(concepts
-      .map(async type => ((!await type.isImplicit()) ? type : null)))
-      .then(explicits => explicits.filter(l => l));
+      const response = (await (await graknTx.query('match $x sub thing; get;')).collect());
 
-    const labelledNodes = await Promise.all(explicitConcepts.map(async x => Object.assign(x, { label: await x.label() })));
+      const concepts = response.map(answer => Array.from(answer.map().values())).flatMap(x => x);
+      const explicitConcepts = await Promise.all(concepts
+        .map(async type => ((!await type.isImplicit()) ? type : null)))
+        .then(explicits => explicits.filter(l => l));
 
-    let nodes = labelledNodes
-      .filter(x => !x.isAttributeType())
-      .filter(x => x.label !== 'thing')
-      .filter(x => x.label !== 'entity')
-      .filter(x => x.label !== 'attribute')
-      .filter(x => x.label !== 'relationship');
-    // Find nodes that are subconcepts of existing types - these nodes will only have isa edges
-    const subConcepts = await computeSubConcepts(nodes);
+      const labelledNodes = await Promise.all(explicitConcepts.map(async x => Object.assign(x, { label: await x.label() })));
 
-    // Draw all edges from relationships to roleplayers
-    const relEdges = await relationshipTypesOutboundEdges(nodes);
+      let nodes = labelledNodes
+        .filter(x => !x.isAttributeType())
+        .filter(x => x.label !== 'thing')
+        .filter(x => x.label !== 'entity')
+        .filter(x => x.label !== 'attribute')
+        .filter(x => x.label !== 'relationship');
+      // Find nodes that are subconcepts of existing types - these nodes will only have isa edges
+      const subConcepts = await computeSubConcepts(nodes);
 
-    graknTx.close();
+      // Draw all edges from relationships to roleplayers
+      const relEdges = await relationshipTypesOutboundEdges(nodes);
 
-    nodes = updateNodePositions(nodes);
-    state.visFacade.addToCanvas({ nodes, edges: relEdges.concat(subConcepts.edges) });
-    state.visFacade.fitGraphToWindow();
-    commit('loadingSchema', false);
+      nodes = updateNodePositions(nodes);
+      state.visFacade.addToCanvas({ nodes, edges: relEdges.concat(subConcepts.edges) });
+      state.visFacade.fitGraphToWindow();
+
+      nodes = await computeAttributes(nodes);
+      state.visFacade.updateNode(nodes);
+
+      graknTx.close();
+      commit('loadingSchema', false);
+    } catch (e) {
+      logger.error(e.stack);
+      graknTx.close();
+      commit('loadingSchema', false);
+      throw e;
+    }
   },
 
   async [COMMIT_TX](store, graknTx) {
