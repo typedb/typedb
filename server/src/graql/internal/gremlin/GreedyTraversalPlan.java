@@ -237,7 +237,7 @@ public class GreedyTraversalPlan {
 
                 // finally, add inferred isa fragments
                 Variable labelVar = inferredLabels.get(label);
-                IsaProperty isaProperty = new IsaProperty(labelVar, var());
+                IsaProperty isaProperty = new IsaProperty(labelVar);
                 EquivalentFragmentSet isaEquivalentFragmentSet = EquivalentFragmentSets.isa(isaProperty,
                         relationshipVar, labelVar, relationshipType.isImplicit());
                 allFragments.addAll(isaEquivalentFragmentSet.fragments());

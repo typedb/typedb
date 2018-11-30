@@ -336,7 +336,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isa(Statement type) {
-        return addProperty(new IsaProperty(type, var()));
+        return addProperty(new IsaProperty(type));
     }
 
     /**
