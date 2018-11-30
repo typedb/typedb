@@ -73,7 +73,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     @Override
     public Stream<ConceptMap> run(InsertQuery query) {
         Collection<Statement> varPatterns = query.admin().varPatterns().stream()
-                .flatMap(v -> v.innerVarPatterns().stream())
+                .flatMap(v -> v.innerStatements().stream())
                 .collect(toImmutableList());
 
         if (query.admin().match() != null) {
@@ -112,7 +112,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     @Override
     public Stream<ConceptMap> run(DefineQuery query) {
         ImmutableList<Statement> allPatterns = query.varPatterns().stream()
-                .flatMap(v -> v.innerVarPatterns().stream())
+                .flatMap(v -> v.innerStatements().stream())
                 .collect(toImmutableList());
 
         ConceptMap defined = QueryOperationExecutor.defineAll(allPatterns, tx);
@@ -122,7 +122,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     @Override
     public Stream<ConceptMap> run(UndefineQuery query) {
         ImmutableList<Statement> allPatterns = query.varPatterns().stream()
-                .flatMap(v -> v.innerVarPatterns().stream())
+                .flatMap(v -> v.innerStatements().stream())
                 .collect(toImmutableList());
 
         ConceptMap undefined = QueryOperationExecutor.undefineAll(allPatterns, tx);

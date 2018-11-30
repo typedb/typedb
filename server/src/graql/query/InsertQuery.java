@@ -116,7 +116,7 @@ public abstract class InsertQuery implements Query<ConceptMap> {
     }
 
     private Stream<Statement> allVarPatterns() {
-        return varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream());
+        return varPatterns().stream().flatMap(v -> v.innerStatements().stream());
     }
 
     private Transaction getTx() {

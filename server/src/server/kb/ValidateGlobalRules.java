@@ -366,7 +366,7 @@ class ValidateGlobalRules {
         Set<String> errors = new HashSet<>();
 
         pattern.statements().stream()
-                .flatMap(v -> v.innerVarPatterns().stream())
+                .flatMap(v -> v.innerStatements().stream())
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
                     SchemaConcept schemaConcept = graph.getSchemaConcept(typeLabel);
                     if(schemaConcept == null){

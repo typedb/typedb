@@ -66,11 +66,11 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * A variable together with its properties in one Graql statement.
- * A VarPattern may be given a variable, or use an "anonymous" variable.
- * Graql provides static methods for constructing VarPattern objects.
- * The methods in VarPattern are used to set its properties. A VarPattern
+ * A Statement may be given a variable, or use an "anonymous" variable.
+ * Graql provides static methods for constructing Statement objects.
+ * The methods in Statement are used to set its properties. A Statement
  * behaves differently depending on the type of query its used in.
- * In a Match clause, a VarPattern describes the properties any matching
+ * In a Match clause, a Statement describes the properties any matching
  * concept must have. In an InsertQuery, it describes the properties that
  * should be set on the inserted concept. In a DeleteQuery, it describes the
  * properties that should be deleted.
@@ -136,7 +136,7 @@ public abstract class Statement implements Pattern {
      * @return all variables that this variable references
      */
     @CheckReturnValue
-    public final Collection<Statement> innerVarPatterns() {
+    public final Collection<Statement> innerStatements() {
         Stack<Statement> newVars = new Stack<>();
         List<Statement> vars = new ArrayList<>();
 
@@ -155,7 +155,7 @@ public abstract class Statement implements Pattern {
      * Get all inner variables, including implicit variables such as in a has property
      */
     @CheckReturnValue
-    public final Collection<Statement> implicitInnerVarPatterns() {
+    public final Collection<Statement> implicitInnerStatements() {
         Stack<Statement> newVars = new Stack<>();
         List<Statement> vars = new ArrayList<>();
 
@@ -190,7 +190,7 @@ public abstract class Statement implements Pattern {
 
     @Override
     public final Set<Variable> variables() {
-        return innerVarPatterns().stream()
+        return innerStatements().stream()
                 .filter(v -> v.var().isUserDefinedName())
                 .map(statement -> statement.var())
                 .collect(toSet());
@@ -290,7 +290,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must have an {@link Attribute} of the given type that matches {@code resource}.
+     * the variable must have an {@link Attribute} of the given type that matches {@code attribute}.
      * The {@link grakn.core.graql.concept.Relationship} associating the two must match {@code relation}.
      *
      * @param type         a resource type in the ontology
