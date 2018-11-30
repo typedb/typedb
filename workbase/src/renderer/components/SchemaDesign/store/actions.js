@@ -89,12 +89,9 @@ export default {
       .filter(x => x.label !== 'relationship');
     // Find nodes that are subconcepts of existing types - these nodes will only have isa edges
     const subConcepts = await computeSubConcepts(nodes);
-    const subConceptsIds = new Set(subConcepts.nodes.map(n => n.id));
 
-    const relNodes = nodes.filter(x => !subConceptsIds.has(x.id));
-
-    // Draw all edges from relationships to roleplayers only on concepts that don't subtype a custom type
-    const relEdges = await relationshipTypesOutboundEdges(relNodes);
+    // Draw all edges from relationships to roleplayers
+    const relEdges = await relationshipTypesOutboundEdges(nodes);
 
     graknTx.close();
 
