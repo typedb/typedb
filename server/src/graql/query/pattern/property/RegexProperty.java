@@ -18,39 +18,40 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.property.RegexAtom;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.util.StringUtil;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code regex} property on a {@link AttributeType}.
- *
- * This property can be queried and inserted.
- *
+ * Represents the {@code regex} property on a {@link AttributeType}. This property can be queried and inserted.
  * This property introduces a validation constraint on instances of this {@link AttributeType}, stating that their
  * values must conform to the given regular expression.
- *
  */
-@AutoValue
-public abstract class RegexProperty extends VarProperty {
+public class RegexProperty extends VarProperty {
 
-    public static RegexProperty of(String regex) {
-        return new AutoValue_RegexProperty(regex);
+    private final String regex;
+
+    public RegexProperty(String regex) {
+        if (regex == null) {
+            throw new NullPointerException("Null regex");
+        }
+        this.regex = regex;
     }
 
-    public abstract String regex();
+    public String regex() {
+        return regex;
+    }
 
     @Override
     public String getName() {
@@ -65,6 +66,11 @@ public abstract class RegexProperty extends VarProperty {
     @Override
     public boolean isUnique() {
         return true;
+    }
+
+    @Override
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        return RegexAtom.create(var.var(), this, parent);
     }
 
     @Override
@@ -94,7 +100,22 @@ public abstract class RegexProperty extends VarProperty {
     }
 
     @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        return RegexAtom.create(var.var(), this, parent);
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof RegexProperty) {
+            RegexProperty that = (RegexProperty) o;
+            return (this.regex.equals(that.regex()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.regex.hashCode();
+        return h;
     }
 }

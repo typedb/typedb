@@ -18,13 +18,13 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.common.exception.ErrorMessage;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -32,7 +32,6 @@ import java.util.Set;
 
 /**
  * Abstract property for the patterns within rules.
- *
  */
 public abstract class RuleProperty extends VarProperty {
 
@@ -48,14 +47,14 @@ public abstract class RuleProperty extends VarProperty {
         return true;
     }
 
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getName()));
-    }
-
     @Nullable
     @Override
     public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
         return null;
+    }
+
+    @Override
+    public Collection<EquivalentFragmentSet> match(Variable start) {
+        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getName()));
     }
 }

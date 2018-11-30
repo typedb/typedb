@@ -18,17 +18,17 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.executor.ConceptBuilder;
 import grakn.core.graql.internal.reasoner.atom.binary.SubAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -37,14 +37,14 @@ import java.util.stream.Stream;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
-
-/**
- *
- */
 public abstract class AbstractSubProperty extends VarProperty {
 
-
     public abstract Statement superType();
+
+    @Override
+    public String getProperty() {
+        return superType().getPrintableName();
+    }
 
     @Override
     public boolean isUnique() {
@@ -59,11 +59,6 @@ public abstract class AbstractSubProperty extends VarProperty {
     @Override
     public Stream<Statement> innerStatements() {
         return Stream.of(superType());
-    }
-
-    @Override
-    public String getProperty() {
-        return superType().getPrintableName();
     }
 
     @Override

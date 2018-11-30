@@ -18,41 +18,43 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.util.StringUtil;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.util.StringUtil;
 
 import java.util.Collection;
 import java.util.Set;
 
 /**
  * Represents the {@code label} property on a {@link Type}.
- *
  * This property can be queried and inserted. If used in an insert query and there is an existing type with the give
  * label, then that type will be retrieved.
- *
  */
-@AutoValue
-public abstract class LabelProperty extends VarProperty {
+public class LabelProperty extends VarProperty {
 
     public static final String NAME = "label";
+    private final Label label;
 
-    public static LabelProperty of(Label label) {
-        return new AutoValue_LabelProperty(label);
+    public LabelProperty(Label label) {
+        if (label == null) {
+            throw new NullPointerException("Null label");
+        }
+        this.label = label;
     }
 
-    public abstract Label label();
+    public Label label() {
+        return label;
+    }
 
     @Override
     public String getName() {
@@ -67,6 +69,18 @@ public abstract class LabelProperty extends VarProperty {
     @Override
     public boolean isUnique() {
         return true;
+    }
+
+    @Override
+    public boolean uniquelyIdentifiesConcept() {
+        return true;
+    }
+
+    @Override
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label());
+        if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label());
+        return IdPredicate.create(var.var().asUserDefined(), label(), parent);
     }
 
     @Override
@@ -96,14 +110,22 @@ public abstract class LabelProperty extends VarProperty {
     }
 
     @Override
-    public boolean uniquelyIdentifiesConcept() {
-        return true;
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof LabelProperty) {
+            LabelProperty that = (LabelProperty) o;
+            return (this.label.equals(that.label()));
+        }
+        return false;
     }
 
     @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label());
-        if (schemaConcept == null)  throw GraqlQueryException.labelNotFound(label());
-        return IdPredicate.create(var.var().asUserDefined(), label(), parent);
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.label.hashCode();
+        return h;
     }
 }

@@ -18,41 +18,41 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.Variable;
+import com.google.common.collect.ImmutableSet;
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.common.util.CommonUtil;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.predicate.ValuePredicate;
 
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Represents the {@code value} property on a {@link Attribute}.
- *
+ * Represents the {@code value} property on an attribute.
  * This property can be queried or inserted.
- *
- * This property matches only resources whose value matches the given {@link ValuePredicate}.
- *
+ * This property matches only resources whose value matches the given a value predicate.
  */
-@AutoValue
-public abstract class ValueProperty extends VarProperty {
+public class ValueProperty extends VarProperty {
 
     public static final String NAME = "";
+    private final ValuePredicate predicate;
 
-    public static ValueProperty of(ValuePredicate predicate) {
-        return new AutoValue_ValueProperty(predicate);
+    public ValueProperty(ValuePredicate predicate) {
+        if (predicate == null) {
+            throw new NullPointerException("Null predicate");
+        }
+        this.predicate = predicate;
     }
 
-    public abstract ValuePredicate predicate();
+    public ValuePredicate predicate() {
+        return predicate;
+    }
 
     @Override
     public String getName() {
@@ -75,6 +75,16 @@ public abstract class ValueProperty extends VarProperty {
     }
 
     @Override
+    public Stream<Statement> innerStatements() {
+        return CommonUtil.optionalToStream(predicate().getInnerVar());
+    }
+
+    @Override
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        return grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var.var(), this.predicate(), parent);
+    }
+
+    @Override
     public Collection<EquivalentFragmentSet> match(Variable start) {
         return ImmutableSet.of(EquivalentFragmentSets.value(this, start, predicate()));
     }
@@ -90,12 +100,22 @@ public abstract class ValueProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> innerStatements() {
-        return CommonUtil.optionalToStream(predicate().getInnerVar());
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof ValueProperty) {
+            ValueProperty that = (ValueProperty) o;
+            return (this.predicate.equals(that.predicate()));
+        }
+        return false;
     }
 
     @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        return grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var.var(), this.predicate(), parent);
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.predicate.hashCode();
+        return h;
     }
 }

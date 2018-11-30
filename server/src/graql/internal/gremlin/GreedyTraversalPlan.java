@@ -231,13 +231,13 @@ public class GreedyTraversalPlan {
                 if (!inferredLabels.containsKey(label)) {
                     Variable labelVar = var();
                     inferredLabels.put(label, labelVar);
-                    Fragment labelFragment = Fragments.label(LabelProperty.of(label), labelVar, ImmutableSet.of(label));
+                    Fragment labelFragment = Fragments.label(new LabelProperty(label), labelVar, ImmutableSet.of(label));
                     allFragments.add(labelFragment);
                 }
 
                 // finally, add inferred isa fragments
                 Variable labelVar = inferredLabels.get(label);
-                IsaProperty isaProperty = IsaProperty.of(labelVar);
+                IsaProperty isaProperty = new IsaProperty(labelVar, var());
                 EquivalentFragmentSet isaEquivalentFragmentSet = EquivalentFragmentSets.isa(isaProperty,
                         relationshipVar, labelVar, relationshipType.isImplicit());
                 allFragments.addAll(isaEquivalentFragmentSet.fragments());

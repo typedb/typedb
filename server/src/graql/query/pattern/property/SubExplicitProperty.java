@@ -18,21 +18,18 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.Statement;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collection;
 
 /**
  * Represents the {@code sub!} property on a {@link Type}.
- *
  * This property can be queried or inserted.
- *
  * This property relates a {@link Type} and another {@link Type}. It indicates
  * that every instance of the left type is also an instance of the right type.
  * When matching, subtyping is ignored:
@@ -41,15 +38,23 @@ import java.util.Collection;
  * `person sub entity`,
  * then
  * `$x sub! entity` only returns `person` but not `man`
- *
  */
-@AutoValue
-public abstract class SubExplicitProperty extends AbstractSubProperty {
+public class SubExplicitProperty extends AbstractSubProperty {
 
     public static final String NAME = "sub!";
 
-    public static SubExplicitProperty of(Statement superType) {
-        return new AutoValue_SubExplicitProperty(superType);
+    private final Statement superType;
+
+    public SubExplicitProperty(Statement superType) {
+        if (superType == null) {
+            throw new NullPointerException("Null superType");
+        }
+        this.superType = superType;
+    }
+
+    @Override
+    public Statement superType() {
+        return superType;
     }
 
     @Override
@@ -63,5 +68,25 @@ public abstract class SubExplicitProperty extends AbstractSubProperty {
     @Override
     public Collection<EquivalentFragmentSet> match(Variable start) {
         return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType().var(), true));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof SubExplicitProperty) {
+            SubExplicitProperty that = (SubExplicitProperty) o;
+            return (this.superType.equals(that.superType()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.superType.hashCode();
+        return h;
     }
 }

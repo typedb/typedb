@@ -18,8 +18,9 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.server.Transaction;
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
@@ -28,58 +29,68 @@ import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.internal.Schema;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.server.Transaction;
 
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
+import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.util.StringUtil.typeLabelToString;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Represents the {@code has} property on an {@link Thing}.
- *
- * This property can be queried, inserted or deleted.
- *
- * The property is defined as a {@link Relationship} between an {@link Thing} and a {@link Attribute}, where the
- * {@link Attribute} is of a particular type.
- *
- * When matching, {@link  Schema.EdgeLabel#ROLE_PLAYER} edges are used to speed up the traversal. The type of the {@link Relationship} does not
- * matter.
- *
- * When inserting, an implicit {@link Relationship} is created between the instance and the {@link Attribute}, using
- * type labels derived from the label of the {@link AttributeType}.
- *
+ * Represents the {@code has} property on an {@link Thing}. This property can be queried, inserted or deleted.
+ * The property is defined as a {@link Relationship} between an {@link Thing} and a {@link Attribute},
+ * where the{@link Attribute} is of a particular type. When matching, {@link  Schema.EdgeLabel#ROLE_PLAYER}
+ * edges are used to speed up the traversal. The type of the {@link Relationship} does notmatter.
+ * When inserting, an implicit {@link Relationship} is created between the instance and the {@link Attribute},
+ * using type labels derived from the label of the {@link AttributeType}.
  */
-@AutoValue
-public abstract class HasAttributeProperty extends VarProperty {
+public class HasAttributeProperty extends VarProperty {
 
     public static final String NAME = "has";
 
-    public static HasAttributeProperty of(Label attributeType, Statement attribute, Statement relationship) {
-        attribute = attribute.isa(label(attributeType));
-        return new AutoValue_HasAttributeProperty(attributeType, attribute, relationship);
+    private final Label type;
+    private final Statement attribute;
+    private final Statement relationship;
+
+    public HasAttributeProperty(Label type, Statement attribute, Statement relationship) {
+        attribute = attribute.isa(label(type));
+        if (type == null) {
+            throw new NullPointerException("Null type");
+        }
+        this.type = type;
+        this.attribute = attribute;
+        if (relationship == null) {
+            throw new NullPointerException("Null relationship");
+        }
+        this.relationship = relationship;
     }
 
-    public abstract Label type();
-    public abstract Statement attribute();
-    public abstract Statement relationship();
+    public Label type() {
+        return type;
+    }
+
+    public Statement attribute() {
+        return attribute;
+    }
+
+    public Statement relationship() {
+        return relationship;
+    }
 
     @Override
     public String getName() {
@@ -111,6 +122,54 @@ public abstract class HasAttributeProperty extends VarProperty {
     }
 
     @Override
+    public Stream<Statement> getTypes() {
+        return Stream.of(label(type()));
+    }
+
+    @Override
+    public Stream<Statement> innerStatements() {
+        return Stream.of(attribute(), relationship());
+    }
+
+    private boolean hasReifiedRelationship() {
+        return relationship().getProperties().findAny().isPresent() || relationship().var().isUserDefinedName();
+    }
+
+    @Override
+    void checkValidProperty(Transaction graph, Statement var) {
+        SchemaConcept schemaConcept = graph.getSchemaConcept(type());
+        if (schemaConcept == null) {
+            throw GraqlQueryException.labelNotFound(type());
+        }
+        if (!schemaConcept.isAttributeType()) {
+            throw GraqlQueryException.mustBeAttributeType(type());
+        }
+    }
+
+    @Override
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        //NB: HasAttributeProperty always has (type) label specified
+        Variable varName = var.var().asUserDefined();
+
+        Variable relationVariable = relationship().var();
+        Variable attributeVariable = attribute().var().asUserDefined();
+        Variable predicateVariable = Pattern.var();
+        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent);
+
+        IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
+        Statement typeVar = isaProp != null ? isaProp.type() : null;
+        IdPredicate predicate = typeVar != null ? getIdPredicate(predicateVariable, typeVar, vars, parent) : null;
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+
+        //add resource atom
+        Statement resVar = relationVariable.isUserDefinedName() ?
+                varName.has(type(), attributeVariable, relationVariable) :
+                varName.has(type(), attributeVariable);
+        ResourceAtom atom = ResourceAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);
+        return atom;
+    }
+
+    @Override
     public Collection<EquivalentFragmentSet> match(Variable start) {
         Label type = type();
         Label has = Schema.ImplicitType.HAS.getLabel(type);
@@ -118,7 +177,7 @@ public abstract class HasAttributeProperty extends VarProperty {
 
         Label hasOwnerRole = Schema.ImplicitType.HAS_OWNER.getLabel(type);
         Label keyOwnerRole = Schema.ImplicitType.KEY_OWNER.getLabel(type);
-        Label hasValueRole= Schema.ImplicitType.HAS_VALUE.getLabel(type);
+        Label hasValueRole = Schema.ImplicitType.HAS_VALUE.getLabel(type);
         Label keyValueRole = Schema.ImplicitType.KEY_VALUE.getLabel(type);
 
         Variable edge1 = Pattern.var();
@@ -131,22 +190,6 @@ public abstract class HasAttributeProperty extends VarProperty {
                 rolePlayer(this, relationship().var(), edge2, attribute().var(), null, ImmutableSet.of(hasValueRole, keyValueRole), ImmutableSet.of(has, key)),
                 neq(this, edge1, edge2)
         );
-    }
-
-    @Override
-    public Stream<Statement> innerStatements() {
-        return Stream.of(attribute(), relationship());
-    }
-
-    @Override
-    void checkValidProperty(Transaction graph, Statement var) {
-        SchemaConcept schemaConcept = graph.getSchemaConcept(type());
-        if (schemaConcept == null) {
-            throw GraqlQueryException.labelNotFound(type());
-        }
-        if(!schemaConcept.isAttributeType()) {
-            throw GraqlQueryException.mustBeAttributeType(type());
-        }
     }
 
     @Override
@@ -164,15 +207,6 @@ public abstract class HasAttributeProperty extends VarProperty {
                 .build();
 
         return ImmutableSet.of(executor);
-    }
-
-    @Override
-    public Stream<Statement> getTypes() {
-        return Stream.of(label(type()));
-    }
-
-    private boolean hasReifiedRelationship() {
-        return relationship().getProperties().findAny().isPresent() || relationship().var().isUserDefinedName();
     }
 
     @Override
@@ -203,28 +237,5 @@ public abstract class HasAttributeProperty extends VarProperty {
         }
 
         return result;
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        //NB: HasAttributeProperty always has (type) label specified
-        Variable varName = var.var().asUserDefined();
-
-        Variable relationVariable = relationship().var();
-        Variable attributeVariable = attribute().var().asUserDefined();
-        Variable predicateVariable = Pattern.var();
-        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent);
-
-        IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
-        Statement typeVar = isaProp != null? isaProp.type() : null;
-        IdPredicate predicate = typeVar != null? getIdPredicate(predicateVariable, typeVar, vars, parent) : null;
-        ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
-
-        //add resource atom
-        Statement resVar = relationVariable.isUserDefinedName()?
-                varName.has(type(), attributeVariable, relationVariable) :
-                varName.has(type(), attributeVariable);
-        ResourceAtom atom = ResourceAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);
-        return atom;
     }
 }

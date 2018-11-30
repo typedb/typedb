@@ -18,42 +18,48 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collection;
 
 /**
  * Represents the {@code isa} property on a {@link Thing}.
- * <p>
  * This property can be queried and inserted.
- * </p>
- * <p>
  * THe property is defined as a relationship between an {@link Thing} and a {@link Type}.
- * </p>
- * <p>
  * When matching, any subtyping is respected. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it follows that {@code $bob isa person} and {@code bob isa entity}.
- * </p>
- *
  */
-@AutoValue
-public abstract class IsaProperty extends AbstractIsaProperty {
+public class IsaProperty extends AbstractIsaProperty {
 
     public static final String NAME = "isa";
+    private final Variable directTypeVar;
+    private final Statement type;
 
-    public static IsaProperty of(Statement type) {
-        return new AutoValue_IsaProperty(type, Pattern.var());
+    public IsaProperty(Statement type, Variable directTypeVar) {
+        if (type == null) {
+            throw new NullPointerException("Null type");
+        }
+        this.type = type;
+        if (directTypeVar == null) {
+            throw new NullPointerException("Null directTypeVar");
+        }
+        this.directTypeVar = directTypeVar;
     }
 
-    public abstract Variable directTypeVar();
+    private Variable directTypeVar() {
+        return directTypeVar;
+    }
+
+    @Override
+    public Statement type() {
+        return type;
+    }
 
     @Override
     public String getName() {

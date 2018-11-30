@@ -38,23 +38,6 @@ import java.util.stream.Stream;
  */
 public abstract class VarProperty {
 
-    /**
-     * Check if the given property can be used in a {@link Match}
-     */
-    public final void checkValid(Transaction graph, Statement var) throws GraqlQueryException {
-        checkValidProperty(graph, var);
-
-        innerStatements().map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
-            if (graph.getSchemaConcept(label) == null) {
-                throw GraqlQueryException.labelNotFound(label);
-            }
-        });
-    }
-
-    void checkValidProperty(Transaction graph, Statement var) {
-
-    }
-
     public abstract String getName();
 
     public abstract String getProperty();
@@ -112,6 +95,23 @@ public abstract class VarProperty {
     @Override
     public String toString() {
         return getName() + " " + getProperty();
+    }
+
+    /**
+     * Check if the given property can be used in a {@link Match}
+     */
+    public final void checkValid(Transaction graph, Statement var) throws GraqlQueryException {
+        checkValidProperty(graph, var);
+
+        innerStatements().map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
+            if (graph.getSchemaConcept(label) == null) {
+                throw GraqlQueryException.labelNotFound(label);
+            }
+        });
+    }
+
+    void checkValidProperty(Transaction graph, Statement var) {
+
     }
 
     /**

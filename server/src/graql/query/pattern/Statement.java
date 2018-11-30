@@ -27,7 +27,6 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.util.StringUtil;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.property.RelationPlayerProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
@@ -203,7 +202,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement id(ConceptId id) {
-        return addProperty(IdProperty.of(id));
+        return addProperty(new IdProperty(id));
     }
 
     /**
@@ -221,7 +220,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement label(Label label) {
-        return addProperty(LabelProperty.of(label));
+        return addProperty(new LabelProperty(label));
     }
 
     /**
@@ -239,7 +238,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement val(ValuePredicate predicate) {
-        return addProperty(ValueProperty.of(predicate));
+        return addProperty(new ValueProperty(predicate));
     }
 
     /**
@@ -301,7 +300,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(Label type, Statement attribute, Statement relationship) {
-        return addProperty(HasAttributeProperty.of(type, attribute, relationship));
+        return addProperty(new HasAttributeProperty(type, attribute, relationship));
     }
 
     /**
@@ -319,7 +318,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isaExplicit(Statement type) {
-        return addProperty(IsaExplicitProperty.of(type));
+        return addProperty(new IsaExplicitProperty(type));
     }
 
     /**
@@ -337,7 +336,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isa(Statement type) {
-        return addProperty(IsaProperty.of(type));
+        return addProperty(new IsaProperty(type, var()));
     }
 
     /**
@@ -355,7 +354,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement sub(Statement type) {
-        return addProperty(SubProperty.of(type));
+        return addProperty(new SubProperty(type));
     }
 
     /**
@@ -373,7 +372,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement subExplicit(Statement type) {
-        return addProperty(SubExplicitProperty.of(type));
+        return addProperty(new SubExplicitProperty(type));
     }
 
     /**
@@ -409,7 +408,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public Statement relates(Statement roleType, @Nullable Statement superRoleType) {
-        return addProperty(RelatesProperty.of(roleType, superRoleType));
+        return addProperty(new RelatesProperty(roleType, superRoleType));
     }
 
     /**
@@ -427,7 +426,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement plays(Statement type) {
-        return addProperty(PlaysProperty.of(type, false));
+        return addProperty(new PlaysProperty(type, false));
     }
 
     /**
@@ -445,7 +444,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(Statement type) {
-        return addProperty(HasAttributeTypeProperty.of(type, false));
+        return addProperty(new HasAttributeTypeProperty(type, false));
     }
 
     /**
@@ -463,7 +462,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement key(Statement type) {
-        return addProperty(HasAttributeTypeProperty.of(type, true));
+        return addProperty(new HasAttributeTypeProperty(type, true));
     }
 
     /**
@@ -485,7 +484,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement roleplayer) {
-        return addCasting(RelationPlayerProperty.of(roleplayer));
+        return addCasting(new RelationshipProperty.RolePlayer(null, roleplayer));
     }
 
     /**
@@ -533,7 +532,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement role, Statement roleplayer) {
-        return addCasting(RelationPlayerProperty.of(role, roleplayer));
+        return addCasting(new RelationshipProperty.RolePlayer(role, roleplayer));
     }
 
     /**
@@ -552,7 +551,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement datatype(AttributeType.DataType<?> datatype) {
-        return addProperty(DataTypeProperty.of(datatype));
+        return addProperty(new DataTypeProperty(datatype));
     }
 
     /**
@@ -563,7 +562,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement regex(String regex) {
-        return addProperty(RegexProperty.of(regex));
+        return addProperty(new RegexProperty(regex));
     }
 
     /**
@@ -572,7 +571,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement when(Pattern when) {
-        return addProperty(WhenProperty.of(when));
+        return addProperty(new WhenProperty(when));
     }
 
     /**
@@ -581,7 +580,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement then(Pattern then) {
-        return addProperty(ThenProperty.of(then));
+        return addProperty(new ThenProperty(then));
     }
 
     /**
@@ -603,7 +602,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement neq(Statement varPattern) {
-        return addProperty(NeqProperty.of(varPattern));
+        return addProperty(new NeqProperty(varPattern));
     }
 
     /**
@@ -634,17 +633,17 @@ public abstract class Statement implements Pattern {
         return properties().stream();
     }
 
-    private Statement addCasting(RelationPlayerProperty relationPlayer) {
+    private Statement addCasting(RelationshipProperty.RolePlayer relationPlayer) {
         Optional<RelationshipProperty> relationProperty = getProperty(RelationshipProperty.class);
 
-        ImmutableMultiset<RelationPlayerProperty> oldCastings = relationProperty
+        ImmutableMultiset<RelationshipProperty.RolePlayer> oldCastings = relationProperty
                 .map(RelationshipProperty::relationPlayers)
                 .orElse(ImmutableMultiset.of());
 
-        ImmutableMultiset<RelationPlayerProperty> relationPlayers =
+        ImmutableMultiset<RelationshipProperty.RolePlayer> relationPlayers =
                 Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
-        RelationshipProperty newProperty = RelationshipProperty.of(relationPlayers);
+        RelationshipProperty newProperty = new RelationshipProperty(relationPlayers);
 
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }
