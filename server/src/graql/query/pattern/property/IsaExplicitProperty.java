@@ -69,7 +69,7 @@ public class IsaExplicitProperty extends AbstractIsaProperty {
     }
 
     @Override
-    protected final Statement varPatternForAtom(Variable varName, Variable typeVariable) {
+    protected final Statement statementForAtom(Variable varName, Variable typeVariable) {
         return varName.isaExplicit(typeVariable);
     }
 

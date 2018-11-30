@@ -220,9 +220,9 @@ public class HasAttributeProperty extends VarProperty {
         if (!attribute().equals(that.attribute())) return false;
 
         // TODO: Having to check this is pretty dodgy
-        // This check is necessary for `equals` and `hashCode` because `VarPattern` equality is defined
+        // This check is necessary for `equals` and `hashCode` because `Statement` equality is defined
         // s.t. `var() != var()`, but `var().label("movie") == var().label("movie")`
-        // i.e., a `Var` is compared by name, but a `VarPattern` ignores the name if the var is not user-defined
+        // i.e., a `Var` is compared by name, but a `Statement` ignores the name if the var is not user-defined
         return !hasReifiedRelationship() || relationship().equals(that.relationship());
     }
 

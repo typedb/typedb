@@ -128,9 +128,9 @@ public class RelatesProperty extends VarProperty {
 
         PropertyExecutor isRoleExecutor = PropertyExecutor.builder(isRoleMethod).produces(roleVar).build();
 
-        Statement superRoleVarPattern = superRole;
-        if (superRoleVarPattern != null) {
-            Variable superRoleVar = superRoleVarPattern.var();
+        Statement superRoleStatement = superRole;
+        if (superRoleStatement != null) {
+            Variable superRoleVar = superRoleStatement.var();
             PropertyExecutor.Method subMethod = executor -> {
                 Role superRole = executor.get(superRoleVar).asRole();
                 executor.builder(roleVar).sub(superRole);

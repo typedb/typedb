@@ -484,7 +484,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement roleplayer) {
-        return addCasting(new RelationshipProperty.RolePlayer(null, roleplayer));
+        return addRolePlayer(new RelationshipProperty.RolePlayer(null, roleplayer));
     }
 
     /**
@@ -532,7 +532,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement role, Statement roleplayer) {
-        return addCasting(new RelationshipProperty.RolePlayer(role, roleplayer));
+        return addRolePlayer(new RelationshipProperty.RolePlayer(role, roleplayer));
     }
 
     /**
@@ -597,12 +597,12 @@ public abstract class Statement implements Pattern {
     /**
      * Specify that the variable is different to another variable
      *
-     * @param varPattern the variable pattern that this variable should not be equal to
+     * @param statement the variable pattern that this variable should not be equal to
      * @return this
      */
     @CheckReturnValue
-    public final Statement neq(Statement varPattern) {
-        return addProperty(new NeqProperty(varPattern));
+    public final Statement neq(Statement statement) {
+        return addProperty(new NeqProperty(statement));
     }
 
     /**
@@ -633,7 +633,7 @@ public abstract class Statement implements Pattern {
         return properties().stream();
     }
 
-    private Statement addCasting(RelationshipProperty.RolePlayer relationPlayer) {
+    private Statement addRolePlayer(RelationshipProperty.RolePlayer relationPlayer) {
         Optional<RelationshipProperty> relationProperty = getProperty(RelationshipProperty.class);
 
         ImmutableMultiset<RelationshipProperty.RolePlayer> oldCastings = relationProperty

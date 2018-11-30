@@ -96,9 +96,9 @@ abstract class AbstractIsaProperty extends VarProperty {
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
 
         //isa part
-        Statement isaVar = varPatternForAtom(varName, typeVariable);
+        Statement isaVar = statementForAtom(varName, typeVariable);
         return IsaAtom.create(varName, typeVariable, isaVar, predicateId, parent);
     }
 
-    protected abstract Statement varPatternForAtom(Variable varName, Variable typeVariable);
+    protected abstract Statement statementForAtom(Variable varName, Variable typeVariable);
 }
