@@ -19,6 +19,7 @@ function getMockAttributeType() {
     label: () => Promise.resolve('name'),
     isImplicit: () => Promise.resolve(false),
     isType: () => true,
+    dataType: () => Promise.resolve('String'),
   };
 }
 

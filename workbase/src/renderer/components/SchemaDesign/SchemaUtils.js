@@ -79,3 +79,13 @@ export async function typeInboundEdges(type, visFacade) {
   const relationshipTypes = await Promise.all(roles.map(role => role.relationshipTypes())).then(rels => rels.flatMap(x => x));
   return relationshipTypesOutboundEdges(relationshipTypes.filter(rel => visFacade.getNode(rel)));
 }
+
+// attach attribute labels and data types to each node
+export async function computeAttributes(nodes) {
+  return Promise.all(nodes.map(async (node) => {
+    const attributes = await (await node.attributes()).collect();
+    node.attributes = await Promise.all(attributes.map(async concept => ({ type: await concept.label(), dataType: await concept.dataType() })));
+    return node;
+  }));
+}
+
