@@ -122,4 +122,27 @@ public class PlaysProperty extends VarProperty {
 
         return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role.var()).build());
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof PlaysProperty) {
+            PlaysProperty that = (PlaysProperty) o;
+            return (this.role.equals(that.role))
+                    && (this.required == that.required);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.role.hashCode();
+        h *= 1000003;
+        h ^= this.required ? 1231 : 1237;
+        return h;
+    }
 }
