@@ -18,8 +18,8 @@
 #
 
 import grpc
-from protocol.keyspace.Keyspace_pb2_grpc import KeyspaceServiceStub
-import protocol.keyspace.Keyspace_pb2 as keyspace_messages
+from grakn.rpc.protocol.keyspace.Keyspace_pb2_grpc import KeyspaceServiceStub
+import grakn.rpc.protocol.keyspace.Keyspace_pb2 as keyspace_messages
 
 class KeyspaceService(object):
 

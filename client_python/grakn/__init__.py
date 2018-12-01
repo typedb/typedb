@@ -21,7 +21,7 @@ import grpc
 from grakn.service.Session.util.enums import TxType, DataType
 from grakn.service.Keyspace.KeyspaceService import KeyspaceService
 from grakn.service.Session.TransactionService import TransactionService
-from protocol.session.Session_pb2_grpc import SessionServiceStub
+from grakn.rpc.protocol.session.Session_pb2_grpc import SessionServiceStub
 from grakn.exception.GraknError import GraknError
 
 class Grakn(object):

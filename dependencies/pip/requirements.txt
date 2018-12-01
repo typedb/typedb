@@ -3,3 +3,7 @@ protobuf==3.6.1
 six==1.11.0
 forbiddenfruit==0.1.2
 enum34==1.1.6
+# Deployment-only dependencies
+setuptools>=38.6.0 # for supporting Markdown
+wheel==0.32.3 # for supporting bdist_wheel
+twine==1.12.1 # for uploading the package
