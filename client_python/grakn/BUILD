@@ -30,8 +30,6 @@ python_grpc_compile(
 py_replace_imports(
     name = "rpc",
     src = ":rpc_raw",
-    original_name = "rpc_raw",
-    output_name = "rpc",
     original_package = "protocol",
     output_package = "grakn.rpc.protocol"
 )
