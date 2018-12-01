@@ -18,7 +18,7 @@
 
 exports_files([
     "package.json",
-    "yarn.lock"
+    "package-lock.json"
 ])
 
 load("@org_pubref_rules_proto//node:compile.bzl", "node_grpc_compile")
