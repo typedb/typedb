@@ -18,8 +18,8 @@
 #
 
 from enum import Enum
-import protocol.session.Session_pb2 as SessionMessages
-import protocol.session.Concept_pb2 as ConceptMessages
+import grakn.rpc.protocol.session.Session_pb2 as SessionMessages
+import grakn.rpc.protocol.session.Concept_pb2 as ConceptMessages
 
 
 class TxType(Enum):

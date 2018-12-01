@@ -50,29 +50,3 @@ deploy_maven_jar(
     version_file = "//:VERSION",
     deployment_properties = "//:deployment.properties",
 )
-
-
-load("@org_pubref_rules_proto//python:compile.bzl", "python_grpc_compile")
-load("@io_bazel_rules_python//python:python.bzl", "py_library")
-load("@pypi_dependencies//:requirements.bzl", "requirement")
-
-python_grpc_compile(
-    name = "protocol_python_src",
-    deps = [
-        "//protocol/session:session-proto",
-        "//protocol/session:answer-proto",
-        "//protocol/session:concept-proto",
-        "//protocol/keyspace:keyspace-proto",
-    ]
-)
-
-py_library(
-    name = "protocol_python",
-    srcs = [":protocol_python_src"],
-    deps = [
-        requirement("protobuf"),
-        requirement("grpcio"),
-        requirement("six"),
-        requirement("enum34")
-    ]
-)
