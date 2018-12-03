@@ -121,7 +121,18 @@ export default {
   async [DEFINE_ENTITY_TYPE]({ state, dispatch }, payload) {
     let graknTx = await dispatch(OPEN_GRAKN_TX);
 
+    // define entity type
     await state.schemaHandler.defineEntityType(payload);
+
+    // add attribute types to entity type
+    await Promise.all(payload.attributeTypes.map(async (attributeType) => {
+      await state.schemaHandler.addAttribute({ label: payload.label, attributeLabel: attributeType });
+    }));
+
+    // add roles to entity type
+    await Promise.all(payload.roleTypes.map(async (roleType) => {
+      await state.schemaHandler.addPlaysRole({ label: payload.label, roleLabel: roleType });
+    }));
 
     dispatch(COMMIT_TX, graknTx).then(async () => {
       graknTx = await dispatch(OPEN_GRAKN_TX);
@@ -133,17 +144,25 @@ export default {
       // If the supertype is a concept defined by user
       // we just draw the isa edge instead of all edges from relationshipTypes
       if (!META_CONCEPTS.has(supLabel)) {
-        edges = [{ from: type.id, to: sup.id, label: 'isa' }];
+        edges = [{ from: type.id, to: sup.id, label: 'sub' }];
       } else {
         edges = await typeInboundEdges(type, state.visFacade);
       }
       const label = await type.label();
 
-      const nodes = [Object.assign(type, { label })];
+      let nodes = [Object.assign(type, { label })];
+
+      // constuct role edges
+      edges.push(await relationshipTypesOutboundEdges([type]));
 
       state.visFacade.addToCanvas({ nodes, edges });
+
+      nodes = await computeAttributes(nodes);
+      state.visFacade.updateNode(nodes);
+      graknTx.close();
     })
       .catch((e) => {
+        logger.error(e.stack);
         throw e;
       });
   },

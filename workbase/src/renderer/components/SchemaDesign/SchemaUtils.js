@@ -76,7 +76,7 @@ export async function loadMetaTypeInstances(graknTx) {
 
 export async function typeInboundEdges(type, visFacade) {
   const roles = await (await type.playing()).collect();
-  const relationshipTypes = await Promise.all(roles.map(role => role.relationshipTypes())).then(rels => rels.flatMap(x => x));
+  const relationshipTypes = await Promise.all(roles.map(async role => (await role.relationships()).collect())).then(rels => rels.flatMap(x => x));
   return relationshipTypesOutboundEdges(relationshipTypes.filter(rel => visFacade.getNode(rel)));
 }
 

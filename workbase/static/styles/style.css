@@ -200,6 +200,14 @@ span.bp3-icon::before {
   margin-left: 10px !important;
 }
 
+.submit-btn {
+  margin: 0px !important;
+} 
+
+.define-btn {
+  margin: 0px !important;
+}
+
 /* Input */
 
 .input {
