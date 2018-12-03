@@ -80,9 +80,13 @@ public abstract class Atom extends AtomicBase {
     /**
      * Determines whether the subsumption relation between this (A) and provided atom (B) holds,
      * i. e. determines if:
-     * A >= B
+     *
+     * A >= B,
+     *
      * is true meaning that B is more general than A and the respective answer sets meet:
+     *
      * answers(B) subsetOf answers(A)
+     *
      * i. e. the set of answers of A is a subset of the set of answers of B
      *
      * @param atomic to compare with
@@ -281,11 +285,12 @@ public abstract class Atom extends AtomicBase {
 
     /**
      *
-     * @param type
-     * @param <T>
-     * @return
+     * @param var variable of interest
+     * @param type the class of {@link Predicate} to return
+     * @param <T>  the type of {@link Predicate} to return
+     * @return stream of all predicates (public and inner) relevant to this atom and variable
      */
-    public <T extends Predicate> Stream<T> getAllPredicates(Variable var, Class<T> type) {
+    private <T extends Predicate> Stream<T> getAllPredicates(Variable var, Class<T> type) {
         return Stream.concat(
                 getPredicates(type),
                 getInnerPredicates(type)

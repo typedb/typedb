@@ -110,8 +110,7 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
 
 
     /**
-     *
-     * @return
+     * @return corresponding value predicate if transformation exists (id corresponds to an attribute concept)
      */
     public ValuePredicate toValuePredicate(){
         Concept concept = tx().getConcept(this.getPredicate());

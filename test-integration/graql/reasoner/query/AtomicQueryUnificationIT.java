@@ -724,13 +724,13 @@ public class AtomicQueryUnificationIT {
         if(unifierExists != !multiUnifier.isEmpty()){
             System.out.println("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent);
         }
-        //assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
+        assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
         if (unifierExists && unifierType != UnifierType.RULE){
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
             if(unifierExists != !multiUnifierInverse.isEmpty()){
                 System.out.println("Unexpected unifier inverse: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child);
             }
-            //assertEquals("Unexpected unifier inverse: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
+            assertEquals("Unexpected unifier inverse: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
             assertEquals(multiUnifierInverse, multiUnifier.inverse());
         }
         return multiUnifier;
