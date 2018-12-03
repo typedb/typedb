@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Streams;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.MultiUnifier;
@@ -401,18 +400,18 @@ public abstract class Atom extends AtomicBase {
 
     /**
      *
-     * @param parentAtom
-     * @param unifier
-     * @param unifierType
-     * @return
+     * @param parentAtom atom wrt which we check the compatibility
+     * @param unifier mappings between this (child) and parent variables
+     * @param unifierType unifier type in question
+     * @return true if predicates between this (child) and parent are compatible based on the mappings provided by unifier
      */
     protected boolean isPredicateCompatible(Atom parentAtom, Unifier unifier, UnifierComparison unifierType){
         //check value predicates compatibility
         return unifier.mappings().stream().allMatch(mapping -> {
             Variable childVar = mapping.getKey();
             Variable parentVar = mapping.getValue();
-            Set<Atomic> parentIdPredicates = parentAtom.getAllPredicates(parentVar, IdPredicate.class).collect(Collectors.toSet());
-            Set<Atomic> childIdPredicates = this.getAllPredicates(childVar, IdPredicate.class).collect(Collectors.toSet());
+            Set<Atomic> parentIdPredicates = parentAtom.getPredicates(parentVar, IdPredicate.class).collect(Collectors.toSet());
+            Set<Atomic> childIdPredicates = this.getPredicates(childVar, IdPredicate.class).collect(Collectors.toSet());
             Set<Atomic> parentValuePredicates = parentAtom.getAllPredicates(parentVar, ValuePredicate.class).collect(Collectors.toSet());
             Set<Atomic> childValuePredicates = this.getAllPredicates(childVar, ValuePredicate.class).collect(Collectors.toSet());
 
