@@ -72,7 +72,6 @@ public abstract class GraknConfigKey<T> {
     };
 
     public static final GraknConfigKey<Integer> WEBSERVER_THREADS = key("webserver.threads", INT);
-    public static final GraknConfigKey<Integer> NUM_BACKGROUND_THREADS = key("background-tasks.threads", INT);
 
     public static final GraknConfigKey<String> SERVER_HOST_NAME = key("server.host");
     public static final GraknConfigKey<Integer> SERVER_PORT = key("server.port", INT);
@@ -83,13 +82,9 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<String> STORAGE_KEYSPACE = key("storage.cassandra.keyspace", STRING);
     public static final GraknConfigKey<Integer> STORAGE_REPLICATION_FACTOR = key("storage.cassandra.replication-factor", INT);
 
-    public static final GraknConfigKey<List<String>> REDIS_HOST = key("queue.host", CSV);
-    public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST = key("queue.sentinel.host", CSV);
-    public static final GraknConfigKey<String> REDIS_BIND = key("bind");
-    public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER = key("queue.sentinel.master");
-    public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("queue.pool-size", INT);
-    public static final GraknConfigKey<Integer> POST_PROCESSOR_POOL_SIZE = key("post-processor.pool-size", INT);
-    public static final GraknConfigKey<Integer> POST_PROCESSOR_DELAY = key("post-processor.delay", INT);
+    public static final GraknConfigKey<Integer> STORAGE_PORT = key("storage.port", INT);
+    public static final GraknConfigKey<Integer> HADOOP_STORAGE_PORT = key("janusgraphmr.ioformat.conf.storage.port", INT);
+    public static final GraknConfigKey<Integer> STORAGE_CQL_NATIVE_PORT = key("cassandra.input.native.port", INT);
 
     public static final GraknConfigKey<Path> STATIC_FILES_PATH = key("server.static-file-dir", PATH);
 
