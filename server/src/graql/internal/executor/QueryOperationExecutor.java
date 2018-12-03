@@ -32,9 +32,9 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.util.Partition;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.StatementImpl;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.PropertyExecutor;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.server.Transaction;
@@ -50,8 +50,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -59,10 +59,6 @@ import static java.util.stream.Collectors.toList;
  * Multiple query types share this class, such as InsertQuery and DefineQuery.
  */
 public class QueryOperationExecutor {
-
-    private static final String INSERT = "INSERT";
-    private static final String DEFINE = "DEFINE";
-    private static final String UNDEFINE = "UNDEFINE";
 
     protected final Logger LOG = LoggerFactory.getLogger(QueryOperationExecutor.class);
 
@@ -92,48 +88,47 @@ public class QueryOperationExecutor {
         this.dependencies = dependencies;
     }
 
-    static ConceptMap insertAll(Collection<Statement> patterns, Transaction graph) {
-        return create(patterns, graph, INSERT).insertAll(new ConceptMap());
+    static ConceptMap insertAll(Collection<Statement> statements, Transaction transaction) {
+        return insertAll(statements, transaction, new ConceptMap());
     }
 
-    static ConceptMap insertAll(Collection<Statement> patterns, Transaction graph, ConceptMap results) {
-        return create(patterns, graph, INSERT).insertAll(results);
+    static ConceptMap insertAll(Collection<Statement> patterns, Transaction transaction, ConceptMap results) {
+        ImmutableSet.Builder<VarAndProperty> properties = ImmutableSet.builder();
+        for (Statement statement : patterns) {
+            for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
+                for (PropertyExecutor executor : property.insert(statement.var())) {
+                    properties.add(new VarAndProperty(statement.var(), property, executor));
+                }
+            }
+        }
+        return create(properties.build(), transaction).insertAll(results);
     }
 
-    static ConceptMap defineAll(Collection<Statement> patterns, Transaction graph) {
-        return create(patterns, graph, DEFINE).insertAll(new ConceptMap());
+    static ConceptMap defineAll(Collection<Statement> patterns, Transaction transaction) {
+        ImmutableSet.Builder<VarAndProperty> properties = ImmutableSet.builder();
+        for (Statement statement : patterns) {
+            for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
+                for (PropertyExecutor executor : property.define(statement.var())) {
+                    properties.add(new VarAndProperty(statement.var(), property, executor));
+                }
+            }
+        }
+        return create(properties.build(), transaction).insertAll(new ConceptMap());
     }
 
-    static ConceptMap undefineAll(ImmutableList<Statement> patterns, Transaction tx) {
-        return create(patterns, tx, UNDEFINE).insertAll(new ConceptMap());
+    static ConceptMap undefineAll(ImmutableList<Statement> patterns, Transaction transaction) {
+        ImmutableSet.Builder<VarAndProperty> properties = ImmutableSet.builder();
+        for (Statement statement : patterns) {
+            for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
+                for (PropertyExecutor executor : property.undefine(statement.var())) {
+                    properties.add(new VarAndProperty(statement.var(), property, executor));
+                }
+            }
+        }
+        return create(properties.build(), transaction).insertAll(new ConceptMap());
     }
 
-    private static QueryOperationExecutor create(Collection<Statement> patterns, Transaction graph, String writeType) {
-        ImmutableSet<VarAndProperty> properties = patterns.stream()
-                .flatMap(
-                        pattern -> pattern.getProperties().flatMap(
-                                property -> {
-                                    Variable var = pattern.var();
-                                    Collection<PropertyExecutor> executors;
-                                    switch (writeType) {
-                                        case INSERT:
-                                            executors = property.insert(var);
-                                            break;
-                                        case DEFINE:
-                                            executors = property.define(var);
-                                            break;
-                                        case UNDEFINE:
-                                            executors = property.undefine(var);
-                                            break;
-                                        default:
-                                            throw new IllegalArgumentException();
-                                    }
-
-                                    return executors.stream().map(executor -> new VarAndProperty(var, property, executor));
-                                }
-                        )
-                ).collect(toImmutableSet());
-
+    private static QueryOperationExecutor create(ImmutableSet<VarAndProperty> properties, Transaction transaction) {
         /*
             We build several many-to-many relations, indicated by a `Multimap<X, Y>`. These are used to represent
             the dependencies between properties and variables.
@@ -221,7 +216,7 @@ public class QueryOperationExecutor {
          */
         Multimap<VarAndProperty, VarAndProperty> dependencies = composeMultimaps(propDependencies, varDependencies);
 
-        return new QueryOperationExecutor(graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies));
+        return new QueryOperationExecutor(transaction, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies));
     }
 
     private static Multimap<VarProperty, Variable> equivalentProperties(Set<VarAndProperty> properties) {
