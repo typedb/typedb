@@ -19,8 +19,6 @@ package grakn.core.graql.internal.reasoner.atom.binary;
 
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
-import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Concept;
@@ -279,30 +277,7 @@ public abstract class ResourceAtom extends Binary{
 
         ResourceAtom parent = (ResourceAtom) parentAtom;
         Unifier unifier = super.getUnifier(parentAtom, unifierType);
-
-        Set<Atomic> parentPredicates = new HashSet<>(parent.getMultiPredicate());
-        Set<Atomic> childPredicates = new HashSet<>(this.getMultiPredicate());
-        if (!unifierType.equals(UnifierType.STRUCTURAL)) {
-            IdPredicate parentAttributeId = parent.getIdPredicate(parent.getAttributeVariable());
-            IdPredicate childAttributeId = this.getIdPredicate(this.getAttributeVariable());
-
-            Concept parentConcept = parentAttributeId != null ? tx().getConcept(parentAttributeId.getPredicate()) : null;
-            Concept childConcept = childAttributeId != null ? tx().getConcept(childAttributeId.getPredicate()) : null;
-            Object parentValue = (parentConcept != null && parentConcept.isAttribute())? parentConcept.asAttribute().value() : null;
-            Object childValue = (childConcept != null && childConcept.isAttribute())? childConcept.asAttribute().value() : null;
-            ValuePredicate parentPredicateFromId = parentValue != null?
-                    ValuePredicate.create(parent.getAttributeVariable(), Predicates.eq(parentValue), parentAtom.getParentQuery()) : null;
-            ValuePredicate childPredicateFromId = childValue != null?
-                    ValuePredicate.create(this.getAttributeVariable(), Predicates.eq(childValue), this.getParentQuery()) : null;
-            if (childPredicateFromId != null) childPredicates.add(childPredicateFromId);
-            if (parentPredicateFromId != null) parentPredicates.add(parentPredicateFromId);
-        }
-
-        if (unifier == null
-                || !unifierType.idCompatibility(parent.getIdPredicate(parent.getAttributeVariable()), this.getIdPredicate(this.getAttributeVariable()))
-                || !unifierType.attributeValueCompatibility(parentPredicates, childPredicates)){
-            return UnifierImpl.nonExistent();
-        }
+        if (unifier == null) return UnifierImpl.nonExistent();
 
         //unify attribute vars
         Variable childAttributeVarName = this.getAttributeVariable();
@@ -317,7 +292,9 @@ public abstract class ResourceAtom extends Binary{
         if (parentRelationVarName.isUserDefinedName()){
             unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
         }
-        return unifier;
+
+        return isPredicateCompatible(parentAtom, unifier, unifierType)?
+                unifier : UnifierImpl.nonExistent();
     }
 
     @Override

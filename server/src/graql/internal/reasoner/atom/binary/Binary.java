@@ -192,33 +192,26 @@ public abstract class Binary extends Atom {
         Variable parentPredicateVarName = parentAtom.getPredicateVariable();
         Type parentType = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentAtom.getVarName());
         Type childType = this.getParentQuery().getVarTypeMap(inferTypes).get(this.getVarName());
-        Set<Atomic> parentPredicate = parentAtom.getPredicates(parentVarName, ValuePredicate.class).collect(Collectors.toSet());
-        Set<Atomic> childPredicate = this.getPredicates(childVarName, ValuePredicate.class).collect(Collectors.toSet());
-        Set<Atomic> parentTypePredicate = parentAtom.getPredicates(parentPredicateVarName, ValuePredicate.class).collect(Collectors.toSet());
-        Set<Atomic> childTypePredicate = this.getPredicates(childPredicateVarName, ValuePredicate.class).collect(Collectors.toSet());
 
         //check for incompatibilities
         if( !unifierType.typeCompatibility(parentAtom.getSchemaConcept(), this.getSchemaConcept())
                 || !unifierType.typeCompatibility(parentType, childType)
                 || !unifierType.typePlayability(this.getParentQuery(), this.getVarName(), parentType)
-                || !unifierType.idCompatibility(parentAtom.getIdPredicate(parentVarName), this.getIdPredicate(childVarName))
-                || !unifierType.idCompatibility(parentAtom.getIdPredicate(parentPredicateVarName), this.getIdPredicate(childPredicateVarName))
-                || !unifierType.attributeValueCompatibility(parentPredicate, childPredicate)
-                || !unifierType.attributeValueCompatibility(parentTypePredicate, childTypePredicate)
                 || !unifierType.typeExplicitenessCompatibility(parentAtom, this)){
                      return UnifierImpl.nonExistent();
         }
 
         Multimap<Variable, Variable> varMappings = HashMultimap.create();
 
-        if (parentVarName.isUserDefinedName()
-                && childVarName.isUserDefinedName()) {
+        if (parentVarName.isUserDefinedName()) {
             varMappings.put(childVarName, parentVarName);
         }
-        if (parentPredicateVarName.isUserDefinedName()
-                && childPredicateVarName.isUserDefinedName()) {
+        if (parentPredicateVarName.isUserDefinedName()) {
             varMappings.put(childPredicateVarName, parentPredicateVarName);
         }
-        return new UnifierImpl(varMappings);
+
+        UnifierImpl unifier = new UnifierImpl(varMappings);
+        return isPredicateCompatible(parentAtom, unifier, unifierType)?
+                unifier : UnifierImpl.nonExistent();
     }
 }

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.MultiUnifier;
@@ -51,6 +52,8 @@ import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.pattern.Variable;
 
+import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
@@ -278,6 +281,19 @@ public abstract class Atom extends AtomicBase {
     }
 
     /**
+     *
+     * @param type
+     * @param <T>
+     * @return
+     */
+    public <T extends Predicate> Stream<T> getAllPredicates(Variable var, Class<T> type) {
+        return Stream.concat(
+                getPredicates(type),
+                getInnerPredicates(type)
+        ).filter(p -> p.getVarName().equals(var));
+    }
+
+    /**
      * @return set of types relevant to this atom
      */
     public Stream<TypeAtom> getTypeConstraints() {
@@ -291,7 +307,7 @@ public abstract class Atom extends AtomicBase {
      * @param <T>  the type of neighbour {@link Atomic} to return
      * @return neighbours of this atoms, i.e. atoms connected to this atom via shared variable
      */
-    public <T extends Atomic> Stream<T> getNeighbours(Class<T> type) {
+    protected <T extends Atomic> Stream<T> getNeighbours(Class<T> type) {
         return getParentQuery().getAtoms(type)
                 .filter(atom -> atom != this)
                 .filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
@@ -382,6 +398,41 @@ public abstract class Atom extends AtomicBase {
      */
     @Nullable
     public abstract Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType);
+
+    /**
+     *
+     * @param parentAtom
+     * @param unifier
+     * @param unifierType
+     * @return
+     */
+    protected boolean isPredicateCompatible(Atom parentAtom, Unifier unifier, UnifierComparison unifierType){
+        //check value predicates compatibility
+        return unifier.mappings().stream().allMatch(mapping -> {
+            Variable childVar = mapping.getKey();
+            Variable parentVar = mapping.getValue();
+            Set<Atomic> parentIdPredicates = parentAtom.getAllPredicates(parentVar, IdPredicate.class).collect(Collectors.toSet());
+            Set<Atomic> childIdPredicates = this.getAllPredicates(childVar, IdPredicate.class).collect(Collectors.toSet());
+            Set<Atomic> parentValuePredicates = parentAtom.getAllPredicates(parentVar, ValuePredicate.class).collect(Collectors.toSet());
+            Set<Atomic> childValuePredicates = this.getAllPredicates(childVar, ValuePredicate.class).collect(Collectors.toSet());
+
+            if (unifierType.inferValues()) {
+                parentAtom.getParentQuery().getAtoms(IdPredicate.class)
+                        .filter(id -> id.getVarName().equals(parentVar))
+                        .map(IdPredicate::toValuePredicate)
+                        .filter(Objects::nonNull)
+                        .forEach(parentValuePredicates::add);
+                this.getParentQuery().getAtoms(IdPredicate.class)
+                        .filter(id -> id.getVarName().equals(childVar))
+                        .map(IdPredicate::toValuePredicate)
+                        .filter(Objects::nonNull)
+                        .forEach(childValuePredicates::add);
+            }
+
+            return unifierType.idCompatibility(parentIdPredicates, childIdPredicates)
+                    && unifierType.valueCompatibility(parentValuePredicates, childValuePredicates);
+        });
+    }
 
     /**
      * find the (multi) unifier with parent atom

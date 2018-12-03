@@ -344,7 +344,7 @@ public class ConceptMap implements Answer<ConceptMap> {
         Set<Variable> varNames = parent.getVarNames();
         return map.entrySet().stream()
                 .filter(e -> varNames.contains(e.getKey()))
-                .map(e -> IdPredicate.create(e.getKey(), e.getValue(), parent))
+                .map(e -> IdPredicate.create(e.getKey(), e.getValue().id(), parent))
                 .collect(Collectors.toSet());
     }
 }
