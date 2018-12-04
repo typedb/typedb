@@ -47,17 +47,9 @@ public class DeleteQueryTest {
     }
 
     @Test
-    public void deleteQueriesWithDifferentMatchesAreDifferent() {
+    public void deleteQueriesWithDifferentMatchesOrVarsAreDifferent() {
         DeleteQuery query1 = new DeleteQuery(match1, ImmutableSet.copyOf(vars1));
-        DeleteQuery query2 = new DeleteQuery(match2, ImmutableSet.copyOf(vars1));
-
-        assertNotEquals(query1, query2);
-    }
-
-    @Test
-    public void deleteQueriesWithDifferentVarsAreDifferent() {
-        DeleteQuery query1 = new DeleteQuery(match1, ImmutableSet.copyOf(vars1));
-        DeleteQuery query2 = new DeleteQuery(match1, ImmutableSet.copyOf(vars2));
+        DeleteQuery query2 = new DeleteQuery(match2, ImmutableSet.copyOf(vars2));
 
         assertNotEquals(query1, query2);
     }
