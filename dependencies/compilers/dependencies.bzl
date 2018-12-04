@@ -32,7 +32,7 @@ def grpc_dependencies():
     )
 
     native.git_repository(
-        name = "org_pubref_rules_proto",
-        remote = "https://github.com/pubref/rules_proto",
-        commit = "f493ce70027f353cd6964339018163207393ba93",
+        name = "stackb_rules_proto",
+        remote = "https://github.com/stackb/rules_proto",
+        commit = "4c2226458203a9653ae722245cc27e8b07c383f7",
     )
