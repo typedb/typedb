@@ -123,8 +123,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public DefineQuery define(Collection<? extends Statement> varPatterns) {
-        ImmutableList<Statement> admins = ImmutableList.copyOf(varPatterns);
-        return DefineQuery.of(admins, tx);
+        return new DefineQuery(tx, ImmutableList.copyOf(varPatterns));
     }
 
     /**

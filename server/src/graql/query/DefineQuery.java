@@ -22,8 +22,6 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -33,21 +31,35 @@ import java.util.stream.Stream;
 /**
  * Implementation for {@link DefineQuery}
  */
-@AutoValue
-public abstract class DefineQuery implements Query<ConceptMap> {
+public class DefineQuery implements Query<ConceptMap> {
+
+    private final Transaction tx;
+    private final Collection<? extends Statement> statements;
+
+    DefineQuery(@Nullable Transaction tx, Collection<? extends Statement> statements) {
+        this.tx = tx;
+        if (statements == null) {
+            throw new NullPointerException("Null statements");
+        }
+        this.statements = statements;
+    }
+
+    @Nullable
+    @Override
+    public Transaction tx() {
+        return tx;
+    }
 
     /**
      * Get the {@link Statement}s describing what {@link SchemaConcept}s to define.
      */
-    public abstract Collection<? extends Statement> statements();
-
-    static DefineQuery of(Collection<? extends Statement> varPatterns, @Nullable Transaction tx) {
-        return new AutoValue_DefineQuery(tx, ImmutableList.copyOf(varPatterns));
+    public Collection<? extends Statement> statements() {
+        return statements;
     }
 
     @Override
     public Query<ConceptMap> withTx(Transaction tx) {
-        return DefineQuery.of(statements(), tx);
+        return new DefineQuery(tx, statements);
     }
 
     @Override
@@ -68,5 +80,28 @@ public abstract class DefineQuery implements Query<ConceptMap> {
     @Override
     public Boolean inferring() {
         return false;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof DefineQuery) {
+            DefineQuery that = (DefineQuery) o;
+            return ((this.tx == null) ? (that.tx() == null) : this.tx.equals(that.tx()))
+                    && (this.statements.equals(that.statements()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (tx == null) ? 0 : this.tx.hashCode();
+        h *= 1000003;
+        h ^= this.statements.hashCode();
+        return h;
     }
 }
