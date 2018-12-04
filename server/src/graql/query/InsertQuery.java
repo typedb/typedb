@@ -92,9 +92,9 @@ public class InsertQuery implements Query<ConceptMap> {
     @Override
     public final InsertQuery withTx(Transaction tx) {
         if (match() != null) {
-            return Queries.insert(match().withTx(tx).admin(), statements());
+            return new InsertQuery(tx, match().withTx(tx).admin(), statements);
         } else {
-            return Queries.insert(tx, statements());
+            return new InsertQuery(tx, null, statements);
         }
     }
 

@@ -104,8 +104,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public InsertQuery insert(Collection<? extends Statement> vars) {
-        ImmutableList<Statement> varAdmins = ImmutableList.copyOf(vars);
-        return Queries.insert(tx, varAdmins);
+        return new InsertQuery(tx, null, ImmutableList.copyOf(vars));
     }
 
     /**

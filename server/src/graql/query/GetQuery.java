@@ -20,6 +20,7 @@ package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 
@@ -46,6 +47,11 @@ public class GetQuery implements Query<ConceptMap> {
         if (match == null) {
             throw new NullPointerException("Null match");
         }
+        for (Variable var : vars) {
+            if (!match.admin().getSelectedNames().contains(var)) {
+                throw GraqlQueryException.varNotInQuery(var);
+            }
+        }
         this.match = match;
     }
 
@@ -61,7 +67,7 @@ public class GetQuery implements Query<ConceptMap> {
 
     @Override
     public GetQuery withTx(Transaction tx) {
-        return Queries.get(match().withTx(tx).admin(), vars());
+        return new GetQuery(vars(), match().withTx(tx).admin());
     }
 
     @Override

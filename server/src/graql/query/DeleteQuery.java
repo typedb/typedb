@@ -18,7 +18,9 @@
 
 package grakn.core.graql.query;
 
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 
@@ -48,6 +50,11 @@ public class DeleteQuery implements Query<ConceptSet> {
         this.match = match;
         if (vars == null) {
             throw new NullPointerException("Null vars");
+        }
+        for (Variable var : vars) {
+            if (!match.admin().getSelectedNames().contains(var)) {
+                throw GraqlQueryException.varNotInQuery(var);
+            }
         }
         this.vars = vars;
     }
@@ -86,7 +93,7 @@ public class DeleteQuery implements Query<ConceptSet> {
 
     @Override
     public DeleteQuery withTx(Transaction tx) {
-        return Queries.delete(match().withTx(tx).admin(), vars());
+        return new DeleteQuery(match().withTx(tx).admin(), vars);
     }
 
     @CheckReturnValue
