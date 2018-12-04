@@ -43,7 +43,7 @@ public abstract class UndefineQuery implements Query<ConceptMap> {
 
     @Override
     public UndefineQuery withTx(Transaction tx) {
-        return of(varPatterns(), tx);
+        return of(statements(), tx);
     }
 
     @Override
@@ -58,7 +58,7 @@ public abstract class UndefineQuery implements Query<ConceptMap> {
 
     @Override
     public String toString() {
-        return "undefine " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+        return "undefine " + statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 
     @Override
@@ -69,5 +69,5 @@ public abstract class UndefineQuery implements Query<ConceptMap> {
     /**
      * Get the {@link Statement}s describing what {@link SchemaConcept}s to define.
      */
-    public abstract Collection<? extends Statement> varPatterns();
+    public abstract Collection<? extends Statement> statements();
 }

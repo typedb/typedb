@@ -138,11 +138,11 @@ public class QueryOperationExecutor {
 
             For example, the property `$x isa $y` depends on the existence of the concept represented by `$y`.
          */
-        Multimap<VarAndProperty, Variable> propDependencies = HashMultimap.create();
+        Multimap<VarAndProperty, Variable> propToVarDeps = HashMultimap.create();
 
         for (VarAndProperty property : properties) {
             for (Variable requiredVar : property.executor.requiredVars()) {
-                propDependencies.put(property, requiredVar);
+                propToVarDeps.put(property, requiredVar);
             }
         }
 
@@ -152,11 +152,11 @@ public class QueryOperationExecutor {
 
             For example, the concept represented by `$x` will not exist before the property `$x isa $y` is inserted.
          */
-        Multimap<Variable, VarAndProperty> varDependencies = HashMultimap.create();
+        Multimap<Variable, VarAndProperty> varToPropDeps = HashMultimap.create();
 
         for (VarAndProperty property : properties) {
             for (Variable producedVar : property.executor.producedVars()) {
-                varDependencies.put(producedVar, property);
+                varToPropDeps.put(producedVar, property);
             }
         }
 
@@ -188,12 +188,12 @@ public class QueryOperationExecutor {
         equivalentProperties(properties).asMap().values().forEach(vars -> {
             // These vars must refer to the same concept, so share their dependencies
             Collection<VarAndProperty> producers =
-                    vars.stream().flatMap(var -> varDependencies.get(var).stream()).collect(toList());
+                    vars.stream().flatMap(var -> varToPropDeps.get(var).stream()).collect(toList());
 
             Variable first = vars.iterator().next();
 
             vars.forEach(var -> {
-                varDependencies.replaceValues(var, producers);
+                varToPropDeps.replaceValues(var, producers);
                 equivalentVars.merge(first, var);
             });
         });
@@ -214,9 +214,9 @@ public class QueryOperationExecutor {
 
             The `dependencies` relation contains all the information to decide what order to execute the properties.
          */
-        Multimap<VarAndProperty, VarAndProperty> dependencies = composeMultimaps(propDependencies, varDependencies);
+        Multimap<VarAndProperty, VarAndProperty> propertyDependencies = propertyDependencies(propToVarDeps, varToPropDeps);
 
-        return new QueryOperationExecutor(transaction, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies));
+        return new QueryOperationExecutor(transaction, properties, equivalentVars, ImmutableMultimap.copyOf(propertyDependencies));
     }
 
     private static Multimap<VarProperty, Variable> equivalentProperties(Set<VarAndProperty> properties) {
@@ -235,19 +235,19 @@ public class QueryOperationExecutor {
      * <a href=https://en.wikipedia.org/wiki/Composition_of_relations>Compose</a> two {@link Multimap}s together,
      * treating them like many-to-many relations.
      */
-    private static <K, T, V> Multimap<K, V> composeMultimaps(Multimap<K, T> map1, Multimap<T, V> map2) {
-        Multimap<K, V> composed = HashMultimap.create();
+    private static Multimap<VarAndProperty, VarAndProperty> propertyDependencies(Multimap<VarAndProperty, Variable> propToVar, Multimap<Variable, VarAndProperty> varToProp) {
+        Multimap<VarAndProperty, VarAndProperty> propertyDependencies = HashMultimap.create();
 
-        for (Map.Entry<K, T> entry1 : map1.entries()) {
-            K key = entry1.getKey();
-            T intermediateValue = entry1.getValue();
+        for (Map.Entry<VarAndProperty, Variable> entry1 : propToVar.entries()) {
+            VarAndProperty dependant = entry1.getKey();
+            Variable intermediateVar = entry1.getValue();
 
-            for (V value : map2.get(intermediateValue)) {
-                composed.put(key, value);
+            for (VarAndProperty depended : varToProp.get(intermediateVar)) {
+                propertyDependencies.put(dependant, depended);
             }
         }
 
-        return composed;
+        return propertyDependencies;
     }
 
     private ConceptMap insertAll(ConceptMap map) {
@@ -257,7 +257,7 @@ public class QueryOperationExecutor {
             property.executor.execute(this);
         }
 
-        conceptBuilders.forEach(this::buildConcept);
+        conceptBuilders.forEach((var1, builder) -> buildConcept(var1, builder));
 
         ImmutableMap.Builder<Variable, Concept> allConcepts = ImmutableMap.<Variable, Concept>builder().putAll(concepts);
 
@@ -279,10 +279,7 @@ public class QueryOperationExecutor {
 
     /**
      * Produce a valid ordering of the properties by using the given dependency information.
-     *
-     * <p>
      * This method uses a topological sort (Kahn's algorithm) in order to find a valid ordering.
-     * </p>
      */
     private ImmutableList<VarAndProperty> sortProperties() {
         ImmutableList.Builder<VarAndProperty> sorted = ImmutableList.builder();
@@ -330,16 +327,10 @@ public class QueryOperationExecutor {
     /**
      * Return a {@link ConceptBuilder} for given {@link Variable}. This can be used to provide information for how to create
      * the concept that the variable represents.
-     *
-     * <p>
      * This method is expected to be called from implementations of
      * {@link VarProperty#insert(Variable)}, provided they return the given {@link Variable} in the
      * response to {@link PropertyExecutor#producedVars()}.
-     * </p>
-     * <p>
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
-     * </p>
-     *
      * @throws GraqlQueryException if the concept in question has already been created
      */
     public ConceptBuilder builder(Variable var) {
@@ -352,18 +343,11 @@ public class QueryOperationExecutor {
     /**
      * Return a {@link ConceptBuilder} for given {@link Variable}. This can be used to provide information for how to create
      * the concept that the variable represents.
-     *
-     * <p>
      * This method is expected to be called from implementations of
-     * {@link VarProperty#insert(Variable)}, provided they return the given {@link Variable} in the
-     * response to {@link PropertyExecutor#producedVars()}.
-     * </p>
-     * <p>
+     * {@link VarProperty#insert(Variable)}, provided they include the given {@link Variable} in
+     * their {@link PropertyExecutor#producedVars()}.
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
-     * </p>
-     * <p>
      * If the concept has already been created, this will return empty.
-     * </p>
      */
     public Optional<ConceptBuilder> tryBuilder(Variable var) {
         var = equivalentVars.componentOf(var);
@@ -385,12 +369,9 @@ public class QueryOperationExecutor {
 
     /**
      * Return a {@link Concept} for a given {@link Variable}.
-     *
-     * <p>
      * This method is expected to be called from implementations of
-     * {@link VarProperty#insert(Variable)}, provided they return the given {@link Variable} in the
-     * response to {@link PropertyExecutor#requiredVars()}.
-     * </p>
+     * {@link VarProperty#insert(Variable)}, provided they include the given {@link Variable} in
+     * their {@link PropertyExecutor#requiredVars()}.
      */
     public Concept get(Variable var) {
         var = equivalentVars.componentOf(var);

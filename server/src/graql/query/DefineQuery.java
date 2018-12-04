@@ -39,7 +39,7 @@ public abstract class DefineQuery implements Query<ConceptMap> {
     /**
      * Get the {@link Statement}s describing what {@link SchemaConcept}s to define.
      */
-    public abstract Collection<? extends Statement> varPatterns();
+    public abstract Collection<? extends Statement> statements();
 
     static DefineQuery of(Collection<? extends Statement> varPatterns, @Nullable Transaction tx) {
         return new AutoValue_DefineQuery(tx, ImmutableList.copyOf(varPatterns));
@@ -47,7 +47,7 @@ public abstract class DefineQuery implements Query<ConceptMap> {
 
     @Override
     public Query<ConceptMap> withTx(Transaction tx) {
-        return DefineQuery.of(varPatterns(), tx);
+        return DefineQuery.of(statements(), tx);
     }
 
     @Override
@@ -62,7 +62,7 @@ public abstract class DefineQuery implements Query<ConceptMap> {
 
     @Override
     public String toString() {
-        return "define " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+        return "define " + statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 
     @Override

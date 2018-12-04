@@ -73,14 +73,14 @@ public abstract class InsertQuery implements Query<ConceptMap> {
      * @return the variables to insert in the insert query
      */
     @CheckReturnValue
-    public abstract Collection<Statement> varPatterns();
+    public abstract Collection<Statement> statements();
 
     @Override
     public final InsertQuery withTx(Transaction tx) {
         if (match() != null) {
-            return Queries.insert(match().withTx(tx).admin(), varPatterns());
+            return Queries.insert(match().withTx(tx).admin(), statements());
         } else {
-            return Queries.insert(tx, varPatterns());
+            return Queries.insert(tx, statements());
         }
     }
 
@@ -116,7 +116,7 @@ public abstract class InsertQuery implements Query<ConceptMap> {
     }
 
     private Stream<Statement> allVarPatterns() {
-        return varPatterns().stream().flatMap(v -> v.innerStatements().stream());
+        return statements().stream().flatMap(v -> v.innerStatements().stream());
     }
 
     private Transaction getTx() {
@@ -130,7 +130,7 @@ public abstract class InsertQuery implements Query<ConceptMap> {
 
         if (match() != null) builder.append(match()).append("\n");
         builder.append("insert ");
-        builder.append(varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim());
+        builder.append(statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim());
 
         return builder.toString();
     }

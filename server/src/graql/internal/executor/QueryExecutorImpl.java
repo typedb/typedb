@@ -72,24 +72,24 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(InsertQuery query) {
-        Collection<Statement> varPatterns = query.admin().varPatterns().stream()
+        Collection<Statement> statements = query.admin().statements().stream()
                 .flatMap(v -> v.innerStatements().stream())
                 .collect(toImmutableList());
 
         if (query.admin().match() != null) {
-            return runMatchInsert(query.admin().match(), varPatterns);
+            return runMatchInsert(query.admin().match(), statements);
         } else {
-            return Stream.of(QueryOperationExecutor.insertAll(varPatterns, tx));
+            return Stream.of(QueryOperationExecutor.insertAll(statements, tx));
         }
     }
 
-    private Stream<ConceptMap> runMatchInsert(Match match, Collection<Statement> varPatterns) {
+    private Stream<ConceptMap> runMatchInsert(Match match, Collection<Statement> statements) {
         Set<Variable> varsInMatch = match.admin().getSelectedNames();
-        Set<Variable> varsInInsert = varPatterns.stream().map(statement -> statement.var()).collect(toImmutableSet());
+        Set<Variable> varsInInsert = statements.stream().map(statement -> statement.var()).collect(toImmutableSet());
         Set<Variable> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
 
         Stream<ConceptMap> answers = match.get(projectedVars).stream();
-        return answers.map(answer -> QueryOperationExecutor.insertAll(varPatterns, tx, answer)).collect(toList()).stream();
+        return answers.map(answer -> QueryOperationExecutor.insertAll(statements, tx, answer)).collect(toList()).stream();
     }
 
     @Override
@@ -111,7 +111,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(DefineQuery query) {
-        ImmutableList<Statement> allPatterns = query.varPatterns().stream()
+        ImmutableList<Statement> allPatterns = query.statements().stream()
                 .flatMap(v -> v.innerStatements().stream())
                 .collect(toImmutableList());
 
@@ -121,7 +121,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(UndefineQuery query) {
-        ImmutableList<Statement> allPatterns = query.varPatterns().stream()
+        ImmutableList<Statement> allPatterns = query.statements().stream()
                 .flatMap(v -> v.innerStatements().stream())
                 .collect(toImmutableList());
 
