@@ -1,5 +1,5 @@
 java_test(
-    name = "aggregate-query-impl-test",
+    name = "aggregate-query-test",
     test_class = "grakn.core.graql.query.AggregateQueryTest",
     srcs = ["AggregateQueryTest.java"],
     deps = [
@@ -20,7 +20,7 @@ java_test(
 )
 
 java_test(
-    name = "delete-query-impl-test",
+    name = "delete-query-test",
     test_class = "grakn.core.graql.query.DeleteQueryTest",
     srcs = ["DeleteQueryTest.java"],
     deps = [
@@ -30,7 +30,7 @@ java_test(
 )
 
 java_test(
-    name = "insert-query-impl-test",
+    name = "insert-query-test",
     test_class = "grakn.core.graql.query.InsertQueryTest",
     srcs = ["InsertQueryTest.java"],
     deps = [

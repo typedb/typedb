@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Syntax.Compute.Method.COUNT;
+import static grakn.core.graql.query.ComputeQuery.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")

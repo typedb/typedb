@@ -34,7 +34,6 @@ import java.util.stream.Stream;
  * A Graql query of any kind. May read and write to the graph.
  *
  * @param <T> The result type after executing the query
- *
  */
 public interface Query<T extends Answer> extends Iterable<T> {
 
@@ -93,4 +92,57 @@ public interface Query<T extends Answer> extends Iterable<T> {
      * @return boolean that indicates whether this query will perform rule-based inference during execution
      */
     Boolean inferring();
+
+    /**
+     * Graql commands to determine the type of query
+     */
+    enum Command {
+        MATCH("match"),
+        COMPUTE("compute");
+
+        private final String command;
+
+        Command(String command) {
+            this.command = command;
+        }
+
+        @Override
+        public String toString() {
+            return this.command;
+        }
+
+        public static Command of(String value) {
+            for (Command c : Command.values()) {
+                if (c.command.equals(value)) {
+                    return c;
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Characters available for use in the Graql syntax
+     */
+    enum Char {
+        EQUAL("="),
+        SEMICOLON(";"),
+        SPACE(" "),
+        COMMA(","),
+        COMMA_SPACE(", "),
+        SQUARE_OPEN("["),
+        SQUARE_CLOSE("]"),
+        QUOTE("\"");
+
+        private final String character;
+
+        Char(String character) {
+            this.character = character;
+        }
+
+        @Override
+        public String toString() {
+            return this.character;
+        }
+    }
 }

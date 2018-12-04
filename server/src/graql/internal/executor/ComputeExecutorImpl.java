@@ -25,7 +25,6 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.Syntax;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptSet;
@@ -90,19 +89,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.query.Syntax.Compute.Algorithm.DEGREE;
-import static grakn.core.graql.query.Syntax.Compute.Algorithm.K_CORE;
-import static grakn.core.graql.query.Syntax.Compute.Method.CENTRALITY;
-import static grakn.core.graql.query.Syntax.Compute.Method.CLUSTER;
-import static grakn.core.graql.query.Syntax.Compute.Method.COUNT;
-import static grakn.core.graql.query.Syntax.Compute.Method.MAX;
-import static grakn.core.graql.query.Syntax.Compute.Method.MEAN;
-import static grakn.core.graql.query.Syntax.Compute.Method.MEDIAN;
-import static grakn.core.graql.query.Syntax.Compute.Method.MIN;
-import static grakn.core.graql.query.Syntax.Compute.Method.PATH;
-import static grakn.core.graql.query.Syntax.Compute.Method.STD;
-import static grakn.core.graql.query.Syntax.Compute.Method.SUM;
+import static grakn.core.graql.query.ComputeQuery.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.query.ComputeQuery.Algorithm.DEGREE;
+import static grakn.core.graql.query.ComputeQuery.Algorithm.K_CORE;
+import static grakn.core.graql.query.ComputeQuery.Method.CENTRALITY;
+import static grakn.core.graql.query.ComputeQuery.Method.CLUSTER;
+import static grakn.core.graql.query.ComputeQuery.Method.COUNT;
+import static grakn.core.graql.query.ComputeQuery.Method.MAX;
+import static grakn.core.graql.query.ComputeQuery.Method.MEAN;
+import static grakn.core.graql.query.ComputeQuery.Method.MEDIAN;
+import static grakn.core.graql.query.ComputeQuery.Method.MIN;
+import static grakn.core.graql.query.ComputeQuery.Method.PATH;
+import static grakn.core.graql.query.ComputeQuery.Method.STD;
+import static grakn.core.graql.query.ComputeQuery.Method.SUM;
 
 /**
  * A Graql Compute query job executed against a {@link TransactionOLAP}.
@@ -127,7 +126,7 @@ class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
 
     @Override
     public Stream<T> stream() {
-        Syntax.Compute.Method<?> method = query.method();
+        ComputeQuery.Method<?> method = query.method();
         if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
             return (Stream<T>) runComputeMinMaxMedianOrSum();
         } else if (method.equals(MEAN)) {
@@ -281,7 +280,7 @@ class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
      * @return an object which is a subclass of StatisticsMapReduce
      */
     private StatisticsMapReduce<?> initStatisticsMapReduce(Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
-        Syntax.Compute.Method<?> method = query.method();
+        ComputeQuery.Method<?> method = query.method();
         if (method.equals(MIN)) {
             return new MinMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MAX)) {

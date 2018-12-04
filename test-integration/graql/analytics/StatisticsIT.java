@@ -47,12 +47,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Syntax.Compute.Method.MAX;
-import static grakn.core.graql.query.Syntax.Compute.Method.MEAN;
-import static grakn.core.graql.query.Syntax.Compute.Method.MEDIAN;
-import static grakn.core.graql.query.Syntax.Compute.Method.MIN;
-import static grakn.core.graql.query.Syntax.Compute.Method.STD;
-import static grakn.core.graql.query.Syntax.Compute.Method.SUM;
+import static grakn.core.graql.query.ComputeQuery.Method.MAX;
+import static grakn.core.graql.query.ComputeQuery.Method.MEAN;
+import static grakn.core.graql.query.ComputeQuery.Method.MEDIAN;
+import static grakn.core.graql.query.ComputeQuery.Method.MIN;
+import static grakn.core.graql.query.ComputeQuery.Method.STD;
+import static grakn.core.graql.query.ComputeQuery.Method.SUM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
