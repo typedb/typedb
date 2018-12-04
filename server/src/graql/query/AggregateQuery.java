@@ -34,7 +34,7 @@ public class AggregateQuery<T extends Answer> implements Query<T> {
     private final Match match;
     private final Aggregate<T> aggregate;
 
-    AggregateQuery(@Nullable Match match, Aggregate<T> aggregate) {
+    public AggregateQuery(@Nullable Match match, Aggregate<T> aggregate) {
         this.match = match;
         if (aggregate == null) {
             throw new NullPointerException("Null aggregate");
