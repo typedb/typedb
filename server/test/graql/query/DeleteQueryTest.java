@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.pattern.Variable;
 import org.junit.Test;
@@ -38,8 +39,8 @@ public class DeleteQueryTest {
 
     @Test
     public void deleteQueriesWithTheSameMatchAndVarsAreEqual() {
-        DeleteQuery query1 = DeleteQuery.of(vars1, match1);
-        DeleteQuery query2 = DeleteQuery.of(vars1, match1);
+        DeleteQuery query1 = new DeleteQuery(match1, ImmutableSet.copyOf(vars1));
+        DeleteQuery query2 = new DeleteQuery(match1, ImmutableSet.copyOf(vars1));
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -47,16 +48,16 @@ public class DeleteQueryTest {
 
     @Test
     public void deleteQueriesWithDifferentMatchesAreDifferent() {
-        DeleteQuery query1 = DeleteQuery.of(vars1, match1);
-        DeleteQuery query2 = DeleteQuery.of(vars1, match2);
+        DeleteQuery query1 = new DeleteQuery(match1, ImmutableSet.copyOf(vars1));
+        DeleteQuery query2 = new DeleteQuery(match2, ImmutableSet.copyOf(vars1));
 
         assertNotEquals(query1, query2);
     }
 
     @Test
     public void deleteQueriesWithDifferentVarsAreDifferent() {
-        DeleteQuery query1 = DeleteQuery.of(vars1, match1);
-        DeleteQuery query2 = DeleteQuery.of(vars2, match1);
+        DeleteQuery query1 = new DeleteQuery(match1, ImmutableSet.copyOf(vars1));
+        DeleteQuery query2 = new DeleteQuery(match1, ImmutableSet.copyOf(vars2));
 
         assertNotEquals(query1, query2);
     }

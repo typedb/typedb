@@ -18,14 +18,11 @@
 
 package grakn.core.graql.query;
 
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -33,22 +30,46 @@ import static java.util.stream.Collectors.joining;
 
 /**
  * A query for deleting concepts from a {@link Match} clause.
- * The delete operation to perform is based on what {@link VarPattern} objects
+ * The delete operation to perform is based on what Statement objects
  * are provided to it. If only variable names are provided, then the delete
  * query will delete the concept bound to each given variable name. If property
  * flags are provided, e.g. {@code var("x").has("name")} then only those
  * properties are deleted.
  */
-@AutoValue
-public abstract class DeleteQuery implements Query<ConceptSet> {
+public class DeleteQuery implements Query<ConceptSet> {
+
+    private final Match match;
+    private final Set<Variable> vars;
+
+    DeleteQuery(
+            Match match,
+            Set<Variable> vars) {
+        if (match == null) {
+            throw new NullPointerException("Null match");
+        }
+        this.match = match;
+        if (vars == null) {
+            throw new NullPointerException("Null vars");
+        }
+        this.vars = vars;
+    }
 
     /**
-     * @param vars  a collection of variables to delete
-     * @param match a pattern to match and delete for each result
+     * @return the {@link Match} this delete query is operating on
      */
-    static DeleteQuery of(Collection<? extends Variable> vars, Match match) {
-        return new AutoValue_DeleteQuery(match, ImmutableSet.copyOf(vars));
+    @CheckReturnValue
+    public Match match() {
+        return match;
     }
+
+    /**
+     * Get the {@link Variable}s to delete on each result of {@link #match()}.
+     */
+    @CheckReturnValue
+    public Set<Variable> vars() {
+        return vars;
+    }
+
 
     @Override
     public Stream<ConceptSet> stream() {
@@ -91,15 +112,26 @@ public abstract class DeleteQuery implements Query<ConceptSet> {
         return match().admin().inferring();
     }
 
-    /**
-     * @return the {@link Match} this delete query is operating on
-     */
-    @CheckReturnValue
-    public abstract Match match();
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof DeleteQuery) {
+            DeleteQuery that = (DeleteQuery) o;
+            return (this.match.equals(that.match()))
+                    && (this.vars.equals(that.vars()));
+        }
+        return false;
+    }
 
-    /**
-     * Get the {@link Variable}s to delete on each result of {@link #match()}.
-     */
-    @CheckReturnValue
-    public abstract Set<Variable> vars();
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.match.hashCode();
+        h *= 1000003;
+        h ^= this.vars.hashCode();
+        return h;
+    }
 }

@@ -57,7 +57,7 @@ public class Queries {
 
     public static DeleteQuery delete(MatchAdmin match, Set<Variable> vars) {
         validateMatchVars(match, vars);
-        return DeleteQuery.of(vars, match);
+        return new DeleteQuery(match, ImmutableSet.copyOf(vars));
     }
 
     public static <T extends Answer> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {
