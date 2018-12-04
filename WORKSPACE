@@ -73,7 +73,11 @@ node_repositories(package_json = ["//client-nodejs:package.json"])
 npm_install(
     name = "nodejs_dependencies",
     package_json = "//client-nodejs:package.json",
-    package_lock_json = "//client-nodejs:package-lock.json",
+    data = [
+      "@build_bazel_rules_nodejs//internal/babel_library:package.json",
+      "@build_bazel_rules_nodejs//internal/babel_library:babel.js",
+      "@build_bazel_rules_nodejs//internal/babel_library:yarn.lock",
+    ],
 )
 
 node_repositories(package_json = ["//workbase:package.json"])
@@ -122,7 +126,7 @@ node_grpc_compile()
 git_repository(
     name="graknlabs_rules_deployment",
     remote="https://github.com/graknlabs/deployment",
-    commit="acc2b7baf4ab93a02dd49123d3adab4dc6989ce8",
+    commit="fc812a4cd0dddd7478437ff03bc22e6c83b13620",
 )
 
 load("@graknlabs_rules_deployment//github:dependencies.bzl", "dependencies_for_github_deployment")
