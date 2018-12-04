@@ -18,11 +18,10 @@
 
 package grakn.core.graql.query;
 
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;
@@ -34,16 +33,30 @@ import static java.util.stream.Collectors.joining;
  * pattern-matching query. The patterns are described in a declarative fashion, then the {@link GetQuery} will traverse
  * the knowledge base in an efficient fashion to find any matching answers.
  */
-@AutoValue
-public abstract class GetQuery implements Query<ConceptMap> {
+public class GetQuery implements Query<ConceptMap> {
+
+    private final ImmutableSet<Variable> vars;
+    private final Match match;
+
+    GetQuery(ImmutableSet<Variable> vars, Match match) {
+        if (vars == null) {
+            throw new NullPointerException("Null vars");
+        }
+        this.vars = vars;
+        if (match == null) {
+            throw new NullPointerException("Null match");
+        }
+        this.match = match;
+    }
 
     @CheckReturnValue
-    public abstract ImmutableSet<Variable> vars();
-    @CheckReturnValue
-    public abstract Match match();
+    public ImmutableSet<Variable> vars() {
+        return vars;
+    }
 
-    public static GetQuery of(Match match, ImmutableSet<Variable> vars) {
-        return new AutoValue_GetQuery(vars, match);
+    @CheckReturnValue
+    public Match match() {
+        return match;
     }
 
     @Override
@@ -74,5 +87,28 @@ public abstract class GetQuery implements Query<ConceptMap> {
     @Override
     public final Boolean inferring() {
         return match().admin().inferring();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof GetQuery) {
+            GetQuery that = (GetQuery) o;
+            return (this.vars.equals(that.vars()))
+                    && (this.match.equals(that.match()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.vars.hashCode();
+        h *= 1000003;
+        h ^= this.match.hashCode();
+        return h;
     }
 }

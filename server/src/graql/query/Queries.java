@@ -31,7 +31,6 @@ import java.util.Set;
 
 /**
  * Internal query factory
- *
  */
 public class Queries {
 
@@ -40,7 +39,7 @@ public class Queries {
 
     public static GetQuery get(MatchAdmin match, ImmutableSet<Variable> vars) {
         validateMatchVars(match, vars);
-        return GetQuery.of(match, vars);
+        return new GetQuery(vars, match);
     }
 
     public static InsertQuery insert(Transaction tx, Collection<Statement> vars) {

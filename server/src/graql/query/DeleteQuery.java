@@ -41,9 +41,7 @@ public class DeleteQuery implements Query<ConceptSet> {
     private final Match match;
     private final Set<Variable> vars;
 
-    DeleteQuery(
-            Match match,
-            Set<Variable> vars) {
+    DeleteQuery(Match match, Set<Variable> vars) {
         if (match == null) {
             throw new NullPointerException("Null match");
         }
