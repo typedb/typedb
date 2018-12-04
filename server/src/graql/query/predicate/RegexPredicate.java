@@ -18,9 +18,8 @@
 
 package grakn.core.graql.query.predicate;
 
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.Schema;
-import com.google.auto.value.AutoValue;
+import grakn.core.graql.query.pattern.Statement;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 
@@ -28,16 +27,19 @@ import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
-@AutoValue
-abstract class RegexPredicate implements ValuePredicate {
+class RegexPredicate implements ValuePredicate {
 
-    abstract String pattern();
+    private final String pattern;
 
-    /**
-     * @param pattern the regex pattern that this predicate is testing against
-     */
-    static RegexPredicate of(String pattern) {
-        return new AutoValue_RegexPredicate(pattern);
+    RegexPredicate(String pattern) {
+        if (pattern == null) {
+            throw new NullPointerException("Null pattern");
+        }
+        this.pattern = pattern;
+    }
+
+    String pattern() {
+        return pattern;
     }
 
     private P<Object> regexPredicate() {
@@ -66,7 +68,7 @@ abstract class RegexPredicate implements ValuePredicate {
     }
 
     @Override
-    public boolean isCompatibleWith(ValuePredicate predicate){
+    public boolean isCompatibleWith(ValuePredicate predicate) {
         if (!(predicate instanceof EqPredicate)) return false;
         EqPredicate p = (EqPredicate) predicate;
         Object thatVal = p.equalsValue().orElse(null);
@@ -76,5 +78,25 @@ abstract class RegexPredicate implements ValuePredicate {
     @Override
     public boolean subsumes(ValuePredicate predicate) {
         return this.isCompatibleWith(predicate);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof RegexPredicate) {
+            RegexPredicate that = (RegexPredicate) o;
+            return (this.pattern.equals(that.pattern()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.pattern.hashCode();
+        return h;
     }
 }

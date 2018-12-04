@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.predicate;
 
-import grakn.core.graql.query.predicate.RegexPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.junit.Test;
 
@@ -30,7 +29,7 @@ public class RegexPredicateTest {
 
     @Test
     public void regexPredicateInterpretsCharacterClassesCorrectly() {
-        P<Object> predicate = RegexPredicate.of("\\d").getPredicate().get();
+        P<Object> predicate = new RegexPredicate("\\d").getPredicate().get();
 
         assertTrue(predicate.test("0"));
         assertTrue(predicate.test("1"));
@@ -39,7 +38,7 @@ public class RegexPredicateTest {
 
     @Test
     public void regexPredicateInterpretsQuotesCorrectly() {
-        P<Object> predicate = RegexPredicate.of("\"").getPredicate().get();
+        P<Object> predicate = new RegexPredicate("\"").getPredicate().get();
 
         assertTrue(predicate.test("\""));
         assertFalse(predicate.test("\\\""));
@@ -47,7 +46,7 @@ public class RegexPredicateTest {
 
     @Test
     public void regexPredicateInterpretsBackslashesCorrectly() {
-        P<Object> predicate = RegexPredicate.of("\\\\").getPredicate().get();
+        P<Object> predicate = new RegexPredicate("\\\\").getPredicate().get();
 
         assertTrue(predicate.test("\\"));
         assertFalse(predicate.test("\\\\"));
@@ -55,7 +54,7 @@ public class RegexPredicateTest {
 
     @Test
     public void regexPredicateInterpretsNewlineCorrectly() {
-        P<Object> predicate = RegexPredicate.of("\\n").getPredicate().get();
+        P<Object> predicate = new RegexPredicate("\\n").getPredicate().get();
 
         assertTrue(predicate.test("\n"));
         assertFalse(predicate.test("\\n"));
@@ -63,14 +62,14 @@ public class RegexPredicateTest {
 
     @Test
     public void regexPredicateToStringDoesNotEscapeMostThings() {
-        RegexPredicate predicate = RegexPredicate.of("don't escape these: \\d, \", \n ok");
+        RegexPredicate predicate = new RegexPredicate("don't escape these: \\d, \", \n ok");
 
         assertEquals("/don't escape these: \\d, \", \n ok/", predicate.toString());
     }
 
     @Test
     public void regexPredicateToStringEscapesForwardSlashes() {
-        RegexPredicate predicate = RegexPredicate.of("escape this: / ok");
+        RegexPredicate predicate = new RegexPredicate("escape this: / ok");
 
         assertEquals("/escape this: \\/ ok/", predicate.toString());
     }
