@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query;
 
+import com.google.common.collect.ImmutableList;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
 import grakn.core.graql.admin.MatchAdmin;
@@ -40,8 +41,8 @@ public class InsertQueryTest {
 
     @Test
     public void insertQueriesWithTheSameVarsAndQueryAreEqual() {
-        InsertQuery query1 = InsertQuery.create(null, match1, vars1);
-        InsertQuery query2 = InsertQuery.create(null, match1, vars1);
+        InsertQuery query1 = new InsertQuery(null, match1, ImmutableList.copyOf(vars1));
+        InsertQuery query2 = new InsertQuery(null, match1, ImmutableList.copyOf(vars1));
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -51,8 +52,8 @@ public class InsertQueryTest {
     public void insertQueriesWithTheSameVarsAndGraphAreEqual() {
         Transaction graph = mock(Transaction.class);
 
-        InsertQuery query1 = InsertQuery.create(graph, null, vars1);
-        InsertQuery query2 = InsertQuery.create(graph, null, vars1);
+        InsertQuery query1 = new InsertQuery(graph, null, ImmutableList.copyOf(vars1));
+        InsertQuery query2 = new InsertQuery(graph, null, ImmutableList.copyOf(vars1));
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -60,8 +61,8 @@ public class InsertQueryTest {
 
     @Test
     public void insertQueriesWithDifferentMatchesAreDifferent() {
-        InsertQuery query1 = InsertQuery.create(null, match1, vars1);
-        InsertQuery query2 = InsertQuery.create(null, match2, vars1);
+        InsertQuery query1 = new InsertQuery(null, match1, ImmutableList.copyOf(vars1));
+        InsertQuery query2 = new InsertQuery(null, match2, ImmutableList.copyOf(vars1));
 
         assertNotEquals(query1, query2);
     }
@@ -71,16 +72,16 @@ public class InsertQueryTest {
         Transaction graph1 = mock(Transaction.class);
         Transaction graph2 = mock(Transaction.class);
 
-        InsertQuery query1 = InsertQuery.create(graph1, null, vars1);
-        InsertQuery query2 = InsertQuery.create(graph2, null, vars2);
+        InsertQuery query1 = new InsertQuery(graph1, null, ImmutableList.copyOf(vars1));
+        InsertQuery query2 = new InsertQuery(graph2, null, ImmutableList.copyOf(vars2));
 
         assertNotEquals(query1, query2);
     }
 
     @Test
     public void insertQueriesWithDifferentVarsAreDifferent() {
-        InsertQuery query1 = InsertQuery.create(null, match1, vars1);
-        InsertQuery query2 = InsertQuery.create(null, match1, vars2);
+        InsertQuery query1 = new InsertQuery(null, match1, ImmutableList.copyOf(vars1));
+        InsertQuery query2 = new InsertQuery(null, match1, ImmutableList.copyOf(vars2));
 
         assertNotEquals(query1, query2);
     }

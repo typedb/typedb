@@ -38,7 +38,7 @@ public class GetQuery implements Query<ConceptMap> {
     private final ImmutableSet<Variable> vars;
     private final Match match;
 
-    GetQuery(ImmutableSet<Variable> vars, Match match) {
+    public GetQuery(ImmutableSet<Variable> vars, Match match) {
         if (vars == null) {
             throw new NullPointerException("Null vars");
         }

@@ -36,7 +36,7 @@ public class DefineQuery implements Query<ConceptMap> {
     private final Transaction tx;
     private final Collection<? extends Statement> statements;
 
-    DefineQuery(@Nullable Transaction tx, Collection<? extends Statement> statements) {
+    public DefineQuery(@Nullable Transaction tx, Collection<? extends Statement> statements) {
         this.tx = tx;
         if (statements == null) {
             throw new NullPointerException("Null statements");

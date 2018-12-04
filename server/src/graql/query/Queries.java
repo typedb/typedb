@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query;
 
+import com.google.common.collect.ImmutableList;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
@@ -43,7 +44,7 @@ public class Queries {
     }
 
     public static InsertQuery insert(Transaction tx, Collection<Statement> vars) {
-        return InsertQuery.create(tx, null, vars);
+        return new InsertQuery(tx, null, ImmutableList.copyOf(vars));
     }
 
     /**
@@ -51,7 +52,7 @@ public class Queries {
      * @param varPattern  a collection of Vars to insert
      */
     public static InsertQuery insert(MatchAdmin match, Collection<Statement> varPattern) {
-        return InsertQuery.create(match.tx(), match, varPattern);
+        return new InsertQuery(match.tx(), match, ImmutableList.copyOf(varPattern));
     }
 
     public static DeleteQuery delete(MatchAdmin match, Set<Variable> vars) {
