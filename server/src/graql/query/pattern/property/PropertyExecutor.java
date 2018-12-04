@@ -18,57 +18,60 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.internal.executor.QueryOperationExecutor;
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.internal.executor.QueryOperationExecutor;
+import grakn.core.graql.query.pattern.Variable;
+
+import java.util.Arrays;
 
 // TODO: Add an example of 'undefine' to this description
+
 /**
  * A class describing an operation to perform using a {@link VarProperty}.
- *
- * <p>
- *     The behaviour is executed via a {@link QueryOperationExecutor} using {@link #execute}. The class also
- *     report its {@link #requiredVars} before it can run and its {@link #producedVars()}, that will be available to
- *     other {@link PropertyExecutor}s after it has run.
- * </p>
- * <p>
- *     For example:
- *     <pre>
- *         SubProperty property = SubProperty.of(y);
- *         PropertyExecutor executor = property.define(x);
- *         executor.requiredVars(); // returns `{y}`
- *         executor.producedVars(); // returns `{x}`
- *
- *         // apply the `sub` property between `x` and `y`
- *         // because it requires `y`, it will call `queryOperationExecutor.get(y)`
- *         // because it produces `x`, it will call `queryOperationExecutor.builder(x)`
- *         executor.execute(queryOperationExecutor);
- *     </pre>
- * </p>
- *
+ * The behaviour is executed via a {@link QueryOperationExecutor} using {@link #execute}. The class also
+ * report its {@link #requiredVars} before it can run and its {@link #producedVars()}, that will be available to
+ * other {@link PropertyExecutor}s after it has run.
+ * For example:
+ * SubProperty property = SubProperty.of(y);
+ * PropertyExecutor executor = property.define(x);
+ * executor.requiredVars(); // returns `{y}`
+ * executor.producedVars(); // returns `{x}`
+ * // apply the `sub` property between `x` and `y`
+ * // because it requires `y`, it will call `queryOperationExecutor.get(y)`
+ * // because it produces `x`, it will call `queryOperationExecutor.builder(x)`
+ * executor.execute(queryOperationExecutor);
  */
-@AutoValue
-public abstract class PropertyExecutor {
+public class PropertyExecutor {
+
+    private final ImmutableSet<Variable> requiredVars;
+    private final ImmutableSet<Variable> producedVars;
+    private final PropertyExecutor.Method executeMethod;
+
+    private PropertyExecutor(
+            ImmutableSet<Variable> requiredVars,
+            ImmutableSet<Variable> producedVars,
+            PropertyExecutor.Method executeMethod) {
+        this.requiredVars = requiredVars;
+        this.producedVars = producedVars;
+        this.executeMethod = executeMethod;
+    }
 
     public static PropertyExecutor.Builder builder(Method executeMethod) {
         return builder().executeMethod(executeMethod);
     }
 
     private static PropertyExecutor.Builder builder() {
-        return new AutoValue_PropertyExecutor.Builder();
+        return new PropertyExecutor.Builder();
     }
 
     /**
      * Apply the given property, if possible.
      *
      * @param executor a class providing a map of concepts that are accessible and methods to build new concepts.
-     *                 <p>
      *                 This method can expect any key to be here that is returned from
      *                 {@link #requiredVars()}. The method may also build a concept provided that key is returned
      *                 from {@link #producedVars()}.
-     *                 </p>
      */
     public final void execute(QueryOperationExecutor executor) {
         executeMethod().execute(executor);
@@ -77,50 +80,122 @@ public abstract class PropertyExecutor {
     /**
      * Get all {@link Variable}s whose {@link Concept} must exist for the subject {@link Variable} to be applied.
      * For example, for {@link IsaProperty} the type must already be present before an instance can be created.
-     *
-     * <p>
-     *     When calling {@link #execute}, the method can expect any {@link Variable} returned here to be available by calling
-     *     {@link QueryOperationExecutor#get}.
-     * </p>
+     * When calling {@link #execute}, the method can expect any {@link Variable} returned here to be available by calling
+     * {@link QueryOperationExecutor#get}.
      */
-    public abstract ImmutableSet<Variable> requiredVars();
+    public ImmutableSet<Variable> requiredVars() {
+        return requiredVars;
+    }
 
     /**
      * Get all {@link Variable}s whose {@link Concept} can only be created after this property is applied.
-     *
-     * <p>
-     *     When calling {@link #execute}, the method must help build a {@link Concept} for every {@link Variable} returned
-     *     from this method, using {@link QueryOperationExecutor#builder}.
-     * </p>
+     * When calling {@link #execute}, the method must help build a {@link Concept} for every {@link Variable} returned
+     * from this method, using {@link QueryOperationExecutor#builder}.
      */
-    public abstract ImmutableSet<Variable> producedVars();
+    public ImmutableSet<Variable> producedVars() {
+        return producedVars;
+    }
 
-    abstract Method executeMethod();
+    private PropertyExecutor.Method executeMethod() {
+        return executeMethod;
+    }
 
-    @AutoValue.Builder
-    abstract static class Builder {
-        abstract Builder executeMethod(Method value);
+    @Override
+    public String toString() {
+        return "PropertyExecutor{"
+                + "requiredVars=" + requiredVars + ", "
+                + "producedVars=" + producedVars + ", "
+                + "executeMethod=" + executeMethod
+                + "}";
+    }
 
-        abstract ImmutableSet.Builder<Variable> requiredVarsBuilder();
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof PropertyExecutor) {
+            PropertyExecutor that = (PropertyExecutor) o;
+            return (this.requiredVars.equals(that.requiredVars()))
+                    && (this.producedVars.equals(that.producedVars()))
+                    && (this.executeMethod.equals(that.executeMethod()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.requiredVars.hashCode();
+        h *= 1000003;
+        h ^= this.producedVars.hashCode();
+        h *= 1000003;
+        h ^= this.executeMethod.hashCode();
+        return h;
+    }
+
+    static class Builder {
+
+        private ImmutableSet.Builder<Variable> requiredVarsBuilder;
+        private ImmutableSet<Variable> requiredVars;
+        private ImmutableSet.Builder<Variable> producedVarsBuilder;
+        private ImmutableSet<Variable> producedVars;
+        private PropertyExecutor.Method executeMethod;
+
+        Builder() {}
 
         public Builder requires(Variable... values) {
-            requiredVarsBuilder().add(values);
-            return this;
+            return requires(Arrays.asList(values));
         }
 
         public Builder requires(Iterable<Variable> values) {
-            requiredVarsBuilder().addAll(values);
+            if (requiredVarsBuilder == null) {
+                requiredVarsBuilder = ImmutableSet.builder();
+            }
+            requiredVarsBuilder.addAll(values);
             return this;
         }
-
-        abstract ImmutableSet.Builder<Variable> producedVarsBuilder();
 
         public Builder produces(Variable... values) {
-            producedVarsBuilder().add(values);
+            if (producedVarsBuilder == null) {
+                producedVarsBuilder = ImmutableSet.builder();
+            }
+            producedVarsBuilder.add(values);
             return this;
         }
 
-        abstract PropertyExecutor build();
+        PropertyExecutor.Builder executeMethod(PropertyExecutor.Method executeMethod) {
+            if (executeMethod == null) {
+                throw new NullPointerException("Null executeMethod");
+            }
+            this.executeMethod = executeMethod;
+            return this;
+        }
+
+        PropertyExecutor build() {
+            if (requiredVarsBuilder != null) {
+                this.requiredVars = requiredVarsBuilder.build();
+            } else if (this.requiredVars == null) {
+                this.requiredVars = ImmutableSet.of();
+            }
+            if (producedVarsBuilder != null) {
+                this.producedVars = producedVarsBuilder.build();
+            } else if (this.producedVars == null) {
+                this.producedVars = ImmutableSet.of();
+            }
+            String missing = "";
+            if (this.executeMethod == null) {
+                missing += " executeMethod";
+            }
+            if (!missing.isEmpty()) {
+                throw new IllegalStateException("Missing required properties:" + missing);
+            }
+            return new PropertyExecutor(
+                    this.requiredVars,
+                    this.producedVars,
+                    this.executeMethod);
+        }
     }
 
     @FunctionalInterface
