@@ -22,7 +22,8 @@ exports_files([
 ])
 
 load("@stackb_rules_proto//node:node_grpc_compile.bzl", "node_grpc_compile")
-load("@build_bazel_rules_nodejs//:defs.bzl", "npm_package", "nodejs_jest_test")
+load("@build_bazel_rules_nodejs//:defs.bzl", "npm_package", "nodejs_jest_test", "babel_library")
+load("@graknlabs_rules_deployment//npm:rules.bzl", "deploy_npm")
 
 
 node_grpc_compile(
@@ -35,20 +36,39 @@ node_grpc_compile(
     ]
 )
 
+babel_library(
+    name = 'bundle',
+    srcs = glob([
+       "src/*.js",
+       "src/service/Keyspace/KeyspaceService.js",
+       "src/service/Session/*.js",
+       "src/service/Session/util/*.js",
+       "src/service/Session/concept/*.js",
+   ]),
+   data = [
+       "package.json",
+       "README.md"
+   ],
+   babel = "@nodejs_dependencies//@bazel/babel/bin:babel",
+   babelrc = "babel.rc.js"
+)
+
+
 npm_package(
     name = "client-nodejs",
-    srcs = glob([
-            "src/*.js",
-            "src/service/Keyspace/KeyspaceService.js",
-            "src/service/Session/*.js",
-            "src/service/Session/util/*.js",
-            "src/service/Session/concept/*.js",
-        ]),
     deps = [
         ":client-nodejs-proto",
+        ":bundle",
         "@nodejs_dependencies//grpc",
         "@nodejs_dependencies//google-protobuf"
     ]
+)
+
+deploy_npm(
+    name = "deploy-npm",
+    target = ":client-nodejs",
+    version_file = "//:VERSION",
+    deployment_properties = "//:deployment.properties",
 )
 
 nodejs_jest_test(
