@@ -23,6 +23,7 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Set;
+import java.util.function.BiFunction;
 
 /**
  * Interface for defining unifier comparisons.
@@ -35,9 +36,14 @@ public interface UnifierComparison {
     boolean inferTypes();
 
     /**
-     * @param parent
-     * @param child
-     * @return
+     * @return true if values should be inferred from id predicates when computing unifier
+     */
+    boolean inferValues();
+
+    /**
+     * @param parent parent type {@link Atomic}
+     * @param child child type {@link Atomic}
+     * @return true if both types are compatible in terms of type expliciteness (directness)
      */
     boolean typeExplicitenessCompatibility(Atomic parent, Atomic child);
 
@@ -63,23 +69,36 @@ public interface UnifierComparison {
     boolean valueCompatibility(Atomic parent, Atomic child);
 
     /**
+     * @param parent {@link Atomic}s of parent expression
+     * @param child  {@link Atomic}s of child expression
+     * @return true if id predicate sets are compatible
+     */
+    default boolean idCompatibility(Set<Atomic> parent, Set<Atomic> child){
+        return predicateCompatibility(parent, child, this::idCompatibility);
+    }
+
+    /**
+     * @param parent multipredicate of parent
+     * @param child  multipredicate of child
+     * @return true if multipredicates are compatible (no contradictions between value predicates)
+     */
+    default boolean valueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
+        return predicateCompatibility(parent, child, this::valueCompatibility);
+    }
+
+    default boolean predicateCompatibility(Set<Atomic> parent, Set<Atomic> child, BiFunction<Atomic, Atomic, Boolean> comparison){
+        //checks intra compatibility
+        return (child.isEmpty() || child.stream().allMatch(cp -> child.stream().allMatch(cp::isCompatibleWith)))
+                && (parent.isEmpty() || parent.stream().allMatch(cp -> parent.stream().allMatch(cp::isCompatibleWith)));
+    }
+
+    /**
      * @param query to be checked
      * @param var   variable of interest
      * @param type  which playability is toto be checked
      * @return true if typing the typeVar with type is compatible with role configuration of the provided query
      */
     boolean typePlayability(ReasonerQuery query, Variable var, Type type);
-
-    /**
-     * @param parent multipredicate of parent attribute
-     * @param child  multipredicate of child attribute
-     * @return true if multipredicates of attributes are compatible
-     */
-    default boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
-        //checks intra-vp compatibility
-        return (child.isEmpty() || child.stream().allMatch(cp -> child.stream().allMatch(cp::isCompatibleWith)))
-                && (parent.isEmpty() || parent.stream().allMatch(cp -> parent.stream().allMatch(cp::isCompatibleWith)));
-    }
 
     /**
      * @param parent    {@link Atomic} query

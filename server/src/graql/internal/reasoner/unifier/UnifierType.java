@@ -18,8 +18,11 @@
 
 package grakn.core.graql.internal.reasoner.unifier;
 
+import com.google.common.collect.Sets;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
@@ -30,8 +33,11 @@ import grakn.core.graql.internal.reasoner.cache.StructuralCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
@@ -55,6 +61,9 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override
         public boolean inferTypes() { return true; }
+
+        @Override
+        public boolean inferValues() { return false; }
 
         @Override
         public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) {
@@ -85,9 +94,10 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
-            return isEquivalentCollection(parent, child, this::valueCompatibility);
+        public boolean predicateCompatibility(Set<Atomic> parent, Set<Atomic> child, BiFunction<Atomic, Atomic, Boolean> comparison) {
+            return isEquivalentCollection(parent, child, comparison);
         }
+
     },
 
     /**
@@ -103,6 +113,9 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override
         public boolean inferTypes() { return false; }
+
+        @Override
+        public boolean inferValues() { return false; }
 
         @Override
         public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) {
@@ -132,8 +145,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
-            return isEquivalentCollection(parent, child, this::valueCompatibility);
+        public boolean predicateCompatibility(Set<Atomic> parent, Set<Atomic> child, BiFunction<Atomic, Atomic, Boolean> comparison) {
+            return isEquivalentCollection(parent, child, comparison);
         }
     },
 
@@ -161,6 +174,9 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         public boolean inferTypes() { return true; }
 
         @Override
+        public boolean inferValues() { return true; }
+
+        @Override
         public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) { return true; }
 
         @Override
@@ -175,7 +191,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override
         public boolean idCompatibility(Atomic parent, Atomic child) {
-            return child == null || parent == null || parent.isAlphaEquivalent(child);
+            return child == null || parent == null || child.isAlphaEquivalent(parent);
         }
 
         @Override
@@ -184,12 +200,12 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
-            return super.attributeValueCompatibility(parent, child)
+        public boolean predicateCompatibility(Set<Atomic> parent, Set<Atomic> child, BiFunction<Atomic, Atomic, Boolean> comparison) {
+            return super.predicateCompatibility(parent, child, comparison)
                     //inter-vp compatibility
                     && (
                     parent.isEmpty()
-                            || child.stream().allMatch(cp -> parent.stream().allMatch(pp -> valueCompatibility(pp, cp)))
+                            || child.stream().allMatch(cp -> parent.stream().allMatch(pp -> comparison.apply(pp, cp)))
             );
         }
 
@@ -208,19 +224,26 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
      * Unifier type used to determine whether two queries are in a subsumption relation.
      * Subsumption can be regarded as a stricter version of the semantic overlap requirement seen in RULE {@link UnifierType}.
      * Defining queries Q and P and their respective answer sets A(Q) and A(P) we say that:
+     *
      * <p>
      * Q subsumes P iff
      * P >= Q (Q specialises P) iff
      * A(Q) is a subset of A(P)
      * <p>
-     * Subsumption relation is NOT symmetric.
+     *
+     * Subsumption relation is NOT symmetric in general. The only case when it is symmetric is when parent and child
+     * are alpha-equivalent.
      */
     SUBSUMPTIVE {
+
         @Override
         public ReasonerQueryEquivalence equivalence() { return null; }
 
         @Override
         public boolean inferTypes() { return false; }
+
+        @Override
+        public boolean inferValues() { return true; }
 
         @Override
         public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) {
@@ -253,11 +276,11 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
+        public boolean predicateCompatibility(Set<Atomic> parent, Set<Atomic> child, BiFunction<Atomic, Atomic, Boolean> comparison) {
             //check both ways to eliminate contradictions
             boolean parentToChild = parent.stream().allMatch(pp -> child.stream().anyMatch(cp -> cp.subsumes(pp)));
             boolean childToParent = child.stream().allMatch(cp -> parent.stream().anyMatch(pp -> cp.isCompatibleWith(pp)));
-            return super.attributeValueCompatibility(parent, child)
+            return super.predicateCompatibility(parent, child, comparison)
                     && (parent.isEmpty()
                     || (!child.isEmpty() && parentToChild && childToParent));
         }

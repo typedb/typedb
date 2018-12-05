@@ -465,7 +465,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .filter(vp -> vp.getTypeLabel().isPresent())
                 .map(vp -> {
                     Label label = vp.getTypeLabel().orElse(null);
-                    return IdPredicate.create(vp.var(), tx().getRole(label.getValue()), getParentQuery());
+                    return IdPredicate.create(vp.var(), tx().getRole(label.getValue()).id(), getParentQuery());
                 });
     }
 
@@ -517,7 +517,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return getRoleTypeMap(false);
     }
 
-    public Multimap<Role, Type> getRoleTypeMap(boolean inferTypes) {
+    private Multimap<Role, Type> getRoleTypeMap(boolean inferTypes) {
         ImmutableMultimap.Builder<Role, Type> builder = ImmutableMultimap.builder();
         Multimap<Role, Variable> roleMap = getRoleVarMap();
         Map<Variable, Type> varTypeMap = getParentQuery().getVarTypeMap();
@@ -912,15 +912,15 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                                                 })
                                                 //check for substitution compatibility
                                                 .filter(crp -> {
-                                                    IdPredicate parentId = parentAtom.getIdPredicate(prp.getRolePlayer().var());
-                                                    IdPredicate childId = this.getIdPredicate(crp.getRolePlayer().var());
-                                                    return matchType.idCompatibility(parentId, childId);
+                                                    Set<Atomic> parentIds = parentAtom.getPredicates(prp.getRolePlayer().var(), IdPredicate.class).collect(toSet());
+                                                    Set<Atomic> childIds = this.getPredicates(crp.getRolePlayer().var(), IdPredicate.class).collect(toSet());
+                                                    return matchType.idCompatibility(parentIds, childIds);
                                                 })
                                                 //check for value predicate compatibility
                                                 .filter(crp -> {
                                                     Set<Atomic> parentVP = parentAtom.getPredicates(prp.getRolePlayer().var(), ValuePredicate.class).collect(toSet());
                                                     Set<Atomic> childVP = this.getPredicates(crp.getRolePlayer().var(), ValuePredicate.class).collect(toSet());
-                                                    return matchType.attributeValueCompatibility(parentVP, childVP);
+                                                    return matchType.valueCompatibility(parentVP, childVP);
                                                 })
                                                 //check linked resources
                                                 .filter(crp -> {
@@ -968,28 +968,28 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public MultiUnifier getMultiUnifier(Atom pAtom, UnifierComparison unifierType) {
-        Unifier baseUnifier = super.getUnifier(pAtom, unifierType);
+    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierComparison unifierType) {
+        Unifier baseUnifier = super.getUnifier(parentAtom, unifierType);
         if (baseUnifier == null){ return MultiUnifierImpl.nonExistent();}
 
         Set<Unifier> unifiers = new HashSet<>();
-        if (pAtom.isRelation()) {
-            RelationshipAtom parentAtom = pAtom.toRelationshipAtom();
+        if (parentAtom.isRelation()) {
+            RelationshipAtom parent = parentAtom.toRelationshipAtom();
 
             //NB: if two atoms are equal and their sub and type mappings are equal we return the identity unifier
             //this is important for cases like unifying ($r1: $x, $r2: $y) with itself
-            if (this.equals(parentAtom)
+            if (this.equals(parent)
                     && unifierType != UnifierType.SUBSUMPTIVE
-                    && this.getPartialSubstitutions().collect(toSet()).equals(parentAtom.getPartialSubstitutions().collect(toSet()))
-                    && this.getTypeConstraints().collect(toSet()).equals(parentAtom.getTypeConstraints().collect(toSet()))){
+                    && this.getPartialSubstitutions().collect(toSet()).equals(parent.getPartialSubstitutions().collect(toSet()))
+                    && this.getTypeConstraints().collect(toSet()).equals(parent.getTypeConstraints().collect(toSet()))){
                 return MultiUnifierImpl.trivial();
             }
 
-            boolean unifyRoleVariables = parentAtom.getRelationPlayers().stream()
+            boolean unifyRoleVariables = parent.getRelationPlayers().stream()
                     .map(RelationPlayerProperty::getRole)
                     .flatMap(CommonUtil::optionalToStream)
                     .anyMatch(rp -> rp.var().isUserDefinedName());
-            getRelationPlayerMappings(parentAtom, unifierType)
+            getRelationPlayerMappings(parent, unifierType)
                     .forEach(mappingList -> {
                         Multimap<Variable, Variable> varMappings = HashMultimap.create();
                         mappingList.forEach(rpm -> {
