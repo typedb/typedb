@@ -154,9 +154,9 @@ public class GraqlTraversalTest {
 
     @Test
     public void testAllTraversalsSimpleQuery() {
-        IdProperty titanicId = IdProperty.of(ConceptId.of("Titanic"));
-        IdProperty movieId = IdProperty.of(ConceptId.of("movie"));
-        SubProperty subProperty = SubProperty.of(new StatementImpl(y, ImmutableSet.of(movieId)));
+        IdProperty titanicId = new IdProperty(ConceptId.of("Titanic"));
+        IdProperty movieId = new IdProperty(ConceptId.of("movie"));
+        SubProperty subProperty = new SubProperty(new StatementImpl(y, ImmutableSet.of(movieId)));
 
         Statement pattern = new StatementImpl(x, ImmutableSet.of(titanicId, subProperty));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());

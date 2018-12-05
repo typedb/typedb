@@ -39,7 +39,6 @@ import grakn.core.graql.query.Order;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.query.Syntax;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.Variable;
@@ -63,9 +62,9 @@ import java.util.stream.Stream;
 import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.Graql.eq;
 import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.Syntax.Compute.Algorithm;
-import static grakn.core.graql.query.Syntax.Compute.Argument;
-import static grakn.core.graql.query.Syntax.Compute.Method;
+import static grakn.core.graql.query.ComputeQuery.Algorithm;
+import static grakn.core.graql.query.ComputeQuery.Argument;
+import static grakn.core.graql.query.ComputeQuery.Method;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -673,7 +672,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
     public List<Argument> visitComputeArgs(GraqlParser.ComputeArgsContext computeArgs) {
 
         List<GraqlParser.ComputeArgContext> argContextList = new ArrayList<>();
-        List<Syntax.Compute.Argument> argList = new ArrayList<>();
+        List<Argument> argList = new ArrayList<>();
 
         if (computeArgs.computeArg() != null) {
             argContextList.add(computeArgs.computeArg());

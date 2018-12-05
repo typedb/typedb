@@ -18,6 +18,9 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
@@ -26,60 +29,46 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.Match;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
-import grakn.core.graql.internal.Schema;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.Match;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY;
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY_OWNER;
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY_VALUE;
+import static grakn.core.graql.query.pattern.Pattern.var;
 
 /**
  * Represents the {@code has} and {@code key} properties on a {@link Type}.
- *
  * This property can be queried or inserted. Whether this is a key is indicated by the
  * {@link HasAttributeTypeProperty#required} field.
- *
  * This property is defined as an implicit ontological structure between a {@link Type} and a {@link AttributeType},
  * including one implicit {@link RelationshipType} and two implicit {@link Role}s. The labels of these types are derived
  * from the label of the {@link AttributeType}.
- *
  * Like {@link HasAttributeProperty}, if this is not a key and is used in a {@link Match} it will not use the implicit
  * structure - instead, it will match if there is any kind of relation type connecting the two types.
- *
  */
-@AutoValue
-public abstract class HasAttributeTypeProperty extends VarProperty {
+public class HasAttributeTypeProperty extends VarProperty {
 
-    abstract Statement resourceType();
+    private final Statement resourceType;
+    private final Statement ownerRole;
+    private final Statement valueRole;
+    private final Statement relationOwner;
+    private final Statement relationValue;
+    private final boolean required;
 
-    abstract Statement ownerRole();
-    abstract Statement valueRole();
-    abstract Statement relationOwner();
-    abstract Statement relationValue();
-
-    abstract boolean required();
-
-    /**
-     * @throws GraqlQueryException if no label is specified on {@code resourceType}
-     */
-    public static HasAttributeTypeProperty of(Statement resourceType, boolean required) {
-        Label resourceLabel = resourceType.getTypeLabel().orElseThrow(() ->
-                GraqlQueryException.noLabelSpecifiedForHas(resourceType)
+    public HasAttributeTypeProperty(Statement resourceType, boolean required) {
+        Label resourceLabel = resourceType.getTypeLabel().orElseThrow(
+                () -> GraqlQueryException.noLabelSpecifiedForHas(resourceType)
         );
 
         Statement role = Pattern.label(Schema.MetaSchema.ROLE.getLabel());
@@ -89,7 +78,7 @@ public abstract class HasAttributeTypeProperty extends VarProperty {
         Statement relationType = var().sub(Pattern.label(Schema.MetaSchema.RELATIONSHIP.getLabel()));
 
         // If a key, limit only to the implicit key type
-        if(required){
+        if (required) {
             ownerRole = ownerRole.label(KEY_OWNER.getLabel(resourceLabel));
             valueRole = valueRole.label(KEY_VALUE.getLabel(resourceLabel));
             relationType = relationType.label(KEY.getLabel(resourceLabel));
@@ -98,18 +87,28 @@ public abstract class HasAttributeTypeProperty extends VarProperty {
         Statement relationOwner = relationType.relates(ownerRole);
         Statement relationValue = relationType.var().relates(valueRole);
 
-        return new AutoValue_HasAttributeTypeProperty(
-                resourceType, ownerRole, valueRole, relationOwner, relationValue, required);
+        this.resourceType = resourceType;
+        this.ownerRole = ownerRole;
+        this.valueRole = valueRole;
+        if (relationOwner == null) {
+            throw new NullPointerException("Null relationOwner");
+        }
+        this.relationOwner = relationOwner;
+        if (relationValue == null) {
+            throw new NullPointerException("Null relationValue");
+        }
+        this.relationValue = relationValue;
+        this.required = required;
     }
 
     @Override
     public String getName() {
-        return required() ? "key" : "has";
+        return required ? "key" : "has";
     }
 
     @Override
     public String getProperty() {
-        return resourceType().getPrintableName();
+        return resourceType.getPrintableName();
     }
 
     @Override
@@ -121,53 +120,67 @@ public abstract class HasAttributeTypeProperty extends VarProperty {
     public Collection<EquivalentFragmentSet> match(Variable start) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        traversals.addAll(PlaysProperty.of(ownerRole(), required()).match(start));
+        traversals.addAll(new PlaysProperty(ownerRole, required).match(start));
         //TODO: Get this to use real constraints no just the required flag
-        traversals.addAll(PlaysProperty.of(valueRole(), false).match(resourceType().var()));
-        traversals.addAll(NeqProperty.of(ownerRole()).match(valueRole().var()));
+        traversals.addAll(new PlaysProperty(valueRole, false).match(resourceType.var()));
+        traversals.addAll(new NeqProperty(ownerRole).match(valueRole.var()));
 
         return traversals;
     }
 
     @Override
     public Stream<Statement> getTypes() {
-        return Stream.of(resourceType());
+        return Stream.of(resourceType);
     }
 
     @Override
-    public Stream<Statement> innerVarPatterns() {
-        return Stream.of(resourceType());
+    public Stream<Statement> innerStatements() {
+        return Stream.of(resourceType);
     }
 
     @Override
-    public Stream<Statement> implicitInnerVarPatterns() {
-        return Stream.of(resourceType(), ownerRole(), valueRole(), relationOwner(), relationValue());
+    public Stream<Statement> implicitInnerStatements() {
+        return Stream.of(resourceType, ownerRole, valueRole, relationOwner, relationValue);
+    }
+
+    @Override
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        //NB: HasResourceType is a special case and it doesn't allow variables as resource types
+        Variable varName = var.var().asUserDefined();
+        Label label = resourceType.getTypeLabel().orElse(null);
+
+        Variable predicateVar = var();
+        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
+        ConceptId predicateId = schemaConcept != null ? schemaConcept.id() : null;
+        //isa part
+        Statement resVar = varName.has(Pattern.label(label));
+        return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 
     @Override
     public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Type entityTypeConcept = executor.get(var).asType();
-            AttributeType attributeTypeConcept = executor.get(resourceType().var()).asAttributeType();
+            AttributeType attributeTypeConcept = executor.get(resourceType.var()).asAttributeType();
 
-            if (required()) {
+            if (required) {
                 entityTypeConcept.key(attributeTypeConcept);
             } else {
                 entityTypeConcept.has(attributeTypeConcept);
             }
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, resourceType().var()).build());
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, resourceType.var()).build());
     }
 
     @Override
     public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
-            AttributeType<?> attributeType = executor.get(resourceType().var()).asAttributeType();
+            AttributeType<?> attributeType = executor.get(resourceType.var()).asAttributeType();
 
             if (!type.isDeleted() && !attributeType.isDeleted()) {
-                if (required()) {
+                if (required) {
                     type.unkey(attributeType);
                 } else {
                     type.unhas(attributeType);
@@ -175,20 +188,41 @@ public abstract class HasAttributeTypeProperty extends VarProperty {
             }
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, resourceType().var()).build());
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, resourceType.var()).build());
     }
 
     @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        //NB: HasResourceType is a special case and it doesn't allow variables as resource types
-        Variable varName = var.var().asUserDefined();
-        Label label = this.resourceType().getTypeLabel().orElse(null);
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof HasAttributeTypeProperty) {
+            HasAttributeTypeProperty that = (HasAttributeTypeProperty) o;
+            return (this.resourceType.equals(that.resourceType))
+                    && (this.ownerRole.equals(that.ownerRole))
+                    && (this.valueRole.equals(that.valueRole))
+                    && (this.relationOwner.equals(that.relationOwner))
+                    && (this.relationValue.equals(that.relationValue))
+                    && (this.required == that.required);
+        }
+        return false;
+    }
 
-        Variable predicateVar = var();
-        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
-        ConceptId predicateId = schemaConcept != null? schemaConcept.id() : null;
-        //isa part
-        Statement resVar = varName.has(Pattern.label(label));
-        return HasAtom.create(resVar, predicateVar, predicateId, parent);
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.resourceType.hashCode();
+        h *= 1000003;
+        h ^= this.ownerRole.hashCode();
+        h *= 1000003;
+        h ^= this.valueRole.hashCode();
+        h *= 1000003;
+        h ^= this.relationOwner.hashCode();
+        h *= 1000003;
+        h ^= this.relationValue.hashCode();
+        h *= 1000003;
+        h ^= this.required ? 1231 : 1237;
+        return h;
     }
 }

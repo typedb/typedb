@@ -18,18 +18,18 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.server.Transaction;
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.server.Transaction;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -37,9 +37,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
-
-/**
- */
 
 abstract class AbstractIsaProperty extends VarProperty {
 
@@ -61,7 +58,7 @@ abstract class AbstractIsaProperty extends VarProperty {
     }
 
     @Override
-    public final Stream<Statement> innerVarPatterns() {
+    public final Stream<Statement> innerStatements() {
         return Stream.of(type());
     }
 
@@ -99,9 +96,9 @@ abstract class AbstractIsaProperty extends VarProperty {
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
 
         //isa part
-        Statement isaVar = varPatternForAtom(varName, typeVariable);
+        Statement isaVar = statementForAtom(varName, typeVariable);
         return IsaAtom.create(varName, typeVariable, isaVar, predicateId, parent);
     }
 
-    protected abstract Statement varPatternForAtom(Variable varName, Variable typeVariable);
+    protected abstract Statement statementForAtom(Variable varName, Variable typeVariable);
 }

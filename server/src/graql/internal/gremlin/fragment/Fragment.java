@@ -168,15 +168,15 @@ public abstract class Fragment {
             if (!currentVar.equals(start())) {
                 if (vars.contains(start())) {
                     // If the variable name has been visited but the traversal is not at that variable name, select it
-                    traversal.select(start().label());
+                    traversal.select(start().symbol());
                 } else {
                     // Restart traversal when fragments are disconnected
-                    traversal.V().as(start().label());
+                    traversal.V().as(start().symbol());
                 }
             }
         } else {
             // If the variable name has not been visited yet, remember it and use the 'as' step
-            traversal.as(start().label());
+            traversal.as(start().symbol());
         }
 
         vars.add(start());
@@ -196,10 +196,10 @@ public abstract class Fragment {
     static <T, U> GraphTraversal<T, U> assignVar(GraphTraversal<T, U> traversal, Variable var, Collection<Variable> vars) {
         if (!vars.contains(var)) {
             // This variable name has not been encountered before, remember it and use the 'as' step
-            return traversal.as(var.label());
+            return traversal.as(var.symbol());
         } else {
             // This variable name has been encountered before, confirm it is the same
-            return traversal.where(P.eq(var.label()));
+            return traversal.where(P.eq(var.symbol()));
         }
     }
 

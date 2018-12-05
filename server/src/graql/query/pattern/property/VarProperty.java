@@ -38,30 +38,6 @@ import java.util.stream.Stream;
  */
 public abstract class VarProperty {
 
-    /**
-     * Helper method to perform the safe cast into this internal type
-     */
-    public static VarProperty from(VarProperty varProperty) {
-        return varProperty;
-    }
-
-    /**
-     * Check if the given property can be used in a {@link Match}
-     */
-    public final void checkValid(Transaction graph, Statement var) throws GraqlQueryException {
-        checkValidProperty(graph, var);
-
-        innerVarPatterns().map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
-            if (graph.getSchemaConcept(label) == null) {
-                throw GraqlQueryException.labelNotFound(label);
-            }
-        });
-    }
-
-    void checkValidProperty(Transaction graph, Statement var) {
-
-    }
-
     public abstract String getName();
 
     public abstract String getProperty();
@@ -92,7 +68,7 @@ public abstract class VarProperty {
      * Get a stream of any inner {@link Statement} within this `VarProperty`.
      */
     @CheckReturnValue
-    public Stream<Statement> innerVarPatterns() {
+    public Stream<Statement> innerStatements() {
         return Stream.empty();
     }
 
@@ -101,8 +77,8 @@ public abstract class VarProperty {
      * implicitly created (such as with "has").
      */
     @CheckReturnValue
-    public Stream<Statement> implicitInnerVarPatterns() {
-        return innerVarPatterns();
+    public Stream<Statement> implicitInnerStatements() {
+        return innerStatements();
     }
 
     /**
@@ -114,27 +90,28 @@ public abstract class VarProperty {
     }
 
     /**
-     * Build a Graql string representation of this property
-     *
-     * @param builder a string builder to append to
+     * Get the Graql string representation of this property
      */
-    public void buildString(StringBuilder builder) {
-        builder.append(getName()).append(" ").append(getProperty());
+    @Override
+    public String toString() {
+        return getName() + " " + getProperty();
     }
 
     /**
-     * Get the Graql string representation of this property
+     * Check if the given property can be used in a {@link Match}
      */
-    @CheckReturnValue
-    public String graqlString() {
-        StringBuilder builder = new StringBuilder();
-        buildString(builder);
-        return builder.toString();
+    public final void checkValid(Transaction graph, Statement var) throws GraqlQueryException {
+        checkValidProperty(graph, var);
+
+        innerStatements().map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
+            if (graph.getSchemaConcept(label) == null) {
+                throw GraqlQueryException.labelNotFound(label);
+            }
+        });
     }
 
-    @Override
-    public final String toString() {
-        return graqlString();
+    void checkValidProperty(Transaction graph, Statement var) {
+
     }
 
     /**

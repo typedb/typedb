@@ -112,7 +112,7 @@ public abstract class InIsaFragment extends Fragment {
 
         // First retrieve the type ID
         GraphTraversal<Vertex, Vertex> traversal =
-                __.<Vertex>as(type.label()).values(LABEL_ID.name()).as(labelId.label()).select(type.label());
+                __.<Vertex>as(type.symbol()).values(LABEL_ID.name()).as(labelId.symbol()).select(type.symbol());
 
         // Next, navigate the schema to all possible types whose instances can be in this relation
         traversal = Fragments.inSubs(traversal.out(RELATES.getLabel()).in(PLAYS.getLabel()));
@@ -123,7 +123,7 @@ public abstract class InIsaFragment extends Fragment {
 
         // Finally, navigate to all relation edges with the correct type attached to these instances
         return traversal.outE(ATTRIBUTE.getLabel())
-                .has(RELATIONSHIP_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.label())));
+                .has(RELATIONSHIP_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.symbol())));
     }
 
     @Override

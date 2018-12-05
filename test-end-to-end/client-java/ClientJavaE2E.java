@@ -6,7 +6,6 @@ import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Syntax;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.Value;
@@ -235,7 +234,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - compute count...");
-            final ComputeQuery<Value> computeQuery = tx.graql().compute(Syntax.Compute.Method.COUNT).in("lion");
+            final ComputeQuery<Value> computeQuery = tx.graql().compute(ComputeQuery.Method.COUNT).in("lion");
             LOG.info("clientJavaE2E() - '" + computeQuery + "'");
             int computeCount = computeQuery.execute().get(0).number().intValue();
             assertThat(computeCount, equalTo(lionNames().length));

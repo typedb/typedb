@@ -109,7 +109,7 @@ public class MatchBase extends AbstractMatch {
 
         Map<Variable, Concept> map = new HashMap<>();
         for (Variable var : vars) {
-            Element element = elements.get(var.label());
+            Element element = elements.get(var.symbol());
             if (element == null) {
                 throw GraqlQueryException.unexpectedResult(var);
             } else {
@@ -132,7 +132,7 @@ public class MatchBase extends AbstractMatch {
     @Override
     public Set<SchemaConcept> getSchemaConcepts(Transaction tx) {
         return pattern.statements().stream()
-                .flatMap(v -> v.innerVarPatterns().stream())
+                .flatMap(v -> v.innerStatements().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
                 .map(tx::<SchemaConcept>getSchemaConcept)
                 .filter(Objects::nonNull)

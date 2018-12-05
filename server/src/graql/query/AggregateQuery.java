@@ -18,27 +18,48 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.Transaction;
 import grakn.core.graql.answer.Answer;
-import com.google.auto.value.AutoValue;
+import grakn.core.server.Transaction;
 
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
  * An aggregate query produced from a {@link Match}.
+ *
  * @param <T> the type of the result of the aggregate query
  */
-@AutoValue
-public abstract class AggregateQuery<T extends Answer> implements Query<T> {
+public class AggregateQuery<T extends Answer> implements Query<T> {
 
-    public static <T extends Answer> AggregateQuery<T> of(Match match, Aggregate<T> aggregate) {
-        return new AutoValue_AggregateQuery<>(match, aggregate);
+    private final Match match;
+    private final Aggregate<T> aggregate;
+
+    public AggregateQuery(@Nullable Match match, Aggregate<T> aggregate) {
+        this.match = match;
+        if (aggregate == null) {
+            throw new NullPointerException("Null aggregate");
+        }
+        this.aggregate = aggregate;
+    }
+
+    /**
+     * Get the {@link Match} that this {@link AggregateQuery} will operate on.
+     */
+    @Nullable
+    public Match match() {
+        return match;
+    }
+
+    /**
+     * Get the {@link Aggregate} that will be executed against the results of the {@link #match()}.
+     */
+    public Aggregate<T> aggregate() {
+        return aggregate;
     }
 
     @Override
     public final AggregateQuery<T> withTx(Transaction tx) {
-        return Queries.aggregate(match().withTx(tx).admin(), aggregate());
+        return new AggregateQuery<>(match().withTx(tx).admin(), aggregate());
     }
 
     @Override
@@ -67,14 +88,27 @@ public abstract class AggregateQuery<T extends Answer> implements Query<T> {
         return match().admin().inferring();
     }
 
-    /**
-     * Get the {@link Match} that this {@link AggregateQuery} will operate on.
-     */
-    @Nullable
-    public abstract Match match();
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof AggregateQuery) {
+            AggregateQuery<?> that = (AggregateQuery<?>) o;
+            return ((this.match == null) ? (that.match() == null) : this.match.equals(that.match()))
+                    && (this.aggregate.equals(that.aggregate()));
+        }
+        return false;
+    }
 
-    /**
-     * Get the {@link Aggregate} that will be executed against the results of the {@link #match()}.
-     */
-    public abstract Aggregate<T> aggregate();
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (match == null) ? 0 : this.match.hashCode();
+        h *= 1000003;
+        h ^= this.aggregate.hashCode();
+        return h;
+    }
+
 }

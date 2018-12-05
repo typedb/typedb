@@ -112,9 +112,9 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
             Collection<Variable> vars) {
         if (role != null) {
             Variable edge = Pattern.var();
-            traversal.as(edge.label());
+            traversal.as(edge.symbol());
             Fragments.outSubs(Fragments.traverseSchemaConceptFromEdge(traversal, edgeProperty));
-            assignVar(traversal, role, vars).select(edge.label());
+            assignVar(traversal, role, vars).select(edge.symbol());
         }
     }
 }

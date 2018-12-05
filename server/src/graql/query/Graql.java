@@ -46,7 +46,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.core.graql.query.Syntax.Compute.Method;
+import static grakn.core.graql.query.ComputeQuery.Method;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -151,9 +151,6 @@ public class Graql {
     public static <T extends Query<?>> T parse(String queryString) {
         return new QueryBuilder().parse(queryString);
     }
-
-    // PATTERNS AND VARS
-
 
     // AGGREGATES
 

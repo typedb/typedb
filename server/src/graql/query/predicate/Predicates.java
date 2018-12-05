@@ -29,7 +29,7 @@ public class Predicates {
     private Predicates() {}
 
     public static ValuePredicate regex(String pattern) {
-        return RegexPredicate.of(pattern);
+        return new RegexPredicate(pattern);
     }
 
     public static ValuePredicate neq(Object value) {

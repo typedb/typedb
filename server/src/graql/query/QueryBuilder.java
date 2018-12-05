@@ -20,12 +20,12 @@ package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.parser.QueryParser;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static grakn.core.graql.query.Syntax.Compute.Method;
+import static grakn.core.graql.query.ComputeQuery.Method;
 
 /**
  * A starting point for creating queries.
@@ -104,8 +104,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public InsertQuery insert(Collection<? extends Statement> vars) {
-        ImmutableList<Statement> varAdmins = ImmutableList.copyOf(vars);
-        return Queries.insert(tx, varAdmins);
+        return new InsertQuery(tx, null, ImmutableList.copyOf(vars));
     }
 
     /**
@@ -123,8 +122,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public DefineQuery define(Collection<? extends Statement> varPatterns) {
-        ImmutableList<Statement> admins = ImmutableList.copyOf(varPatterns);
-        return DefineQuery.of(admins, tx);
+        return new DefineQuery(tx, ImmutableList.copyOf(varPatterns));
     }
 
     /**
@@ -137,13 +135,12 @@ public class QueryBuilder {
     }
 
     /**
-     * @param varPatterns a collection of {@link Statement}s defining {@link SchemaConcept}s to undefine
+     * @param statements a collection of {@link Statement}s defining {@link SchemaConcept}s to undefine
      * @return an {@link UndefineQuery} that will remove the changes described in the {@code varPatterns}
      */
     @CheckReturnValue
-    public UndefineQuery undefine(Collection<? extends Statement> varPatterns) {
-        ImmutableList<Statement> admins = ImmutableList.copyOf(varPatterns);
-        return UndefineQuery.of(admins, tx);
+    public UndefineQuery undefine(Collection<? extends Statement> statements) {
+        return new UndefineQuery(tx, statements);
     }
 
     /**

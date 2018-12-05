@@ -18,17 +18,15 @@
 
 package grakn.core.graql.query;
 
+import com.google.common.base.Preconditions;
+import grakn.core.common.util.CommonUtil;
+import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.admin.MatchAdmin;
-import grakn.core.common.util.CommonUtil;
-import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -43,23 +41,35 @@ import java.util.stream.Stream;
  * When built from a {@link Match}, the insert query will execute for each result of the {@link Match},
  * where variable names in the insert query are bound to the concept in the result of the {@link Match}.
  */
-@AutoValue
-public abstract class InsertQuery implements Query<ConceptMap> {
+public class InsertQuery implements Query<ConceptMap> {
+
+    private final Transaction tx;
+    private final Match match;
+    private final Collection<Statement> statements;
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
-     * @param tx the graph to execute on
-     * @param match the {@link Match} to insert for each result
-     * @param vars a collection of Vars to insert
+     *
+     * @param tx         the graph to execute on
+     * @param match      the {@link Match} to insert for each result
+     * @param statements a collection of Vars to insert
      */
-    static InsertQuery create(Transaction tx, MatchAdmin match, Collection<Statement> vars) {
+    public InsertQuery(@Nullable Transaction tx, @Nullable MatchAdmin match, Collection<Statement> statements) {
         if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
 
-        if (vars.isEmpty()) {
+        if (statements.isEmpty()) {
             throw GraqlQueryException.noPatterns();
         }
 
-        return new AutoValue_InsertQuery(tx, match, ImmutableList.copyOf(vars));
+        this.tx = tx;
+        this.match = match;
+        this.statements = statements;
+    }
+
+    @Nullable
+    @Override
+    public Transaction tx() {
+        return tx;
     }
 
     /**
@@ -67,20 +77,24 @@ public abstract class InsertQuery implements Query<ConceptMap> {
      */
     @Nullable
     @CheckReturnValue
-    public abstract Match match();
+    public Match match() {
+        return match;
+    }
 
     /**
      * @return the variables to insert in the insert query
      */
     @CheckReturnValue
-    public abstract Collection<Statement> varPatterns();
+    public Collection<Statement> statements() {
+        return statements;
+    }
 
     @Override
     public final InsertQuery withTx(Transaction tx) {
         if (match() != null) {
-            return Queries.insert(match().withTx(tx).admin(), varPatterns());
+            return new InsertQuery(tx, match().withTx(tx).admin(), statements);
         } else {
-            return Queries.insert(tx, varPatterns());
+            return new InsertQuery(tx, null, statements);
         }
     }
 
@@ -116,7 +130,7 @@ public abstract class InsertQuery implements Query<ConceptMap> {
     }
 
     private Stream<Statement> allVarPatterns() {
-        return varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream());
+        return statements().stream().flatMap(v -> v.innerStatements().stream());
     }
 
     private Transaction getTx() {
@@ -130,7 +144,7 @@ public abstract class InsertQuery implements Query<ConceptMap> {
 
         if (match() != null) builder.append(match()).append("\n");
         builder.append("insert ");
-        builder.append(varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim());
+        builder.append(statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim());
 
         return builder.toString();
     }
@@ -139,5 +153,31 @@ public abstract class InsertQuery implements Query<ConceptMap> {
     public final Boolean inferring() {
         if (match() != null) return match().admin().inferring();
         else return false;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof InsertQuery) {
+            InsertQuery that = (InsertQuery) o;
+            return ((this.tx == null) ? (that.tx() == null) : this.tx.equals(that.tx()))
+                    && ((this.match == null) ? (that.match() == null) : this.match.equals(that.match()))
+                    && (this.statements.equals(that.statements()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (tx == null) ? 0 : this.tx.hashCode();
+        h *= 1000003;
+        h ^= (match == null) ? 0 : this.match.hashCode();
+        h *= 1000003;
+        h ^= this.statements.hashCode();
+        return h;
     }
 }

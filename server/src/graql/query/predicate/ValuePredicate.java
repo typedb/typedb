@@ -26,12 +26,8 @@ import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 
 /**
- * a atom on a value in a query.
- * <p>
- * A atom describes a atom (true/false) function that can be tested against some value in the graph.
- * <p>
+ * A function that evaluates to TRUE/FALSE that can be tested against some value in the graph.
  * Predicates can be combined together using the methods {@code and}, {@code or}, {@code any} and {@code all}.
- *
  */
 public interface ValuePredicate {
 

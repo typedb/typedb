@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.match;
 
-import com.google.common.collect.ImmutableMultiset;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.query.pattern.Pattern;
@@ -32,7 +32,6 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.Order;
-import grakn.core.graql.query.Queries;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
@@ -91,7 +90,7 @@ abstract class AbstractMatch implements MatchAdmin {
 
     @Override
     public final <S extends Answer> AggregateQuery<S> aggregate(Aggregate<S> aggregate) {
-        return Queries.aggregate(admin(), aggregate);
+        return new AggregateQuery<>(admin(), aggregate);
     }
 
     @Override
@@ -115,7 +114,7 @@ abstract class AbstractMatch implements MatchAdmin {
     @Override
     public GetQuery get(Set<Variable> vars) {
         if (vars.isEmpty()) vars = getPattern().variables();
-        return Queries.get(this, ImmutableSet.copyOf(vars));
+        return new GetQuery(ImmutableSet.copyOf(vars), this);
     }
 
     @Override
@@ -125,8 +124,8 @@ abstract class AbstractMatch implements MatchAdmin {
 
     @Override
     public final InsertQuery insert(Collection<? extends Statement> vars) {
-        ImmutableMultiset<Statement> varAdmins = ImmutableMultiset.copyOf(vars);
-        return Queries.insert(admin(), varAdmins);
+        MatchAdmin match = admin();
+        return new InsertQuery(match.tx(), match, ImmutableList.copyOf(vars));
     }
 
     @Override
@@ -150,7 +149,7 @@ abstract class AbstractMatch implements MatchAdmin {
     @Override
     public final DeleteQuery delete(Set<Variable> vars) {
         if (vars.isEmpty()) vars = getPattern().variables();
-        return Queries.delete(this, vars);
+        return new DeleteQuery(this, ImmutableSet.copyOf(vars));
     }
 
     @Override

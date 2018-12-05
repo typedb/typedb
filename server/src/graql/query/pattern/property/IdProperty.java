@@ -18,40 +18,43 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.util.StringUtil;
-import grakn.core.graql.query.pattern.Variable;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.util.StringUtil;
 
 import java.util.Collection;
 import java.util.Set;
 
 /**
  * Represents the {@code id} property on a {@link Concept}.
- *
  * This property can be queried. While this property cannot be inserted, if used in an insert query any existing concept
  * with the given ID will be retrieved.
- *
  */
-@AutoValue
-public abstract class IdProperty extends VarProperty {
+public class IdProperty extends VarProperty {
 
     public static final String NAME = "id";
 
-    public static IdProperty of(ConceptId id) {
-        return new AutoValue_IdProperty(id);
+    private final ConceptId id;
+
+    public IdProperty(ConceptId id) {
+        if (id == null) {
+            throw new NullPointerException("Null id");
+        }
+        this.id = id;
     }
 
-    public abstract ConceptId id();
+    public ConceptId id() {
+        return id;
+    }
 
     @Override
     public String getName() {
@@ -66,6 +69,16 @@ public abstract class IdProperty extends VarProperty {
     @Override
     public boolean isUnique() {
         return true;
+    }
+
+    @Override
+    public boolean uniquelyIdentifiesConcept() {
+        return true;
+    }
+
+    @Override
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        return IdPredicate.create(var.var(), id(), parent);
     }
 
     @Override
@@ -95,12 +108,22 @@ public abstract class IdProperty extends VarProperty {
     }
 
     @Override
-    public boolean uniquelyIdentifiesConcept() {
-        return true;
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof IdProperty) {
+            IdProperty that = (IdProperty) o;
+            return (this.id.equals(that.id()));
+        }
+        return false;
     }
 
     @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        return IdPredicate.create(var.var(), id(), parent);
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.id.hashCode();
+        return h;
     }
 }

@@ -47,8 +47,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Syntax.Compute.Algorithm.DEGREE;
-import static grakn.core.graql.query.Syntax.Compute.Method.CENTRALITY;
+import static grakn.core.graql.query.ComputeQuery.Algorithm.DEGREE;
+import static grakn.core.graql.query.ComputeQuery.Method.CENTRALITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
