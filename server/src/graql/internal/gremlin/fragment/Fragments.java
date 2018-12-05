@@ -248,10 +248,10 @@ public class Fragments {
 
         // Access label ID from edge
         Variable labelId = Pattern.var();
-        traversal.values(edgeProperty.name()).as(labelId.label());
+        traversal.values(edgeProperty.name()).as(labelId.symbol());
 
         // Look up schema concept using ID
-        return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.label())));
+        return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.symbol())));
     }
 
 }

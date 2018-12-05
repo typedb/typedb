@@ -109,7 +109,7 @@ public class MatchBase extends AbstractMatch {
 
         Map<Variable, Concept> map = new HashMap<>();
         for (Variable var : vars) {
-            Element element = elements.get(var.label());
+            Element element = elements.get(var.symbol());
             if (element == null) {
                 throw GraqlQueryException.unexpectedResult(var);
             } else {

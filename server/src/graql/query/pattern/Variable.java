@@ -92,7 +92,7 @@ public class Variable extends Statement {
     /**
      * Get a unique label identifying the variable, differentiating user-defined variables from generated ones.
      */
-    public String label() {
+    public String symbol() {
         if (label == null) {
             synchronized (this) {
                 if (label == null) {

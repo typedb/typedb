@@ -41,7 +41,7 @@ public abstract class NeqFragment extends Fragment {
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Variable> vars) {
-        return traversal.where(P.neq(other().label()));
+        return traversal.where(P.neq(other().symbol()));
     }
 
     @Override

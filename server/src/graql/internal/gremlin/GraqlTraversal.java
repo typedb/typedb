@@ -184,10 +184,10 @@ public abstract class GraqlTraversal {
             // Produce an empty result
             return traversal.constant(ImmutableMap.of());
         } else if (vars.size() == 1) {
-            String label = vars.iterator().next().label();
+            String label = vars.iterator().next().symbol();
             return traversal.select(label, label);
         } else {
-            String[] labelArray = vars.stream().map(Variable::label).toArray(String[]::new);
+            String[] labelArray = vars.stream().map(Variable::symbol).toArray(String[]::new);
             return traversal.asAdmin().addStep(new SelectStep<>(traversal.asAdmin(), null, labelArray));
         }
     }
