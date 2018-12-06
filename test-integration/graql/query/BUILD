@@ -33,3 +33,20 @@ java_test(
     ],
     size = "medium"
 )
+
+java_test(
+    name = "undefine-query-it",
+    test_class = "grakn.core.graql.query.UndefineQueryIT",
+    srcs = ["UndefineQueryIT.java"],
+    deps = [
+        "//server",
+        "//test-integration/graql/graph:movie-graph",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+
+    ],
+    size = "medium"
+)

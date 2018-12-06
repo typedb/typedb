@@ -84,7 +84,6 @@ import static org.junit.Assert.assertThat;
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class InsertQueryIT {
 
-
     private static final Variable w = var("w");
     private static final Variable x = var("x");
     private static final Variable y = var("y");
