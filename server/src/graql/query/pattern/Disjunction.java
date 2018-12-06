@@ -73,6 +73,11 @@ public class Disjunction<T extends Pattern> implements Pattern {
     }
 
     @Override
+    public Disjunction<?> asDisjunction() {
+        return this;
+    }
+
+    @Override
     public String toString() {
         return getPatterns().stream().map(Object::toString).collect(Collectors.joining(" or "));
     }

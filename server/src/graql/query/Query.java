@@ -53,7 +53,6 @@ public interface Query<T extends Answer> extends Iterable<T> {
     /**
      * @return a {@link List} of T, where T is a special type of {@link Answer}
      */
-    @CheckReturnValue
     default List<T> execute() {
         return stream().collect(Collectors.toList());
     }

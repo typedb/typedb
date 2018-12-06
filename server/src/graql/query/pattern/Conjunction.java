@@ -88,6 +88,11 @@ public class Conjunction<T extends Pattern> implements Pattern {
         return true;
     }
 
+    @Override
+    public Conjunction<?> asConjunction() {
+        return this;
+    }
+
     /**
      * @return the corresponding reasoner query
      */
