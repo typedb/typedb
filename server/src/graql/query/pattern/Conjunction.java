@@ -28,7 +28,9 @@ import grakn.core.server.session.TransactionImpl;
 
 import javax.annotation.CheckReturnValue;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -47,7 +49,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
         if (patterns == null) {
             throw new NullPointerException("Null patterns");
         }
-        this.patterns = patterns;
+        this.patterns = patterns.stream().map(Objects::requireNonNull).collect(Collectors.toSet());
     }
 
     /**
