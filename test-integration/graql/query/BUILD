@@ -50,3 +50,19 @@ java_test(
     ],
     size = "medium"
 )
+
+java_test(
+    name = "query-error-it",
+    test_class = "grakn.core.graql.query.QueryErrorIT",
+    srcs = ["QueryErrorIT.java"],
+    deps = [
+        "//common",
+        "//server",
+        "//test-integration/graql/graph:movie-graph",
+        "//test-integration/rule:grakn-test-server",
+
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+
+    ],
+    size = "medium"
+)
