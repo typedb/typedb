@@ -126,7 +126,7 @@ node_grpc_compile()
 git_repository(
     name="graknlabs_rules_deployment",
     remote="https://github.com/graknlabs/deployment",
-    commit="fc812a4cd0dddd7478437ff03bc22e6c83b13620",
+    commit="5609bd932655116e41411b8615b3c625319d81d9",
 )
 
 load("@graknlabs_rules_deployment//github:dependencies.bzl", "dependencies_for_github_deployment")
