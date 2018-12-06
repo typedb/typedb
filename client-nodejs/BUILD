@@ -18,7 +18,6 @@
 
 exports_files([
     "package.json",
-    "package-lock.json"
 ])
 
 load("@stackb_rules_proto//node:node_grpc_compile.bzl", "node_grpc_compile")
