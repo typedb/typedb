@@ -52,6 +52,19 @@ java_test(
 )
 
 java_test(
+    name = "query-builder-it",
+    test_class = "grakn.core.graql.query.QueryBuilderIT",
+    srcs = ["QueryBuilderIT.java"],
+    deps = [
+        "//server",
+        "//test-integration/graql/graph:movie-graph",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+    ],
+    size = "medium"
+)
+
+java_test(
     name = "query-error-it",
     test_class = "grakn.core.graql.query.QueryErrorIT",
     srcs = ["QueryErrorIT.java"],
