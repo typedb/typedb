@@ -16,6 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
+load("@graknlabs_rules_deployment//brew:rules.bzl", deploy_brew = "deploy_brew")
+
 sh_binary(
     name = "deploy-github-zip",
     srcs = ["@graknlabs_rules_deployment//github:deployment.sh"],
@@ -40,4 +43,7 @@ genrule(
     visibility = ["//visibility:public"]
 )
 
-exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
+deploy_brew(
+    name = "deploy-brew",
+    version_file = "//:VERSION"
+)
