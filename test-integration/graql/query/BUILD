@@ -17,6 +17,20 @@
 #
 
 java_test(
+    name = "delete-query-it",
+    test_class = "grakn.core.graql.query.DeleteQueryIT",
+    srcs = ["DeleteQueryIT.java"],
+    deps = [
+        "//common",
+        "//server",
+        "//test-integration/graql/graph:movie-graph",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+    ],
+    size = "medium"
+)
+
+java_test(
     name = "insert-query-it",
     test_class = "grakn.core.graql.query.InsertQueryIT",
     srcs = ["InsertQueryIT.java"],
