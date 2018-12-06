@@ -23,7 +23,7 @@
     }
 
     .keyspace-tooltip {
-        right: 100px;
+        right: 136px;
         top: 8px;
     }
 

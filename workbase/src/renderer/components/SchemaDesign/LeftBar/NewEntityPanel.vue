@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button class="btn define-btn" @click="$emit('show-panel', 'entity')">E</button>
+    <button class="btn define-btn" @click="togglePanel">E</button>
     <div class="new-entity-panel-container" v-if="panelShown === 'entity'">
       <div class="title">Define New Entity Type</div>
       <div class="content">
@@ -89,7 +89,6 @@
 
     /*dynamic*/
     .toggle-attribute-btn {
-        /*border: 1px solid var(--button-hover-border-color);*/
         background-color: var(--purple-3);
     }
 
@@ -235,9 +234,13 @@
         ...mapActions([DEFINE_ENTITY_TYPE]),
       };
     },
-    created() {
-      this.superType = this.types[0];
-      this.types.push(...this.metaTypeInstances.entities);
+    watch: {
+      panelShown(val) {
+        if (val && this.superType === undefined) {
+          this.superType = this.types[0];
+          this.types.push(...this.metaTypeInstances.entities);
+        }
+      },
     },
     methods: {
       toggleAttributeType(type) {
@@ -260,6 +263,8 @@
         this.showSpinner = true;
         await this[DEFINE_ENTITY_TYPE]({ label: this.label, superType: this.superType, attributeTypes: this.toggledAttributeTypes, roleTypes: this.toggledRoleTypes });
         this.showSpinner = false;
+        this.types.push(this.label);
+        this.clearPanel();
       },
       selectSuperType(type) {
         this.superType = type;
@@ -270,6 +275,10 @@
         this.superType = this.types[0];
         this.toggledAttributeTypes = [];
         this.toggledRoleTypes = [];
+      },
+      togglePanel() {
+        if (this.panelShown === 'entity') this.$emit('show-panel', undefined);
+        else this.$emit('show-panel', 'entity');
       },
     },
   };

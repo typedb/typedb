@@ -178,7 +178,10 @@ export default {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
     await state.schemaHandler.defineAttributeType(payload);
     dispatch(COMMIT_TX, graknTx)
-      .catch((e) => { throw e; });
+      .catch((e) => {
+        logger.error(e.stack);
+        throw e;
+      });
   },
 
   async [DEFINE_RELATIONSHIP_TYPE]({ state, dispatch }, payload) {

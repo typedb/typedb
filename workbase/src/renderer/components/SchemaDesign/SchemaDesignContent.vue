@@ -1,11 +1,12 @@
 <template>
   <transition name="slide-fade" appear>
     <div class="design-wrapper">
-      <top-bar></top-bar>
+      <top-bar v-on:toggle-preferences="showPreferences = !showPreferences" :showKeyspaceToolTip="showKeyspaceToolTip" v-on:keyspace-selected="showKeyspaceToolTip = false"></top-bar>
       <div class="row">
-        <left-bar></left-bar>
+        <left-bar v-on:keyspace-not-selected="showKeyspaceToolTip = true"></left-bar>
         <div class="column">
-          <graph-canvas></graph-canvas>
+          <graph-canvas></graph-canvas> 
+          <preferences v-show="showPreferences" v-on:close-preferences="showPreferences = false"></preferences>
         </div>
         <right-bar></right-bar>
       </div>
@@ -52,6 +53,7 @@ import TopBar from './TopBar';
 import GraphCanvas from '../shared/GraphCanvas.vue';
 import RightBar from './RightBar';
 import LeftBar from './LeftBar';
+import Preferences from '../shared/Preferences.vue';
 
 import actions from './store/actions';
 import mutations from './store/mutations';
@@ -61,7 +63,13 @@ import state from './store/state';
 export default {
   name: 'SchemaDesignContent',
   components: {
-    GraphCanvas, TopBar, RightBar, LeftBar,
+    GraphCanvas, TopBar, RightBar, LeftBar, Preferences,
+  },
+  data() {
+    return {
+      showPreferences: false,
+      showKeyspaceToolTip: false,
+    };
   },
   beforeCreate() {
     this.$store.registerModule('schema-design', { namespaced: true, getters, state, mutations, actions });

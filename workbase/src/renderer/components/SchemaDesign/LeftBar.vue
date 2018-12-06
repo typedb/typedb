@@ -1,6 +1,7 @@
 <template>
   <div class="left-bar-container">
     <new-entity-panel :panelShown="panelShown" v-on:show-panel="togglePanel"></new-entity-panel>
+    <new-attribute-panel :panelShown="panelShown" v-on:show-panel="togglePanel"></new-attribute-panel>
   </div>
 </template>
 
@@ -21,19 +22,31 @@
 </style>
 
 <script>
+  import { createNamespacedHelpers } from 'vuex';
 
   import NewEntityPanel from './LeftBar/NewEntityPanel';
+  import NewAttributePanel from './LeftBar/NewAttributePanel';
+
 
   export default {
-    components: { NewEntityPanel },
+    components: { NewEntityPanel, NewAttributePanel },
     data() {
       return {
         panelShown: undefined,
       };
     },
+    beforeCreate() {
+      const { mapGetters } = createNamespacedHelpers('schema-design');
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['currentKeyspace']),
+      };
+    },
     methods: {
       togglePanel(panel) {
-        if (this.panelShown) this.panelShown = undefined;
+        if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
         else this.panelShown = panel;
       },
     },
