@@ -199,8 +199,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 threadExecutor.submit(runnable).get();
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
-                assert cause instanceof RuntimeException : "No checked exceptions are thrown, because it's a `Runnable`";
-                throw (RuntimeException) cause;
+                throw new RuntimeException(cause);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
