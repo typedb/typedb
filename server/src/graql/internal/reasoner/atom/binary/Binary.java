@@ -134,27 +134,24 @@ public abstract class Binary extends Atom {
         IdPredicate thisTypePredicate = this.getTypePredicate();
         IdPredicate typePredicate = that.getTypePredicate();
 
-        Set<IdPredicate> thisVarPredicate = this.getPredicates(this.getVarName(), IdPredicate.class).collect(Collectors.toSet());
-        Set<IdPredicate> varPredicate = that.getPredicates(that.getVarName(), IdPredicate.class).collect(Collectors.toSet());
-
-        Set<NeqPredicate> thisVarNeqPredicate = this.getPredicates(this.getVarName(), NeqPredicate.class).collect(Collectors.toSet());
-        Set<NeqPredicate> varNeqPredicate = that.getPredicates(that.getVarName(), NeqPredicate.class).collect(Collectors.toSet());
-
-        Set<NeqPredicate> thisTypeNeqPredicate = this.getPredicates(this.getPredicateVariable(), NeqPredicate.class).collect(Collectors.toSet());
-        Set<NeqPredicate> typeNeqPredicate = that.getPredicates(that.getPredicateVariable(), NeqPredicate.class).collect(Collectors.toSet());
-
-        Set<ValuePredicate> thisValuePredicate = this.getAllPredicates(this.getVarName(), ValuePredicate.class).collect(Collectors.toSet());
-        Set<ValuePredicate> valuePredicate = that.getAllPredicates(that.getVarName(), ValuePredicate.class).collect(Collectors.toSet());
-
-        Set<ValuePredicate> thisTypeValuePredicate  = this.getAllPredicates(this.getPredicateVariable(), ValuePredicate.class).collect(Collectors.toSet());
-        Set<ValuePredicate> typeValuePredicate = that.getAllPredicates(that.getPredicateVariable(), ValuePredicate.class).collect(Collectors.toSet());
-
         return (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && equiv.equivalent(thisTypePredicate, typePredicate))
-                && equiv.equivalentCollection(thisVarPredicate, varPredicate)
-                && equiv.equivalentCollection(thisVarNeqPredicate, varNeqPredicate)
-                && equiv.equivalentCollection(thisTypeNeqPredicate, typeNeqPredicate)
+                && predicateBindingsEquivalent(this.getVarName(), that.getVarName(), that, equiv)
+                && predicateBindingsEquivalent(this.getPredicateVariable(), that.getPredicateVariable(), that, equiv);
+    }
+
+    boolean predicateBindingsEquivalent(Var thisVar, Var thatVar, Binary that, AtomicEquivalence equiv){
+        Set<IdPredicate> thisIdPredicate = this.getPredicates(thisVar, IdPredicate.class).collect(Collectors.toSet());
+        Set<IdPredicate> idPredicate = that.getPredicates(thatVar, IdPredicate.class).collect(Collectors.toSet());
+
+        Set<ValuePredicate> thisValuePredicate = this.getPredicates(thisVar, ValuePredicate.class).collect(Collectors.toSet());
+        Set<ValuePredicate> valuePredicate = that.getPredicates(thatVar, ValuePredicate.class).collect(Collectors.toSet());
+
+        Set<NeqPredicate> thisNeqPredicate = this.getPredicates(thisVar, NeqPredicate.class).collect(Collectors.toSet());
+        Set<NeqPredicate> neqPredicate = that.getPredicates(thatVar, NeqPredicate.class).collect(Collectors.toSet());
+
+        return equiv.equivalentCollection(thisIdPredicate, idPredicate)
                 && equiv.equivalentCollection(thisValuePredicate, valuePredicate)
-                && equiv.equivalentCollection(thisTypeValuePredicate, typeValuePredicate);
+                && equiv.equivalentCollection(thisNeqPredicate, neqPredicate);
     }
 
     @Override
