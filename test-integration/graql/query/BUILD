@@ -17,6 +17,19 @@
 #
 
 java_test(
+    name = "aggregate-query-it",
+    test_class = "grakn.core.graql.query.AggregateQueryIT",
+    srcs = ["AggregateQueryIT.java"],
+    deps = [
+        "//common",
+        "//server",
+        "//test-integration/graql/graph:movie-graph",
+        "//test-integration/rule:grakn-test-server",
+    ],
+    size = "medium"
+)
+
+java_test(
     name = "define-query-it",
     test_class = "grakn.core.graql.query.DefineQueryIT",
     srcs = ["DefineQueryIT.java"],
