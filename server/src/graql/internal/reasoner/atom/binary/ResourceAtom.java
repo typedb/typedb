@@ -180,10 +180,10 @@ public abstract class ResourceAtom extends Binary{
         ResourceAtom that = (ResourceAtom) at;
         if (!multiPredicateEquivalent(that, equiv)) return false;
 
-        IdPredicate thisPredicate = this.getIdPredicate(this.getAttributeVariable());
-        IdPredicate predicate = that.getIdPredicate(that.getAttributeVariable());
+        Set<IdPredicate> thisPredicate = this.getPredicates(this.getAttributeVariable(), IdPredicate.class).collect(Collectors.toSet());
+        Set<IdPredicate> predicate = that.getPredicates(that.getAttributeVariable(), IdPredicate.class).collect(Collectors.toSet());
 
-        return thisPredicate == null && predicate == null || thisPredicate != null && equiv.equivalent(thisPredicate, predicate);
+        return equiv.equivalentCollection(thisPredicate, predicate);
     }
 
     @Override

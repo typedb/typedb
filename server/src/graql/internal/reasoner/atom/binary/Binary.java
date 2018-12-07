@@ -131,31 +131,30 @@ public abstract class Binary extends Atom {
     }
 
     boolean predicateBindingsEquivalent(Binary that, AtomicEquivalence equiv) {
-        //check if there is a substitution for varName
-        IdPredicate thisVarPredicate = this.getIdPredicate(this.getVarName());
-        IdPredicate varPredicate = that.getIdPredicate(that.getVarName());
-
-        NeqPredicate thisVarNeqPredicate = this.getPredicates(this.getVarName(), NeqPredicate.class).findFirst().orElse(null);
-        NeqPredicate varNeqPredicate = that.getPredicates(that.getVarName(), NeqPredicate.class).findFirst().orElse(null);
-
         IdPredicate thisTypePredicate = this.getTypePredicate();
         IdPredicate typePredicate = that.getTypePredicate();
 
-        NeqPredicate thisTypeNeqPredicate = this.getPredicates(this.getPredicateVariable(), NeqPredicate.class).findFirst().orElse(null);
-        NeqPredicate typeNeqPredicate = that.getPredicates(that.getPredicateVariable(), NeqPredicate.class).findFirst().orElse(null);
+        Set<IdPredicate> thisVarPredicate = this.getPredicates(this.getVarName(), IdPredicate.class).collect(Collectors.toSet());
+        Set<IdPredicate> varPredicate = that.getPredicates(that.getVarName(), IdPredicate.class).collect(Collectors.toSet());
 
-        Set<ValuePredicate> thisValuePredicate = this.getPredicates(this.getVarName(), ValuePredicate.class).collect(Collectors.toSet());
-        Set<ValuePredicate> valuePredicate = that.getPredicates(that.getVarName(), ValuePredicate.class).collect(Collectors.toSet());
+        Set<NeqPredicate> thisVarNeqPredicate = this.getPredicates(this.getVarName(), NeqPredicate.class).collect(Collectors.toSet());
+        Set<NeqPredicate> varNeqPredicate = that.getPredicates(that.getVarName(), NeqPredicate.class).collect(Collectors.toSet());
 
-        Set<ValuePredicate> thisTypeValuePredicate  = this.getPredicates(this.getPredicateVariable(), ValuePredicate.class).collect(Collectors.toSet());
-        Set<ValuePredicate> typeValuePredicate = that.getPredicates(that.getPredicateVariable(), ValuePredicate.class).collect(Collectors.toSet());
+        Set<NeqPredicate> thisTypeNeqPredicate = this.getPredicates(this.getPredicateVariable(), NeqPredicate.class).collect(Collectors.toSet());
+        Set<NeqPredicate> typeNeqPredicate = that.getPredicates(that.getPredicateVariable(), NeqPredicate.class).collect(Collectors.toSet());
 
-        return ((thisVarPredicate == null && varPredicate == null || thisVarPredicate != null && equiv.equivalent(thisVarPredicate, varPredicate)))
-                && (thisVarNeqPredicate == null && varNeqPredicate == null || thisVarNeqPredicate != null && equiv.equivalent(thisVarNeqPredicate, varNeqPredicate))
-                && (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && equiv.equivalent(thisTypePredicate, typePredicate))
-                && (thisTypeNeqPredicate == null && typeNeqPredicate == null || thisTypeNeqPredicate != null && equiv.equivalent(thisTypeNeqPredicate, typeNeqPredicate))
-                && (thisValuePredicate == null && valuePredicate == null || thisValuePredicate != null && equiv.equivalentCollection(thisValuePredicate, valuePredicate))
-                && (thisTypeValuePredicate == null && typeValuePredicate == null || thisTypeValuePredicate != null && equiv.equivalentCollection(thisTypeValuePredicate, typeValuePredicate));
+        Set<ValuePredicate> thisValuePredicate = this.getAllPredicates(this.getVarName(), ValuePredicate.class).collect(Collectors.toSet());
+        Set<ValuePredicate> valuePredicate = that.getAllPredicates(that.getVarName(), ValuePredicate.class).collect(Collectors.toSet());
+
+        Set<ValuePredicate> thisTypeValuePredicate  = this.getAllPredicates(this.getPredicateVariable(), ValuePredicate.class).collect(Collectors.toSet());
+        Set<ValuePredicate> typeValuePredicate = that.getAllPredicates(that.getPredicateVariable(), ValuePredicate.class).collect(Collectors.toSet());
+
+        return (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && equiv.equivalent(thisTypePredicate, typePredicate))
+                && equiv.equivalentCollection(thisVarPredicate, varPredicate)
+                && equiv.equivalentCollection(thisVarNeqPredicate, varNeqPredicate)
+                && equiv.equivalentCollection(thisTypeNeqPredicate, typeNeqPredicate)
+                && equiv.equivalentCollection(thisValuePredicate, valuePredicate)
+                && equiv.equivalentCollection(thisTypeValuePredicate, typeValuePredicate);
     }
 
     @Override
