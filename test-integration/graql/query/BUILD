@@ -136,3 +136,18 @@ java_test(
     ],
     size = "medium"
 )
+
+java_test(
+    name = "query-planner-it",
+    test_class = "grakn.core.graql.query.QueryPlannerIT",
+    srcs = ["QueryPlannerIT.java"],
+    deps = [
+        "//server",
+        "//test-integration/graql/graph:movie-graph",
+        "//test-integration/rule:grakn-test-server",
+
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+
+    ],
+    size = "medium"
+)
