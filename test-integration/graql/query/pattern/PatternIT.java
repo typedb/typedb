@@ -115,20 +115,23 @@ public class PatternIT {
         assertEquals(conjunction, conjunction.asConjunction());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testConjunctionAsVar() {
+        exception.expect(UnsupportedOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         and(var("x").isa("movie"), var("x").isa("person")).asStatement();
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testDisjunctionAsConjunction() {
+        exception.expect(UnsupportedOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         or(var("x").isa("movie"), var("x").isa("person")).asConjunction();
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testVarAsDisjunction() {
+        exception.expect(UnsupportedOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         var("x").isa("movie").asDisjunction();
     }
@@ -232,15 +235,17 @@ public class PatternIT {
         assertTrue(conj.size() > 1);
     }
 
-    @Test(expected = Exception.class)
+    @Test
     public void whenConjunctionPassedNull_Throw() {
+        exception.expect(Exception.class);
         Set<Statement> varSet = null;
         //noinspection ResultOfMethodCallIgnored,ConstantConditions
         and(varSet);
     }
 
-    @Test(expected = Exception.class)
+    @Test
     public void whenConjunctionPassedVarAndNull_Throw() {
+        exception.expect(Exception.class);
         Statement var = null;
         //noinspection ResultOfMethodCallIgnored,ConstantConditions
         and(var(), var);
@@ -281,15 +286,17 @@ public class PatternIT {
         assertTrue(conj.size() > 1);
     }
 
-    @Test(expected = Exception.class)
+    @Test
     public void whenDisjunctionPassedNull_Throw() {
+        exception.expect(Exception.class);
         Set<Statement> varSet = null;
         //noinspection ResultOfMethodCallIgnored,ConstantConditions
         or(varSet);
     }
 
-    @Test(expected = Exception.class)
+    @Test
     public void whenDisjunctionPassedVarAndNull_Throw() {
+        exception.expect(Exception.class);
         Statement var = null;
         //noinspection ResultOfMethodCallIgnored,ConstantConditions
         or(var(), var);
@@ -314,8 +321,9 @@ public class PatternIT {
         assertEquals(1, result2.size());
     }
 
-    @Test(expected = Exception.class)
+    @Test
     public void whenNegationPassedNull_Throw() {
+        exception.expect(Exception.class);
         Statement var = null;
         //noinspection ConstantConditions,ResultOfMethodCallIgnored
         neq(var);
