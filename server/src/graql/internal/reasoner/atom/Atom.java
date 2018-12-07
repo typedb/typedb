@@ -290,7 +290,7 @@ public abstract class Atom extends AtomicBase {
      * @param <T>  the type of {@link Predicate} to return
      * @return stream of all predicates (public and inner) relevant to this atom and variable
      */
-    private <T extends Predicate> Stream<T> getAllPredicates(Variable var, Class<T> type) {
+    public <T extends Predicate> Stream<T> getAllPredicates(Variable var, Class<T> type) {
         return Stream.concat(
                 getPredicates(type),
                 getInnerPredicates(type)

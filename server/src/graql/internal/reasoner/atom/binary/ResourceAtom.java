@@ -176,14 +176,8 @@ public abstract class ResourceAtom extends Binary{
     @Override
     boolean predicateBindingsEquivalent(Binary at, AtomicEquivalence equiv) {
         if (!(at instanceof ResourceAtom && super.predicateBindingsEquivalent(at, equiv))) return false;
-
         ResourceAtom that = (ResourceAtom) at;
-        if (!multiPredicateEquivalent(that, equiv)) return false;
-
-        IdPredicate thisPredicate = this.getIdPredicate(this.getAttributeVariable());
-        IdPredicate predicate = that.getIdPredicate(that.getAttributeVariable());
-
-        return thisPredicate == null && predicate == null || thisPredicate != null && equiv.equivalent(thisPredicate, predicate);
+        return predicateBindingsEquivalent(this.getAttributeVariable(), that.getAttributeVariable(), that, equiv);
     }
 
     @Override

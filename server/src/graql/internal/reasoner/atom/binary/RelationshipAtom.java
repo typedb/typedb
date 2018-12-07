@@ -304,21 +304,13 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 && this.predicateBindingsAlphaEquivalent(that);
     }
 
-    @Memoized
     @Override
-    public int alphaEquivalenceHashCode() {
-        int equivalenceHashCode = baseHashCode();
-        SortedSet<Integer> hashes = new TreeSet<>();
-        this.getRoleTypeMap().entries().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().label()))
-                .sorted(Comparator.comparing(e -> e.getValue().label()))
-                .forEach(e -> hashes.add(e.hashCode()));
-        this.getRoleConceptIdMap().entries().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().label()))
-                .sorted(Comparator.comparing(Map.Entry::getValue))
-                .forEach(e -> hashes.add(e.hashCode()));
-        for (Integer hash : hashes) equivalenceHashCode = equivalenceHashCode * 37 + hash;
-        return equivalenceHashCode;
+    public boolean isStructurallyEquivalent(Object obj) {
+        if (!isBaseEquivalent(obj) || !super.isStructurallyEquivalent(obj)) return false;
+        RelationshipAtom that = (RelationshipAtom) obj;
+        // check bindings
+        return this.getRoleTypeMap(false).equals(that.getRoleTypeMap(false))
+                && this.predicateBindingsStructurallyEquivalent(that);
     }
 
     private boolean predicateBindingsEquivalent(RelationshipAtom atom,
@@ -346,13 +338,21 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return predicateBindingsEquivalent(atom, (a, b) -> true, AtomicEquivalence.StructuralEquivalence);
     }
 
+    @Memoized
     @Override
-    public boolean isStructurallyEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj) || !super.isStructurallyEquivalent(obj)) return false;
-        RelationshipAtom that = (RelationshipAtom) obj;
-        // check bindings
-        return this.getRoleTypeMap(false).equals(that.getRoleTypeMap(false))
-                && this.predicateBindingsStructurallyEquivalent(that);
+    public int alphaEquivalenceHashCode() {
+        int equivalenceHashCode = baseHashCode();
+        SortedSet<Integer> hashes = new TreeSet<>();
+        this.getRoleTypeMap().entries().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().label()))
+                .sorted(Comparator.comparing(e -> e.getValue().label()))
+                .forEach(e -> hashes.add(e.hashCode()));
+        this.getRoleConceptIdMap().entries().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().label()))
+                .sorted(Comparator.comparing(Map.Entry::getValue))
+                .forEach(e -> hashes.add(e.hashCode()));
+        for (Integer hash : hashes) equivalenceHashCode = equivalenceHashCode * 37 + hash;
+        return equivalenceHashCode;
     }
 
     @Override
