@@ -95,6 +95,20 @@ java_test(
 )
 
 java_test(
+    name = "query-admin-it",
+    test_class = "grakn.core.graql.query.QueryAdminIT",
+    srcs = ["QueryAdminIT.java"],
+    deps = [
+        "//server",
+        "//test-integration/graql/graph:movie-graph",
+        "//test-integration/rule:grakn-test-server",
+
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+    ],
+    size = "medium"
+)
+
+java_test(
     name = "query-error-it",
     test_class = "grakn.core.graql.query.QueryErrorIT",
     srcs = ["QueryErrorIT.java"],
