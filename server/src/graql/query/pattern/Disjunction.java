@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,12 +37,11 @@ public class Disjunction<T extends Pattern> implements Pattern {
 
     private final Set<T> patterns;
 
-    public Disjunction(
-            Set<T> patterns) {
+    public Disjunction(Set<T> patterns) {
         if (patterns == null) {
             throw new NullPointerException("Null patterns");
         }
-        this.patterns = patterns;
+        this.patterns = patterns.stream().map(Objects::requireNonNull).collect(Collectors.toSet());
     }
 
     /**
@@ -70,6 +70,11 @@ public class Disjunction<T extends Pattern> implements Pattern {
     @Override
     public boolean isDisjunction() {
         return true;
+    }
+
+    @Override
+    public Disjunction<?> asDisjunction() {
+        return this;
     }
 
     @Override

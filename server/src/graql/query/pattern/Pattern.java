@@ -151,7 +151,31 @@ public interface Pattern {
     }
 
     /**
-     * @return true if this {@link Pattern}  is a {@link Conjunction}
+     * @return this {@link Pattern} as a {@link Disjunction}, if it is one.
+     */
+    @CheckReturnValue
+    default Disjunction<?> asDisjunction() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return this {@link Pattern} as a {@link Conjunction}, if it is one.
+     */
+    @CheckReturnValue
+    default Conjunction<?> asConjunction() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return true if this {@link Pattern} is a {@link Statement}
+     */
+    @CheckReturnValue
+    default boolean isStatement() {
+        return false;
+    }
+
+    /**
+     * @return true if this {@link Pattern} is a {@link Conjunction}
      */
     @CheckReturnValue
     default boolean isDisjunction() {
@@ -159,7 +183,7 @@ public interface Pattern {
     }
 
     /**
-     * @return true if this {@link Pattern}  is a {@link Disjunction}
+     * @return true if this {@link Pattern} is a {@link Disjunction}
      */
     @CheckReturnValue
     default boolean isConjunction() {

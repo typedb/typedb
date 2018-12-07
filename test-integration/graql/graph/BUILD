@@ -16,12 +16,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-java_test(
-    name = "pattern-impl-test",
-    test_class = "grakn.core.graql.query.pattern.PatternTest",
-    srcs = ["PatternTest.java"],
+java_library(
+    name = "movie-graph",
+    srcs = ["MovieGraph.java"],
+    visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//server"],
-    size = "small"
+        "//server",
+
+    ],
 )

@@ -17,11 +17,17 @@
 #
 
 java_test(
-    name = "pattern-impl-test",
-    test_class = "grakn.core.graql.query.pattern.PatternTest",
-    srcs = ["PatternTest.java"],
+    name = "pattern-it",
+    test_class = "grakn.core.graql.query.pattern.PatternIT",
+    srcs = ["PatternIT.java"],
     deps = [
+        "//server",
+        "//test-integration/graql/graph:movie-graph",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//server"],
-    size = "small"
+
+    ],
+    size = "medium"
 )

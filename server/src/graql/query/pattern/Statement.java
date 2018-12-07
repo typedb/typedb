@@ -90,6 +90,11 @@ public abstract class Statement implements Pattern {
         return this;
     }
 
+    @Override
+    public boolean isStatement() {
+        return true;
+    }
+
     /**
      * @return the name this variable represents, if it represents something with a specific name
      */
