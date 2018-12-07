@@ -139,7 +139,7 @@ public abstract class Binary extends Atom {
                 && predicateBindingsEquivalent(this.getPredicateVariable(), that.getPredicateVariable(), that, equiv);
     }
 
-    boolean predicateBindingsEquivalent(Var thisVar, Var thatVar, Binary that, AtomicEquivalence equiv){
+    boolean predicateBindingsEquivalent(Variable thisVar, Variable thatVar, Binary that, AtomicEquivalence equiv){
         Set<IdPredicate> thisIdPredicate = this.getPredicates(thisVar, IdPredicate.class).collect(Collectors.toSet());
         Set<IdPredicate> idPredicate = that.getPredicates(thatVar, IdPredicate.class).collect(Collectors.toSet());
 
