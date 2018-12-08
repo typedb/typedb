@@ -46,27 +46,21 @@ computeMethod       : COUNT                                                     
                     | CLUSTER                                                   // compute detection of cluster
                     ;
 computeConditions   : computeCondition (',' computeCondition)* ;
-computeCondition    : FROM      computeFromID
-                    | TO        computeToID
-                    | OF        computeOfLabels
-                    | IN        computeInLabels
-                    | USING     computeAlgorithm
-                    | WHERE     computeArgs
+computeCondition    : FROM      id                  # computeConditionFrom      // an instance to start the compute from
+                    | TO        id                  # computeConditionTo        // an instance to end the compute at
+                    | OF        labels              # computeConditionOf        // type(s) of instances to apply compute
+                    | IN        labels              # computeConditionIn        // type(s) to scope compute visibility
+                    | USING     computeAlgorithm    # computeConditionUsing     // algorithm to determine how to compute
+                    | WHERE     computeArgs         # computeConditionWhere     // additional args for compute method
                     ;
 
-computeFromID       : id ;
-computeToID         : id ;
-computeOfLabels     : labels ;
-computeInLabels     : labels ;
-computeAlgorithm    : DEGREE | K_CORE | CONNECTED_COMPONENT ;                   // different types of algorithms that
-                                                                                // determines how the method is computed
-
+computeAlgorithm    : DEGREE | K_CORE | CONNECTED_COMPONENT ;                   // algorithm to determine how to compute
 computeArgs         : computeArg | computeArgsArray ;                           // single argument or array of arguments
 computeArgsArray    : '[' computeArg (',' computeArg)* ']' ;                    // an array of arguments
-computeArg          : MIN_K         '='     INTEGER        # computeArgMinK     // a single argument for min-k=INTEGER
-                    | K             '='     INTEGER        # computeArgK        // a single argument for k=INTEGER
-                    | SIZE          '='     INTEGER        # computeArgSize     // a single argument for size=INTEGER
-                    | CONTAINS      '='     id             # computeArgContains // a single argument for contains=ID
+computeArg          : MIN_K     '=' INTEGER         # computeArgMinK            // a single argument for min-k=INTEGER
+                    | K         '=' INTEGER         # computeArgK               // a single argument for k=INTEGER
+                    | SIZE      '=' INTEGER         # computeArgSize            // a single argument for size=INTEGER
+                    | CONTAINS  '=' id              # computeArgContains        // a single argument for contains=ID
                     ;
 
 // =====================================================================================================================

@@ -23,9 +23,7 @@ import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import graql.grammar.GraqlBaseVisitor;
-import graql.grammar.GraqlParser;
-import grakn.core.graql.util.StringUtil;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
@@ -36,13 +34,15 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.Order;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.predicate.ValuePredicate;
+import grakn.core.graql.util.StringUtil;
+import graql.grammar.GraqlBaseVisitor;
+import graql.grammar.GraqlParser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -59,18 +59,17 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.pattern.Pattern.and;
-import static grakn.core.graql.query.Graql.eq;
-import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.ComputeQuery.Algorithm;
 import static grakn.core.graql.query.ComputeQuery.Argument;
 import static grakn.core.graql.query.ComputeQuery.Method;
+import static grakn.core.graql.query.Graql.eq;
+import static grakn.core.graql.query.pattern.Pattern.and;
+import static grakn.core.graql.query.pattern.Pattern.label;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
  * ANTLR visitor class for parsing a query
- *
  */
 // This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
 @SuppressWarnings("unchecked")
@@ -631,28 +630,27 @@ class GraqlConstructor extends GraqlBaseVisitor {
         ComputeQuery query = queryBuilder.compute(Method.of(method.getText()));
         if (conditions == null) return query;
 
-        for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {
-            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
-                case GraqlParser.RULE_computeFromID:
-                    query = query.from(visitId(condition.computeFromID().id()));
-                    break;
-                case GraqlParser.RULE_computeToID:
-                    query = query.to(visitId(condition.computeToID().id()));
-                    break;
-                case GraqlParser.RULE_computeOfLabels:
-                    query.of(visitLabels(condition.computeOfLabels().labels()));
-                    break;
-                case GraqlParser.RULE_computeInLabels:
-                    query.in(visitLabels(condition.computeInLabels().labels()));
-                    break;
-                case GraqlParser.RULE_computeAlgorithm:
-                    query.using(Algorithm.of(condition.computeAlgorithm().getText()));
-                    break;
-                case GraqlParser.RULE_computeArgs:
-                    query.where(visitComputeArgs(condition.computeArgs()));
-                    break;
-                default:
-                    throw GraqlQueryException.invalidComputeQuery_invalidCondition(query.method());
+        for (GraqlParser.ComputeConditionContext conditionContext : conditions.computeCondition()) {
+            if (conditionContext instanceof GraqlParser.ComputeConditionFromContext) {
+                query.from(visitId((((GraqlParser.ComputeConditionFromContext) conditionContext).id())));
+
+            } else if (conditionContext instanceof GraqlParser.ComputeConditionToContext) {
+                query.to(visitId(((GraqlParser.ComputeConditionToContext) conditionContext).id()));
+
+            } else if (conditionContext instanceof GraqlParser.ComputeConditionOfContext) {
+                query.of(visitLabels(((GraqlParser.ComputeConditionOfContext) conditionContext).labels()));
+
+            } else if (conditionContext instanceof GraqlParser.ComputeConditionInContext) {
+                query.in(visitLabels(((GraqlParser.ComputeConditionInContext) conditionContext).labels()));
+
+            } else if (conditionContext instanceof GraqlParser.ComputeConditionUsingContext) {
+                query.using(Algorithm.of(((GraqlParser.ComputeConditionUsingContext) conditionContext).computeAlgorithm().getText()));
+
+            } else if (conditionContext instanceof GraqlParser.ComputeConditionWhereContext) {
+                query.where(visitComputeArgs(((GraqlParser.ComputeConditionWhereContext) conditionContext).computeArgs()));
+
+            } else {
+                throw GraqlQueryException.invalidComputeQuery_invalidCondition(query.method());
             }
         }
 
