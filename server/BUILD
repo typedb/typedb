@@ -18,7 +18,6 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_antlr//antlr:antlr4.bzl", "antlr4")
 load("@graknlabs_rules_deployment//maven:rules.bzl", "deploy_maven_jar")
 
 
@@ -27,19 +26,13 @@ exports_files(
     visibility = ["//visibility:public"]
 )
 
-antlr4(
-    name = "graql-java",
-    srcs = glob(["src/graql/grammar/*.g4"]),
-    visitor = True,
-    package = "grakn.core.graql.grammar"
-)
-
 java_library(
     name = "server",
-    srcs = [":graql-java"] + glob(["src/**/*.java"]),
+    srcs = glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
         "//common",
+        "//graql/java:graql",
         "//protocol:protocol-java",
 
         # External dependencies

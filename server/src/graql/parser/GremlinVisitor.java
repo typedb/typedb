@@ -19,9 +19,9 @@
 package grakn.core.graql.parser;
 
 import com.google.common.base.Strings;
-import grakn.core.graql.grammar.GremlinBaseVisitor;
-import grakn.core.graql.grammar.GremlinLexer;
-import grakn.core.graql.grammar.GremlinParser;
+import graql.grammar.GremlinBaseVisitor;
+import graql.grammar.GremlinLexer;
+import graql.grammar.GremlinParser;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
