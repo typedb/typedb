@@ -69,10 +69,10 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
 
     final String innerName() {
         Variable role = role();
-        String roleString = role != null ? " role:" + role.shortName() : "";
+        String roleString = role != null ? " role:" + role.symbol() : "";
         String rels = displayOptionalTypeLabels("rels", relationTypeLabels());
         String roles = displayOptionalTypeLabels("roles", roleLabels());
-        return "[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":" + edge().shortName() + roleString + rels + roles + "]";
+        return "[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":" + edge().symbol() + roleString + rels + roles + "]";
     }
 
     @Override

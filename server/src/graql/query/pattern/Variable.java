@@ -21,7 +21,6 @@ package grakn.core.graql.query.pattern;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import org.apache.commons.lang.StringUtils;
 
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -35,7 +34,7 @@ public class Variable extends Statement {
 
     private final String name;
     private final Type type;
-    private volatile String label;
+    private volatile String symbol;
 
     public Variable(String name, Type type) {
         if (name == null) {
@@ -76,10 +75,10 @@ public class Variable extends Statement {
     }
 
     /**
-     * Transform the variable into a user-defined one, retaining the generated label.
+     * Transform the variable into a user-defined one, retaining the generated symbol.
      * This is useful for "reifying" an existing variable.
      *
-     * @return a new variable with the same label as the previous, but set as user-defined.
+     * @return a new variable with the same symbol as the previous, but set as user-defined.
      */
     public Variable asUserDefined() {
         if (isUserDefinedName()) {
@@ -90,24 +89,17 @@ public class Variable extends Statement {
     }
 
     /**
-     * Get a unique label identifying the variable, differentiating user-defined variables from generated ones.
+     * Get a unique symbol identifying the variable, differentiating user-defined variables from generated ones.
      */
     public String symbol() {
-        if (label == null) {
+        if (symbol == null) {
             synchronized (this) {
-                if (label == null) {
-                    label = type().prefix() + name();
+                if (symbol == null) {
+                    symbol = type().prefix() + name();
                 }
             }
         }
-        return label;
-    }
-
-    /**
-     * Get a shorter representation of the variable (with prefixed "$")
-     */
-    public String shortName() {
-        return type().prefix() + StringUtils.right(name(), 3);
+        return symbol;
     }
 
     @Override

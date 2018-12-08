@@ -202,7 +202,7 @@ public abstract class GraqlTraversal {
                 if (!fragment.start().equals(currentName)) {
                     if (currentName != null) sb.append(" ");
 
-                    sb.append(fragment.start().shortName());
+                    sb.append(fragment.start().symbol());
                     currentName = fragment.start();
                 }
 
@@ -210,7 +210,7 @@ public abstract class GraqlTraversal {
 
                 Variable end = fragment.end();
                 if (end != null) {
-                    sb.append(end.shortName());
+                    sb.append(end.symbol());
                     currentName = end;
                 }
             }
