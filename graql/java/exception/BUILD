@@ -16,14 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//graql:__subpackages__"])
+package(default_visibility = ["//graql/java:__subpackages__"])
 
-load("@rules_antlr//antlr:antlr4.bzl", "antlr4")
 
-antlr4(
-    name = "graql-java",
-    srcs = glob(["**/*.g4"]),
-    language = "Java",
-    visitor = True,
-    package = "graql.grammar",
+java_library(
+    name = "exception",
+    srcs = glob(["**/*.java"]),
 )

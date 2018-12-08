@@ -32,7 +32,7 @@ java_library(
     deps = [
         # Grakn Core dependencies
         "//common",
-        "//graql/java:graql",
+        "//graql/java/parser:parser", # TODO: need to just depend on top package //graql/java:graql
         "//protocol:protocol-java",
 
         # External dependencies

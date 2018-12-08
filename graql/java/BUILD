@@ -21,8 +21,8 @@ package(default_visibility = ["//visibility:public"])
 
 java_library(
     name = "graql",
-    srcs = ["//graql/grammar:graql-java"] + glob(["**/*.java"]),
-    deps = [
-        "//dependencies/maven/artifacts/org/antlr:antlr4-runtime", # sync version with @antlr4_runtime//jar
+    srcs = glob(["**/*.java"]),
+    runtime_deps = [ # TODO: Needs to be compile-time deps
+        "//graql/java/parser:parser",
     ]
 )

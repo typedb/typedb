@@ -22,6 +22,12 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSyntaxException;
+import grakn.core.graql.query.Aggregate;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Variable;
 import graql.grammar.GraqlLexer;
 import graql.grammar.GraqlParser;
 import graql.grammar.GraqlParser.PatternContext;
@@ -29,12 +35,8 @@ import graql.grammar.GraqlParser.PatternsContext;
 import graql.grammar.GraqlParser.QueryContext;
 import graql.grammar.GraqlParser.QueryEOFContext;
 import graql.grammar.GraqlParser.QueryListContext;
-import grakn.core.graql.query.Aggregate;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.query.pattern.Variable;
+import graql.parser.ChannelTokenSource;
+import graql.parser.ErrorListener;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
@@ -142,7 +144,7 @@ public class QueryParser {
      */
     public <T extends Query<?>> Stream<T> parseReader(Reader reader) {
         UnbufferedCharStream charStream = new UnbufferedCharStream(reader);
-        GraqlErrorListener errorListener = GraqlErrorListener.withoutQueryString();
+        ErrorListener errorListener = ErrorListener.withoutQueryString();
         GraqlLexer lexer = createLexer(charStream, errorListener);
 
         /*
@@ -224,14 +226,14 @@ public class QueryParser {
     }
 
 
-    private static GraqlLexer createLexer(CharStream input, GraqlErrorListener errorListener) {
+    private static GraqlLexer createLexer(CharStream input, ErrorListener errorListener) {
         GraqlLexer lexer = new GraqlLexer(input);
         lexer.removeErrorListeners();
         lexer.addErrorListener(errorListener);
         return lexer;
     }
 
-    private static GraqlParser createParser(TokenStream tokens, GraqlErrorListener errorListener) {
+    private static GraqlParser createParser(TokenStream tokens, ErrorListener errorListener) {
         GraqlParser parser = new GraqlParser(tokens);
         parser.removeErrorListeners();
         parser.addErrorListener(errorListener);
@@ -323,7 +325,7 @@ public class QueryParser {
          */
         final T parse(String queryString) {
             ANTLRInputStream charStream = new ANTLRInputStream(queryString);
-            GraqlErrorListener errorListener = GraqlErrorListener.of(queryString);
+            ErrorListener errorListener = ErrorListener.of(queryString);
 
             GraqlLexer lexer = createLexer(charStream, errorListener);
 
@@ -335,9 +337,9 @@ public class QueryParser {
 
         /**
          * Parse the {@link GraqlParser} into a Java object, where errors are reported to the given
-         * {@link GraqlErrorListener}.
+         * {@link ErrorListener}.
          */
-        final T parse(GraqlParser parser, GraqlErrorListener errorListener) {
+        final T parse(GraqlParser parser, ErrorListener errorListener) {
             S tree;
 
             try {

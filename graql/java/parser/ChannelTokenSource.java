@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.parser;
+package graql.parser;
 
 import com.google.auto.value.AutoValue;
 import org.antlr.v4.runtime.CharStream;

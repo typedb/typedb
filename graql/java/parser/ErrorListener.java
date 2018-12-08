@@ -16,48 +16,43 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.parser;
+package graql.parser;
 
-import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * ANTLR error listener that listens for syntax errors.
- *
- * When a syntax error occurs, it is recorded. Call {@link GraqlErrorListener#hasErrors()} to see if there were errors.
- * View the errors with {@link GraqlErrorListener#toString()}.
- *
+ * When a syntax error occurs, it is recorded. Call {@link ErrorListener#hasErrors()} to see if there were errors.
+ * View the errors with {@link ErrorListener#toString()}.
  */
-public class GraqlErrorListener extends BaseErrorListener {
+public class ErrorListener extends BaseErrorListener {
 
-    private final @Nullable List<String> query;
+    private final List<String> query;
     private final List<SyntaxError> errors = new ArrayList<>();
 
-    private GraqlErrorListener(@Nullable List<String> query) {
+    private ErrorListener(List<String> query) {
         this.query = query;
     }
 
     /**
-     * Create a {@link GraqlErrorListener} without a reference to a query string.
-     * <p>
-     *     This will have limited error-reporting abilities, but is necessary when dealing with very large queries
-     *     that should not be held in memory all at once.
-     * </p>
+     * Create a {@link ErrorListener} without a reference to a query string.
+     * This will have limited error-reporting abilities, but is necessary when dealing with very large queries
+     * that should not be held in memory all at once.
      */
-    public static GraqlErrorListener withoutQueryString() {
-        return new GraqlErrorListener(null);
+    public static ErrorListener withoutQueryString() {
+        return new ErrorListener(null);
     }
 
-    public static GraqlErrorListener of(String query) {
-        List<String> queryList = Lists.newArrayList(query.split("\n"));
-        return new GraqlErrorListener(queryList);
+    public static ErrorListener of(String query) {
+        List<String> queryList = Arrays.asList(query.split("\n"));
+        return new ErrorListener(queryList);
     }
 
     @Override
@@ -66,9 +61,9 @@ public class GraqlErrorListener extends BaseErrorListener {
             RecognitionException e) {
 
         if (query == null) {
-            errors.add(SyntaxError.of(line, msg));
+            errors.add(new SyntaxError(null, line, 0, msg));
         } else {
-            errors.add(SyntaxError.of(line, msg, query.get(line-1), charPositionInLine));
+            errors.add(new SyntaxError(query.get(line - 1), line, charPositionInLine, msg));
         }
     }
 

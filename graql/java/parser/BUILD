@@ -16,14 +16,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//graql:__subpackages__"])
+package(default_visibility = ["//visibility:public"]) # TODO: Needs to be replaced with below
+#package(default_visibility = ["//graql/java:__subpackages__"])
 
-load("@rules_antlr//antlr:antlr4.bzl", "antlr4")
 
-antlr4(
-    name = "graql-java",
-    srcs = glob(["**/*.g4"]),
-    language = "Java",
-    visitor = True,
-    package = "graql.grammar",
+java_library(
+    name = "parser",
+    srcs = ["//graql/grammar:graql-java"] + glob(["**/*.java"]),
+    deps = [
+        "//graql/java/exception:exception",
+
+        # External dependencies
+        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
+        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/antlr:antlr4-runtime", # sync version with @antlr4_runtime//jar
+    ]
 )
