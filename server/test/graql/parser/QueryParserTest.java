@@ -21,18 +21,13 @@ package grakn.core.graql.parser;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.property.DataTypeProperty;
-import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -42,9 +37,12 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlSyntaxException;
+import grakn.core.graql.query.pattern.property.DataTypeProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -66,8 +64,11 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static grakn.core.graql.query.Graql.max;
-import static grakn.core.graql.query.pattern.Pattern.and;
+import static grakn.core.graql.query.ComputeQuery.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.query.ComputeQuery.Algorithm.K_CORE;
+import static grakn.core.graql.query.ComputeQuery.Argument.k;
+import static grakn.core.graql.query.ComputeQuery.Argument.size;
+import static grakn.core.graql.query.ComputeQuery.Method.CLUSTER;
 import static grakn.core.graql.query.Graql.contains;
 import static grakn.core.graql.query.Graql.count;
 import static grakn.core.graql.query.Graql.define;
@@ -76,23 +77,20 @@ import static grakn.core.graql.query.Graql.group;
 import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.query.Graql.gte;
 import static grakn.core.graql.query.Graql.insert;
-import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.Graql.lt;
 import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
+import static grakn.core.graql.query.Graql.max;
 import static grakn.core.graql.query.Graql.neq;
-import static grakn.core.graql.query.pattern.Pattern.or;
 import static grakn.core.graql.query.Graql.parse;
 import static grakn.core.graql.query.Graql.regex;
 import static grakn.core.graql.query.Graql.std;
 import static grakn.core.graql.query.Graql.undefine;
-import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.query.Order.desc;
-import static grakn.core.graql.query.ComputeQuery.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.query.ComputeQuery.Algorithm.K_CORE;
-import static grakn.core.graql.query.ComputeQuery.Argument.k;
-import static grakn.core.graql.query.ComputeQuery.Argument.size;
-import static grakn.core.graql.query.ComputeQuery.Method.CLUSTER;
+import static grakn.core.graql.query.pattern.Pattern.and;
+import static grakn.core.graql.query.pattern.Pattern.label;
+import static grakn.core.graql.query.pattern.Pattern.or;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -432,11 +430,11 @@ public class QueryParserTest {
         );
 
         InsertQuery parsed = parse("insert " +
-                "$x has name 'Pichu' isa pokemon;" +
-                "$y has name 'Pikachu' isa pokemon;" +
-                "$z has name 'Raichu' isa pokemon;" +
-                "(evolves-from: $x ,evolves-to: $y) isa evolution;" +
-                "(evolves-from: $y, evolves-to: $z) isa evolution;"
+                                           "$x has name 'Pichu' isa pokemon;" +
+                                           "$y has name 'Pikachu' isa pokemon;" +
+                                           "$z has name 'Raichu' isa pokemon;" +
+                                           "(evolves-from: $x ,evolves-to: $y) isa evolution;" +
+                                           "(evolves-from: $y, evolves-to: $z) isa evolution;"
         );
 
         assertEquals(expected, parsed);
@@ -456,10 +454,10 @@ public class QueryParserTest {
         );
 
         DefineQuery parsed = parse("define " +
-                "parent sub role;\n" +
-                "child sub role;\n" +
-                "parenthood sub relationship, relates parent, relates child;\n" +
-                "fatherhood sub parenthood, relates father as parent, relates son as child;"
+                                           "parent sub role;\n" +
+                                           "child sub role;\n" +
+                                           "parenthood sub relationship, relates parent, relates child;\n" +
+                                           "fatherhood sub parenthood, relates father as parent, relates son as child;"
         );
 
         assertEquals(expected, parsed);
@@ -475,7 +473,7 @@ public class QueryParserTest {
         ).get();
 
         GetQuery parsed = parse("match " +
-                "fatherhood sub parenthood, relates $x as parent, relates son as $y; get;"
+                                        "fatherhood sub parenthood, relates $x as parent, relates son as $y; get;"
         );
 
         assertEquals(expected, parsed);
@@ -494,12 +492,12 @@ public class QueryParserTest {
         );
 
         DefineQuery parsed = parse("define " +
-                "'pokemon' sub entity;" +
-                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
-                "evolves-from sub role;" +
-                "label \"evolves-to\" sub role;" +
-                "evolution relates evolves-from, relates evolves-to;" +
-                "pokemon plays evolves-from plays evolves-to has name;"
+                                           "'pokemon' sub entity;" +
+                                           "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
+                                           "evolves-from sub role;" +
+                                           "label \"evolves-to\" sub role;" +
+                                           "evolution relates evolves-from, relates evolves-to;" +
+                                           "pokemon plays evolves-from plays evolves-to has name;"
         );
 
         assertEquals(expected, parsed);
@@ -517,12 +515,12 @@ public class QueryParserTest {
         );
 
         UndefineQuery parsed = parse("undefine " +
-                "'pokemon' sub entity;" +
-                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
-                "evolves-from sub role;" +
-                "label \"evolves-to\" sub role;" +
-                "evolution relates evolves-from, relates evolves-to;" +
-                "pokemon plays evolves-from plays evolves-to has name;"
+                                             "'pokemon' sub entity;" +
+                                             "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
+                                             "evolves-from sub role;" +
+                                             "label \"evolves-to\" sub role;" +
+                                             "evolution relates evolves-from, relates evolves-to;" +
+                                             "pokemon plays evolves-from plays evolves-to has name;"
         );
 
         assertEquals(expected, parsed);
@@ -638,7 +636,7 @@ public class QueryParserTest {
     @Test
     public void testParseAggregateGroupCount() {
         AggregateQuery<AnswerGroup<Value>> expected = match(var("x").isa("movie")).aggregate(group("x", count()));
-        AggregateQuery<AnswerGroup<Value>> parsed = parse("match $x isa movie; aggregate group $x count;");
+        AggregateQuery<AnswerGroup<Value>> parsed = parse("match $x isa movie; aggregate group $x, count;");
 
         assertEquals(expected, parsed);
     }
@@ -653,7 +651,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseAggregateToString() {
-        String query = "match $x isa movie; aggregate group $x count;";
+        String query = "match $x isa movie; aggregate group $x, count;";
         assertEquals(query, parse(query).toString());
     }
 
@@ -1079,16 +1077,14 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAggregateWithWrongVariableArgumentNumber_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("group", "1-2", 0));
+        exception.expect(GraqlSyntaxException.class);
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate group;");
     }
 
     @Test
     public void whenParsingAggregateWithWrongName_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(ErrorMessage.UNKNOWN_AGGREGATE.getMessage("hello"));
+        exception.expect(GraqlSyntaxException.class);
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate hello $x;");
     }
