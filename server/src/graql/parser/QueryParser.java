@@ -19,11 +19,7 @@
 package grakn.core.graql.parser;
 
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ImmutableMap;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSyntaxException;
-import grakn.core.graql.query.Aggregate;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.pattern.Pattern;
@@ -51,9 +47,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 import javax.annotation.Nullable;
 import java.io.Reader;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -65,7 +59,6 @@ import java.util.stream.StreamSupport;
 public class QueryParser {
 
     private final QueryBuilder queryBuilder;
-    private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
     private boolean defineAllVars = false;
 
     /**
@@ -85,21 +78,7 @@ public class QueryParser {
      */
     public static QueryParser create(QueryBuilder queryBuilder) {
         QueryParser parser = new QueryParser(queryBuilder);
-        parser.registerDefaultAggregates();
         return parser;
-    }
-
-    private void registerAggregate(String name, int numArgs, Function<List<Object>, Aggregate> aggregateMethod) {
-        registerAggregate(name, numArgs, numArgs, aggregateMethod);
-    }
-
-    private void registerAggregate(String name, int minArgs, int maxArgs, Function<List<Object>, Aggregate> aggregateMethod) {
-        aggregateMethods.put(name, args -> {
-            if (args.size() < minArgs || args.size() > maxArgs) {
-                throw GraqlQueryException.incorrectAggregateArgumentNumber(name, minArgs, maxArgs, args);
-            }
-            return aggregateMethod.apply(args);
-        });
     }
 
     /**
@@ -241,32 +220,7 @@ public class QueryParser {
     }
 
     private GraqlConstructor getQueryVisitor() {
-        ImmutableMap<String, Function<List<Object>, Aggregate>> immutableAggregates =
-                ImmutableMap.copyOf(aggregateMethods);
-
-        return new GraqlConstructor(immutableAggregates, queryBuilder, defineAllVars);
-    }
-
-    // Aggregate methods that include other aggregates, such as group are not necessarily safe at runtime.
-    // This is unavoidable in the parser.
-    // TODO: remove this manual registration of aggregate queries and design it into the grammar
-    @SuppressWarnings("unchecked")
-    private void registerDefaultAggregates() {
-        registerAggregate("count", 0, Integer.MAX_VALUE, args -> Graql.count());
-        registerAggregate("sum", 1, args -> Graql.sum((Variable) args.get(0)));
-        registerAggregate("max", 1, args -> Graql.max((Variable) args.get(0)));
-        registerAggregate("min", 1, args -> Graql.min((Variable) args.get(0)));
-        registerAggregate("mean", 1, args -> Graql.mean((Variable) args.get(0)));
-        registerAggregate("median", 1, args -> Graql.median((Variable) args.get(0)));
-        registerAggregate("std", 1, args -> Graql.std((Variable) args.get(0)));
-
-        registerAggregate("group", 1, 2, args -> {
-            if (args.size() < 2) {
-                return Graql.group((Variable) args.get(0));
-            } else {
-                return Graql.group((Variable) args.get(0), (Aggregate) args.get(1));
-            }
-        });
+        return new GraqlConstructor(queryBuilder, defineAllVars);
     }
 
     private final QueryPart<QueryListContext, Stream<? extends Query<?>>> QUERY_LIST =

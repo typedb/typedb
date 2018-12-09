@@ -18,12 +18,11 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.parser.QueryParser;
 import grakn.core.graql.query.aggregate.CountAggregate;
 import grakn.core.graql.query.aggregate.GroupAggregate;
@@ -34,8 +33,9 @@ import grakn.core.graql.query.aggregate.MedianAggregate;
 import grakn.core.graql.query.aggregate.MinAggregate;
 import grakn.core.graql.query.aggregate.StdAggregate;
 import grakn.core.graql.query.aggregate.SumAggregate;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
@@ -51,9 +51,8 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * Main class containing static methods for creating Graql queries.
- *
+ * <p>
  * It is recommended you statically import these methods.
- *
  */
 public class Graql {
 
@@ -165,11 +164,17 @@ public class Graql {
     /**
      * Aggregate that counts results of a {@link Match}.
      */
+    @CheckReturnValue
     public static Aggregate<Value> count(Variable var, Variable... vars) {
         Set<Variable> varSet = new HashSet<>(vars.length + 1);
         varSet.add(var);
         varSet.addAll(Arrays.asList(vars));
         return new CountAggregate(varSet);
+    }
+
+    @CheckReturnValue
+    public static Aggregate<Value> count(Collection<Variable> variables) {
+        return new CountAggregate(new HashSet<>(variables));
     }
 
     /**
@@ -190,6 +195,7 @@ public class Graql {
 
     /**
      * Create an aggregate that will find the minimum of a variable's values.
+     *
      * @param var the variable to find the maximum of
      */
     @CheckReturnValue
@@ -199,6 +205,7 @@ public class Graql {
 
     /**
      * Create an aggregate that will find the minimum of a variable's values.
+     *
      * @param var the variable to find the maximum of
      */
     @CheckReturnValue
@@ -208,6 +215,7 @@ public class Graql {
 
     /**
      * Create an aggregate that will find the maximum of a variable's values.
+     *
      * @param var the variable to find the maximum of
      */
     @CheckReturnValue
@@ -217,6 +225,7 @@ public class Graql {
 
     /**
      * Create an aggregate that will find the maximum of a variable's values.
+     *
      * @param var the variable to find the maximum of
      */
     @CheckReturnValue
@@ -226,6 +235,7 @@ public class Graql {
 
     /**
      * Create an aggregate that will find the mean of a variable's values.
+     *
      * @param var the variable to find the mean of
      */
     @CheckReturnValue
@@ -235,6 +245,7 @@ public class Graql {
 
     /**
      * Create an aggregate that will find the mean of a variable's values.
+     *
      * @param var the variable to find the mean of
      */
     @CheckReturnValue
@@ -244,6 +255,7 @@ public class Graql {
 
     /**
      * Create an aggregate that will find the median of a variable's values.
+     *
      * @param var the variable to find the median of
      */
     @CheckReturnValue
@@ -253,6 +265,7 @@ public class Graql {
 
     /**
      * Create an aggregate that will find the median of a variable's values.
+     *
      * @param var the variable to find the median of
      */
     @CheckReturnValue
@@ -262,6 +275,7 @@ public class Graql {
 
     /**
      * Create an aggregate that will find the unbiased sample standard deviation of a variable's values.
+     *
      * @param var the variable to find the standard deviation of
      */
     @CheckReturnValue
@@ -271,6 +285,7 @@ public class Graql {
 
     /**
      * Create an aggregate that will find the unbiased sample standard deviation of a variable's values.
+     *
      * @param var the variable to find the standard deviation of
      */
     @CheckReturnValue
@@ -280,6 +295,7 @@ public class Graql {
 
     /**
      * Create an aggregate that will group a query by a variable.
+     *
      * @param var the variable to group results by
      */
     @CheckReturnValue
@@ -289,6 +305,7 @@ public class Graql {
 
     /**
      * Aggregate that groups results of a {@link Match} by variable name
+     *
      * @param varName the variable name to group results by
      */
     public static Aggregate<AnswerGroup<ConceptMap>> group(Variable varName) {
@@ -297,9 +314,10 @@ public class Graql {
 
     /**
      * Create an aggregate that will group a query by a variable and apply the given aggregate to each group
-     * @param var the variable to group results by
+     *
+     * @param var       the variable to group results by
      * @param aggregate the aggregate to apply to each group
-     * @param <T> the type the aggregate returns
+     * @param <T>       the type the aggregate returns
      */
     @CheckReturnValue
     public static <T extends Answer> Aggregate<AnswerGroup<T>> group(String var, Aggregate<T> aggregate) {
@@ -308,6 +326,7 @@ public class Graql {
 
     /**
      * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
+     *
      * @param <T> the type of each group
      */
     public static <T extends Answer> Aggregate<AnswerGroup<T>> group(Variable varName, Aggregate<T> innerAggregate) {

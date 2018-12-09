@@ -19,18 +19,42 @@ deleteQuery    : matchClause 'delete' variables? ';' ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-// GRAQL AGGREGATE QUERY GRAMMAR =======================================================================================
-aggregateQuery : matchClause 'aggregate' aggregate ';' ;
-aggregate      : identifier argument*             # customAgg
-               ;
-argument       : VARIABLE  # variableArgument
-               | aggregate # aggregateArgument
-               ;
+// AGGREGATE QUERY =====================================================================================================
+//
+// An aggregate query is composed 3 things:
+// A match clause, followed by the 'aggregate' keyword, and an aggregate function
+//
+// An aggregate function could either be:
+// group aggregate: a function that groups the results by a given concept
+// value aggregate: a function that evaluates a value over the results
+//
+// A group aggregate is composed of 3 things:
+// The 'group' keyword, followed by a variable to group the results by,
+// and optionally a value aggregate to apply over each group of results
+//
+// A value aggregate is composed of 2 things:
+// The aggregate method name, followed by 0 or more variables to be applied to
+//
+// An aggregate method could only be;
+// count, max, mean, median, min, std, sum
 
-// GRAQL COMPUTE QUERY GRAMMAR =========================================================================================
+aggregateQuery      : matchClause AGGREGATE aggregateFunction ';' ;
+aggregateFunction   : aggregateGroup                                            // a group aggregate, or
+                    | aggregateValue                                            // a value aggregate
+                    ;
+
+aggregateGroup      : GROUP VARIABLE (',' aggregateValue)? ;                    // 'group' and variable, and optionally
+                                                                                // a value aggregate for each group
+
+aggregateValue      : aggregateMethod variables? ;                              // method and, optionally, variables
+aggregateMethod     : COUNT                                                     // calculate the number of concepts
+                    | MAX | MEAN | MEDIAN | MIN | STD | SUM                     // calculate statistics functions
+                    ;
+
+// COMPUTE QUERY =======================================================================================================
 //
 // A compute query is composed of 3 things:
-// the 'compute' keyword, followed by a compute method, and optionally a set of conditions
+// The 'compute' keyword, followed by a compute method, and optionally a set of conditions
 //
 // A compute method could only be:
 // count, min, max, median, mean, std, sum, path, centrality, cluster
@@ -139,6 +163,7 @@ order          : ASC | DESC ;
 bool           : TRUE | FALSE ;
 
 // keywords
+GROUP          : 'group';
 MIN            : 'min' ;
 MAX            : 'max' ;
 MEDIAN         : 'median' ;
@@ -162,10 +187,12 @@ CONTAINS       : 'contains' ;
 SIZE           : 'size' ;
 USING          : 'using' ;
 WHERE          : 'where' ;
-MATCH          : 'match' ;
-INSERT         : 'insert' ;
 DEFINE         : 'define' ;
 UNDEFINE       : 'undefine' ;
+MATCH          : 'match' ;
+INSERT         : 'insert' ;
+DELETE         : 'delete' ;
+AGGREGATE      : 'aggregate' ;
 COMPUTE        : 'compute' ;
 ASC            : 'asc' ;
 DESC           : 'desc' ;

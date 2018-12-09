@@ -18,7 +18,6 @@
 
 package grakn.core.graql.parser;
 
-import com.google.common.collect.ImmutableMap;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
@@ -76,14 +75,9 @@ import static java.util.stream.Collectors.toSet;
 class GraqlConstructor extends GraqlBaseVisitor {
 
     private final QueryBuilder queryBuilder;
-    private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
     private final boolean defineAllVars;
 
-    GraqlConstructor(
-            ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilder queryBuilder,
-            boolean defineAllVars
-    ) {
-        this.aggregateMethods = aggregateMethods;
+    GraqlConstructor(QueryBuilder queryBuilder, boolean defineAllVars) {
         this.queryBuilder = queryBuilder;
         this.defineAllVars = defineAllVars;
     }
@@ -183,32 +177,57 @@ class GraqlConstructor extends GraqlBaseVisitor {
 
     @Override
     public AggregateQuery<?> visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
-        Aggregate aggregate = visitAggregate(ctx.aggregate());
+        GraqlParser.AggregateFunctionContext function = ctx.aggregateFunction();
+        Aggregate<?> aggregate;
+
+        if (function.aggregateGroup() != null) {
+            aggregate = visitAggregateGroup(function.aggregateGroup());
+        } else { // function.aggregateValue() != null
+            aggregate = visitAggregateValue(function.aggregateValue());
+        }
+
         return visitMatchClause(ctx.matchClause()).aggregate(aggregate);
     }
 
     @Override
-    public Aggregate<?> visitCustomAgg(GraqlParser.CustomAggContext ctx) {
-        String name = visitIdentifier(ctx.identifier());
-        Function<List<Object>, Aggregate> aggregateMethod = aggregateMethods.get(name);
-
-        if (aggregateMethod == null) {
-            throw GraqlQueryException.unknownAggregate(name);
+    public Aggregate<?> visitAggregateGroup(GraqlParser.AggregateGroupContext ctx) {
+        if (ctx.aggregateValue() != null) {
+            return Graql.group(getVariable(ctx.VARIABLE()), visitAggregateValue(ctx.aggregateValue()));
+        } else {
+            return Graql.group(getVariable(ctx.VARIABLE()));
         }
-
-        List<Object> arguments = ctx.argument().stream().map(this::visit).collect(toList());
-
-        return aggregateMethod.apply(arguments);
     }
 
     @Override
-    public Variable visitVariableArgument(GraqlParser.VariableArgumentContext ctx) {
-        return getVariable(ctx.VARIABLE());
-    }
+    public Aggregate<?> visitAggregateValue(GraqlParser.AggregateValueContext ctx) {
+        GraqlParser.AggregateMethodContext method = ctx.aggregateMethod();
+        List<Variable> variables = new ArrayList<>(visitVariables(ctx.variables()));
 
-    @Override
-    public Aggregate<?> visitAggregateArgument(GraqlParser.AggregateArgumentContext ctx) {
-        return visitAggregate(ctx.aggregate());
+        // TODO: replace this with ENUM lookup once we split Aggregate Query Language vs Execution
+        switch (method.getText()) {
+            case "count":
+                return Graql.count(variables);
+            case "max":
+                if (variables.size() == 1) return Graql.max(variables.get(0));
+                throw GraqlQueryException.incorrectAggregateArgumentNumber("max", 1, 1, variables);
+            case "mean":
+                if (variables.size() == 1) return Graql.mean(variables.get(0));
+                throw GraqlQueryException.incorrectAggregateArgumentNumber("mean", 1, 1, variables);
+            case "median":
+                if (variables.size() == 1) return Graql.median(variables.get(0));
+                throw GraqlQueryException.incorrectAggregateArgumentNumber("median", 1, 1, variables);
+            case "min":
+                if (variables.size() == 1) return Graql.min(variables.get(0));
+                throw GraqlQueryException.incorrectAggregateArgumentNumber("min", 1, 1, variables);
+            case "std":
+                if (variables.size() == 1) return Graql.std(variables.get(0));
+                throw GraqlQueryException.incorrectAggregateArgumentNumber("std", 1, 1, variables);
+            case "sum":
+                if (variables.size() == 1) return Graql.sum(variables.get(0));
+                throw GraqlQueryException.incorrectAggregateArgumentNumber("sum", 1, 1, variables);
+            default:
+                throw GraqlQueryException.unknownAggregate(method.getText());
+        }
     }
 
     @Override
@@ -523,10 +542,6 @@ class GraqlConstructor extends GraqlBaseVisitor {
 
     private Match visitMatchClause(GraqlParser.MatchClauseContext ctx) {
         return (Match) visit(ctx);
-    }
-
-    private Aggregate<?> visitAggregate(GraqlParser.AggregateContext ctx) {
-        return (Aggregate) visit(ctx);
     }
 
     public Pattern visitPattern(GraqlParser.PatternContext ctx) {

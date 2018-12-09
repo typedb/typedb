@@ -66,6 +66,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static grakn.core.graql.query.Graql.max;
 import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.Graql.contains;
 import static grakn.core.graql.query.Graql.count;
@@ -359,6 +360,33 @@ public class QueryParserTest {
                 "match $x isa movie; { $y isa genre == 'drama'; ($x, $y); } or $x == 'The Muppets'; get;"
         );
 
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testAggregateCountQuery() {
+        AggregateQuery<Value> expected = match(var().rel("x").rel("y").isa("friendship")).aggregate(count("x", "y"));
+        AggregateQuery<Value> parsed = parse("match ($x, $y) isa friendship; aggregate count $x, $y;");
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testAggregateGroupCountQuery() {
+        AggregateQuery<AnswerGroup<Value>> expected = match(var().rel("x").rel("y").isa("friendship")).aggregate(group("x", count("x", "y")));
+        AggregateQuery<AnswerGroup<Value>> parsed = parse("match ($x, $y) isa friendship; aggregate group $x, count $x, $y;");
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testAggregateGroupMaxQuery() {
+        AggregateQuery<AnswerGroup<Value>> expected =
+                match(
+                        var().rel("x").rel("y").isa("friendship"),
+                        var("y").has("age", var("z"))
+                ).aggregate(
+                        group("x", max("z"))
+                );
+        AggregateQuery<AnswerGroup<Value>> parsed = parse("match ($x, $y) isa friendship; $y has age $z; aggregate group $x, max $z;");
         assertEquals(expected, parsed);
     }
 
