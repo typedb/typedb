@@ -78,7 +78,7 @@ public class GroupAggregate<T extends Answer> implements Aggregate<AnswerGroup<T
         if (innerAggregate instanceof ListAggregate) {
             return "group " + varName;
         } else {
-            return "group " + varName + " " + innerAggregate.toString();
+            return "group " + varName + ", " + innerAggregate.toString();
         }
     }
 

@@ -51,6 +51,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -201,7 +202,9 @@ class GraqlConstructor extends GraqlBaseVisitor {
     @Override
     public Aggregate<?> visitAggregateValue(GraqlParser.AggregateValueContext ctx) {
         GraqlParser.AggregateMethodContext method = ctx.aggregateMethod();
-        List<Variable> variables = new ArrayList<>(visitVariables(ctx.variables()));
+        List<Variable> variables = ctx.variables() != null ?
+                new ArrayList<>(visitVariables(ctx.variables())) :
+                Collections.emptyList();
 
         // TODO: replace this with ENUM lookup once we split Aggregate Query Language vs Execution
         switch (method.getText()) {
