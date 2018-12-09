@@ -23,7 +23,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>1.4.3-SNAPSHOT</version>
+        <version>v1.1.0-507-gd27b603ac1261dace4c1066e512d31f77498891d</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
