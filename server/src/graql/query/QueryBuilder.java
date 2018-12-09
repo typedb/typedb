@@ -23,7 +23,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.match.MatchBase;
-import grakn.core.graql.parser.QueryParser;
+import grakn.core.graql.parser.Parser;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
@@ -47,7 +47,7 @@ public class QueryBuilder {
 
     @Nullable
     private final Transaction tx;
-    private final QueryParser queryParser = QueryParser.create(this);
+    private final Parser queryParser = Parser.create(this);
     private boolean infer = true;
 
     public QueryBuilder() {
@@ -152,9 +152,9 @@ public class QueryBuilder {
     }
 
     /**
-     * Get a {@link QueryParser} for parsing queries from strings
+     * Get a {@link Parser} for parsing queries from strings
      */
-    public QueryParser parser() {
+    public Parser parser() {
         return queryParser;
     }
 
@@ -164,7 +164,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public <T extends Query<?>> T parse(String queryString) {
-        return queryParser.parseQuery(queryString);
+        return queryParser.parseQueryEOF(queryString);
     }
 
 }

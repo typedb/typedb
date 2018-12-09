@@ -23,7 +23,7 @@ import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.parser.QueryParser;
+import grakn.core.graql.parser.Parser;
 import grakn.core.graql.query.aggregate.CountAggregate;
 import grakn.core.graql.query.aggregate.GroupAggregate;
 import grakn.core.graql.query.aggregate.ListAggregate;
@@ -136,9 +136,9 @@ public class Graql {
     }
 
     /**
-     * Get a {@link QueryParser} for parsing queries from strings
+     * Get a {@link Parser} for parsing queries from strings
      */
-    public static QueryParser parser() {
+    public static Parser parser() {
         return new QueryBuilder().parser();
     }
 

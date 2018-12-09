@@ -17,9 +17,9 @@
 #
 
 java_test(
-    name = "query-parser-test",
-    test_class = "grakn.core.graql.parser.QueryParserTest",
-    srcs = ["QueryParserTest.java"],
+    name = "parser-test",
+    test_class = "grakn.core.graql.parser.ParserTest",
+    srcs = ["ParserTest.java"],
     deps = [
         "//server",
         "//common",
