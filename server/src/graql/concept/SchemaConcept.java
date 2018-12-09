@@ -18,7 +18,6 @@
 
 package grakn.core.graql.concept;
 
-import grakn.core.server.Transaction;
 import grakn.core.graql.internal.Schema;
 
 import javax.annotation.CheckReturnValue;
@@ -26,29 +25,25 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     Facilitates construction of ontological elements.
- * </p>
- *
- * <p>
- *     Allows you to create schema or ontological elements.
- *     These differ from normal graph constructs in two ways:
- *     1. They have a unique {@link Label} which identifies them
- *     2. You can link them together into a hierarchical structure
- * </p>
- *
- *
+ * Facilitates construction of ontological elements.
+ * Allows you to create schema or ontological elements.
+ * These differ from normal graph constructs in two ways:
+ * 1. They have a unique {@link Label} which identifies them
+ * 2. You can link them together into a hierarchical structure
  */
 public interface SchemaConcept extends Concept {
     //------------------------------------- Modifiers ----------------------------------
+
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.
+     *
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
     SchemaConcept label(Label label);
 
     //------------------------------------- Accessors ---------------------------------
+
     /**
      * Returns the unique id of this Type.
      *
@@ -66,7 +61,6 @@ public interface SchemaConcept extends Concept {
     Label label();
 
     /**
-     *
      * @return The direct super of this concept
      */
     @CheckReturnValue
@@ -76,18 +70,14 @@ public interface SchemaConcept extends Concept {
     /**
      * @return All super-concepts of this {@link SchemaConcept } including itself and excluding the meta
      * {@link Schema.MetaSchema#THING}.
-     *
-     * <p>
-     *     If you want to include {@link Schema.MetaSchema#THING}, use {@link Transaction#sups(SchemaConcept)}.
-     * </p>
-     *
+     * If you want to include {@link Schema.MetaSchema#THING}, use Transaction.sups().
      * @see Schema.MetaSchema#THING
      */
     Stream<? extends SchemaConcept> sups();
 
     /**
      * Get all indirect subs of this concept.
-     *
+     * <p>
      * The indirect subs are the concept itself and all indirect subs of direct subs.
      *
      * @return All the indirect sub-types of this {@link SchemaConcept}
@@ -97,7 +87,7 @@ public interface SchemaConcept extends Concept {
 
     /**
      * Return whether the {@link SchemaConcept} was created implicitly.
-     *
+     * <p>
      * By default, {@link SchemaConcept} are not implicit.
      *
      * @return returns true if the type was created implicitly through the {@link Attribute} syntax
@@ -107,18 +97,18 @@ public interface SchemaConcept extends Concept {
 
     /**
      * Return the collection of {@link Rule} for which this {@link SchemaConcept} serves as a hypothesis.
-     * @see Rule
      *
      * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a hypothesis
+     * @see Rule
      */
     @CheckReturnValue
     Stream<Rule> whenRules();
 
     /**
      * Return the collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion.
-     * @see Rule
      *
      * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion
+     * @see Rule
      */
     @CheckReturnValue
     Stream<Rule> thenRules();
@@ -127,14 +117,14 @@ public interface SchemaConcept extends Concept {
     @Deprecated
     @CheckReturnValue
     @Override
-    default SchemaConcept asSchemaConcept(){
+    default SchemaConcept asSchemaConcept() {
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isSchemaConcept(){
+    default boolean isSchemaConcept() {
         return true;
     }
 }

@@ -18,15 +18,12 @@
 
 package grakn.core.graql.concept;
 
-import grakn.core.server.Transaction;
-
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
 /**
- * A class which represents an id of any {@link Concept} in the {@link Transaction}.
+ * A class which represents an id of any {@link Concept}.
  * Also contains a static method for producing concept IDs from Strings.
- *
  */
 public class ConceptId implements Comparable<ConceptId>, Serializable {
 
@@ -41,15 +38,16 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
 
     /**
      * The default constructor for ConceptID, which requires String value provided
+     *
      * @param value String representation of the Concept ID
      */
     ConceptId(String value) {
-        if(value == null) throw new NullPointerException("Provided ConceptId is NULL");
+        if (value == null) throw new NullPointerException("Provided ConceptId is NULL");
 
         this.value = value;
     }
+
     /**
-     *
      * @return Used for indexing purposes and for graql traversals
      */
     @CheckReturnValue
@@ -63,12 +61,11 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
     }
 
     /**
-     *
      * @param value The string which potentially represents a Concept
      * @return The matching concept ID
      */
     @CheckReturnValue
-    public static ConceptId of(String value){
+    public static ConceptId of(String value) {
         return new ConceptId(value);
     }
 

@@ -18,28 +18,21 @@
 
 package grakn.core.graql.concept;
 
-import grakn.core.server.exception.TransactionException;
-
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     {@link SchemaConcept} used to represent categories.
- * </p>
- *
- * <p>
- *     An ontological element which represents categories instances can fall within.
- *     Any instance of a Entity Type is called an {@link Entity}.
- * </p>
- *
- *
+ * {@link SchemaConcept} used to represent categories.
+ * An ontological element which represents categories instances can fall within.
+ * Any instance of a Entity Type is called an {@link Entity}.
  */
-public interface EntityType extends Type{
+public interface EntityType extends Type {
     //------------------------------------- Modifiers ----------------------------------
+
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.
+     *
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
@@ -48,8 +41,7 @@ public interface EntityType extends Type{
     /**
      * Sets the EntityType to be abstract - which prevents it from having any instances.
      *
-     * @param isAbstract  Specifies if the EntityType is to be abstract (true) or not (false).
-     *
+     * @param isAbstract Specifies if the EntityType is to be abstract (true) or not (false).
      * @return The EntityType itself
      */
     @Override
@@ -60,9 +52,6 @@ public interface EntityType extends Type{
      *
      * @param type The supertype of this EntityType
      * @return The EntityType itself
-     *
-     * @throws TransactionException if this is a meta type
-     * @throws TransactionException if the given supertype is already an indirect subtype of this type
      */
     EntityType sup(EntityType type);
 
@@ -104,11 +93,9 @@ public interface EntityType extends Type{
 
     /**
      * Creates and returns a new Entity instance, whose direct type will be this type.
-     * @see Entity
      *
      * @return a new empty entity.
-     *
-     * @throws TransactionException if this is a meta type
+     * @see Entity
      */
     Entity create();
 
@@ -131,6 +118,7 @@ public interface EntityType extends Type{
     EntityType has(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
+
     /**
      * Returns the supertype of this EntityType.
      *
@@ -159,9 +147,8 @@ public interface EntityType extends Type{
     /**
      * Returns a collection of all Entity instances for this EntityType.
      *
-     * @see Entity
-     *
      * @return All the instances of this EntityType.
+     * @see Entity
      */
     @Override
     Stream<Entity> instances();
@@ -170,14 +157,14 @@ public interface EntityType extends Type{
     @Deprecated
     @CheckReturnValue
     @Override
-    default EntityType asEntityType(){
+    default EntityType asEntityType() {
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isEntityType(){
+    default boolean isEntityType() {
         return true;
     }
 }

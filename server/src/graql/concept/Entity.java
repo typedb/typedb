@@ -21,22 +21,15 @@ package grakn.core.graql.concept;
 import javax.annotation.CheckReturnValue;
 
 /**
- * <p>
- *     An instance of Entity Type {@link EntityType}
- * </p>
- *
- * <p>
- *     This represents an entity in the graph.
- *     Entities are objects which are defined by their {@link Attribute} and their links to
- *     other entities via {@link Relationship}
- * </p>
- *
+ * An instance of Entity Type {@link EntityType}
+ * This represents an entity in the graph.
+ * Entities are objects which are defined by their {@link Attribute} and their links to
+ * other entities via {@link Relationship}
  */
 public interface Entity extends Thing {
     //------------------------------------- Accessors ----------------------------------
 
     /**
-     *
      * @return The EntityType of this Entity
      * @see EntityType
      */
@@ -54,6 +47,7 @@ public interface Entity extends Thing {
 
     /**
      * Removes the provided {@link Attribute} from this {@link Entity}
+     *
      * @param attribute the {@link Attribute} to be removed
      * @return The {@link Entity} itself
      */
@@ -64,14 +58,14 @@ public interface Entity extends Thing {
     @Deprecated
     @CheckReturnValue
     @Override
-    default Entity asEntity(){
+    default Entity asEntity() {
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isEntity(){
+    default boolean isEntity() {
         return true;
     }
 }

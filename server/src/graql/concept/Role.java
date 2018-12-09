@@ -23,21 +23,16 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     An {@link SchemaConcept} which defines a role which can be played in a {@link RelationshipType}
- * </p>
- *
- * <p>
- *     This ontological element defines the {@link Role} which make up a {@link RelationshipType}.
- *     It behaves similarly to {@link SchemaConcept} when relating to other types.
- * </p>
- *
- *
+ * An {@link SchemaConcept} which defines a role which can be played in a {@link RelationshipType}
+ * This ontological element defines the {@link Role} which make up a {@link RelationshipType}.
+ * It behaves similarly to {@link SchemaConcept} when relating to other types.
  */
 public interface Role extends SchemaConcept {
     //------------------------------------- Modifiers ----------------------------------
+
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.
+     *
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
@@ -52,6 +47,7 @@ public interface Role extends SchemaConcept {
     Role sup(Role type);
 
     //------------------------------------- Accessors ----------------------------------
+
     /**
      * Returns the super of this Role.
      *
@@ -77,18 +73,18 @@ public interface Role extends SchemaConcept {
 
     /**
      * Returns the {@link RelationshipType}s that this {@link Role} takes part in.
-     * @see RelationshipType
      *
      * @return The {@link RelationshipType} which this {@link Role} takes part in.
+     * @see RelationshipType
      */
     @CheckReturnValue
     Stream<RelationshipType> relationships();
 
     /**
      * Returns a collection of the {@link Type}s that can play this {@link Role}.
-     * @see Type
      *
      * @return A list of all the {@link Type}s which can play this {@link Role}.
+     * @see Type
      */
     @CheckReturnValue
     Stream<Type> players();
@@ -97,14 +93,14 @@ public interface Role extends SchemaConcept {
     @Deprecated
     @CheckReturnValue
     @Override
-    default Role asRole(){
+    default Role asRole() {
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isRole(){
+    default boolean isRole() {
         return true;
     }
 }
