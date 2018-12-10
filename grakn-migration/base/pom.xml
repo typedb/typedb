@@ -25,7 +25,7 @@
     <parent>
         <artifactId>grakn-migration</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>v1.1.0-509-g89ebe3c5db812ec1bf0f67c014f3106d54401eed</version>
+        <version>1.4.3-SNAPSHOT</version>
     </parent>
 
     <dependencies>
