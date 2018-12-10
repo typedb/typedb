@@ -18,8 +18,6 @@
 
 package ai.grakn.engine.attribute.deduplicator;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
@@ -48,41 +46,39 @@ public class AttributeDeduplicator {
      * in the duplicates as the "merge target", copying every edges from every "other duplicates" to the merge target, and
      * finally deleting that other duplicates.
      *
-     * @param txFactory the factory object for accessing the database
+     * @param tx the transaction used for accessing the database
      * @param keyspaceIndexPair the pair containing information about the attribute keyspace and index
      */
-    public static void deduplicate(EngineGraknTxFactory txFactory, KeyspaceIndexPair keyspaceIndexPair) {
-        try (EmbeddedGraknTx tx = txFactory.tx(keyspaceIndexPair.keyspace(), GraknTxType.WRITE)) {
-            GraphTraversalSource tinker = tx.getTinkerTraversal();
-            GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceIndexPair.index());
-            Vertex mergeTargetV = duplicates.next();
-            while (duplicates.hasNext()) {
-                Vertex duplicate = duplicates.next();
-                try {
-                    duplicate.vertices(Direction.IN).forEachRemaining(connectedVertex -> {
-                        // merge attribute edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
-                        GraphTraversal<Vertex, Edge> attributeEdge =
-                                tinker.V(duplicate).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(connectedVertex));
-                        if (attributeEdge.hasNext()) {
-                            mergeAttributeEdge(mergeTargetV, connectedVertex, attributeEdge);
-                        }
+    public static void deduplicate(EmbeddedGraknTx tx, KeyspaceIndexPair keyspaceIndexPair) {
+        GraphTraversalSource tinker = tx.getTinkerTraversal();
+        GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceIndexPair.index());
+        Vertex mergeTargetV = duplicates.next();
+        while (duplicates.hasNext()) {
+            Vertex duplicate = duplicates.next();
+            try {
+                duplicate.vertices(Direction.IN).forEachRemaining(connectedVertex -> {
+                    // merge attribute edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
+                    GraphTraversal<Vertex, Edge> attributeEdge =
+                            tinker.V(duplicate).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(connectedVertex));
+                    if (attributeEdge.hasNext()) {
+                        mergeAttributeEdge(mergeTargetV, connectedVertex, attributeEdge);
+                    }
 
-                        // merge role-player edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
-                        GraphTraversal<Vertex, Edge> rolePlayerEdge =
-                                tinker.V(duplicate).inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).filter(__.outV().is(connectedVertex));
-                        if (rolePlayerEdge.hasNext()) {
-                            mergeRolePlayerEdge(mergeTargetV, rolePlayerEdge);
-                        }
-                    });
-                    duplicate.remove();
-                }
-                catch (IllegalStateException vertexAlreadyRemovedException) {
-                    LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + duplicate.id() + " which is already removed.");
-                }
+                    // merge role-player edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
+                    GraphTraversal<Vertex, Edge> rolePlayerEdge =
+                            tinker.V(duplicate).inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).filter(__.outV().is(connectedVertex));
+                    if (rolePlayerEdge.hasNext()) {
+                        mergeRolePlayerEdge(mergeTargetV, rolePlayerEdge);
+                    }
+                });
+                duplicate.remove();
             }
-
-            tx.commit();
+            catch (IllegalStateException vertexAlreadyRemovedException) {
+                LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + duplicate.id() + " which is already removed.");
+            }
         }
+
+        tx.commit();
     }
 
     private static void mergeRolePlayerEdge(Vertex mergeTargetV, GraphTraversal<Vertex, Edge> rolePlayerEdge) {

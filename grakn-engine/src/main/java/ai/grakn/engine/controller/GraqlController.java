@@ -21,10 +21,10 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.engine.controller.response.ExplanationBuilder;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
@@ -100,15 +100,15 @@ public class GraqlController implements HttpController {
     private static final int MAX_RETRY = 10;
     private final Printer printer;
     private final EngineGraknTxFactory factory;
-    private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
+    private AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon;
     private final Timer executeGraql;
     private final Timer executeExplanation;
 
     public GraqlController(
-            EngineGraknTxFactory factory, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, Printer printer, MetricRegistry metricRegistry
+            EngineGraknTxFactory factory, AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon, Printer printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
-        this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
+        this.AttributeDeduplicatorDaemon = AttributeDeduplicatorDaemon;
         this.printer = printer;
         this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
         this.executeExplanation = metricRegistry.timer(name(GraqlController.class, "execute-explanation"));
@@ -287,7 +287,7 @@ public class GraqlController implements HttpController {
         if (commitQuery) {
             tx.commitAndGetLogs().ifPresent(commitLog ->
                     commitLog.attributes().forEach((value, conceptIds) ->
-                            conceptIds.forEach(id -> attributeDeduplicatorDaemon.markForDeduplication(commitLog.keyspace(), value, id))
+                            conceptIds.forEach(id -> AttributeDeduplicatorDaemon.markForDeduplication(commitLog.keyspace(), value, id))
                     )
             );
         }

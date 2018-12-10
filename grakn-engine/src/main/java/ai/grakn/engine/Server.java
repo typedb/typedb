@@ -45,11 +45,11 @@ public class Server implements AutoCloseable {
     private final ServerStatus serverStatus;
     private final LockProvider lockProvider;
     private final ServerHTTP httpHandler;
-    private final AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
+    private final AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon;
 
     private final KeyspaceStore keyspaceStore;
 
-    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, ServerHTTP httpHandler, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
+    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, ServerHTTP httpHandler, AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
         this.config = config;
         this.serverStatus = serverStatus;
         // Redis connection pool
@@ -58,7 +58,7 @@ public class Server implements AutoCloseable {
         this.keyspaceStore = keyspaceStore;
         this.httpHandler = httpHandler;
         this.engineId = engineId;
-        this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
+        this.AttributeDeduplicatorDaemon = AttributeDeduplicatorDaemon;
     }
 
     public void start() throws IOException {
@@ -70,7 +70,7 @@ public class Server implements AutoCloseable {
             lockAndInitializeSystemSchema();
             httpHandler.startHTTP();
         }
-        attributeDeduplicatorDaemon.startDeduplicationDaemon();
+        AttributeDeduplicatorDaemon.startDeduplicationDaemon();
         serverStatus.setReady(true);
         LOG.info("Grakn started in {}", timer.stop());
     }
@@ -84,7 +84,7 @@ public class Server implements AutoCloseable {
                 LOG.error(getFullStackTrace(e));
                 Thread.currentThread().interrupt();
             }
-            attributeDeduplicatorDaemon.stopDeduplicationDaemon();
+            AttributeDeduplicatorDaemon.stopDeduplicationDaemon();
         }
     }
 
