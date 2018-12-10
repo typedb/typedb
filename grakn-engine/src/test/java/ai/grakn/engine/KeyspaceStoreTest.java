@@ -25,6 +25,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemonImpl;
 import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
@@ -86,7 +87,7 @@ public class KeyspaceStoreTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private final static AttributeDeduplicatorDaemon MOCKED_ATTRIBUTE_DEDUPLICATOR = mock(AttributeDeduplicatorDaemon.class);
+    private final static AttributeDeduplicatorDaemon MOCKED_ATTRIBUTE_DEDUPLICATOR = mock(AttributeDeduplicatorDaemonImpl.class);
 
 
     @BeforeClass

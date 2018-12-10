@@ -19,6 +19,7 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemonImpl;
 import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -66,14 +67,14 @@ public class ServerFactory {
 
 
         // post-processing
-        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, engineGraknTxFactory);
+        AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon = new AttributeDeduplicatorDaemonImpl(config, engineGraknTxFactory);
 
         // http services: spark, http controller, and gRPC server
         Service sparkHttp = Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
-        ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, attributeDeduplicatorDaemon, keyspaceStore);
+        ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, AttributeDeduplicatorDaemon, keyspaceStore);
 
-        return createServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
+        return createServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, lockProvider, AttributeDeduplicatorDaemon, keyspaceStore);
     }
 
     /**
@@ -86,11 +87,11 @@ public class ServerFactory {
             Service sparkHttp, Collection<HttpController> httpControllers, ServerRPC rpcServerRPC,
             EngineGraknTxFactory engineGraknTxFactory,
             MetricRegistry metricRegistry,
-            LockProvider lockProvider, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
+            LockProvider lockProvider, AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
 
-        ServerHTTP httpHandler = new ServerHTTP(config, sparkHttp, engineGraknTxFactory, metricRegistry, serverStatus, attributeDeduplicatorDaemon, rpcServerRPC, httpControllers);
+        ServerHTTP httpHandler = new ServerHTTP(config, sparkHttp, engineGraknTxFactory, metricRegistry, serverStatus, AttributeDeduplicatorDaemon, rpcServerRPC, httpControllers);
 
-        Server server = new Server(engineId, config, serverStatus, lockProvider, httpHandler, attributeDeduplicatorDaemon, keyspaceStore);
+        Server server = new Server(engineId, config, serverStatus, lockProvider, httpHandler, AttributeDeduplicatorDaemon, keyspaceStore);
 
         Thread thread = new Thread(server::close, "grakn-server-shutdown");
         Runtime.getRuntime().addShutdownHook(thread);
@@ -98,12 +99,12 @@ public class ServerFactory {
         return server;
     }
 
-    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore){
+    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon, KeyspaceStore keyspaceStore){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)
-                .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))
+                .addService(new SessionService(requestOpener, AttributeDeduplicatorDaemon))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
 

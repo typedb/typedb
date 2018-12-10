@@ -53,13 +53,13 @@ public class ServerHTTP {
     private final EngineGraknTxFactory factory;
     private final MetricRegistry metricRegistry;
     private final ServerStatus serverStatus;
-    private final AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
+    private final AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon;
     private final ServerRPC rpcServerRPC;
     private final Collection<HttpController> additionalCollaborators;
 
     public ServerHTTP(
             GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry,
-            ServerStatus serverStatus, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon,
+            ServerStatus serverStatus, AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon,
             ServerRPC rpcServerRPC,
             Collection<HttpController> additionalCollaborators
     ) {
@@ -68,7 +68,7 @@ public class ServerHTTP {
         this.factory = factory;
         this.metricRegistry = metricRegistry;
         this.serverStatus = serverStatus;
-        this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
+        this.AttributeDeduplicatorDaemon = AttributeDeduplicatorDaemon;
         this.rpcServerRPC = rpcServerRPC;
         this.additionalCollaborators = additionalCollaborators;
     }
@@ -88,7 +88,7 @@ public class ServerHTTP {
         JacksonPrinter printer = JacksonPrinter.create();
 
         // Start all the DEFAULT controllers
-        new GraqlController(factory, attributeDeduplicatorDaemon, printer, metricRegistry).start(spark);
+        new GraqlController(factory, AttributeDeduplicatorDaemon, printer, metricRegistry).start(spark);
         new ConceptController(factory, metricRegistry).start(spark);
         new SystemController(prop, factory.keyspaceStore(), serverStatus, metricRegistry).start(spark);
 

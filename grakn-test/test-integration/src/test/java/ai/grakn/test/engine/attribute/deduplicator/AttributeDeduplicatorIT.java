@@ -57,8 +57,9 @@ public class AttributeDeduplicatorIT {
         }
 
         // perform deduplicate on the instances
-        AttributeDeduplicator.deduplicate(txFactory, KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue)));
-
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
+            AttributeDeduplicator.deduplicate(tx, KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue)));
+        }
         // verify if we only have 1 instances after deduplication
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
             List<ConceptMap> conceptMaps = tx.graql().match(var(testAttributeLabel).isa(testAttributeLabel).val(testAttributeValue)).get().execute();
@@ -93,8 +94,9 @@ public class AttributeDeduplicatorIT {
         }
 
         // perform deduplicate on the attribute
-        AttributeDeduplicator.deduplicate(txFactory, KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
-
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
+            AttributeDeduplicator.deduplicate(tx, KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
+        }
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
             Set<String> owned = new HashSet<>();
@@ -142,9 +144,15 @@ public class AttributeDeduplicatorIT {
         }
 
         // deduplicate
-        AttributeDeduplicator.deduplicate(txFactory, KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
-        AttributeDeduplicator.deduplicate(txFactory, KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownerLabel), ownerValue1)));
-        AttributeDeduplicator.deduplicate(txFactory, KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownerLabel), ownerValue1)));
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
+            AttributeDeduplicator.deduplicate(tx, KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
+        }
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
+            AttributeDeduplicator.deduplicate(tx, KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownerLabel), ownerValue1)));
+        }
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
+            AttributeDeduplicator.deduplicate(tx, KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownerLabel), ownerValue1)));
+        }
 
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
@@ -189,8 +197,10 @@ public class AttributeDeduplicatorIT {
         }
 
         // perform deduplicate on the attribute
-        AttributeDeduplicator.deduplicate(txFactory,
-                KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
+            AttributeDeduplicator.deduplicate(tx,
+                    KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
+        }
 
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
@@ -236,8 +246,10 @@ public class AttributeDeduplicatorIT {
         }
 
         // deduplicate
-        AttributeDeduplicator.deduplicate(txFactory,
-                KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
+            AttributeDeduplicator.deduplicate(tx,
+                    KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
+        }
 
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
@@ -290,9 +302,10 @@ public class AttributeDeduplicatorIT {
         }
 
         // deduplicate
-        AttributeDeduplicator.deduplicate(txFactory,
-                KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
-
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
+            AttributeDeduplicator.deduplicate(tx,
+                    KeyspaceIndexPair.create(keyspace, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
+        }
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
             List<ConceptMap> conceptMaps = tx.graql().match(var("owner").isa("owner")

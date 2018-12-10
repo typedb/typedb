@@ -18,8 +18,6 @@
 
 package ai.grakn.engine.attribute.deduplicator;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
