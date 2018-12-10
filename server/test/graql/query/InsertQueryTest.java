@@ -21,7 +21,6 @@ package grakn.core.graql.query;
 import com.google.common.collect.ImmutableList;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
-import grakn.core.graql.admin.MatchAdmin;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;

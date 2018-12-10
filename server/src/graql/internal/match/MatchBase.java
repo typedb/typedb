@@ -56,11 +56,14 @@ public class MatchBase extends AbstractMatch {
     protected final Logger LOG = LoggerFactory.getLogger(MatchBase.class);
 
     private final Conjunction<Pattern> pattern;
+    private Transaction tx;
 
     /**
      * @param pattern a pattern to match in the graph
      */
-    public MatchBase(Conjunction<Pattern> pattern) {
+    public MatchBase(Transaction tx, Conjunction<Pattern> pattern) {
+        this.tx = tx;
+
         if (pattern.getPatterns().size() == 0) {
             throw GraqlQueryException.noPatterns();
         }
@@ -69,13 +72,17 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Stream<ConceptMap> stream(TransactionImpl<?> tx) {
-        if (tx == null) throw GraqlQueryException.noTx();
+    public Stream<ConceptMap> stream() {
+        if (this.tx == null || !(this.tx instanceof TransactionImpl)) {
+            throw GraqlQueryException.noTx();
+        }
 
-        validateStatements(tx);
+        TransactionImpl<?> embeddedTx = (TransactionImpl) this.tx;
 
-        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, tx);
-        return streamWithTraversal(this.getPatterns().variables(), tx, graqlTraversal);
+        validateStatements(embeddedTx);
+
+        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, embeddedTx);
+        return streamWithTraversal(this.getPatterns().variables(), embeddedTx, graqlTraversal);
     }
 
     /**
@@ -151,7 +158,7 @@ public class MatchBase extends AbstractMatch {
 
     @Override
     public Transaction tx() {
-        return null;
+        return tx;
     }
 
     @Override

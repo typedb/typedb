@@ -20,7 +20,6 @@ package grakn.core.graql.query;
 
 import com.google.common.base.Preconditions;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;

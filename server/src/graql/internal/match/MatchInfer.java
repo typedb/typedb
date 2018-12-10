@@ -48,34 +48,27 @@ class MatchInfer extends AbstractMatch {
     }
 
     @Override
-    public Stream<ConceptMap> stream(TransactionImpl<?> tx) {
-        // If the tx is not embedded, treat it like there is no transaction
-        // TODO: this is dodgy - when queries don't contain transactions this can be fixed
-
-        TransactionImpl<?> embeddedTx;
-
-        if (tx != null) {
-            embeddedTx = tx;
-        } else if (inner.tx() instanceof TransactionImpl) {
-            embeddedTx = (TransactionImpl) inner.tx();
-        } else {
+    public Stream<ConceptMap> stream() {
+        if (inner.tx() == null || !(inner.tx() instanceof TransactionImpl)) {
             throw GraqlQueryException.noTx();
         }
 
-        if (!RuleUtils.hasRules(embeddedTx)) return inner.stream(embeddedTx);
-        validateStatements(embeddedTx);
+        TransactionImpl<?> tx = (TransactionImpl) inner.tx();
+
+        if (!RuleUtils.hasRules(tx)) return inner.stream();
+        validateStatements(tx);
 
         try {
             Iterator<Conjunction<Statement>> conjIt = getPatterns().getDisjunctiveNormalForm().getPatterns().iterator();
             Conjunction<Statement> conj = conjIt.next();
 
-            ReasonerQuery conjQuery = ReasonerQueries.create(conj, embeddedTx).rewrite();
+            ReasonerQuery conjQuery = ReasonerQueries.create(conj, tx).rewrite();
             conjQuery.checkValid();
-            Stream<ConceptMap> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : embeddedTx.graql().infer(false).match(conj).stream();
+            Stream<ConceptMap> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : tx.graql().infer(false).match(conj).stream();
             while (conjIt.hasNext()) {
                 conj = conjIt.next();
-                conjQuery = ReasonerQueries.create(conj, embeddedTx).rewrite();
-                Stream<ConceptMap> localStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : embeddedTx.graql().infer(false).match(conj).stream();
+                conjQuery = ReasonerQueries.create(conj, tx).rewrite();
+                Stream<ConceptMap> localStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : tx.graql().infer(false).match(conj).stream();
                 answerStream = Stream.concat(answerStream, localStream);
             }
             return answerStream.map(result -> result.project(getSelectedNames()));

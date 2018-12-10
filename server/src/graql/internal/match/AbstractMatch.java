@@ -20,7 +20,7 @@ package grakn.core.graql.internal.match;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.MatchAdmin;
+import grakn.core.graql.query.MatchAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Aggregate;
@@ -49,18 +49,8 @@ abstract class AbstractMatch implements MatchAdmin {
         return this;
     }
 
-    /**
-     * Execute the query using the given graph.
-     *
-     * @param tx the graph to use to execute the query
-     * @return a stream of results
-     */
-    public abstract Stream<ConceptMap> stream(TransactionImpl<?> tx);
-
     @Override
-    public final Stream<ConceptMap> stream() {
-        return stream(null);
-    }
+    public abstract Stream<ConceptMap> stream();
 
     /**
      * @param tx the {@link Transaction} against which the pattern should be validated

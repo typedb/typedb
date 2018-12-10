@@ -21,8 +21,6 @@ package grakn.core.graql.query;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.server.Transaction;
-import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;
