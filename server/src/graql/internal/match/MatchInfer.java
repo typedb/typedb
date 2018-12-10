@@ -88,11 +88,6 @@ class MatchInfer extends AbstractMatch {
     }
 
     @Override
-    public final Set<SchemaConcept> getSchemaConcepts(Transaction tx) {
-        return inner.getSchemaConcepts(tx);
-    }
-
-    @Override
     public final Conjunction<Pattern> getPatterns() {
         return inner.getPatterns();
     }

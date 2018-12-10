@@ -137,18 +137,13 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Set<SchemaConcept> getSchemaConcepts(Transaction tx) {
+    public Set<SchemaConcept> getSchemaConcepts() {
         return pattern.statements().stream()
                 .flatMap(v -> v.innerStatements().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
                 .map(tx::<SchemaConcept>getSchemaConcept)
                 .filter(Objects::nonNull)
                 .collect(toSet());
-    }
-
-    @Override
-    public Set<SchemaConcept> getSchemaConcepts() {
-        throw GraqlQueryException.noTx();
     }
 
     @Override

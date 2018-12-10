@@ -67,7 +67,7 @@ describe('Integration test', () => {
     test("explanation and default of infer is true", async () => {
         const localSession = graknClient.session("gene");
         const tx = await localSession.transaction(env.txType().WRITE);
-        const iterator = await tx.query("match $x isa cousins; offset 0; get;"); // TODO: put back limit 1
+        const iterator = await tx.query("match $x isa cousins; get;"); // TODO: put back offset 0; limit 1;
         const answer = await iterator.next();
         expect(answer.map().size).toBe(1);
         expect(answer.explanation().answers()).toHaveLength(3);
@@ -93,7 +93,7 @@ describe('Integration test', () => {
     test("no results with infer false", async () => {
         const localSession = graknClient.session("gene");
         const tx = await localSession.transaction(env.txType().WRITE);
-        const iterator = await tx.query("match $x isa cousins; offset 0; get;", { infer: false }); // TODO: put back limit 1
+        const iterator = await tx.query("match $x isa cousins; get;", { infer: false }); // TODO: put back offset 0; limit 1;
         const answer = await iterator.next();
         expect(answer).toBeNull();
         await tx.close();

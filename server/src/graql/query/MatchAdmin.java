@@ -35,13 +35,6 @@ import java.util.Set;
 public interface MatchAdmin extends Match {
 
     /**
-     * @param tx the {@link Transaction} to use to get types from
-     * @return all concept types referred to explicitly in the query
-     */
-    @CheckReturnValue
-    Set<SchemaConcept> getSchemaConcepts(Transaction tx);
-
-    /**
      * @return all concept types referred to explicitly in the query
      */
     @CheckReturnValue
