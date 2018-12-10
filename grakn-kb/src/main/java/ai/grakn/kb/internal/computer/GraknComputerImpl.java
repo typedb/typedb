@@ -88,8 +88,10 @@ public class GraknComputerImpl implements GraknComputer {
             if (mapReduce != null) graphComputer.mapReduce(mapReduce);
             applyFilters(types, includesRolePlayerEdges);
             return graphComputer.submit().get();
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (ExecutionException e) {
             throw asRuntimeException(e.getCause());
+        } catch (InterruptedException e) {
+            throw asRuntimeException(e);
         }
     }
 
@@ -108,6 +110,7 @@ public class GraknComputerImpl implements GraknComputer {
 
     private RuntimeException asRuntimeException(Throwable throwable) {
         Throwable cause = throwable.getCause();
+        if (cause == null) return new RuntimeException(throwable);
         if (cause instanceof RuntimeException) {
             return (RuntimeException) cause;
         } else {
