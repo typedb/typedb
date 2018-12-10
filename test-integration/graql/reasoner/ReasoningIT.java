@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static grakn.core.graql.query.pattern.Pattern.var;
@@ -207,6 +208,7 @@ public class ReasoningIT {
         }
     }
 
+    @Ignore // TODO: un-ignore once we re-enable query limits
     @Test //Expected result: The query should return 10 unique matches (no duplicates).
     public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
         try(Session session = server.sessionWithNewKeyspace()) {
@@ -214,7 +216,7 @@ public class ReasoningIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder iqb = tx.graql().infer(true);
                 QueryBuilder qb = tx.graql().infer(false);
-                String queryString = "match $x isa relation1; limit 10; get;";
+                String queryString = "match $x isa relation1; get;"; // TODO: put back limit 10
                 List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
                 assertEquals(10, answers.size());
                 assertEquals(qb.<GetQuery>parse(queryString).execute().size(), answers.size());
@@ -378,7 +380,7 @@ public class ReasoningIT {
             loadFromFileAndCommit(resourcePath, "testSet23.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql().infer(true);
-                String queryString = "match (friend1:$x1, friend2:$x2) isa knows-trans;limit 60; get;";
+                String queryString = "match (friend1:$x1, friend2:$x2) isa knows-trans; get;"; // TODO: put back limit 60
                 List<ConceptMap> oldAnswers = qb.<GetQuery>parse(queryString).execute();
                 for (int i = 0; i < 5; i++) {
                     List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -455,7 +457,7 @@ public class ReasoningIT {
                         "(role1: $x, role2: $y);" +
                         "(role1: $y, role2: $z);" +
                         "(role3: $z, role4: $w) isa relation3;" +
-                        "limit 3; get;";
+                        "get;"; // TODO: put back limit 3
 
                 assertEquals(3, qb.<GetQuery>parse(queryWithTypes).execute().size());
 

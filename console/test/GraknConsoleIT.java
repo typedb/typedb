@@ -35,6 +35,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -319,7 +320,7 @@ public class GraknConsoleIT {
         assertThat(result[result.length - 1], endsWith("> "));
     }
 
-    @Test
+    @Test @Ignore // TODO: un-ignore once we re-enable query limits
     public void when_writingQueryWithLimitOne_expect_oneLineResponse() throws Exception {
         assertConsoleSessionMatches(
                 "match $x sub thing; limit 1; get;",
