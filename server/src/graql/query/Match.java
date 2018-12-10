@@ -126,60 +126,6 @@ public interface Match extends Iterable<ConceptMap> {
     DeleteQuery delete(Set<Variable> vars);
 
     /**
-     * Order the results by degree in ascending order
-     * @param varName the variable name to order the results by
-     * @return a new {@link Match} with the given ordering
-     */
-    @CheckReturnValue
-    Match orderBy(String varName);
-
-    /**
-     * Order the results by degree in ascending order
-     * @param varName the variable name to order the results by
-     * @return a new {@link Match} with the given ordering
-     */
-    @CheckReturnValue
-    Match orderBy(Variable varName);
-
-    /**
-     * Order the results by degree
-     * @param varName the variable name to order the results by
-     * @param order the ordering to use
-     * @return a new {@link Match} with the given ordering
-     */
-    @CheckReturnValue
-    Match orderBy(String varName, Order order);
-
-    /**
-     * Order the results by degree
-     * @param varName the variable name to order the results by
-     * @param order the ordering to use
-     * @return a new {@link Match} with the given ordering
-     */
-    @CheckReturnValue
-    Match orderBy(Variable varName, Order order);
-
-    /**
-     * @param tx the graph to execute the query on
-     * @return a new {@link Match} with the graph set
-     */
-    Match withTx(Transaction tx);
-
-    /**
-     * @param limit the maximum number of results the query should return
-     * @return a new {@link Match} with the limit set
-     */
-    @CheckReturnValue
-    Match limit(long limit);
-
-    /**
-     * @param offset the number of results to skip
-     * @return a new {@link Match} with the offset set
-     */
-    @CheckReturnValue
-    Match offset(long offset);
-
-    /**
      * Aggregate results of a query.
      * @param aggregate the aggregate operation to apply
      * @param <T> the type of the aggregate result

@@ -59,11 +59,6 @@ public class UndefineQuery implements Query<ConceptMap> {
     }
 
     @Override
-    public UndefineQuery withTx(Transaction tx) {
-        return new UndefineQuery(tx, statements);
-    }
-
-    @Override
     public Stream<ConceptMap> stream() {
         return executor().run(this);
     }

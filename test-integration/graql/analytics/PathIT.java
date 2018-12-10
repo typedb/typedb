@@ -118,7 +118,7 @@ public class PathIT {
             checkPath(correctPath, path.list());
 
             Collections.reverse(correctPath);
-            allPaths = Graql.compute(PATH).withTx(tx).to(entityId1).from(relationId12).execute();
+            allPaths = tx.graql().compute(PATH).to(entityId1).from(relationId12).execute();
             checkPath(correctPath, allPaths.get(0).list());
 
             // entities connected by a relation

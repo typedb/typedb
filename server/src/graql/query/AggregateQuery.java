@@ -58,11 +58,6 @@ public class AggregateQuery<T extends Answer> implements Query<T> {
     }
 
     @Override
-    public final AggregateQuery<T> withTx(Transaction tx) {
-        return new AggregateQuery<>(match().withTx(tx).admin(), aggregate());
-    }
-
-    @Override
     public final Stream<T> stream() {
         return executor().run(this);
     }

@@ -18,8 +18,8 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import com.google.common.collect.Sets;
+import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
@@ -29,12 +29,11 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.graql.internal.Schema;
-import com.google.common.collect.Sets;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.exception.InvalidKBException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -112,7 +111,7 @@ public class ConnectedComponentIT {
     public void testConnectedComponentOnEmptyGraph() {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             // test on an empty rule.tx()
-            List<ConceptSet> clusterList = Graql.compute(CLUSTER).withTx(tx).using(CONNECTED_COMPONENT).includeAttributes(true).execute();
+            List<ConceptSet> clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true).execute();
             assertTrue(clusterList.isEmpty());
             clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).execute();
             assertTrue(clusterList.isEmpty());
@@ -127,7 +126,7 @@ public class ConnectedComponentIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            clusterList = Graql.compute(CLUSTER).withTx(tx).using(CONNECTED_COMPONENT).includeAttributes(true).where(size(1L)).execute();
+            clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true).where(size(1L)).execute();
             assertEquals(0, clusterList.size());
 
             clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(size(1L)).execute();
@@ -194,19 +193,19 @@ public class ConnectedComponentIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            clusterList = Graql.compute(CLUSTER).withTx(tx).using(CONNECTED_COMPONENT).includeAttributes(true).execute();
+            clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true).execute();
             assertEquals(1, clusterList.size());
             assertEquals(7, clusterList.iterator().next().set().size()); // 4 entities, 3 assertions
 
-            clusterList = Graql.compute(CLUSTER).withTx(tx).using(CONNECTED_COMPONENT).where(contains(entityId1)).includeAttributes(true).execute();
+            clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(entityId1)).includeAttributes(true).execute();
             assertEquals(1, clusterList.size());
             assertEquals(7, clusterList.iterator().next().set().size());
 
-            clusterList = Graql.compute(CLUSTER).withTx(tx).using(CONNECTED_COMPONENT).execute();
+            clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).execute();
             assertEquals(1, clusterList.size());
             assertEquals(7, clusterList.iterator().next().set().size());
 
-            clusterList = Graql.compute(CLUSTER).withTx(tx).using(CONNECTED_COMPONENT).where(contains(entityId4)).execute();
+            clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(entityId4)).execute();
             assertEquals(1, clusterList.size());
             assertEquals(7, clusterList.iterator().next().set().size());
         }
@@ -255,7 +254,7 @@ public class ConnectedComponentIT {
 
         Set<List<ConceptSet>> result = list.parallelStream().map(i -> {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                return Graql.compute(CLUSTER).withTx(tx).using(CONNECTED_COMPONENT).execute();
+                return tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).execute();
             }
         }).collect(Collectors.toSet());
         result.forEach(map -> {

@@ -66,11 +66,6 @@ public class GetQuery implements Query<ConceptMap> {
     }
 
     @Override
-    public GetQuery withTx(Transaction tx) {
-        return new GetQuery(vars(), match().withTx(tx).admin());
-    }
-
-    @Override
     public final Transaction tx() {
         return match().admin().tx();
     }

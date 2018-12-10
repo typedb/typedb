@@ -19,26 +19,32 @@
 package grakn.core.graql.internal.match;
 
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 
 import java.util.Iterator;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
  * Modifier that specifies the graph to execute the {@link Match} with.
- *
  */
-class MatchInfer extends MatchModifier {
+class MatchInfer extends AbstractMatch {
+
+    final AbstractMatch inner;
 
     MatchInfer(AbstractMatch inner) {
-        super(inner);
+        this.inner = inner;
     }
 
     @Override
@@ -57,10 +63,10 @@ class MatchInfer extends MatchModifier {
         }
 
         if (!RuleUtils.hasRules(embeddedTx)) return inner.stream(embeddedTx);
-        validatePattern(embeddedTx);
+        validateStatements(embeddedTx);
 
         try {
-            Iterator<Conjunction<Statement>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
+            Iterator<Conjunction<Statement>> conjIt = getPatterns().getDisjunctiveNormalForm().getPatterns().iterator();
             Conjunction<Statement> conj = conjIt.next();
 
             ReasonerQuery conjQuery = ReasonerQueries.create(conj, embeddedTx).rewrite();
@@ -84,8 +90,52 @@ class MatchInfer extends MatchModifier {
         return true;
     }
 
-    @Override
     protected String modifierString() {
         return "";
+    }
+
+    @Override
+    public final Set<SchemaConcept> getSchemaConcepts(Transaction tx) {
+        return inner.getSchemaConcepts(tx);
+    }
+
+    @Override
+    public final Conjunction<Pattern> getPatterns() {
+        return inner.getPatterns();
+    }
+
+    @Override
+    public Transaction tx() {
+        return inner.tx();
+    }
+
+    @Override
+    public Set<SchemaConcept> getSchemaConcepts() {
+        return inner.getSchemaConcepts();
+    }
+
+    @Override
+    public final Set<Variable> getSelectedNames() {
+        return inner.getSelectedNames();
+    }
+
+    @Override
+    public final String toString() {
+        return inner.toString() + modifierString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MatchInfer maps = (MatchInfer) o;
+
+        return inner.equals(maps.inner);
+    }
+
+    @Override
+    public int hashCode() {
+        return inner.hashCode();
     }
 }

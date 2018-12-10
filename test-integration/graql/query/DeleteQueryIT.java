@@ -37,8 +37,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Set;
-
 import static grakn.core.common.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.pattern.Pattern.var;
@@ -211,7 +209,7 @@ public class DeleteQueryIT {
 
         assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
 
-        qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).limit(1).delete(x, y).execute();
+        qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete(x, y).execute();
 
         assertNotExists(qb, var().isa("fake-type"));
     }
@@ -223,7 +221,7 @@ public class DeleteQueryIT {
 
         assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
 
-        qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).limit(1).delete().execute();
+        qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete().execute();
 
         assertNotExists(qb, var().isa("fake-type"));
     }

@@ -174,7 +174,7 @@ public class BenchmarkSmallIT {
         String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
         Transaction tx = session.transaction(Transaction.Type.WRITE);
         executeQuery(queryString, tx, "full");
-        executeQuery(tx.graql().<GetQuery>parse(queryString).match().limit(limit).get(), "limit " + limit);
+//        executeQuery(tx.graql().<GetQuery>parse(queryString).match().limit(limit).get(), "limit " + limit); // TODO: uncomment
         tx.close();
         session.close();
     }
@@ -216,8 +216,8 @@ public class BenchmarkSmallIT {
         assertEquals(executeQuery(query, "full").size(), answers);
         assertEquals(executeQuery(query2, "With specific resource").size(), N);
 
-        executeQuery(query.match().limit(limit).get(), "limit " + limit);
-        executeQuery(query2.match().limit(limit).get(), "limit " + limit);
+//        executeQuery(query.match().limit(limit).get(), "limit " + limit); // TODO: uncomment
+//        executeQuery(query2.match().limit(limit).get(), "limit " + limit); // TODO: uncomment
         tx.close();
         session.close();
     }
@@ -276,7 +276,7 @@ public class BenchmarkSmallIT {
         executeQuery(query, "full");
         executeQuery(query2, "With specific resource");
         executeQuery(query3, "Single argument bound");
-        executeQuery(query.match().limit(limit).get(), "limit " + limit);
+//        executeQuery(query.match().limit(limit).get(), "limit " + limit); // TODO: uncomment
         tx.close();
         session.close();
     }
@@ -323,7 +323,7 @@ public class BenchmarkSmallIT {
         GetQuery query = iqb.parse(queryString);
 
         executeQuery(query, "full");
-        executeQuery(query.match().limit(limit).get(), "limit " + limit);
+//        executeQuery(query.match().limit(limit).get(), "limit " + limit); // TODO: uncomment
         tx.close();
         session.close();
     }

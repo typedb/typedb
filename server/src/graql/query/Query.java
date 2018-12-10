@@ -38,13 +38,6 @@ import java.util.stream.Stream;
 public interface Query<T extends Answer> extends Iterable<T> {
 
     /**
-     * @param tx the graph to execute the query on
-     * @return a new query with the graph set
-     */
-    @CheckReturnValue
-    Query<T> withTx(Transaction tx);
-
-    /**
      * @return a {@link Stream} of T, where T is a special type of {@link Answer}
      */
     @CheckReturnValue

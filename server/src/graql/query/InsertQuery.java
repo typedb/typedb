@@ -90,15 +90,6 @@ public class InsertQuery implements Query<ConceptMap> {
     }
 
     @Override
-    public final InsertQuery withTx(Transaction tx) {
-        if (match() != null) {
-            return new InsertQuery(tx, match().withTx(tx).admin(), statements);
-        } else {
-            return new InsertQuery(tx, null, statements);
-        }
-    }
-
-    @Override
     public boolean isReadOnly() {
         return false;
     }

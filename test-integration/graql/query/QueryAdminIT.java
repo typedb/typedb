@@ -101,7 +101,7 @@ public class QueryAdminIT {
     public void testGetPatternInQuery() {
         Match match = qb.match(var("x").isa("movie"), var("x").val("Bob"));
 
-        Conjunction<Pattern> conjunction = match.admin().getPattern();
+        Conjunction<Pattern> conjunction = match.admin().getPatterns();
         assertNotNull(conjunction);
 
         Set<Pattern> patterns = conjunction.getPatterns();
@@ -112,7 +112,7 @@ public class QueryAdminIT {
     public void testMutateMatch() {
         Match match = qb.match(var("x").isa("movie"));
 
-        Conjunction<Pattern> pattern = match.admin().getPattern();
+        Conjunction<Pattern> pattern = match.admin().getPatterns();
         pattern.getPatterns().add(var("x").has("title", "Spy"));
 
         assertEquals(1, match.stream().count());

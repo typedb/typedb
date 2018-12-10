@@ -7,14 +7,3 @@ java_test(
         "//server"],
     size = "small"
 )
-
-java_test(
-    name = "match-kb-test",
-    test_class = "grakn.core.graql.internal.match.MatchKBTest",
-    srcs = ["MatchKBTest.java"],
-    deps = [
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//server"],
-    size = "small"
-)

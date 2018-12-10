@@ -72,10 +72,10 @@ public class MatchBase extends AbstractMatch {
     public Stream<ConceptMap> stream(TransactionImpl<?> tx) {
         if (tx == null) throw GraqlQueryException.noTx();
 
-        validatePattern(tx);
+        validateStatements(tx);
 
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, tx);
-        return streamWithTraversal(this.getPattern().variables(), tx, graqlTraversal);
+        return streamWithTraversal(this.getPatterns().variables(), tx, graqlTraversal);
     }
 
     /**
@@ -145,7 +145,7 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Conjunction<Pattern> getPattern() {
+    public Conjunction<Pattern> getPatterns() {
         return pattern;
     }
 

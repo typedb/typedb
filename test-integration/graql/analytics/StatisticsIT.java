@@ -30,7 +30,6 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.ComputeQuery;
-import grakn.core.graql.query.Graql;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -166,38 +165,38 @@ public class StatisticsIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(MIN).of(resourceType1).in(Collections.emptyList()).withTx(tx).execute();
+            result = tx.graql().compute(MIN).of(resourceType1).in(Collections.emptyList()).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MIN).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(MIN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MIN).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(MIN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MIN).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(MIN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(MIN).of(resourceType2).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(MIN).of(resourceType2, resourceType5).execute();
             assertTrue(result.isEmpty());
-            result = tx.graql().compute(MIN).of(resourceType2).withTx(tx).execute();
+            result = tx.graql().compute(MIN).of(resourceType2).execute();
             assertTrue(result.isEmpty());
-            result = tx.graql().compute(MIN).withTx(tx).of(resourceType2).execute();
+            result = tx.graql().compute(MIN).of(resourceType2).execute();
             assertTrue(result.isEmpty());
 
-            result = Graql.compute(MAX).of(resourceType1).in(Collections.emptyList()).withTx(tx).execute();
+            result = tx.graql().compute(MAX).of(resourceType1).in(Collections.emptyList()).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MAX).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(MAX).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MAX).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(MAX).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MAX).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(MAX).of(resourceType1).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(MAX).of(resourceType2).in(Collections.emptyList()).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(MAX).of(resourceType2, resourceType5).execute();
             assertTrue(result.isEmpty());
-            result = tx.graql().compute(MAX).of(resourceType2).withTx(tx).execute();
+            result = tx.graql().compute(MAX).of(resourceType2).execute();
             assertTrue(result.isEmpty());
-            result = tx.graql().compute(MAX).withTx(tx).of(resourceType2).execute();
+            result = tx.graql().compute(MAX).of(resourceType2).execute();
             assertTrue(result.isEmpty());
         }
 
@@ -205,22 +204,22 @@ public class StatisticsIT {
         addResourcesInstances();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(MIN).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(MIN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MIN).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(MIN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(MIN).of(resourceType2).in(thing, anotherThing).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MIN).of(resourceType2).withTx(tx).in(anotherThing).execute();
+            result = tx.graql().compute(MIN).of(resourceType2).in(anotherThing).execute();
             assertTrue(result.isEmpty());
 
-            result = Graql.compute(MAX).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(MAX).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MAX).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(MAX).of(resourceType1).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(MAX).of(resourceType2).in(thing, anotherThing).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MAX).of(resourceType2).withTx(tx).in(anotherThing).execute();
+            result = tx.graql().compute(MAX).of(resourceType2).in(anotherThing).execute();
             assertTrue(result.isEmpty());
         }
 
@@ -230,7 +229,7 @@ public class StatisticsIT {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             result = tx.graql().compute(MIN).of(resourceType1).in(Collections.emptySet()).execute();
             assertEquals(1.2, result.get(0).number().doubleValue(), delta);
-            result = Graql.compute(MIN).in(thing).of(resourceType2).withTx(tx).execute();
+            result = tx.graql().compute(MIN).in(thing).of(resourceType2).execute();
             assertEquals(-1, result.get(0).number().intValue());
             result = tx.graql().compute(MIN).in(thing).of(resourceType2, resourceType5).execute();
             assertEquals(-7, result.get(0).number().intValue());
@@ -239,7 +238,7 @@ public class StatisticsIT {
             result = tx.graql().compute(MIN).in(anotherThing).of(resourceType2).execute();
             assertEquals(0, result.get(0).number().intValue());
 
-            result = Graql.compute(MAX).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(MAX).of(resourceType1).execute();
             assertEquals(1.8, result.get(0).number().doubleValue(), delta);
             result = tx.graql().compute(MAX).of(resourceType1, resourceType6).execute();
             assertEquals(7.5, result.get(0).number().doubleValue(), delta);
@@ -258,21 +257,21 @@ public class StatisticsIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(SUM).of(resourceType1).in(Collections.emptyList()).withTx(tx).execute();
+            result = tx.graql().compute(SUM).of(resourceType1).in(Collections.emptyList()).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(SUM).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(SUM).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(SUM).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(SUM).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(SUM).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(SUM).of(resourceType1).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(SUM).of(resourceType2).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(SUM).of(resourceType2, resourceType5).execute();
             assertTrue(result.isEmpty());
-            result = tx.graql().compute(SUM).of(resourceType2).withTx(tx).execute();
+            result = tx.graql().compute(SUM).of(resourceType2).execute();
             assertTrue(result.isEmpty());
-            result = tx.graql().compute(SUM).withTx(tx).of(resourceType2).execute();
+            result = tx.graql().compute(SUM).of(resourceType2).execute();
             assertTrue(result.isEmpty());
         }
 
@@ -280,13 +279,13 @@ public class StatisticsIT {
         addResourcesInstances();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(SUM).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(SUM).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(SUM).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(SUM).of(resourceType1).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(SUM).of(resourceType2).in(thing, anotherThing).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(SUM).of(resourceType2).withTx(tx).in(anotherThing).execute();
+            result = tx.graql().compute(SUM).of(resourceType2).in(anotherThing).execute();
             assertTrue(result.isEmpty());
         }
 
@@ -294,9 +293,9 @@ public class StatisticsIT {
         addResourceRelations();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(SUM).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(SUM).of(resourceType1).execute();
             assertEquals(4.5, result.get(0).number().doubleValue(), delta);
-            result = Graql.compute(SUM).of(resourceType2).in(thing).withTx(tx).execute();
+            result = tx.graql().compute(SUM).of(resourceType2).in(thing).execute();
             assertEquals(3, result.get(0).number().intValue());
             result = tx.graql().compute(SUM).of(resourceType1, resourceType6).execute();
             assertEquals(27.0, result.get(0).number().doubleValue(), delta);
@@ -314,21 +313,21 @@ public class StatisticsIT {
         // resource-type has no instance
         addSchemaAndEntities();
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(MEAN).of(resourceType1).in(Collections.emptyList()).withTx(tx).execute();
+            result = tx.graql().compute(MEAN).of(resourceType1).in(Collections.emptyList()).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MEAN).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(MEAN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MEAN).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(MEAN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MEAN).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(MEAN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(MEAN).of(resourceType2).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(MEAN).of(resourceType2, resourceType5).execute();
             assertTrue(result.isEmpty());
-            result = tx.graql().compute(MEAN).of(resourceType2).withTx(tx).execute();
+            result = tx.graql().compute(MEAN).of(resourceType2).execute();
             assertTrue(result.isEmpty());
-            result = tx.graql().compute(MEAN).withTx(tx).of(resourceType2).execute();
+            result = tx.graql().compute(MEAN).of(resourceType2).execute();
             assertTrue(result.isEmpty());
         }
 
@@ -336,13 +335,13 @@ public class StatisticsIT {
         addResourcesInstances();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(MEAN).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(MEAN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MEAN).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(MEAN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(MEAN).of(resourceType2).in(thing, anotherThing).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MEAN).of(resourceType2).withTx(tx).in(anotherThing).execute();
+            result = tx.graql().compute(MEAN).of(resourceType2).in(anotherThing).execute();
             assertTrue(result.isEmpty());
         }
 
@@ -350,9 +349,9 @@ public class StatisticsIT {
         addResourceRelations();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(MEAN).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(MEAN).of(resourceType1).execute();
             assertEquals(1.5, result.get(0).number().doubleValue(), delta);
-            result = Graql.compute(MEAN).of(resourceType2).withTx(tx).execute();
+            result = tx.graql().compute(MEAN).of(resourceType2).execute();
             assertEquals(1D, result.get(0).number().doubleValue(), delta);
             result = tx.graql().compute(MEAN).of(resourceType1, resourceType6).execute();
             assertEquals(4.5, result.get(0).number().doubleValue(), delta);
@@ -371,21 +370,21 @@ public class StatisticsIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(STD).of(resourceType1).in(Collections.emptyList()).withTx(tx).execute();
+            result = tx.graql().compute(STD).of(resourceType1).in(Collections.emptyList()).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(STD).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(STD).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(STD).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(STD).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(STD).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(STD).of(resourceType1).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(STD).of(resourceType2).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(STD).of(resourceType2, resourceType5).execute();
             assertTrue(result.isEmpty());
-            result = tx.graql().compute(STD).of(resourceType2).withTx(tx).execute();
+            result = tx.graql().compute(STD).of(resourceType2).execute();
             assertTrue(result.isEmpty());
-            result = tx.graql().compute(STD).withTx(tx).of(resourceType2).execute();
+            result = tx.graql().compute(STD).of(resourceType2).execute();
             assertTrue(result.isEmpty());
         }
 
@@ -393,13 +392,13 @@ public class StatisticsIT {
         addResourcesInstances();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(STD).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(STD).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(STD).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(STD).of(resourceType1).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(STD).of(resourceType2).in(thing, anotherThing).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(STD).of(resourceType2).withTx(tx).in(anotherThing).execute();
+            result = tx.graql().compute(STD).of(resourceType2).in(anotherThing).execute();
             assertTrue(result.isEmpty());
         }
 
@@ -407,9 +406,9 @@ public class StatisticsIT {
         addResourceRelations();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(STD).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(STD).of(resourceType1).execute();
             assertEquals(Math.sqrt(0.18 / 3), result.get(0).number().doubleValue(), delta);
-            result = Graql.compute(STD).of(resourceType2).withTx(tx).in(anotherThing).execute();
+            result = tx.graql().compute(STD).of(resourceType2).in(anotherThing).execute();
             assertEquals(Math.sqrt(0D), result.get(0).number().doubleValue(), delta);
             result = tx.graql().compute(STD).of(resourceType1, resourceType6).execute();
             assertEquals(Math.sqrt(54.18 / 6), result.get(0).number().doubleValue(), delta);
@@ -441,21 +440,21 @@ public class StatisticsIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(MEDIAN).of(resourceType1).in(Collections.emptyList()).withTx(tx).execute();
+            result = tx.graql().compute(MEDIAN).of(resourceType1).in(Collections.emptyList()).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MEDIAN).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(MEDIAN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MEDIAN).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(MEDIAN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MEDIAN).withTx(tx).of(resourceType1).execute();
+            result = tx.graql().compute(MEDIAN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(MEDIAN).of(resourceType2).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(MEDIAN).of(resourceType2, resourceType5).execute();
             assertTrue(result.isEmpty());
-            result = tx.graql().compute(MEDIAN).of(resourceType2).withTx(tx).execute();
+            result = tx.graql().compute(MEDIAN).of(resourceType2).execute();
             assertTrue(result.isEmpty());
-            result = tx.graql().compute(MEDIAN).withTx(tx).of(resourceType2).execute();
+            result = tx.graql().compute(MEDIAN).of(resourceType2).execute();
             assertTrue(result.isEmpty());
         }
 
@@ -463,13 +462,13 @@ public class StatisticsIT {
         addResourcesInstances();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = Graql.compute(MEDIAN).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(MEDIAN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MEDIAN).of(resourceType1).withTx(tx).execute();
+            result = tx.graql().compute(MEDIAN).of(resourceType1).execute();
             assertTrue(result.isEmpty());
             result = tx.graql().compute(MEDIAN).of(resourceType2).in(thing, anotherThing).execute();
             assertTrue(result.isEmpty());
-            result = Graql.compute(MEDIAN).of(resourceType2).withTx(tx).in(anotherThing).execute();
+            result = tx.graql().compute(MEDIAN).of(resourceType2).in(anotherThing).execute();
             assertTrue(result.isEmpty());
         }
 
@@ -479,17 +478,17 @@ public class StatisticsIT {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             result = tx.graql().compute(MEDIAN).of(resourceType1).execute();
             assertEquals(1.5D, result.get(0).number().doubleValue(), delta);
-            result = Graql.compute(MEDIAN).withTx(tx).of(resourceType6).execute();
+            result = tx.graql().compute(MEDIAN).of(resourceType6).execute();
             assertEquals(7.5D, result.get(0).number().doubleValue(), delta);
             result = tx.graql().compute(MEDIAN).of(resourceType1, resourceType6).execute();
             assertEquals(1.8D, result.get(0).number().doubleValue(), delta);
-            result = Graql.compute(MEDIAN).withTx(tx).of(resourceType2).execute();
+            result = tx.graql().compute(MEDIAN).of(resourceType2).execute();
             assertEquals(0L, result.get(0).number().longValue());
-            result = Graql.compute(MEDIAN).withTx(tx).in(thing).of(resourceType5).execute();
+            result = tx.graql().compute(MEDIAN).in(thing).of(resourceType5).execute();
             assertEquals(-7L, result.get(0).number().longValue());
             result = tx.graql().compute(MEDIAN).in(thing, anotherThing).of(resourceType2, resourceType5).execute();
             assertEquals(-7L, result.get(0).number().longValue());
-            result = Graql.compute(MEDIAN).withTx(tx).in(thing).of(resourceType2).execute();
+            result = tx.graql().compute(MEDIAN).in(thing).of(resourceType2).execute();
             assertNotEquals(0L, result.get(0).number().longValue());
         }
 

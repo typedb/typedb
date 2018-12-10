@@ -21,8 +21,6 @@ package grakn.core.graql.internal.match;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.MatchAdmin;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Aggregate;
@@ -30,8 +28,8 @@ import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Match;
-import grakn.core.graql.query.Order;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
@@ -43,8 +41,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.Order.asc;
-
 @SuppressWarnings("UnusedReturnValue")
 abstract class AbstractMatch implements MatchAdmin {
 
@@ -55,6 +51,7 @@ abstract class AbstractMatch implements MatchAdmin {
 
     /**
      * Execute the query using the given graph.
+     *
      * @param tx the graph to use to execute the query
      * @return a stream of results
      */
@@ -68,24 +65,10 @@ abstract class AbstractMatch implements MatchAdmin {
     /**
      * @param tx the {@link Transaction} against which the pattern should be validated
      */
-    void validatePattern(Transaction tx){
-        for (Statement var : getPattern().statements()) {
-            var.getProperties().forEach(property -> property.checkValid(tx, var));}
-    }
-
-    @Override
-    public final Match withTx(Transaction tx) {
-        return new MatchTx(tx, this);
-    }
-
-    @Override
-    public final Match limit(long limit) {
-        return new MatchLimit(this, limit);
-    }
-
-    @Override
-    public final Match offset(long offset) {
-        return new MatchOffset(this, offset);
+    void validateStatements(Transaction tx) {
+        for (Statement statement : getPatterns().statements()) {
+            statement.getProperties().forEach(property -> property.checkValid(tx, statement));
+        }
     }
 
     @Override
@@ -95,7 +78,7 @@ abstract class AbstractMatch implements MatchAdmin {
 
     @Override
     public GetQuery get() {
-        return get(getPattern().variables());
+        return get(getPatterns().variables());
     }
 
     @Override
@@ -113,7 +96,7 @@ abstract class AbstractMatch implements MatchAdmin {
 
     @Override
     public GetQuery get(Set<Variable> vars) {
-        if (vars.isEmpty()) vars = getPattern().variables();
+        if (vars.isEmpty()) vars = getPatterns().variables();
         return new GetQuery(ImmutableSet.copyOf(vars), this);
     }
 
@@ -130,7 +113,7 @@ abstract class AbstractMatch implements MatchAdmin {
 
     @Override
     public DeleteQuery delete() {
-        return delete(getPattern().variables());
+        return delete(getPatterns().variables());
     }
 
     @Override
@@ -148,27 +131,7 @@ abstract class AbstractMatch implements MatchAdmin {
 
     @Override
     public final DeleteQuery delete(Set<Variable> vars) {
-        if (vars.isEmpty()) vars = getPattern().variables();
+        if (vars.isEmpty()) vars = getPatterns().variables();
         return new DeleteQuery(this, ImmutableSet.copyOf(vars));
-    }
-
-    @Override
-    public final Match orderBy(String varName) {
-        return orderBy(varName, asc);
-    }
-
-    @Override
-    public final Match orderBy(Variable varName) {
-        return orderBy(varName, asc);
-    }
-
-    @Override
-    public final Match orderBy(String varName, Order order) {
-        return orderBy(Pattern.var(varName), order);
-    }
-
-    @Override
-    public final Match orderBy(Variable varName, Order order) {
-        return new MatchOrder(this, Ordering.of(varName, order));
     }
 }

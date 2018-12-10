@@ -301,7 +301,7 @@ public class CorenessIT {
 
         Set<List<ConceptSetMeasure>> result = list.parallelStream().map(i -> {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                return Graql.compute(CENTRALITY).withTx(tx).using(K_CORE).where(min_k(3L)).execute();
+                return tx.graql().compute(CENTRALITY).using(K_CORE).where(min_k(3L)).execute();
             }
         }).collect(Collectors.toSet());
         assertEquals(1, result.size());

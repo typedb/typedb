@@ -6,9 +6,6 @@ queryEOF       : query EOF ;
 query          : getQuery | insertQuery | defineQuery | undefineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchClause    : MATCH patterns                             # matchBase
-               | matchClause 'limit' INTEGER              ';' # matchLimit
-               | matchClause 'offset' INTEGER             ';' # matchOffset
-               | matchClause 'order' 'by' VARIABLE order? ';' # matchOrderBy
                ;
 
 getQuery       : matchClause 'get' variables? ';' ;

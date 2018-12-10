@@ -227,8 +227,8 @@ public class AtomicQueryIT {
         GetQuery parentQuery = qb.parse(parentString);
         Set<ConceptMap> answers = childQuery.stream().collect(toSet());
         Set<ConceptMap> fullAnswers = parentQuery.stream().collect(toSet());
-        Atom childAtom = ReasonerQueries.atomic(conjunction(childQuery.match().admin().getPattern()), tx).getAtom();
-        Atom parentAtom = ReasonerQueries.atomic(conjunction(parentQuery.match().admin().getPattern()), tx).getAtom();
+        Atom childAtom = ReasonerQueries.atomic(conjunction(childQuery.match().admin().getPatterns()), tx).getAtom();
+        Atom parentAtom = ReasonerQueries.atomic(conjunction(parentQuery.match().admin().getPatterns()), tx).getAtom();
 
         MultiUnifier multiUnifier = childAtom.getMultiUnifier(childAtom, UnifierType.RULE);
         Set<ConceptMap> permutedAnswers = answers.stream()

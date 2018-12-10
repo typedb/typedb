@@ -58,11 +58,6 @@ public class DefineQuery implements Query<ConceptMap> {
     }
 
     @Override
-    public Query<ConceptMap> withTx(Transaction tx) {
-        return new DefineQuery(tx, statements);
-    }
-
-    @Override
     public final Stream<ConceptMap> stream() {
         return executor().run(this);
     }

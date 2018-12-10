@@ -316,7 +316,7 @@ public class KCoreIT {
 
         Set<List<ConceptSet>> result = list.parallelStream().map(i -> {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                return Graql.compute(CLUSTER).withTx(tx).using(K_CORE).where(k(3L)).execute();
+                return tx.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute();
             }
         }).collect(Collectors.toSet());
         result.forEach(map -> {

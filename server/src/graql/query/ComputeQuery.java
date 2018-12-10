@@ -236,12 +236,6 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
     }
 
     @Override
-    public final ComputeQuery<T> withTx(Transaction tx) {
-        this.tx = tx;
-        return this;
-    }
-
-    @Override
     public final Transaction tx() {
         return tx;
     }

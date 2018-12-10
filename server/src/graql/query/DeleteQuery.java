@@ -91,11 +91,6 @@ public class DeleteQuery implements Query<ConceptSet> {
         return match().admin().tx();
     }
 
-    @Override
-    public DeleteQuery withTx(Transaction tx) {
-        return new DeleteQuery(match().withTx(tx).admin(), vars);
-    }
-
     @CheckReturnValue
     public DeleteQuery admin() {
         return this;

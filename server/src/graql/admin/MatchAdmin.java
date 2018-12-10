@@ -51,7 +51,7 @@ public interface MatchAdmin extends Match {
      * @return the pattern to match in the graph
      */
     @CheckReturnValue
-    Conjunction<Pattern> getPattern();
+    Conjunction<Pattern> getPatterns();
 
     /**
      * @return the graph the query operates on, if one was provided

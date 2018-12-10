@@ -36,7 +36,6 @@ import org.junit.rules.ExpectedException;
 
 import static grakn.core.graql.query.Graql.insert;
 import static grakn.core.graql.query.Graql.match;
-import static grakn.core.graql.query.Graql.undefine;
 import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
@@ -78,7 +77,7 @@ public class QueryBuilderIT {
     @Test
     public void whenBuildingInsertQueryWithGraphLast_ItExecutes() {
         assertNotExists(tx, var().has("title", "a-movie"));
-        InsertQuery query = insert(var().has("title", "a-movie").isa("movie")).withTx(tx);
+        InsertQuery query = tx.graql().insert(var().has("title", "a-movie").isa("movie"));
         query.execute();
         assertExists(tx, var().has("title", "a-movie"));
     }
@@ -90,7 +89,7 @@ public class QueryBuilderIT {
 
         assertExists(tx, var().has("title", "123"));
 
-        DeleteQuery query = match(x.has("title", "123")).delete(x).withTx(tx);
+        DeleteQuery query = tx.graql().match(x.has("title", "123")).delete(x);
         query.execute();
 
         assertNotExists(tx, var().has("title", "123"));
@@ -100,7 +99,7 @@ public class QueryBuilderIT {
     public void whenBuildingUndefineQueryWithGraphLast_ItExecutes() {
         tx.graql().define(label("yes").sub("entity")).execute();
 
-        UndefineQuery query = undefine(label("yes").sub("entity")).withTx(tx);
+        UndefineQuery query = tx.graql().undefine(label("yes").sub("entity"));
         query.execute();
         assertNotExists(tx, label("yes").sub("entity"));
     }
@@ -109,8 +108,8 @@ public class QueryBuilderIT {
     public void whenBuildingMatchInsertQueryWithGraphLast_ItExecutes() {
         assertNotExists(tx, var().has("title", "a-movie"));
         InsertQuery query =
-                match(x.label("movie")).
-                        insert(var().has("title", "a-movie").isa("movie")).withTx(tx);
+                tx.graql().match(x.label("movie"))
+                        .insert(var().has("title", "a-movie").isa("movie"));
         query.execute();
         assertExists(tx, var().has("title", "a-movie"));
     }
@@ -141,17 +140,8 @@ public class QueryBuilderIT {
 
     @Test
     public void whenGraphIsProvidedAndQueryExecutedWithNonexistentType_Throw() {
-        Match match = match(x.isa("not-a-thing"));
         exception.expect(GraqlQueryException.class);
         //noinspection ResultOfMethodCallIgnored
-        match.withTx(tx).stream();
-    }
-
-    @Test
-    public void whenGraphIsProvidedTwice_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage("graph");
-        //noinspection ResultOfMethodCallIgnored
-        tx.graql().match(x.isa("movie")).withTx(tx).stream();
+        tx.graql().match(x.isa("not-a-thing")).stream();
     }
 }

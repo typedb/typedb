@@ -32,7 +32,6 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.Order;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.pattern.Pattern;
@@ -100,29 +99,6 @@ class Visitor extends GraqlBaseVisitor {
     public Match visitMatchBase(GraqlParser.MatchBaseContext ctx) {
         Collection<Pattern> patterns = visitPatterns(ctx.patterns());
         return queryBuilder.match(patterns);
-    }
-
-    @Override
-    public Match visitMatchOffset(GraqlParser.MatchOffsetContext ctx) {
-        return visitMatchClause(ctx.matchClause()).offset(getInteger(ctx.INTEGER()));
-    }
-
-    @Override
-    public Match visitMatchOrderBy(GraqlParser.MatchOrderByContext ctx) {
-        Match match = visitMatchClause(ctx.matchClause());
-
-        // decide which ordering method to use
-        Variable var = getVariable(ctx.VARIABLE());
-        if (ctx.order() != null) {
-            return match.orderBy(var, visitOrder(ctx.order()));
-        } else {
-            return match.orderBy(var);
-        }
-    }
-
-    @Override
-    public Match visitMatchLimit(GraqlParser.MatchLimitContext ctx) {
-        return visitMatchClause(ctx.matchClause()).limit(getInteger(ctx.INTEGER()));
     }
 
     @Override
@@ -415,16 +391,6 @@ class Visitor extends GraqlBaseVisitor {
     @Override
     public ValuePredicate visitPredicateRegex(GraqlParser.PredicateRegexContext ctx) {
         return Graql.regex(getRegex(ctx.REGEX()));
-    }
-
-    @Override
-    public Order visitOrder(GraqlParser.OrderContext ctx) {
-        if (ctx.ASC() != null) {
-            return Order.asc;
-        } else {
-            assert ctx.DESC() != null;
-            return Order.desc;
-        }
     }
 
     @Override
