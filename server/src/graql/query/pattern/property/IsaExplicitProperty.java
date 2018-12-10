@@ -18,47 +18,48 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collection;
 
 /**
  * Represents the {@code isa-explicit} property on a {@link Thing}.
- * <p>
  * This property can be queried and inserted.
- * </p>
- * <p>
  * THe property is defined as a relationship between an {@link Thing} and a {@link Type}.
- * </p>
- * <p>
  * When matching, any subtyping is ignored. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it only follows {@code $bob isa man}, not {@code bob isa entity}.
- * </p>
- *
  */
-@AutoValue
-public abstract class IsaExplicitProperty extends AbstractIsaProperty {
+public class IsaExplicitProperty extends AbstractIsaProperty {
 
     public static final String NAME = "isa!";
+    private final Statement type;
 
-    public static IsaExplicitProperty of(Statement directType) {
-        return new AutoValue_IsaExplicitProperty(directType);
+    public IsaExplicitProperty(
+            Statement type) {
+        if (type == null) {
+            throw new NullPointerException("Null type");
+        }
+        this.type = type;
     }
 
     @Override
-    public boolean isExplicit() { return true;}
+    public Statement type() {
+        return type;
+    }
 
     @Override
     public String getName() {
         return NAME;
     }
+
+    @Override
+    public boolean isExplicit() { return true;}
 
     @Override
     public Collection<EquivalentFragmentSet> match(Variable start) {
@@ -68,7 +69,27 @@ public abstract class IsaExplicitProperty extends AbstractIsaProperty {
     }
 
     @Override
-    protected final Statement varPatternForAtom(Variable varName, Variable typeVariable) {
+    protected final Statement statementForAtom(Variable varName, Variable typeVariable) {
         return varName.isaExplicit(typeVariable);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof IsaExplicitProperty) {
+            IsaExplicitProperty that = (IsaExplicitProperty) o;
+            return (this.type.equals(that.type()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.type.hashCode();
+        return h;
     }
 }

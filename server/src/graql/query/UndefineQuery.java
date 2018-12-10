@@ -22,8 +22,6 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -34,16 +32,35 @@ import java.util.stream.Stream;
  * A query for undefining the Schema types.
  * The query will undefine all concepts described in the pattern provided.
  */
-@AutoValue
-public abstract class UndefineQuery implements Query<ConceptMap> {
+public class UndefineQuery implements Query<ConceptMap> {
 
-    static UndefineQuery of(Collection<? extends Statement> varPatterns, @Nullable Transaction tx) {
-        return new AutoValue_UndefineQuery(tx, ImmutableList.copyOf(varPatterns));
+    private final Transaction tx;
+    private final Collection<? extends Statement> statements;
+
+    UndefineQuery(@Nullable Transaction tx, Collection<? extends Statement> statements) {
+        this.tx = tx;
+        if (statements == null) {
+            throw new NullPointerException("Null statements");
+        }
+        this.statements = statements;
+    }
+
+    @Nullable
+    @Override
+    public Transaction tx() {
+        return tx;
+    }
+
+    /**
+     * Get the {@link Statement}s describing what {@link SchemaConcept}s to define.
+     */
+    public Collection<? extends Statement> statements() {
+        return statements;
     }
 
     @Override
     public UndefineQuery withTx(Transaction tx) {
-        return of(varPatterns(), tx);
+        return new UndefineQuery(tx, statements);
     }
 
     @Override
@@ -58,7 +75,7 @@ public abstract class UndefineQuery implements Query<ConceptMap> {
 
     @Override
     public String toString() {
-        return "undefine " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+        return "undefine " + statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 
     @Override
@@ -66,8 +83,26 @@ public abstract class UndefineQuery implements Query<ConceptMap> {
         return false;
     }
 
-    /**
-     * Get the {@link Statement}s describing what {@link SchemaConcept}s to define.
-     */
-    public abstract Collection<? extends Statement> varPatterns();
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof UndefineQuery) {
+            UndefineQuery that = (UndefineQuery) o;
+            return ((this.tx == null) ? (that.tx() == null) : this.tx.equals(that.tx()))
+                    && (this.statements.equals(that.statements()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (tx == null) ? 0 : this.tx.hashCode();
+        h *= 1000003;
+        h ^= this.statements.hashCode();
+        return h;
+    }
 }

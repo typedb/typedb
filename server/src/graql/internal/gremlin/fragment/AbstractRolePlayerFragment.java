@@ -69,10 +69,10 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
 
     final String innerName() {
         Variable role = role();
-        String roleString = role != null ? " role:" + role.shortName() : "";
+        String roleString = role != null ? " role:" + role.symbol() : "";
         String rels = displayOptionalTypeLabels("rels", relationTypeLabels());
         String roles = displayOptionalTypeLabels("roles", roleLabels());
-        return "[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":" + edge().shortName() + roleString + rels + roles + "]";
+        return "[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":" + edge().symbol() + roleString + rels + roles + "]";
     }
 
     @Override
@@ -112,9 +112,9 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
             Collection<Variable> vars) {
         if (role != null) {
             Variable edge = Pattern.var();
-            traversal.as(edge.label());
+            traversal.as(edge.symbol());
             Fragments.outSubs(Fragments.traverseSchemaConceptFromEdge(traversal, edgeProperty));
-            assignVar(traversal, role, vars).select(edge.label());
+            assignVar(traversal, role, vars).select(edge.symbol());
         }
     }
 }

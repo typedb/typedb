@@ -18,14 +18,14 @@
 
 package grakn.core.graql.query.aggregate;
 
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.answer.Answer;
-import grakn.core.graql.answer.AnswerGroup;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -39,6 +39,7 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
+ *
  * @param <T> the type of each group
  */
 public class GroupAggregate<T extends Answer> implements Aggregate<AnswerGroup<T>> {
@@ -53,17 +54,18 @@ public class GroupAggregate<T extends Answer> implements Aggregate<AnswerGroup<T
 
     @Override
     public List<AnswerGroup<T>> apply(Stream<? extends ConceptMap> conceptMaps) {
-        Collector<ConceptMap, ?, List<T>> applyAggregate =
+        Collector<ConceptMap, ?, List<T>> applyInnerAggregate =
                 collectingAndThen(toList(), list -> innerAggregate.apply(list.stream()));
 
         List<AnswerGroup<T>> answerGroups = new ArrayList<>();
-        conceptMaps.collect(groupingBy(this::getConcept, applyAggregate))
-                .forEach( (key, values) -> answerGroups.add(new AnswerGroup<>(key, values)));
+        conceptMaps.collect(groupingBy(result -> getConcept(result), applyInnerAggregate))
+                .forEach((key, values) -> answerGroups.add(new AnswerGroup<>(key, values)));
 
         return answerGroups;
     }
 
-    private @Nonnull Concept getConcept(ConceptMap result) {
+    private @Nonnull
+    Concept getConcept(ConceptMap result) {
         Concept concept = result.get(varName);
         if (concept == null) {
             throw GraqlQueryException.varNotInQuery(varName);
@@ -76,7 +78,7 @@ public class GroupAggregate<T extends Answer> implements Aggregate<AnswerGroup<T
         if (innerAggregate instanceof ListAggregate) {
             return "group " + varName;
         } else {
-            return "group " + varName + " " + innerAggregate.toString();
+            return "group " + varName + ", " + innerAggregate.toString();
         }
     }
 

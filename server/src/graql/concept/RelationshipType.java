@@ -18,28 +18,21 @@
 
 package grakn.core.graql.concept;
 
-import grakn.core.server.exception.TransactionException;
-
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     An ontological element which categorises how {@link Thing}s may relate to each other.
- * </p>
- *
- * <p>
- *     A {@link RelationshipType} defines how {@link Type} may relate to one another.
- *     They are used to model and categorise n-ary {@link Relationship}s.
- * </p>
- *
- *
+ * An ontological element which categorises how {@link Thing}s may relate to each other.
+ * A {@link RelationshipType} defines how {@link Type} may relate to one another.
+ * They are used to model and categorise n-ary {@link Relationship}s.
  */
 public interface RelationshipType extends Type {
     //------------------------------------- Modifiers ----------------------------------
+
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.
+     *
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
@@ -47,11 +40,9 @@ public interface RelationshipType extends Type {
 
     /**
      * Creates and returns a new {@link Relationship} instance, whose direct type will be this type.
-     * @see Relationship
      *
      * @return a new empty relation.
-     *
-     * @throws TransactionException if this is a meta type
+     * @see Relationship
      */
     Relationship create();
 
@@ -59,7 +50,7 @@ public interface RelationshipType extends Type {
      * Sets the supertype of the {@link RelationshipType} to be the {@link RelationshipType} specified.
      *
      * @param type The supertype of this {@link RelationshipType}
-     * @return  The {@link RelationshipType} itself.
+     * @return The {@link RelationshipType} itself.
      */
     RelationshipType sup(RelationshipType type);
 
@@ -82,11 +73,12 @@ public interface RelationshipType extends Type {
     RelationshipType has(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
+
     /**
      * Retrieves a list of the RoleTypes that make up this {@link RelationshipType}.
-     * @see Role
      *
      * @return A list of the RoleTypes which make up this {@link RelationshipType}.
+     * @see Role
      */
     @CheckReturnValue
     Stream<Role> roles();
@@ -95,10 +87,10 @@ public interface RelationshipType extends Type {
 
     /**
      * Sets a new Role for this {@link RelationshipType}.
-     * @see Role
      *
      * @param role A new role which is part of this relationship.
      * @return The {@link RelationshipType} itself.
+     * @see Role
      */
     RelationshipType relates(Role role);
 
@@ -106,18 +98,19 @@ public interface RelationshipType extends Type {
 
     /**
      * Unrelated a Role from this {@link RelationshipType}
-     * @see Role
      *
      * @param role The Role to unrelate from the {@link RelationshipType}.
      * @return The {@link RelationshipType} itself.
+     * @see Role
      */
     RelationshipType unrelate(Role role);
 
     //---- Inherited Methods
+
     /**
      * Sets the {@link RelationshipType} to be abstract - which prevents it from having any instances.
      *
-     * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
+     * @param isAbstract Specifies if the concept is to be abstract (true) or not (false).
      * @return The {@link RelationshipType} itself.
      */
     @Override
@@ -125,6 +118,7 @@ public interface RelationshipType extends Type {
 
     /**
      * Returns the direct supertype of this {@link RelationshipType}.
+     *
      * @return The direct supertype of this {@link RelationshipType}
      */
     @Override
@@ -133,6 +127,7 @@ public interface RelationshipType extends Type {
 
     /**
      * Returns a collection of supertypes of this {@link RelationshipType}.
+     *
      * @return All the supertypes of this {@link RelationshipType}
      */
     @Override
@@ -150,7 +145,7 @@ public interface RelationshipType extends Type {
      * Sets the Role which instances of this {@link RelationshipType} may play.
      *
      * @param role The Role which the instances of this Type are allowed to play.
-     * @return  The {@link RelationshipType} itself.
+     * @return The {@link RelationshipType} itself.
      */
     @Override
     RelationshipType plays(Role role);
@@ -184,9 +179,9 @@ public interface RelationshipType extends Type {
 
     /**
      * Retrieve all the {@link Relationship} instances of this {@link RelationshipType}
-     * @see Relationship
      *
      * @return All the {@link Relationship} instances of this {@link RelationshipType}
+     * @see Relationship
      */
     @Override
     Stream<Relationship> instances();
@@ -195,14 +190,14 @@ public interface RelationshipType extends Type {
     @Deprecated
     @CheckReturnValue
     @Override
-    default RelationshipType asRelationshipType(){
+    default RelationshipType asRelationshipType() {
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isRelationshipType(){
+    default boolean isRelationshipType() {
         return true;
     }
 }

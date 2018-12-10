@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.parser;
+package graql.parser;
 
-import com.google.common.base.Strings;
-import grakn.core.graql.grammar.GremlinBaseVisitor;
-import grakn.core.graql.grammar.GremlinLexer;
-import grakn.core.graql.grammar.GremlinParser;
+import graql.grammar.GremlinBaseVisitor;
+import graql.grammar.GremlinLexer;
+import graql.grammar.GremlinParser;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 
 import java.io.IOException;
@@ -36,7 +36,6 @@ import java.util.stream.Stream;
 
 /**
  * Parser to make Gremlin queries pretty
- *
  */
 public class GremlinVisitor extends GremlinBaseVisitor<Consumer<GremlinVisitor.PrettyStringBuilder>> {
 
@@ -239,7 +238,7 @@ public class GremlinVisitor extends GremlinBaseVisitor<Consumer<GremlinVisitor.P
         PrettyStringBuilder append(String string) {
             if (newline) {
                 builder.append("\n");
-                builder.append(Strings.repeat(INDENT_STR, indent));
+                builder.append(StringUtils.repeat(INDENT_STR, indent));
                 newline = false;
             }
             builder.append(string);

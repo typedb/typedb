@@ -18,31 +18,23 @@
 
 package grakn.core.graql.concept;
 
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.exception.TransactionException;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
+import grakn.core.server.keyspace.Keyspace;
 
 import javax.annotation.CheckReturnValue;
 
 
 /**
- * <p>
- *     The base concept implementation.
- * </p>
- *
- * <p>
- *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
- *     This class forms the basis of assuring the graph follows the Grakn object model.
- *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
- *     ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link Rule} or {@link AttributeType})
- *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Attribute}).
- * </p>
- *
- *
+ * The base concept implementation.
+ * A concept which can every object in the graph.
+ * This class forms the basis of assuring the graph follows the Grakn object model.
+ * It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
+ * ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link Rule} or {@link AttributeType})
+ * or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Attribute}).
  */
 public interface Concept {
     //------------------------------------- Accessors ----------------------------------
+
     /**
      * Get the unique ID associated with the Concept.
      *
@@ -59,13 +51,14 @@ public interface Concept {
     Keyspace keyspace();
 
     //------------------------------------- Other ---------------------------------
+
     /**
      * Return as a {@link SchemaConcept} if the {@link Concept} is a {@link SchemaConcept}.
      *
      * @return A {@link SchemaConcept} if the {@link Concept} is a {@link SchemaConcept}
      */
     @CheckReturnValue
-    default SchemaConcept asSchemaConcept(){
+    default SchemaConcept asSchemaConcept() {
         throw TransactionException.invalidCasting(this, SchemaConcept.class);
     }
 
@@ -75,7 +68,7 @@ public interface Concept {
      * @return A {@link Type} if the {@link Concept} is a {@link Type}
      */
     @CheckReturnValue
-    default Type asType(){
+    default Type asType() {
         throw TransactionException.invalidCasting(this, Type.class);
     }
 
@@ -85,7 +78,7 @@ public interface Concept {
      * @return An {@link Thing} if the {@link Concept} is an {@link Thing}
      */
     @CheckReturnValue
-    default Thing asThing(){
+    default Thing asThing() {
         throw TransactionException.invalidCasting(this, Thing.class);
     }
 
@@ -95,7 +88,7 @@ public interface Concept {
      * @return A {@link EntityType} if the {@link Concept} is an {@link EntityType}
      */
     @CheckReturnValue
-    default EntityType asEntityType(){
+    default EntityType asEntityType() {
         throw TransactionException.invalidCasting(this, EntityType.class);
     }
 
@@ -105,7 +98,7 @@ public interface Concept {
      * @return A {@link Role} if the {@link Concept} is a {@link Role}
      */
     @CheckReturnValue
-    default Role asRole(){
+    default Role asRole() {
         throw TransactionException.invalidCasting(this, Role.class);
     }
 
@@ -115,7 +108,7 @@ public interface Concept {
      * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
-    default RelationshipType asRelationshipType(){
+    default RelationshipType asRelationshipType() {
         throw TransactionException.invalidCasting(this, RelationshipType.class);
     }
 
@@ -125,7 +118,7 @@ public interface Concept {
      * @return A {@link AttributeType} if the {@link Concept} is a {@link AttributeType}
      */
     @CheckReturnValue
-    default <D> AttributeType<D> asAttributeType(){
+    default <D> AttributeType<D> asAttributeType() {
         throw TransactionException.invalidCasting(this, AttributeType.class);
     }
 
@@ -135,16 +128,17 @@ public interface Concept {
      * @return A {@link Rule} if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
-    default Rule asRule(){
+    default Rule asRule() {
         throw TransactionException.invalidCasting(this, Rule.class);
     }
 
     /**
      * Return as an {@link Entity}, if the {@link Concept} is an {@link Entity} {@link Thing}.
+     *
      * @return An {@link Entity} if the {@link Concept} is a {@link Thing}
      */
     @CheckReturnValue
-    default Entity asEntity(){
+    default Entity asEntity() {
         throw TransactionException.invalidCasting(this, Entity.class);
     }
 
@@ -154,7 +148,7 @@ public interface Concept {
      * @return A {@link Relationship}  if the {@link Concept} is a {@link Relationship}
      */
     @CheckReturnValue
-    default Relationship asRelationship(){
+    default Relationship asRelationship() {
         throw TransactionException.invalidCasting(this, Relationship.class);
     }
 
@@ -164,7 +158,7 @@ public interface Concept {
      * @return A {@link Attribute} if the {@link Concept} is a {@link Attribute}
      */
     @CheckReturnValue
-    default <D> Attribute<D> asAttribute(){
+    default <D> Attribute<D> asAttribute() {
         throw TransactionException.invalidCasting(this, Attribute.class);
     }
 
@@ -174,7 +168,7 @@ public interface Concept {
      * @return true if the{@link Concept} concept is a {@link SchemaConcept}
      */
     @CheckReturnValue
-    default boolean isSchemaConcept(){
+    default boolean isSchemaConcept() {
         return false;
     }
 
@@ -184,7 +178,7 @@ public interface Concept {
      * @return true if the{@link Concept} concept is a {@link Type}
      */
     @CheckReturnValue
-    default boolean isType(){
+    default boolean isType() {
         return false;
     }
 
@@ -194,7 +188,7 @@ public interface Concept {
      * @return true if the {@link Concept} is an {@link Thing}
      */
     @CheckReturnValue
-    default boolean isThing(){
+    default boolean isThing() {
         return false;
     }
 
@@ -204,7 +198,7 @@ public interface Concept {
      * @return true if the {@link Concept} is an {@link EntityType}.
      */
     @CheckReturnValue
-    default boolean isEntityType(){
+    default boolean isEntityType() {
         return false;
     }
 
@@ -214,7 +208,7 @@ public interface Concept {
      * @return true if the {@link Concept} is a {@link Role}
      */
     @CheckReturnValue
-    default boolean isRole(){
+    default boolean isRole() {
         return false;
     }
 
@@ -224,7 +218,7 @@ public interface Concept {
      * @return true if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
-    default boolean isRelationshipType(){
+    default boolean isRelationshipType() {
         return false;
     }
 
@@ -234,7 +228,7 @@ public interface Concept {
      * @return true if the{@link Concept} concept is a {@link AttributeType}
      */
     @CheckReturnValue
-    default boolean isAttributeType(){
+    default boolean isAttributeType() {
         return false;
     }
 
@@ -244,7 +238,7 @@ public interface Concept {
      * @return true if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
-    default boolean isRule(){
+    default boolean isRule() {
         return false;
     }
 
@@ -254,7 +248,7 @@ public interface Concept {
      * @return true if the {@link Concept} is a {@link Entity}
      */
     @CheckReturnValue
-    default boolean isEntity(){
+    default boolean isEntity() {
         return false;
     }
 
@@ -264,7 +258,7 @@ public interface Concept {
      * @return true if the {@link Concept} is a {@link Relationship}
      */
     @CheckReturnValue
-    default boolean isRelationship(){
+    default boolean isRelationship() {
         return false;
     }
 
@@ -274,7 +268,7 @@ public interface Concept {
      * @return true if the {@link Concept} is a {@link Attribute}
      */
     @CheckReturnValue
-    default boolean isAttribute(){
+    default boolean isAttribute() {
         return false;
     }
 
@@ -287,10 +281,6 @@ public interface Concept {
 
     /**
      * Return whether the concept has been deleted.
-     *
-     * <p>
-     *     Under some implementations, such as {@link TinkerGraph} this always returns false.
-     * </p>
      */
     boolean isDeleted();
 }

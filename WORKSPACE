@@ -73,7 +73,11 @@ node_repositories(package_json = ["//client-nodejs:package.json"])
 npm_install(
     name = "nodejs_dependencies",
     package_json = "//client-nodejs:package.json",
-    package_lock_json = "//client-nodejs:package-lock.json",
+    data = [
+      "@build_bazel_rules_nodejs//internal/babel_library:package.json",
+      "@build_bazel_rules_nodejs//internal/babel_library:babel.js",
+      "@build_bazel_rules_nodejs//internal/babel_library:yarn.lock",
+    ],
 )
 
 node_repositories(package_json = ["//workbase:package.json"])
@@ -103,15 +107,15 @@ load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", com_github_grpc_grpc_bazel_gr
 com_github_grpc_grpc_bazel_grpc_deps()
 
 # Load GRPC Java dependencies
-load("@org_pubref_rules_proto//java:deps.bzl", "java_grpc_compile")
+load("@stackb_rules_proto//java:deps.bzl", "java_grpc_compile")
 java_grpc_compile()
 
 # Load GRPC Python dependencies
-load("@org_pubref_rules_proto//python:deps.bzl", "python_grpc_compile")
+load("@stackb_rules_proto//python:deps.bzl", "python_grpc_compile")
 python_grpc_compile()
 
 # Load GRPC Node.js dependencies
-load("@org_pubref_rules_proto//node:deps.bzl", "node_grpc_compile")
+load("@stackb_rules_proto//node:deps.bzl", "node_grpc_compile")
 node_grpc_compile()
 
 
@@ -122,7 +126,7 @@ node_grpc_compile()
 git_repository(
     name="graknlabs_rules_deployment",
     remote="https://github.com/graknlabs/deployment",
-    commit="acc2b7baf4ab93a02dd49123d3adab4dc6989ce8",
+    commit="5609bd932655116e41411b8615b3c625319d81d9",
 )
 
 load("@graknlabs_rules_deployment//github:dependencies.bzl", "dependencies_for_github_deployment")

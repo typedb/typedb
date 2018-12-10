@@ -89,11 +89,11 @@ public class StatementImpl extends Statement {
 
     @Override
     public final String toString() {
-        Collection<Statement> innerVars = innerVarPatterns();
+        Collection<Statement> innerVars = innerStatements();
         innerVars.remove(this);
         getProperties(HasAttributeProperty.class)
                 .map(HasAttributeProperty::attribute)
-                .flatMap(r -> r.innerVarPatterns().stream())
+                .flatMap(r -> r.innerStatements().stream())
                 .forEach(innerVars::remove);
 
         if (innerVars.stream().anyMatch(StatementImpl::invalidInnerVariable)) {
@@ -118,7 +118,7 @@ public class StatementImpl extends Statement {
                 builder.append(" ");
             }
             first = false;
-            property.buildString(builder);
+            builder.append(property.toString());
         }
 
         return builder.toString();

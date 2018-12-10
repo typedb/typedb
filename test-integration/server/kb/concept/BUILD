@@ -60,7 +60,7 @@ java_test(
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "medium"
+     size = "large"
 )
 java_test(
      name = "relationship-it",

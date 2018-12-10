@@ -19,31 +19,28 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableBiMap;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.property.DataTypeAtom;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collection;
 import java.util.Set;
 
 /**
  * Represents the {@code datatype} property on a {@link AttributeType}.
- *
  * This property can be queried or inserted.
- *
  */
-@AutoValue
-public abstract class DataTypeProperty extends VarProperty {
+public class DataTypeProperty extends VarProperty {
 
     public static final String NAME = "datatype";
+    private final AttributeType.DataType<?> dataType;
     private static final ImmutableBiMap<String, AttributeType.DataType<?>> DATA_TYPES = ImmutableBiMap.of(
             "long", AttributeType.DataType.LONG,
             "double", AttributeType.DataType.DOUBLE,
@@ -52,11 +49,17 @@ public abstract class DataTypeProperty extends VarProperty {
             "date", AttributeType.DataType.DATE
     );
 
-    public static DataTypeProperty of(AttributeType.DataType<?> datatype) {
-        return new AutoValue_DataTypeProperty(datatype);
+    public DataTypeProperty(
+            AttributeType.DataType<?> dataType) {
+        if (dataType == null) {
+            throw new NullPointerException("Null dataType");
+        }
+        this.dataType = dataType;
     }
 
-    public abstract AttributeType.DataType<?> dataType();
+    public AttributeType.DataType<?> dataType() {
+        return dataType;
+    }
 
     @Override
     public String getName() {
@@ -106,5 +109,25 @@ public abstract class DataTypeProperty extends VarProperty {
     @Override
     public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
         return DataTypeAtom.create(var.var(), this, parent);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof DataTypeProperty) {
+            DataTypeProperty that = (DataTypeProperty) o;
+            return (this.dataType.equals(that.dataType()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.dataType.hashCode();
+        return h;
     }
 }

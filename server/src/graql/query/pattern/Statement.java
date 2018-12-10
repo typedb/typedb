@@ -27,7 +27,6 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.util.StringUtil;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.property.RelationPlayerProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
@@ -67,11 +66,11 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * A variable together with its properties in one Graql statement.
- * A VarPattern may be given a variable, or use an "anonymous" variable.
- * Graql provides static methods for constructing VarPattern objects.
- * The methods in VarPattern are used to set its properties. A VarPattern
+ * A Statement may be given a variable, or use an "anonymous" variable.
+ * Graql provides static methods for constructing Statement objects.
+ * The methods in Statement are used to set its properties. A Statement
  * behaves differently depending on the type of query its used in.
- * In a Match clause, a VarPattern describes the properties any matching
+ * In a Match clause, a Statement describes the properties any matching
  * concept must have. In an InsertQuery, it describes the properties that
  * should be set on the inserted concept. In a DeleteQuery, it describes the
  * properties that should be deleted.
@@ -89,6 +88,11 @@ public abstract class Statement implements Pattern {
     @Override
     public Statement asStatement() {
         return this;
+    }
+
+    @Override
+    public boolean isStatement() {
+        return true;
     }
 
     /**
@@ -137,7 +141,7 @@ public abstract class Statement implements Pattern {
      * @return all variables that this variable references
      */
     @CheckReturnValue
-    public final Collection<Statement> innerVarPatterns() {
+    public final Collection<Statement> innerStatements() {
         Stack<Statement> newVars = new Stack<>();
         List<Statement> vars = new ArrayList<>();
 
@@ -146,7 +150,7 @@ public abstract class Statement implements Pattern {
         while (!newVars.isEmpty()) {
             Statement var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(VarProperty::innerVarPatterns).forEach(newVars::add);
+            var.getProperties().flatMap(varProperty -> varProperty.innerStatements()).forEach(newVars::add);
         }
 
         return vars;
@@ -156,7 +160,7 @@ public abstract class Statement implements Pattern {
      * Get all inner variables, including implicit variables such as in a has property
      */
     @CheckReturnValue
-    public final Collection<Statement> implicitInnerVarPatterns() {
+    public final Collection<Statement> implicitInnerStatements() {
         Stack<Statement> newVars = new Stack<>();
         List<Statement> vars = new ArrayList<>();
 
@@ -165,7 +169,7 @@ public abstract class Statement implements Pattern {
         while (!newVars.isEmpty()) {
             Statement var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(VarProperty::implicitInnerVarPatterns).forEach(newVars::add);
+            var.getProperties().flatMap(varProperty -> varProperty.implicitInnerStatements()).forEach(newVars::add);
         }
 
         return vars;
@@ -191,7 +195,7 @@ public abstract class Statement implements Pattern {
 
     @Override
     public final Set<Variable> variables() {
-        return innerVarPatterns().stream()
+        return innerStatements().stream()
                 .filter(v -> v.var().isUserDefinedName())
                 .map(statement -> statement.var())
                 .collect(toSet());
@@ -203,7 +207,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement id(ConceptId id) {
-        return addProperty(IdProperty.of(id));
+        return addProperty(new IdProperty(id));
     }
 
     /**
@@ -221,7 +225,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement label(Label label) {
-        return addProperty(LabelProperty.of(label));
+        return addProperty(new LabelProperty(label));
     }
 
     /**
@@ -239,7 +243,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement val(ValuePredicate predicate) {
-        return addProperty(ValueProperty.of(predicate));
+        return addProperty(new ValueProperty(predicate));
     }
 
     /**
@@ -291,7 +295,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must have an {@link Attribute} of the given type that matches {@code resource}.
+     * the variable must have an {@link Attribute} of the given type that matches {@code attribute}.
      * The {@link grakn.core.graql.concept.Relationship} associating the two must match {@code relation}.
      *
      * @param type         a resource type in the ontology
@@ -301,7 +305,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(Label type, Statement attribute, Statement relationship) {
-        return addProperty(HasAttributeProperty.of(type, attribute, relationship));
+        return addProperty(new HasAttributeProperty(type, attribute, relationship));
     }
 
     /**
@@ -319,7 +323,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isaExplicit(Statement type) {
-        return addProperty(IsaExplicitProperty.of(type));
+        return addProperty(new IsaExplicitProperty(type));
     }
 
     /**
@@ -337,7 +341,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isa(Statement type) {
-        return addProperty(IsaProperty.of(type));
+        return addProperty(new IsaProperty(type));
     }
 
     /**
@@ -355,7 +359,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement sub(Statement type) {
-        return addProperty(SubProperty.of(type));
+        return addProperty(new SubProperty(type));
     }
 
     /**
@@ -373,7 +377,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement subExplicit(Statement type) {
-        return addProperty(SubExplicitProperty.of(type));
+        return addProperty(new SubExplicitProperty(type));
     }
 
     /**
@@ -409,7 +413,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public Statement relates(Statement roleType, @Nullable Statement superRoleType) {
-        return addProperty(RelatesProperty.of(roleType, superRoleType));
+        return addProperty(new RelatesProperty(roleType, superRoleType));
     }
 
     /**
@@ -427,7 +431,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement plays(Statement type) {
-        return addProperty(PlaysProperty.of(type, false));
+        return addProperty(new PlaysProperty(type, false));
     }
 
     /**
@@ -445,7 +449,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(Statement type) {
-        return addProperty(HasAttributeTypeProperty.of(type, false));
+        return addProperty(new HasAttributeTypeProperty(type, false));
     }
 
     /**
@@ -463,7 +467,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement key(Statement type) {
-        return addProperty(HasAttributeTypeProperty.of(type, true));
+        return addProperty(new HasAttributeTypeProperty(type, true));
     }
 
     /**
@@ -485,7 +489,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement roleplayer) {
-        return addCasting(RelationPlayerProperty.of(roleplayer));
+        return addRolePlayer(new RelationshipProperty.RolePlayer(null, roleplayer));
     }
 
     /**
@@ -533,7 +537,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement role, Statement roleplayer) {
-        return addCasting(RelationPlayerProperty.of(role, roleplayer));
+        return addRolePlayer(new RelationshipProperty.RolePlayer(role, roleplayer));
     }
 
     /**
@@ -552,7 +556,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement datatype(AttributeType.DataType<?> datatype) {
-        return addProperty(DataTypeProperty.of(datatype));
+        return addProperty(new DataTypeProperty(datatype));
     }
 
     /**
@@ -563,7 +567,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement regex(String regex) {
-        return addProperty(RegexProperty.of(regex));
+        return addProperty(new RegexProperty(regex));
     }
 
     /**
@@ -572,7 +576,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement when(Pattern when) {
-        return addProperty(WhenProperty.of(when));
+        return addProperty(new WhenProperty(when));
     }
 
     /**
@@ -581,7 +585,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement then(Pattern then) {
-        return addProperty(ThenProperty.of(then));
+        return addProperty(new ThenProperty(then));
     }
 
     /**
@@ -598,12 +602,12 @@ public abstract class Statement implements Pattern {
     /**
      * Specify that the variable is different to another variable
      *
-     * @param varPattern the variable pattern that this variable should not be equal to
+     * @param statement the variable pattern that this variable should not be equal to
      * @return this
      */
     @CheckReturnValue
-    public final Statement neq(Statement varPattern) {
-        return addProperty(NeqProperty.of(varPattern));
+    public final Statement neq(Statement statement) {
+        return addProperty(new NeqProperty(statement));
     }
 
     /**
@@ -634,17 +638,17 @@ public abstract class Statement implements Pattern {
         return properties().stream();
     }
 
-    private Statement addCasting(RelationPlayerProperty relationPlayer) {
+    private Statement addRolePlayer(RelationshipProperty.RolePlayer relationPlayer) {
         Optional<RelationshipProperty> relationProperty = getProperty(RelationshipProperty.class);
 
-        ImmutableMultiset<RelationPlayerProperty> oldCastings = relationProperty
+        ImmutableMultiset<RelationshipProperty.RolePlayer> oldCastings = relationProperty
                 .map(RelationshipProperty::relationPlayers)
                 .orElse(ImmutableMultiset.of());
 
-        ImmutableMultiset<RelationPlayerProperty> relationPlayers =
+        ImmutableMultiset<RelationshipProperty.RolePlayer> relationPlayers =
                 Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
-        RelationshipProperty newProperty = RelationshipProperty.of(relationPlayers);
+        RelationshipProperty newProperty = new RelationshipProperty(relationPlayers);
 
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }

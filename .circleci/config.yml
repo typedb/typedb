@@ -74,6 +74,14 @@ jobs:
       - *install_bazel
       - run: bazel test //console/... --test_output=errors
 
+  graql:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *install_bazel
+    - run: bazel test //graql/... --test_output=errors
+
   server:
     machine: true
     working_directory: ~/grakn
@@ -107,6 +115,7 @@ jobs:
       - *install_bazel
       - run: bazel test //test-integration/server/... --test_output=errors
       - run: bazel test //test-integration/graql/internal/... --test_output=errors
+      - run: bazel test //test-integration/graql/query/... --test_output=errors
 
   test-integration-reasoner:
     machine: true
@@ -225,6 +234,7 @@ workflows:
       - client-python
       - common
       - console
+      - graql
       - server
       - workbase
       - test-integration

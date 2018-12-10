@@ -23,7 +23,6 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
@@ -132,31 +131,27 @@ public abstract class Binary extends Atom {
     }
 
     boolean predicateBindingsEquivalent(Binary that, AtomicEquivalence equiv) {
-        //check if there is a substitution for varName
-        IdPredicate thisVarPredicate = this.getIdPredicate(this.getVarName());
-        IdPredicate varPredicate = that.getIdPredicate(that.getVarName());
-
-        NeqPredicate thisVarNeqPredicate = this.getPredicates(this.getVarName(), NeqPredicate.class).findFirst().orElse(null);
-        NeqPredicate varNeqPredicate = that.getPredicates(that.getVarName(), NeqPredicate.class).findFirst().orElse(null);
-
         IdPredicate thisTypePredicate = this.getTypePredicate();
         IdPredicate typePredicate = that.getTypePredicate();
 
-        NeqPredicate thisTypeNeqPredicate = this.getPredicates(this.getPredicateVariable(), NeqPredicate.class).findFirst().orElse(null);
-        NeqPredicate typeNeqPredicate = that.getPredicates(that.getPredicateVariable(), NeqPredicate.class).findFirst().orElse(null);
+        return (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && equiv.equivalent(thisTypePredicate, typePredicate))
+                && predicateBindingsEquivalent(this.getVarName(), that.getVarName(), that, equiv)
+                && predicateBindingsEquivalent(this.getPredicateVariable(), that.getPredicateVariable(), that, equiv);
+    }
 
-        Set<ValuePredicate> thisValuePredicate = this.getPredicates(this.getVarName(), ValuePredicate.class).collect(Collectors.toSet());
-        Set<ValuePredicate> valuePredicate = that.getPredicates(that.getVarName(), ValuePredicate.class).collect(Collectors.toSet());
+    boolean predicateBindingsEquivalent(Variable thisVar, Variable thatVar, Binary that, AtomicEquivalence equiv){
+        Set<IdPredicate> thisIdPredicate = this.getPredicates(thisVar, IdPredicate.class).collect(Collectors.toSet());
+        Set<IdPredicate> idPredicate = that.getPredicates(thatVar, IdPredicate.class).collect(Collectors.toSet());
 
-        Set<ValuePredicate> thisTypeValuePredicate  = this.getPredicates(this.getPredicateVariable(), ValuePredicate.class).collect(Collectors.toSet());
-        Set<ValuePredicate> typeValuePredicate = that.getPredicates(that.getPredicateVariable(), ValuePredicate.class).collect(Collectors.toSet());
+        Set<ValuePredicate> thisValuePredicate = this.getPredicates(thisVar, ValuePredicate.class).collect(Collectors.toSet());
+        Set<ValuePredicate> valuePredicate = that.getPredicates(thatVar, ValuePredicate.class).collect(Collectors.toSet());
 
-        return ((thisVarPredicate == null && varPredicate == null || thisVarPredicate != null && equiv.equivalent(thisVarPredicate, varPredicate)))
-                && (thisVarNeqPredicate == null && varNeqPredicate == null || thisVarNeqPredicate != null && equiv.equivalent(thisVarNeqPredicate, varNeqPredicate))
-                && (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && equiv.equivalent(thisTypePredicate, typePredicate))
-                && (thisTypeNeqPredicate == null && typeNeqPredicate == null || thisTypeNeqPredicate != null && equiv.equivalent(thisTypeNeqPredicate, typeNeqPredicate))
-                && (thisValuePredicate == null && valuePredicate == null || thisValuePredicate != null && equiv.equivalentCollection(thisValuePredicate, valuePredicate))
-                && (thisTypeValuePredicate == null && typeValuePredicate == null || thisTypeValuePredicate != null && equiv.equivalentCollection(thisTypeValuePredicate, typeValuePredicate));
+        Set<NeqPredicate> thisNeqPredicate = this.getPredicates(thisVar, NeqPredicate.class).collect(Collectors.toSet());
+        Set<NeqPredicate> neqPredicate = that.getPredicates(thatVar, NeqPredicate.class).collect(Collectors.toSet());
+
+        return equiv.equivalentCollection(thisIdPredicate, idPredicate)
+                && equiv.equivalentCollection(thisValuePredicate, valuePredicate)
+                && equiv.equivalentCollection(thisNeqPredicate, neqPredicate);
     }
 
     @Override
@@ -192,33 +187,26 @@ public abstract class Binary extends Atom {
         Variable parentPredicateVarName = parentAtom.getPredicateVariable();
         Type parentType = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentAtom.getVarName());
         Type childType = this.getParentQuery().getVarTypeMap(inferTypes).get(this.getVarName());
-        Set<Atomic> parentPredicate = parentAtom.getPredicates(parentVarName, ValuePredicate.class).collect(Collectors.toSet());
-        Set<Atomic> childPredicate = this.getPredicates(childVarName, ValuePredicate.class).collect(Collectors.toSet());
-        Set<Atomic> parentTypePredicate = parentAtom.getPredicates(parentPredicateVarName, ValuePredicate.class).collect(Collectors.toSet());
-        Set<Atomic> childTypePredicate = this.getPredicates(childPredicateVarName, ValuePredicate.class).collect(Collectors.toSet());
 
         //check for incompatibilities
         if( !unifierType.typeCompatibility(parentAtom.getSchemaConcept(), this.getSchemaConcept())
                 || !unifierType.typeCompatibility(parentType, childType)
                 || !unifierType.typePlayability(this.getParentQuery(), this.getVarName(), parentType)
-                || !unifierType.idCompatibility(parentAtom.getIdPredicate(parentVarName), this.getIdPredicate(childVarName))
-                || !unifierType.idCompatibility(parentAtom.getIdPredicate(parentPredicateVarName), this.getIdPredicate(childPredicateVarName))
-                || !unifierType.attributeValueCompatibility(parentPredicate, childPredicate)
-                || !unifierType.attributeValueCompatibility(parentTypePredicate, childTypePredicate)
                 || !unifierType.typeExplicitenessCompatibility(parentAtom, this)){
                      return UnifierImpl.nonExistent();
         }
 
         Multimap<Variable, Variable> varMappings = HashMultimap.create();
 
-        if (parentVarName.isUserDefinedName()
-                && childVarName.isUserDefinedName()) {
+        if (parentVarName.isUserDefinedName()) {
             varMappings.put(childVarName, parentVarName);
         }
-        if (parentPredicateVarName.isUserDefinedName()
-                && childPredicateVarName.isUserDefinedName()) {
+        if (parentPredicateVarName.isUserDefinedName()) {
             varMappings.put(childPredicateVarName, parentPredicateVarName);
         }
-        return new UnifierImpl(varMappings);
+
+        UnifierImpl unifier = new UnifierImpl(varMappings);
+        return isPredicateCompatible(parentAtom, unifier, unifierType)?
+                unifier : UnifierImpl.nonExistent();
     }
 }

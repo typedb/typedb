@@ -47,11 +47,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.query.Syntax.Compute.Argument.contains;
-import static grakn.core.graql.query.Syntax.Compute.Argument.size;
-import static grakn.core.graql.query.Syntax.Compute.Method.CLUSTER;
-import static grakn.core.graql.query.Syntax.Compute.Method.COUNT;
+import static grakn.core.graql.query.ComputeQuery.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.query.ComputeQuery.Argument.contains;
+import static grakn.core.graql.query.ComputeQuery.Argument.size;
+import static grakn.core.graql.query.ComputeQuery.Method.CLUSTER;
+import static grakn.core.graql.query.ComputeQuery.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

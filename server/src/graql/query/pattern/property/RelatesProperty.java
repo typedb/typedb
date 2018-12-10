@@ -18,20 +18,19 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.RelatesAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -49,23 +48,19 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
  * <p>
  * This property relates a {@link RelationshipType} and a {@link Role}. It indicates that a {@link Relationship} whose
  * type is this {@link RelationshipType} may have a role-player playing the given {@link Role}.
- *
  */
-@AutoValue
-public abstract class RelatesProperty extends VarProperty {
+public class RelatesProperty extends VarProperty {
 
-    public static RelatesProperty of(Statement role, @Nullable Statement superRole) {
-        return new AutoValue_RelatesProperty(role, superRole);
+    private final Statement role;
+    private final Statement superRole;
+
+    public RelatesProperty(Statement role, @Nullable Statement superRole) {
+        if (role == null) {
+            throw new NullPointerException("Null role");
+        }
+        this.role = role;
+        this.superRole = superRole;
     }
-
-    public static RelatesProperty of(Statement role) {
-        return RelatesProperty.of(role, null);
-    }
-
-    abstract Statement role();
-
-    @Nullable
-    abstract Statement superRole();
 
     @Override
     public String getName() {
@@ -74,9 +69,9 @@ public abstract class RelatesProperty extends VarProperty {
 
     @Override
     public String getProperty() {
-        StringBuilder builder = new StringBuilder(role().getPrintableName());
-        if ( superRole() != null) {
-            builder.append(" as ").append(superRole().getPrintableName());
+        StringBuilder builder = new StringBuilder(role.getPrintableName());
+        if (superRole != null) {
+            builder.append(" as ").append(superRole.getPrintableName());
         }
         return builder.toString();
     }
@@ -88,28 +83,38 @@ public abstract class RelatesProperty extends VarProperty {
 
     @Override
     public Collection<EquivalentFragmentSet> match(Variable start) {
-        Statement superRole = superRole();
-        EquivalentFragmentSet relates = relates(this, start, role().var());
+        Statement superRole = this.superRole;
+        EquivalentFragmentSet relates = relates(this, start, role.var());
         if (superRole == null) {
             return ImmutableSet.of(relates);
         } else {
-            return ImmutableSet.of(relates, sub(this, role().var(), superRole.var()));
+            return ImmutableSet.of(relates, sub(this, role.var(), superRole.var()));
         }
     }
 
     @Override
     public Stream<Statement> getTypes() {
-        return Stream.of(role());
+        return Stream.of(role);
     }
 
     @Override
-    public Stream<Statement> innerVarPatterns() {
-        return superRole() == null ? Stream.of(role()) : Stream.of(superRole(), role());
+    public Stream<Statement> innerStatements() {
+        return superRole == null ? Stream.of(role) : Stream.of(superRole, role);
+    }
+
+    @Override
+    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        Variable varName = var.var().asUserDefined();
+        Statement roleVar = role;
+        Variable roleVariable = roleVar.var();
+        IdPredicate predicate = getIdPredicate(roleVariable, roleVar, vars, parent);
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+        return RelatesAtom.create(varName, roleVariable, predicateId, parent);
     }
 
     @Override
     public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        Variable roleVar = role().var();
+        Variable roleVar = role.var();
 
         PropertyExecutor.Method relatesMethod = executor -> {
             Role role = executor.get(roleVar).asRole();
@@ -123,9 +128,9 @@ public abstract class RelatesProperty extends VarProperty {
 
         PropertyExecutor isRoleExecutor = PropertyExecutor.builder(isRoleMethod).produces(roleVar).build();
 
-        Statement superRoleVarPattern = superRole();
-        if (superRoleVarPattern != null) {
-            Variable superRoleVar = superRoleVarPattern.var();
+        Statement superRoleStatement = superRole;
+        if (superRoleStatement != null) {
+            Variable superRoleVar = superRoleStatement.var();
             PropertyExecutor.Method subMethod = executor -> {
                 Role superRole = executor.get(superRoleVar).asRole();
                 executor.builder(roleVar).sub(superRole);
@@ -144,23 +149,36 @@ public abstract class RelatesProperty extends VarProperty {
     public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             RelationshipType relationshipType = executor.get(var).asRelationshipType();
-            Role role = executor.get(this.role().var()).asRole();
+            Role role = executor.get(this.role.var()).asRole();
 
             if (!relationshipType.isDeleted() && !role.isDeleted()) {
                 relationshipType.unrelate(role);
             }
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role().var()).build());
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role.var()).build());
     }
 
     @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        Variable varName = var.var().asUserDefined();
-        Statement roleVar = this.role();
-        Variable roleVariable = roleVar.var();
-        IdPredicate predicate = getIdPredicate(roleVariable, roleVar, vars, parent);
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        return RelatesAtom.create(varName, roleVariable, predicateId, parent);
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof RelatesProperty) {
+            RelatesProperty that = (RelatesProperty) o;
+            return (this.role.equals(that.role))
+                    && ((this.superRole == null) ? (that.superRole == null) : this.superRole.equals(that.superRole));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.role.hashCode();
+        h *= 1000003;
+        h ^= (superRole == null) ? 0 : this.superRole.hashCode();
+        return h;
     }
 }

@@ -18,31 +18,35 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 
 
 /**
- * Represents the {@code then} (right-hand side) property on a {@link grakn.core.graql.concept.Rule}.
- *
+ * Represents the {@code then} (right-hand side) property on a rule.
  * This property can be inserted and not queried.
- *
  * The then side describes the right-hand of an implication, stating that when the when side of a rule is
  * true the then side must hold.
- *
  */
-@AutoValue
-public abstract class ThenProperty extends RuleProperty {
+public class ThenProperty extends RuleProperty {
 
     public static final String NAME = "then";
+    private final Pattern pattern;
 
-    public static ThenProperty of(Pattern then) {
-        return new AutoValue_ThenProperty(then);
+    public ThenProperty(Pattern pattern) {
+        if (pattern == null) {
+            throw new NullPointerException("Null pattern");
+        }
+        this.pattern = pattern;
+    }
+
+    @Override
+    public Pattern pattern() {
+        return pattern;
     }
 
     @Override
@@ -58,5 +62,25 @@ public abstract class ThenProperty extends RuleProperty {
         };
 
         return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof ThenProperty) {
+            ThenProperty that = (ThenProperty) o;
+            return (this.pattern.equals(that.pattern()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.pattern.hashCode();
+        return h;
     }
 }

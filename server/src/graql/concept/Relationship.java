@@ -18,29 +18,20 @@
 
 package grakn.core.graql.concept;
 
-
-import grakn.core.server.exception.PropertyNotUniqueException;
-
 import javax.annotation.CheckReturnValue;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     Encapsulates relationships between {@link Thing}
- * </p>
- *
- * <p>
- *     A relation which is an instance of a {@link RelationshipType} defines how instances may relate to one another.
- *     It represents how different entities relate to one another.
- *     {@link Relationship} are used to model n-ary relationships between instances.
- * </p>
- *
- *
+ * Encapsulates relationships between {@link Thing}
+ * A relation which is an instance of a {@link RelationshipType} defines how instances may relate to one another.
+ * It represents how different entities relate to one another.
+ * {@link Relationship} are used to model n-ary relationships between instances.
  */
 public interface Relationship extends Thing {
     //------------------------------------- Modifiers ----------------------------------
+
     /**
      * Creates a relation from this instance to the provided {@link Attribute}.
      *
@@ -54,26 +45,27 @@ public interface Relationship extends Thing {
 
     /**
      * Retrieve the associated {@link RelationshipType} for this {@link Relationship}.
-     * @see RelationshipType
      *
      * @return The associated {@link RelationshipType} for this {@link Relationship}.
+     * @see RelationshipType
      */
     @Override
     RelationshipType type();
 
     /**
      * Retrieve a list of all Instances involved in the {@link Relationship}, and the {@link Role} they play.
-     * @see Role
      *
      * @return A list of all the role types and the instances playing them in this {@link Relationship}.
+     * @see Role
      */
     @CheckReturnValue
     Map<Role, Set<Thing>> rolePlayersMap();
 
     /**
      * Retrieves a list of every {@link Thing} involved in the {@link Relationship}, filtered by {@link Role} played.
+     *
      * @param roles used to filter the returned instances only to ones that play any of the role types.
-     *                  If blank, returns all role players.
+     *              If blank, returns all role players.
      * @return a list of every {@link Thing} involved in the {@link Relationship}.
      */
     @CheckReturnValue
@@ -82,16 +74,15 @@ public interface Relationship extends Thing {
     /**
      * Expands this {@link Relationship} to include a new role player which is playing a specific role.
      *
-     * @param role The Role Type of the new role player.
+     * @param role   The Role Type of the new role player.
      * @param player The new role player.
      * @return The {@link Relationship} itself.
-     *
-     * @throws PropertyNotUniqueException if the concept is only allowed to play this role once.
      */
     Relationship assign(Role role, Thing player);
 
     /**
      * Removes the provided {@link Attribute} from this {@link Relationship}
+     *
      * @param attribute the {@link Attribute} to be removed
      * @return The {@link Relationship} itself
      */
@@ -102,7 +93,7 @@ public interface Relationship extends Thing {
      * Removes the {@link Thing} which is playing a {@link Role} in this {@link Relationship}.
      * If the {@link Thing} is not playing any {@link Role} in this {@link Relationship} nothing happens.
      *
-     * @param role The {@link Role} being played by the {@link Thing}
+     * @param role   The {@link Role} being played by the {@link Thing}
      * @param player The {@link Thing} playing the {@link Role} in this {@link Relationship}
      */
     void unassign(Role role, Thing player);
@@ -111,14 +102,14 @@ public interface Relationship extends Thing {
     @Deprecated
     @CheckReturnValue
     @Override
-    default Relationship asRelationship(){
+    default Relationship asRelationship() {
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isRelationship(){
+    default boolean isRelationship() {
         return true;
     }
 }

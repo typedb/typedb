@@ -18,7 +18,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
+load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 load("@graknlabs_rules_deployment//maven:rules.bzl", "deploy_maven_jar")
 
 java_grpc_compile(

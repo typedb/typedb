@@ -18,34 +18,38 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 
 /**
- * Represents the {@code when} property on a {@link grakn.core.graql.concept.Rule}.
- *
+ * Represents the {@code when} property on a rule.
  * This property can be inserted and not queried.
- *
  * The when side describes the left-hand of an implication, stating that when the when side of a rule is true
  * the then side must hold.
- *
  */
-@AutoValue
-public abstract class WhenProperty extends RuleProperty {
+public class WhenProperty extends RuleProperty {
 
     public static final String NAME = "when";
+    private final Pattern pattern;
 
-    public static WhenProperty of(Pattern pattern) {
-        return new AutoValue_WhenProperty(pattern);
+    public WhenProperty(Pattern pattern) {
+        if (pattern == null) {
+            throw new NullPointerException("Null pattern");
+        }
+        this.pattern = pattern;
     }
 
     @Override
-    public String getName(){
+    public Pattern pattern() {
+        return pattern;
+    }
+
+    @Override
+    public String getName() {
         return NAME;
     }
 
@@ -57,5 +61,25 @@ public abstract class WhenProperty extends RuleProperty {
         };
 
         return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof WhenProperty) {
+            WhenProperty that = (WhenProperty) o;
+            return (this.pattern.equals(that.pattern()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.pattern.hashCode();
+        return h;
     }
 }

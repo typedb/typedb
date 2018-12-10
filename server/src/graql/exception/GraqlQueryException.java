@@ -29,6 +29,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -50,12 +51,11 @@ import static grakn.core.common.exception.ErrorMessage.NEGATIVE_OFFSET;
 import static grakn.core.common.exception.ErrorMessage.NON_POSITIVE_LIMIT;
 import static grakn.core.common.exception.ErrorMessage.UNEXPECTED_RESULT;
 import static grakn.core.common.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
-import static grakn.core.graql.query.Syntax.Compute;
-import static grakn.core.graql.query.Syntax.Compute.ALGORITHMS_ACCEPTED;
-import static grakn.core.graql.query.Syntax.Compute.ARGUMENTS_ACCEPTED;
-import static grakn.core.graql.query.Syntax.Compute.CONDITIONS_ACCEPTED;
-import static grakn.core.graql.query.Syntax.Compute.CONDITIONS_REQUIRED;
-import static grakn.core.graql.query.Syntax.Compute.METHODS_ACCEPTED;
+import static grakn.core.graql.query.ComputeQuery.ALGORITHMS_ACCEPTED;
+import static grakn.core.graql.query.ComputeQuery.ARGUMENTS_ACCEPTED;
+import static grakn.core.graql.query.ComputeQuery.CONDITIONS_ACCEPTED;
+import static grakn.core.graql.query.ComputeQuery.CONDITIONS_REQUIRED;
+import static grakn.core.graql.query.ComputeQuery.METHODS_ACCEPTED;
 
 /**
  * Graql Query Exception
@@ -88,7 +88,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException incorrectAggregateArgumentNumber(
-            String name, int minArgs, int maxArgs, List<Object> args) {
+            String name, int minArgs, int maxArgs, List<Variable> args) {
         String expectedArgs = (minArgs == maxArgs) ? Integer.toString(minArgs) : minArgs + "-" + maxArgs;
         String message = ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage(name, expectedArgs, args.size());
         return new GraqlQueryException(message);
@@ -97,7 +97,7 @@ public class GraqlQueryException extends GraknException {
     public static GraqlQueryException conflictingProperties(
             Statement varPattern, VarProperty property, VarProperty other) {
         String message = ErrorMessage.CONFLICTING_PROPERTIES.getMessage(
-                varPattern.getPrintableName(), property.graqlString(), other.graqlString()
+                varPattern.getPrintableName(), property.toString(), other.toString()
         );
         return new GraqlQueryException(message);
     }
@@ -339,19 +339,19 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(INVALID_COMPUTE_METHOD.getMessage(METHODS_ACCEPTED));
     }
 
-    public static GraqlQueryException invalidComputeQuery_invalidCondition(Compute.Method method) {
+    public static GraqlQueryException invalidComputeQuery_invalidCondition(ComputeQuery.Method method) {
         return new GraqlQueryException(INVALID_COMPUTE_CONDITION.getMessage(method, CONDITIONS_ACCEPTED.get(method)));
     }
 
-    public static GraqlQueryException invalidComputeQuery_missingCondition(Compute.Method method) {
+    public static GraqlQueryException invalidComputeQuery_missingCondition(ComputeQuery.Method method) {
         return new GraqlQueryException(MISSING_COMPUTE_CONDITION.getMessage(method, CONDITIONS_REQUIRED.get(method)));
     }
 
-    public static GraqlQueryException invalidComputeQuery_invalidMethodAlgorithm(Compute.Method method) {
+    public static GraqlQueryException invalidComputeQuery_invalidMethodAlgorithm(ComputeQuery.Method method) {
         return new GraqlQueryException(INVALID_COMPUTE_METHOD_ALGORITHM.getMessage(method, ALGORITHMS_ACCEPTED.get(method)));
     }
 
-    public static GraqlQueryException invalidComputeQuery_invalidArgument(Compute.Method method, Compute.Algorithm algorithm) {
+    public static GraqlQueryException invalidComputeQuery_invalidArgument(ComputeQuery.Method method, ComputeQuery.Algorithm algorithm) {
         return new GraqlQueryException(INVALID_COMPUTE_ARGUMENT.getMessage(method, algorithm, ARGUMENTS_ACCEPTED.get(method).get(algorithm)));
     }
 }

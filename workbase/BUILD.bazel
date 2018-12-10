@@ -18,7 +18,6 @@
 
 exports_files([
     "package.json",
-    "package-lock.json",
 ])
 
 package(default_visibility = ["//visibility:public"])
