@@ -18,14 +18,11 @@
 
 package grakn.core.graql.parser;
 
-import com.google.common.collect.ImmutableMap;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.grammar.GraqlBaseVisitor;
-import grakn.core.graql.grammar.GraqlParser;
-import grakn.core.graql.util.StringUtil;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
@@ -36,13 +33,15 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.Order;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.predicate.ValuePredicate;
+import grakn.core.graql.util.StringUtil;
+import graql.grammar.GraqlBaseVisitor;
+import graql.grammar.GraqlParser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -52,6 +51,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -59,34 +59,26 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.pattern.Pattern.and;
-import static grakn.core.graql.query.Graql.eq;
-import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.ComputeQuery.Algorithm;
 import static grakn.core.graql.query.ComputeQuery.Argument;
 import static grakn.core.graql.query.ComputeQuery.Method;
+import static grakn.core.graql.query.Graql.eq;
+import static grakn.core.graql.query.pattern.Pattern.and;
+import static grakn.core.graql.query.pattern.Pattern.label;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
  * ANTLR visitor class for parsing a query
- *
  */
 // This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
 @SuppressWarnings("unchecked")
-class GraqlConstructor extends GraqlBaseVisitor {
+class Visitor extends GraqlBaseVisitor {
 
     private final QueryBuilder queryBuilder;
-    private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
-    private final boolean defineAllVars;
 
-    GraqlConstructor(
-            ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilder queryBuilder,
-            boolean defineAllVars
-    ) {
-        this.aggregateMethods = aggregateMethods;
+    Visitor(QueryBuilder queryBuilder) {
         this.queryBuilder = queryBuilder;
-        this.defineAllVars = defineAllVars;
     }
 
     @Override
@@ -112,12 +104,12 @@ class GraqlConstructor extends GraqlBaseVisitor {
 
     @Override
     public Match visitMatchOffset(GraqlParser.MatchOffsetContext ctx) {
-        return visitMatchPart(ctx.matchPart()).offset(getInteger(ctx.INTEGER()));
+        return visitMatchClause(ctx.matchClause()).offset(getInteger(ctx.INTEGER()));
     }
 
     @Override
     public Match visitMatchOrderBy(GraqlParser.MatchOrderByContext ctx) {
-        Match match = visitMatchPart(ctx.matchPart());
+        Match match = visitMatchClause(ctx.matchClause());
 
         // decide which ordering method to use
         Variable var = getVariable(ctx.VARIABLE());
@@ -130,12 +122,12 @@ class GraqlConstructor extends GraqlBaseVisitor {
 
     @Override
     public Match visitMatchLimit(GraqlParser.MatchLimitContext ctx) {
-        return visitMatchPart(ctx.matchPart()).limit(getInteger(ctx.INTEGER()));
+        return visitMatchClause(ctx.matchClause()).limit(getInteger(ctx.INTEGER()));
     }
 
     @Override
     public GetQuery visitGetQuery(GraqlParser.GetQueryContext ctx) {
-        Match match = visitMatchPart(ctx.matchPart());
+        Match match = visitMatchClause(ctx.matchClause());
 
         if (ctx.variables() != null) {
             Set<Variable> vars = ctx.variables().VARIABLE().stream().map(this::getVariable).collect(toSet());
@@ -148,10 +140,10 @@ class GraqlConstructor extends GraqlBaseVisitor {
 
     @Override
     public InsertQuery visitInsertQuery(GraqlParser.InsertQueryContext ctx) {
-        Collection<Statement> vars = visitVarPatterns(ctx.varPatterns());
+        Collection<Statement> vars = this.visitStatements(ctx.statements());
 
-        if (ctx.matchPart() != null) {
-            return visitMatchPart(ctx.matchPart()).insert(vars);
+        if (ctx.matchClause() != null) {
+            return visitMatchClause(ctx.matchClause()).insert(vars);
         } else {
             return queryBuilder.insert(vars);
         }
@@ -159,19 +151,19 @@ class GraqlConstructor extends GraqlBaseVisitor {
 
     @Override
     public DefineQuery visitDefineQuery(GraqlParser.DefineQueryContext ctx) {
-        Collection<Statement> vars = visitVarPatterns(ctx.varPatterns());
+        Collection<Statement> vars = this.visitStatements(ctx.statements());
         return queryBuilder.define(vars);
     }
 
     @Override
     public Object visitUndefineQuery(GraqlParser.UndefineQueryContext ctx) {
-        Collection<Statement> vars = visitVarPatterns(ctx.varPatterns());
+        Collection<Statement> vars = this.visitStatements(ctx.statements());
         return queryBuilder.undefine(vars);
     }
 
     @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
-        Match match = visitMatchPart(ctx.matchPart());
+        Match match = visitMatchClause(ctx.matchClause());
         if (ctx.variables() != null) return match.delete(visitVariables(ctx.variables()));
         else return match.delete();
     }
@@ -183,36 +175,6 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
-    public AggregateQuery<?> visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
-        Aggregate aggregate = visitAggregate(ctx.aggregate());
-        return visitMatchPart(ctx.matchPart()).aggregate(aggregate);
-    }
-
-    @Override
-    public Aggregate<?> visitCustomAgg(GraqlParser.CustomAggContext ctx) {
-        String name = visitIdentifier(ctx.identifier());
-        Function<List<Object>, Aggregate> aggregateMethod = aggregateMethods.get(name);
-
-        if (aggregateMethod == null) {
-            throw GraqlQueryException.unknownAggregate(name);
-        }
-
-        List<Object> arguments = ctx.argument().stream().map(this::visit).collect(toList());
-
-        return aggregateMethod.apply(arguments);
-    }
-
-    @Override
-    public Variable visitVariableArgument(GraqlParser.VariableArgumentContext ctx) {
-        return getVariable(ctx.VARIABLE());
-    }
-
-    @Override
-    public Aggregate<?> visitAggregateArgument(GraqlParser.AggregateArgumentContext ctx) {
-        return visitAggregate(ctx.aggregate());
-    }
-
-    @Override
     public List<Pattern> visitPatterns(GraqlParser.PatternsContext ctx) {
         return ctx.pattern().stream()
                 .map(this::visitPattern)
@@ -220,22 +182,22 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Pattern visitOrPattern(GraqlParser.OrPatternContext ctx) {
+    public Pattern visitPatternDisjunction(GraqlParser.PatternDisjunctionContext ctx) {
         return Pattern.or(ctx.pattern().stream().map(this::visitPattern).collect(toList()));
     }
 
     @Override
-    public List<Statement> visitVarPatterns(GraqlParser.VarPatternsContext ctx) {
-        return ctx.varPattern().stream().map(this::visitVarPattern).collect(toList());
+    public List<Statement> visitStatements(GraqlParser.StatementsContext ctx) {
+        return ctx.statement().stream().map(this::visitStatement).collect(toList());
     }
 
     @Override
-    public Pattern visitAndPattern(GraqlParser.AndPatternContext ctx) {
+    public Pattern visitPatternConjunction(GraqlParser.PatternConjunctionContext ctx) {
         return and(visitPatterns(ctx.patterns()));
     }
 
     @Override
-    public Statement visitVarPattern(GraqlParser.VarPatternContext ctx) {
+    public Statement visitStatement(GraqlParser.StatementContext ctx) {
         Statement var;
         if (ctx.VARIABLE() != null) {
             var = getVariable(ctx.VARIABLE());
@@ -267,7 +229,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Statement> visitPropThen(GraqlParser.PropThenContext ctx) {
-        return var -> var.then(and(visitVarPatterns(ctx.varPatterns())));
+        return var -> var.then(and(this.visitStatements(ctx.statements())));
     }
 
     @Override
@@ -400,7 +362,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
     @Override
     public Statement visitVariable(GraqlParser.VariableContext ctx) {
         if (ctx == null) {
-            return var();
+            return Pattern.var();
         } else if (ctx.label() != null) {
             return label(visitLabel(ctx.label()));
         } else {
@@ -522,12 +484,8 @@ class GraqlConstructor extends GraqlBaseVisitor {
         }
     }
 
-    private Match visitMatchPart(GraqlParser.MatchPartContext ctx) {
+    private Match visitMatchClause(GraqlParser.MatchClauseContext ctx) {
         return (Match) visit(ctx);
-    }
-
-    private Aggregate<?> visitAggregate(GraqlParser.AggregateContext ctx) {
-        return (Aggregate) visit(ctx);
     }
 
     public Pattern visitPattern(GraqlParser.PatternContext ctx) {
@@ -603,56 +561,113 @@ class GraqlConstructor extends GraqlBaseVisitor {
         }
     }
 
-    private Variable var() {
-        Variable var = Pattern.var();
+    //========================================================================//
+    // Building Graql Aggregate Queries                                       //
+    //========================================================================//
 
-        if (defineAllVars) {
-            return var.asUserDefined();
+    /**
+     * Visits the aggregate query node in the parsed syntax tree and builds the
+     * appropriate aggregate query object
+     *
+     * @param ctx reference to the parsed aggregate query string
+     * @return An AggregateQuery object
+     */
+    @Override
+    public AggregateQuery<?> visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
+        GraqlParser.AggregateFunctionContext function = ctx.aggregateFunction();
+        Aggregate<?> aggregate;
+
+        if (function.aggregateGroup() != null) {
+            aggregate = visitAggregateGroup(function.aggregateGroup());
+        } else { // function.aggregateValue() != null
+            aggregate = visitAggregateValue(function.aggregateValue());
+        }
+
+        return visitMatchClause(ctx.matchClause()).aggregate(aggregate);
+    }
+
+    @Override
+    public Aggregate<?> visitAggregateGroup(GraqlParser.AggregateGroupContext ctx) {
+        if (ctx.aggregateValue() != null) {
+            return Graql.group(getVariable(ctx.VARIABLE()), visitAggregateValue(ctx.aggregateValue()));
         } else {
-            return var;
+            return Graql.group(getVariable(ctx.VARIABLE()));
         }
     }
 
-    //================================================================================================================//
-    // Building Graql Compute (Analytics) Queries                                                                     //
-    //================================================================================================================//
+    @Override
+    public Aggregate<?> visitAggregateValue(GraqlParser.AggregateValueContext ctx) {
+        GraqlParser.AggregateMethodContext method = ctx.aggregateMethod();
+        List<Variable> variables = ctx.variables() != null ?
+                new ArrayList<>(visitVariables(ctx.variables())) :
+                Collections.emptyList();
+
+        // TODO: replace this with ENUM lookup once we split Aggregate Query Language vs Execution
+        switch (method.getText()) {
+            case "count":
+                return Graql.count(variables);
+            case "max":
+                if (variables.size() == 1) return Graql.max(variables.get(0));
+                throw GraqlQueryException.incorrectAggregateArgumentNumber("max", 1, 1, variables);
+            case "mean":
+                if (variables.size() == 1) return Graql.mean(variables.get(0));
+                throw GraqlQueryException.incorrectAggregateArgumentNumber("mean", 1, 1, variables);
+            case "median":
+                if (variables.size() == 1) return Graql.median(variables.get(0));
+                throw GraqlQueryException.incorrectAggregateArgumentNumber("median", 1, 1, variables);
+            case "min":
+                if (variables.size() == 1) return Graql.min(variables.get(0));
+                throw GraqlQueryException.incorrectAggregateArgumentNumber("min", 1, 1, variables);
+            case "std":
+                if (variables.size() == 1) return Graql.std(variables.get(0));
+                throw GraqlQueryException.incorrectAggregateArgumentNumber("std", 1, 1, variables);
+            case "sum":
+                if (variables.size() == 1) return Graql.sum(variables.get(0));
+                throw GraqlQueryException.incorrectAggregateArgumentNumber("sum", 1, 1, variables);
+            default:
+                throw GraqlQueryException.unknownAggregate(method.getText());
+        }
+    }
+
+    //========================================================================//
+    // Building Graql Compute Queries                                         //
+    //========================================================================//
 
     /**
-     * Visits the compute query node in the parsed syntax tree and builds the appropriate compute query
+     * Visits the compute query node in the parsed syntax tree and builds the
+     * appropriate compute query object
      *
-     * @param context for compute query parsed syntax
+     * @param ctx reference to the parsed compute query string
      * @return A ComputeQuery object
      */
-
-    public ComputeQuery visitComputeQuery(GraqlParser.ComputeQueryContext context) {
-        GraqlParser.ComputeMethodContext method = context.computeMethod();
-        GraqlParser.ComputeConditionsContext conditions = context.computeConditions();
+    public ComputeQuery visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
+        GraqlParser.ComputeMethodContext method = ctx.computeMethod();
+        GraqlParser.ComputeConditionsContext conditions = ctx.computeConditions();
 
         ComputeQuery query = queryBuilder.compute(Method.of(method.getText()));
         if (conditions == null) return query;
 
-        for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {
-            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
-                case GraqlParser.RULE_computeFromID:
-                    query = query.from(visitId(condition.computeFromID().id()));
-                    break;
-                case GraqlParser.RULE_computeToID:
-                    query = query.to(visitId(condition.computeToID().id()));
-                    break;
-                case GraqlParser.RULE_computeOfLabels:
-                    query.of(visitLabels(condition.computeOfLabels().labels()));
-                    break;
-                case GraqlParser.RULE_computeInLabels:
-                    query.in(visitLabels(condition.computeInLabels().labels()));
-                    break;
-                case GraqlParser.RULE_computeAlgorithm:
-                    query.using(Algorithm.of(condition.computeAlgorithm().getText()));
-                    break;
-                case GraqlParser.RULE_computeArgs:
-                    query.where(visitComputeArgs(condition.computeArgs()));
-                    break;
-                default:
-                    throw GraqlQueryException.invalidComputeQuery_invalidCondition(query.method());
+        for (GraqlParser.ComputeConditionContext conditionContext : conditions.computeCondition()) {
+            if (conditionContext instanceof GraqlParser.ComputeConditionFromContext) {
+                query.from(visitId((((GraqlParser.ComputeConditionFromContext) conditionContext).id())));
+
+            } else if (conditionContext instanceof GraqlParser.ComputeConditionToContext) {
+                query.to(visitId(((GraqlParser.ComputeConditionToContext) conditionContext).id()));
+
+            } else if (conditionContext instanceof GraqlParser.ComputeConditionOfContext) {
+                query.of(visitLabels(((GraqlParser.ComputeConditionOfContext) conditionContext).labels()));
+
+            } else if (conditionContext instanceof GraqlParser.ComputeConditionInContext) {
+                query.in(visitLabels(((GraqlParser.ComputeConditionInContext) conditionContext).labels()));
+
+            } else if (conditionContext instanceof GraqlParser.ComputeConditionUsingContext) {
+                query.using(Algorithm.of(((GraqlParser.ComputeConditionUsingContext) conditionContext).computeAlgorithm().getText()));
+
+            } else if (conditionContext instanceof GraqlParser.ComputeConditionWhereContext) {
+                query.where(visitComputeArgs(((GraqlParser.ComputeConditionWhereContext) conditionContext).computeArgs()));
+
+            } else {
+                throw GraqlQueryException.invalidComputeQuery_invalidCondition(query.method());
             }
         }
 
@@ -663,21 +678,22 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     /**
-     * Visits the computeArgs tree in the compute query 'where <computeArgs>' condition and get the list of arguments
+     * Visits the computeArgs tree in the compute query 'where <computeArgs>'
+     * condition and get the list of arguments
      *
-     * @param computeArgs
-     * @return
+     * @param ctx reference to the parsed computeArgs string
+     * @return a list of compute query arguments
      */
     @Override
-    public List<Argument> visitComputeArgs(GraqlParser.ComputeArgsContext computeArgs) {
+    public List<Argument> visitComputeArgs(GraqlParser.ComputeArgsContext ctx) {
 
         List<GraqlParser.ComputeArgContext> argContextList = new ArrayList<>();
         List<Argument> argList = new ArrayList<>();
 
-        if (computeArgs.computeArg() != null) {
-            argContextList.add(computeArgs.computeArg());
-        } else if (computeArgs.computeArgsArray() != null) {
-            argContextList.addAll(computeArgs.computeArgsArray().computeArg());
+        if (ctx.computeArg() != null) {
+            argContextList.add(ctx.computeArg());
+        } else if (ctx.computeArgsArray() != null) {
+            argContextList.addAll(ctx.computeArgsArray().computeArg());
         }
 
         for (GraqlParser.ComputeArgContext argContext : argContextList) {

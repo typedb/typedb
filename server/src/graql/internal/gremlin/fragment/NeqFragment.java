@@ -46,7 +46,7 @@ public abstract class NeqFragment extends Fragment {
 
     @Override
     public String name() {
-        return "[neq:" + other().shortName() + "]";
+        return "[neq:" + other().symbol() + "]";
     }
 
     @Override

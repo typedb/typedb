@@ -91,11 +91,12 @@ public class AggregateQueryIT {
     @Test
     public void testCount() {
         List<Value> count = qb.match(var("x").isa("movie"), var("y").isa("person"), var("r").rel("x").rel("y")).aggregate(count()).execute();
-        Assert.assertEquals(14, count.get(0).number().intValue());
+
+        assertEquals(14, count.get(0).number().intValue());
 
         count = qb.match(var("x").isa("movie"), var("y").isa("person"), var().rel("x").rel("y")).aggregate(count("x")).execute();
 
-        Assert.assertEquals(7, count.get(0).number().intValue());
+        assertEquals(7, count.get(0).number().intValue());
     }
 
     @Test
@@ -127,6 +128,66 @@ public class AggregateQueryIT {
                 assertEquals(9, group.answers().get(0).number().intValue());
             }
         });
+    }
+
+    @Test
+    public void testGroupCount2Vars() {
+        List<AnswerGroup<Value>> groupCounts = qb.match(
+                var("x").isa("movie"),
+                var("y").isa("person"),
+                var("z").isa("person"),
+                var().rel("x").rel("y")
+        ).aggregate(group("x", count("y", "z"))).execute();
+
+        Thing chineseCoffee = tx.getAttributeType("title").attribute("Chinese Coffee").owner();
+        Thing godfather = tx.getAttributeType("title").attribute("Godfather").owner();
+
+        boolean containsChineseCoffee = false, containsGodfather = false;
+
+        for (AnswerGroup<Value> group : groupCounts) {
+            if (group.owner().equals(chineseCoffee)) {
+                assertEquals(10, group.answers().get(0).number().intValue());
+                containsChineseCoffee = true;
+            }
+            if (group.owner().equals(godfather)) {
+                assertEquals(20, group.answers().get(0).number().intValue());
+                containsGodfather = true;
+            }
+        }
+
+        assertTrue(containsChineseCoffee);
+        assertTrue(containsGodfather);
+    }
+
+    @Test
+    public void testGroupMax() {
+        List<AnswerGroup<Value>> groupCount =
+                qb.match(
+                        var("x").isa("person"),
+                        var("y").isa("movie").has("tmdb-vote-count", var("z")),
+                        var().rel("x").rel("y")
+                ).aggregate(
+                        group("x", max("z"))
+                ).execute();
+
+        Thing marlonBrando = tx.getAttributeType("name").attribute("Marlon Brando").owner();
+        Thing alPacino = tx.getAttributeType("name").attribute("Al Pacino").owner();
+
+        boolean containsMarlonBrando = false, containsAlPacino = false;
+
+        for (AnswerGroup<Value> group : groupCount) {
+            if (group.owner().equals(marlonBrando)) {
+                assertEquals(1000, group.answers().get(0).number().intValue());
+                containsMarlonBrando = true;
+            }
+            if (group.owner().equals(alPacino)) {
+                assertEquals(1000, group.answers().get(0).number().intValue());
+                containsAlPacino = true;
+            }
+        }
+
+        assertTrue(containsMarlonBrando);
+        assertTrue(containsAlPacino);
     }
 
     @Test

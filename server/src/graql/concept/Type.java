@@ -25,26 +25,16 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     A Type represents any ontological element in the graph.
- * </p>
- *
- * <p>
- *     Types are used to model the behaviour of {@link Thing} and how they relate to each other.
- *     They also aid in categorising {@link Thing} to different types.
- * </p>
- *
- * @see EntityType
- * @see Role
- * @see RelationshipType
- * @see AttributeType
- *
- *
+ * A Type represents any ontological element in the graph.
+ * Types are used to model the behaviour of {@link Thing} and how they relate to each other.
+ * They also aid in categorising {@link Thing} to different types.
  */
 public interface Type extends SchemaConcept {
     //------------------------------------- Modifiers ----------------------------------
+
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.
+     *
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
@@ -53,18 +43,15 @@ public interface Type extends SchemaConcept {
     /**
      * Sets the Entity Type to be abstract - which prevents it from having any instances.
      *
-     * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
+     * @param isAbstract Specifies if the concept is to be abstract (true) or not (false).
      * @return The concept itself
-     *
      * @throws TransactionException if this is a meta-type
      */
     Type isAbstract(Boolean isAbstract) throws TransactionException;
 
     /**
-     *
      * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
-     *
      * @throws TransactionException if this is a meta-type
      */
     Type plays(Role role) throws TransactionException;
@@ -74,7 +61,6 @@ public interface Type extends SchemaConcept {
      *
      * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
      * @return The Type itself.
-     *
      * @throws TransactionException if this is a meta-type
      */
     Type key(AttributeType attributeType) throws TransactionException;
@@ -84,35 +70,30 @@ public interface Type extends SchemaConcept {
      *
      * @param attributeType The {@link AttributeType}  which instances of this type should be allowed to play.
      * @return The Type itself.
-     *
      * @throws TransactionException if this is a meta-type
      */
-     Type has(AttributeType attributeType) throws TransactionException;
+    Type has(AttributeType attributeType) throws TransactionException;
 
     //------------------------------------- Accessors ---------------------------------
 
     /**
-     *
      * @return A list of Role Types which instances of this Type can indirectly play.
      */
     Stream<Role> playing();
 
     /**
-     *
      * @return The {@link AttributeType}s which this {@link Type} is linked with.
      */
     @CheckReturnValue
     Stream<AttributeType> attributes();
 
     /**
-     *
      * @return The {@link AttributeType}s which this {@link Type} is linked with as a key.
      */
     @CheckReturnValue
     Stream<AttributeType> keys();
 
     /**
-     *
      * @return The direct super of this Type
      */
     @CheckReturnValue
@@ -120,7 +101,6 @@ public interface Type extends SchemaConcept {
     Type sup();
 
     /**
-     *
      * @return All the the super-types of this {@link Type}
      */
     @Override
@@ -128,7 +108,6 @@ public interface Type extends SchemaConcept {
 
     /**
      * Get all indirect sub-types of this type.
-     *
      * The indirect sub-types are the type itself and all indirect sub-types of direct sub-types.
      *
      * @return All the indirect sub-types of this Type
@@ -138,7 +117,6 @@ public interface Type extends SchemaConcept {
 
     /**
      * Get all indirect instances of this type.
-     *
      * The indirect instances are the direct instances and all indirect instances of direct sub-types.
      *
      * @return All the indirect instances of this type.
@@ -148,7 +126,6 @@ public interface Type extends SchemaConcept {
 
     /**
      * Return if the type is set to abstract.
-     *
      * By default, types are not abstract.
      *
      * @return returns true if the type is set to be abstract.
@@ -157,6 +134,7 @@ public interface Type extends SchemaConcept {
     Boolean isAbstract();
 
     //------------------------------------- Other ----------------------------------
+
     /**
      * Removes the ability of this {@link Type} to play a specific {@link Role}
      *
@@ -184,14 +162,14 @@ public interface Type extends SchemaConcept {
     @Deprecated
     @CheckReturnValue
     @Override
-    default Type asType(){
+    default Type asType() {
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isType(){
+    default boolean isType() {
         return true;
     }
 }

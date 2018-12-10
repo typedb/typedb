@@ -151,7 +151,6 @@ public enum ErrorMessage {
     //--------------------------------------------- Graql Errors -----------------------------------------------
     NO_TX("no graph provided"),
 
-    SYNTAX_ERROR_NO_POINTER("syntax error at line %s:\n%s"),
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
 
     MUST_BE_ATTRIBUTE_TYPE("type '%s' must be an attribute-type"),

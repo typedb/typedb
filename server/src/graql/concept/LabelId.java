@@ -18,56 +18,80 @@
 
 package grakn.core.graql.concept;
 
-import grakn.core.server.Transaction;
-import com.google.auto.value.AutoValue;
-
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
 /**
- * <p>
- *     A Type Id
- * </p>
- *
- * <p>
- *     A class which represents an id of any {@link SchemaConcept} in the {@link Transaction}.
- *     Also contains a static method for producing IDs from Integers.
- * </p>
- *
+ * A Type Id
+ * A class which represents an id of any {@link SchemaConcept}.
+ * Also contains a static method for producing IDs from Integers.
  */
-@AutoValue
-public abstract class LabelId implements Comparable<LabelId>, Serializable {
+public class LabelId implements Comparable<LabelId>, Serializable {
     private static final long serialVersionUID = -1676610785035926909L;
 
+    private final Integer value;
+
+    public LabelId(Integer value) {
+        if (value == null) {
+            throw new NullPointerException("Null value");
+        }
+        this.value = value;
+    }
+
     /**
-     *
      * @return Used for indexing purposes and for graql traversals
      */
     @CheckReturnValue
-    public abstract Integer getValue();
+    public Integer getValue() {
+        return value;
+    }
 
     @Override
     public int compareTo(LabelId o) {
         return getValue().compareTo(o.getValue());
     }
 
-    public boolean isValid(){
+    public boolean isValid() {
         return getValue() != -1;
     }
 
     /**
-     *
      * @param value The integer which potentially represents a Type
      * @return The matching type ID
      */
-    public static LabelId of(Integer value){
-        return new AutoValue_LabelId(value);
+    public static LabelId of(Integer value) {
+        return new LabelId(value);
     }
 
     /**
      * @return a type id which does not match any type
      */
-    public static LabelId invalid(){
-        return new AutoValue_LabelId(-1);
+    public static LabelId invalid() {
+        return new LabelId(-1);
+    }
+
+    @Override
+    public String toString() {
+        return getValue().toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof LabelId) {
+            LabelId that = (LabelId) o;
+            return (this.value.equals(that.getValue()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.value.hashCode();
+        return h;
     }
 }

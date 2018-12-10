@@ -5,89 +5,98 @@ queryList : query* EOF ;
 queryEOF       : query EOF ;
 query          : getQuery | insertQuery | defineQuery | undefineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
-matchPart      : MATCH patterns                             # matchBase
-               | matchPart 'limit' INTEGER              ';' # matchLimit
-               | matchPart 'offset' INTEGER             ';' # matchOffset
-               | matchPart 'order' 'by' VARIABLE order? ';' # matchOrderBy
+matchClause    : MATCH patterns                             # matchBase
+               | matchClause 'limit' INTEGER              ';' # matchLimit
+               | matchClause 'offset' INTEGER             ';' # matchOffset
+               | matchClause 'order' 'by' VARIABLE order? ';' # matchOrderBy
                ;
 
-getQuery       : matchPart 'get' variables? ';' ;
-insertQuery    : matchPart? INSERT varPatterns ;
-defineQuery    : DEFINE varPatterns ;
-undefineQuery  : UNDEFINE varPatterns ;
-deleteQuery    : matchPart 'delete' variables? ';' ;
-aggregateQuery : matchPart 'aggregate' aggregate ';' ;
+getQuery       : matchClause 'get' variables? ';' ;
+insertQuery    : matchClause? INSERT statements ;
+defineQuery    : DEFINE statements ;
+undefineQuery  : UNDEFINE statements ;
+deleteQuery    : matchClause 'delete' variables? ';' ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-// GRAQL COMPUTE QUERY: OVERALL SYNTAX GRAMMAR =========================================================================
+// AGGREGATE QUERY =====================================================================================================
+//
+// An aggregate query is composed 3 things:
+// A match clause, followed by the 'aggregate' keyword, and an aggregate function
+//
+// An aggregate function could either be:
+// group aggregate: a function that groups the results by a given concept
+// value aggregate: a function that evaluates a value over the results
+//
+// A group aggregate is composed of 3 things:
+// The 'group' keyword, followed by a variable to group the results by,
+// and optionally a value aggregate to apply over each group of results
+//
+// A value aggregate is composed of 2 things:
+// The aggregate method name, followed by 0 or more variables to be applied to
+//
+// An aggregate method could only be;
+// count, max, mean, median, min, std, sum
+
+aggregateQuery      : matchClause AGGREGATE aggregateFunction ';' ;
+aggregateFunction   : aggregateGroup                                            // a group aggregate, or
+                    | aggregateValue                                            // a value aggregate
+                    ;
+
+aggregateGroup      : GROUP VARIABLE (',' aggregateValue)? ;                    // 'group' and variable, and optionally
+                                                                                // a value aggregate for each group
+
+aggregateValue      : aggregateMethod variables? ;                              // method and, optionally, variables
+aggregateMethod     : COUNT                                                     // calculate the number of concepts
+                    | MAX | MEAN | MEDIAN | MIN | STD | SUM                     // calculate statistics functions
+                    ;
+
+// COMPUTE QUERY =======================================================================================================
 //
 // A compute query is composed of 3 things:
-// the 'compute' keyword, followed by a compute method, and a set of conditions (that may be optional)
+// The 'compute' keyword, followed by a compute method, and optionally a set of conditions
 //
 // A compute method could only be:
-// count                                    (to count the number of concepts in the graph)
-// min, max, median, mean, std and sum      (to calculate statistics functions)
-// path                                     (to compute the paths between concepts)
-// centrality                               (to compute how densely connected concepts are in the graph)
-// cluster                                  (to detect communities in the graph)
+// count, min, max, median, mean, std, sum, path, centrality, cluster
 //
 // The compute conditions can be a set of zero or more individual condition separated by a comma
 // A compute condition can either be a FromID, ToID, OfLabels, InLabels, Algorithm or Args
 
-computeQuery                    : COMPUTE computeMethod computeConditions? ';';
-computeMethod                   : COUNT                                                 // compute count
-                                | MIN | MAX | MEDIAN | MEAN | STD | SUM                 // compute statistics
-                                | PATH                                                  // compute path
-                                | CENTRALITY                                            // compute centrality
-                                | CLUSTER                                               // compute cluster
-                                ;
-computeConditions               : computeCondition (',' computeCondition)* ;
-computeCondition                : FROM      computeFromID
-                                | TO        computeToID
-                                | OF        computeOfLabels
-                                | IN        computeInLabels
-                                | USING     computeAlgorithm
-                                | WHERE     computeArgs
-                                ;
+computeQuery        : COMPUTE computeMethod computeConditions? ';';
+computeMethod       : COUNT                                                     // compute the number of concepts
+                    | MIN | MAX | MEDIAN | MEAN | STD | SUM                     // compute statistics functions
+                    | PATH                                                      // compute the paths between concepts
+                    | CENTRALITY                                                // compute density of connected concepts
+                    | CLUSTER                                                   // compute detection of cluster
+                    ;
+computeConditions   : computeCondition (',' computeCondition)* ;
+computeCondition    : FROM      id                  # computeConditionFrom      // an instance to start the compute from
+                    | TO        id                  # computeConditionTo        // an instance to end the compute at
+                    | OF        labels              # computeConditionOf        // type(s) of instances to apply compute
+                    | IN        labels              # computeConditionIn        // type(s) to scope compute visibility
+                    | USING     computeAlgorithm    # computeConditionUsing     // algorithm to determine how to compute
+                    | WHERE     computeArgs         # computeConditionWhere     // additional args for compute method
+                    ;
 
-// GRAQL COMPUTE QUERY: CONDITIONS GRAMMAR =============================================================================
-//
-// The following are definitions of computeConditions for the Graql Compute Query
-// computeFromID and computeToID takes in a concept ID
-// computeOfLabels and computeInLabels takes in labels, such as types in the schema
-// computeAlgorithm are the different algorithm names that determines how the compute method is performed
-// computeArgs can either be a single argument or an array of arguments
-// computeArgsArray is an arry of arguments
-// computeArg is a single argument
+computeAlgorithm    : DEGREE | K_CORE | CONNECTED_COMPONENT ;                   // algorithm to determine how to compute
+computeArgs         : computeArg | computeArgsArray ;                           // single argument or array of arguments
+computeArgsArray    : '[' computeArg (',' computeArg)* ']' ;                    // an array of arguments
+computeArg          : MIN_K     '=' INTEGER         # computeArgMinK            // a single argument for min-k=INTEGER
+                    | K         '=' INTEGER         # computeArgK               // a single argument for k=INTEGER
+                    | SIZE      '=' INTEGER         # computeArgSize            // a single argument for size=INTEGER
+                    | CONTAINS  '=' id              # computeArgContains        // a single argument for contains=ID
+                    ;
 
-computeFromID                   : id ;
-computeToID                     : id ;
-computeOfLabels                 : labels ;
-computeInLabels                 : labels ;
-computeAlgorithm                : DEGREE | K_CORE | CONNECTED_COMPONENT ;
-computeArgs                     : computeArgsArray | computeArg ;
-computeArgsArray                : '[' computeArg (',' computeArg)* ']' ;
-computeArg                      : MIN_K         '='     INTEGER         # computeArgMinK
-                                | K             '='     INTEGER         # computeArgK
-                                | SIZE          '='     INTEGER         # computeArgSize
-                                | CONTAINS      '='     id              # computeArgContains
-                                ;
-
-aggregate      : identifier argument*             # customAgg
-               ;
-argument       : VARIABLE  # variableArgument
-               | aggregate # aggregateArgument
-               ;
+// =====================================================================================================================
 
 patterns       : (pattern ';')+ ;
-pattern        : varPattern                    # varPatternCase
-               | pattern 'or' pattern          # orPattern
-               | '{' patterns '}'              # andPattern
+pattern        : statement                     # patternStatement
+               | pattern 'or' pattern          # patternDisjunction
+               | '{' patterns '}'              # patternConjunction
                ;
 
-varPatterns    : (varPattern ';')+ ;
-varPattern     : VARIABLE | variable? property (','? property)* ;
+statements    : (statement ';')+ ;
+statement     : VARIABLE | variable? property (','? property)* ;
 
 property       : 'isa' variable                     # isa
                | 'isa!' variable                    # isaExplicit
@@ -99,7 +108,7 @@ property       : 'isa' variable                     # isa
                | 'label' label                      # propLabel
                |  predicate                         # propValue
                | 'when' '{' patterns '}'            # propWhen
-               | 'then' '{' varPatterns '}'         # propThen
+               | 'then' '{' statements '}'         # propThen
                | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)? # propHas
                | 'has' variable                     # propResource
                | 'key' variable                     # propKey
@@ -154,6 +163,7 @@ order          : ASC | DESC ;
 bool           : TRUE | FALSE ;
 
 // keywords
+GROUP          : 'group';
 MIN            : 'min' ;
 MAX            : 'max' ;
 MEDIAN         : 'median' ;
@@ -177,10 +187,12 @@ CONTAINS       : 'contains' ;
 SIZE           : 'size' ;
 USING          : 'using' ;
 WHERE          : 'where' ;
-MATCH          : 'match' ;
-INSERT         : 'insert' ;
 DEFINE         : 'define' ;
 UNDEFINE       : 'undefine' ;
+MATCH          : 'match' ;
+INSERT         : 'insert' ;
+DELETE         : 'delete' ;
+AGGREGATE      : 'aggregate' ;
 COMPUTE        : 'compute' ;
 ASC            : 'asc' ;
 DESC           : 'desc' ;

@@ -20,7 +20,7 @@ package grakn.core.graql.util;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.grammar.GraqlLexer;
+import graql.grammar.GraqlLexer;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import java.text.DecimalFormat;

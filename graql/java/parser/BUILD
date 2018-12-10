@@ -16,27 +16,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-java_test(
-    name = "parser-test",
-    test_class = "grakn.core.graql.parser.ParserTest",
-    srcs = ["ParserTest.java"],
-    deps = [
-        "//server",
-        "//common",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-    ],
-    size = "medium"
-)
+package(default_visibility = ["//visibility:public"]) # TODO: Needs to be replaced with below
+#package(default_visibility = ["//graql/java:__subpackages__"])
 
-java_test(
-    name = "query-to-string-test",
-    test_class = "grakn.core.graql.parser.QueryToStringTest",
-    srcs = ["QueryToStringTest.java"],
+
+java_library(
+    name = "parser",
+    srcs = ["//graql/grammar:graql-java"] + glob(["**/*.java"]),
     deps = [
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//server"],
-    size = "small"
+        "//graql/java/exception:exception",
+
+        # External dependencies
+        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/antlr:antlr4-runtime", # sync version with @antlr4_runtime//jar
+    ]
 )

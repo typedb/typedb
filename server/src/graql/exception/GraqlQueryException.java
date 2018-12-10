@@ -88,7 +88,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException incorrectAggregateArgumentNumber(
-            String name, int minArgs, int maxArgs, List<Object> args) {
+            String name, int minArgs, int maxArgs, List<Variable> args) {
         String expectedArgs = (minArgs == maxArgs) ? Integer.toString(minArgs) : minArgs + "-" + maxArgs;
         String message = ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage(name, expectedArgs, args.size());
         return new GraqlQueryException(message);

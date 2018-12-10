@@ -18,32 +18,34 @@
 
 package grakn.core.graql.concept;
 
-import grakn.core.server.Transaction;
-import com.google.auto.value.AutoValue;
-
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 import java.util.function.Function;
 
 /**
- * <p>
- *     A Label
- * </p>
- *
- * <p>
- *     A class which represents the unique label of any {@link SchemaConcept} in the {@link Transaction}.
- *     Also contains a static method for producing {@link Label}s from Strings.
- * </p>
- *
+ * A Label
+ * A class which represents the unique label of any {@link SchemaConcept}
+ * Also contains a static method for producing {@link Label}s from Strings.
  */
-@AutoValue
-public abstract class Label implements Comparable<Label>, Serializable {
+public class Label implements Comparable<Label>, Serializable {
     private static final long serialVersionUID = 2051578406740868932L;
 
-    public abstract String getValue();
+    private final String value;
+
+    public Label(String value) {
+        if (value == null) {
+            throw new NullPointerException("Null value");
+        }
+        this.value = value;
+    }
+
+    public String getValue() {
+        return value;
+    }
 
     /**
      * Rename a {@link Label} (does not modify the original {@link Label})
+     *
      * @param mapper a function to apply to the underlying type label
      * @return the new type label
      */
@@ -58,18 +60,36 @@ public abstract class Label implements Comparable<Label>, Serializable {
     }
 
     /**
-     *
      * @param value The string which potentially represents a Type
      * @return The matching Type Label
      */
     @CheckReturnValue
-    public static Label of(String value){
-        return new AutoValue_Label(value);
+    public static Label of(String value) {
+        return new Label(value);
     }
 
     @Override
     public final String toString() {
-        // TODO: Consider using @AutoValue toString
         return getValue();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof Label) {
+            Label that = (Label) o;
+            return (this.value.equals(that.getValue()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.value.hashCode();
+        return h;
     }
 }

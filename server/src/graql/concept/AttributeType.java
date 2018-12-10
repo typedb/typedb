@@ -19,9 +19,9 @@
 package grakn.core.graql.concept;
 
 
-import grakn.core.server.exception.TransactionException;
-import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
+import grakn.core.graql.internal.Schema;
+import grakn.core.server.exception.TransactionException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -32,26 +32,22 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     An ontological element which models and categorises the various {@link Attribute} in the graph.
- * </p>
- *
- * <p>
- *     This ontological element behaves similarly to {@link Type} when defining how it relates to other
- *     types. It has two additional functions to be aware of:
- *     1. It has a {@link DataType} constraining the data types of the values it's instances may take.
- *     2. Any of it's instances are unique to the type.
- *     For example if you have an {@link AttributeType} modelling month throughout the year there can only be one January.
- * </p>
- *
+ * An ontological element which models and categorises the various {@link Attribute} in the graph.
+ * This ontological element behaves similarly to {@link Type} when defining how it relates to other
+ * types. It has two additional functions to be aware of:
+ * 1. It has a {@link DataType} constraining the data types of the values it's instances may take.
+ * 2. Any of it's instances are unique to the type.
+ * For example if you have an {@link AttributeType} modelling month throughout the year there can only be one January.
  *
  * @param <D> The data type of this resource type.
- *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
+ *            Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 public interface AttributeType<D> extends Type {
     //------------------------------------- Modifiers ----------------------------------
+
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.
+     *
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
@@ -60,8 +56,7 @@ public interface AttributeType<D> extends Type {
     /**
      * Sets the {@link AttributeType} to be abstract - which prevents it from having any instances.
      *
-     * @param isAbstract  Specifies if the {@link AttributeType} is to be abstract (true) or not (false).
-     *
+     * @param isAbstract Specifies if the {@link AttributeType} is to be abstract (true) or not (false).
      * @return The {@link AttributeType} itself.
      */
     @Override
@@ -146,6 +141,7 @@ public interface AttributeType<D> extends Type {
     AttributeType<D> has(AttributeType attributeType);
 
     //------------------------------------- Accessors ---------------------------------
+
     /**
      * Returns the supertype of this {@link AttributeType}.
      *
@@ -157,10 +153,10 @@ public interface AttributeType<D> extends Type {
 
     /**
      * Get the {@link Attribute} with the value provided, and its type, or return NULL
-     * @see Attribute
      *
      * @param value A value which an {@link Attribute} in the graph may be holding
      * @return The {@link Attribute} with the provided value and type or null if no such {@link Attribute} exists.
+     * @see Attribute
      */
     @CheckReturnValue
     @Nullable
@@ -202,7 +198,7 @@ public interface AttributeType<D> extends Type {
     /**
      * Retrieve the regular expression to which instances of this {@link AttributeType} must conform, or {@code null} if no
      * regular expression is set.
-     *
+     * <p>
      * By default, an {@link AttributeType} does not have a regular expression set.
      *
      * @return The regular expression to which instances of this {@link AttributeType} must conform.
@@ -216,20 +212,21 @@ public interface AttributeType<D> extends Type {
     @Deprecated
     @CheckReturnValue
     @Override
-    default AttributeType asAttributeType(){
+    default AttributeType asAttributeType() {
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isAttributeType(){
+    default boolean isAttributeType() {
         return true;
     }
 
     /**
      * A class used to hold the supported data types of resources and any other concepts.
      * This is used tp constrain value data types to only those we explicitly support.
+     *
      * @param <D> The data type.
      */
     class DataType<D> {
@@ -282,14 +279,14 @@ public interface AttributeType<D> extends Type {
                 });
 
         public static final ImmutableMap<String, DataType<?>> SUPPORTED_TYPES = ImmutableMap.<String, DataType<?>>builder()
-                    .put(STRING.getName(), STRING)
-                    .put(BOOLEAN.getName(), BOOLEAN)
-                    .put(LONG.getName(), LONG)
-                    .put(DOUBLE.getName(), DOUBLE)
-                    .put(INTEGER.getName(), INTEGER)
-                    .put(FLOAT.getName(), FLOAT)
-                    .put(DATE.getName(), DATE)
-                    .build();
+                .put(STRING.getName(), STRING)
+                .put(BOOLEAN.getName(), BOOLEAN)
+                .put(LONG.getName(), LONG)
+                .put(DOUBLE.getName(), DOUBLE)
+                .put(INTEGER.getName(), INTEGER)
+                .put(FLOAT.getName(), FLOAT)
+                .put(DATE.getName(), DATE)
+                .build();
 
         private final String dataType;
         private final Schema.VertexProperty vertexProperty;
@@ -297,17 +294,17 @@ public interface AttributeType<D> extends Type {
         private final Function<Object, D> valueSupplier;
 
 
-        private DataType(String dataType, Schema.VertexProperty vertexProperty, Function<D, Object> savedValueProvider, Function<Object, D> valueSupplier){
+        private DataType(String dataType, Schema.VertexProperty vertexProperty, Function<D, Object> savedValueProvider, Function<Object, D> valueSupplier) {
             this.dataType = dataType;
             this.vertexProperty = vertexProperty;
             this.persistenceValueSupplier = savedValueProvider;
             this.valueSupplier = valueSupplier;
         }
 
-        private static <X> X defaultConverter(Object o, Class clazz, Function<Object, X> converter){
-            if(o == null){
+        private static <X> X defaultConverter(Object o, Class clazz, Function<Object, X> converter) {
+            if (o == null) {
                 return null;
-            } else if(clazz.isInstance(o)){
+            } else if (clazz.isInstance(o)) {
                 //noinspection unchecked
                 return (X) o;
             } else {
@@ -316,17 +313,17 @@ public interface AttributeType<D> extends Type {
         }
 
         @CheckReturnValue
-        public String getName(){
+        public String getName() {
             return dataType;
         }
 
         @CheckReturnValue
-        public Schema.VertexProperty getVertexProperty(){
+        public Schema.VertexProperty getVertexProperty() {
             return vertexProperty;
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return getName();
         }
 
@@ -337,7 +334,7 @@ public interface AttributeType<D> extends Type {
          * @return The String representation of the value
          */
         @CheckReturnValue
-        public Object getPersistenceValue(D value){
+        public Object getPersistenceValue(D value) {
             return persistenceValueSupplier.apply(value);
         }
 
@@ -348,7 +345,7 @@ public interface AttributeType<D> extends Type {
          * @return The value of the string
          */
         @CheckReturnValue
-        public D getValue(Object object){
+        public D getValue(Object object) {
             return valueSupplier.apply(object);
         }
     }
