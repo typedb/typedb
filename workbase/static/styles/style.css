@@ -188,6 +188,7 @@ span.bp3-icon::before {
 .small-btn {
   height: 22px;
   min-height: 22px;
+  min-width: 22px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -208,6 +209,7 @@ span.bp3-icon::before {
 .define-btn {
   margin: 0px !important;
   margin-bottom: 5px !important;
+  width: 102px;
 }
 
 /* Input */

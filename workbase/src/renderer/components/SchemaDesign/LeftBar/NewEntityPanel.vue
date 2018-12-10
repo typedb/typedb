@@ -1,14 +1,17 @@
 <template>
   <div>
-    <button class="btn define-btn" @click="togglePanel">E</button>
+    <button class="btn define-btn" @click="togglePanel">Entity Type</button>
     <div class="new-entity-panel-container" v-if="panelShown === 'entity'">
-      <div class="title">Define New Entity Type</div>
+      <div class="title">
+        Define New Entity Type
+        <div class="close-container" @click="$emit('show-panel', undefined)"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
+      </div>
       <div class="content">
 
         <div class="row">
-          <input class="input-small label-input" v-model="label" placeholder="Label">
+          <input class="input-small label-input" v-model="label" placeholder="Entity Label">
           sub
-          <div v-bind:class="(showTypeList) ? 'btn type-btn type-list-shown' : 'btn type-btn'" @click="showTypeList = !showTypeList"><div class="type-btn-text" >{{superType}}</div><div class="type-btn-caret"><vue-icon className="vue-icon" icon="caret-down"></vue-icon></div></div>
+          <div v-bind:class="(showTypeList) ? 'btn type-btn type-list-shown' : 'btn type-btn'" @click="showTypeList = !showTypeList"><div class="type-btn-text">{{superType}}</div><div class="type-btn-caret"><vue-icon className="vue-icon" icon="caret-down"></vue-icon></div></div>
 
           <div class="type-list" v-show="showTypeList">
               <ul v-for="type in types" :key=type>
@@ -22,7 +25,7 @@
           <div class="plays">plays</div>
         </div>
 
-        <div class="row">
+        <div class="row-2">
           <div class="has">
             <ul class="attribute-type-list" v-if="metaTypeInstances.attributes.length">
               <li :class="(toggledAttributeTypes.includes(attributeType)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeType(attributeType)" v-for="attributeType in metaTypeInstances.attributes" :key=attributeType>
@@ -41,8 +44,8 @@
           </div>
         </div>
 
-        <div class="row submit-row">
-          <button class="btn" @click="clearPanel">Clear</button>
+        <div class="submit-row">
+          <button class="btn submit-btn" @click="clearPanel">Clear</button>
           <loading-button v-on:clicked="defineEntityType" text="Submit" :loading="showSpinner" className="btn submit-btn"></loading-button>
         </div>
 
@@ -52,9 +55,17 @@
 </template>
 
 <style scoped>
+    .close-container {
+        position: absolute;
+        right: 2px;
+    }
 
     .submit-row {
-      justify-content: space-between !important;
+      justify-content: space-between;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: var(--container-padding);
     }
 
     .attribute-type-list {
@@ -105,15 +116,22 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    padding: var(--container-padding);
+    padding: var(--container-padding) var(--container-padding) 0px var(--container-padding);
+    justify-content: space-between;
+  }
+
+  .row-2 {
+    display: flex;
+    flex-direction: row;
+    padding: var(--container-padding) var(--container-padding) 0px var(--container-padding);
     justify-content: space-between;
   }
 
   .new-entity-panel-container {
     position: absolute;
-    left: 42px;
+    left: 120px;
     top: 10px;
-    background-color: var(--gray-3);
+    background-color: var(--gray-2);
     border: var(--container-darkest-border);
   }
 
@@ -192,6 +210,7 @@
       white-space: normal !important;
       word-wrap: break-word;
       line-height: 19px;
+      overflow: -webkit-paged-x;
   }
 
   .type-btn-caret {
@@ -200,9 +219,18 @@
       display: flex;
   }
 
+    .type-btn-text::-webkit-scrollbar {
+      height: 2px;
+  }
+
+  .type-btn-text::-webkit-scrollbar-thumb {
+      background: var(--green-4);
+  }
+
 </style>
 
 <script>
+  import logger from '@/../Logger';
   import { DEFINE_ENTITY_TYPE } from '@/components/shared/StoresActions';
   import { createNamespacedHelpers } from 'vuex';
 
@@ -259,12 +287,18 @@
           this.toggledRoleTypes.push(type);
         }
       },
-      async defineEntityType() {
+      defineEntityType() {
         this.showSpinner = true;
-        await this[DEFINE_ENTITY_TYPE]({ label: this.label, superType: this.superType, attributeTypes: this.toggledAttributeTypes, roleTypes: this.toggledRoleTypes });
-        this.showSpinner = false;
-        this.types.push(this.label);
-        this.clearPanel();
+        this[DEFINE_ENTITY_TYPE]({ label: this.label, superType: this.superType, attributeTypes: this.toggledAttributeTypes, roleTypes: this.toggledRoleTypes })
+          .then(() => {
+            this.types.push(this.label);
+            this.showSpinner = false;
+            this.clearPanel();
+          })
+          .catch((e) => {
+            logger.error(e.stack);
+            this.showSpinner = false;
+          });
       },
       selectSuperType(type) {
         this.superType = type;

@@ -20,7 +20,7 @@ const grakn = new Grakn(ServerSettings.getServerUri(), null);
 let graknSession;
 
 beforeEach(() => {
-  graknSession = grakn.session('testkeyspace');
+  graknSession = grakn.session('testkeyspace2');
 });
 
 

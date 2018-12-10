@@ -1,22 +1,29 @@
 <template>
   <div>
-    <button class="btn define-btn" @click="togglePanel">A</button>
+    <button class="btn define-btn" @click="togglePanel">Attribute Type</button>
     <div class="new-attribute-panel-container" v-if="panelShown === 'attribute'">
-      <div class="title">Define New Attribute Type</div>
+      <div class="title">
+        Define New Attribute Type
+        <div class="close-container" @click="$emit('show-panel', undefined)"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
+      </div>
       <div class="content">
 
         <div class="row">
 
-          <input class="input-small label-input" v-model="label" placeholder="Label">
-          <div class="list-label">sub</div>
-          <div v-bind:class="(showTypeList) ? 'btn type-btn type-list-shown' : 'btn type-btn'" @click="showTypeList = !showTypeList"><div ref="typeText" class="type-btn-text" >{{superType | truncate}}</div><div class="type-btn-caret"><vue-icon className="vue-icon" icon="caret-down"></vue-icon></div></div>
+          <input class="input-small label-input" v-model="label" placeholder="Attribute Label">
+          <div class="sub-label">sub</div>
+          <div v-bind:class="(showTypeList) ? 'btn type-btn type-list-shown' : 'btn type-btn'" @click="showTypeList = !showTypeList"><div ref="typeText" class="type-btn-text" >{{superType}}</div><div class="type-btn-caret"><vue-icon className="vue-icon" icon="caret-down"></vue-icon></div></div>
           
           <div class="type-list" v-show="showTypeList">
             <ul v-for="type in types" :key=type>
                 <li class="type-item" @click="selectSuperType(type)" v-bind:class="[(type === superType) ? 'type-item-selected' : '']">{{type}}</li>
             </ul>
           </div>
-          
+
+        </div>
+
+        <div class="row">
+
           <div class="data-type-options" v-if="showDataTypeOptions">
             <div class="list-label">data type</div>
             <div v-bind:class="(showDataTypeList) ? 'btn type-btn type-list-shown data-type-btn' : 'btn type-btn data-type-btn'" @click="showDataTypeList = !showDataTypeList"><div class="type-btn-text" >{{selectedDataType}}</div><div class="type-btn-caret"><vue-icon className="vue-icon" icon="caret-down"></vue-icon></div></div>
@@ -26,13 +33,14 @@
                     <li class="type-item" @click="selectDataType(dataType)" v-bind:class="[(dataType === selectedDataType) ? 'type-item-selected' : '']">{{dataType}}</li>
                 </ul>
             </div>
+            
           </div>
-
+            <div class="submit-btn-div">
+              <loading-button v-on:clicked="defineAttributeType" text="Submit" :loading="showSpinner" className="btn submit-btn"></loading-button>
+            </div>
         </div>
         
         <div class="row submit-row">
-          <button class="btn" @click="clearPanel">Clear</button>
-          <loading-button v-on:clicked="defineAttributeType" text="Submit" :loading="showSpinner" className="btn submit-btn"></loading-button>
         </div>
 
       </div>
@@ -42,8 +50,28 @@
 
 <style scoped>
 
+    .close-container {
+        position: absolute;
+        right: 2px;
+    }
+
+
+      .submit-row {
+  justify-content: flex-end;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: var(--container-padding);
+    }
+
+
+.sub-label {
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
 .data-type-btn {
-  width: 64px !important;
+  width: 88px !important;
 }
 
 .data-type-options {
@@ -52,7 +80,6 @@
 
 }
   .list-label {
-    margin-left: 5px;
     margin-right: 5px;
   }
 
@@ -68,16 +95,16 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    padding: var(--container-padding);
+    padding: var(--container-padding) var(--container-padding) 0px var(--container-padding);
     justify-content: space-between;
     white-space: nowrap;
   }
 
   .new-attribute-panel-container {
     position: absolute;
-    left: 42px;
+    left: 120px;
     top: 10px;
-    background-color: var(--gray-3);
+    background-color: var(--gray-2);
     border: var(--container-darkest-border);
   }
 
@@ -102,7 +129,7 @@
       max-height: 172px;
       overflow: auto;
       position: absolute;
-      right: 131px;
+      right: 10px;
       top: 54px;
       width: 140px;
       z-index: 1;
@@ -124,12 +151,11 @@
 
 
       background-color: var(--gray-1);
-      max-height: 172px;
-      overflow: auto;
+      max-height: 174px;
       position: absolute;
-      right: 10px;
-      top: 54px;
-      width: 64px;
+      left: 62px;
+      top: 90px;
+      width: 87px;
       z-index: 1;
   }
   
@@ -172,6 +198,16 @@
       white-space: normal !important;
       word-wrap: break-word;
       line-height: 19px;
+      overflow: -webkit-paged-x;
+  }
+
+
+    .type-btn-text::-webkit-scrollbar {
+      height: 2px;
+  }
+
+  .type-btn-text::-webkit-scrollbar-thumb {
+      background: var(--green-4);
   }
 
   .type-btn-caret {
@@ -183,6 +219,7 @@
 </style>
 
 <script>
+  import logger from '@/../Logger';
   import { DEFINE_ATTRIBUTE_TYPE, OPEN_GRAKN_TX, UPDATE_METATYPE_INSTANCES } from '@/components/shared/StoresActions';
   import { createNamespacedHelpers } from 'vuex';
 
@@ -217,12 +254,6 @@
         ...mapActions([DEFINE_ATTRIBUTE_TYPE, OPEN_GRAKN_TX, UPDATE_METATYPE_INSTANCES]),
       };
     },
-    filters: {
-      truncate(type) {
-        if (type.length > 14) return `${type.substring(0, 14)}...`;
-        return type;
-      },
-    },
     watch: {
       panelShown(val) {
         if (val && this.superType === undefined) {
@@ -244,12 +275,18 @@
       },
     },
     methods: {
-      async defineAttributeType() {
+      defineAttributeType() {
         this.showSpinner = true;
-        await this[DEFINE_ATTRIBUTE_TYPE]({ label: this.label, superType: this.superType, dataType: this.selectedDataType, inheritDatatype: this.inheritDatatype });
-        this.showSpinner = false;
-        this.types.push(this.label);
-        this.clearPanel();
+        this[DEFINE_ATTRIBUTE_TYPE]({ label: this.label, superType: this.superType, dataType: this.selectedDataType, inheritDatatype: this.inheritDatatype })
+          .then(() => {
+            this.showSpinner = false;
+            this.types.push(this.label);
+            this.clearPanel();
+          })
+          .catch((e) => {
+            logger.error(e.stack);
+            this.showSpinner = false;
+          });
       },
       selectSuperType(type) {
         this.superType = type;
@@ -262,6 +299,7 @@
       clearPanel() {
         this.label = '';
         this.superType = this.types[0];
+        this.selectedDataType = this.dataTypes[0];
       },
       togglePanel() {
         if (this.panelShown === 'attribute') this.$emit('show-panel', undefined);

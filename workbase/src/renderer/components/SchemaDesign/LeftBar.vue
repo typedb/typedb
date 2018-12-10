@@ -1,11 +1,31 @@
 <template>
+<div>
   <div class="left-bar-container">
-    <new-entity-panel :panelShown="panelShown" v-on:show-panel="togglePanel"></new-entity-panel>
-    <new-attribute-panel :panelShown="panelShown" v-on:show-panel="togglePanel"></new-attribute-panel>
+    <div class="panel-header">
+      <h1>Define</h1>
+    </div>
+    <div class="content">
+      <new-entity-panel :panelShown="panelShown" v-on:show-panel="togglePanel"></new-entity-panel>
+      <new-attribute-panel :panelShown="panelShown" v-on:show-panel="togglePanel"></new-attribute-panel>
+      <new-relationship-panel :panelShown="panelShown" v-on:show-panel="togglePanel"></new-relationship-panel>
+    </div>
   </div>
+</div>
 </template>
 
 <style scoped>
+
+.content { 
+    display: flex;
+    flex-direction: column;
+    padding: var(--container-padding);
+}
+
+  .panel-header {
+    justify-content: center;
+    border-right: var(--container-darkest-border);
+    cursor: default;
+  }
 
   .left-bar-container {
     background-color: var(--gray-3);
@@ -13,7 +33,6 @@
     height: 100%;
     position: relative;
     z-index: 1;
-    padding: var(--container-padding);
     display: flex;
     align-items: center;
     flex-direction: column;
@@ -26,10 +45,10 @@
 
   import NewEntityPanel from './LeftBar/NewEntityPanel';
   import NewAttributePanel from './LeftBar/NewAttributePanel';
-
+  import NewRelationshipPanel from './LeftBar/NewRelationshipPanel';
 
   export default {
-    components: { NewEntityPanel, NewAttributePanel },
+    components: { NewEntityPanel, NewAttributePanel, NewRelationshipPanel },
     data() {
       return {
         panelShown: undefined,
@@ -43,6 +62,11 @@
         ...(this.$options.computed || {}),
         ...mapGetters(['currentKeyspace']),
       };
+    },
+    watch: {
+      currentKeyspace() {
+        this.panelShown = undefined;
+      },
     },
     methods: {
       togglePanel(panel) {
