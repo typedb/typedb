@@ -15,18 +15,6 @@
 
 <style scoped>
 
-.content { 
-    display: flex;
-    flex-direction: column;
-    padding: var(--container-padding);
-}
-
-  .panel-header {
-    justify-content: center;
-    border-right: var(--container-darkest-border);
-    cursor: default;
-  }
-
   .left-bar-container {
     background-color: var(--gray-3);
     border-right: var(--container-darkest-border);
@@ -36,6 +24,17 @@
     display: flex;
     align-items: center;
     flex-direction: column;
+  }
+
+  .content { 
+      display: flex;
+      flex-direction: column;
+      padding: var(--container-padding);
+  }
+
+  .panel-header {
+    justify-content: center;
+    cursor: default;
   }
 
 </style>

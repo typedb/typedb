@@ -37,12 +37,10 @@ SchemaHandler.prototype.defineRelationshipType = async function define({ label, 
   return type;
 };
 
-SchemaHandler.prototype.defineAttributeType = async function define({ label, superType, dataType, inheritDatatype }) {
-  const type = await tx.putAttributeType(label, toGraknDatatype(dataType));
-  if (!inheritDatatype) {
-    const directSuper = await tx.getSchemaConcept(superType);
-    await type.sup(directSuper);
-  }
+SchemaHandler.prototype.defineAttributeType = async function define({ attributeLabel, superType, dataType }) {
+  const type = await tx.putAttributeType(attributeLabel, toGraknDatatype(dataType));
+  const directSuper = await tx.getSchemaConcept(superType);
+  await type.sup(directSuper);
 };
 
 SchemaHandler.prototype.deleteType = async function deleteType({ label }) {

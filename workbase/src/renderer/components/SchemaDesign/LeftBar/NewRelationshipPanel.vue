@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button class="btn define-btn" @click="togglePanel">Relationship Type</button>
+    <button class="btn define-btn" :class="(panelShown === 'relationship') ? 'green-border': ''" @click="togglePanel">Relationship Type</button>
     <div class="new-relationship-panel-container" v-if="panelShown === 'relationship'">
       <div class="title">
         Define New Relationship Type
@@ -29,7 +29,6 @@
                 <div class="as-label">as</div>
               </div>
               <input class="input-small role-readonly" :value="role" placeholder="Relationship Label" readonly>
-              <!-- <div class="as-label">{{role}}</div> -->
               <div class="btns">
                 <div class="btn small-btn" v-if="!overridenRoles[index].override" @click="overRideRole(index)"><vue-icon icon="annotation" class="vue-icon" iconSize="12"></vue-icon></div>
                 <div class="btn small-btn" v-if="overridenRoles[index].override && superRelatipnshipTypeRoles[index] !== superRelatipnshipTypeRoles[index - 1]" @click="overRideAgain(index, role)"><vue-icon icon="plus" class="vue-icon" iconSize="12"></vue-icon></div>
@@ -77,6 +76,11 @@
 </template>
 
 <style scoped>
+
+
+.green-border {
+  border: 1px solid var(--button-hover-border-color);
+}
 
 .has {
   width: 100%;

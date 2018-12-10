@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button class="btn define-btn" @click="togglePanel">Entity Type</button>
+    <button class="btn define-btn" :class="(panelShown === 'entity') ? 'green-border': ''" @click="togglePanel">Entity Type</button>
     <div class="new-entity-panel-container" v-if="panelShown === 'entity'">
       <div class="title">
         Define New Entity Type
@@ -55,6 +55,12 @@
 </template>
 
 <style scoped>
+
+
+.green-border {
+  border: 1px solid var(--button-hover-border-color);
+}
+
     .close-container {
         position: absolute;
         right: 2px;
