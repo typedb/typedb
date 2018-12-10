@@ -19,6 +19,7 @@
 package ai.grakn.engine.attribute.deduplicator;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
@@ -94,7 +95,7 @@ public class AttributeDeduplicatorDaemon {
     /**
      * Starts a daemon which performs deduplication on incoming attributes in real-time.
      * The thread listens to the {@link RocksDbQueue} queue for incoming attributes and applies
-     * the {@link AttributeDeduplicator#deduplicate(EngineGraknTxFactory, KeyspaceIndexPair)} algorithm.
+     * the {@link AttributeDeduplicator#deduplicate(EmbeddedGraknTx, KeyspaceIndexPair)} algorithm.
      *
      */
     public CompletableFuture<Void> startDeduplicationDaemon() {
@@ -114,7 +115,9 @@ public class AttributeDeduplicatorDaemon {
 
                     // perform deduplicate for each (keyspace -> value)
                     for (KeyspaceIndexPair keyspaceIndexPair : uniqueKeyValuePairs) {
-                        deduplicate(txFactory, keyspaceIndexPair);
+                        try (EmbeddedGraknTx tx = txFactory.tx(keyspaceIndexPair.keyspace(), GraknTxType.WRITE)) {
+                            deduplicate(tx, keyspaceIndexPair);
+                        }
                     }
 
                     LOG.trace("new attributes processed.");
