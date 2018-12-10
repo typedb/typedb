@@ -19,15 +19,14 @@
 package grakn.core.graql.answer;
 
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.admin.Explanation;
-import com.google.common.collect.ImmutableSet;
 
+import java.util.Collections;
 import java.util.Set;
 
 /**
  * A type of {@link Answer} object that contains a {@link Set}.
  */
-public class ConceptSet implements Answer<ConceptSet>{
+public class ConceptSet implements Answer<ConceptSet> {
 
     // TODO: change to store Set<Concept> once we are able to construct Concept without a database look up
     private final Set<ConceptId> set;
@@ -38,10 +37,10 @@ public class ConceptSet implements Answer<ConceptSet>{
     }
 
     public ConceptSet(Set<ConceptId> set, Explanation explanation) {
-        this.set = ImmutableSet.copyOf(set);
+        this.set = Collections.unmodifiableSet(set);
         this.explanation = explanation;
     }
-    
+
     @Override
     public ConceptSet asConceptSet() {
         return this;
@@ -65,7 +64,7 @@ public class ConceptSet implements Answer<ConceptSet>{
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         return set.hashCode();
     }
 }

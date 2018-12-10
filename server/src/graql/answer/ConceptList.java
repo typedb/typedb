@@ -19,13 +19,12 @@
 package grakn.core.graql.answer;
 
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.admin.Explanation;
-import com.google.common.collect.ImmutableList;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
- * A type of {@link Answer} object that contains a {@link List}.
+ * A type of {@link Answer} object that contains a {@link List} of Concepts.
  */
 public class ConceptList implements Answer<ConceptList>{
 
@@ -38,7 +37,7 @@ public class ConceptList implements Answer<ConceptList>{
     }
 
     public ConceptList(List<ConceptId> list, Explanation explanation) {
-        this.list = ImmutableList.copyOf(list);
+        this.list = Collections.unmodifiableList(list);
         this.explanation = explanation;
     }
 

@@ -18,7 +18,6 @@
 
 package grakn.core.client.test;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -26,16 +25,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.client.Grakn;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.AggregateQuery;
-import grakn.core.graql.query.DeleteQuery;
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptList;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Value;
@@ -54,6 +47,12 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.printer.Printer;
+import grakn.core.graql.query.AggregateQuery;
+import grakn.core.graql.query.DeleteQuery;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -76,16 +75,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.Graql.count;
-import static grakn.core.graql.query.Graql.group;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.Graql.max;
-import static grakn.core.graql.query.Graql.mean;
-import static grakn.core.graql.query.Graql.median;
-import static grakn.core.graql.query.Graql.min;
-import static grakn.core.graql.query.Graql.std;
-import static grakn.core.graql.query.Graql.sum;
-import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.query.ComputeQuery.Algorithm.CONNECTED_COMPONENT;
 import static grakn.core.graql.query.ComputeQuery.Algorithm.DEGREE;
 import static grakn.core.graql.query.ComputeQuery.Algorithm.K_CORE;
@@ -99,6 +88,16 @@ import static grakn.core.graql.query.ComputeQuery.Method.MIN;
 import static grakn.core.graql.query.ComputeQuery.Method.PATH;
 import static grakn.core.graql.query.ComputeQuery.Method.STD;
 import static grakn.core.graql.query.ComputeQuery.Method.SUM;
+import static grakn.core.graql.query.Graql.count;
+import static grakn.core.graql.query.Graql.group;
+import static grakn.core.graql.query.Graql.max;
+import static grakn.core.graql.query.Graql.mean;
+import static grakn.core.graql.query.Graql.median;
+import static grakn.core.graql.query.Graql.min;
+import static grakn.core.graql.query.Graql.std;
+import static grakn.core.graql.query.Graql.sum;
+import static grakn.core.graql.query.pattern.Pattern.label;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -307,7 +306,7 @@ public class GraknClientIT {
     }
 
     private void checkAnswerConnectedness(ConceptMap answer) {
-        ImmutableList<ConceptMap> answers = answer.explanation().getAnswers();
+        List<ConceptMap> answers = answer.explanation().getAnswers();
         answers.forEach(a -> {
             TestCase.assertTrue("Disconnected answer in explanation",
                     answers.stream()
@@ -384,7 +383,6 @@ public class GraknClientIT {
                 assertEquals(localConcept.isType(), remoteConcept.isType());
                 assertEquals(localConcept.id(), remoteConcept.id());
                 assertEquals(localConcept.isDeleted(), remoteConcept.isDeleted());
-                assertEquals(localConcept.keyspace(), remoteConcept.keyspace());
             }
         }
     }

@@ -31,7 +31,7 @@ java_library(
     srcs = glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//common",
+        "//common:common",
         "//graql/java/parser:parser", # TODO: need to just depend on top package //graql/java:graql
         "//protocol:protocol-java",
 

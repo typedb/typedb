@@ -18,19 +18,18 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.LabelId;
 import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
+import grakn.core.graql.internal.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.graql.internal.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,11 +106,6 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
     @Override
     public ConceptId id() {
         return ConceptId.of(edge().id().getValue());
-    }
-
-    @Override
-    public Keyspace keyspace() {
-        return edge().tx().keyspace();
     }
 
     @Override

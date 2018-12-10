@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.explanation;
 
-import grakn.core.graql.admin.Explanation;
+import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.admin.ReasonerQuery;
 import com.google.common.collect.ImmutableList;
 import grakn.core.graql.answer.ConceptMap;

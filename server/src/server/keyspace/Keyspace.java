@@ -26,14 +26,7 @@ import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
 /**
- * <p>
- *     A {@link Keyspace}
- * </p>
- *
- * <p>
- *     A class which represents the unique name of a Grakn Knowledge Base
- * </p>
- *
+ * An identifier for an isolated scope of a data in the database.
  */
 @AutoValue
 public abstract class Keyspace implements Comparable<Keyspace>, Serializable {
@@ -43,18 +36,17 @@ public abstract class Keyspace implements Comparable<Keyspace>, Serializable {
 
     @Override
     public int compareTo(Keyspace o) {
-        if(equals(o)) return 0;
+        if (equals(o)) return 0;
         return getName().compareTo(o.getName());
     }
 
     /**
-     *
      * @param name The string which potentially represents a unique {@link Keyspace}
      * @return The matching {@link Keyspace}
      */
     @CheckReturnValue
-    public static Keyspace of(String name){
-        if(!Validator.isValidKeyspaceName(name)) {
+    public static Keyspace of(String name) {
+        if (!Validator.isValidKeyspaceName(name)) {
             throw TransactionException.invalidKeyspaceName(name);
         }
         return new AutoValue_Keyspace(name);

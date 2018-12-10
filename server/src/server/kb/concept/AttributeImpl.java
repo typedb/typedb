@@ -21,27 +21,21 @@ package grakn.core.server.kb.concept;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Thing;
+import grakn.core.graql.internal.Schema;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     Represent a literal resource in the graph.
- * </p>
- *
- * <p>
- *     Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
- *     1. It is unique to its {@link AttributeType} based on it's value.
- *     2. It has a {@link AttributeType.DataType} associated with it which constrains the allowed values.
- * </p>
- *
+ * Represent a literal resource in the graph.
+ * Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
+ * 1. It is unique to its {@link AttributeType} based on it's value.
+ * 2. It has a {@link AttributeType.DataType} associated with it which constrains the allowed values.
  *
  * @param <D> The data type of this resource type.
- *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
+ *            Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
     private AttributeImpl(VertexElement vertexElement) {
@@ -53,7 +47,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
         setValue(value);
     }
 
-    public static <D> AttributeImpl<D> get(VertexElement vertexElement){
+    public static <D> AttributeImpl<D> get(VertexElement vertexElement) {
         return new AttributeImpl<>(vertexElement);
     }
 
@@ -72,10 +66,11 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
 
     /**
      * This is to handle casting longs and doubles when the type allows for the data type to be a number
+     *
      * @param value The value of the resource
      * @return The value casted to the correct type
      */
-    private static Object castValue(AttributeType.DataType dataType, Object value){
+    private static Object castValue(AttributeType.DataType dataType, Object value) {
         try {
             if (dataType.equals(AttributeType.DataType.DOUBLE)) {
                 return ((Number) value).doubleValue();
@@ -84,10 +79,9 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
                     throw new ClassCastException();
                 }
                 return ((Number) value).longValue();
-            } else if (dataType.equals(AttributeType.DataType.DATE) && (value instanceof Long)){
+            } else if (dataType.equals(AttributeType.DataType.DATE) && (value instanceof Long)) {
                 return value;
-            }
-            else {
+            } else {
                 return dataType.getPersistenceValue(value);
             }
         } catch (ClassCastException e) {
@@ -96,7 +90,6 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     /**
-     *
      * @return The data type of this {@link Attribute}'s {@link AttributeType}.
      */
     @Override
@@ -118,7 +111,6 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     /**
-     *
      * @param value The value to store on the resource
      */
     private void setValue(Object value) {
@@ -128,20 +120,19 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     /**
-     *
      * @return The value casted to the correct type
      */
     @Override
-    public D value(){
+    public D value() {
         return dataType().getValue(vertex().property(dataType().getVertexProperty()));
     }
 
     @Override
-    public String innerToString(){
+    public String innerToString() {
         return super.innerToString() + "- Value [" + value() + "] ";
     }
 
-    public static AttributeImpl from(Attribute attribute){
+    public static AttributeImpl from(Attribute attribute) {
         return (AttributeImpl) attribute;
     }
 }

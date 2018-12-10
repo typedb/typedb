@@ -18,18 +18,18 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Type;
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Thing;
+import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.Schema;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.server.kb.structure.EdgeElement;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Before;
@@ -62,13 +62,13 @@ public class ConceptIT {
     private SessionImpl session;
 
     @Before
-    public void setUp(){
+    public void setUp() {
         session = server.sessionWithNewKeyspace();
         tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
-    public void tearDown(){
+    public void tearDown() {
         tx.close();
         session.close();
     }
@@ -105,7 +105,7 @@ public class ConceptIT {
     }
 
     @Test
-    public void whenGettingEdgesFromAConcept_EdgesFilteredByLabelAreReturned(){
+    public void whenGettingEdgesFromAConcept_EdgesFilteredByLabelAreReturned() {
         EntityType entityType1 = tx.putEntityType("entity type");
         EntityTypeImpl entityType2 = (EntityTypeImpl) tx.putEntityType("entity type 1").sup(entityType1);
         EntityType entityType3 = tx.putEntityType("entity type 2").sup(entityType2);
@@ -121,7 +121,7 @@ public class ConceptIT {
     }
 
     @Test
-    public void whenCastingToCorrectType_ReturnCorrectType(){
+    public void whenCastingToCorrectType_ReturnCorrectType() {
         Concept concept = tx.putEntityType("Test");
         assertTrue("Concept is not of type [" + EntityType.class.getName() + "]", concept.isEntityType());
         EntityType type = concept.asEntityType();
@@ -130,7 +130,7 @@ public class ConceptIT {
 
 
     @Test
-    public void whenCastingToInCorrectType_Throw(){
+    public void whenCastingToInCorrectType_Throw() {
         EntityType thingType = tx.putEntityType("thing type");
         Entity thing = thingType.create();
 

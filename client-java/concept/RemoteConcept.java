@@ -19,12 +19,11 @@
 
 package grakn.core.client.concept;
 
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.client.Grakn;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.server.exception.TransactionException;
 import grakn.core.protocol.ConceptProto;
+import grakn.core.server.exception.TransactionException;
 
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -69,11 +68,6 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
 
     @Override
     public abstract ConceptId id();
-
-    @Override
-    public final Keyspace keyspace() {
-        return tx().keyspace();
-    }
 
     @Override
     public final void delete() throws TransactionException {

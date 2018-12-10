@@ -29,7 +29,7 @@ import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;
-import grakn.core.graql.admin.Explanation;
+import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptSet;

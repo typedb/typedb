@@ -18,11 +18,9 @@
 
 package grakn.core.graql.answer;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.Explanation;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
@@ -37,6 +35,8 @@ import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
+
+import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,35 +48,28 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.CheckReturnValue;
 
 
 /**
- * <p>
- * Wrapper for a query result class {@link ConceptMap}.
- * </p>
+ * A type of {@link Answer} object that contains a {@link Map} of Concepts.
  */
 public class ConceptMap implements Answer<ConceptMap> {
 
-    private final ImmutableMap<Variable, Concept> map;
+    private final Map<Variable, Concept> map;
     private final Explanation explanation;
 
     public ConceptMap() {
-        this.map = ImmutableMap.of();
+        this.map = Collections.emptyMap();
         this.explanation = new QueryExplanation();
     }
 
     public ConceptMap(ConceptMap map) {
-        this(map.map().entrySet(), map.explanation());
+        this(map.map(), map.explanation());
     }
 
-    public ConceptMap(Collection<Map.Entry<Variable, Concept>> mappings, Explanation exp) {
-        this.map = ImmutableMap.<Variable, Concept>builder().putAll(mappings).build();
+    public ConceptMap(Map<Variable, Concept> map, Explanation exp) {
+        this.map = Collections.unmodifiableMap(map);
         this.explanation = exp;
-    }
-
-    public ConceptMap(Map<Variable, Concept> m, Explanation exp) {
-        this(m.entrySet(), exp);
     }
 
     public ConceptMap(Map<Variable, Concept> m) {
@@ -94,7 +87,7 @@ public class ConceptMap implements Answer<ConceptMap> {
     }
 
     @CheckReturnValue
-    public ImmutableMap<Variable, Concept> map() {
+    public Map<Variable, Concept> map() {
         return map;
     }
 
@@ -164,7 +157,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      * perform an answer merge with optional explanation
      * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
      *
-     * @param map          answer to be merged with
+     * @param map              answer to be merged with
      * @param mergeExplanation flag for providing explanation
      * @return merged answer
      */
@@ -237,7 +230,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      * @return explained answer
      */
     public ConceptMap explain(Explanation exp) {
-        return new ConceptMap(this.map.entrySet(), exp.childOf(this));
+        return new ConceptMap(this.map, exp.childOf(this));
     }
 
     /**
@@ -249,16 +242,16 @@ public class ConceptMap implements Answer<ConceptMap> {
         return new ConceptMap(
                 this.map.entrySet().stream()
                         .filter(e -> vars.contains(e.getKey()))
-                        .collect(Collectors.toSet()),
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
                 this.explanation()
         );
     }
 
     /**
      * @param partialSub partial child substitution that needs to be incorporated
-     * @param vars child vars
-     * @param unifier parent-child unifier
-     * @param diff parent-child semantic difference
+     * @param vars       child vars
+     * @param unifier    parent-child unifier
+     * @param diff       parent-child semantic difference
      * @return projected answer (empty if semantic difference not satisfied)
      */
     @CheckReturnValue
@@ -266,7 +259,7 @@ public class ConceptMap implements Answer<ConceptMap> {
         ConceptMap unified = this.unify(unifier);
         if (unified.isEmpty()) return unified;
         Set<Variable> varsToRetain = Sets.difference(unified.vars(), partialSub.vars());
-        return diff.satisfiedBy(unified)?
+        return diff.satisfiedBy(unified) ?
                 unified
                         .project(varsToRetain)
                         .merge(partialSub)
