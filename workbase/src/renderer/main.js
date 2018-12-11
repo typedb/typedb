@@ -17,7 +17,7 @@ import CustomPlugins from './customPlugins/';
 Array.prototype.flatMap = function flat(lambda) { return Array.prototype.concat.apply([], this.map(lambda)); };
 
 const SERVER_AUTHENTICATED = false;
-const LANDING_PAGE = '/develop/data';
+const LANDING_PAGE = '/login';
 
 // Disable devtools message
 Vue.config.devtools = false;
@@ -54,7 +54,7 @@ router.beforeEach((to, from, next) => {
 });
 
 function initialiseStore() {
-  this.$store.dispatch('initGrakn');
+  // this.$store.dispatch('initGrakn');
   this.$router.push(LANDING_PAGE);
 }
 

@@ -19,16 +19,21 @@ export const deleteKeyspace = async (context, name) => context.state.grakn.keysp
   .then(() => { context.dispatch('loadKeyspaces'); });
 
 export const login = (context, credentials) =>
-  // TODO: Keyspace 'grakn' is hardcoded until we will implement an authenticate endpoint in gRPC
   context.dispatch('initGrakn', credentials).then(() => {
     context.commit('setCredentials', credentials);
     context.commit('userLogged', true);
   });
 
 export const initGrakn = (context, credentials) => {
-  const grakn = new Grakn(ServerSettings.getServerUri(), credentials);
-  context.commit('setGrakn', grakn);
-  context.dispatch('loadKeyspaces');
+  try {
+    const grakn = new Grakn(ServerSettings.getServerUri(), credentials);
+    grakn.session('grakn').transaction();
+
+    context.commit('setGrakn', grakn);
+    context.dispatch('loadKeyspaces');
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 export const logout = (context) => {
