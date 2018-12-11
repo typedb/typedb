@@ -23,15 +23,15 @@ SchemaHandler.prototype.defineEntityType = async function define({ entityLabel, 
   await type.sup(directSuper);
 };
 
-SchemaHandler.prototype.defineRole = async function define({ label, superType }) {
-  const type = await tx.putRole(label);
+SchemaHandler.prototype.defineRole = async function define({ roleLabel, superType }) {
+  const type = await tx.putRole(roleLabel);
   const directSuper = await tx.getSchemaConcept(superType);
   await type.sup(directSuper);
   return type;
 };
 
-SchemaHandler.prototype.defineRelationshipType = async function define({ label, superType }) {
-  const type = await tx.putRelationshipType(label);
+SchemaHandler.prototype.defineRelationshipType = async function define({ relationshipLabel, superType }) {
+  const type = await tx.putRelationshipType(relationshipLabel);
   const directSuper = await tx.getSchemaConcept(superType);
   await type.sup(directSuper);
   return type;
@@ -49,8 +49,8 @@ SchemaHandler.prototype.deleteType = async function deleteType({ label }) {
   return type.id;
 };
 
-SchemaHandler.prototype.addAttribute = async function addAttribute({ label, attributeLabel }) {
-  const type = await tx.getSchemaConcept(label);
+SchemaHandler.prototype.addAttribute = async function addAttribute({ schemaLabel, attributeLabel }) {
+  const type = await tx.getSchemaConcept(schemaLabel);
   const attribute = await tx.getSchemaConcept(attributeLabel);
   return type.has(attribute);
 };
@@ -61,8 +61,8 @@ SchemaHandler.prototype.deleteAttribute = async function deleteAttribute({ label
   return type.unhas(attribute);
 };
 
-SchemaHandler.prototype.addPlaysRole = async function addPlaysRole({ label, roleLabel }) {
-  const type = await tx.getSchemaConcept(label);
+SchemaHandler.prototype.addPlaysRole = async function addPlaysRole({ schemaLabel, roleLabel }) {
+  const type = await tx.getSchemaConcept(schemaLabel);
   const role = await tx.getSchemaConcept(roleLabel);
   return type.plays(role);
 };
@@ -73,8 +73,8 @@ SchemaHandler.prototype.deletePlaysRole = async function deletePlaysRole({ label
   return type.unplay(role);
 };
 
-SchemaHandler.prototype.addRelatesRole = async function addRelatesRole({ label, roleLabel }) {
-  const relationshipType = await tx.getSchemaConcept(label);
+SchemaHandler.prototype.addRelatesRole = async function addRelatesRole({ schemaLabel, roleLabel }) {
+  const relationshipType = await tx.getSchemaConcept(schemaLabel);
   const role = await tx.getSchemaConcept(roleLabel);
   return relationshipType.relates(role);
 };

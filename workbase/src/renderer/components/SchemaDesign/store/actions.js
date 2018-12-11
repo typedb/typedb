@@ -126,12 +126,12 @@ export default {
 
     // add attribute types to entity type
     await Promise.all(payload.attributeTypes.map(async (attributeType) => {
-      await state.schemaHandler.addAttribute({ label: payload.entityLabel, attributeLabel: attributeType });
+      await state.schemaHandler.addAttribute({ schemaLabel: payload.entityLabel, attributeLabel: attributeType });
     }));
 
     // add roles to entity type
     await Promise.all(payload.roleTypes.map(async (roleType) => {
-      await state.schemaHandler.addPlaysRole({ label: payload.entityLabel, roleLabel: roleType });
+      await state.schemaHandler.addPlaysRole({ schemaLabel: payload.entityLabel, roleLabel: roleType });
     }));
 
     dispatch(COMMIT_TX, graknTx).then(async () => {
@@ -191,16 +191,17 @@ export default {
   async [DEFINE_ATTRIBUTE_TYPE]({ state, dispatch }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
 
+    // define entity type
     await state.schemaHandler.defineAttributeType(payload);
 
-    // add attribute types to entity type
+    // add attribute types to attribute type
     await Promise.all(payload.attributeTypes.map(async (attributeType) => {
-      await state.schemaHandler.addAttribute({ label: payload.attributeLabel, attributeLabel: attributeType });
+      await state.schemaHandler.addAttribute({ schemaLabel: payload.attributeLabel, attributeLabel: attributeType });
     }));
 
-    // add roles to entity type
+    // add roles to attribute type
     await Promise.all(payload.roleTypes.map(async (roleType) => {
-      await state.schemaHandler.addPlaysRole({ label: payload.attributeLabel, roleLabel: roleType });
+      await state.schemaHandler.addPlaysRole({ schemaLabel: payload.attributeLabel, roleLabel: roleType });
     }));
 
     dispatch(COMMIT_TX, graknTx)
@@ -218,30 +219,30 @@ export default {
     let graknTx = await dispatch(OPEN_GRAKN_TX);
     await state.schemaHandler.defineRelationshipType(payload);
 
-    // define and relate roles to entity type
+    // define and relate roles to relationship type
     await Promise.all(payload.defineRoles.map(async (roleType) => {
-      await state.schemaHandler.defineRole({ label: roleType.label, superType: roleType.superType });
-      await state.schemaHandler.addRelatesRole({ label: payload.label, roleLabel: roleType.label });
+      await state.schemaHandler.defineRole({ roleLabel: roleType.label, superType: roleType.superType });
+      await state.schemaHandler.addRelatesRole({ schemaLabel: payload.relationshipLabel, roleLabel: roleType.label });
     }));
 
-    // relate roles to entity type
+    // relate roles to relationship type
     await Promise.all(payload.relateRoles.map(async (roleType) => {
-      await state.schemaHandler.addRelatesRole({ label: payload.label, roleLabel: roleType });
+      await state.schemaHandler.addRelatesRole({ schemaLabel: payload.relationshipLabel, roleLabel: roleType });
     }));
 
-    // add attribute types to entity type
+    // add attribute types to relationship type
     await Promise.all(payload.attributeTypes.map(async (attributeType) => {
-      await state.schemaHandler.addAttribute({ label: payload.label, attributeLabel: attributeType });
+      await state.schemaHandler.addAttribute({ schemaLabel: payload.relationshipLabel, attributeLabel: attributeType });
     }));
 
-    // add roles to entity type
+    // add roles to relationship type
     await Promise.all(payload.roleTypes.map(async (roleType) => {
-      await state.schemaHandler.addPlaysRole({ label: payload.label, roleLabel: roleType });
+      await state.schemaHandler.addPlaysRole({ schemaLabel: payload.relationshipLabel, roleLabel: roleType });
     }));
 
     dispatch(COMMIT_TX, graknTx).then(async () => {
       graknTx = await dispatch(OPEN_GRAKN_TX);
-      const type = await graknTx.getSchemaConcept(payload.label);
+      const type = await graknTx.getSchemaConcept(payload.relationshipLabel);
       const label = await type.label();
       const sup = await type.sup();
       const supLabel = await sup.label();

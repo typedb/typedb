@@ -1,7 +1,7 @@
 <template>
   <div>
-    <button class="btn define-btn" :class="(panelShown === 'relationship') ? 'green-border': ''" @click="togglePanel">Relationship Type</button>
-    <div class="new-relationship-panel-container" v-if="panelShown === 'relationship'">
+    <button class="btn define-btn" :class="(showPanel === 'relationship') ? 'green-border': ''" @click="togglePanel">Relationship Type</button>
+    <div class="new-relationship-panel-container" v-if="showPanel === 'relationship'">
       <div class="title">
         Define New Relationship Type
         <div class="close-container" @click="$emit('show-panel', undefined)"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
@@ -367,7 +367,7 @@
   import { createNamespacedHelpers } from 'vuex';
 
   export default {
-    props: ['panelShown'],
+    props: ['showPanel'],
     data() {
       return {
         showTypeList: false,
@@ -400,7 +400,7 @@
       };
     },
     watch: {
-      panelShown(val) {
+      showPanel(val) {
         if (val === 'relationship') { // reset panel when it is toggled
           this.resetPanel();
         }
@@ -408,7 +408,7 @@
       async superType(val) {
         if (val !== 'relationship') { // if super type is not 'relationship' then compute roles of supertype for inheriting and overriding
           this.newRoles = [];
-          
+
           const graknTx = await this[OPEN_GRAKN_TX]();
           const RelationshipType = await graknTx.getSchemaConcept(val);
 
@@ -441,14 +441,17 @@
       },
       async defineRelationshipType() {
         if (this.relationshipLabel === '') {
-          this.$notifyInfo('Cannot define Relationship Type without Relationship Label');
-        } else if (this.superType === 'relationship' && !this.newRoles[0].length) {
-          this.$notifyInfo('Cannot define Relationship Type without atleast one related role');
+          this.$notifyError('Cannot define Relationship Type without Relationship Label');
+        } else if (this.superType === 'relationship' && !this.newRoles[0].length && !this.toggledRoleTypes.length) {
+          this.$notifyError('Cannot define Relationship Type without atleast one related role');
         } else {
           this.showSpinner = true;
 
+          // collect all roles to be defined and related
           const defineRoles = this.newRoles.map(role => ({ label: role, superType: 'role' }))
             .concat(this.overridenRoles.map(role => ((role.override) ? { label: role.label, superType: role.superType } : null))).filter(r => r);
+
+          // collect all roles which are already defined but only need to be related
           const relateRoles = this.overridenRoles.map(role => ((!role.override) ? role.label : null)).filter(r => r);
 
           this[DEFINE_RELATIONSHIP_TYPE]({
@@ -488,7 +491,7 @@
         this.overridenRoles = [];
       },
       togglePanel() {
-        if (this.panelShown === 'relationship') this.$emit('show-panel', undefined);
+        if (this.showPanel === 'relationship') this.$emit('show-panel', undefined);
         else this.$emit('show-panel', 'relationship');
       },
       addNewRole() {

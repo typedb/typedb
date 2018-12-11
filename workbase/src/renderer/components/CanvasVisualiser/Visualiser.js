@@ -78,7 +78,7 @@ function edgesBetweenTwoNodes(a, b) {
 function addEdge(edge) {
   if (this.nodeExists(edge.from) && this.nodeExists(edge.to)
         && !this.alreadyConnected(edge.from, edge.to, edge.label)) {
-    this._edges.add(Object.assign(edge, { label: edge.label, hiddenLabel: edge.label }));
+    this._edges.add(Object.assign(edge, { label: '', hiddenLabel: edge.label }));
     this.checkParallelEdges(edge.from, edge.to);
   }
 }

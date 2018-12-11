@@ -1,8 +1,8 @@
 <template>
   <div>
-    <button class="btn define-btn" :class="(panelShown === 'attribute') ? 'green-border': ''" @click="togglePanel">Attribute Type</button>
+    <button class="btn define-btn" :class="(showPanel === 'attribute') ? 'green-border': ''" @click="togglePanel">Attribute Type</button>
 
-    <div class="new-attribute-panel-container" v-if="panelShown === 'attribute'">
+    <div class="new-attribute-panel-container" v-if="showPanel === 'attribute'">
       <div class="title">
         Define New Attribute Type
         <div class="close-cross" @click="$emit('show-panel', undefined)"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
@@ -344,7 +344,7 @@
   import { createNamespacedHelpers } from 'vuex';
 
   export default {
-    props: ['panelShown'],
+    props: ['showPanel'],
     data() {
       return {
         attributeLabel: '',
@@ -377,7 +377,7 @@
       };
     },
     watch: {
-      panelShown(val) {
+      showPanel(val) {
         if (val === 'attribute') { // reset panel when it is toggled
           this.resetPanel();
         }
@@ -387,6 +387,7 @@
           const graknTx = await this[OPEN_GRAKN_TX]();
           const attributeType = await graknTx.getSchemaConcept(val);
           this.dataType = (await attributeType.dataType()).toLowerCase();
+          this.showDataTypeList = false;
         } else {
           this.dataType = this.dataTypes[0];
         }
@@ -395,7 +396,7 @@
     methods: {
       defineAttributeType() {
         if (this.attributeLabel === '') {
-          this.$notifyInfo('Cannot define Attribute Type without Attribute Label');
+          this.$notifyError('Cannot define Attribute Type without Attribute Label');
         } else {
           this.showSpinner = true;
           this[DEFINE_ATTRIBUTE_TYPE]({
@@ -435,7 +436,7 @@
         this.showPlaysPanel = false;
       },
       togglePanel() {
-        if (this.panelShown === 'attribute') this.$emit('show-panel', undefined);
+        if (this.showPanel === 'attribute') this.$emit('show-panel', undefined);
         else this.$emit('show-panel', 'attribute');
       },
       toggleDataList() {

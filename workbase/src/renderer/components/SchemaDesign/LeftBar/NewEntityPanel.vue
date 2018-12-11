@@ -1,7 +1,7 @@
 <template>
   <div>
-    <button class="btn define-btn" :class="(panelShown === 'entity') ? 'green-border': ''" @click="togglePanel">Entity Type</button>
-    <div class="new-entity-panel-container" v-if="panelShown === 'entity'">
+    <button class="btn define-btn" :class="(showPanel === 'entity') ? 'green-border': ''" @click="togglePanel">Entity Type</button>
+    <div class="new-entity-panel-container" v-if="showPanel === 'entity'">
       <div class="title">
         Define New Entity Type
         <div class="close-container" @click="$emit('show-panel', undefined)"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
@@ -265,7 +265,7 @@
   import { createNamespacedHelpers } from 'vuex';
 
   export default {
-    props: ['panelShown'],
+    props: ['showPanel'],
     data() {
       return {
         showEntityTypeList: false,
@@ -295,7 +295,7 @@
       };
     },
     watch: {
-      panelShown(val) {
+      showPanel(val) {
         if (val === 'entity') {
           this.resetPanel();
         }
@@ -320,7 +320,7 @@
       },
       defineEntityType() {
         if (this.entityLabel === '') {
-          this.$notifyInfo('Cannot define Entity Type without Entity Label');
+          this.$notifyError('Cannot define Entity Type without Entity Label');
         } else {
           this.showSpinner = true;
           this[DEFINE_ENTITY_TYPE]({ entityLabel: this.entityLabel, superType: this.superType, attributeTypes: this.toggledAttributeTypes, roleTypes: this.toggledRoleTypes })
@@ -351,7 +351,7 @@
         this.showPlaysPanel = false;
       },
       togglePanel() {
-        if (this.panelShown === 'entity') this.$emit('show-panel', undefined);
+        if (this.showPanel === 'entity') this.$emit('show-panel', undefined);
         else this.$emit('show-panel', 'entity');
       },
     },

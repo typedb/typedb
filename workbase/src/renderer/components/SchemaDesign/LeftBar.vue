@@ -1,13 +1,13 @@
 <template>
 <div>
-  <div class="left-bar-container">
+  <div class="left-bar-container noselect">
     <div class="panel-header">
       <h1>Define</h1>
     </div>
     <div class="content">
-      <new-entity-panel :panelShown="panelShown" v-on:show-panel="togglePanel"></new-entity-panel>
-      <new-attribute-panel :panelShown="panelShown" v-on:show-panel="togglePanel"></new-attribute-panel>
-      <new-relationship-panel :panelShown="panelShown" v-on:show-panel="togglePanel"></new-relationship-panel>
+      <new-entity-panel :showPanel="showPanel" v-on:show-panel="togglePanel"></new-entity-panel>
+      <new-attribute-panel :showPanel="showPanel" v-on:show-panel="togglePanel"></new-attribute-panel>
+      <new-relationship-panel :showPanel="showPanel" v-on:show-panel="togglePanel"></new-relationship-panel>
     </div>
   </div>
 </div>
@@ -50,7 +50,7 @@
     components: { NewEntityPanel, NewAttributePanel, NewRelationshipPanel },
     data() {
       return {
-        panelShown: undefined,
+        showPanel: undefined,
       };
     },
     beforeCreate() {
@@ -64,13 +64,13 @@
     },
     watch: {
       currentKeyspace() {
-        this.panelShown = undefined;
+        this.showPanel = undefined;
       },
     },
     methods: {
       togglePanel(panel) {
         if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
-        else this.panelShown = panel;
+        else this.showPanel = panel;
       },
     },
   };
