@@ -58,9 +58,8 @@
           </div>
         </div>
 
-
         <div class="submit-row">
-          <button class="btn submit-btn" @click="clearPanel">Clear</button>
+          <button class="btn submit-btn" @click="resetPanel">Clear</button>
           <loading-button v-on:clicked="defineEntityType" text="Submit" :loading="showSpinner" className="btn submit-btn"></loading-button>
         </div>
 
@@ -71,72 +70,71 @@
 
 <style scoped>
 
-.has-header {
-  width: 100%;
-  background-color: var(--gray-1);
-  border: var(--container-darkest-border);
-  height: 22px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
+  .has-header {
+    width: 100%;
+    background-color: var(--gray-1);
+    border: var(--container-darkest-border);
+    height: 22px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
 
+  .has {
+    width: 100%;
+  }
 
-.has {
-  width: 100%;
-}
+  .green-border {
+    border: 1px solid var(--button-hover-border-color);
+  }
 
-.green-border {
-  border: 1px solid var(--button-hover-border-color);
-}
+  .close-container {
+    position: absolute;
+    right: 2px;
+  }
 
-    .close-container {
-        position: absolute;
-        right: 2px;
-    }
-
-    .submit-row {
-      justify-content: space-between;
+  .submit-row {
+    justify-content: space-between;
     display: flex;
     flex-direction: row;
     align-items: center;
     padding: var(--container-padding);
-    }
+  }
 
-    .attribute-type-list {
-        border: var(--container-darkest-border);
-        background-color: var(--gray-1);
-        width: 100%;
-        max-height: 140px;
-        overflow: auto;
-    }
+  .attribute-type-list {
+    border: var(--container-darkest-border);
+    background-color: var(--gray-1);
+    width: 100%;
+    max-height: 140px;
+    overflow: auto;
+  }
 
-    .attribute-type-list::-webkit-scrollbar {
-        width: 2px;
-    }
+  .attribute-type-list::-webkit-scrollbar {
+    width: 2px;
+  }
 
-    .attribute-type-list::-webkit-scrollbar-thumb {
-        background: var(--green-4);
-    }
+  .attribute-type-list::-webkit-scrollbar-thumb {
+    background: var(--green-4);
+  }
 
-    /*dynamic*/
-    .attribute-btn {
-        align-items: center;
-        padding: 2px;
-        cursor: pointer;
-        white-space: normal;
-        word-wrap: break-word;
-    }
+  /*dynamic*/
+  .attribute-btn {
+    align-items: center;
+    padding: 2px;
+    cursor: pointer;
+    white-space: normal;
+    word-wrap: break-word;
+  }
 
-    /*dynamic*/
-    .attribute-btn:hover {
-        background-color: var(--purple-4);
-    }
+  /*dynamic*/
+  .attribute-btn:hover {
+    background-color: var(--purple-4);
+  }
 
-    /*dynamic*/
-    .toggle-attribute-btn {
-        background-color: var(--purple-3);
-    }
+  /*dynamic*/
+  .toggle-attribute-btn {
+    background-color: var(--purple-3);
+  }
 
 
   .label-input {
@@ -174,6 +172,7 @@
     display: flex;
     align-items: center;
     padding: var(--container-padding);
+    border-bottom: var(--container-darkest-border);
   }
 
   .content {
@@ -181,28 +180,25 @@
   }
 
   .type-list {
-      border-left: var(--container-darkest-border);
-      border-right: var(--container-darkest-border);
-      border-bottom: var(--container-darkest-border);
-
-
-      background-color: var(--gray-1);
-      max-height: 172px;
-      overflow: auto;
-      position: absolute;
-      right: 10px;
-      top: 54px;
-      width: 140px;
-      z-index: 1;
+    border-left: var(--container-darkest-border);
+    border-right: var(--container-darkest-border);
+    border-bottom: var(--container-darkest-border);
+    background-color: var(--gray-1);
+    max-height: 172px;
+    overflow: auto;
+    position: absolute;
+    right: 10px;
+    top: 54px;
+    width: 140px;
+    z-index: 1;
   }
 
-
   .type-list::-webkit-scrollbar {
-      width: 2px;
+    width: 2px;
   }
 
   .type-list::-webkit-scrollbar-thumb {
-      background: var(--green-4);
+    background: var(--green-4);
   }
   
   .type-list-shown {
@@ -210,55 +206,55 @@
   }
 
   .type-item {
-      align-items: center;
-      padding: 2px;
-      cursor: pointer;
-      white-space: normal;
-      word-wrap: break-word;
+    align-items: center;
+    padding: 2px;
+    cursor: pointer;
+    white-space: normal;
+    word-wrap: break-word;
   }
 
   .type-item:hover {
-      background-color: var(--purple-4);
+    background-color: var(--purple-4);
   }
 
   /*dynamic*/
   .type-item-selected {
-      background-color: var(--purple-3);
+    background-color: var(--purple-3);
   }
 
   .type-btn {
-      height: 22px;
-      min-height: 22px !important;
-      cursor: pointer;
-      display: flex;
-      flex-direction: row;
-      width: 140px;
-      z-index: 2;
-      margin: 0px 0px 0px 5px !important;
+    height: 22px;
+    min-height: 22px !important;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    width: 140px;
+    z-index: 2;
+    margin: 0px 0px 0px 5px !important;
   }
 
   .type-btn-text {
-      width: 100%;
-      padding-left: 4px;
-      display: block;
-      white-space: normal !important;
-      word-wrap: break-word;
-      line-height: 19px;
-      overflow: -webkit-paged-x;
+    width: 100%;
+    padding-left: 4px;
+    display: block;
+    white-space: normal !important;
+    word-wrap: break-word;
+    line-height: 19px;
+    overflow: -webkit-paged-x;
   }
 
   .type-btn-caret {
-      cursor: pointer;
-      align-items: center;
-      display: flex;
+    cursor: pointer;
+    align-items: center;
+    display: flex;
   }
 
-    .type-btn-text::-webkit-scrollbar {
-      height: 2px;
+  .type-btn-text::-webkit-scrollbar {
+    height: 2px;
   }
 
   .type-btn-text::-webkit-scrollbar-thumb {
-      background: var(--green-4);
+    background: var(--green-4);
   }
 
 </style>
@@ -301,7 +297,7 @@
     watch: {
       panelShown(val) {
         if (val === 'entity') {
-          this.clearPanel();
+          this.resetPanel();
         }
       },
     },
@@ -332,7 +328,7 @@
               this.superTypes.push(this.entityLabel);
               this.showSpinner = false;
               this.$notifyInfo(`Entity Type, ${this.entityLabel}, has been defined`);
-              this.clearPanel();
+              this.resetPanel();
             })
             .catch((e) => {
               logger.error(e.stack);
@@ -344,7 +340,7 @@
         this.superType = type;
         this.showEntityTypeList = false;
       },
-      clearPanel() {
+      resetPanel() {
         this.entityLabel = '';
         this.showEntityTypeList = false;
         this.superTypes = ['entity', ...this.metaTypeInstances.entities];

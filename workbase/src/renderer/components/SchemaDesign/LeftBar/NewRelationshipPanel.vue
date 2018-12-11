@@ -9,12 +9,12 @@
       <div class="content">
 
         <div class="row">
-          <input class="input-small label-input" v-model="label" placeholder="Relationship Label">
+          <input class="input-small label-input" v-model="relationshipLabel" placeholder="Relationship Label">
           sub
           <div v-bind:class="(showTypeList) ? 'btn type-btn type-list-shown' : 'btn type-btn'" @click="showTypeList = !showTypeList"><div class="type-btn-text" >{{superType}}</div><div class="type-btn-caret"><vue-icon className="vue-icon" icon="caret-down"></vue-icon></div></div>
 
           <div class="type-list" v-show="showTypeList">
-              <ul v-for="type in types" :key=type>
+              <ul v-for="type in superTypes" :key=type>
                   <li class="type-item" @click="selectSuperType(type)" v-bind:class="[(type === superType) ? 'type-item-selected' : '']">{{type}}</li>
               </ul>
           </div>
@@ -69,7 +69,6 @@
           </div>
         </div>
 
-    
         <div class="row">
           <div @click="showPlaysPanel = !showPlaysPanel" class="has-header">
             <vue-icon :icon="(showPlaysPanel) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
@@ -88,10 +87,8 @@
           </div>
         </div>
 
-
-
         <div class="submit-row">
-          <button class="btn submit-btn" @click="clearPanel">Clear</button>
+          <button class="btn submit-btn" @click="resetPanel">Clear</button>
           <loading-button v-on:clicked="defineRelationshipType" text="Submit" :loading="showSpinner" className="btn submit-btn"></loading-button>
         </div>
 
@@ -102,15 +99,15 @@
 
 <style scoped>
 
-.has-header {
-  width: 100%;
-  background-color: var(--gray-1);
-  border: var(--container-darkest-border);
-  height: 22px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
+  .has-header {
+    width: 100%;
+    background-color: var(--gray-1);
+    border: var(--container-darkest-border);
+    height: 22px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
 
   .row-2 {
     display: flex;
@@ -119,119 +116,133 @@
     justify-content: space-between;
   }
 
-.green-border {
-  border: 1px solid var(--button-hover-border-color);
-}
+  .green-border {
+    border: 1px solid var(--button-hover-border-color);
+  }
 
-.has {
-  width: 100%;
-}
-    .close-container {
-        position: absolute;
-        right: 2px;
-    }
-.role-readonly {
-  width: 100%;
-  height: 22px;
-  padding-left: 4px;
-  background-color: var(--gray-2);
-  border: var(--container-darkest-border);
-  display: flex;
-  align-items: center;
-}
+  .has {
+    width: 100%;
+  }
 
-.margin-top {
-  margin-top:5px;
-}
+  .close-container {
+      position: absolute;
+      right: 2px;
+  }
 
-.overriden {
-  display: flex;
-  align-items: center;
-}
+  .role-readonly {
+    width: 100%;
+    height: 22px;
+    padding-left: 4px;
+    background-color: var(--gray-2);
+    border: var(--container-darkest-border);
+    display: block;
+    white-space: normal !important;
+    word-wrap: break-word;
+    line-height: 19px;
+    overflow: -webkit-paged-x;
+  }
 
-.btns {
-  display: flex;
-  justify-content: flex-end;
-  /* width: 100%; */
-}
+  .role-readonly::-webkit-scrollbar {
+    height: 2px;
+  }
 
-.as-label{
-  text-align: center;
-  width: 28px;
-  white-space: nowrap;
-}
+  .role-readonly::-webkit-scrollbar-thumb {
+    background: var(--green-4);
+  }
 
-.relates-list{
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-.small-btn {
-  margin-left: 5px;
-}
+  .margin-top {
+    margin-top:5px;
+  }
 
-.role-override-label-input {
-  width: 101px !important;
-  margin-right: 0px !important;
-}
+  .overriden {
+    display: flex;
+    align-items: center;
+  }
 
-.role-label-input{
-  width: 100% !important;
-  margin-right: 0px !important;
-}
+  .btns {
+    display: flex;
+    justify-content: flex-end;
+    /* width: 100%; */
+  }
 
-.relates-label {
-  margin-right: 5px;
-}
+  .as-label{
+    text-align: center;
+    width: 28px;
+    white-space: nowrap;
+  }
 
-.relates {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
+  .relates-list{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
 
-    .submit-row {
-      justify-content: space-between;
+  .small-btn {
+    margin-left: 5px;
+  }
+
+  .role-override-label-input {
+    width: 101px !important;
+    margin-right: 0px !important;
+  }
+
+  .role-label-input{
+    width: 100% !important;
+    margin-right: 0px !important;
+  }
+
+  .relates-label {
+    margin-right: 5px;
+  }
+
+  .relates {
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+
+  .submit-row {
+    justify-content: space-between;
     display: flex;
     flex-direction: row;
     align-items: center;
     padding: var(--container-padding);
-    }
-
+  }
 
   .attribute-type-list {
-      border: var(--container-darkest-border);
-      background-color: var(--gray-1);
-      width: 100%;
-      max-height: 140px;
-      overflow: auto;
+    border: var(--container-darkest-border);
+    background-color: var(--gray-1);
+    width: 100%;
+    max-height: 140px;
+    overflow: auto;
   }
-    .attribute-type-list::-webkit-scrollbar {
-        width: 2px;
-    }
 
-    .attribute-type-list::-webkit-scrollbar-thumb {
-        background: var(--green-4);
-    }
+  .attribute-type-list::-webkit-scrollbar {
+      width: 2px;
+  }
 
-    /*dynamic*/
-    .attribute-btn {
-        align-items: center;
-        padding: 2px;
-        cursor: pointer;
-        white-space: normal;
-        word-wrap: break-word;
-    }
+  .attribute-type-list::-webkit-scrollbar-thumb {
+      background: var(--green-4);
+  }
 
-    /*dynamic*/
-    .attribute-btn:hover {
-        background-color: var(--purple-4);
-    }
+  /*dynamic*/
+  .attribute-btn {
+    align-items: center;
+    padding: 2px;
+    cursor: pointer;
+    white-space: normal;
+    word-wrap: break-word;
+  }
 
-    /*dynamic*/
-    .toggle-attribute-btn {
-        background-color: var(--purple-3);
-    }
+  /*dynamic*/
+  .attribute-btn:hover {
+    background-color: var(--purple-4);
+  }
+
+  /*dynamic*/
+  .toggle-attribute-btn {
+    background-color: var(--purple-3);
+  }
 
   .plays {
     width: 140px;
@@ -263,6 +274,7 @@
     display: flex;
     align-items: center;
     padding: var(--container-padding);
+    border-bottom: var(--container-darkest-border);
   }
 
   .content {
@@ -270,28 +282,25 @@
   }
 
   .type-list {
-      border-left: var(--container-darkest-border);
-      border-right: var(--container-darkest-border);
-      border-bottom: var(--container-darkest-border);
-
-
-      background-color: var(--gray-1);
-      max-height: 172px;
-      overflow: auto;
-      position: absolute;
-      right: 10px;
-      top: 54px;
-      width: 140px;
-      z-index: 1;
+    border-left: var(--container-darkest-border);
+    border-right: var(--container-darkest-border);
+    border-bottom: var(--container-darkest-border);
+    background-color: var(--gray-1);
+    max-height: 172px;
+    overflow: auto;
+    position: absolute;
+    right: 10px;
+    top: 54px;
+    width: 140px;
+    z-index: 1;
   }
 
-
   .type-list::-webkit-scrollbar {
-      width: 2px;
+    width: 2px;
   }
 
   .type-list::-webkit-scrollbar-thumb {
-      background: var(--green-4);
+    background: var(--green-4);
   }
   
   .type-list-shown {
@@ -299,56 +308,55 @@
   }
 
   .type-item {
-      align-items: center;
-      padding: 2px;
-      cursor: pointer;
-      white-space: normal;
-      word-wrap: break-word;
+    align-items: center;
+    padding: 2px;
+    cursor: pointer;
+    white-space: normal;
+    word-wrap: break-word;
   }
 
   .type-item:hover {
-      background-color: var(--purple-4);
+    background-color: var(--purple-4);
   }
 
   /*dynamic*/
   .type-item-selected {
-      background-color: var(--purple-3);
+    background-color: var(--purple-3);
   }
 
   .type-btn {
-      height: 22px;
-      min-height: 22px !important;
-      cursor: pointer;
-      display: flex;
-      flex-direction: row;
-      width: 140px;
-      z-index: 2;
-      margin: 0px 0px 0px 5px !important;
+    height: 22px;
+    min-height: 22px !important;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    width: 140px;
+    z-index: 2;
+    margin: 0px 0px 0px 5px !important;
   }
 
   .type-btn-text {
-      width: 100%;
-      padding-left: 4px;
-      display: block;
-      white-space: normal !important;
-      word-wrap: break-word;
-      line-height: 19px;
-      overflow: -webkit-paged-x;
+    width: 100%;
+    padding-left: 4px;
+    display: block;
+    white-space: normal !important;
+    word-wrap: break-word;
+    line-height: 19px;
+    overflow: -webkit-paged-x;
   }
 
-
-    .type-btn-text::-webkit-scrollbar {
-      height: 2px;
+  .type-btn-text::-webkit-scrollbar {
+    height: 2px;
   }
 
   .type-btn-text::-webkit-scrollbar-thumb {
-      background: var(--green-4);
+    background: var(--green-4);
   }
 
   .type-btn-caret {
-      cursor: pointer;
-      align-items: center;
-      display: flex;
+    cursor: pointer;
+    align-items: center;
+    display: flex;
   }
 
 </style>
@@ -363,9 +371,9 @@
     data() {
       return {
         showTypeList: false,
-        types: ['relationship'],
+        superTypes: [],
         superType: undefined,
-        label: '',
+        relationshipLabel: '',
         showSpinner: false,
         newRoles: [''],
         superRelatipnshipTypeRoles: [],
@@ -393,16 +401,15 @@
     },
     watch: {
       panelShown(val) {
-        if (val && this.superType === undefined) {
-          this.superType = this.types[0];
-          this.types.push(...this.metaTypeInstances.relationships);
+        if (val === 'relationship') { // reset panel when it is toggled
+          this.resetPanel();
         }
       },
       async superType(val) {
-        if (val !== 'relationship') {
+        if (val !== 'relationship') { // if super type is not 'relationship' then compute roles of supertype for inheriting and overriding
           this.newRoles = [];
+          
           const graknTx = await this[OPEN_GRAKN_TX]();
-
           const RelationshipType = await graknTx.getSchemaConcept(val);
 
           this.superRelatipnshipTypeRoles = await Promise.all((await (await RelationshipType.roles()).collect()).map(async role => role.label()));
@@ -411,9 +418,7 @@
 
           this.overridenRoles.push(...this.superRelatipnshipTypeRoles.map(role => ({ label: role, override: false })));
         } else {
-          this.superRelatipnshipTypeRoles = [];
-          this.overridenRoles = [];
-          this.newRoles = [''];
+          this.resetPanel();
         }
       },
     },
@@ -435,39 +440,52 @@
         }
       },
       async defineRelationshipType() {
-        this.showSpinner = true;
+        if (this.relationshipLabel === '') {
+          this.$notifyInfo('Cannot define Relationship Type without Relationship Label');
+        } else if (this.superType === 'relationship' && !this.newRoles[0].length) {
+          this.$notifyInfo('Cannot define Relationship Type without atleast one related role');
+        } else {
+          this.showSpinner = true;
 
-        const defineRoles = this.newRoles.map(role => ({ label: role, superType: 'role' }))
-          .concat(this.overridenRoles.map(role => ((role.override) ? { label: role.label, superType: role.superType } : null))).filter(r => r);
-        const relateRoles = this.overridenRoles.map(role => ((!role.override) ? role.label : null)).filter(r => r);
+          const defineRoles = this.newRoles.map(role => ({ label: role, superType: 'role' }))
+            .concat(this.overridenRoles.map(role => ((role.override) ? { label: role.label, superType: role.superType } : null))).filter(r => r);
+          const relateRoles = this.overridenRoles.map(role => ((!role.override) ? role.label : null)).filter(r => r);
 
-
-        this[DEFINE_RELATIONSHIP_TYPE]({
-          label: this.label, superType: this.superType, defineRoles, relateRoles, attributeTypes: this.toggledAttributeTypes, roleTypes: this.toggledRoleTypes,
-        })
-          .then(() => {
-            this.showSpinner = false;
-            this.types.push(this.label);
-            this.clearPanel();
+          this[DEFINE_RELATIONSHIP_TYPE]({
+            relationshipLabel: this.relationshipLabel,
+            superType: this.superType,
+            defineRoles,
+            relateRoles,
+            attributeTypes: this.toggledAttributeTypes,
+            roleTypes: this.toggledRoleTypes,
           })
-          .catch((e) => {
-            logger.error(e.stack);
-            this.showSpinner = false;
-            if (e.stack.includes('ALREADY_EXISTS')) this.$notifyError(`Attribute Type with label, ${this.attributeLabel}, already exists. Please choose a different label`);
-          });
+            .then(() => {
+              this.showSpinner = false;
+              this.superTypes.push(this.relationshipLabel);
+              this.resetPanel();
+            })
+            .catch((e) => {
+              logger.error(e.stack);
+              this.showSpinner = false;
+              if (e.stack.includes('ALREADY_EXISTS')) this.$notifyError(`Relationship Type with label, ${this.relationshipLabel}, already exists. Please choose a different label`);
+            });
+        }
       },
       selectSuperType(type) {
         this.superType = type;
         this.showTypeList = false;
       },
-      clearPanel() {
-        this.label = '';
-        this.superType = this.types[0];
+      resetPanel() {
+        this.relationshipLabel = '';
+        this.superTypes = ['relationship', ...this.metaTypeInstances.relationships];
+        this.superType = this.superTypes[0];
         this.newRoles = [''];
         this.toggledAttributeTypes = [];
         this.toggledRoleTypes = [];
         this.showHasPanel = false;
         this.showPlaysPanel = false;
+        this.superRelatipnshipTypeRoles = [];
+        this.overridenRoles = [];
       },
       togglePanel() {
         if (this.panelShown === 'relationship') this.$emit('show-panel', undefined);
