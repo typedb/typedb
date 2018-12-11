@@ -56,8 +56,12 @@ public class MatchBase extends AbstractMatch {
     protected final Logger LOG = LoggerFactory.getLogger(MatchBase.class);
 
     private final Conjunction<Pattern> pattern;
-    private Transaction tx;
+    private final Transaction tx;
 
+    MatchBase() {
+        this.pattern = null;
+        this.tx = null;
+    }
     /**
      * @param pattern a pattern to match in the graph
      */
@@ -157,12 +161,12 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public final Set<Variable> getSelectedNames() {
+    public Set<Variable> getSelectedNames() {
         return pattern.variables();
     }
 
     @Override
-    public final Boolean inferring() {
+    public Boolean inferring() {
         return false;
     }
 

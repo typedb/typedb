@@ -39,11 +39,12 @@ import java.util.stream.Stream;
 /**
  * Modifier that specifies the graph to execute the {@link Match} with.
  */
-class MatchInfer extends AbstractMatch {
+class MatchInfer extends MatchBase {
 
     final AbstractMatch inner;
 
-    MatchInfer(AbstractMatch inner) {
+    MatchInfer(MatchBase inner) {
+        super();
         this.inner = inner;
     }
 
@@ -83,10 +84,6 @@ class MatchInfer extends AbstractMatch {
         return true;
     }
 
-    protected String modifierString() {
-        return "";
-    }
-
     @Override
     public final Conjunction<Pattern> getPatterns() {
         return inner.getPatterns();
@@ -109,7 +106,7 @@ class MatchInfer extends AbstractMatch {
 
     @Override
     public final String toString() {
-        return inner.toString() + modifierString();
+        return inner.toString();
     }
 
     @Override
