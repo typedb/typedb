@@ -26,8 +26,9 @@ import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -49,8 +50,8 @@ public class QueryAdminIT {
 
     @ClassRule
     public static GraknTestServer graknServer = new GraknTestServer();
-    private static Session session;
-    private Transaction tx;
+    private static SessionImpl session;
+    private TransactionImpl tx;
     private QueryBuilder qb;
 
     @BeforeClass
@@ -110,12 +111,12 @@ public class QueryAdminIT {
 
     @Test
     public void testMutateMatch() {
-        Match match = qb.match(var("x").isa("movie"));
+        Match match = Graql.match(var("x").isa("movie"));
 
         Conjunction<Pattern> pattern = match.getPatterns();
         pattern.getPatterns().add(var("x").has("title", "Spy"));
 
-        assertEquals(1, match.stream().count());
+        assertEquals(1, tx.stream(match).count());
     }
 
     @Test

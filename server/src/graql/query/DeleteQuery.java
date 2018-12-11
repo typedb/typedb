@@ -81,6 +81,11 @@ public class DeleteQuery implements Query<ConceptSet> {
     }
 
     @Override
+    public Stream<ConceptSet> stream(boolean infer) {
+        return executor(infer).run(this);
+    }
+
+    @Override
     public final boolean isReadOnly() {
         return false;
     }

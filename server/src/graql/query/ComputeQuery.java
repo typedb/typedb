@@ -215,7 +215,12 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
     }
 
     @Override
-    public final Stream<T> stream() {
+    public Stream<T> stream(boolean infer) {
+        return stream();
+    }
+
+    @Override
+    public Stream<T> stream() {
         Optional<GraqlQueryException> exception = getException();
         if (exception.isPresent()) throw exception.get();
 
@@ -228,7 +233,6 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
         } finally {
             runningJobs.remove(job);
         }
-
     }
 
     public final void kill() {

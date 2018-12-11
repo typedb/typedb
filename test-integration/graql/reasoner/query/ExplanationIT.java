@@ -55,7 +55,7 @@
 //    @BeforeClass
 //    public static void onStartup() throws Exception {
 //        Transaction tx = geoKB.tx();
-//        iqb = tx.graql().infer(true);
+//        iqb = tx.graql();
 //        polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
 //        uw = getConcept(tx, "name", "University-of-Warsaw");
 //        warsaw = getConcept(tx, "name", "Warsaw");

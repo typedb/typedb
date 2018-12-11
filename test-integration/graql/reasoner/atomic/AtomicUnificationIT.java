@@ -267,9 +267,9 @@ public class AtomicUnificationIT {
         Atom parentAtom = parentQuery.getAtom();
         Atom parentAtom2 = parentQuery2.getAtom();
 
-        List<ConceptMap> childAnswers = childQuery.getQuery().execute();
-        List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
-        List<ConceptMap> parentAnswers2 = parentQuery2.getQuery().execute();
+        List<ConceptMap> childAnswers = childQuery.getQuery().execute(false);
+        List<ConceptMap> parentAnswers = parentQuery.getQuery().execute(false);
+        List<ConceptMap> parentAnswers2 = parentQuery2.getQuery().execute(false);
 
         Unifier unifier = childAtom.getUnifier(parentAtom, UnifierType.EXACT);
         Unifier unifier2 = childAtom.getUnifier(parentAtom2, UnifierType.EXACT);
@@ -302,7 +302,7 @@ public class AtomicUnificationIT {
         ReasonerAtomicQuery resourceQuery2 = ReasonerQueries.atomic(conjunction(resource2, tx), tx);
         ReasonerAtomicQuery resourceQuery3 = ReasonerQueries.atomic(conjunction(resource3, tx), tx);
 
-        String type = "{$x isa resource;$x id '" + resourceQuery.getQuery().execute().iterator().next().get("r").id().getValue()  + "';}";
+        String type = "{$x isa resource;$x id '" + resourceQuery.getQuery().execute(false).iterator().next().get("r").id().getValue()  + "';}";
         ReasonerAtomicQuery typeQuery = ReasonerQueries.atomic(conjunction(type, tx), tx);
         Atom typeAtom = typeQuery.getAtom();
 
@@ -314,10 +314,10 @@ public class AtomicUnificationIT {
         Unifier unifier2 = resourceAtom2.getUnifier(typeAtom, UnifierType.RULE);
         Unifier unifier3 = resourceAtom3.getUnifier(typeAtom, UnifierType.RULE);
 
-        ConceptMap typeAnswer = typeQuery.getQuery().execute().iterator().next();
-        ConceptMap resourceAnswer = resourceQuery.getQuery().execute().iterator().next();
-        ConceptMap resourceAnswer2 = resourceQuery2.getQuery().execute().iterator().next();
-        ConceptMap resourceAnswer3 = resourceQuery3.getQuery().execute().iterator().next();
+        ConceptMap typeAnswer = typeQuery.getQuery().execute(false).iterator().next();
+        ConceptMap resourceAnswer = resourceQuery.getQuery().execute(false).iterator().next();
+        ConceptMap resourceAnswer2 = resourceQuery2.getQuery().execute(false).iterator().next();
+        ConceptMap resourceAnswer3 = resourceQuery3.getQuery().execute(false).iterator().next();
 
         assertEquals(typeAnswer.get(var("x")), resourceAnswer.unify(unifier).get(var("x")));
         assertEquals(typeAnswer.get(var("x")), resourceAnswer2.unify(unifier2).get(var("x")));
@@ -467,12 +467,12 @@ public class AtomicUnificationIT {
 
         Unifier unifier = childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).getUnifier();
 
-        List<ConceptMap> childAnswers = childQuery.getQuery().execute();
+        List<ConceptMap> childAnswers = childQuery.getQuery().execute(false);
         List<ConceptMap> unifiedAnswers = childAnswers.stream()
                 .map(a -> a.unify(unifier))
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
-        List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
+        List<ConceptMap> parentAnswers = parentQuery.getQuery().execute(false);
 
         if (checkInverse) {
             Unifier unifier2 = parentAtom.getUnifier(childAtom, UnifierType.EXACT);

@@ -76,12 +76,7 @@ import javax.annotation.Nullable;
 import static grakn.core.graql.query.pattern.Pattern.var;
 
 /**
- *
- * <p>
  * Base reasoner query providing resolution and atom handling facilities for conjunctive graql queries.
- * </p>
- *
- *
  */
 public class ReasonerQueryImpl implements ReasonerQuery {
 
@@ -303,7 +298,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     public GetQuery getQuery() {
-        return tx.graql().infer(false).match(getPattern()).get();
+        return tx.graql().match(getPattern()).get();
     }
 
     private Stream<IsaAtom> inferEntityTypes(ConceptMap sub) {
@@ -520,7 +515,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Iterator<QueryStateBase> subGoalIterator;
 
         if(!this.isRuleResolvable()) {
-            dbIterator = this.getQuery().stream()
+            dbIterator = this.getQuery().stream(false)
                     .map(ans -> ans.explain(new JoinExplanation(this, ans)))
                     .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                     .iterator();

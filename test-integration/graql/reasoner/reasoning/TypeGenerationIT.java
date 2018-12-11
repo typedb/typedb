@@ -46,7 +46,7 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivation.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String derivedTypeQuery = "match $x isa derivedEntity; get;";
                 List<ConceptMap> answers = qb.<GetQuery>parse(derivedTypeQuery).execute();
                 assertEquals(1, answers.size());
@@ -64,7 +64,7 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationWithDirect.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String queryString = "match $x isa derivedEntity; get;";
                 String queryString2 = "match $x isa! derivedEntity; get;";
                 String queryString3 = "match $x isa directDerivedEntity; get;";
@@ -83,7 +83,7 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationRelationsWithDirect.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String queryString = "match ($x, $y) isa derivedRelation; get;";
                 String queryString2 = "match ($x, $y) isa! derivedRelation; get;";
                 String queryString3 = "match ($x, $y) isa directDerivedRelation; get;";
@@ -102,7 +102,7 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationFromRelations.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa derivedEntity; get;";
                 List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -119,7 +119,7 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationFromAttribute.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa derivedEntity; get;";
                 List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -138,7 +138,7 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "freshEntityDerivation.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa derivedEntity; get;";
                 List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -158,12 +158,12 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "freshEntityDerivationFromRelations.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
                 String queryString = "match $x isa derivedEntity; get;";
                 String explicitQuery = "match $x isa baseEntity; get;";
                 List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(explicitQuery).execute();
+                List<ConceptMap> answers2 = qb.<GetQuery>parse(explicitQuery).execute(false);
 
                 assertEquals(3, answers2.size());
                 assertTrue(!answers2.containsAll(answers));
@@ -178,7 +178,7 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "freshRelationDerivation.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String queryString = "match $x isa baseRelation; get;";
                 List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
                 assertEquals(3, answers.size());

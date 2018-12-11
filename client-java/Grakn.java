@@ -202,8 +202,13 @@ public final class Grakn {
         }
 
         @Override
-        public QueryExecutor queryExecutor() {
-            return RemoteQueryExecutor.create(this);
+        public QueryExecutor executor() {
+            return new RemoteQueryExecutor(this, true);
+        }
+
+        @Override
+        public QueryExecutor executor(boolean infer) {
+            return new RemoteQueryExecutor(this, infer);
         }
 
 

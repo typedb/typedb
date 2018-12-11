@@ -28,7 +28,7 @@ public class NeqPredicateIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet27.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String queryString = "match (related-state: $s) isa holds; get;";
 
                 List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -43,7 +43,7 @@ public class NeqPredicateIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String baseQueryString = "match " +
                         "(role1: $x, role2: $y) isa binary-base;" +
                         "$x != $y;";
@@ -83,7 +83,7 @@ public class NeqPredicateIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String baseQueryString = "match " +
                         "(role1: $x, role2: $y) isa binary-base;" +
                         "(role1: $x, role2: $z) isa binary-base;" +
@@ -107,7 +107,7 @@ public class NeqPredicateIT {
                         "{$y has name 'c';$z has name 'b';};";
 
                 List<ConceptMap> answers = qb.<GetQuery>parse(queryString + "get;").execute();
-                List<ConceptMap> answers2 = qb.infer(false).<GetQuery>parse(explicitString + "get;").execute();
+                List<ConceptMap> answers2 = qb.<GetQuery>parse(explicitString + "get;").execute(false);
                 assertTrue(baseAnswers.containsAll(answers));
                 assertCollectionsEqual(answers, answers2);
             }
@@ -129,7 +129,7 @@ public class NeqPredicateIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String baseQueryString = "match " +
                         "(role1: $x, role2: $y) isa binary-base;" +
                         "(role1: $y, role2: $z) isa binary-base;" +
@@ -154,7 +154,7 @@ public class NeqPredicateIT {
                         "{$y has name 'c';$z has name 'b';};";
 
                 List<ConceptMap> answers = qb.<GetQuery>parse(queryString + "get;").execute();
-                List<ConceptMap> answers2 = qb.infer(false).<GetQuery>parse(explicitString + "get;").execute();
+                List<ConceptMap> answers2 = qb.<GetQuery>parse(explicitString + "get;").execute(false);
                 assertCollectionsEqual(answers, answers2);
             }
         }
@@ -179,7 +179,7 @@ public class NeqPredicateIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String baseQueryString = "match " +
                         "(role1: $x, role2: $y1) isa binary-base;" +
                         "(role1: $x, role2: $z1) isa binary-base;" +
@@ -225,7 +225,7 @@ public class NeqPredicateIT {
         try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
                 String baseQueryString = "match " +
                         "(role1: $x, role2: $y) isa binary-base;" +
                         "$x != $z1;" +

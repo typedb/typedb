@@ -43,13 +43,11 @@ import java.util.stream.StreamSupport;
 public final class RemoteQueryExecutor implements QueryExecutor {
 
     private final Grakn.Transaction tx;
+    private final boolean infer;
 
-    private RemoteQueryExecutor(Grakn.Transaction tx) {
+    public RemoteQueryExecutor(Grakn.Transaction tx, boolean infer) {
         this.tx = tx;
-    }
-
-    public static RemoteQueryExecutor create(Grakn.Transaction tx) {
-        return new RemoteQueryExecutor(tx);
+        this.infer = infer;
     }
 
     @Override

@@ -58,8 +58,13 @@ public class AggregateQuery<T extends Answer> implements Query<T> {
     }
 
     @Override
-    public final Stream<T> stream() {
+    public Stream<T> stream() {
         return executor().run(this);
+    }
+
+    @Override
+    public Stream<T> stream(boolean infer) {
+        return executor(infer).run(this);
     }
 
     @Override

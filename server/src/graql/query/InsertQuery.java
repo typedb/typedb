@@ -94,8 +94,13 @@ public class InsertQuery implements Query<ConceptMap> {
     }
 
     @Override
-    public final Stream<ConceptMap> stream() {
+    public Stream<ConceptMap> stream() {
         return executor().run(this);
+    }
+
+    @Override
+    public Stream<ConceptMap> stream(boolean infer) {
+        return executor(infer).run(this);
     }
 
     @CheckReturnValue

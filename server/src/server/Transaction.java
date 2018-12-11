@@ -168,7 +168,9 @@ public interface Transaction extends AutoCloseable{
     Stream<SchemaConcept> sups(SchemaConcept schemaConcept);
 
 
-    QueryExecutor queryExecutor();
+    QueryExecutor executor();
+
+    QueryExecutor executor(boolean infer);
 
     //------------------------------------- Concept Construction ----------------------------------
     /**

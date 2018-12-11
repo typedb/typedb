@@ -26,8 +26,9 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -55,8 +56,8 @@ public class DeleteQueryIT {
 
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
-    public static Session session;
-    public Transaction tx;
+    public static SessionImpl session;
+    public TransactionImpl tx;
     public QueryBuilder qb;
 
     @Rule
@@ -99,7 +100,7 @@ public class DeleteQueryIT {
         qb.define(label("fake-type").sub(ENTITY)).execute();
         qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
 
-        assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
+        assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
         qb.match(x.isa("fake-type")).delete(x).execute();
 
@@ -207,7 +208,7 @@ public class DeleteQueryIT {
         qb.define(label("fake-type").sub(ENTITY)).execute();
         qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
 
-        assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
+        assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
         qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete(x, y).execute();
 
@@ -219,7 +220,7 @@ public class DeleteQueryIT {
         qb.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
         qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
 
-        assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
+        assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
         qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete().execute();
 

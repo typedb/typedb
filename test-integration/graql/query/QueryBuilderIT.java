@@ -23,8 +23,9 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -50,8 +51,8 @@ public class QueryBuilderIT {
 
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
-    private static Session session;
-    private Transaction tx;
+    private static SessionImpl session;
+    private TransactionImpl tx;
 
     @BeforeClass
     public static void newSession() {
@@ -142,6 +143,6 @@ public class QueryBuilderIT {
     public void whenGraphIsProvidedAndQueryExecutedWithNonexistentType_Throw() {
         exception.expect(GraqlQueryException.class);
         //noinspection ResultOfMethodCallIgnored
-        tx.graql().match(x.isa("not-a-thing")).stream();
+        tx.stream(Graql.match(x.isa("not-a-thing")));
     }
 }

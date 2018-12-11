@@ -77,7 +77,7 @@ public class ResourceAttachmentIT {
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_reattachingResourceToEntity() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
+            QueryBuilder qb = tx.graql();
 
             String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; get;";
             List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -93,7 +93,7 @@ public class ResourceAttachmentIT {
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_queryingForGenericRelation() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
+            QueryBuilder qb = tx.graql();
 
             String queryString = "match $x isa genericEntity;($x, $y); get;";
             List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -107,7 +107,7 @@ public class ResourceAttachmentIT {
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_usingExistingResourceToDefineSubResource() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
+            QueryBuilder qb = tx.graql();
             String queryString = "match $x isa genericEntity, has subResource $y; get;";
             List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
             assertEquals(tx.getEntityType("genericEntity").instances().count(), answers.size());
@@ -129,7 +129,7 @@ public class ResourceAttachmentIT {
     @Test
     public void whenReasoningWithResourcesInRelationForm_ResultsAreComplete() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
+            QueryBuilder qb = tx.graql();
 
             List<ConceptMap> concepts = qb.<GetQuery>parse("match $x isa genericEntity;get;").execute();
             List<ConceptMap> subResources = qb.<GetQuery>parse(
@@ -152,7 +152,7 @@ public class ResourceAttachmentIT {
     @Test
     public void whenReasoningWithResourcesWithRelationVar_ResultsAreComplete() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
+            QueryBuilder qb = tx.graql();
 
             Statement has = var("x").has(Label.of("reattachable-resource-string"), var("y"), var("r"));
             List<ConceptMap> answers = qb.match(has).get().execute();
@@ -164,8 +164,8 @@ public class ResourceAttachmentIT {
     @Test
     public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder withInference = tx.graql().infer(true);
-            QueryBuilder withoutInference = tx.graql().infer(false);
+            QueryBuilder withInference = tx.graql();
+            QueryBuilder withoutInference = tx.graql();
 
             Statement owner = label(HAS_OWNER.getLabel("reattachable-resource-string"));
             Statement value = label(HAS_VALUE.getLabel("reattachable-resource-string"));
@@ -177,7 +177,7 @@ public class ResourceAttachmentIT {
             ).get();
 
 
-            Set<ConceptMap> resultsWithoutInference = query.apply(withoutInference).stream().collect(toSet());
+            Set<ConceptMap> resultsWithoutInference = query.apply(withoutInference).stream(false).collect(toSet());
             Set<ConceptMap> resultsWithInference = query.apply(withInference).stream().collect(toSet());
 
             assertThat(resultsWithoutInference, not(empty()));
@@ -189,7 +189,7 @@ public class ResourceAttachmentIT {
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_attachingExistingResourceToARelation() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
+            QueryBuilder qb = tx.graql();
 
             String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; $z isa relation; get;";
             List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -218,7 +218,7 @@ public class ResourceAttachmentIT {
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_derivingResourceFromOtherResourceWithConditionalValue() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
+            QueryBuilder qb = tx.graql();
             String queryString = "match $x has derived-resource-boolean $r; get;";
             List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
             assertEquals(1, answers.size());
@@ -229,7 +229,7 @@ public class ResourceAttachmentIT {
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResourceWithSpecificValue() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
+            QueryBuilder qb = tx.graql();
             String queryString = "match $x has derived-resource-string 'value'; get;";
             String queryString2 = "match $x has derived-resource-string $r; get;";
             GetQuery query = qb.parse(queryString);
@@ -248,7 +248,7 @@ public class ResourceAttachmentIT {
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_attachingStrayResourceToEntityDoesntThrowErrors() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
+            QueryBuilder qb = tx.graql();
             String queryString = "match $x isa yetAnotherEntity, has derived-resource-string 'unattached'; get;";
             List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
             assertEquals(2, answers.size());

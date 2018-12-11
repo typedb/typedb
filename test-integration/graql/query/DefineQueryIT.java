@@ -37,9 +37,10 @@ import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -86,8 +87,8 @@ public class DefineQueryIT {
 
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
-    public static Session session;
-    private Transaction tx;
+    public static SessionImpl session;
+    private TransactionImpl tx;
     private QueryBuilder qb;
 
     @BeforeClass
@@ -210,7 +211,7 @@ public class DefineQueryIT {
 
         Match typeQuery = qb.match(var("n").label("new-type"));
 
-        assertEquals(1, typeQuery.stream().count());
+        assertEquals(1, tx.stream(typeQuery).count());
 
         // We checked count ahead of time
         //noinspection OptionalGetWithoutIsPresent

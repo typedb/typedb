@@ -22,11 +22,11 @@ import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
-import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.graql.query.pattern.Pattern;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -34,7 +34,6 @@ import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.collections.CollectionUtils;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertFalse;
@@ -77,10 +76,6 @@ public class GraqlTestUtil {
 
     public static <T> void assertCollectionsEqual(String msg, Collection<T> c1, Collection<T> c2) {
         assertTrue(msg, CollectionUtils.isEqualCollection(c1, c2));
-    }
-
-    public static void assertQueriesEqual(GetQuery q1, GetQuery q2) {
-        assertCollectionsEqual(q1.execute(), q2.execute());
     }
 
     public static void loadFromFile(String gqlPath, String file, Transaction tx) {

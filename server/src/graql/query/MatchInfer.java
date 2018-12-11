@@ -18,22 +18,13 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
 
-import java.util.Iterator;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Modifier that specifies the graph to execute the {@link Match} with.
@@ -45,37 +36,6 @@ class MatchInfer extends Match {
     MatchInfer(Match inner) {
         super();
         this.inner = inner;
-    }
-
-    @Override
-    public Stream<ConceptMap> stream() {
-        if (inner.tx() == null || !(inner.tx() instanceof TransactionImpl)) {
-            throw GraqlQueryException.noTx();
-        }
-
-        TransactionImpl<?> tx = (TransactionImpl) inner.tx();
-
-        if (!RuleUtils.hasRules(tx)) return inner.stream();
-        validateStatements(tx);
-
-        try {
-            Iterator<Conjunction<Statement>> conjIt = getPatterns().getDisjunctiveNormalForm().getPatterns().iterator();
-            Conjunction<Statement> conj = conjIt.next();
-
-            ReasonerQuery conjQuery = ReasonerQueries.create(conj, tx).rewrite();
-            conjQuery.checkValid();
-            Stream<ConceptMap> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : tx.graql().infer(false).match(conj).stream();
-            while (conjIt.hasNext()) {
-                conj = conjIt.next();
-                conjQuery = ReasonerQueries.create(conj, tx).rewrite();
-                Stream<ConceptMap> localStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : tx.graql().infer(false).match(conj).stream();
-                answerStream = Stream.concat(answerStream, localStream);
-            }
-            return answerStream.map(result -> result.project(getSelectedNames()));
-        } catch (GraqlQueryException e) {
-            System.err.println(e.getMessage());
-            return Stream.empty();
-        }
     }
 
     @Override

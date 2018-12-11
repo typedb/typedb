@@ -289,7 +289,7 @@ public abstract class SemanticCache<
         if (answer != null) return answer;
 
         //TODO should it create a cache entry?
-        List<ConceptMap> answers = ReasonerQueries.create(query, ans).getQuery().execute();
+        List<ConceptMap> answers = ReasonerQueries.create(query, ans).getQuery().execute(false);
         return answers.isEmpty()? new ConceptMap() : answers.iterator().next();
     }
 }

@@ -373,7 +373,7 @@ public class BenchmarkBigIT {
     }
 
     private List<ConceptMap> executeQuery(String queryString, Grakn.Transaction transaction, String msg){
-        return executeQuery(transaction.graql().infer(true).parse(queryString), msg);
+        return executeQuery(transaction.graql().parse(queryString), msg);
     }
 
     private List<ConceptMap> executeQuery(GetQuery query, String msg) {

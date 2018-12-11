@@ -35,8 +35,6 @@ import grakn.core.util.GraqlTestUtil;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.util.GraqlTestUtil.assertQueriesEqual;
-
 @SuppressWarnings("CheckReturnValue")
 public class RecursionIT {
     
@@ -51,13 +49,16 @@ public class RecursionIT {
         try (Session session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "transitivity.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
                 String queryString = "match ($x, $y) isa R;$x has index 'i'; get $y;";
                 String explicitQuery = "match $y has index $ind;" +
                         "{$ind == 'j';} or {$ind == 's';} or {$ind == 'v';}; get $y;";
 
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+                GraqlTestUtil.assertCollectionsEqual(
+                        qb.<GetQuery>parse(explicitQuery).execute(false),
+                        iqb.<GetQuery>parse(queryString).execute()
+                );
             }
         }
     }
@@ -69,21 +70,21 @@ public class RecursionIT {
         try (Session session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "ancestor.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String query = "match (ancestor: $X, descendant: $Y) isa Ancestor;$X has name 'aa';" +
                         "$Y has name $name;get $Y, $name;";
                 String explicitQuery = "match $Y isa person, has name $name;" +
                         "{$name == 'aaa';} or {$name == 'aab';} or {$name == 'aaaa';};get $Y, $name;";
 
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(query));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(query).execute());
 
                 String noRoleQuery = "match ($X, $Y) isa Ancestor;$X has name 'aa'; get $Y;";
                 String explicitQuery2 = "match $Y isa person, has name $name;" +
                         "{$name == 'a';} or {$name == 'aaa';} or {$name == 'aab';} or {$name == 'aaaa';};get $Y;";
 
-                assertQueriesEqual(qb.parse(explicitQuery2), iqb.parse(noRoleQuery));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery2).execute(false), iqb.<GetQuery>parse(noRoleQuery).execute());
 
                 String closure = "match (ancestor: $X, descendant: $Y) isa Ancestor; get;";
                 String explicitClosure = "match $Y isa person, has name $nameY; $X isa person, has name $nameX;" +
@@ -93,7 +94,7 @@ public class RecursionIT {
                         "{$nameX == 'aa';$nameY == 'aab';} or {$nameX == 'aa';$nameY == 'aaaa';} or " +
                         "{$nameX == 'aaa';$nameY == 'aaaa';} or {$nameX == 'c';$nameY == 'ca';}; get $X, $Y;";
 
-                assertQueriesEqual(qb.parse(explicitClosure), iqb.parse(closure));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitClosure).execute(false), iqb.<GetQuery>parse(closure).execute());
 
                 String noRoleClosure = "match ($X, $Y) isa Ancestor; get;";
                 String explicitNoRoleClosure = "match $Y isa person, has name $nameY; $X isa person, has name $nameX;" +
@@ -114,7 +115,7 @@ public class RecursionIT {
                         +
                         "{$nameX == 'c';$nameY == 'ca';} or " +
                         "{$nameY == 'c';$nameX == 'ca';}; get $X, $Y;";
-                assertQueriesEqual(qb.parse(explicitNoRoleClosure), iqb.parse(noRoleClosure));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitNoRoleClosure).execute(false), iqb.<GetQuery>parse(noRoleClosure).execute());
             }
         }
     }
@@ -125,23 +126,23 @@ public class RecursionIT {
         try (Session session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "ancestor-friend.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String ancestorVariant = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; $Y has name $name; get $Y;";
                 String explicitAncestorQuery = "match $Y has name $name;{$name == 'd';} or {$name == 'g';}; get $Y;";
-                assertQueriesEqual(qb.parse(explicitAncestorQuery), iqb.parse(ancestorVariant));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitAncestorQuery).execute(false), iqb.<GetQuery>parse(ancestorVariant).execute());
 
                 String noRoleAncestorQuery = "match ($X, $Y) isa Ancestor-friend;$X has name 'a'; get $Y;";
-                assertQueriesEqual(qb.parse(explicitAncestorQuery), iqb.parse(noRoleAncestorQuery));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitAncestorQuery).execute(false), iqb.<GetQuery>parse(noRoleAncestorQuery).execute());
 
                 String ancestorFriendVariant = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$Y has name 'd'; get $X;";
                 String explicitAncestorFriendQuery = "match $X has name $name;" +
                         "{$name == 'a';} or {$name == 'b';} or {$name == 'c';}; get $X;";
-                assertQueriesEqual(qb.parse(explicitAncestorFriendQuery), iqb.parse(ancestorFriendVariant));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitAncestorFriendQuery).execute(false), iqb.<GetQuery>parse(ancestorFriendVariant).execute());
 
                 String noRoleAncestorFriendQuery = "match ($X, $Y) isa Ancestor-friend;$Y has name 'd'; get $X;";
-                assertQueriesEqual(qb.parse(explicitAncestorFriendQuery), iqb.parse(noRoleAncestorFriendQuery));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitAncestorFriendQuery).execute(false), iqb.<GetQuery>parse(noRoleAncestorFriendQuery).execute());
             }
         }
     }
@@ -152,13 +153,13 @@ public class RecursionIT {
         try (Session session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "recursivity-sg.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String queryString = "match ($x, $y) isa SameGen; $x has name 'a'; get $y;";
                 String explicitQuery = "match $y has name $name;{$name == 'f';} or {$name == 'a';};get $y;";
 
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(queryString).execute());
             }
         }
     }
@@ -169,13 +170,13 @@ public class RecursionIT {
         try (Session session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "recursivity-tc.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String queryString = "match ($x, $y) isa N-TC; $y has index 'a'; get $x;";
                 String explicitQuery = "match $x has index 'a2'; get;";
 
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(queryString).execute());
             }
         }
     }
@@ -185,8 +186,8 @@ public class RecursionIT {
         try (Session session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "reachability.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String queryString = "match (reach-from: $x, reach-to: $y) isa reachable; get;";
                 String explicitQuery = "match $x has index $indX;$y has index $indY;" +
@@ -198,7 +199,7 @@ public class RecursionIT {
                         "{$indX == 'b';$indY == 'd';} or" +
                         "{$indX == 'a';$indY == 'd';};get $x, $y;";
 
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(queryString).execute());
             }
         }
     }
@@ -208,14 +209,14 @@ public class RecursionIT {
         try (Session session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "reachability-symmetric.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String queryString = "match ($x, $y) isa reachable;$x has index 'a';get $y;";
                 String explicitQuery = "match $y has index $indY;" +
                         "{$indY == 'a';} or {$indY == 'b';} or {$indY == 'c';} or {$indY == 'd';};get $y;";
 
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(queryString).execute());
             }
         }
     }
@@ -226,14 +227,14 @@ public class RecursionIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "same-generation.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String queryString = "match ($x, $y) isa SameGen;$x has name 'ann';get $y;";
                 String explicitQuery = "match $y has name $name;" +
                         "{$name == 'ann';} or {$name == 'bill';} or {$name == 'peter';};get $y;";
 
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(queryString).execute());
             }
         }
     }
@@ -244,14 +245,14 @@ public class RecursionIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "recursivity-rsg.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String specificQuery = "match (RSG-from: $x, RSG-to: $y) isa RevSG;$x has name 'a'; get $y;";
                 String explicitQuery = "match $y isa person, has name $name;" +
                         "{$name == 'b';} or {$name == 'c';} or {$name == 'd';};get $y;";
 
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(specificQuery));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(specificQuery).execute());
 
                 String generalQuery = "match (RSG-from: $x, RSG-to: $y) isa RevSG; get;";
                 String generalExplicitQuery = "match $x has name $nameX;$y has name $nameY;" +
@@ -262,7 +263,7 @@ public class RecursionIT {
                         "{$nameX == 'i';$nameY == 'f';} or {$nameX == 'j';$nameY == 'f';} or" +
                         "{$nameX == 'f';$nameY == 'k';};get $x, $y;";
 
-                assertQueriesEqual(qb.parse(generalExplicitQuery), iqb.parse(generalQuery));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(generalExplicitQuery).execute(false), iqb.<GetQuery>parse(generalQuery).execute());
             }
         }
     }
@@ -276,13 +277,13 @@ public class RecursionIT {
             graph.load(N, N);
             try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x has index 'a0'; get $y;";
                 String explicitQuery = "match $y isa a-entity or $y isa end; get;";
 
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(queryString).execute());
             }
         }
     }
@@ -297,13 +298,13 @@ public class RecursionIT {
             TailRecursionGraph tailRecursionGraph = new TailRecursionGraph(session);
             tailRecursionGraph.load(N, M);
             try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a0'; get $y;";
                 String explicitQuery = "match $y isa b-entity; get;";
 
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(queryString).execute());
             }
         }
     }
@@ -336,13 +337,13 @@ public class RecursionIT {
             NguyenGraph graph = new NguyenGraph(session);
             graph.load(N);
             try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; get $y;";
                 String explicitQuery = "match $y isa a-entity; get;";
 
-                assertQueriesEqual(qb.<GetQuery>parse(explicitQuery), iqb.<GetQuery>parse(queryString));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(queryString).execute());
             }
         }
     }
@@ -356,13 +357,13 @@ public class RecursionIT {
             LinearTransitivityMatrixGraph graph = new LinearTransitivityMatrixGraph(session);
             graph.load(N, M);
             try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String queryString = "match (P-from: $x, P-to: $y) isa P;$x has index 'a'; get $y;";
                 String explicitQuery = "match $y isa a-entity; get;";
 
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(queryString).execute());
             }
         }
     }
@@ -375,13 +376,13 @@ public class RecursionIT {
             PathTreeSymmetricGraph graph = new PathTreeSymmetricGraph(session);
             graph.load(N, depth);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String queryString = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
                 String explicitQuery = "match {$y isa vertex;} or {$y isa start-vertex;}; get;";
 
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(queryString).execute());
             }
         }
     }
@@ -395,17 +396,17 @@ public class RecursionIT {
             PathTreeGraph graph = new PathTreeGraph(session);
             graph.load(N, depth);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String query = "match (path-from: $x, path-to: $y) isa path;" +
                         "$x has index 'a0';" +
                         "get $y;";
                 String explicitQuery = "match $y isa vertex; get;";
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(query));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(query).execute());
 
                 String noRoleQuery = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
-                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(noRoleQuery));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitQuery).execute(false), iqb.<GetQuery>parse(noRoleQuery).execute());
             }
         }
     }
@@ -418,18 +419,18 @@ public class RecursionIT {
             PathMatrixGraph graph = new PathMatrixGraph(session);
             graph.load(pathSize, pathSize);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql();
+                QueryBuilder iqb = tx.graql();
 
                 String query = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; get $y;";
                 String explicit = "match $y isa vertex; get;";
 
-                assertQueriesEqual(qb.parse(explicit), iqb.parse(query));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicit).execute(false), iqb.<GetQuery>parse(query).execute());
 
                 String noRoleQuery = "match ($x, $y) isa path;$x has index 'a0'; $y has index $ind;get $y, $ind;";
                 String explicitWithIndices = "match $y isa vertex;$y has index $ind; get;";
 
-                assertQueriesEqual(qb.parse(explicitWithIndices), iqb.parse(noRoleQuery));
+                GraqlTestUtil.assertCollectionsEqual(qb.<GetQuery>parse(explicitWithIndices).execute(false), iqb.<GetQuery>parse(noRoleQuery).execute());
             }
         }
     }

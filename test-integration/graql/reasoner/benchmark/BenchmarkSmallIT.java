@@ -205,7 +205,7 @@ public class BenchmarkSmallIT {
         transitivityChainGraph.load(N);
         Transaction tx = session.transaction(Transaction.Type.WRITE);
 
-        QueryBuilder iqb = tx.graql().infer(true);
+        QueryBuilder iqb = tx.graql();
 
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
         GetQuery query = iqb.parse(queryString);
@@ -258,7 +258,7 @@ public class BenchmarkSmallIT {
         //results @N = 35 396900   ?        ?      ?     76 s
         transitivityMatrixGraph.load(N, N);
         Transaction tx = session.transaction(Transaction.Type.WRITE);
-        QueryBuilder iqb = tx.graql().infer(true);
+        QueryBuilder iqb = tx.graql();
 
         //full result
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
@@ -318,7 +318,7 @@ public class BenchmarkSmallIT {
         //results @N = 50  2304    8s    / 1s
         //results @N = 100 9604  loading takes ages
         Transaction tx = session.transaction(Transaction.Type.WRITE);
-        QueryBuilder iqb = tx.graql().infer(true);
+        QueryBuilder iqb = tx.graql();
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
         GetQuery query = iqb.parse(queryString);
 
@@ -387,7 +387,7 @@ public class BenchmarkSmallIT {
     }
 
     private List<ConceptMap> executeQuery(String queryString, Transaction graph, String msg){
-        return executeQuery(graph.graql().infer(true).parse(queryString), msg);
+        return executeQuery(graph.graql().parse(queryString), msg);
     }
 
     private List<ConceptMap> executeQuery(GetQuery query, String msg) {

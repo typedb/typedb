@@ -64,7 +64,7 @@ public class VariableRolesIT {
     @Test
     public void binaryRelationWithDifferentVariantsOfVariableRoles(){
         try(TransactionImpl tx = variableRoleSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
+            QueryBuilder qb = tx.graql();
 
             //9 binary-base instances with {role, role2} = 2 roles for r2 -> 18 answers
             /*
@@ -193,7 +193,7 @@ public class VariableRolesIT {
 
     private void ternaryNaryRelationWithVariableRoles(String label, int conceptDOF){
         try(TransactionImpl tx = variableRoleSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
+            QueryBuilder qb = tx.graql();
             final int arity = (int) tx.getRelationshipType(label).roles().count();
 
             Statement resourcePattern = var("a1").has("name", "a");

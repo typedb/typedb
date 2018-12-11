@@ -43,9 +43,10 @@ import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -97,9 +98,9 @@ public class InsertQueryIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
 
-    public static Session session;
+    public static SessionImpl session;
 
-    private Transaction tx;
+    private TransactionImpl tx;
     private QueryBuilder qb;
 
     @BeforeClass
@@ -189,16 +190,16 @@ public class InsertQueryIT {
         Statement language = var("x").has("name", "123").isa("language");
         InsertQuery query = qb.insert(language);
 
-        assertEquals(0, qb.match(language).stream().count());
+        assertEquals(0, tx.stream(Graql.match(language)).count());
         query.execute();
-        assertEquals(1, qb.match(language).stream().count());
+        assertEquals(1, tx.stream(Graql.match(language)).count());
         query.execute();
-        assertEquals(2, qb.match(language).stream().count());
+        assertEquals(2, tx.stream(Graql.match(language)).count());
         query.execute();
-        assertEquals(3, qb.match(language).stream().count());
+        assertEquals(3, tx.stream(Graql.match(language)).count());
 
         qb.match(language).delete("x").execute();
-        assertEquals(0, qb.match(language).stream().count());
+        assertEquals(0, tx.stream(Graql.match(language)).count());
     }
 
     @Test
@@ -443,7 +444,7 @@ public class InsertQueryIT {
     @Test
     public void testInsertDuplicatePattern() {
         qb.insert(var().isa("person").has("name", "a name"), var().isa("person").has("name", "a name")).execute();
-        assertEquals(2, qb.match(x.has("name", "a name")).stream().count());
+        assertEquals(2, tx.stream(Graql.match(x.has("name", "a name"))).count());
     }
 
     @Test

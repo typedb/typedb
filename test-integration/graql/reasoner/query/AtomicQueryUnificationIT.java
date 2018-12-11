@@ -743,12 +743,12 @@ public class AtomicQueryUnificationIT {
         ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentString), tx);
         Unifier unifier = unification(childString, parentString, true, unifierType, tx).getUnifier();
 
-        List<ConceptMap> childAnswers = child.getQuery().execute();
+        List<ConceptMap> childAnswers = child.getQuery().execute(false);
         List<ConceptMap> unifiedAnswers = childAnswers.stream()
                 .map(a -> a.unify(unifier))
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
-        List<ConceptMap> parentAnswers = parent.getQuery().execute();
+        List<ConceptMap> parentAnswers = parent.getQuery().execute(false);
 
         if (checkInverse) {
             Unifier inverse = parent.getMultiUnifier(child, unifierType).getUnifier();

@@ -155,12 +155,12 @@ public class ConsoleSession implements AutoCloseable {
         // We'll use streams so we can print the answer out much faster and smoother
         try {
             // Parse the string to get a stream of Graql Queries
-            Stream<Query<Answer>> queries = tx.graql().infer(infer).parser().parseList(queryString);
+            Stream<Query<Answer>> queries = tx.graql().parser().parseList(queryString);
 
             // Get the stream of answers for each query (query.stream())
             // Get the  stream of printed answers (printer.toStream(..))
             // Combine the stream of printed answers into one stream (queries.flatMap(..))
-            Stream<String> answers = queries.flatMap(query -> printer.toStream(query.stream()));
+            Stream<String> answers = queries.flatMap(query -> printer.toStream(query.stream(infer)));
 
             // For each printed answer, print them them on one line
             answers.forEach(answer -> {

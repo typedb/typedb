@@ -123,10 +123,10 @@ public class OntologicalQueryIT {
 //                "$meta3 label capability-type; $type != $meta3;" +
 //                "get $x, $y, $type;";
 //
-//        List<ConceptMap> simpleAnswers = tx.graql().infer(false).<GetQuery>parse(simpleQuery).execute();
-//        List<ConceptMap> simpleAnswersInferred = tx.graql().infer(true).<GetQuery>parse(simpleQuery).execute();
-//        List<ConceptMap> answersWithExclusions = tx.graql().infer(false).<GetQuery>parse(queryWithExclusions).execute();
-//        List<ConceptMap> answersWithExclusionsInferred = tx.graql().infer(true).<GetQuery>parse(queryWithExclusions).execute();
+//        List<ConceptMap> simpleAnswers = tx.graql().<GetQuery>parse(simpleQuery).execute(false);
+//        List<ConceptMap> simpleAnswersInferred = tx.graql().<GetQuery>parse(simpleQuery).execute();
+//        List<ConceptMap> answersWithExclusions = tx.graql().<GetQuery>parse(queryWithExclusions).execute(false);
+//        List<ConceptMap> answersWithExclusionsInferred = tx.graql().<GetQuery>parse(queryWithExclusions).execute();
 //        assertFalse(simpleAnswers.isEmpty());
 //        assertFalse(answersWithExclusions.isEmpty());
 //        assertCollectionsEqual(simpleAnswers, simpleAnswersInferred);
@@ -137,8 +137,8 @@ public class OntologicalQueryIT {
     public void instancesOfSubsetOfTypesExcludingGivenType() {
         String queryString = "match $x isa $type; $type sub entity; $type2 label noRoleEntity; $type2 != $type; get $x, $type;";
 
-        List<ConceptMap> answers = tx.graql().infer(false).<GetQuery>parse(queryString).execute();
-        List<ConceptMap> answersInferred = tx.graql().infer(true).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = tx.graql().<GetQuery>parse(queryString).execute(false);
+        List<ConceptMap> answersInferred = tx.graql().<GetQuery>parse(queryString).execute();
 
         assertFalse(answers.isEmpty());
         assertCollectionsEqual(answers, answersInferred);
@@ -148,17 +148,17 @@ public class OntologicalQueryIT {
     @Ignore
     @Test
     public void allInstancesAndTheirType() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String queryString = "match $x isa $type; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
     }
 
     @Test
     @Ignore //TODO: re-enable this test once we figure out why it randomly fails
     public void allRolePlayerPairsAndTheirRelationType() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String relationString = "match $x isa relationship;get;";
         String rolePlayerPairString = "match ($u, $v) isa $type; get;";
 
@@ -186,25 +186,25 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfTypesThatCanHaveAGivenResourceType() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String queryString = "match $x isa $type; $type has name; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         //1 x noRoleEntity + 3 x 3 (hierarchy) anotherTwoRoleEntities
         assertEquals(10, answers.size());
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
     }
 
     @Test
     public void allInstancesOfTypesThatCanHaveAGivenResourceType_needInferenceToGetAllResults() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
 
         String queryString = "match $x isa $type; $type has description; get;";
         String specificQueryString = "match $x isa reifiable-relation;get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
         assertEquals(qb.<GetQuery>parse(specificQueryString).execute().size() * tx.getRelationshipType("reifiable-relation").subs().count(), answers.size());
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
     }
 
     /**
@@ -213,27 +213,27 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfTypesThatAreSubTypeOfGivenType() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String queryString = "match $x isa $type; $type sub noRoleEntity; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count(), answers.size());
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
     }
 
     @Test
     public void allInstancesOfTypesThatAreSubTypeOfGivenType_needInferenceToGetAllResults() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String queryString = "match $x isa $type; $type sub relationship; get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
         assertEquals(tx.getRelationshipType("relationship").subs().flatMap(RelationshipType::instances).count(), answers.size());
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
     }
 
     @Test
     public void allTypesAGivenTypeSubs() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String queryString = "match binary sub $x; get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
@@ -253,13 +253,13 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfTypesThatPlayGivenRole() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String queryString = "match $x isa $type; $type plays someRole; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         List<ConceptMap> reifiableRelations = qb.<GetQuery>parse("match $x isa reifiable-relation;get;").execute();
         assertEquals(tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count() + reifiableRelations.size(), answers.size());
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
     }
 
     /**
@@ -268,20 +268,20 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfRelationsThatRelateGivenRole() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String queryString = "match $x isa $type; $type relates someRole; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
-        List<ConceptMap> relations = qb.<GetQuery>parse("match $x isa relationship;get;").execute();
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
+        List<ConceptMap> relations = qb.<GetQuery>parse("match $x isa relationship;get;").execute(false);
         //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
         assertEquals(relations.stream().filter(ans -> !ans.get("x").asRelationship().type().isImplicit()).count() + 3, answers.size());
     }
 
     @Test
     public void allRolesGivenRelationRelates() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String queryString = "match reifying-relation relates $x; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -297,7 +297,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allTypesOfRolePlayerInASpecificRelationWithSpecifiedRoles() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String queryString = "match (someRole: $x, subRole: $y) isa reifiable-relation;$x isa $type; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -307,7 +307,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allTypesOfRolePlayerInASpecificRelationWithUnspecifiedRoles() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String queryString = "match ($x, $y) isa reifiable-relation;$x isa $type; get;";
 
         //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing} * arity
@@ -321,7 +321,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfMetaEntity() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         long noOfEntities = tx.getMetaEntityType().instances().count();
         String queryString = "match $x isa entity;get;";
 
@@ -331,7 +331,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfMetaRelation() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String queryString = "match $x isa relationship;get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -347,7 +347,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfMetaResource() {
-        QueryBuilder qb = tx.graql().infer(true);
+        QueryBuilder qb = tx.graql();
         String queryString = "match $x isa attribute;get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();

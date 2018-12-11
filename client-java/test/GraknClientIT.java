@@ -264,11 +264,11 @@ public class GraknClientIT {
                 "get;";
 
         try (Grakn.Transaction tx = reasonerRemoteSession.transaction(Transaction.Type.READ)) {
-            remoteAnswers = tx.graql().infer(true).<GetQuery>parse(queryString).execute();
+            remoteAnswers = tx.graql().<GetQuery>parse(queryString).execute();
         }
 
         try (Transaction tx = reasonerLocalSession.transaction(Transaction.Type.READ)) {
-            localAnswers = tx.graql().infer(true).<GetQuery>parse(queryString).execute();
+            localAnswers = tx.graql().<GetQuery>parse(queryString).execute();
         }
 
         assertEquals(remoteAnswers.size(), limit);
@@ -283,7 +283,7 @@ public class GraknClientIT {
 
             ConceptMap specificAnswer;
             try (Grakn.Transaction tx = reasonerRemoteSession.transaction(Transaction.Type.READ)) {
-                specificAnswer = Iterables.getOnlyElement(tx.graql().infer(true).<GetQuery>parse(specificQuery).execute());
+                specificAnswer = Iterables.getOnlyElement(tx.graql().<GetQuery>parse(specificQuery).execute());
             }
             assertEquals(answer, specificAnswer);
             testExplanation(specificAnswer);
@@ -348,8 +348,8 @@ public class GraknClientIT {
         try (Grakn.Transaction tx = remoteSession.transaction(Transaction.Type.READ)) {
             GetQuery query = tx.graql().match(var("x").sub("thing")).get();
 
-            Iterator<ConceptMap> iterator1 = query.iterator();
-            Iterator<ConceptMap> iterator2 = query.iterator();
+            Iterator<ConceptMap> iterator1 = query.stream().iterator();
+            Iterator<ConceptMap> iterator2 = query.stream().iterator();
 
             while (iterator1.hasNext() || iterator2.hasNext()) {
                 assertEquals(iterator1.next(), iterator2.next());

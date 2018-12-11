@@ -64,6 +64,11 @@ public class UndefineQuery implements Query<ConceptMap> {
     }
 
     @Override
+    public Stream<ConceptMap> stream(boolean infer) {
+        return executor(infer).run(this);
+    }
+
+    @Override
     public boolean isReadOnly() {
         return false;
     }

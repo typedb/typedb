@@ -47,7 +47,6 @@ public class QueryBuilder {
     @Nullable
     private final Transaction tx;
     private final Parser queryParser = Parser.create(this);
-    private boolean infer = true;
 
     public QueryBuilder() {
         this.tx = null;
@@ -57,14 +56,6 @@ public class QueryBuilder {
     /** used by {@link TransactionImpl#graql()}*/
     public QueryBuilder(Transaction tx) {
         this.tx = tx;
-    }
-
-    /**
-     * Enable or disable inference
-     */
-    public QueryBuilder infer(boolean infer) {
-        this.infer = infer;
-        return this;
     }
 
     /**
@@ -84,7 +75,7 @@ public class QueryBuilder {
     public Match match(Collection<? extends Pattern> patterns) {
         Conjunction<Pattern> conjunction = Pattern.and(Sets.newHashSet(patterns));
         Match base = new Match(tx, conjunction);
-        return infer ? base.infer() : base;
+        return base.infer();
     }
 
     /**

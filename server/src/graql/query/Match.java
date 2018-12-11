@@ -21,33 +21,23 @@ package grakn.core.graql.query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.Answer;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.server.Transaction;
-import grakn.core.graql.concept.Concept;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.internal.gremlin.GraqlTraversal;
-import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
-import com.google.common.collect.Sets;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -72,6 +62,7 @@ public class Match implements Iterable<ConceptMap> {
         this.pattern = null;
         this.tx = null;
     }
+
     /**
      * @param pattern a pattern to match in the graph
      */
@@ -83,71 +74,6 @@ public class Match implements Iterable<ConceptMap> {
         }
 
         this.pattern = pattern;
-    }
-
-    @CheckReturnValue
-    public Stream<ConceptMap> stream() {
-        if (this.tx == null || !(this.tx instanceof TransactionImpl)) {
-            throw GraqlQueryException.noTx();
-        }
-
-        TransactionImpl<?> embeddedTx = (TransactionImpl) this.tx;
-
-        validateStatements(embeddedTx);
-
-        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, embeddedTx);
-        return streamWithTraversal(this.getPatterns().variables(), embeddedTx, graqlTraversal);
-    }
-
-    /**
-     * @param commonVars set of variables of interest
-     * @param tx the graph to get results from
-     * @param graqlTraversal gral traversal corresponding to the provided pattern
-     * @return resulting answer stream
-     */
-    public static Stream<ConceptMap> streamWithTraversal(
-            Set<Variable> commonVars, TransactionImpl<?> tx, GraqlTraversal graqlTraversal
-    ) {
-        Set<Variable> vars = Sets.filter(commonVars, Variable::isUserDefinedName);
-
-        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(tx, vars);
-
-        return traversal.toStream()
-                .map(elements -> makeResults(vars, tx, elements))
-                .distinct()
-                .sequential()
-                .map(ConceptMap::new);
-    }
-
-    /**
-     * @param vars set of variables of interest
-     * @param tx the graph to get results from
-     * @param elements a map of vertices and edges where the key is the variable name
-     * @return a map of concepts where the key is the variable name
-     */
-    private static Map<Variable, Concept> makeResults(
-            Set<Variable> vars, TransactionImpl<?> tx, Map<String, Element> elements) {
-
-        Map<Variable, Concept> map = new HashMap<>();
-        for (Variable var : vars) {
-            Element element = elements.get(var.symbol());
-            if (element == null) {
-                throw GraqlQueryException.unexpectedResult(var);
-            } else {
-                Concept concept = buildConcept(tx, element);
-                map.put(var, concept);
-            }
-        }
-
-        return map;
-    }
-
-    private static Concept buildConcept(TransactionImpl<?> tx, Element element) {
-        if (element instanceof Vertex) {
-            return tx.buildConcept((Vertex) element);
-        } else {
-            return tx.buildConcept((Edge) element);
-        }
     }
 
     @CheckReturnValue
@@ -186,15 +112,6 @@ public class Match implements Iterable<ConceptMap> {
 
     public final Match infer() {
         return new MatchInfer(this);
-    }
-
-    /**
-     * @param tx the transaction against which the pattern should be validated
-     */
-    void validateStatements(Transaction tx) {
-        for (Statement statement : getPatterns().statements()) {
-            statement.getProperties().forEach(property -> property.checkValid(tx, statement));
-        }
     }
 
     /**
@@ -312,7 +229,10 @@ public class Match implements Iterable<ConceptMap> {
     @Override
     @CheckReturnValue
     public Iterator<ConceptMap> iterator() {
-        return stream().iterator();
+        if (tx ==null || !(tx instanceof TransactionImpl)) {
+            throw GraqlQueryException.noTx();
+        }
+        return ((TransactionImpl<?>) tx).stream(this).iterator();
     }
 
     @Override

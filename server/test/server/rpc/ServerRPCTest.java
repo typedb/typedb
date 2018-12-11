@@ -88,7 +88,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
@@ -141,7 +140,6 @@ public class ServerRPCTest {
         when(txFactory.tx(eq(MYKS), any())).thenReturn(tx);
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);
-        when(qb.infer(anyBoolean())).thenReturn(qb);
         when(query.executor()).thenReturn(executor);
 
         when(query.execute()).thenAnswer(params -> Stream.of(new ConceptMap()));
@@ -417,33 +415,6 @@ public class ServerRPCTest {
                     .build();
             assertEquals(expected, tx.receive().ok());
         }
-    }
-
-    @Test
-    public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() throws InterruptedException {
-        try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
-            tx.send(query(QUERY, false));
-            int iterator = tx.receive().ok().getQueryIter().getId();
-
-            tx.send(iterate(iterator));
-        }
-
-        verify(tx.graql()).infer(false);
-    }
-
-    @Test
-    @Ignore // TODO: re-enable this test after investigating the possibility of a race condition
-    public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() throws InterruptedException {
-        try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
-            tx.send(query(QUERY, true));
-            int iterator = tx.receive().ok().getQueryIter().getId();
-
-            tx.send(iterate(iterator));
-        }
-
-        verify(tx.graql()).infer(true);
     }
 
     @Test
