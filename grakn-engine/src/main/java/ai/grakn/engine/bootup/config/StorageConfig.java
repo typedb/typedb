@@ -43,11 +43,15 @@ public class StorageConfig extends ProcessConfig<Object> {
 
     private static final String EMPTY_VALUE = "";
     private static final String CONFIG_PARAM_PREFIX = "storage.internal.";
-    private static final String SAVED_CACHES_SUBDIR = "cassandra/saved_caches";
-    private static final String COMMITLOG_SUBDIR = "cassandra/commitlog";
-    private static final String DATA_SUBDIR = "cassandra/data";
+    private static final String SAVED_CACHES_DIR_CONFIG_VALUE = "cassandra/saved_caches";
+    private static final String COMMITLOG_DIR_CONFIG_VALUE = "cassandra/commitlog";
+    private static final String DATA_FILE_DIR_CONFIG_VALUE = "cassandra/data";
+    private static final String CDC_RAW_DIR_CONFIG_VALUE = "cassandra/cdc_raw";
+    private static final String HINTS_DIR_CONFIG_VALUE = "cassandra/hints";
 
     private static final String DATA_FILE_DIR_CONFIG_KEY = "data_file_directories";
+    private static final String CDC_RAW_DIR_CONFIG_KEY = "cdc_raw_directory";
+    private static final String HINTS_DIR_CONFIG_KEY = "hints_directory";
     private static final String SAVED_CACHES_DIR_CONFIG_KEY = "saved_caches_directory";
     private static final String COMMITLOG_DIR_CONFIG_KEY = "commitlog_directory";
 
@@ -91,9 +95,11 @@ public class StorageConfig extends ProcessConfig<Object> {
         String dbDir = config.getProperty(GraknConfigKey.DATA_DIR);
 
         ImmutableMap<String, Object> dirParams = ImmutableMap.of(
-                DATA_FILE_DIR_CONFIG_KEY, Collections.singletonList(dbDir + DATA_SUBDIR),
-                SAVED_CACHES_DIR_CONFIG_KEY, dbDir + SAVED_CACHES_SUBDIR,
-                COMMITLOG_DIR_CONFIG_KEY, dbDir + COMMITLOG_SUBDIR
+                DATA_FILE_DIR_CONFIG_KEY, Collections.singletonList(dbDir + DATA_FILE_DIR_CONFIG_VALUE),
+                SAVED_CACHES_DIR_CONFIG_KEY, dbDir + SAVED_CACHES_DIR_CONFIG_VALUE,
+                COMMITLOG_DIR_CONFIG_KEY, dbDir + COMMITLOG_DIR_CONFIG_VALUE,
+                CDC_RAW_DIR_CONFIG_KEY, dbDir + CDC_RAW_DIR_CONFIG_VALUE,
+                HINTS_DIR_CONFIG_KEY, dbDir + HINTS_DIR_CONFIG_VALUE
         );
         return new StorageConfig(this.updateParamsFromMap(dirParams));
     }
