@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.parser.Parser;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;

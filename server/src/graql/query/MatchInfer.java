@@ -16,12 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.match;
+package grakn.core.graql.query;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.query.pattern.Pattern;
