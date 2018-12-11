@@ -445,33 +445,44 @@
         } else if (this.superType === 'relationship' && !this.newRoles[0].length && !this.toggledRoleTypes.length) {
           this.$notifyError('Cannot define Relationship Type without atleast one related role');
         } else {
-          this.showSpinner = true;
+          let overrideError = false;
 
-          // collect all roles to be defined and related
-          const defineRoles = this.newRoles.map(role => ({ label: role, superType: 'role' }))
-            .concat(this.overridenRoles.map(role => ((role.override) ? { label: role.label, superType: role.superType } : null))).filter(r => r);
+          this.overridenRoles.forEach((role) => {
+            if (role.label === '') overrideError = true;
+          });
 
-          // collect all roles which are already defined but only need to be related
-          const relateRoles = this.overridenRoles.map(role => ((!role.override) ? role.label : null)).filter(r => r);
+          if (overrideError) {
+            this.$notifyError('Cannot define Relationship Type with an empty overriden role');
+          } else {
+            this.showSpinner = true;
 
-          this[DEFINE_RELATIONSHIP_TYPE]({
-            relationshipLabel: this.relationshipLabel,
-            superType: this.superType,
-            defineRoles,
-            relateRoles,
-            attributeTypes: this.toggledAttributeTypes,
-            roleTypes: this.toggledRoleTypes,
-          })
-            .then(() => {
-              this.showSpinner = false;
-              this.superTypes.push(this.relationshipLabel);
-              this.resetPanel();
+            // collect all roles to be defined and related
+            const defineRoles = this.newRoles.map(role => ({ label: role, superType: 'role' }))
+              .concat(this.overridenRoles.map(role => ((role.override) ? { label: role.label, superType: role.superType } : null))).filter(r => r);
+
+            // collect all roles which are already defined but only need to be related
+            const relateRoles = this.overridenRoles.map(role => ((!role.override) ? role.label : null)).filter(r => r);
+
+            this[DEFINE_RELATIONSHIP_TYPE]({
+              relationshipLabel: this.relationshipLabel,
+              superType: this.superType,
+              defineRoles,
+              relateRoles,
+              attributeTypes: this.toggledAttributeTypes,
+              roleTypes: this.toggledRoleTypes,
             })
-            .catch((e) => {
-              logger.error(e.stack);
-              this.showSpinner = false;
-              if (e.stack.includes('ALREADY_EXISTS')) this.$notifyError(`Relationship Type with label, ${this.relationshipLabel}, already exists. Please choose a different label`);
-            });
+              .then(() => {
+                this.showSpinner = false;
+                this.superTypes.push(this.relationshipLabel);
+                this.resetPanel();
+              })
+              .catch((e) => {
+                debugger;
+                logger.error(e.stack);
+                this.showSpinner = false;
+                this.$notifyError(e.message);
+              });
+          }
         }
       },
       selectSuperType(type) {

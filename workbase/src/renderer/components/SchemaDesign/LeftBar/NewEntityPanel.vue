@@ -333,6 +333,7 @@
             .catch((e) => {
               logger.error(e.stack);
               this.showSpinner = false;
+              this.$notifyError(e.message);
             });
         }
       },

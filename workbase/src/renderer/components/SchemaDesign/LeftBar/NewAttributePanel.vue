@@ -411,7 +411,7 @@
             .catch((e) => {
               logger.error(e.stack);
               this.showSpinner = false;
-              if (e.stack.includes('ALREADY_EXISTS')) this.$notifyError(`Attribute Type with label, ${this.attributeLabel}, already exists. Please choose a different label`);
+              this.$notifyError(e.message);
             });
         }
       },
