@@ -25,7 +25,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
-import grakn.core.graql.query.MatchBase;
+import grakn.core.graql.query.Match;
 import grakn.core.graql.internal.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -71,7 +71,7 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
 
             ReasonerQueryImpl transformedQuery = equivalentQuery.transformIds(idTransform);
 
-            return MatchBase.streamWithTraversal(transformedQuery.getPattern().variables(), tx, traversal.transform(idTransform))
+            return Match.streamWithTraversal(transformedQuery.getPattern().variables(), tx, traversal.transform(idTransform))
                     .map(ans -> ans.unify(unifier))
                     .map(a -> a.explain(new LookupExplanation(query)));
         }
@@ -79,7 +79,7 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
         GraqlTraversal traversal = GreedyTraversalPlan.createTraversal(query.getPattern(), tx);
         structCache.put(structQuery, new CacheEntry<>(query, traversal));
 
-        return MatchBase.streamWithTraversal(query.getPattern().variables(), tx, traversal)
+        return Match.streamWithTraversal(query.getPattern().variables(), tx, traversal)
                 .map(a -> a.explain(new LookupExplanation(query)));
     }
 }

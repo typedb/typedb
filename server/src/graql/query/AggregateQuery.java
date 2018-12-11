@@ -70,7 +70,7 @@ public class AggregateQuery<T extends Answer> implements Query<T> {
 
     @Override
     public final Transaction tx() {
-        return match().admin().tx();
+        return match().tx();
     }
 
     @Override
@@ -80,7 +80,7 @@ public class AggregateQuery<T extends Answer> implements Query<T> {
 
     @Override
     public final Boolean inferring() {
-        return match().admin().inferring();
+        return match().inferring();
     }
 
     @Override

@@ -20,7 +20,6 @@ package grakn.core.graql.query.aggregate;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Aggregate;
-import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.answer.Value;
 
@@ -31,7 +30,7 @@ import java.util.stream.Stream;
 import static java.lang.Math.sqrt;
 
 /**
- * Aggregate that finds the unbiased sample standard deviation of a {@link Match}.
+ * Aggregate that finds the unbiased sample standard deviation of a match clause.
  */
 public class StdAggregate implements Aggregate<Value> {
 

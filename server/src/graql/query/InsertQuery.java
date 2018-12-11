@@ -53,7 +53,7 @@ public class InsertQuery implements Query<ConceptMap> {
      * @param match      the {@link Match} to insert for each result
      * @param statements a collection of Vars to insert
      */
-    public InsertQuery(@Nullable Transaction tx, @Nullable MatchAdmin match, Collection<Statement> statements) {
+    public InsertQuery(@Nullable Transaction tx, @Nullable Match match, Collection<Statement> statements) {
         if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
 
         if (statements.isEmpty()) {
@@ -114,7 +114,7 @@ public class InsertQuery implements Query<ConceptMap> {
                 .map(theGraph::<Type>getSchemaConcept)
                 .collect(Collectors.toSet());
 
-        if (match() != null) types.addAll(match().admin().getSchemaConcepts());
+        if (match() != null) types.addAll(match().getSchemaConcepts());
 
         return types;
     }
@@ -124,7 +124,7 @@ public class InsertQuery implements Query<ConceptMap> {
     }
 
     private Transaction getTx() {
-        if (match() != null && match().admin().tx() != null) return match().admin().tx();
+        if (match() != null && match().tx() != null) return match().tx();
         else return tx();
     }
 
@@ -141,7 +141,7 @@ public class InsertQuery implements Query<ConceptMap> {
 
     @Override
     public final Boolean inferring() {
-        if (match() != null) return match().admin().inferring();
+        if (match() != null) return match().inferring();
         else return false;
     }
 

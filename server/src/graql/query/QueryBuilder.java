@@ -83,8 +83,8 @@ public class QueryBuilder {
     @CheckReturnValue
     public Match match(Collection<? extends Pattern> patterns) {
         Conjunction<Pattern> conjunction = Pattern.and(Sets.newHashSet(patterns));
-        MatchBase base = new MatchBase(tx, conjunction);
-        return infer ? base.infer().admin() : base;
+        Match base = new Match(tx, conjunction);
+        return infer ? base.infer() : base;
     }
 
     /**

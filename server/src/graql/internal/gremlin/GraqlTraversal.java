@@ -19,7 +19,6 @@
 package grakn.core.graql.internal.gremlin;
 
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.server.session.TransactionImpl;
@@ -48,10 +47,9 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A traversal over a Grakn knowledge base, representing one of many ways to execute a {@link Match}.
+ * A traversal over a Grakn knowledge base, representing one of many ways to execute a match clause
  * Comprised of ordered {@code Fragment}s which are used to construct a TinkerPop {@code GraphTraversal}, which can be
  * retrieved and executed.
- *
  */
 @AutoValue
 public abstract class GraqlTraversal {

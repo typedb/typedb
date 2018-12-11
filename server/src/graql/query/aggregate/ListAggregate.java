@@ -20,14 +20,13 @@ package grakn.core.graql.query.aggregate;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Aggregate;
-import grakn.core.graql.query.Match;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * An aggregate that changes {@link Match} results into a list.
+ * An aggregate that changes match clause results into a list.
  */
 public class ListAggregate implements Aggregate<ConceptMap> {
 

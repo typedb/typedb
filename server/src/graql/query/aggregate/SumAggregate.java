@@ -20,7 +20,6 @@ package grakn.core.graql.query.aggregate;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Aggregate;
-import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.answer.Value;
 
@@ -29,7 +28,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Aggregate that sums results of a {@link Match}.
+ * Aggregate that sums results of a match clause.
  */
 public class SumAggregate implements Aggregate<Value> {
 

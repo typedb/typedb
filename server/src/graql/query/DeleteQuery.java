@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query;
 
-import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
@@ -31,7 +30,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A query for deleting concepts from a {@link Match} clause.
+ * A query for deleting concepts from a match clause clause.
  * The delete operation to perform is based on what Statement objects
  * are provided to it. If only variable names are provided, then the delete
  * query will delete the concept bound to each given variable name. If property
@@ -52,7 +51,7 @@ public class DeleteQuery implements Query<ConceptSet> {
             throw new NullPointerException("Null vars");
         }
         for (Variable var : vars) {
-            if (!match.admin().getSelectedNames().contains(var)) {
+            if (!match.getSelectedNames().contains(var)) {
                 throw GraqlQueryException.varNotInQuery(var);
             }
         }
@@ -88,7 +87,7 @@ public class DeleteQuery implements Query<ConceptSet> {
 
     @Override
     public final Transaction tx() {
-        return match().admin().tx();
+        return match().tx();
     }
 
     @CheckReturnValue
@@ -109,7 +108,7 @@ public class DeleteQuery implements Query<ConceptSet> {
 
     @Override
     public final Boolean inferring() {
-        return match().admin().inferring();
+        return match().inferring();
     }
 
     @Override

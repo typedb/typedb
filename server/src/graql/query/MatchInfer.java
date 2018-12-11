@@ -38,11 +38,11 @@ import java.util.stream.Stream;
 /**
  * Modifier that specifies the graph to execute the {@link Match} with.
  */
-class MatchInfer extends MatchBase {
+class MatchInfer extends Match {
 
-    final AbstractMatch inner;
+    final Match inner;
 
-    MatchInfer(MatchBase inner) {
+    MatchInfer(Match inner) {
         super();
         this.inner = inner;
     }

@@ -87,21 +87,21 @@ public class QueryAdminIT {
                 "movie", "production", "tmdb-vote-count", "character", "production-with-cast", "has-cast"
         ).map(t -> tx.<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
 
-        assertEquals(types, match.admin().getSchemaConcepts());
+        assertEquals(types, match.getSchemaConcepts());
     }
 
     @Test
     public void testDefaultGetSelectedNamesInQuery() {
         Match match = qb.match(var("x").isa(var("y")));
 
-        assertEquals(Sets.newHashSet(var("x"), var("y")), match.admin().getSelectedNames());
+        assertEquals(Sets.newHashSet(var("x"), var("y")), match.getSelectedNames());
     }
 
     @Test
     public void testGetPatternInQuery() {
         Match match = qb.match(var("x").isa("movie"), var("x").val("Bob"));
 
-        Conjunction<Pattern> conjunction = match.admin().getPatterns();
+        Conjunction<Pattern> conjunction = match.getPatterns();
         assertNotNull(conjunction);
 
         Set<Pattern> patterns = conjunction.getPatterns();
@@ -112,7 +112,7 @@ public class QueryAdminIT {
     public void testMutateMatch() {
         Match match = qb.match(var("x").isa("movie"));
 
-        Conjunction<Pattern> pattern = match.admin().getPatterns();
+        Conjunction<Pattern> pattern = match.getPatterns();
         pattern.getPatterns().add(var("x").has("title", "Spy"));
 
         assertEquals(1, match.stream().count());

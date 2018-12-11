@@ -20,7 +20,6 @@ package grakn.core.graql.query.aggregate;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Aggregate;
-import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.answer.Value;
 
@@ -30,7 +29,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Aggregate that counts results of a {@link Match}.
+ * Aggregate that counts results of a match clause.
  */
 public class CountAggregate implements Aggregate<Value> {
 

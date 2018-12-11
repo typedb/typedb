@@ -32,8 +32,8 @@ import static org.mockito.Mockito.mock;
 
 public class InsertQueryTest {
 
-    private final MatchAdmin match1 = Graql.match(var("x").isa("movie")).admin();
-    private final MatchAdmin match2 = Graql.match(var("y").isa("movie")).admin();
+    private final Match match1 = Graql.match(var("x").isa("movie"));
+    private final Match match2 = Graql.match(var("y").isa("movie"));
 
     private final ImmutableCollection<Statement> vars1 = ImmutableSet.of(var("x"));
     private final ImmutableCollection<Statement> vars2 = ImmutableSet.of(var("y"));
