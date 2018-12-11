@@ -6,43 +6,58 @@
         Define New Entity Type
         <div class="close-container" @click="$emit('show-panel', undefined)"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
       </div>
+
       <div class="content">
-
         <div class="row">
-          <input class="input-small label-input" v-model="label" placeholder="Entity Label">
+          <input class="input-small label-input" v-model="entityLabel" placeholder="Entity Label">
           sub
-          <div v-bind:class="(showTypeList) ? 'btn type-btn type-list-shown' : 'btn type-btn'" @click="showTypeList = !showTypeList"><div class="type-btn-text">{{superType}}</div><div class="type-btn-caret"><vue-icon className="vue-icon" icon="caret-down"></vue-icon></div></div>
+          <div class="btn type-btn" :class="(showEntityTypeList) ? 'type-list-shown' : ''" @click="showEntityTypeList = !showEntityTypeList"><div class="type-btn-text">{{superType}}</div><div class="type-btn-caret"><vue-icon className="vue-icon" icon="caret-down"></vue-icon></div></div>
 
-          <div class="type-list" v-show="showTypeList">
-              <ul v-for="type in types" :key=type>
-                  <li class="type-item" @click="selectSuperType(type)" v-bind:class="[(type === superType) ? 'type-item-selected' : '']">{{type}}</li>
+          <div class="type-list" v-show="showEntityTypeList">
+              <ul v-for="type in superTypes" :key=type>
+                  <li class="type-item" @click="selectSuperType(type)" :class="[(type === superType) ? 'type-item-selected' : '']">{{type}}</li>
               </ul>
           </div>
         </div>
 
         <div class="row">
-          <div class="has">has</div>
-          <div class="plays">plays</div>
+          <div @click="showHasPanel = !showHasPanel" class="has-header">
+            <vue-icon :icon="(showHasPanel) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
+            has
+            </div>
         </div>
 
-        <div class="row-2">
+
+        <div class="row-2" v-if="showHasPanel">
           <div class="has">
             <ul class="attribute-type-list" v-if="metaTypeInstances.attributes.length">
               <li :class="(toggledAttributeTypes.includes(attributeType)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeType(attributeType)" v-for="attributeType in metaTypeInstances.attributes" :key=attributeType>
                   {{attributeType}}
               </li>
             </ul>
-            <div v-else>There are no attribute types defined</div>
+            <div v-else class="no-types">There are no attribute types defined</div>
           </div>
-          <div class="plays">
+        </div>
+
+    
+        <div class="row">
+          <div @click="showPlaysPanel = !showPlaysPanel" class="has-header">
+            <vue-icon :icon="(showPlaysPanel) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
+            plays
+            </div>
+        </div>
+
+        <div class="row-2" v-if="showPlaysPanel">
+          <div class="has">
             <ul class="attribute-type-list" v-if="metaTypeInstances.roles.length">
               <li :class="(toggledRoleTypes.includes(roleType)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleRoleType(roleType)" v-for="roleType in metaTypeInstances.roles" :key=roleType>
                   {{roleType}}
               </li>
             </ul>
-            <div v-else>There are no role types defined</div>
+            <div v-else class="no-types">There are no role types defined</div>
           </div>
         </div>
+
 
         <div class="submit-row">
           <button class="btn submit-btn" @click="clearPanel">Clear</button>
@@ -56,6 +71,20 @@
 
 <style scoped>
 
+.has-header {
+  width: 100%;
+  background-color: var(--gray-1);
+  border: var(--container-darkest-border);
+  height: 22px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+
+.has {
+  width: 100%;
+}
 
 .green-border {
   border: 1px solid var(--button-hover-border-color);
@@ -77,7 +106,7 @@
     .attribute-type-list {
         border: var(--container-darkest-border);
         background-color: var(--gray-1);
-        width: 140px;
+        width: 100%;
         max-height: 140px;
         overflow: auto;
     }
@@ -109,9 +138,6 @@
         background-color: var(--purple-3);
     }
 
-  .plays {
-    width: 140px;
-  }
 
   .label-input {
     width: 140px;
@@ -129,9 +155,11 @@
   .row-2 {
     display: flex;
     flex-direction: row;
-    padding: var(--container-padding) var(--container-padding) 0px var(--container-padding);
+    padding: 0px var(--container-padding) 0px var(--container-padding);
     justify-content: space-between;
   }
+
+
 
   .new-entity-panel-container {
     position: absolute;
@@ -244,13 +272,15 @@
     props: ['panelShown'],
     data() {
       return {
-        showTypeList: false,
-        types: ['entity'],
+        showEntityTypeList: false,
+        superTypes: [],
         toggledAttributeTypes: [],
         toggledRoleTypes: [],
         superType: undefined,
-        label: '',
+        entityLabel: '',
         showSpinner: false,
+        showHasPanel: false,
+        showPlaysPanel: false,
       };
     },
     beforeCreate() {
@@ -270,9 +300,8 @@
     },
     watch: {
       panelShown(val) {
-        if (val && this.superType === undefined) {
-          this.superType = this.types[0];
-          this.types.push(...this.metaTypeInstances.entities);
+        if (val === 'entity') {
+          this.clearPanel();
         }
       },
     },
@@ -294,27 +323,36 @@
         }
       },
       defineEntityType() {
-        this.showSpinner = true;
-        this[DEFINE_ENTITY_TYPE]({ label: this.label, superType: this.superType, attributeTypes: this.toggledAttributeTypes, roleTypes: this.toggledRoleTypes })
-          .then(() => {
-            this.types.push(this.label);
-            this.showSpinner = false;
-            this.clearPanel();
-          })
-          .catch((e) => {
-            logger.error(e.stack);
-            this.showSpinner = false;
-          });
+        if (this.entityLabel === '') {
+          this.$notifyInfo('Cannot define Entity Type without Entity Label');
+        } else {
+          this.showSpinner = true;
+          this[DEFINE_ENTITY_TYPE]({ entityLabel: this.entityLabel, superType: this.superType, attributeTypes: this.toggledAttributeTypes, roleTypes: this.toggledRoleTypes })
+            .then(() => {
+              this.superTypes.push(this.entityLabel);
+              this.showSpinner = false;
+              this.$notifyInfo(`Entity Type, ${this.entityLabel}, has been defined`);
+              this.clearPanel();
+            })
+            .catch((e) => {
+              logger.error(e.stack);
+              this.showSpinner = false;
+            });
+        }
       },
       selectSuperType(type) {
         this.superType = type;
-        this.showTypeList = false;
+        this.showEntityTypeList = false;
       },
       clearPanel() {
-        this.label = '';
-        this.superType = this.types[0];
+        this.entityLabel = '';
+        this.showEntityTypeList = false;
+        this.superTypes = ['entity', ...this.metaTypeInstances.entities];
+        this.superType = this.superTypes[0];
         this.toggledAttributeTypes = [];
         this.toggledRoleTypes = [];
+        this.showHasPanel = false;
+        this.showPlaysPanel = false;
       },
       togglePanel() {
         if (this.panelShown === 'entity') this.$emit('show-panel', undefined);

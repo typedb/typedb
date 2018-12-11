@@ -28,7 +28,7 @@
                 <input class="input-small label-input role-override-label-input" v-model="overridenRoles[index].label" placeholder="Role Label">
                 <div class="as-label">as</div>
               </div>
-              <input class="input-small role-readonly" :value="role" placeholder="Relationship Label" readonly>
+              <div class="role-readonly">{{role}}</div>
               <div class="btns">
                 <div class="btn small-btn" v-if="!overridenRoles[index].override" @click="overRideRole(index)"><vue-icon icon="annotation" class="vue-icon" iconSize="12"></vue-icon></div>
                 <div class="btn small-btn" v-if="overridenRoles[index].override && superRelatipnshipTypeRoles[index] !== superRelatipnshipTypeRoles[index - 1]" @click="overRideAgain(index, role)"><vue-icon icon="plus" class="vue-icon" iconSize="12"></vue-icon></div>
@@ -51,19 +51,44 @@
         </div>
 
         <div class="row">
-          <div class="has">has</div>
+          <div @click="showHasPanel = !showHasPanel" class="has-header">
+            <vue-icon :icon="(showHasPanel) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
+            has
+            </div>
         </div>
 
-        <div class="row">
+
+        <div class="row-2" v-if="showHasPanel">
           <div class="has">
             <ul class="attribute-type-list" v-if="metaTypeInstances.attributes.length">
               <li :class="(toggledAttributeTypes.includes(attributeType)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeType(attributeType)" v-for="attributeType in metaTypeInstances.attributes" :key=attributeType>
                   {{attributeType}}
               </li>
             </ul>
-            <div v-else>There are no attribute types defined</div>
+            <div v-else class="no-types">There are no attribute types defined</div>
           </div>
         </div>
+
+    
+        <div class="row">
+          <div @click="showPlaysPanel = !showPlaysPanel" class="has-header">
+            <vue-icon :icon="(showPlaysPanel) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
+            plays
+            </div>
+        </div>
+
+        <div class="row-2" v-if="showPlaysPanel">
+          <div class="has">
+            <ul class="attribute-type-list" v-if="metaTypeInstances.roles.length">
+              <li :class="(toggledRoleTypes.includes(roleType)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleRoleType(roleType)" v-for="roleType in metaTypeInstances.roles" :key=roleType>
+                  {{roleType}}
+              </li>
+            </ul>
+            <div v-else class="no-types">There are no role types defined</div>
+          </div>
+        </div>
+
+
 
         <div class="submit-row">
           <button class="btn submit-btn" @click="clearPanel">Clear</button>
@@ -77,6 +102,22 @@
 
 <style scoped>
 
+.has-header {
+  width: 100%;
+  background-color: var(--gray-1);
+  border: var(--container-darkest-border);
+  height: 22px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+  .row-2 {
+    display: flex;
+    flex-direction: row;
+    padding: 0px var(--container-padding) 0px var(--container-padding);
+    justify-content: space-between;
+  }
 
 .green-border {
   border: 1px solid var(--button-hover-border-color);
@@ -90,7 +131,13 @@
         right: 2px;
     }
 .role-readonly {
-  width: 100% !important;
+  width: 100%;
+  height: 22px;
+  padding-left: 4px;
+  background-color: var(--gray-2);
+  border: var(--container-darkest-border);
+  display: flex;
+  align-items: center;
 }
 
 .margin-top {
@@ -151,14 +198,14 @@
     padding: var(--container-padding);
     }
 
-    .attribute-type-list {
-        border: var(--container-darkest-border);
-        background-color: var(--gray-1);
-        width: 100%;
-        max-height: 140px;
-        overflow: auto;
-    }
 
+  .attribute-type-list {
+      border: var(--container-darkest-border);
+      background-color: var(--gray-1);
+      width: 100%;
+      max-height: 140px;
+      overflow: auto;
+  }
     .attribute-type-list::-webkit-scrollbar {
         width: 2px;
     }
@@ -324,6 +371,9 @@
         superRelatipnshipTypeRoles: [],
         overridenRoles: [],
         toggledAttributeTypes: [],
+        toggledRoleTypes: [],
+        showHasPanel: false,
+        showPlaysPanel: false,
       };
     },
     beforeCreate() {
@@ -376,6 +426,14 @@
           this.toggledAttributeTypes.push(type);
         }
       },
+      toggleRoleType(type) {
+        const index = this.toggledRoleTypes.indexOf(type);
+        if (index > -1) {
+          this.toggledRoleTypes.splice(index, 1);
+        } else {
+          this.toggledRoleTypes.push(type);
+        }
+      },
       async defineRelationshipType() {
         this.showSpinner = true;
 
@@ -384,7 +442,9 @@
         const relateRoles = this.overridenRoles.map(role => ((!role.override) ? role.label : null)).filter(r => r);
 
 
-        this[DEFINE_RELATIONSHIP_TYPE]({ label: this.label, superType: this.superType, defineRoles, relateRoles, attributeTypes: this.toggledAttributeTypes })
+        this[DEFINE_RELATIONSHIP_TYPE]({
+          label: this.label, superType: this.superType, defineRoles, relateRoles, attributeTypes: this.toggledAttributeTypes, roleTypes: this.toggledRoleTypes,
+        })
           .then(() => {
             this.showSpinner = false;
             this.types.push(this.label);
@@ -393,6 +453,7 @@
           .catch((e) => {
             logger.error(e.stack);
             this.showSpinner = false;
+            if (e.stack.includes('ALREADY_EXISTS')) this.$notifyError(`Attribute Type with label, ${this.attributeLabel}, already exists. Please choose a different label`);
           });
       },
       selectSuperType(type) {
@@ -404,6 +465,9 @@
         this.superType = this.types[0];
         this.newRoles = [''];
         this.toggledAttributeTypes = [];
+        this.toggledRoleTypes = [];
+        this.showHasPanel = false;
+        this.showPlaysPanel = false;
       },
       togglePanel() {
         if (this.panelShown === 'relationship') this.$emit('show-panel', undefined);

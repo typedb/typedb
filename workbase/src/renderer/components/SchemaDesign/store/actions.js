@@ -126,18 +126,18 @@ export default {
 
     // add attribute types to entity type
     await Promise.all(payload.attributeTypes.map(async (attributeType) => {
-      await state.schemaHandler.addAttribute({ label: payload.label, attributeLabel: attributeType });
+      await state.schemaHandler.addAttribute({ label: payload.entityLabel, attributeLabel: attributeType });
     }));
 
     // add roles to entity type
     await Promise.all(payload.roleTypes.map(async (roleType) => {
-      await state.schemaHandler.addPlaysRole({ label: payload.label, roleLabel: roleType });
+      await state.schemaHandler.addPlaysRole({ label: payload.entityLabel, roleLabel: roleType });
     }));
 
     dispatch(COMMIT_TX, graknTx).then(async () => {
       graknTx = await dispatch(OPEN_GRAKN_TX);
 
-      const type = await graknTx.getSchemaConcept(payload.label);
+      const type = await graknTx.getSchemaConcept(payload.entityLabel);
       const sup = await type.sup();
       const supLabel = await sup.label();
       let edges;
@@ -190,7 +190,19 @@ export default {
 
   async [DEFINE_ATTRIBUTE_TYPE]({ state, dispatch }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
+
     await state.schemaHandler.defineAttributeType(payload);
+
+    // add attribute types to entity type
+    await Promise.all(payload.attributeTypes.map(async (attributeType) => {
+      await state.schemaHandler.addAttribute({ label: payload.attributeLabel, attributeLabel: attributeType });
+    }));
+
+    // add roles to entity type
+    await Promise.all(payload.roleTypes.map(async (roleType) => {
+      await state.schemaHandler.addPlaysRole({ label: payload.attributeLabel, roleLabel: roleType });
+    }));
+
     dispatch(COMMIT_TX, graknTx)
       .then(() => {
         dispatch(UPDATE_METATYPE_INSTANCES);
@@ -222,6 +234,10 @@ export default {
       await state.schemaHandler.addAttribute({ label: payload.label, attributeLabel: attributeType });
     }));
 
+    // add roles to entity type
+    await Promise.all(payload.roleTypes.map(async (roleType) => {
+      await state.schemaHandler.addPlaysRole({ label: payload.label, roleLabel: roleType });
+    }));
 
     dispatch(COMMIT_TX, graknTx).then(async () => {
       graknTx = await dispatch(OPEN_GRAKN_TX);

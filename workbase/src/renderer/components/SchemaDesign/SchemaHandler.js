@@ -17,8 +17,8 @@ function toGraknDatatype(dataTypeParam) {
   }
 }
 
-SchemaHandler.prototype.defineEntityType = async function define({ label, superType }) {
-  const type = await tx.putEntityType(label);
+SchemaHandler.prototype.defineEntityType = async function define({ entityLabel, superType }) {
+  const type = await tx.putEntityType(entityLabel);
   const directSuper = await tx.getSchemaConcept(superType);
   await type.sup(directSuper);
 };
