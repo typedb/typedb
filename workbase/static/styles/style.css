@@ -200,9 +200,13 @@ span.bp3-icon::before {
   margin-left: 10px !important;
 }
 
-.login-btn {
-  margin: 0px !important;
-  width: 50px;
+.landing-btn {
+  margin: 0px;
+  flex-direction: row;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0px;
 }
 
 /* Input */

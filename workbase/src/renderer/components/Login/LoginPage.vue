@@ -1,98 +1,93 @@
 <template>
   <transition name="slide-fade" appear>
-    <div class="wrapper noselect">
-       <div @click="isKgms = false"><vue-icon v-if="isKgms" icon="arrow-left" class="vue-icon back-arrow" iconSize="30"></vue-icon></div>
-
-
-
+    <div class="wrapper noselect" v-if="showLoginPage">
       <div class="login-header">
         <img src="static/img/logo-text.png" class="icon">
-        <div v-if="!isKgms" class="workbase">WORKBASE</div>
+        <div v-if="!showPanel" class="workbase3">WORKBASE</div>
         <div v-else class="workbase2">WORKBASE FOR KGMS</div>
       </div>
 
-      <div class="btn-row">
-        <button v-if="!isKgms" @click="loginTocore" class="btn landing-btn">CORE</button>
-        <button v-if="!isKgms" @click="isKgms = true" class="btn landing-btn">KGMS</button>
-      </div>
-
-      <div class="login-panel z-depth-5">
-            <div class="header">
-              Server Address
-            </div>
-            <div class="content">
+      <div class="login-panel" v-if="showPanel">
+        <div class="header">
+          Log In
+        </div>
+        <div class="row">
+          <div class="column">
+            <div class="row">
               <h1 class="label">Host:</h1>
               <input class="input left-input" v-model="serverHost">
+            </div>
+            <div class="row">
+              <h1 class="label">Username:</h1>
+              <input class="input left-input" v-model="username">
+            </div>
+            <div class="row">
+              <button @click="isKgms = !isKgms" class="btn landing-btn non-btn"></button>
+            </div>
+          </div>
+          <div class="column">
+            <div class="row">
               <h1 class="label">Port:</h1>
               <input class="input" type="number" v-model="serverPort">
             </div>
-        </div>
-
-      <div v-if="isKgms">
-        <div class="login-panel z-depth-5">
-            <div class="header">
-              Log In
-            </div>
-            <div class="content">
-              <h1 class="label">Username:</h1>
-              <input class="input left-input" v-model="username">
+            <div class="row">
               <h1 class="label">Password:</h1>
-              <input class="input" v-model="password" type="password">
-              <div class="login-row">
-              <loading-button v-on:clicked="loginToKgms" text="Log In" :loading="isLoading" className="btn login-btn"></loading-button>
-              </div>
+              <input class="input" v-model="password">
             </div>
-
-
-
+            <div class="row flex-end">
+              <loading-button v-on:clicked="loginToKgms()" text="Login" :loading="isLoading" className="btn landing-btn"></loading-button>
+            </div>
+          </div>
         </div>
-      
       </div>
-
-
       
     </div>
   </transition>
 </template>
 <style scoped>
-
-.back-arrow {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  cursor: pointer;
-}
-
-
-.header {
-  background-color: var(--gray-1);
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-bottom: var(--container-darkest-border);
-}
-.label {
-  margin-right: 5px;
-}
-
-  .title {
-      padding: var(--container-padding);
+  .arrow-left {
+    padding-right: 2px;
   }
 
-  .content {
-      padding: var(--container-padding);
-      display: flex;
-      align-items: center;
+  .flex-end {
+    justify-content: flex-end;
   }
 
-  .login-row {
-    margin-left: 5px;
+  .non-btn {
+    background-color: var(--gray-2) !important;
+    border: 0px;
+    padding-left: 0px;
   }
 
+  .input {
+    width: 100%;
+  }
 
-  .left-input {
+  .column {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: var(--container-padding);
+  }
+
+  .header {
+    background-color: var(--gray-1);
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: var(--container-darkest-border);
+  }
+
+  .label {
     margin-right: 5px;
+    width: 85px;
   }
 
   .login-panel {
@@ -101,18 +96,13 @@
     display: flex;
     flex-direction: column;
     background-color: var(--gray-2);
-  }
-
-  .landing-btn {
-    width: 200px;
-    height: 100px;
-    font-size: 50px !important;
+    width: 384px;
   }
 
   .btn-row {
-    margin-top: 50px;
     display: flex;
     flex-direction: row;
+    width: 100%;
   }
 
   .slide-fade-enter-active {
@@ -135,12 +125,13 @@
     width: 400px;
   }
 
-  .workbase {
+   .workbase3 {
     right: 30%;
     font-size: 150%;
     color: #00eca2;
     margin-left: 170px;
   }
+
 
   .workbase2 {
     right: 30%;
@@ -166,12 +157,13 @@ export default {
   name: 'LoginPage',
   data() {
     return {
-      isKgms: false,
       username: '',
       password: '',
       isLoading: false,
       serverHost: ServerSettings.getServerHost(),
       serverPort: ServerSettings.getServerPort(),
+      showPanel: true,
+      showLoginPage: false,
     };
   },
   watch: {
@@ -181,6 +173,20 @@ export default {
     serverPort(newVal) {
       ServerSettings.setServerPort(newVal);
     },
+  },
+  beforeCreate() {
+    const grakn = new Grakn(ServerSettings.getServerUri(), { username: this.username, password: this.password });
+    grakn.session('grakn').transaction().then(() => {
+      this.$router.push('develop/data');
+      this.$store.dispatch('initGrakn');
+    })
+      .catch((e) => {
+        if (!e.message.includes('2 UNKNOWN')) {
+          this.showPanel = false;
+          this.$notifyError('Looks like Grakn is not running: <br> - Please make sure Grakn is running and refresh workbase.');
+        }
+        this.showLoginPage = true;
+      });
   },
   created() {
     window.addEventListener('keyup', (e) => {
@@ -194,21 +200,6 @@ export default {
     });
   },
   methods: {
-    loginTocore() {
-      const grakn = new Grakn(ServerSettings.getServerUri(), { username: this.username, password: this.password });
-      grakn.session('grakn').transaction().then(() => {
-        this.$router.push('develop/data');
-      })
-        .catch((e) => {
-          let error;
-          if (e.message.includes('2 UNKNOWN')) {
-            error = 'Login failed. Check if Grakn Core is running.';
-          } else {
-            error = e;
-          }
-          this.$notifyError(error);
-        });
-    },
     loginToKgms() {
       this.isLoading = true;
       const grakn = new Grakn(ServerSettings.getServerUri(), { username: this.username, password: this.password });
@@ -222,7 +213,7 @@ export default {
           this.isLoading = false;
           let error;
           if (e.message.includes('2 UNKNOWN') || e.message.includes('14 UNAVAILABLE')) {
-            error = 'Login failed. <br> - make sure Grakn KGMS is running <br> - check if credentials are correct';
+            error = 'Login failed: <br> - make sure Grakn KGMS is running <br> - check that host and port are correct <br> - check if credentials are correct';
           } else {
             error = e;
           }
