@@ -35,7 +35,7 @@
               <input class="input" v-model="password">
             </div>
             <div class="row flex-end">
-              <loading-button v-on:clicked="loginToKgms()" text="Login" :loading="isLoading" className="btn landing-btn"></loading-button>
+              <loading-button v-on:clicked="loginToKgms()" text="Login" :loading="isLoading" className="btn login-btn"></loading-button>
             </div>
           </div>
         </div>
