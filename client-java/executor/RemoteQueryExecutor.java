@@ -52,7 +52,7 @@ public final class RemoteQueryExecutor implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(DefineQuery query) {
-        Iterable<ConceptMap> iterable = () -> tx.query(query);
+        Iterable<ConceptMap> iterable = () -> tx.query(query, infer);
         return StreamSupport.stream(iterable.spliterator(), false);
     }
 
@@ -78,13 +78,13 @@ public final class RemoteQueryExecutor implements QueryExecutor {
 
     @Override
     public <T extends Answer> Stream<T> run(AggregateQuery<T> query) {
-        Iterable<T> iterable = () -> tx.query(query);
+        Iterable<T> iterable = () -> tx.query(query, infer);
         return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     @Override
     public <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query) {
-        Iterable<T> iterable = () -> tx.query(query);
+        Iterable<T> iterable = () -> tx.query(query, infer);
         Stream<T> stream = StreamSupport.stream(iterable.spliterator(), false);
         return RemoteComputeExecutor.of(stream);
     }
@@ -92,12 +92,12 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     // Helper methods
 
     private Stream<ConceptMap> streamConceptMaps(Query<ConceptMap> query) {
-        Iterable<ConceptMap> iterable = () -> tx.query(query);
+        Iterable<ConceptMap> iterable = () -> tx.query(query, infer);
         return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     private Stream<ConceptSet> streamConceptSets(Query<ConceptSet> query) {
-        Iterable<ConceptSet> iterable = () -> tx.query(query);
+        Iterable<ConceptSet> iterable = () -> tx.query(query, infer);
         return StreamSupport.stream(iterable.spliterator(), false);
     }
 }
