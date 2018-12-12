@@ -78,7 +78,7 @@ public class QueryAdminIT {
 
     @Test
     public void testGetTypesInQuery() {
-        Match match = qb.match(
+        MatchClause match = qb.match(
                 var("x").isa(label("movie").sub("production")).has("tmdb-vote-count", 400),
                 var("y").isa("character"),
                 var().rel("production-with-cast", "x").rel("y").isa("has-cast")
@@ -93,14 +93,14 @@ public class QueryAdminIT {
 
     @Test
     public void testDefaultGetSelectedNamesInQuery() {
-        Match match = qb.match(var("x").isa(var("y")));
+        MatchClause match = qb.match(var("x").isa(var("y")));
 
         assertEquals(Sets.newHashSet(var("x"), var("y")), match.getSelectedNames());
     }
 
     @Test
     public void testGetPatternInQuery() {
-        Match match = qb.match(var("x").isa("movie"), var("x").val("Bob"));
+        MatchClause match = qb.match(var("x").isa("movie"), var("x").val("Bob"));
 
         Conjunction<Pattern> conjunction = match.getPatterns();
         assertNotNull(conjunction);
@@ -111,7 +111,7 @@ public class QueryAdminIT {
 
     @Test
     public void testMutateMatch() {
-        Match match = Graql.match(var("x").isa("movie"));
+        MatchClause match = Graql.match(var("x").isa("movie"));
 
         Conjunction<Pattern> pattern = match.getPatterns();
         pattern.getPatterns().add(var("x").has("title", "Spy"));

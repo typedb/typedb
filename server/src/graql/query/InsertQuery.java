@@ -35,25 +35,25 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A query for inserting data, which can be built from a {@link QueryBuilder} or a {@link Match}.
+ * A query for inserting data, which can be built from a {@link QueryBuilder} or a {@link MatchClause}.
  * When built from a {@code QueryBuilder}, the insert query will execute once, inserting all the variables provided.
- * When built from a {@link Match}, the insert query will execute for each result of the {@link Match},
- * where variable names in the insert query are bound to the concept in the result of the {@link Match}.
+ * When built from a {@link MatchClause}, the insert query will execute for each result of the {@link MatchClause},
+ * where variable names in the insert query are bound to the concept in the result of the {@link MatchClause}.
  */
 public class InsertQuery implements Query<ConceptMap> {
 
     private final Transaction tx;
-    private final Match match;
+    private final MatchClause match;
     private final Collection<Statement> statements;
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
      *
      * @param tx         the graph to execute on
-     * @param match      the {@link Match} to insert for each result
+     * @param match      the {@link MatchClause} to insert for each result
      * @param statements a collection of Vars to insert
      */
-    public InsertQuery(@Nullable Transaction tx, @Nullable Match match, Collection<Statement> statements) {
+    public InsertQuery(@Nullable Transaction tx, @Nullable MatchClause match, Collection<Statement> statements) {
         if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
 
         if (statements.isEmpty()) {
@@ -72,11 +72,11 @@ public class InsertQuery implements Query<ConceptMap> {
     }
 
     /**
-     * @return the {@link Match} that this insert query is using, if it was provided one
+     * @return the {@link MatchClause} that this insert query is using, if it was provided one
      */
     @Nullable
     @CheckReturnValue
-    public Match match() {
+    public MatchClause match() {
         return match;
     }
 
@@ -86,11 +86,6 @@ public class InsertQuery implements Query<ConceptMap> {
     @CheckReturnValue
     public Collection<Statement> statements() {
         return statements;
-    }
-
-    @Override
-    public boolean isReadOnly() {
-        return false;
     }
 
     @Override
@@ -142,12 +137,6 @@ public class InsertQuery implements Query<ConceptMap> {
         builder.append(statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim());
 
         return builder.toString();
-    }
-
-    @Override
-    public final Boolean inferring() {
-        if (match() != null) return match().inferring();
-        else return false;
     }
 
     @Override

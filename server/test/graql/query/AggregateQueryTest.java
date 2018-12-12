@@ -28,8 +28,8 @@ import static org.junit.Assert.assertNotEquals;
 
 public class AggregateQueryTest {
 
-    private final Match match1 = Graql.match(var("x").isa("movie"));
-    private final Match match2 = Graql.match(var("y").isa("movie"));
+    private final MatchClause match1 = Graql.match(var("x").isa("movie"));
+    private final MatchClause match2 = Graql.match(var("y").isa("movie"));
 
     private final Aggregate<Value> aggregate1 = Graql.count();
     private final Aggregate<Value> aggregate2 = Graql.sum(Pattern.var("x"));

@@ -25,7 +25,6 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
-import grakn.core.graql.query.Match;
 import grakn.core.graql.internal.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;

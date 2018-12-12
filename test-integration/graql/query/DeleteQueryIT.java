@@ -63,10 +63,10 @@ public class DeleteQueryIT {
     @Rule
     public  final ExpectedException exception = ExpectedException.none();
 
-    private Match kurtz;
-    private Match marlonBrando;
-    private Match apocalypseNow;
-    private Match kurtzCastRelation;
+    private MatchClause kurtz;
+    private MatchClause marlonBrando;
+    private MatchClause apocalypseNow;
+    private MatchClause kurtzCastRelation;
 
     @BeforeClass
     public static void newSession() {
@@ -139,7 +139,7 @@ public class DeleteQueryIT {
     @Test
     public void testDeleteAllRolePlayers() {
         ConceptId id = kurtzCastRelation.get("a").stream().map(ans -> ans.get("a")).findFirst().get().id();
-        Match relation = qb.match(var().id(id));
+        MatchClause relation = qb.match(var().id(id));
 
         assertExists(kurtz);
         assertExists(marlonBrando);
@@ -188,7 +188,7 @@ public class DeleteQueryIT {
 
     @Test
     public void afterDeletingAllInstances_TheTypeCanBeUndefined() {
-        Match movie = qb.match(x.isa("movie"));
+        MatchClause movie = qb.match(x.isa("movie"));
 
         assertNotNull(tx.getEntityType("movie"));
         assertExists(movie);

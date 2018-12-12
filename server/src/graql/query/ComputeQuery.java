@@ -349,11 +349,6 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
         return includeAttributes;
     }
 
-    @Override
-    public final Boolean inferring() {
-        return false;
-    }
-
     @CheckReturnValue
     public final boolean isValid() {
         return !getException().isPresent();
@@ -519,14 +514,6 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
         result = 31 * result + Objects.hashCode(includeAttributes);
 
         return result;
-    }
-
-    /**
-     * Checks Whether this query will modify the graph
-     */
-    @Override
-    public boolean isReadOnly() {
-        return true;
     }
 
     /**

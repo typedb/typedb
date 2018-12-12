@@ -22,7 +22,7 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Match;
+import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
 import org.junit.Before;
@@ -235,7 +235,7 @@ public class QueryToStringTest {
 
     @Test
     public void whenCallingToStringOnAQueryWithAContainsPredicate_ResultIsCorrect() {
-        Match match = match(var("x").val(contains(var("y"))));
+        MatchClause match = match(var("x").val(contains(var("y"))));
 
         assertEquals("match $x contains $y;", match.toString());
     }

@@ -60,22 +60,21 @@ public class QueryBuilder {
 
     /**
      * @param patterns an array of patterns to match in the graph
-     * @return a {@link Match} that will find matches of the given patterns
+     * @return a {@link MatchClause} that will find matches of the given patterns
      */
     @CheckReturnValue
-    public Match match(Pattern... patterns) {
+    public MatchClause match(Pattern... patterns) {
         return match(Arrays.asList(patterns));
     }
 
     /**
      * @param patterns a collection of patterns to match in the graph
-     * @return a {@link Match} that will find matches of the given patterns
+     * @return a {@link MatchClause} that will find matches of the given patterns
      */
     @CheckReturnValue
-    public Match match(Collection<? extends Pattern> patterns) {
+    public MatchClause match(Collection<? extends Pattern> patterns) {
         Conjunction<Pattern> conjunction = Pattern.and(Sets.newHashSet(patterns));
-        Match base = new Match(tx, conjunction);
-        return base.infer();
+        return new MatchClause(tx, conjunction);
     }
 
     /**

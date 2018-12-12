@@ -117,7 +117,7 @@ public class QueryBuilderIT {
 
     @Test
     public void whenExecutingAMatchWithoutAGraph_Throw() {
-        Match match = match(x.isa("movie"));
+        MatchClause match = match(x.isa("movie"));
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         //noinspection ResultOfMethodCallIgnored

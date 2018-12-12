@@ -68,18 +68,8 @@ public class DefineQuery implements Query<ConceptMap> {
     }
 
     @Override
-    public boolean isReadOnly() {
-        return false;
-    }
-
-    @Override
     public String toString() {
         return "define " + statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
-    }
-
-    @Override
-    public Boolean inferring() {
-        return false;
     }
 
     @Override

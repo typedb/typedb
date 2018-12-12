@@ -30,8 +30,6 @@ import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
@@ -51,17 +49,12 @@ import static java.util.stream.Collectors.toSet;
  * The match clause is the pattern-matching part of a query. The patterns are described in a declarative fashion,
  * then the match clause will traverse the knowledge base in an efficient fashion to find any matching answers.
  */
-public class Match implements Iterable<ConceptMap> {
-
-    protected final Logger LOG = LoggerFactory.getLogger(Match.class);
+public class MatchClause implements Iterable<ConceptMap> {
 
     private final Conjunction<Pattern> pattern;
     private final Transaction tx;
 
-    /**
-     * @param pattern a pattern to match in the graph
-     */
-    public Match(Transaction tx, Conjunction<Pattern> pattern) {
+    public MatchClause(Transaction tx, Conjunction<Pattern> pattern) {
         this.tx = tx;
 
         if (pattern.getPatterns().size() == 0) {
@@ -69,6 +62,16 @@ public class Match implements Iterable<ConceptMap> {
         }
 
         this.pattern = pattern;
+    }
+
+    @CheckReturnValue
+    public final Conjunction<Pattern> getPatterns() {
+        return pattern;
+    }
+
+    @CheckReturnValue
+    public Transaction tx() {
+        return tx;
     }
 
     @CheckReturnValue
@@ -82,31 +85,8 @@ public class Match implements Iterable<ConceptMap> {
     }
 
     @CheckReturnValue
-    public Conjunction<Pattern> getPatterns() {
-        return pattern;
-    }
-
-    @CheckReturnValue
-    public Transaction tx() {
-        return tx;
-    }
-
-    @CheckReturnValue
-    public Set<Variable> getSelectedNames() {
+    public final Set<Variable> getSelectedNames() {
         return pattern.variables();
-    }
-
-    public Boolean inferring() {
-        return false;
-    }
-
-    @Override
-    public String toString() {
-        return "match " + pattern.getPatterns().stream().map(p -> p + ";").collect(joining(" "));
-    }
-
-    public final Match infer() {
-        return new MatchInfer(this);
     }
 
     /**
@@ -161,8 +141,8 @@ public class Match implements Iterable<ConceptMap> {
     }
 
     /**
-     * @param vars an array of variables to insert for each result of this {@link Match}
-     * @return an insert query that will insert the given variables for each result of this {@link Match}
+     * @param vars an array of variables to insert for each result of this {@link MatchClause}
+     * @return an insert query that will insert the given variables for each result of this {@link MatchClause}
      */
     @CheckReturnValue
     public final InsertQuery insert(Statement... vars) {
@@ -170,12 +150,12 @@ public class Match implements Iterable<ConceptMap> {
     }
 
     /**
-     * @param vars a collection of variables to insert for each result of this {@link Match}
-     * @return an insert query that will insert the given variables for each result of this {@link Match}
+     * @param vars a collection of variables to insert for each result of this {@link MatchClause}
+     * @return an insert query that will insert the given variables for each result of this {@link MatchClause}
      */
     @CheckReturnValue
     public final InsertQuery insert(Collection<? extends Statement> vars) {
-        Match match = this;
+        MatchClause match = this;
         return new InsertQuery(match.tx(), match, ImmutableList.copyOf(vars));
     }
 
@@ -188,8 +168,8 @@ public class Match implements Iterable<ConceptMap> {
     }
 
     /**
-     * @param vars an array of variables to delete for each result of this {@link Match}
-     * @return a delete query that will delete the given variables for each result of this {@link Match}
+     * @param vars an array of variables to delete for each result of this {@link MatchClause}
+     * @return a delete query that will delete the given variables for each result of this {@link MatchClause}
      */
     @CheckReturnValue
     public final DeleteQuery delete(String var, String... vars) {
@@ -198,8 +178,8 @@ public class Match implements Iterable<ConceptMap> {
     }
 
     /**
-     * @param vars an array of variables to delete for each result of this {@link Match}
-     * @return a delete query that will delete the given variables for each result of this {@link Match}
+     * @param vars an array of variables to delete for each result of this {@link MatchClause}
+     * @return a delete query that will delete the given variables for each result of this {@link MatchClause}
      */
     @CheckReturnValue
     public final DeleteQuery delete(Variable var, Variable... vars) {
@@ -209,8 +189,8 @@ public class Match implements Iterable<ConceptMap> {
     }
 
     /**
-     * @param vars a collection of variables to delete for each result of this {@link Match}
-     * @return a delete query that will delete the given variables for each result of this {@link Match}
+     * @param vars a collection of variables to delete for each result of this {@link MatchClause}
+     * @return a delete query that will delete the given variables for each result of this {@link MatchClause}
      */
     @CheckReturnValue
     public final DeleteQuery delete(Set<Variable> vars) {
@@ -231,13 +211,17 @@ public class Match implements Iterable<ConceptMap> {
     }
 
     @Override
+    public final String toString() {
+        return "match " + pattern.getPatterns().stream().map(p -> p + ";").collect(joining(" "));
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Match maps = (Match) o;
-
-        return pattern.equals(maps.pattern);
+        MatchClause other = (MatchClause) o;
+        return pattern.equals(other.pattern);
     }
 
     @Override
@@ -245,4 +229,3 @@ public class Match implements Iterable<ConceptMap> {
         return pattern.hashCode();
     }
 }
-

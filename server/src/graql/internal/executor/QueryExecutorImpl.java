@@ -26,6 +26,7 @@ import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.Answer;
@@ -38,7 +39,6 @@ import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Match;
 import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.ComputeExecutor;
@@ -80,7 +80,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     /**
      * @param matchClause the match clause containing patterns to query
      */
-    void validateStatements(Match matchClause) {
+    void validateStatements(MatchClause matchClause) {
         for (Statement statement : matchClause.getPatterns().statements()) {
             statement.getProperties().forEach(property -> property.checkValid(tx, statement));
         }
@@ -131,7 +131,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         }
     }
 
-    public Stream<ConceptMap> run(Match matchClause) {
+    public Stream<ConceptMap> run(MatchClause matchClause) {
         validateStatements(matchClause);
 
         if (!infer || !RuleUtils.hasRules(tx)) {
@@ -183,7 +183,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         }
     }
 
-    private Stream<ConceptMap> runMatchInsert(Match match, Collection<Statement> statements) {
+    private Stream<ConceptMap> runMatchInsert(MatchClause match, Collection<Statement> statements) {
         Set<Variable> varsInMatch = match.getSelectedNames();
         Set<Variable> varsInInsert = statements.stream().map(statement -> statement.var()).collect(toImmutableSet());
         Set<Variable> projectedVars = Sets.intersection(varsInMatch, varsInInsert);

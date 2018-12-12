@@ -79,21 +79,10 @@ public interface Query<T extends Answer> extends Iterable<T> {
     }
 
     /**
-     * @return boolean that indicates whether this query will modify the graph
-     */
-    @CheckReturnValue
-    boolean isReadOnly();
-
-    /**
      * @return the transaction {@link Transaction} associated with this query
      */
     @Nullable
     Transaction tx();
-
-    /**
-     * @return boolean that indicates whether this query will perform rule-based inference during execution
-     */
-    Boolean inferring();
 
     /**
      * Graql commands to determine the type of query

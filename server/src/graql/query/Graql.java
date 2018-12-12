@@ -60,19 +60,19 @@ public class Graql {
 
     /**
      * @param patterns an array of patterns to match in the graph
-     * @return a {@link Match} that will find matches of the given patterns
+     * @return a {@link MatchClause} that will find matches of the given patterns
      */
     @CheckReturnValue
-    public static Match match(Pattern... patterns) {
+    public static MatchClause match(Pattern... patterns) {
         return new QueryBuilder().match(patterns);
     }
 
     /**
      * @param patterns a collection of patterns to match in the graph
-     * @return a {@link Match} that will find matches of the given patterns
+     * @return a {@link MatchClause} that will find matches of the given patterns
      */
     @CheckReturnValue
-    public static Match match(Collection<? extends Pattern> patterns) {
+    public static MatchClause match(Collection<? extends Pattern> patterns) {
         return new QueryBuilder().match(patterns);
     }
 
@@ -162,7 +162,7 @@ public class Graql {
     }
 
     /**
-     * Aggregate that counts results of a {@link Match}.
+     * Aggregate that counts results of a {@link MatchClause}.
      */
     @CheckReturnValue
     public static Aggregate<Value> count(Variable var, Variable... vars) {
@@ -304,7 +304,7 @@ public class Graql {
     }
 
     /**
-     * Aggregate that groups results of a {@link Match} by variable name
+     * Aggregate that groups results of a {@link MatchClause} by variable name
      *
      * @param varName the variable name to group results by
      */
@@ -325,7 +325,7 @@ public class Graql {
     }
 
     /**
-     * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
+     * Aggregate that groups results of a {@link MatchClause} by variable name, applying an aggregate to each group.
      *
      * @param <T> the type of each group
      */

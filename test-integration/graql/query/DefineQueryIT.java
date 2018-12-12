@@ -154,7 +154,7 @@ public class DefineQueryIT {
                 label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
         ).execute();
 
-        Match match = qb.match(var("x").label("my-type"));
+        MatchClause match = qb.match(var("x").label("my-type"));
         AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().dataType();
 
         Assert.assertEquals(AttributeType.DataType.LONG, datatype);
@@ -167,7 +167,7 @@ public class DefineQueryIT {
                 label("sub-type").sub("my-type")
         ).execute();
 
-        Match match = qb.match(var("x").label("sub-type"));
+        MatchClause match = qb.match(var("x").label("sub-type"));
         AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().dataType();
 
         Assert.assertEquals(AttributeType.DataType.STRING, datatype);
@@ -209,7 +209,7 @@ public class DefineQueryIT {
 
         qb.insert(var("x").isa("new-type")).execute();
 
-        Match typeQuery = qb.match(var("n").label("new-type"));
+        MatchClause typeQuery = qb.match(var("n").label("new-type"));
 
         assertEquals(1, tx.stream(typeQuery).count());
 
@@ -285,7 +285,7 @@ public class DefineQueryIT {
     public void testResourceTypeRegex() {
         qb.define(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING).regex("hello|good day")).execute();
 
-        Match match = qb.match(var("x").label("greeting"));
+        MatchClause match = qb.match(var("x").label("greeting"));
         assertEquals("hello|good day", match.get("x")
                 .stream().map(ans -> ans.get("x")).findFirst().get().asAttributeType().regex());
     }

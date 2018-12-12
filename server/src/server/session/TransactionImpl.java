@@ -22,7 +22,7 @@ import com.google.auto.value.AutoValue;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.Match;
+import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -807,20 +807,20 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         return new QueryExecutorImpl(this, infer);
     }
 
-    public Stream<ConceptMap> stream(Match matchClause) {
+    public Stream<ConceptMap> stream(MatchClause matchClause) {
         return executor().run(matchClause);
 
     }
 
-    public Stream<ConceptMap> stream(Match matchClause, boolean infer) {
+    public Stream<ConceptMap> stream(MatchClause matchClause, boolean infer) {
         return executor(infer).run(matchClause);
     }
 
-    public List<ConceptMap> execute(Match matchClause) {
+    public List<ConceptMap> execute(MatchClause matchClause) {
         return stream(matchClause).collect(Collectors.toList());
     }
 
-    public List<ConceptMap> execute(Match matchClause, boolean infer) {
+    public List<ConceptMap> execute(MatchClause matchClause, boolean infer) {
         return stream(matchClause, infer).collect(Collectors.toList());
     }
 

@@ -20,7 +20,7 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Match;
+import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.QueryBuilder;
 import org.junit.Test;
@@ -53,7 +53,7 @@ public class IsaExplicitTest {
     @Test
     public void testMatchSyntax() {
         QueryBuilder queryBuilder = new QueryBuilder();
-        Match matchQuery;
+        MatchClause matchQuery;
         GetQuery getQuery;
 
         matchQuery = queryBuilder.match(x.isaExplicit(thingy1));

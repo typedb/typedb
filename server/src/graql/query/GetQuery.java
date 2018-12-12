@@ -37,9 +37,9 @@ import static java.util.stream.Collectors.joining;
 public class GetQuery implements Query<ConceptMap> {
 
     private final ImmutableSet<Variable> vars;
-    private final Match match;
+    private final MatchClause match;
 
-    public GetQuery(ImmutableSet<Variable> vars, Match match) {
+    public GetQuery(ImmutableSet<Variable> vars, MatchClause match) {
         if (vars == null) {
             throw new NullPointerException("Null vars");
         }
@@ -61,18 +61,13 @@ public class GetQuery implements Query<ConceptMap> {
     }
 
     @CheckReturnValue
-    public Match match() {
+    public MatchClause match() {
         return match;
     }
 
     @Override
     public final Transaction tx() {
         return match().tx();
-    }
-
-    @Override
-    public boolean isReadOnly() {
-        return true;
     }
 
     @Override
@@ -88,11 +83,6 @@ public class GetQuery implements Query<ConceptMap> {
     @Override
     public String toString() {
         return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
-    }
-
-    @Override
-    public final Boolean inferring() {
-        return match().inferring();
     }
 
     @Override

@@ -69,18 +69,8 @@ public class UndefineQuery implements Query<ConceptMap> {
     }
 
     @Override
-    public boolean isReadOnly() {
-        return false;
-    }
-
-    @Override
     public String toString() {
         return "undefine " + statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
-    }
-
-    @Override
-    public Boolean inferring() {
-        return false;
     }
 
     @Override

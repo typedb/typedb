@@ -39,10 +39,10 @@ import static java.util.stream.Collectors.joining;
  */
 public class DeleteQuery implements Query<ConceptSet> {
 
-    private final Match match;
+    private final MatchClause match;
     private final Set<Variable> vars;
 
-    public DeleteQuery(Match match, Set<Variable> vars) {
+    public DeleteQuery(MatchClause match, Set<Variable> vars) {
         if (match == null) {
             throw new NullPointerException("Null match");
         }
@@ -59,10 +59,10 @@ public class DeleteQuery implements Query<ConceptSet> {
     }
 
     /**
-     * @return the {@link Match} this delete query is operating on
+     * @return the {@link MatchClause} this delete query is operating on
      */
     @CheckReturnValue
-    public Match match() {
+    public MatchClause match() {
         return match;
     }
 
@@ -86,11 +86,6 @@ public class DeleteQuery implements Query<ConceptSet> {
     }
 
     @Override
-    public final boolean isReadOnly() {
-        return false;
-    }
-
-    @Override
     public final Transaction tx() {
         return match().tx();
     }
@@ -110,12 +105,6 @@ public class DeleteQuery implements Query<ConceptSet> {
 
         return query.toString();
     }
-
-    @Override
-    public final Boolean inferring() {
-        return match().inferring();
-    }
-
     @Override
     public boolean equals(Object o) {
         if (o == this) {

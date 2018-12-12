@@ -31,7 +31,7 @@ import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Match;
+import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.pattern.Pattern;
@@ -96,14 +96,14 @@ class Visitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Match visitMatchBase(GraqlParser.MatchBaseContext ctx) {
+    public MatchClause visitMatchBase(GraqlParser.MatchBaseContext ctx) {
         Collection<Pattern> patterns = visitPatterns(ctx.patterns());
         return queryBuilder.match(patterns);
     }
 
     @Override
     public GetQuery visitGetQuery(GraqlParser.GetQueryContext ctx) {
-        Match match = visitMatchClause(ctx.matchClause());
+        MatchClause match = visitMatchClause(ctx.matchClause());
 
         if (ctx.variables() != null) {
             Set<Variable> vars = ctx.variables().VARIABLE().stream().map(this::getVariable).collect(toSet());
@@ -139,7 +139,7 @@ class Visitor extends GraqlBaseVisitor {
 
     @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
-        Match match = visitMatchClause(ctx.matchClause());
+        MatchClause match = visitMatchClause(ctx.matchClause());
         if (ctx.variables() != null) return match.delete(visitVariables(ctx.variables()));
         else return match.delete();
     }
@@ -450,8 +450,8 @@ class Visitor extends GraqlBaseVisitor {
         }
     }
 
-    private Match visitMatchClause(GraqlParser.MatchClauseContext ctx) {
-        return (Match) visit(ctx);
+    private MatchClause visitMatchClause(GraqlParser.MatchClauseContext ctx) {
+        return (MatchClause) visit(ctx);
     }
 
     public Pattern visitPattern(GraqlParser.PatternContext ctx) {
