@@ -51,8 +51,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.stream.Stream;
-
 import static grakn.core.graql.concept.AttributeType.DataType.BOOLEAN;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
@@ -131,12 +129,12 @@ public class DefineQueryIT {
                 label("pokemon").plays("evolves-from").plays("evolves-to").has("name")
         ).execute();
 
-        assertExists(qb, label("pokemon").sub(ENTITY.getLabel().getValue()));
-        assertExists(qb, label("evolution").sub(RELATIONSHIP.getLabel().getValue()));
-        assertExists(qb, label("evolves-from").sub(ROLE.getLabel().getValue()));
-        assertExists(qb, label("evolves-to").sub(ROLE.getLabel().getValue()));
-        assertExists(qb, label("evolution").relates("evolves-from").relates("evolves-to"));
-        assertExists(qb, label("pokemon").plays("evolves-from").plays("evolves-to"));
+        assertExists(tx, label("pokemon").sub(ENTITY.getLabel().getValue()));
+        assertExists(tx, label("evolution").sub(RELATIONSHIP.getLabel().getValue()));
+        assertExists(tx, label("evolves-from").sub(ROLE.getLabel().getValue()));
+        assertExists(tx, label("evolves-to").sub(ROLE.getLabel().getValue()));
+        assertExists(tx, label("evolution").relates("evolves-from").relates("evolves-to"));
+        assertExists(tx, label("pokemon").plays("evolves-from").plays("evolves-to"));
     }
 
     @Test
@@ -146,8 +144,8 @@ public class DefineQueryIT {
                 label("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getLabel().getValue())
         ).execute();
 
-        assertNotExists(qb, label("concrete-type").isAbstract());
-        assertExists(qb, label("abstract-type").isAbstract());
+        assertNotExists(tx, label("concrete-type").isAbstract());
+        assertExists(tx, label("abstract-type").isAbstract());
     }
 
     @Test
@@ -184,7 +182,7 @@ public class DefineQueryIT {
                 label("spouse2").sub("spouse")
         ).execute();
 
-        assertExists(qb, label("spouse1"));
+        assertExists(tx, label("spouse1"));
     }
 
     @Test
@@ -196,9 +194,9 @@ public class DefineQueryIT {
                 var("abc").plays("director")
         ).execute();
 
-        assertExists(qb, label("123").sub("entity"));
-        assertExists(qb, label("123").plays("actor"));
-        assertExists(qb, label("123").plays("director"));
+        assertExists(tx, label("123").sub("entity"));
+        assertExists(tx, label("123").plays("actor"));
+        assertExists(tx, label("123").plays("director"));
     }
 
     @Test
@@ -221,7 +219,7 @@ public class DefineQueryIT {
 
         assertTrue(newType.playing().anyMatch(role -> role.equals(tx.getRole(roleTypeLabel))));
 
-        assertExists(qb, var().isa("new-type"));
+        assertExists(tx, var().isa("new-type"));
     }
 
     @Test
@@ -235,23 +233,23 @@ public class DefineQueryIT {
         ).execute();
 
         // Make sure a-new-type can have the given resource type, but not other resource types
-        assertExists(qb, label("a-new-type").sub("entity").has(resourceType));
-        assertNotExists(qb, label("a-new-type").has("title"));
-        assertNotExists(qb, label("movie").has(resourceType));
-        assertNotExists(qb, label("a-new-type").has("an-unconnected-resource-type"));
+        assertExists(tx, label("a-new-type").sub("entity").has(resourceType));
+        assertNotExists(tx, label("a-new-type").has("title"));
+        assertNotExists(tx, label("movie").has(resourceType));
+        assertNotExists(tx, label("a-new-type").has("an-unconnected-resource-type"));
 
         Statement hasResource = label(HAS.getLabel(resourceType));
         Statement hasResourceOwner = label(HAS_OWNER.getLabel(resourceType));
         Statement hasResourceValue = label(HAS_VALUE.getLabel(resourceType));
 
         // Make sure the expected ontology elements are created
-        assertExists(qb, hasResource.sub(RELATIONSHIP.getLabel().getValue()));
-        assertExists(qb, hasResourceOwner.sub(ROLE.getLabel().getValue()));
-        assertExists(qb, hasResourceValue.sub(ROLE.getLabel().getValue()));
-        assertExists(qb, hasResource.relates(hasResourceOwner));
-        assertExists(qb, hasResource.relates(hasResourceValue));
-        assertExists(qb, label("a-new-type").plays(hasResourceOwner));
-        assertExists(qb, label(resourceType).plays(hasResourceValue));
+        assertExists(tx, hasResource.sub(RELATIONSHIP.getLabel().getValue()));
+        assertExists(tx, hasResourceOwner.sub(ROLE.getLabel().getValue()));
+        assertExists(tx, hasResourceValue.sub(ROLE.getLabel().getValue()));
+        assertExists(tx, hasResource.relates(hasResourceOwner));
+        assertExists(tx, hasResource.relates(hasResourceValue));
+        assertExists(tx, label("a-new-type").plays(hasResourceOwner));
+        assertExists(tx, label(resourceType).plays(hasResourceValue));
     }
 
     @Test
@@ -264,23 +262,23 @@ public class DefineQueryIT {
         ).execute();
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
-        assertExists(qb, label("a-new-type").sub("entity").key(resourceType));
-        assertExists(qb, label("a-new-type").sub("entity").has(resourceType));
-        assertNotExists(qb, label("a-new-type").sub("entity").key("title"));
-        assertNotExists(qb, label("movie").sub("entity").key(resourceType));
+        assertExists(tx, label("a-new-type").sub("entity").key(resourceType));
+        assertExists(tx, label("a-new-type").sub("entity").has(resourceType));
+        assertNotExists(tx, label("a-new-type").sub("entity").key("title"));
+        assertNotExists(tx, label("movie").sub("entity").key(resourceType));
 
         Statement key = label(KEY.getLabel(resourceType));
         Statement keyOwner = label(KEY_OWNER.getLabel(resourceType));
         Statement keyValue = label(KEY_VALUE.getLabel(resourceType));
 
         // Make sure the expected ontology elements are created
-        assertExists(qb, key.sub(RELATIONSHIP.getLabel().getValue()));
-        assertExists(qb, keyOwner.sub(ROLE.getLabel().getValue()));
-        assertExists(qb, keyValue.sub(ROLE.getLabel().getValue()));
-        assertExists(qb, key.relates(keyOwner));
-        assertExists(qb, key.relates(keyValue));
-        assertExists(qb, label("a-new-type").plays(keyOwner));
-        assertExists(qb, label(resourceType).plays(keyValue));
+        assertExists(tx, key.sub(RELATIONSHIP.getLabel().getValue()));
+        assertExists(tx, keyOwner.sub(ROLE.getLabel().getValue()));
+        assertExists(tx, keyValue.sub(ROLE.getLabel().getValue()));
+        assertExists(tx, key.relates(keyOwner));
+        assertExists(tx, key.relates(keyValue));
+        assertExists(tx, label("a-new-type").plays(keyOwner));
+        assertExists(tx, label(resourceType).plays(keyValue));
     }
 
     @Test
@@ -534,7 +532,7 @@ public class DefineQueryIT {
     private void assertDefine(Statement... vars) {
         // Make sure vars don't exist
         for (Statement var : vars) {
-            assertNotExists(qb, var);
+            assertNotExists(tx, var);
         }
 
         // Define all vars
@@ -542,7 +540,7 @@ public class DefineQueryIT {
 
         // Make sure all vars exist
         for (Statement var : vars) {
-            assertExists(qb, var);
+            assertExists(tx, var);
         }
 
         // Undefine all vars
@@ -550,7 +548,7 @@ public class DefineQueryIT {
 
         // Make sure vars don't exist
         for (Statement var : vars) {
-            assertNotExists(qb, var);
+            assertNotExists(tx, var);
         }
     }
 }

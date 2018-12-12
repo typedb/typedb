@@ -52,7 +52,7 @@ public class QueryBuilderIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
     private static SessionImpl session;
-    private TransactionImpl tx;
+    private TransactionImpl<?> tx;
 
     @BeforeClass
     public static void newSession() {

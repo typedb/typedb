@@ -34,9 +34,10 @@ import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -82,10 +83,9 @@ public class UndefineQueryIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
 
-    public static Session session;
-
+    public static SessionImpl session;
+    private TransactionImpl<?> tx;
     private QueryBuilder qb;
-    private Transaction tx;
 
     @BeforeClass
     public static void newSession() {
@@ -303,8 +303,8 @@ public class UndefineQueryIT {
 
     @Test
     public void whenUndefiningATypeWithInstances_Throw() {
-        assertExists(qb, x.label("movie").sub("entity"));
-        assertExists(qb, x.isa("movie"));
+        assertExists(tx, x.label("movie").sub("entity"));
+        assertExists(tx, x.isa("movie"));
 
         exception.expect(TransactionException.class);
         exception.expectMessage(allOf(containsString("movie"), containsString("delet")));
@@ -313,7 +313,7 @@ public class UndefineQueryIT {
 
     @Test
     public void whenUndefiningASuperConcept_Throw() {
-        assertExists(qb, x.label("production").sub("entity"));
+        assertExists(tx, x.label("production").sub("entity"));
 
         exception.expect(TransactionException.class);
         exception.expectMessage(allOf(containsString("production"), containsString("delet")));
@@ -322,7 +322,7 @@ public class UndefineQueryIT {
 
     @Test
     public void whenUndefiningARoleWithPlayers_Throw() {
-        assertExists(qb, x.label("actor"));
+        assertExists(tx, x.label("actor"));
 
         exception.expect(TransactionException.class);
         exception.expectMessage(allOf(containsString("actor"), containsString("delet")));

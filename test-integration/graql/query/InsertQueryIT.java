@@ -100,7 +100,7 @@ public class InsertQueryIT {
 
     public static SessionImpl session;
 
-    private TransactionImpl tx;
+    private TransactionImpl<?> tx;
     private QueryBuilder qb;
 
     @BeforeClass
@@ -167,22 +167,22 @@ public class InsertQueryIT {
         Statement[] vars = new Statement[]{rel, x, y};
         Pattern[] patterns = new Pattern[]{rel, x, y};
 
-        assertNotExists(qb.match(patterns));
+        assertNotExists(tx, patterns);
 
         qb.insert(vars).execute();
-        assertExists(qb, patterns);
+        assertExists(tx, patterns);
 
         qb.match(patterns).delete("r").execute();
-        assertNotExists(qb, patterns);
+        assertNotExists(tx, patterns);
     }
 
     @Test
     public void testInsertSameVarName() {
         qb.insert(var("x").has("title", "SW"), var("x").has("title", "Star Wars").isa("movie")).execute();
 
-        assertExists(qb, var().isa("movie").has("title", "SW"));
-        assertExists(qb, var().isa("movie").has("title", "Star Wars"));
-        assertExists(qb, var().isa("movie").has("title", "SW").has("title", "Star Wars"));
+        assertExists(tx, var().isa("movie").has("title", "SW"));
+        assertExists(tx, var().isa("movie").has("title", "Star Wars"));
+        assertExists(tx, var().isa("movie").has("title", "SW").has("title", "Star Wars"));
     }
 
     @Test
@@ -208,16 +208,16 @@ public class InsertQueryIT {
         Statement language2 = var().isa("language").has("name", "456");
 
         qb.insert(language1, language2).execute();
-        assertExists(qb, language1);
-        assertExists(qb, language2);
+        assertExists(tx, language1);
+        assertExists(tx, language2);
 
         qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO")).execute();
-        assertExists(qb, var().isa("language").has("name", "123").has("name", "HELLO"));
-        assertExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
+        assertExists(tx, var().isa("language").has("name", "123").has("name", "HELLO"));
+        assertExists(tx, var().isa("language").has("name", "456").has("name", "HELLO"));
 
         qb.match(var("x").isa("language")).delete("x").execute();
-        assertNotExists(qb, language1);
-        assertNotExists(qb, language2);
+        assertNotExists(tx, language1);
+        assertNotExists(tx, language2);
     }
 
     @Test
@@ -240,14 +240,14 @@ public class InsertQueryIT {
         Statement language2 = var().isa("language").has("name", "456");
 
         qb.insert(language1, language2).execute();
-        assertExists(qb, language1);
-        assertExists(qb, language2);
+        assertExists(tx, language1);
+        assertExists(tx, language2);
 
         InsertQuery query = qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO"));
         query.stream();
 
-        assertExists(qb, var().isa("language").has("name", "123").has("name", "HELLO"));
-        assertExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
+        assertExists(tx, var().isa("language").has("name", "123").has("name", "HELLO"));
+        assertExists(tx, var().isa("language").has("name", "456").has("name", "HELLO"));
     }
 
     @Test
@@ -452,9 +452,9 @@ public class InsertQueryIT {
         ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().get().id();
 
-        assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
+        assertNotExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
-        assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
+        assertExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
     @Test
@@ -462,9 +462,9 @@ public class InsertQueryIT {
         ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().get().id();
 
-        assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
+        assertNotExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")).execute();
-        assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
+        assertExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
     @Test
@@ -472,9 +472,9 @@ public class InsertQueryIT {
         ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().get().id();
 
-        assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Not Right Now"));
+        assertNotExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Not Right Now"));
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Not Right Now")).execute();
-        assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Not Right Now"));
+        assertExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Not Right Now"));
     }
 
     @Test
@@ -482,9 +482,9 @@ public class InsertQueryIT {
         ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().get().id();
 
-        assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
+        assertNotExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")).execute();
-        assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
+        assertExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
     @Test
@@ -632,7 +632,7 @@ public class InsertQueryIT {
     private void assertInsert(Statement... vars) {
         // Make sure vars don't exist
         for (Statement var : vars) {
-            assertNotExists(qb, var);
+            assertNotExists(tx, var);
         }
 
         // Insert all vars
@@ -640,7 +640,7 @@ public class InsertQueryIT {
 
         // Make sure all vars exist
         for (Statement var : vars) {
-            assertExists(qb, var);
+            assertExists(tx, var);
         }
 
         // Delete all vars
@@ -650,7 +650,7 @@ public class InsertQueryIT {
 
         // Make sure vars don't exist
         for (Statement var : vars) {
-            assertNotExists(qb, var);
+            assertNotExists(tx, var);
         }
     }
 }

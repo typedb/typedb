@@ -21,20 +21,17 @@ package grakn.core.graql.query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.Answer;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -46,7 +43,7 @@ import static java.util.stream.Collectors.joining;
  * The match clause is the pattern-matching part of a query. The patterns are described in a declarative fashion,
  * then the match clause will traverse the knowledge base in an efficient fashion to find any matching answers.
  */
-public class MatchClause implements Iterable<ConceptMap> {
+public class MatchClause {
 
     private final Conjunction<Pattern> pattern;
     private final Transaction tx;
@@ -183,18 +180,6 @@ public class MatchClause implements Iterable<ConceptMap> {
     public final DeleteQuery delete(Set<Variable> vars) {
         if (vars.isEmpty()) vars = getPatterns().variables();
         return new DeleteQuery(this, ImmutableSet.copyOf(vars));
-    }
-
-    /**
-     * @return iterator over match results
-     */
-    @Override
-    @CheckReturnValue
-    public Iterator<ConceptMap> iterator() {
-        if (tx ==null || !(tx instanceof TransactionImpl)) {
-            throw GraqlQueryException.noTx();
-        }
-        return ((TransactionImpl<?>) tx).stream(this).iterator();
     }
 
     @Override

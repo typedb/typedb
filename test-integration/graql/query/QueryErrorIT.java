@@ -59,7 +59,7 @@ public class QueryErrorIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
     private static SessionImpl session;
-    private TransactionImpl tx;
+    private TransactionImpl<?> tx;
     private QueryBuilder qb;
 
     @BeforeClass

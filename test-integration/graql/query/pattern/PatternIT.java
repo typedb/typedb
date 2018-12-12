@@ -22,8 +22,9 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -55,8 +56,8 @@ public class PatternIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
 
-    private static Session session;
-    private Transaction tx;
+    private static SessionImpl session;
+    private TransactionImpl<?> tx;
 
 
     @BeforeClass
@@ -304,7 +305,7 @@ public class PatternIT {
 
     @Test
     public void testNegation() {
-        assertExists(tx.graql(), var().isa("movie").has("title", "Godfather"));
+        assertExists(tx, var().isa("movie").has("title", "Godfather"));
         Set<Concept> result1 = tx.graql().match(
                 var("x").isa("movie").has("title", var("y")),
                 var("y").val(neq("Godfather"))).get("x")

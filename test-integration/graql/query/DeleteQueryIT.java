@@ -57,7 +57,7 @@ public class DeleteQueryIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
     public static SessionImpl session;
-    public TransactionImpl tx;
+    public TransactionImpl<?> tx;
     public QueryBuilder qb;
 
     @Rule
@@ -104,36 +104,36 @@ public class DeleteQueryIT {
 
         qb.match(x.isa("fake-type")).delete(x).execute();
 
-        assertNotExists(qb, var().isa("fake-type"));
+        assertNotExists(tx, var().isa("fake-type"));
     }
 
     @Test
     public void testDeleteEntity() {
 
-        assertExists(qb, var().has("title", "Godfather"));
-        assertExists(qb, x.has("title", "Godfather"), var().rel(x).rel(y).isa("has-cast"));
-        assertExists(qb, var().has("name", "Don Vito Corleone"));
+        assertExists(tx, var().has("title", "Godfather"));
+        assertExists(tx, x.has("title", "Godfather"), var().rel(x).rel(y).isa("has-cast"));
+        assertExists(tx, var().has("name", "Don Vito Corleone"));
 
         qb.match(x.has("title", "Godfather")).delete(x).execute();
 
-        assertNotExists(qb, var().has("title", "Godfather"));
-        assertNotExists(qb, x.has("title", "Godfather"), var().rel(x).rel(y).isa("has-cast"));
-        assertExists(qb, var().has("name", "Don Vito Corleone"));
+        assertNotExists(tx, var().has("title", "Godfather"));
+        assertNotExists(tx, x.has("title", "Godfather"), var().rel(x).rel(y).isa("has-cast"));
+        assertExists(tx, var().has("name", "Don Vito Corleone"));
     }
 
     @Test
     public void testDeleteRelation() {
-        assertExists(kurtz);
-        assertExists(marlonBrando);
-        assertExists(apocalypseNow);
-        assertExists(kurtzCastRelation);
+        assertExists(tx, kurtz);
+        assertExists(tx, marlonBrando);
+        assertExists(tx, apocalypseNow);
+        assertExists(tx, kurtzCastRelation);
 
         kurtzCastRelation.delete("a").execute();
 
-        assertExists(kurtz);
-        assertExists(marlonBrando);
-        assertExists(apocalypseNow);
-        assertNotExists(kurtzCastRelation);
+        assertExists(tx, kurtz);
+        assertExists(tx, marlonBrando);
+        assertExists(tx, apocalypseNow);
+        assertNotExists(tx, kurtzCastRelation);
     }
 
     @Test
@@ -141,31 +141,31 @@ public class DeleteQueryIT {
         ConceptId id = kurtzCastRelation.get("a").stream().map(ans -> ans.get("a")).findFirst().get().id();
         MatchClause relation = qb.match(var().id(id));
 
-        assertExists(kurtz);
-        assertExists(marlonBrando);
-        assertExists(apocalypseNow);
-        assertExists(relation);
+        assertExists(tx, kurtz);
+        assertExists(tx, marlonBrando);
+        assertExists(tx, apocalypseNow);
+        assertExists(tx, relation);
 
         kurtz.delete(x).execute();
 
-        assertNotExists(kurtz);
-        assertExists(marlonBrando);
-        assertExists(apocalypseNow);
-        assertExists(relation);
+        assertNotExists(tx, kurtz);
+        assertExists(tx, marlonBrando);
+        assertExists(tx, apocalypseNow);
+        assertExists(tx, relation);
 
         marlonBrando.delete(x).execute();
 
-        assertNotExists(kurtz);
-        assertNotExists(marlonBrando);
-        assertExists(apocalypseNow);
-        assertExists(relation);
+        assertNotExists(tx, kurtz);
+        assertNotExists(tx, marlonBrando);
+        assertExists(tx, apocalypseNow);
+        assertExists(tx, relation);
 
         apocalypseNow.delete(x).execute();
 
-        assertNotExists(kurtz);
-        assertNotExists(marlonBrando);
-        assertNotExists(apocalypseNow);
-        assertNotExists(relation);
+        assertNotExists(tx, kurtz);
+        assertNotExists(tx, marlonBrando);
+        assertNotExists(tx, apocalypseNow);
+        assertNotExists(tx, relation);
     }
 
     @Test
@@ -175,15 +175,15 @@ public class DeleteQueryIT {
                 var("a").rel(x).rel(y).isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())
         ).get("a").stream().map(ans -> ans.get("a")).findFirst().get().id();
 
-        assertExists(qb, var().has("title", "Godfather"));
-        assertExists(qb, var().id(id));
-        assertExists(qb, var().val(1000L).isa("tmdb-vote-count"));
+        assertExists(tx, var().has("title", "Godfather"));
+        assertExists(tx, var().id(id));
+        assertExists(tx, var().val(1000L).isa("tmdb-vote-count"));
 
         qb.match(x.val(1000L).isa("tmdb-vote-count")).delete(x).execute();
 
-        assertExists(qb, var().has("title", "Godfather"));
-        assertNotExists(qb, var().id(id));
-        assertNotExists(qb, var().val(1000L).isa("tmdb-vote-count"));
+        assertExists(tx, var().has("title", "Godfather"));
+        assertNotExists(tx, var().id(id));
+        assertNotExists(tx, var().val(1000L).isa("tmdb-vote-count"));
     }
 
     @Test
@@ -191,12 +191,12 @@ public class DeleteQueryIT {
         MatchClause movie = qb.match(x.isa("movie"));
 
         assertNotNull(tx.getEntityType("movie"));
-        assertExists(movie);
+        assertExists(tx, movie);
 
         movie.delete(x).execute();
 
         assertNotNull(tx.getEntityType("movie"));
-        assertNotExists(movie);
+        assertNotExists(tx, movie);
 
         qb.undefine(label("movie").sub("production")).execute();
 
@@ -212,7 +212,7 @@ public class DeleteQueryIT {
 
         qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete(x, y).execute();
 
-        assertNotExists(qb, var().isa("fake-type"));
+        assertNotExists(tx, var().isa("fake-type"));
     }
 
     @Test
@@ -224,7 +224,7 @@ public class DeleteQueryIT {
 
         qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete().execute();
 
-        assertNotExists(qb, var().isa("fake-type"));
+        assertNotExists(tx, var().isa("fake-type"));
     }
 
     @Test

@@ -22,10 +22,13 @@ import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionImpl;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.io.BufferedReader;
@@ -46,28 +49,20 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("CheckReturnValue")
 public class GraqlTestUtil {
 
-    public static void assertExists(Transaction tx, Pattern... patterns) {
-        assertExists(tx.graql(), patterns);
+    public static void assertExists(TransactionImpl<?> tx, Pattern... patterns) {
+        assertTrue(tx.stream(Graql.match(patterns)).iterator().hasNext());
     }
 
-    public static void assertExists(QueryBuilder qb, Pattern... patterns) {
-        assertExists(qb.match(patterns));
+    public static void assertExists(TransactionImpl<?> tx, MatchClause matchClause) {
+        assertTrue(tx.stream(matchClause).iterator().hasNext());
     }
 
-    public static void assertExists(Iterable<?> iterable) {
-        assertTrue(iterable.iterator().hasNext());
+    public static void assertNotExists(TransactionImpl<?> tx, Pattern... patterns) {
+        assertFalse(tx.stream(Graql.match(patterns)).iterator().hasNext());
     }
 
-    public static void assertNotExists(Transaction tx, Pattern... patterns) {
-        assertNotExists(tx.graql(), patterns);
-    }
-
-    public static void assertNotExists(QueryBuilder qb, Pattern... patterns) {
-        assertNotExists(qb.match(patterns));
-    }
-
-    public static void assertNotExists(Iterable<?> iterable) {
-        assertFalse(iterable.iterator().hasNext());
+    public static void assertNotExists(TransactionImpl<?> tx, MatchClause matchClause) {
+        assertFalse(tx.stream(matchClause).iterator().hasNext());
     }
 
     public static <T> void assertCollectionsEqual(Collection<T> c1, Collection<T> c2) {
