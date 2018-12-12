@@ -89,6 +89,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyObject;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
@@ -294,7 +295,7 @@ public class ServerRPCTest {
                 new ConceptMap(ImmutableMap.of(Pattern.var("y"), conceptY))
         );
 
-        when(tx.stream(query, anyBoolean())).thenAnswer(params -> answers.stream());
+        when(tx.stream(any(GetQuery.class), anyBoolean())).thenAnswer(params -> answers.stream());
 
         try (Transceiver transceiver = Transceiver.create(stub)) {
             transceiver.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
@@ -355,7 +356,7 @@ public class ServerRPCTest {
         );
 
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate
-        when(tx.stream(query, anyBoolean())).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
+        when(tx.stream(any(GetQuery.class), anyBoolean())).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
@@ -685,7 +686,7 @@ public class ServerRPCTest {
         String message = "your query is dumb";
         GraknException expectedException = InvalidKBException.create(message);
 
-        when(tx.stream(query, anyBoolean())).thenThrow(expectedException);
+        when(tx.stream(any(GetQuery.class), anyBoolean())).thenThrow(expectedException);
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
