@@ -160,7 +160,7 @@ public class ConsoleSession implements AutoCloseable {
             // Get the stream of answers for each query (query.stream())
             // Get the  stream of printed answers (printer.toStream(..))
             // Combine the stream of printed answers into one stream (queries.flatMap(..))
-            Stream<String> answers = queries.flatMap(query -> printer.toStream(query.stream(infer)));
+            Stream<String> answers = queries.flatMap(query -> printer.toStream(tx.stream(query, infer)));
 
             // For each printed answer, print them them on one line
             answers.forEach(answer -> {

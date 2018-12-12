@@ -106,8 +106,8 @@ public class NeqPredicateIT {
                         "{$y has name 'c';$z has name 'a';} or " +
                         "{$y has name 'c';$z has name 'b';};";
 
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString + "get;").execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(explicitString + "get;").execute(false);
+                List<ConceptMap> answers = tx.execute(qb.<GetQuery>parse(queryString + "get;"));
+                List<ConceptMap> answers2 = tx.execute(qb.<GetQuery>parse(explicitString + "get;"), false);
                 assertTrue(baseAnswers.containsAll(answers));
                 assertCollectionsEqual(answers, answers2);
             }
@@ -153,8 +153,8 @@ public class NeqPredicateIT {
                         "{$y has name 'c';$z has name 'c';} or " +
                         "{$y has name 'c';$z has name 'b';};";
 
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString + "get;").execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(explicitString + "get;").execute(false);
+                List<ConceptMap> answers = tx.execute(qb.<GetQuery>parse(queryString + "get;"));
+                List<ConceptMap> answers2 = tx.execute(qb.<GetQuery>parse(explicitString + "get;"), false);
                 assertCollectionsEqual(answers, answers2);
             }
         }

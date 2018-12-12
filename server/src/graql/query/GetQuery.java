@@ -76,11 +76,6 @@ public class GetQuery implements Query<ConceptMap> {
     }
 
     @Override
-    public Stream<ConceptMap> stream(boolean infer) {
-        return executor(infer).run(this);
-    }
-
-    @Override
     public String toString() {
         return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
     }

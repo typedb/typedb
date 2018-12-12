@@ -137,8 +137,8 @@ public class OntologicalQueryIT {
     public void instancesOfSubsetOfTypesExcludingGivenType() {
         String queryString = "match $x isa $type; $type sub entity; $type2 label noRoleEntity; $type2 != $type; get $x, $type;";
 
-        List<ConceptMap> answers = tx.graql().<GetQuery>parse(queryString).execute(false);
-        List<ConceptMap> answersInferred = tx.graql().<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = tx.execute(tx.graql().<GetQuery>parse(queryString), false);
+        List<ConceptMap> answersInferred = tx.execute(tx.graql().<GetQuery>parse(queryString));
 
         assertFalse(answers.isEmpty());
         assertCollectionsEqual(answers, answersInferred);
@@ -152,7 +152,7 @@ public class OntologicalQueryIT {
         String queryString = "match $x isa $type; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
+        assertCollectionsEqual(answers, tx.execute(qb.<GetQuery>parse(queryString), false));
     }
 
     @Test
@@ -192,7 +192,7 @@ public class OntologicalQueryIT {
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         //1 x noRoleEntity + 3 x 3 (hierarchy) anotherTwoRoleEntities
         assertEquals(10, answers.size());
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
+        assertCollectionsEqual(answers, tx.execute(qb.<GetQuery>parse(queryString), false));
     }
 
     @Test
@@ -204,7 +204,7 @@ public class OntologicalQueryIT {
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
         assertEquals(qb.<GetQuery>parse(specificQueryString).execute().size() * tx.getRelationshipType("reifiable-relation").subs().count(), answers.size());
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
+        assertCollectionsEqual(answers, tx.execute(qb.<GetQuery>parse(queryString), false));
     }
 
     /**
@@ -218,7 +218,7 @@ public class OntologicalQueryIT {
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count(), answers.size());
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
+        assertCollectionsEqual(answers, tx.execute(qb.<GetQuery>parse(queryString), false));
     }
 
     @Test
@@ -228,7 +228,7 @@ public class OntologicalQueryIT {
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
         assertEquals(tx.getRelationshipType("relationship").subs().flatMap(RelationshipType::instances).count(), answers.size());
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
+        assertCollectionsEqual(answers, tx.execute(qb.<GetQuery>parse(queryString), false));
     }
 
     @Test
@@ -259,7 +259,7 @@ public class OntologicalQueryIT {
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         List<ConceptMap> reifiableRelations = qb.<GetQuery>parse("match $x isa reifiable-relation;get;").execute();
         assertEquals(tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count() + reifiableRelations.size(), answers.size());
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
+        assertCollectionsEqual(answers, tx.execute(qb.<GetQuery>parse(queryString), false));
     }
 
     /**
@@ -273,8 +273,8 @@ public class OntologicalQueryIT {
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute(false));
-        List<ConceptMap> relations = qb.<GetQuery>parse("match $x isa relationship;get;").execute(false);
+        assertCollectionsEqual(answers, tx.execute(qb.<GetQuery>parse(queryString), false));
+        List<ConceptMap> relations = tx.execute(qb.<GetQuery>parse("match $x isa relationship;get;"),false);
         //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
         assertEquals(relations.stream().filter(ans -> !ans.get("x").asRelationship().type().isImplicit()).count() + 3, answers.size());
     }

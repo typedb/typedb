@@ -75,15 +75,15 @@ public class ReasoningIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql();
 
-                List<ConceptMap> answers = qb.<GetQuery>parse("match $x isa specific-indicator;get;").execute(false);
+                List<ConceptMap> answers = tx.execute(qb.<GetQuery>parse("match $x isa specific-indicator;get;"), false);
 
                 Concept indicator = answers.iterator().next().get("x");
 
                 GetQuery attributeQuery = qb.parse("match $x has attribute $r; $x id " + indicator.id().getValue() + ";get;");
                 GetQuery attributeRelationQuery = qb.parse("match (@has-attribute-owner: $x, $r) isa @has-attribute; $x id " + indicator.id().getValue() + ";get;");
 
-                Set<Attribute<Object>> attributes = attributeQuery.stream(false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
-                Set<Attribute<Object>> attributesFromImplicitRelation = attributeRelationQuery.stream(false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
+                Set<Attribute<Object>> attributes = tx.stream(attributeQuery, false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
+                Set<Attribute<Object>> attributesFromImplicitRelation = tx.stream(attributeRelationQuery, false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
                 Set<Attribute<?>> attributesFromAPI = indicator.asThing().attributes().collect(Collectors.toSet());
 
                 assertThat(attributes, empty());
@@ -92,8 +92,8 @@ public class ReasoningIT {
 
                 qb.parse("match $rmn isa model-name 'someName', has specific-indicator 'someIndicator' via $a; insert $a has indicator-name 'someIndicatorName';").execute();
 
-                Set<Attribute<Object>> newAttributes = attributeQuery.stream(false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
-                Set<Attribute<Object>> newAttributesFromImplicitRelation = attributeRelationQuery.stream(false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
+                Set<Attribute<Object>> newAttributes = tx.stream(attributeQuery,false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
+                Set<Attribute<Object>> newAttributesFromImplicitRelation = tx.stream(attributeRelationQuery,false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
                 Set<Attribute<?>> newAttributesFromAPI = indicator.asThing().attributes().collect(Collectors.toSet());
 
                 assertThat(newAttributes, empty());
@@ -219,7 +219,7 @@ public class ReasoningIT {
                 String queryString = "match $x isa relation1; get;"; // TODO: put back limit 10
                 List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
                 assertEquals(10, answers.size());
-                assertEquals(qb.<GetQuery>parse(queryString).execute(false).size(), answers.size());
+                assertEquals(tx.execute(qb.<GetQuery>parse(queryString),false).size(), answers.size());
             }
         }
     }
@@ -569,15 +569,15 @@ public class ReasoningIT {
                 QueryBuilder qb = tx.graql();
                 QueryBuilder iqb = tx.graql();
 
-                List<ConceptMap> persistedRelations = qb.<GetQuery>parse("match $r isa relation; get;").execute(false);
+                List<ConceptMap> persistedRelations = tx.execute(qb.<GetQuery>parse("match $r isa relation; get;"),false);
                 List<ConceptMap> inferredRelations = iqb.<GetQuery>parse("match $r isa relation; get;").execute();
                 assertEquals("New relations were created!", persistedRelations, inferredRelations);
 
                 Set<ConceptMap> variants = Stream.of(
-                        Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;").execute(false)),
-                        Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, inferredRole: $z ); $x has resource 'value'; get;").execute(false)),
-                        Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z); get;").execute(false)),
-                        Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (anotherRole: $x, andYetAnotherRole: $y); get;").execute(false))
+                        Iterables.getOnlyElement(tx.execute(qb.<GetQuery>parse("match $r (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;"), false)),
+                        Iterables.getOnlyElement(tx.execute(qb.<GetQuery>parse("match $r (someRole: $x, inferredRole: $z ); $x has resource 'value'; get;"), false)),
+                        Iterables.getOnlyElement(tx.execute(qb.<GetQuery>parse("match $r (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z); get;"), false)),
+                        Iterables.getOnlyElement(tx.execute(qb.<GetQuery>parse("match $r (anotherRole: $x, andYetAnotherRole: $y); get;"),false))
                 )
                         .map(ans -> ans.project(Sets.newHashSet(var("r"))))
                         .collect(Collectors.toSet());

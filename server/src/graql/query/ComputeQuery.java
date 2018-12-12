@@ -30,7 +30,6 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.util.StringUtil;
-import grakn.core.server.ComputeExecutor;
 import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
@@ -46,7 +45,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -77,7 +75,6 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
     public final static Map<Method, Boolean> INCLUDE_ATTRIBUTES_DEFAULT = includeAttributesDefault();
 
     private Transaction tx;
-    private Set<ComputeExecutor> runningJobs = ConcurrentHashMap.newKeySet();
 
     private Method method;
     private boolean includeAttributes;
@@ -215,28 +212,8 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
     }
 
     @Override
-    public Stream<T> stream(boolean infer) {
-        return stream();
-    }
-
-    @Override
     public Stream<T> stream() {
-        Optional<GraqlQueryException> exception = getException();
-        if (exception.isPresent()) throw exception.get();
-
-        ComputeExecutor<T> job = executor().run(this);
-
-        runningJobs.add(job);
-
-        try {
-            return job.stream();
-        } finally {
-            runningJobs.remove(job);
-        }
-    }
-
-    public final void kill() {
-        runningJobs.forEach(ComputeExecutor::kill);
+        return executor().run(this);
     }
 
     @Override

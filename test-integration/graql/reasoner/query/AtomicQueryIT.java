@@ -61,7 +61,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("CheckReturnValue")
+@SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AtomicQueryIT {
 
     @ClassRule
@@ -120,7 +120,7 @@ public class AtomicQueryIT {
         QueryBuilder qb = tx.graql();
         String explicitGetQueryStr = "match (geo-entity: $x, entity-location: $y) isa is-located-in;$x has name 'Warsaw';$y has name 'Poland'; get;";
         GetQuery explicitGetQuery = qb.parse(explicitGetQueryStr);
-        assertFalse(explicitGetQuery.stream(false).iterator().hasNext());
+        assertFalse(tx.stream(explicitGetQuery,false).iterator().hasNext());
 
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         Conjunction<Statement> pattern = conjunction(patternString);
@@ -133,9 +133,9 @@ public class AtomicQueryIT {
         );
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, tx);
 
-        assertFalse(explicitGetQuery.stream(false).iterator().hasNext());
+        assertFalse(tx.stream(explicitGetQuery, false).iterator().hasNext());
         answers.forEach(atomicQuery::materialise);
-        assertTrue(explicitGetQuery.stream(false).iterator().hasNext());
+        assertTrue(tx.stream(explicitGetQuery, false).iterator().hasNext());
         tx.close();
     }
 
@@ -151,9 +151,9 @@ public class AtomicQueryIT {
     public void testWhenMaterialisingResources_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
         TransactionImpl<?> tx = materialisationTestSession.transaction(Transaction.Type.WRITE);
         QueryBuilder qb = tx.graql();
-        Concept firstEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity1; get;").execute(false)).get("x");
-        Concept secondEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity2; get;").execute(false)).get("x");
-        Concept resource = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa resource; get;").execute(false)).get("x");
+        Concept firstEntity = Iterables.getOnlyElement(tx.execute(qb.<GetQuery>parse("match $x isa entity1; get;"), false)).get("x");
+        Concept secondEntity = Iterables.getOnlyElement(tx.execute(qb.<GetQuery>parse("match $x isa entity2; get;"), false)).get("x");
+        Concept resource = Iterables.getOnlyElement(tx.execute(qb.<GetQuery>parse("match $x isa resource; get;"), false)).get("x");
 
         ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction("{$x has resource $r;$r == 'inferred';$x id " + firstEntity.id().getValue() + ";}"), tx);
         String reuseResourcePatternString =
@@ -169,17 +169,17 @@ public class AtomicQueryIT {
 
         reuseResourceQuery.materialise(new ConceptMap()).collect(Collectors.toList());
         assertEquals(Iterables.getOnlyElement(
-                qb.<GetQuery>parse("match" +
+                tx.execute(qb.<GetQuery>parse("match" +
                                            "$x has resource $r via $rel;" +
                                            "$x id " + secondEntity.id().getValue() + ";" +
                                            "$r id " + resource.id().getValue() + ";" +
-                                           "get;").execute(false)).get("rel").asRelationship().isInferred(), true);
+                                           "get;"), false)).get("rel").asRelationship().isInferred(), true);
         assertEquals(Iterables.getOnlyElement(
-                qb.<GetQuery>parse("match" +
+                tx.execute(qb.<GetQuery>parse("match" +
                                            "$x has resource $r via $rel;" +
                                            "$x id " + firstEntity.id().getValue() + ";" +
                                            "$r id " + resource.id().getValue() + ";" +
-                                           "get;").execute(false)).get("rel").asRelationship().isInferred(), false);
+                                           "get;"), false)).get("rel").asRelationship().isInferred(), false);
         tx.close();
     }
 
@@ -187,8 +187,8 @@ public class AtomicQueryIT {
     public void testWhenMaterialisingRelations_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
         TransactionImpl<?> tx = materialisationTestSession.transaction(Transaction.Type.WRITE);
         QueryBuilder qb = tx.graql();
-        Concept firstEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity1; get;").execute(false)).get("x");
-        Concept secondEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity2; get;").execute(false)).get("x");
+        Concept firstEntity = Iterables.getOnlyElement(tx.execute(qb.<GetQuery>parse("match $x isa entity1; get;"), false)).get("x");
+        Concept secondEntity = Iterables.getOnlyElement(tx.execute(qb.<GetQuery>parse("match $x isa entity2; get;"), false)).get("x");
 
         ReasonerAtomicQuery relationQuery = ReasonerQueries.atomic(conjunction(
                 "{" +
@@ -225,8 +225,8 @@ public class AtomicQueryIT {
         QueryBuilder qb = tx.graql();
         GetQuery childQuery = qb.parse(childString);
         GetQuery parentQuery = qb.parse(parentString);
-        Set<ConceptMap> answers = childQuery.stream(false).collect(toSet());
-        Set<ConceptMap> fullAnswers = parentQuery.stream(false).collect(toSet());
+        Set<ConceptMap> answers = tx.stream(childQuery, false).collect(toSet());
+        Set<ConceptMap> fullAnswers = tx.stream(parentQuery, false).collect(toSet());
         Atom childAtom = ReasonerQueries.atomic(conjunction(childQuery.match().getPatterns()), tx).getAtom();
         Atom parentAtom = ReasonerQueries.atomic(conjunction(parentQuery.match().getPatterns()), tx).getAtom();
 

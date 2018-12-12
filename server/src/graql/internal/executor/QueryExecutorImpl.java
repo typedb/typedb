@@ -21,29 +21,28 @@ package grakn.core.graql.internal.executor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.internal.gremlin.GraqlTraversal;
-import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.rule.RuleUtils;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.MatchClause;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.gremlin.GraqlTraversal;
+import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.UndefineQuery;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.ComputeExecutor;
 import grakn.core.server.QueryExecutor;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -54,6 +53,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -238,7 +238,12 @@ public class QueryExecutorImpl implements QueryExecutor {
 
 
     @Override
-    public <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query) {
-        return new ComputeExecutorImpl<>(tx, query);
+    public <T extends Answer> Stream<T> run(ComputeQuery<T> query) {
+        Optional<GraqlQueryException> exception = query.getException();
+        if (exception.isPresent()) throw exception.get();
+
+        ComputeExecutor<T> job = new ComputeExecutor<>(tx, query);
+
+        return job.stream();
     }
 }

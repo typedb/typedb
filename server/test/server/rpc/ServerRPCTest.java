@@ -294,17 +294,17 @@ public class ServerRPCTest {
                 new ConceptMap(ImmutableMap.of(Pattern.var("y"), conceptY))
         );
 
-        when(query.stream(anyBoolean())).thenAnswer(params -> answers.stream());
+        when(tx.stream(query, anyBoolean())).thenAnswer(params -> answers.stream());
 
-        try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
-            tx.receive();
+        try (Transceiver transceiver = Transceiver.create(stub)) {
+            transceiver.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
+            transceiver.receive();
 
-            tx.send(query(QUERY, false));
-            int iterator = tx.receive().ok().getQueryIter().getId();
+            transceiver.send(query(QUERY, false));
+            int iterator = transceiver.receive().ok().getQueryIter().getId();
 
-            tx.send(iterate(iterator));
-            Transaction.Res response1 = tx.receive().ok();
+            transceiver.send(iterate(iterator));
+            Transaction.Res response1 = transceiver.receive().ok();
 
             ConceptProto.Concept rpcX =
                     ConceptProto.Concept.newBuilder().setId(V123).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATION).build();
@@ -316,8 +316,8 @@ public class ServerRPCTest {
                                                                     .setAnswer(answerX))).build();
             assertEquals(resX, response1);
 
-            tx.send(iterate(iterator));
-            Transaction.Res response2 = tx.receive().ok();
+            transceiver.send(iterate(iterator));
+            Transaction.Res response2 = transceiver.receive().ok();
 
             ConceptProto.Concept rpcY =
                     ConceptProto.Concept.newBuilder().setId(V456).setBaseType(ConceptProto.Concept.BASE_TYPE.ATTRIBUTE).build();
@@ -329,8 +329,8 @@ public class ServerRPCTest {
                                                                     .setAnswer(answerY))).build();
             assertEquals(resY, response2);
 
-            tx.send(iterate(iterator));
-            Transaction.Res response3 = tx.receive().ok();
+            transceiver.send(iterate(iterator));
+            Transaction.Res response3 = transceiver.receive().ok();
 
             Transaction.Res expected = Transaction.Res.newBuilder().setIterateRes(Transaction.Iter.Res.newBuilder().setDone(true)).build();
             assertEquals(expected, response3);
@@ -355,7 +355,7 @@ public class ServerRPCTest {
         );
 
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate
-        when(query.stream(anyBoolean())).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
+        when(tx.stream(query, anyBoolean())).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
@@ -685,7 +685,7 @@ public class ServerRPCTest {
         String message = "your query is dumb";
         GraknException expectedException = InvalidKBException.create(message);
 
-        when(query.stream(anyBoolean())).thenThrow(expectedException);
+        when(tx.stream(query, anyBoolean())).thenThrow(expectedException);
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));

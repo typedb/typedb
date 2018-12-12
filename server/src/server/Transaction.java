@@ -18,6 +18,9 @@
 
 package grakn.core.server;
 
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -28,7 +31,15 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.query.AggregateQuery;
+import grakn.core.graql.query.ComputeQuery;
+import grakn.core.graql.query.DefineQuery;
+import grakn.core.graql.query.DeleteQuery;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.UndefineQuery;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.graql.query.pattern.Pattern;
@@ -38,6 +49,8 @@ import grakn.core.server.keyspace.Keyspace;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -89,6 +102,38 @@ public interface Transaction extends AutoCloseable{
                 if (t.type == value) return t;
             }
             return null;
+        }
+    }
+
+    default <T extends Answer> List<T> execute(Query<T> query) {
+        return execute(query, true);
+    }
+
+    default <T extends Answer> List<T> execute(Query<T> query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default <T extends Answer> Stream<T> stream(Query<T> query) {
+        return stream(query, true);
+    }
+
+    default <T extends Answer> Stream<T> stream(Query<T> query, boolean infer) {
+        if (query instanceof DefineQuery) {
+            return (Stream<T>) executor(infer).run((DefineQuery) query);
+        } else if (query instanceof UndefineQuery) {
+            return (Stream<T>) executor(infer).run((UndefineQuery) query);
+        } else if (query instanceof InsertQuery) {
+            return (Stream<T>) executor(infer).run((InsertQuery) query);
+        } else if (query instanceof DeleteQuery) {
+            return (Stream<T>) executor(infer).run((DeleteQuery) query);
+        } else if (query instanceof GetQuery) {
+            return (Stream<T>) executor(infer).run((GetQuery) query);
+        } else if (query instanceof AggregateQuery<?>) {
+            return (Stream<T>) executor(infer).run((AggregateQuery<?>) query);
+        } else if (query instanceof ComputeQuery<?>) {
+            return (Stream<T>) executor(infer).run((ComputeQuery<?>) query);
+        } else {
+            throw new IllegalArgumentException("Unrecognised Query object");
         }
     }
 

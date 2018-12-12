@@ -162,8 +162,8 @@ public class TypeGenerationIT {
                 QueryBuilder iqb = tx.graql();
                 String queryString = "match $x isa derivedEntity; get;";
                 String explicitQuery = "match $x isa baseEntity; get;";
-                List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(explicitQuery).execute(false);
+                List<ConceptMap> answers = tx.execute(iqb.<GetQuery>parse(queryString));
+                List<ConceptMap> answers2 = tx.execute(qb.<GetQuery>parse(explicitQuery), false);
 
                 assertEquals(3, answers2.size());
                 assertTrue(!answers2.containsAll(answers));

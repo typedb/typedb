@@ -53,5 +53,5 @@ public interface QueryExecutor {
 
     <T extends Answer> Stream<T> run(AggregateQuery<T> query);
 
-    <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query);
+    <T extends Answer> Stream<T> run(ComputeQuery<T> query);
 }

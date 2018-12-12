@@ -515,7 +515,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Iterator<QueryStateBase> subGoalIterator;
 
         if(!this.isRuleResolvable()) {
-            dbIterator = this.getQuery().stream(false)
+            dbIterator = tx.stream(getQuery(), false)
                     .map(ans -> ans.explain(new JoinExplanation(this, ans)))
                     .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                     .iterator();

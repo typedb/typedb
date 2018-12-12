@@ -63,11 +63,6 @@ public class DefineQuery implements Query<ConceptMap> {
     }
 
     @Override
-    public Stream<ConceptMap> stream(boolean infer) {
-        return executor(infer).run(this);
-    }
-
-    @Override
     public String toString() {
         return "define " + statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }

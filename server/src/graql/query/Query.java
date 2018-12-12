@@ -43,17 +43,11 @@ public interface Query<T extends Answer> extends Iterable<T> {
     @CheckReturnValue
     Stream<T> stream();
 
-    Stream<T> stream(boolean infer);
-
     /**
      * @return a {@link List} of T, where T is a special type of {@link Answer}
      */
     default List<T> execute() {
         return stream().collect(Collectors.toList());
-    }
-
-    default List<T> execute(boolean infer) {
-        return stream(infer).collect(Collectors.toList());
     }
 
     /**

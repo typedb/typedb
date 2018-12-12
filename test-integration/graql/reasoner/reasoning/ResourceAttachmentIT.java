@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Label;
@@ -164,21 +165,19 @@ public class ResourceAttachmentIT {
     @Test
     public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder withInference = tx.graql();
-            QueryBuilder withoutInference = tx.graql();
 
             Statement owner = label(HAS_OWNER.getLabel("reattachable-resource-string"));
             Statement value = label(HAS_VALUE.getLabel("reattachable-resource-string"));
             Statement hasRes = label(HAS.getLabel("reattachable-resource-string"));
 
-            Function<QueryBuilder, GetQuery> query = qb -> qb.match(
+            GetQuery query = Graql.match(
                     var().rel(owner, "x").rel(value, "y").isa(hasRes),
                     var("a").has("reattachable-resource-string", var("b"))  // This pattern is added only to encourage reasoning to activate
             ).get();
 
 
-            Set<ConceptMap> resultsWithoutInference = query.apply(withoutInference).stream(false).collect(toSet());
-            Set<ConceptMap> resultsWithInference = query.apply(withInference).stream().collect(toSet());
+            Set<ConceptMap> resultsWithoutInference = tx.stream(query,false).collect(toSet());
+            Set<ConceptMap> resultsWithInference = tx.stream(query).collect(toSet());
 
             assertThat(resultsWithoutInference, not(empty()));
             assertThat(Sets.difference(resultsWithoutInference, resultsWithInference), empty());

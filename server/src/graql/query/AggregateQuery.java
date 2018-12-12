@@ -63,11 +63,6 @@ public class AggregateQuery<T extends Answer> implements Query<T> {
     }
 
     @Override
-    public Stream<T> stream(boolean infer) {
-        return executor(infer).run(this);
-    }
-
-    @Override
     public final Transaction tx() {
         return match().tx();
     }

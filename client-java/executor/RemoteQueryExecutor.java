@@ -31,7 +31,6 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
-import grakn.core.server.ComputeExecutor;
 import grakn.core.server.QueryExecutor;
 
 import java.util.stream.Stream;
@@ -83,10 +82,9 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query) {
+    public <T extends Answer> Stream<T> run(ComputeQuery<T> query) {
         Iterable<T> iterable = () -> tx.query(query, infer);
-        Stream<T> stream = StreamSupport.stream(iterable.spliterator(), false);
-        return RemoteComputeExecutor.of(stream);
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     // Helper methods
