@@ -88,6 +88,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
@@ -99,6 +100,7 @@ import static org.mockito.Mockito.when;
 /**
  * Unit Tests for {@link grakn.core.server.rpc}
  */
+@SuppressWarnings("Duplicates")
 public class ServerRPCTest {
 
     private static final String EXCEPTION_MESSAGE = "OH DEAR";
@@ -292,7 +294,7 @@ public class ServerRPCTest {
                 new ConceptMap(ImmutableMap.of(Pattern.var("y"), conceptY))
         );
 
-        when(query.stream()).thenAnswer(params -> answers.stream());
+        when(query.stream(anyBoolean())).thenAnswer(params -> answers.stream());
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
@@ -353,7 +355,7 @@ public class ServerRPCTest {
         );
 
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate
-        when(query.stream()).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
+        when(query.stream(anyBoolean())).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
@@ -683,7 +685,7 @@ public class ServerRPCTest {
         String message = "your query is dumb";
         GraknException expectedException = InvalidKBException.create(message);
 
-        when(query.stream()).thenThrow(expectedException);
+        when(query.stream(anyBoolean())).thenThrow(expectedException);
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
