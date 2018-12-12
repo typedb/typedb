@@ -1,6 +1,10 @@
 <template>
   <transition name="slide-fade" appear>
-    <div class="wrapper">
+    <div class="wrapper noselect">
+       <div @click="isKgms = false"><vue-icon v-if="isKgms" icon="arrow-left" class="vue-icon back-arrow" iconSize="30"></vue-icon></div>
+
+
+
       <div class="login-header">
         <img src="static/img/logo-text.png" class="icon">
         <div v-if="!isKgms" class="workbase">WORKBASE</div>
@@ -12,30 +16,34 @@
         <button v-if="!isKgms" @click="isKgms = true" class="btn landing-btn">KGMS</button>
       </div>
 
-      <div v-if="isKgms">
-        <div class="login-panel z-depth-5">
-            <!-- <div class="title">
+      <div class="login-panel z-depth-5">
+            <div class="header">
               Server Address
-            </div> -->
-
-
+            </div>
             <div class="content">
               <h1 class="label">Host:</h1>
               <input class="input left-input" v-model="serverHost">
               <h1 class="label">Port:</h1>
               <input class="input" type="number" v-model="serverPort">
             </div>
+        </div>
 
+      <div v-if="isKgms">
+        <div class="login-panel z-depth-5">
+            <div class="header">
+              Log In
+            </div>
             <div class="content">
               <h1 class="label">Username:</h1>
               <input class="input left-input" v-model="username">
               <h1 class="label">Password:</h1>
               <input class="input" v-model="password" type="password">
+              <div class="login-row">
+              <loading-button v-on:clicked="loginToKgms" text="Log In" :loading="isLoading" className="btn login-btn"></loading-button>
+              </div>
             </div>
 
-            <div class="content login-row">
-              <loading-button v-on:clicked="loginToKgms" text="Log In" :loading="isLoading" className="btn login-btn"></loading-button>
-            </div>
+
 
         </div>
       
@@ -48,6 +56,26 @@
 </template>
 <style scoped>
 
+.back-arrow {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  cursor: pointer;
+}
+
+
+.header {
+  background-color: var(--gray-1);
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: var(--container-darkest-border);
+}
+.label {
+  margin-right: 5px;
+}
+
   .title {
       padding: var(--container-padding);
   }
@@ -59,22 +87,17 @@
   }
 
   .login-row {
-    display: flex;
-    justify-content: flex-end;
+    margin-left: 5px;
   }
 
-  .label {
-    width: 52px;
-    margin-right: 5px;
-  }
 
   .left-input {
     margin-right: 5px;
   }
 
   .login-panel {
+    margin-top: 50px;
     border: var(--container-darkest-border);
-    padding: var(--container-padding);
     display: flex;
     flex-direction: column;
     background-color: var(--gray-2);
@@ -135,8 +158,9 @@
 
 </style>
 <script>
+import Grakn from 'grakn';
 import storage from '@/components/shared/PersistentStorage';
-import Settings from '../ServerSettings';
+import ServerSettings from '@/components/ServerSettings';
 
 export default {
   name: 'LoginPage',
@@ -146,60 +170,63 @@ export default {
       username: '',
       password: '',
       isLoading: false,
-      serverHost: Settings.getServerHost(),
-      serverPort: Settings.getServerPort(),
+      serverHost: ServerSettings.getServerHost(),
+      serverPort: ServerSettings.getServerPort(),
     };
   },
   watch: {
     serverHost(newVal) {
-      Settings.setServerHost(newVal);
+      ServerSettings.setServerHost(newVal);
     },
     serverPort(newVal) {
-      Settings.setServerPort(newVal);
+      ServerSettings.setServerPort(newVal);
     },
   },
   created() {
     window.addEventListener('keyup', (e) => {
-      if (e.keyCode === 13 && !e.shiftKey && this.username.length && this.password.length) this.login();
+      if (e.keyCode === 13 && !e.shiftKey && this.username.length && this.password.length) this.loginToKgms();
     });
   },
   mounted() {
     this.$nextTick(() => {
-      this.serverHost = Settings.getServerHost();
-      this.serverPort = Settings.getServerPort();
+      this.serverHost = ServerSettings.getServerHost();
+      this.serverPort = ServerSettings.getServerPort();
     });
   },
   methods: {
-    testConnection() {
-      this.$store.dispatch('initGrakn', { username: this.username, password: this.password });
-    },
     loginTocore() {
-      this.$store.dispatch('initGrakn')
-        .then(() => {
-          this.$router.push('develop/data');
-        })
+      const grakn = new Grakn(ServerSettings.getServerUri(), { username: this.username, password: this.password });
+      grakn.session('grakn').transaction().then(() => {
+        this.$router.push('develop/data');
+      })
         .catch((e) => {
-          this.$notifyError(e, 'Login');
+          let error;
+          if (e.message.includes('2 UNKNOWN')) {
+            error = 'Login failed. Check if Grakn Core is running.';
+          } else {
+            error = e;
+          }
+          this.$notifyError(error);
         });
     },
     loginToKgms() {
       this.isLoading = true;
-      this.$store.dispatch('login', { username: this.username, password: this.password })
-        .then(() => {
-          this.isLoading = false;
-          storage.set('user-credentials', JSON.stringify({ username: this.username, password: this.password }));
-          this.$router.push('develop/data');
-        })
-        .catch((err) => {
+      const grakn = new Grakn(ServerSettings.getServerUri(), { username: this.username, password: this.password });
+      grakn.session('grakn').transaction().then(() => {
+        this.$store.dispatch('login', { username: this.username, password: this.password });
+        storage.set('user-credentials', JSON.stringify({ username: this.username, password: this.password }));
+        this.isLoading = false;
+        this.$router.push('develop/data');
+      })
+        .catch((e) => {
           this.isLoading = false;
           let error;
-          // TODO change this once gRPC errors fixed - we guess that credentials were wrong
-          if (err.message.includes('2 UNKNOWN')) {
-            error = 'Login failed. Check credentials and try again.';
+          if (e.message.includes('2 UNKNOWN') || e.message.includes('14 UNAVAILABLE')) {
+            error = 'Login failed. <br> - make sure Grakn KGMS is running <br> - check if credentials are correct';
           } else {
-            error = err;
+            error = e;
           }
-          this.$notifyError(error, 'Login');
+          this.$notifyError(error);
         });
     },
   },

@@ -25,15 +25,9 @@ export const login = (context, credentials) =>
   });
 
 export const initGrakn = (context, credentials) => {
-  try {
-    const grakn = new Grakn(ServerSettings.getServerUri(), credentials);
-    grakn.session('grakn').transaction();
-
-    context.commit('setGrakn', grakn);
-    context.dispatch('loadKeyspaces');
-  } catch (e) {
-    console.log(e);
-  }
+  const grakn = new Grakn(ServerSettings.getServerUri(), credentials);
+  context.commit('setGrakn', grakn);
+  context.dispatch('loadKeyspaces');
 };
 
 export const logout = (context) => {
