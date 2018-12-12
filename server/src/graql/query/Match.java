@@ -58,11 +58,6 @@ public class Match implements Iterable<ConceptMap> {
     private final Conjunction<Pattern> pattern;
     private final Transaction tx;
 
-    Match() {
-        this.pattern = null;
-        this.tx = null;
-    }
-
     /**
      * @param pattern a pattern to match in the graph
      */

@@ -34,7 +34,7 @@ class MatchInfer extends Match {
     final Match inner;
 
     MatchInfer(Match inner) {
-        super();
+        super(inner.tx(), inner.getPatterns());
         this.inner = inner;
     }
 
