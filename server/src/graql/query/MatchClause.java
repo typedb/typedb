@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
@@ -36,13 +35,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * A part of a query used for finding data in a knowledge base that matches the given patterns.
@@ -72,16 +69,6 @@ public class MatchClause implements Iterable<ConceptMap> {
     @CheckReturnValue
     public Transaction tx() {
         return tx;
-    }
-
-    @CheckReturnValue
-    public Set<SchemaConcept> getSchemaConcepts() {
-        return pattern.statements().stream()
-                .flatMap(v -> v.innerStatements().stream())
-                .flatMap(v -> v.getTypeLabels().stream())
-                .map(tx::<SchemaConcept>getSchemaConcept)
-                .filter(Objects::nonNull)
-                .collect(toSet());
     }
 
     @CheckReturnValue

@@ -51,6 +51,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.stream.Stream;
+
 import static grakn.core.graql.concept.AttributeType.DataType.BOOLEAN;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
@@ -88,7 +90,7 @@ public class DefineQueryIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
     public static SessionImpl session;
-    private TransactionImpl tx;
+    private TransactionImpl<?> tx;
     private QueryBuilder qb;
 
     @BeforeClass
@@ -155,7 +157,7 @@ public class DefineQueryIT {
         ).execute();
 
         MatchClause match = qb.match(var("x").label("my-type"));
-        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().dataType();
+        AttributeType.DataType datatype = tx.stream(match).iterator().next().get("x").asAttributeType().dataType();
 
         Assert.assertEquals(AttributeType.DataType.LONG, datatype);
     }
@@ -168,7 +170,7 @@ public class DefineQueryIT {
         ).execute();
 
         MatchClause match = qb.match(var("x").label("sub-type"));
-        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().dataType();
+        AttributeType.DataType datatype = tx.stream(match).iterator().next().get("x").asAttributeType().dataType();
 
         Assert.assertEquals(AttributeType.DataType.STRING, datatype);
     }

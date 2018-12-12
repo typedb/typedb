@@ -100,7 +100,19 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Optional<Label> getTypeLabel() {
-        return getProperty(LabelProperty.class).map(LabelProperty::label);
+        return getProperty(LabelProperty.class).map(labelProperty -> labelProperty.label());
+    }
+
+    /**
+     * @return all type names that this variable refers to
+     */
+    @CheckReturnValue
+    public final Set<Label> getTypeLabels() {
+        return getProperties()
+                .flatMap(varProperty -> varProperty.getTypes())
+                .map(statement -> statement.getTypeLabel())
+                .flatMap(optional -> CommonUtil.optionalToStream(optional))
+                .collect(toSet());
     }
 
     /**
@@ -173,17 +185,6 @@ public abstract class Statement implements Pattern {
         }
 
         return vars;
-    }
-
-    /**
-     * @return all type names that this variable refers to
-     */
-    @CheckReturnValue
-    public final Set<Label> getTypeLabels() {
-        return getProperties()
-                .flatMap(VarProperty::getTypes)
-                .map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream)
-                .collect(toSet());
     }
 
     @Override

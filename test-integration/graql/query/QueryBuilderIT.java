@@ -116,15 +116,6 @@ public class QueryBuilderIT {
     }
 
     @Test
-    public void whenExecutingAMatchWithoutAGraph_Throw() {
-        MatchClause match = match(x.isa("movie"));
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage("graph");
-        //noinspection ResultOfMethodCallIgnored
-        match.iterator();
-    }
-
-    @Test
     public void whenExecutingAnInsertQueryWithoutAGraph_Throw() {
         InsertQuery query = insert(var().id(ConceptId.of("another-movie")).isa("movie"));
         exception.expect(GraqlQueryException.class);

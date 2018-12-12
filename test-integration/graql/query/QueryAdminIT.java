@@ -76,20 +76,6 @@ public class QueryAdminIT {
         session.close();
     }
 
-    @Test
-    public void testGetTypesInQuery() {
-        MatchClause match = qb.match(
-                var("x").isa(label("movie").sub("production")).has("tmdb-vote-count", 400),
-                var("y").isa("character"),
-                var().rel("production-with-cast", "x").rel("y").isa("has-cast")
-        );
-
-        Set<SchemaConcept> types = Stream.of(
-                "movie", "production", "tmdb-vote-count", "character", "production-with-cast", "has-cast"
-        ).map(t -> tx.<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
-
-        assertEquals(types, match.getSchemaConcepts());
-    }
 
     @Test
     public void testDefaultGetSelectedNamesInQuery() {
@@ -148,23 +134,5 @@ public class QueryAdminIT {
 
         query = qb.match(var("x").isaExplicit("movie")).delete("x");
         assertEquals("match $x isa! movie;", query.admin().match().toString());
-    }
-
-    @Test
-    public void testInsertQueryGetTypes() {
-        InsertQuery query = qb.insert(var("x").isa("person").has("name", var("y")), var().rel("actor", "x").isa("has-cast"));
-        Set<SchemaConcept> types = Stream.of("person", "name", "actor", "has-cast").map(t -> tx.<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
-        assertEquals(types, query.admin().getSchemaConcepts());
-    }
-
-    @Test
-    public void testMatchInsertQueryGetTypes() {
-        InsertQuery query = qb.match(var("y").isa("movie"))
-                .insert(var("x").isa("person").has("name", var("z")), var().rel("actor", "x").isa("has-cast"));
-
-        Set<SchemaConcept> types =
-                Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> tx.<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
-
-        assertEquals(types, query.admin().getSchemaConcepts());
     }
 }

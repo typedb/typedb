@@ -103,31 +103,6 @@ public class InsertQuery implements Query<ConceptMap> {
         return this;
     }
 
-    @CheckReturnValue
-    public Set<SchemaConcept> getSchemaConcepts() {
-        if (getTx() == null) throw GraqlQueryException.noTx();
-        Transaction theGraph = getTx();
-
-        Set<SchemaConcept> types = allVarPatterns()
-                .map(Statement::getTypeLabel)
-                .flatMap(CommonUtil::optionalToStream)
-                .map(theGraph::<Type>getSchemaConcept)
-                .collect(Collectors.toSet());
-
-        if (match() != null) types.addAll(match().getSchemaConcepts());
-
-        return types;
-    }
-
-    private Stream<Statement> allVarPatterns() {
-        return statements().stream().flatMap(v -> v.innerStatements().stream());
-    }
-
-    private Transaction getTx() {
-        if (match() != null && match().tx() != null) return match().tx();
-        else return tx();
-    }
-
     @Override
     public final String toString() {
         StringBuilder builder = new StringBuilder();

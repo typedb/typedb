@@ -123,6 +123,8 @@ public class QueryExecutorImpl implements QueryExecutor {
         return map;
     }
 
+
+
     private Concept buildConcept(Element element) {
         if (element instanceof Vertex) {
             return tx.buildConcept((Vertex) element);
