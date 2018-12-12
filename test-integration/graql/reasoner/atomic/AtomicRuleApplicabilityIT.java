@@ -1,5 +1,6 @@
 package grakn.core.graql.reasoner.atomic;
 
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -734,8 +735,8 @@ public class AtomicRuleApplicabilityIT {
         return roleMap;
     }
 
-    private Concept getConcept(TransactionImpl<?> graph, String typeName, Object val){
-        return graph.graql().match((Pattern) var("x").has(typeName, val)).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().orElse(null);
+    private Concept getConcept(TransactionImpl<?> tx, String typeName, Object val){
+        return tx.stream(Graql.match((Pattern) var("x").has(typeName, val)).get("x"))
+                .map(ans -> ans.get("x")).findAny().orElse(null);
     }
 }

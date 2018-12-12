@@ -82,7 +82,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-@SuppressWarnings("OptionalGetWithoutIsPresent")
+@SuppressWarnings({"OptionalGetWithoutIsPresent", "Duplicates"})
 public class InsertQueryIT {
 
     private static final Variable w = var("w");
@@ -169,16 +169,16 @@ public class InsertQueryIT {
 
         assertNotExists(tx, patterns);
 
-        qb.insert(vars).execute();
+        tx.execute(Graql.insert(vars));
         assertExists(tx, patterns);
 
-        qb.match(patterns).delete("r").execute();
+        tx.execute(Graql.match(patterns).delete("r"));
         assertNotExists(tx, patterns);
     }
 
     @Test
     public void testInsertSameVarName() {
-        qb.insert(var("x").has("title", "SW"), var("x").has("title", "Star Wars").isa("movie")).execute();
+        tx.execute(Graql.insert(var("x").has("title", "SW"), var("x").has("title", "Star Wars").isa("movie")));
 
         assertExists(tx, var().isa("movie").has("title", "SW"));
         assertExists(tx, var().isa("movie").has("title", "Star Wars"));
@@ -198,7 +198,7 @@ public class InsertQueryIT {
         query.execute();
         assertEquals(3, tx.stream(Graql.match(language)).count());
 
-        qb.match(language).delete("x").execute();
+        tx.execute(Graql.match(language).delete("x"));
         assertEquals(0, tx.stream(Graql.match(language)).count());
     }
 
@@ -207,15 +207,15 @@ public class InsertQueryIT {
         Statement language1 = var().isa("language").has("name", "123");
         Statement language2 = var().isa("language").has("name", "456");
 
-        qb.insert(language1, language2).execute();
+        tx.execute(Graql.insert(language1, language2));
         assertExists(tx, language1);
         assertExists(tx, language2);
 
-        qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO")).execute();
+        tx.execute(Graql.match(var("x").isa("language")).insert(var("x").has("name", "HELLO")));
         assertExists(tx, var().isa("language").has("name", "123").has("name", "HELLO"));
         assertExists(tx, var().isa("language").has("name", "456").has("name", "HELLO"));
 
-        qb.match(var("x").isa("language")).delete("x").execute();
+        tx.execute(Graql.match(var("x").isa("language")).delete("x"));
         assertNotExists(tx, language1);
         assertNotExists(tx, language2);
     }
@@ -227,7 +227,7 @@ public class InsertQueryIT {
                 var("z").has("name", "xyz").isa("language")
         );
 
-        Set<ConceptMap> results = insert.stream().collect(toSet());
+        Set<ConceptMap> results = tx.stream(insert).collect(toSet());
         assertEquals(1, results.size());
         ConceptMap result = results.iterator().next();
         assertEquals(ImmutableSet.of(var("x"), var("z")), result.vars());
@@ -239,12 +239,12 @@ public class InsertQueryIT {
         Statement language1 = var().isa("language").has("name", "123");
         Statement language2 = var().isa("language").has("name", "456");
 
-        qb.insert(language1, language2).execute();
+        tx.execute(Graql.insert(language1, language2));
         assertExists(tx, language1);
         assertExists(tx, language2);
 
-        InsertQuery query = qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO"));
-        query.stream();
+        InsertQuery query = Graql.match(var("x").isa("language")).insert(var("x").has("name", "HELLO"));
+        tx.stream(query);
 
         assertExists(tx, var().isa("language").has("name", "123").has("name", "HELLO"));
         assertExists(tx, var().isa("language").has("name", "456").has("name", "HELLO"));
@@ -254,14 +254,14 @@ public class InsertQueryIT {
     public void testErrorWhenInsertWithPredicate() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("predicate");
-        qb.insert(var().id(ConceptId.of("123")).val(gt(3))).execute();
+        tx.execute(Graql.insert(var().id(ConceptId.of("123")).val(gt(3))));
     }
 
     @Test
     public void testErrorWhenInsertWithMultipleIds() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("id"), containsString("123"), containsString("456")));
-        qb.insert(var().id(ConceptId.of("123")).id(ConceptId.of("456")).isa("movie")).execute();
+        tx.execute(Graql.insert(var().id(ConceptId.of("123")).id(ConceptId.of("456")).isa("movie")));
     }
 
     @Test
@@ -274,7 +274,7 @@ public class InsertQueryIT {
                 GraqlQueryException.insertMultipleProperties(varPattern, "", "456", "123").getMessage()
         ));
 
-        qb.insert(varPattern).execute();
+        tx.execute(Graql.insert(varPattern));
     }
 
     @Test
@@ -300,7 +300,7 @@ public class InsertQueryIT {
                 label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
-        qb.insert(var().isa("a-new-type").has("a-new-resource-type", "hello")).execute();
+        tx.execute(Graql.insert(var().isa("a-new-type").has("a-new-resource-type", "hello")));
     }
 
     @Test
@@ -344,7 +344,7 @@ public class InsertQueryIT {
                 label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
-        qb.insert(var().isa("a-new-type")).execute();
+        tx.execute(Graql.insert(var().isa("a-new-type")));
 
         exception.expect(InvalidKBException.class);
         tx.commit();
@@ -417,73 +417,73 @@ public class InsertQueryIT {
         exception.expectMessage(
                 allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.THING.getLabel().getValue()))
         );
-        qb.insert(var("my-thing").isa(Schema.MetaSchema.THING.getLabel().getValue())).execute();
+        tx.execute(Graql.insert(var("my-thing").isa(Schema.MetaSchema.THING.getLabel().getValue())));
     }
 
     @Test
     public void whenInsertingAResourceWithoutAValue_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("name")));
-        qb.insert(var("x").isa("name")).execute();
+        tx.execute(Graql.insert(var("x").isa("name")));
     }
 
     @Test
     public void whenInsertingAnInstanceWithALabel_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("label"), containsString("abc")));
-        qb.insert(label("abc").isa("movie")).execute();
+        tx.execute(Graql.insert(label("abc").isa("movie")));
     }
 
     @Test
     public void whenInsertingAResourceWithALabel_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("label"), containsString("bobby")));
-        qb.insert(label("bobby").val("bob").isa("name")).execute();
+        tx.execute(Graql.insert(label("bobby").val("bob").isa("name")));
     }
 
     @Test
     public void testInsertDuplicatePattern() {
-        qb.insert(var().isa("person").has("name", "a name"), var().isa("person").has("name", "a name")).execute();
+        tx.execute(Graql.insert(var().isa("person").has("name", "a name"), var().isa("person").has("name", "a name")));
         assertEquals(2, tx.stream(Graql.match(x.has("name", "a name"))).count());
     }
 
     @Test
     public void testInsertResourceOnExistingId() {
-        ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get().id();
+        ConceptId apocalypseNow = tx.stream(Graql.match(var("x").has("title", "Apocalypse Now")).get("x"))
+                .map(ans -> ans.get("x")).findAny().get().id();
 
         assertNotExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
-        qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
+        tx.execute(Graql.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")));
         assertExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
     @Test
     public void testInsertResourceOnExistingIdWithType() {
-        ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get().id();
+        ConceptId apocalypseNow = tx.stream(Graql.match(var("x").has("title", "Apocalypse Now")).get("x"))
+                .map(ans -> ans.get("x")).findAny().get().id();
 
         assertNotExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
-        qb.insert(var().id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")).execute();
+        tx.execute(Graql.insert(var().id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")));
         assertExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
     @Test
     public void testInsertResourceOnExistingResourceId() {
-        ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get().id();
+        ConceptId apocalypseNow = tx.stream(Graql.match(var("x").val("Apocalypse Now")).get("x"))
+                .map(ans -> ans.get("x")).findAny().get().id();
 
         assertNotExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Not Right Now"));
-        qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Not Right Now")).execute();
+        tx.execute(Graql.insert(var().id(apocalypseNow).has("title", "Apocalypse Not Right Now")));
         assertExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Not Right Now"));
     }
 
     @Test
     public void testInsertResourceOnExistingResourceIdWithType() {
-        ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get().id();
+        ConceptId apocalypseNow = tx.stream(Graql.match(var("x").val("Apocalypse Now")).get("x"))
+                .map(ans -> ans.get("x")).findAny().get().id();
 
         assertNotExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
-        qb.insert(var().id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")).execute();
+        tx.execute(Graql.insert(var().id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")));
         assertExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
@@ -491,7 +491,7 @@ public class InsertQueryIT {
     public void testInsertInstanceWithoutType() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("isa")));
-        qb.insert(var().has("name", "Bob")).execute();
+        tx.execute(Graql.insert(var().has("name", "Bob")));
     }
 
     @Test
@@ -618,7 +618,7 @@ public class InsertQueryIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(SubProperty.NAME).getMessage());
 
-        qb.insert(label("new-type").sub(label(ENTITY.getLabel()))).execute();
+        tx.execute(Graql.insert(label("new-type").sub(label(ENTITY.getLabel()))));
     }
 
     @Test
@@ -626,7 +626,7 @@ public class InsertQueryIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(PlaysProperty.NAME).getMessage());
 
-        qb.insert(label("movie").plays("actor")).execute();
+        tx.execute(Graql.insert(label("movie").plays("actor")));
     }
 
     private void assertInsert(Statement... vars) {
@@ -636,7 +636,7 @@ public class InsertQueryIT {
         }
 
         // Insert all vars
-        qb.insert(vars).execute();
+        tx.execute(Graql.insert(vars));
 
         // Make sure all vars exist
         for (Statement var : vars) {
@@ -645,7 +645,7 @@ public class InsertQueryIT {
 
         // Delete all vars
         for (Statement var : vars) {
-            qb.match(var).delete(var.var()).execute();
+            tx.execute(Graql.match(var).delete(var.var()));
         }
 
         // Make sure vars don't exist

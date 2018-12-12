@@ -215,7 +215,7 @@ public class DefineQueryIT {
 
         // We checked count ahead of time
         //noinspection OptionalGetWithoutIsPresent
-        EntityType newType = typeQuery.get("n").stream().map(ans -> ans.get("n")).findFirst().get().asEntityType();
+        EntityType newType = tx.stream(typeQuery.get("n")).map(ans -> ans.get("n")).findFirst().get().asEntityType();
 
         assertTrue(newType.playing().anyMatch(role -> role.equals(tx.getRole(roleTypeLabel))));
 
@@ -286,8 +286,7 @@ public class DefineQueryIT {
         qb.define(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING).regex("hello|good day")).execute();
 
         MatchClause match = qb.match(var("x").label("greeting"));
-        assertEquals("hello|good day", match.get("x")
-                .stream().map(ans -> ans.get("x")).findFirst().get().asAttributeType().regex());
+        assertEquals("hello|good day", tx.stream(match.get("x")).map(ans -> ans.get("x")).findFirst().get().asAttributeType().regex());
     }
 
     @Test

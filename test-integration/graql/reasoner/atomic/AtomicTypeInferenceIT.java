@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.atomic;
 
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
@@ -427,8 +428,8 @@ public class AtomicTypeInferenceIT {
         List<ConceptMap> answers = new ArrayList<>();
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, tx), tx);
         for(SchemaConcept type : possibleTypes){
-            GetQuery typedQuery = tx.graql().match(ReasonerQueries.atomic(query.getAtom().addType(type)).getPattern()).get();
-            typedQuery.stream().filter(ans -> !answers.contains(ans)).forEach(answers::add);
+            GetQuery typedQuery = Graql.match(ReasonerQueries.atomic(query.getAtom().addType(type)).getPattern()).get();
+            tx.stream(typedQuery).filter(ans -> !answers.contains(ans)).forEach(answers::add);
         }
         return answers;
     }

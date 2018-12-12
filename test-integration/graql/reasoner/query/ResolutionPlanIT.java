@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -419,8 +420,8 @@ public class ResolutionPlanIT {
     @Test
     @Repeat( times = repeat )
     public void makeSureOptimalOrderPickedWhenResourcesWithSubstitutionsArePresent() {
-        Concept concept = tx.graql().match(var("x").isa("baseEntity")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().orElse(null);
+        Concept concept = tx.stream(Graql.match(var("x").isa("baseEntity")).get("x"))
+                .map(ans -> ans.get("x")).findAny().orElse(null);
         String basePatternString =
                 "(someRole:$x, otherRole: $y) isa relation;" +
                         "$x has resource 'this';" +

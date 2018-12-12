@@ -50,7 +50,7 @@ import grakn.core.graql.printer.Printer;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
@@ -111,7 +111,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Integration Tests for {@link grakn.core.server.Server} RPC
  */
-@SuppressWarnings("CheckReturnValue")
+@SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class GraknClientIT {
 
     @ClassRule
@@ -188,7 +188,7 @@ public class GraknClientIT {
     @Test
     public void testExecutingAndCommittingAQuery_TheQueryIsCommitted() {
         try (Grakn.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
-            tx.graql().define(label("person").sub("entity")).execute();
+            tx.execute(Graql.define(label("person").sub("entity")));
             tx.commit();
         }
 
@@ -200,7 +200,7 @@ public class GraknClientIT {
     @Test
     public void testExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() {
         try (Grakn.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
-            tx.graql().define(label("flibflab").sub("entity")).execute();
+            tx.execute(Graql.define(label("flibflab").sub("entity")));
         }
 
         try (Transaction tx = localSession.transaction(Transaction.Type.READ)) {
@@ -213,12 +213,12 @@ public class GraknClientIT {
         List<ConceptMap> answers;
 
         try (Grakn.Transaction tx = remoteSession.transaction(Transaction.Type.READ)) {
-            answers = tx.graql().match(var("x").sub("thing")).get().execute();
+            answers = tx.execute(Graql.match(var("x").sub("thing")).get());
         }
 
         int size;
         try (Transaction tx = localSession.transaction(Transaction.Type.READ)) {
-            size = tx.graql().match(var("x").sub("thing")).get().execute().size();
+            size = tx.execute(Graql.match(var("x").sub("thing")).get()).size();
         }
 
         assertThat(answers, hasSize(size));
@@ -235,7 +235,7 @@ public class GraknClientIT {
     @Ignore // TODO: complete with richer relationship structures
     public void testGetQueryForRelationship() {
         try (Grakn.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> directorships = tx.graql().match(var("x").isa("directed-by")).get().execute();
+            List<ConceptMap> directorships = tx.execute(Graql.match(var("x").isa("directed-by")).get());
 
             for (ConceptMap directorship : directorships) {
                 System.out.println(Printer.stringPrinter(true).toString(directorship.get("x")));
@@ -264,11 +264,11 @@ public class GraknClientIT {
                 "get;";
 
         try (Grakn.Transaction tx = reasonerRemoteSession.transaction(Transaction.Type.READ)) {
-            remoteAnswers = tx.graql().<GetQuery>parse(queryString).execute();
+            remoteAnswers = tx.execute(Graql.<GetQuery>parse(queryString));
         }
 
         try (Transaction tx = reasonerLocalSession.transaction(Transaction.Type.READ)) {
-            localAnswers = tx.graql().<GetQuery>parse(queryString).execute();
+            localAnswers = tx.execute(Graql.<GetQuery>parse(queryString));
         }
 
         assertEquals(remoteAnswers.size(), limit);
@@ -283,7 +283,7 @@ public class GraknClientIT {
 
             ConceptMap specificAnswer;
             try (Grakn.Transaction tx = reasonerRemoteSession.transaction(Transaction.Type.READ)) {
-                specificAnswer = Iterables.getOnlyElement(tx.graql().<GetQuery>parse(specificQuery).execute());
+                specificAnswer = Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse(specificQuery)));
             }
             assertEquals(answer, specificAnswer);
             testExplanation(specificAnswer);
@@ -336,8 +336,8 @@ public class GraknClientIT {
         Set<ConceptMap> answers2;
 
         try (Grakn.Transaction tx = remoteSession.transaction(Transaction.Type.READ)) {
-            answers1 = tx.graql().match(var("x").sub("thing")).get().stream().collect(toSet());
-            answers2 = tx.graql().match(var("x").sub("thing")).get().stream().collect(toSet());
+            answers1 = tx.stream(Graql.match(var("x").sub("thing")).get()).collect(toSet());
+            answers2 = tx.stream(Graql.match(var("x").sub("thing")).get()).collect(toSet());
         }
 
         assertEquals(answers1, answers2);
@@ -346,10 +346,10 @@ public class GraknClientIT {
     @Test
     public void testExecutingTwoParallelQueries_GetBothResults() {
         try (Grakn.Transaction tx = remoteSession.transaction(Transaction.Type.READ)) {
-            GetQuery query = tx.graql().match(var("x").sub("thing")).get();
+            GetQuery query = Graql.match(var("x").sub("thing")).get();
 
-            Iterator<ConceptMap> iterator1 = query.stream().iterator();
-            Iterator<ConceptMap> iterator2 = query.stream().iterator();
+            Iterator<ConceptMap> iterator1 = tx.stream(query).iterator();
+            Iterator<ConceptMap> iterator2 = tx.stream(query).iterator();
 
             while (iterator1.hasNext() || iterator2.hasNext()) {
                 assertEquals(iterator1.next(), iterator2.next());
@@ -405,13 +405,13 @@ public class GraknClientIT {
             tx.commit();
         }
         try (Grakn.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
-            DeleteQuery deleteQuery = tx.graql().match(var("g").rel("x").rel("y").isa("has-cast")).delete("x", "y");
-            deleteQuery.execute();
-            assertTrue(tx.graql().match(var().rel("x").rel("y").isa("has-cast")).get("x", "y").execute().isEmpty());
+            DeleteQuery deleteQuery = Graql.match(var("g").rel("x").rel("y").isa("has-cast")).delete("x", "y");
+            tx.execute(deleteQuery);
+            assertTrue(tx.execute(Graql.match(var().rel("x").rel("y").isa("has-cast")).get("x", "y")).isEmpty());
 
-            deleteQuery = tx.graql().match(var("x").isa("person")).delete();
-            deleteQuery.execute();
-            assertTrue(tx.graql().match(var("x").isa("person")).get().execute().isEmpty());
+            deleteQuery = Graql.match(var("x").isa("person")).delete();
+            tx.execute(deleteQuery);
+            assertTrue(tx.execute(Graql.match(var("x").isa("person")).get()).isEmpty());
         }
     }
 
@@ -437,8 +437,8 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").isa("has-cast")).get();
-            Relationship remoteConcept = query.stream().findAny().get().get("x").asRelationship();
+            GetQuery query = Graql.match(var("x").isa("has-cast")).get();
+            Relationship remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelationship();
             Relationship localConcept = localTx.getConcept(remoteConcept.id()).asRelationship();
 
             assertEqualConcepts(localConcept, remoteConcept, Relationship::rolePlayers);
@@ -473,8 +473,8 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").label("man")).get();
-            SchemaConcept remoteConcept = query.stream().findAny().get().get("x").asSchemaConcept();
+            GetQuery query = Graql.match(var("x").label("man")).get();
+            SchemaConcept remoteConcept = remoteTx.stream(query).findAny().get().get("x").asSchemaConcept();
             SchemaConcept localConcept = localTx.getConcept(remoteConcept.id()).asSchemaConcept();
 
             assertEquals(localConcept.isImplicit(), remoteConcept.isImplicit());
@@ -505,8 +505,8 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").isa("person")).get();
-            Thing remoteConcept = query.stream().findAny().get().get("x").asThing();
+            GetQuery query = Graql.match(var("x").isa("person")).get();
+            Thing remoteConcept = remoteTx.stream(query).findAny().get().get("x").asThing();
             Thing localConcept = localTx.getConcept(remoteConcept.id()).asThing();
 
             assertEquals(localConcept.isInferred(), remoteConcept.isInferred());
@@ -537,8 +537,8 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").label("person")).get();
-            Type remoteConcept = query.stream().findAny().get().get("x").asType();
+            GetQuery query = Graql.match(var("x").label("person")).get();
+            Type remoteConcept = remoteTx.stream(query).findAny().get().get("x").asType();
             Type localConcept = localTx.getConcept(remoteConcept.id()).asType();
 
             assertEquals(localConcept.isAbstract(), remoteConcept.isAbstract());
@@ -562,8 +562,8 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").label("actor")).get();
-            Role remoteConcept = query.stream().findAny().get().get("x").asRole();
+            GetQuery query = Graql.match(var("x").label("actor")).get();
+            Role remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRole();
             Role localConcept = localTx.getConcept(remoteConcept.id()).asRole();
 
             assertEqualConcepts(localConcept, remoteConcept, Role::players);
@@ -575,13 +575,13 @@ public class GraknClientIT {
     public void testGettingARule_TheInformationOnTheRuleIsCorrect() {
         try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putAttributeType("name", DataType.STRING);
-            Pattern when = tx.graql().parser().parsePattern("$x has name 'expectation-when'");
-            Pattern then = tx.graql().parser().parsePattern("$x has name 'expectation-then'");
+            Pattern when = Graql.parser().parsePattern("$x has name 'expectation-when'");
+            Pattern then = Graql.parser().parsePattern("$x has name 'expectation-then'");
 
             tx.putRule("expectation-rule", when, then);
 
-            when = tx.graql().parser().parsePattern("$x has name 'materialize-when'");
-            then = tx.graql().parser().parsePattern("$x has name 'materialize-then'");
+            when = Graql.parser().parsePattern("$x has name 'materialize-when'");
+            then = Graql.parser().parsePattern("$x has name 'materialize-then'");
             tx.putRule("materialize-rule", when, then);
             tx.commit();
         }
@@ -589,8 +589,8 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").label("expectation-rule")).get();
-            grakn.core.graql.concept.Rule remoteConcept = query.stream().findAny().get().get("x").asRule();
+            GetQuery query = Graql.match(var("x").label("expectation-rule")).get();
+            grakn.core.graql.concept.Rule remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRule();
             grakn.core.graql.concept.Rule localConcept = localTx.getConcept(remoteConcept.id()).asRule();
 
             assertEquals(localConcept.when(), remoteConcept.when());
@@ -607,8 +607,8 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").label("person")).get();
-            EntityType remoteConcept = query.stream().findAny().get().get("x").asEntityType();
+            GetQuery query = Graql.match(var("x").label("person")).get();
+            EntityType remoteConcept = remoteTx.stream(query).findAny().get().get("x").asEntityType();
             EntityType localConcept = localTx.getConcept(remoteConcept.id()).asEntityType();
 
             // There actually aren't any new methods on EntityType, but we should still check we can get them
@@ -629,8 +629,8 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").label("has-cast")).get();
-            RelationshipType remoteConcept = query.stream().findAny().get().get("x").asRelationshipType();
+            GetQuery query = Graql.match(var("x").label("has-cast")).get();
+            RelationshipType remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelationshipType();
             RelationshipType localConcept = localTx.getConcept(remoteConcept.id()).asRelationshipType();
 
             assertEqualConcepts(localConcept, remoteConcept, RelationshipType::roles);
@@ -648,8 +648,8 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").label("title")).get();
-            AttributeType<String> remoteConcept = query.stream().findAny().get().get("x").asAttributeType();
+            GetQuery query = Graql.match(var("x").label("title")).get();
+            AttributeType<String> remoteConcept = remoteTx.stream(query).findAny().get().get("x").asAttributeType();
             AttributeType<String> localConcept = localTx.getConcept(remoteConcept.id()).asAttributeType();
 
             assertEquals(localConcept.dataType(), remoteConcept.dataType());
@@ -671,8 +671,8 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").isa("movie")).get();
-            Entity remoteConcept = query.stream().findAny().get().get("x").asEntity();
+            GetQuery query = Graql.match(var("x").isa("movie")).get();
+            Entity remoteConcept = remoteTx.stream(query).findAny().get().get("x").asEntity();
             Entity localConcept = localTx.getConcept(remoteConcept.id()).asEntity();
 
             // There actually aren't any new methods on Entity, but we should still check we can get them
@@ -694,8 +694,8 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").isa("name")).get();
-            Attribute<?> remoteConcept = query.stream().findAny().get().get("x").asAttribute();
+            GetQuery query = Graql.match(var("x").isa("name")).get();
+            Attribute<?> remoteConcept = remoteTx.stream(query).findAny().get().get("x").asAttribute();
             Attribute<?> localConcept = localTx.getConcept(remoteConcept.id()).asAttribute();
 
             assertEquals(localConcept.dataType(), remoteConcept.dataType());
@@ -732,46 +732,46 @@ public class GraknClientIT {
 
         try (Grakn.Transaction tx = remoteSession.transaction(Transaction.Type.READ)) {
             // count
-            assertEquals(1, tx.graql().compute(COUNT).in("animal").execute().get(0).number().intValue());
+            assertEquals(1, tx.execute(Graql.compute(COUNT).in("animal")).get(0).number().intValue());
 
             // statistics
-            assertEquals(10, tx.graql().compute(MIN).of("age").in("human").execute().get(0).number().intValue());
-            assertEquals(10, tx.graql().compute(MAX).of("age").in("human").execute().get(0).number().intValue());
-            assertEquals(10, tx.graql().compute(MEAN).of("age").in("human").execute().get(0).number().intValue());
+            assertEquals(10, tx.execute(Graql.compute(MIN).of("age").in("human")).get(0).number().intValue());
+            assertEquals(10, tx.execute(Graql.compute(MAX).of("age").in("human")).get(0).number().intValue());
+            assertEquals(10, tx.execute(Graql.compute(MEAN).of("age").in("human")).get(0).number().intValue());
 
 
-            List<Value> answer = tx.graql().compute(STD).of("age").in("human").execute();
+            List<Value> answer = tx.execute(Graql.compute(STD).of("age").in("human"));
             assertEquals(0, answer.get(0).number().intValue());
 
 
-            assertEquals(10, tx.graql().compute(SUM).of("age").in("human").execute().get(0).number().intValue());
-            assertEquals(10, tx.graql().compute(MEDIAN).of("age").in("human").execute().get(0).number().intValue());
+            assertEquals(10, tx.execute(Graql.compute(SUM).of("age").in("human")).get(0).number().intValue());
+            assertEquals(10, tx.execute(Graql.compute(MEDIAN).of("age").in("human")).get(0).number().intValue());
 
             // degree
-            List<ConceptSetMeasure> centrality = tx.graql().compute(CENTRALITY).using(DEGREE)
-                    .of("animal").in("human", "animal", "pet-ownership").execute();
+            List<ConceptSetMeasure> centrality = tx.execute(Graql.compute(CENTRALITY).using(DEGREE)
+                    .of("animal").in("human", "animal", "pet-ownership"));
             assertEquals(1, centrality.size());
             assertEquals(idCoco, centrality.get(0).set().iterator().next());
             assertEquals(1, centrality.get(0).measurement().intValue());
 
             // coreness
-            assertTrue(tx.graql().compute(CENTRALITY).using(K_CORE).of("animal").execute().isEmpty());
+            assertTrue(tx.execute(Graql.compute(CENTRALITY).using(K_CORE).of("animal")).isEmpty());
 
             // path
-            List<ConceptList> paths = tx.graql().compute(PATH).to(idCoco).from(idMike).execute();
+            List<ConceptList> paths = tx.execute(Graql.compute(PATH).to(idCoco).from(idMike));
             assertEquals(1, paths.size());
             assertEquals(idCoco, paths.get(0).list().get(2));
             assertEquals(idMike, paths.get(0).list().get(0));
 
             // connected component
-            List<ConceptSet> clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
-                    .in("human", "animal", "pet-ownership").execute();
+            List<ConceptSet> clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .in("human", "animal", "pet-ownership"));
             assertEquals(1, clusterList.size());
             assertEquals(3, clusterList.get(0).set().size());
             assertEquals(Sets.newHashSet(idCoco, idMike, idCocoAndMike), clusterList.get(0).set());
 
             // k-core
-            assertTrue(tx.graql().compute(CLUSTER).using(K_CORE).in("human", "animal", "pet-ownership").execute().isEmpty());
+            assertTrue(tx.execute(Graql.compute(CLUSTER).using(K_CORE).in("human", "animal", "pet-ownership")).isEmpty());
         }
     }
 
@@ -789,44 +789,45 @@ public class GraknClientIT {
             person.create().has(name.create("Bob")).has(age.create(22));
 
             AggregateQuery<Value> nullQuery =
-                    tx.graql().match(var("x").isa("person").has("rating", var("y"))).aggregate(sum("y"));
-            assertTrue(nullQuery.execute().isEmpty());
+                    Graql.match(var("x").isa("person").has("rating", var("y"))).aggregate(sum("y"));
+            assertTrue(tx.execute(nullQuery).isEmpty());
 
             AggregateQuery<Value> countQuery =
-                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(count("y"));
-            assertEquals(2L, countQuery.execute().get(0).number().longValue());
+                    Graql.match(var("x").isa("person").has("age", var("y"))).aggregate(count("y"));
+            assertEquals(2L, tx.execute(countQuery).get(0).number().longValue());
 
             AggregateQuery<Value> sumAgeQuery =
-                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(sum("y"));
-            assertEquals(42, sumAgeQuery.execute().get(0).number().intValue());
+                    Graql.match(var("x").isa("person").has("age", var("y"))).aggregate(sum("y"));
+            assertEquals(42, tx.execute(sumAgeQuery).get(0).number().intValue());
 
             AggregateQuery<Value> minAgeQuery =
-                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(min("y"));
-            assertEquals(20, minAgeQuery.execute().get(0).number().intValue());
+                    Graql.match(var("x").isa("person").has("age", var("y"))).aggregate(min("y"));
+            assertEquals(20, tx.execute(minAgeQuery).get(0).number().intValue());
 
             AggregateQuery<Value> maxAgeQuery =
-                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(max("y"));
-            assertEquals(22, maxAgeQuery.execute().get(0).number().intValue());
+                    Graql.match(var("x").isa("person").has("age", var("y"))).aggregate(max("y"));
+            assertEquals(22, tx.execute(maxAgeQuery).get(0).number().intValue());
 
             AggregateQuery<Value> meanAgeQuery =
-                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(mean("y"));
-            assertEquals(21.0d, meanAgeQuery.execute().get(0).number().doubleValue(), 0.01d);
+                    Graql.match(var("x").isa("person").has("age", var("y"))).aggregate(mean("y"));
+            assertEquals(21.0d, tx.execute(meanAgeQuery).get(0).number().doubleValue(), 0.01d);
 
             AggregateQuery<Value> medianAgeQuery =
-                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(median("y"));
-            assertEquals(21.0d, medianAgeQuery.execute().get(0).number().doubleValue(), 0.01d);
+                    Graql.match(var("x").isa("person").has("age", var("y"))).aggregate(median("y"));
+            assertEquals(21.0d, tx.execute(medianAgeQuery).get(0).number().doubleValue(), 0.01d);
 
             AggregateQuery<Value> stdAgeQuery =
-                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(std("y"));
+                    Graql.match(var("x").isa("person").has("age", var("y"))).aggregate(std("y"));
             int n = 2;
             double mean = (20 + 22) / n;
             double var = (Math.pow(20 - mean, 2) + Math.pow(22 - mean, 2)) / (n - 1);
             double std = Math.sqrt(var);
-            assertEquals(std, stdAgeQuery.execute().get(0).number().doubleValue(), 0.0001d);
+            assertEquals(std, tx.execute(stdAgeQuery).get(0).number().doubleValue(), 0.0001d);
 
-            List<AnswerGroup<ConceptMap>> groups = tx.graql().match(var("x").isa("person").has("name", var("y")))
+            List<AnswerGroup<ConceptMap>> groups = tx.execute(
+                    Graql.match(var("x").isa("person").has("name", var("y")))
                     .aggregate(group("y"))
-                    .execute();
+            );
 
             assertEquals(2, groups.size());
             groups.forEach(group -> {
@@ -835,9 +836,10 @@ public class GraknClientIT {
                 });
             });
 
-            List<AnswerGroup<Value>> counts = tx.graql().match(var("x").isa("person").has("name", var("y")))
+            List<AnswerGroup<Value>> counts = tx.execute(
+                    Graql.match(var("x").isa("person").has("name", var("y")))
                     .aggregate(group("y", count()))
-                    .execute();
+            );
 
             assertEquals(2, counts.size());
             counts.forEach(group -> {
@@ -1001,11 +1003,11 @@ public class GraknClientIT {
     @Test
     public void testExecutingAnInvalidQuery_Throw() throws Throwable {
         try (Grakn.Transaction tx = remoteSession.transaction(Transaction.Type.READ)) {
-            GetQuery query = tx.graql().match(var("x").isa("not-a-thing")).get();
+            GetQuery query = Graql.match(var("x").isa("not-a-thing")).get();
 
             exception.expect(RuntimeException.class);
 
-            query.execute();
+            tx.execute(query);
         }
     }
 
@@ -1023,14 +1025,13 @@ public class GraknClientIT {
             person.create();
             person.create();
 
-            QueryBuilder qb = tx.graql();
             Variable x = var("x");
             Variable y = var("y");
 
-            Collection<ConceptMap> result = qb.match(x.isa("company-123"), y.isa("person-123")).get(x, y).execute();
+            Collection<ConceptMap> result = tx.execute(Graql.match(x.isa("company-123"), y.isa("person-123")).get(x, y));
             assertEquals(6, result.size());
 
-            result = qb.match(x.isa("company-123")).get(x).execute();
+            result = tx.execute(Graql.match(x.isa("company-123")).get(x));
             assertEquals(2, result.size());
         }
     }

@@ -21,6 +21,7 @@ package grakn.core.graql.query.pattern;
 import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.graph.MovieGraph;
+import grakn.core.graql.query.Graql;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -47,7 +48,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("CheckReturnValue")
+@SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class PatternIT {
 
     @Rule
@@ -192,27 +193,27 @@ public class PatternIT {
                 var("x").isa("movie"),
                 var("y1").isa("genre").has("name", "crime"),
                 var().isa("has-genre").rel(var("x")).rel(var("y1")));
-        Set<Concept> resultSet1 = tx.graql().match(varSet1).get("x")
-                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+        Set<Concept> resultSet1 = tx.stream(Graql.match(varSet1).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
         Set<Statement> varSet11 = Sets.newHashSet(var("x"));
         varSet11.addAll(varSet1);
-        Set<Concept> resultSet11 = tx.graql().match(varSet11).get("x")
-                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+        Set<Concept> resultSet11 = tx.stream(Graql.match(varSet11).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertEquals(resultSet11, resultSet1);
 
         varSet11.add(var("z"));
-        resultSet11 = tx.graql().match(varSet11).get("x")
-                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+        resultSet11 = tx.stream(Graql.match(varSet11).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertEquals(resultSet11, resultSet1);
 
         Set<Statement> varSet2 = Sets.newHashSet(
                 var("x").isa("movie"),
                 var("y2").isa("person").has("name", "Marlon Brando"),
                 var().isa("has-cast").rel(var("x")).rel(var("y2")));
-        Set<Concept> resultSet2 = tx.graql().match(varSet2).get("x")
-                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+        Set<Concept> resultSet2 = tx.stream(Graql.match(varSet2).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
         Set<Statement> varSet3 = Sets.newHashSet(
@@ -221,18 +222,19 @@ public class PatternIT {
                 var().isa("has-genre").rel(var("x")).rel(var("y")),
                 var("y2").isa("person").has("name", "Marlon Brando"),
                 var().isa("has-cast").rel(var("x")).rel(var("y2")));
-        Set<Concept> conj = tx.graql().match(varSet3).get("x")
-                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+        Set<Concept> conj = tx.stream(Graql.match(varSet3).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(conj.isEmpty());
 
         resultSet2.retainAll(resultSet1);
         assertEquals(resultSet2, conj);
 
-        conj = tx.graql().match(and(varSet3)).get("x").stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+        conj = tx.stream(Graql.match(and(varSet3)).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertEquals(resultSet2, conj);
 
-        conj = tx.graql().match(or(var("x"), var("x"))).get("x")
-                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+        conj = tx.stream(Graql.match(or(var("x"), var("x"))).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertTrue(conj.size() > 1);
     }
 
@@ -258,16 +260,16 @@ public class PatternIT {
                 var("x").isa("movie"),
                 var("y1").isa("genre").has("name", "crime"),
                 var().isa("has-genre").rel(var("x")).rel(var("y1")));
-        Set<Concept> resultSet1 = tx.graql().match(varSet1).get("x")
-                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+        Set<Concept> resultSet1 = tx.stream(Graql.match(varSet1).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
         Set<Statement> varSet2 = Sets.newHashSet(
                 var("x").isa("movie"),
                 var("y2").isa("person").has("name", "Marlon Brando"),
                 var().isa("has-cast").rel(var("x")).rel(var("y2")));
-        Set<Concept> resultSet2 = tx.graql().match(varSet2).get("x")
-                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+        Set<Concept> resultSet2 = tx.stream(Graql.match(varSet2).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
         Set<Pattern> varSet3 = Sets.newHashSet(
@@ -275,15 +277,15 @@ public class PatternIT {
                 or(var("y").isa("genre").has("name", "crime"),
                         var("y").isa("person").has("name", "Marlon Brando")),
                 var().rel(var("x")).rel(var("y")));
-        Set<Concept> conj = tx.graql().match(varSet3).get("x")
-                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+        Set<Concept> conj = tx.stream(Graql.match(varSet3).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(conj.isEmpty());
 
         resultSet2.addAll(resultSet1);
         assertEquals(resultSet2, conj);
 
-        conj = tx.graql().match(or(var("x"), var("x"))).get("x")
-                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+        conj = tx.stream(Graql.match(or(var("x"), var("x"))).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertTrue(conj.size() > 1);
     }
 
@@ -306,16 +308,16 @@ public class PatternIT {
     @Test
     public void testNegation() {
         assertExists(tx, var().isa("movie").has("title", "Godfather"));
-        Set<Concept> result1 = tx.graql().match(
+        Set<Concept> result1 = tx.stream(Graql.match(
                 var("x").isa("movie").has("title", var("y")),
-                var("y").val(neq("Godfather"))).get("x")
-                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+                var("y").val(neq("Godfather"))).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(result1.isEmpty());
 
-        Set<Concept> result2 = tx.graql().match(
+        Set<Concept> result2 = tx.stream(Graql.match(
                 var("x").isa("movie").has("title", var("y")),
-                var("y")).get("x")
-                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
+                var("y")).get("x"))
+                .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(result2.isEmpty());
 
         result2.removeAll(result1);

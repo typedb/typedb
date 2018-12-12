@@ -25,6 +25,7 @@ import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.concept.AttributeType;
@@ -161,7 +162,7 @@ public class GraknClientTest {
 
         try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             verify(server.requestListener()).onNext(any()); // The open request
-            answers = tx.graql().<GetQuery>parse(queryString).stream().limit(numAnswers).collect(toList());
+            answers = tx.stream(Graql.<GetQuery>parse(queryString)).limit(numAnswers).collect(toList());
         }
 
         assertEquals(10, answers.size());

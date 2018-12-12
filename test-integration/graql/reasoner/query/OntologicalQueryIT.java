@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -302,7 +303,7 @@ public class OntologicalQueryIT {
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing}
-        assertEquals(qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5, answers.size());
+        assertEquals(tx.stream(Graql.<GetQuery>parse("match $x isa reifiable-relation; get;")).count() * 5, answers.size());
     }
 
     @Test
@@ -312,7 +313,7 @@ public class OntologicalQueryIT {
 
         //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing} * arity
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5 * 2, answers.size());
+        assertEquals(tx.stream(Graql.<GetQuery>parse("match $x isa reifiable-relation; get;")).count() * 5 * 2, answers.size());
     }
 
     /**

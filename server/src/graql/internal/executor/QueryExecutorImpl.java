@@ -190,7 +190,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         Set<Variable> varsInInsert = statements.stream().map(statement -> statement.var()).collect(toImmutableSet());
         Set<Variable> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
 
-        Stream<ConceptMap> answers = match.get(projectedVars).stream();
+        Stream<ConceptMap> answers = tx.stream(match.get(projectedVars));
         return answers.map(answer -> QueryOperationExecutor.insertAll(statements, tx, answer)).collect(toList()).stream();
     }
 

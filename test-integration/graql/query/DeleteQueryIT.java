@@ -138,7 +138,7 @@ public class DeleteQueryIT {
 
     @Test
     public void testDeleteAllRolePlayers() {
-        ConceptId id = kurtzCastRelation.get("a").stream().map(ans -> ans.get("a")).findFirst().get().id();
+        ConceptId id = tx.stream(kurtzCastRelation.get("a")).map(ans -> ans.get("a")).findFirst().get().id();
         MatchClause relation = qb.match(var().id(id));
 
         assertExists(tx, kurtz);
@@ -170,10 +170,10 @@ public class DeleteQueryIT {
 
     @Test
     public void whenDeletingAResource_TheResourceAndImplicitRelationsAreDeleted() {
-        ConceptId id = qb.match(
+        ConceptId id = tx.stream(Graql.match(
                 x.has("title", "Godfather"),
                 var("a").rel(x).rel(y).isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())
-        ).get("a").stream().map(ans -> ans.get("a")).findFirst().get().id();
+        ).get("a")).map(ans -> ans.get("a")).findFirst().get().id();
 
         assertExists(tx, var().has("title", "Godfather"));
         assertExists(tx, var().id(id));
@@ -188,17 +188,17 @@ public class DeleteQueryIT {
 
     @Test
     public void afterDeletingAllInstances_TheTypeCanBeUndefined() {
-        MatchClause movie = qb.match(x.isa("movie"));
+        MatchClause movie = Graql.match(x.isa("movie"));
 
         assertNotNull(tx.getEntityType("movie"));
         assertExists(tx, movie);
 
-        movie.delete(x).execute();
+        tx.execute(movie.delete(x));
 
         assertNotNull(tx.getEntityType("movie"));
         assertNotExists(tx, movie);
 
-        qb.undefine(label("movie").sub("production")).execute();
+        tx.execute(Graql.undefine(label("movie").sub("production")));
 
         assertNull(tx.getEntityType("movie"));
     }

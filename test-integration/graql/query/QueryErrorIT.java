@@ -233,8 +233,8 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(var("y")));
 
-        MatchClause match = qb.match(var("x").isa("movie"));
-        Stream<Concept> concepts = match.get("y").stream().map(ans -> ans.get("y"));
+        MatchClause match = Graql.match(var("x").isa("movie"));
+        Stream<Concept> concepts = tx.stream(match.get("y")).map(ans -> ans.get("y"));
     }
 
     @Test

@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
@@ -290,7 +291,7 @@ public class QueryIT {
     }
 
     private static Concept getConcept(TransactionImpl<?> tx, String typeLabel, Object val){
-        return tx.graql().match((Pattern) Pattern.var("x").has(typeLabel, val)).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get();
+        return tx.stream(Graql.match((Pattern) Pattern.var("x").has(typeLabel, val)).get("x"))
+                .map(ans -> ans.get("x")).findAny().get();
     }
 }

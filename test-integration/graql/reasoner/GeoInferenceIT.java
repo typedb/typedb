@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner;
 
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
@@ -384,8 +385,8 @@ public class GeoInferenceIT {
     }
 
     private Concept getConcept(Transaction graph, String typeName, Object val){
-        return graph.graql().match((Pattern) var("x").has(typeName, val)).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().orElse(null);
+        return graph.stream(Graql.match((Pattern) var("x").has(typeName, val)).get("x"))
+                .map(ans -> ans.get("x")).findAny().orElse(null);
     }
 
     private static <T> void assertCollectionsEqual(Collection<T> c1, Collection<T> c2) {
