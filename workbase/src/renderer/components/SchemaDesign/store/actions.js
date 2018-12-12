@@ -10,7 +10,6 @@ import {
   DEFINE_ROLE,
   DEFINE_ATTRIBUTE_TYPE,
   DEFINE_RELATIONSHIP_TYPE,
-  DELETE_TYPE,
   DELETE_SCHEMA_CONCEPT,
   REFRESH_SELECTED_NODE,
   DELETE_PLAYS_ROLE,
@@ -189,24 +188,41 @@ export default {
   },
 
 
-  async [DELETE_TYPE]({ state, dispatch, commit }, payload) {
-    const graknTx = await dispatch(OPEN_GRAKN_TX);
-    const typeId = await state.schemaHandler.deleteType(payload);
-    dispatch(COMMIT_TX, graknTx).then(() => {
-      state.visFacade.deleteFromCanvas([typeId]);
-      commit('selectedNodes'.null);
-    })
-      .catch((e) => { throw e; });
-  },
-
-  // Difference with action above: this deletes a schema concept that is not shown in canvas
   async [DELETE_SCHEMA_CONCEPT]({ state, dispatch, commit }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
-    await state.schemaHandler.defineRelationshipType(payload);
+
+    const type = await graknTx.getSchemaConcept(payload.label);
+
+
+    const instances = await (await type.instances()).collect();
+    debugger;
+    Promise.all(instances.map(async (thing) => {
+      await thing.delete();
+    }));
+
+
+    if (payload.baseType === 'RELATIONSHIP_TYPE') {
+      let roles = await (await type.roles()).collect();
+      await Promise.all(roles.map(async (role) => {
+        await state.schemaHandler.deleteRelatesRole({ label: payload.label, roleLabel: await role.label() });
+      }));
+
+      roles = await (await type.roles()).collect();
+      debugger;
+    }
+
+    const typeId = await state.schemaHandler.deleteType(payload);
+
+    debugger;
+
     dispatch(COMMIT_TX, graknTx).then(() => {
-      commit('selectedNodes'.null);
+      state.visFacade.deleteFromCanvas([typeId]);
+      commit('selectedNodes', null);
     })
-      .catch((e) => { throw e; });
+      .catch((e) => {
+        debugger;
+        throw e;
+      });
   },
 
   async [REFRESH_SELECTED_NODE]({ state, commit }) {

@@ -76,6 +76,7 @@ SchemaHandler.prototype.deletePlaysRole = async function deletePlaysRole({ label
 };
 
 SchemaHandler.prototype.addRelatesRole = async function addRelatesRole({ label, roleLabel }) {
+  debugger;
   const relationshipType = await tx.getSchemaConcept(label);
   const role = await tx.getSchemaConcept(roleLabel);
   return relationshipType.relates(role);

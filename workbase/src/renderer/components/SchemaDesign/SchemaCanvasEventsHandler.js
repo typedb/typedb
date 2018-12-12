@@ -11,6 +11,34 @@ export default {
     });
 
     commit('registerCanvasEvent', {
+      event: 'oncontext',
+      callback: (params) => {
+        const nodeId = state.visFacade.getNetwork().getNodeAt(params.pointer.DOM);
+        if (nodeId) {
+          if (!(params.nodes.length > 1)) {
+            state.visFacade.getNetwork().unselectAll();
+            commit('selectedNodes', [nodeId]);
+            state.visFacade.getNetwork().selectNodes([nodeId]);
+          }
+        } else if (!(params.nodes.length > 1)) {
+          commit('selectedNodes', null);
+          state.visFacade.getNetwork().unselectAll();
+        }
+      },
+    });
+
+    commit('registerCanvasEvent', {
+      event: 'oncontext',
+      callback: (params) => {
+        // Show context menu when keyspace is selected and canvas has data
+        if (state.currentKeyspace) {
+          commit('setContextMenu', { show: true, x: params.pointer.DOM.x, y: params.pointer.DOM.y });
+        }
+      },
+    });
+
+
+    commit('registerCanvasEvent', {
       event: 'dragStart',
       callback: (params) => {
         if (!params.nodes.length > 1) {

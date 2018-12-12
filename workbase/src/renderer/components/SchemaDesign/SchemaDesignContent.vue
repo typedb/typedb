@@ -5,6 +5,7 @@
       <div class="row">
         <left-bar></left-bar>
         <div class="column">
+          <context-menu></context-menu>
           <graph-canvas></graph-canvas>
         </div>
         <right-bar></right-bar>
@@ -52,6 +53,7 @@ import TopBar from './TopBar';
 import GraphCanvas from '../shared/GraphCanvas.vue';
 import RightBar from './RightBar';
 import LeftBar from './LeftBar';
+import ContextMenu from './ContextMenu';
 
 import actions from './store/actions';
 import mutations from './store/mutations';
@@ -61,7 +63,7 @@ import state from './store/state';
 export default {
   name: 'SchemaDesignContent',
   components: {
-    GraphCanvas, TopBar, RightBar, LeftBar,
+    GraphCanvas, TopBar, RightBar, LeftBar, ContextMenu,
   },
   beforeCreate() {
     this.$store.registerModule('schema-design', { namespaced: true, getters, state, mutations, actions });
