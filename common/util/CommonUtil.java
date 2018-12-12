@@ -18,16 +18,12 @@
 
 package grakn.core.common.util;
 
-import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.common.config.SystemProperty;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
@@ -50,17 +46,6 @@ import java.util.stream.StreamSupport;
 public class CommonUtil {
 
     private CommonUtil() {}
-
-    /**
-     * @return The project path. If it is not specified as a JVM parameter it will be set equal to
-     * user.dir folder.
-     */
-    public static Path getProjectPath() {
-        if (SystemProperty.CURRENT_DIRECTORY.value() == null) {
-            SystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
-        }
-        return Paths.get(SystemProperty.CURRENT_DIRECTORY.value());
-    }
 
     /**
      * @param optional the optional to change into a stream

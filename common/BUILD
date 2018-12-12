@@ -17,22 +17,16 @@
 #
 
 package(default_visibility = ["//visibility:public"])
-load("@graknlabs_rules_deployment//maven:rules.bzl", "deploy_maven_jar")
+load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
     name = "common",
-    srcs = [":grakn-version"] + glob(
-        ["**/*.java"],
-        exclude = [
-            "**/test/*.java",
-            "templates/**",
-        ]
-    ),
-    deps = [
-        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
-        "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+    srcs = ["//common/templates/util:grakn-version"],
+    exports = [
+        "//common/exception",
+        "//common/config",
+        "//common/http",
+        "//common/util",
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
@@ -41,28 +35,17 @@ java_library(
     tags = ["maven_coordinates=grakn.core:common:{pom_version}"],
 )
 
-genrule(
-    name = "grakn-version",
-    srcs = [
-        "templates/util/GraknVersion.java",
-        "//:VERSION",
-    ],
-    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/util/GraknVersion.java) >> $@",
-    outs = ["util/GraknVersion.java"]
-)
 
 deploy_maven_jar(
     name = "deploy-maven-jar",
-    targets = [":common"],
+    target = ":common",
+    package = "common",
+    deps = [
+        "//common/exception",
+        "//common/config",
+        "//common/http",
+        "//common/util"
+    ],
     version_file = "//:VERSION",
     deployment_properties = "//:deployment.properties",
-)
-
-java_test(
-    name = "grakn-config-test",
-    test_class = "grakn.core.common.config.test.ConfigTest",
-    srcs = ["config/test/ConfigTest.java"],
-    deps = [":common"],
-    resources = ["//server:conf/grakn.properties"],
-    size = "small"
 )

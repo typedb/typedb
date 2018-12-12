@@ -15,3 +15,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+
+genrule(
+    name = "deployment_rules",
+    srcs = ["@graknlabs_rules_deployment//maven/templates:rules.bzl", "//:deployment.properties"],
+    cmd = "MAVEN_PACKAGES=`grep 'maven.packages' $(location //:deployment.properties) | cut -d '=' -f 2`; sed -e s/{maven_packages}/$$MAVEN_PACKAGES/g $(location @graknlabs_rules_deployment//maven/templates:rules.bzl) >> $@",
+    outs = ["rules.bzl"]
+)
