@@ -45,6 +45,7 @@
           loading: this.loading,
           rightIcon: this.rightIcon,
           className: this.className,
+          disabled: this.disabled,
           onClick: (e) => { this.$emit('clicked', e); },
         }), this.$refs.vueButton);
       },

@@ -9,7 +9,8 @@
         </div>
 
         <div class="right">
-            <keyspaces-handler></keyspaces-handler>
+            <keyspaces-handler :showKeyspaceTooltip="showKeyspaceToolTip" v-on:keyspace-selected="$emit('keyspace-selected')"></keyspaces-handler>
+            <button class="btn" @click="$emit('toggle-preferences')"><vue-icon icon="cog" className="vue-icon"></vue-icon></button>
         </div>
     </div>
 </template>
@@ -77,10 +78,6 @@
 
     export default {
       components: { KeyspacesHandler },
-      data() {
-        return {
-          showKeyspaceToolTip: false,
-        };
-      },
+      props: ['showKeyspaceToolTip'],
     };
 </script>

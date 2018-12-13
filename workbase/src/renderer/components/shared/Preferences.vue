@@ -185,6 +185,9 @@ export default {
       this.serverPort = Settings.getServerPort();
     });
   },
+  created() {
+    this.connectionTest = (this.isGraknRunning) ? 'Valid' : 'Invalid';
+  },
   computed: {
     ...mapGetters(['isGraknRunning', 'allKeyspaces']),
   },
