@@ -21,7 +21,7 @@ load("@graknlabs_rules_deployment//brew:rules.bzl", deploy_brew = "deploy_brew")
 
 sh_binary(
     name = "deploy-github-zip",
-    srcs = ["@graknlabs_rules_deployment//github:deployment.sh"],
+    srcs = ["@graknlabs_rules_deployment//github:deployment.py"],
     data = [":distribution", ":VERSION", ":deployment.properties", "@ghr_osx_zip//file:file", "@ghr_linux_tar//file:file"]
 )
 
