@@ -22,17 +22,17 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import grakn.core.client.Grakn;
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import org.junit.Before;
@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.junit.Assert.assertEquals;
 
-@SuppressWarnings("CheckReturnValue")
+@SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class BenchmarkBigIT {
 
     @ClassRule
@@ -69,7 +69,7 @@ public class BenchmarkBigIT {
             InputStream inputStream = new FileInputStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE);
-            tx.graql().parse(s).execute();
+            tx.execute(Graql.parse(s));
             tx.commit();
         } catch (Exception e){
             System.err.println(e);
@@ -91,7 +91,7 @@ public class BenchmarkBigIT {
                                                  String relationLabel, int N, Grakn.Session session){
         try(Grakn.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
             Variable entityVar = var().asUserDefined();
-            ConceptId[] instances = transaction.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
+            ConceptId[] instances = transaction.stream(Graql.match(entityVar.isa(entityLabel)).get())
                     .map(ans -> ans.get(entityVar).id())
                     .toArray(ConceptId[]::new);
 
@@ -197,7 +197,7 @@ public class BenchmarkBigIT {
                                                     .isa(genericRelationLabel + i)
                                     )
                             );
-                    transaction.graql().define(rulePattern).execute();
+                    transaction.execute(Graql.define(rulePattern));
                 }
                 transaction.commit();
             }
@@ -207,7 +207,7 @@ public class BenchmarkBigIT {
 
             try (Grakn.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
                 Variable entityVar = var().asUserDefined();
-                ConceptId[] instances = transaction.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
+                ConceptId[] instances = transaction.stream(Graql.match(entityVar.isa(entityLabel)).get())
                         .map(ans -> ans.get(entityVar).id())
                         .toArray(ConceptId[]::new);
 
@@ -348,8 +348,8 @@ public class BenchmarkBigIT {
 
         try (Grakn.Session session = new Grakn(server.grpcUri().toString()).session(keyspace)) {
             try(Grakn.Transaction tx = session.transaction(Transaction.Type.READ)) {
-                ConceptId firstId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index 'first';get;").execute()).get("x").id();
-                ConceptId lastId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index '" + N + "';get;").execute()).get("x").id();
+                ConceptId firstId = Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse("match $x has index 'first';get;"))).get("x").id();
+                ConceptId lastId = Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse("match $x has index '" + N + "';get;"))).get("x").id();
                 String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
                 String queryString = "match " + queryPattern + " get;";
                 String subbedQueryString = "match " +
@@ -373,12 +373,8 @@ public class BenchmarkBigIT {
     }
 
     private List<ConceptMap> executeQuery(String queryString, Grakn.Transaction transaction, String msg){
-        return executeQuery(transaction.graql().parse(queryString), msg);
-    }
-
-    private List<ConceptMap> executeQuery(GetQuery query, String msg) {
         final long startTime = System.currentTimeMillis();
-        List<ConceptMap> results = query.execute();
+        List<ConceptMap> results = transaction.execute(Graql.<GetQuery>parse(queryString));
         final long answerTime = System.currentTimeMillis() - startTime;
         System.out.println(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

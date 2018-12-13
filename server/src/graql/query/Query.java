@@ -18,16 +18,14 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.Transaction;
-import grakn.core.server.QueryExecutor;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.answer.Answer;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.server.QueryExecutor;
+import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -42,13 +40,6 @@ public interface Query<T extends Answer> extends Iterable<T> {
      */
     @CheckReturnValue
     Stream<T> stream();
-
-    /**
-     * @return a {@link List} of T, where T is a special type of {@link Answer}
-     */
-    default List<T> execute() {
-        return stream().collect(Collectors.toList());
-    }
 
     /**
      * @return an {@link Iterator} of T, where T is a special type of {@link Answer}

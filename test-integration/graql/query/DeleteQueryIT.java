@@ -97,12 +97,12 @@ public class DeleteQueryIT {
 
     @Test
     public void testDeleteMultiple() {
-        qb.define(label("fake-type").sub(ENTITY)).execute();
-        qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
+        tx.execute(Graql.define(label("fake-type").sub(ENTITY)));
+        tx.execute(Graql.insert(x.isa("fake-type"), y.isa("fake-type")));
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
-        qb.match(x.isa("fake-type")).delete(x).execute();
+        tx.execute(Graql.match(x.isa("fake-type")).delete(x));
 
         assertNotExists(tx, var().isa("fake-type"));
     }
@@ -114,7 +114,7 @@ public class DeleteQueryIT {
         assertExists(tx, x.has("title", "Godfather"), var().rel(x).rel(y).isa("has-cast"));
         assertExists(tx, var().has("name", "Don Vito Corleone"));
 
-        qb.match(x.has("title", "Godfather")).delete(x).execute();
+        tx.execute(Graql.match(x.has("title", "Godfather")).delete(x));
 
         assertNotExists(tx, var().has("title", "Godfather"));
         assertNotExists(tx, x.has("title", "Godfather"), var().rel(x).rel(y).isa("has-cast"));
@@ -128,7 +128,7 @@ public class DeleteQueryIT {
         assertExists(tx, apocalypseNow);
         assertExists(tx, kurtzCastRelation);
 
-        kurtzCastRelation.delete("a").execute();
+        tx.execute(kurtzCastRelation.delete("a"));
 
         assertExists(tx, kurtz);
         assertExists(tx, marlonBrando);
@@ -146,21 +146,21 @@ public class DeleteQueryIT {
         assertExists(tx, apocalypseNow);
         assertExists(tx, relation);
 
-        kurtz.delete(x).execute();
+        tx.execute(kurtz.delete(x));
 
         assertNotExists(tx, kurtz);
         assertExists(tx, marlonBrando);
         assertExists(tx, apocalypseNow);
         assertExists(tx, relation);
 
-        marlonBrando.delete(x).execute();
+        tx.execute(marlonBrando.delete(x));
 
         assertNotExists(tx, kurtz);
         assertNotExists(tx, marlonBrando);
         assertExists(tx, apocalypseNow);
         assertExists(tx, relation);
 
-        apocalypseNow.delete(x).execute();
+        tx.execute(apocalypseNow.delete(x));
 
         assertNotExists(tx, kurtz);
         assertNotExists(tx, marlonBrando);
@@ -179,7 +179,7 @@ public class DeleteQueryIT {
         assertExists(tx, var().id(id));
         assertExists(tx, var().val(1000L).isa("tmdb-vote-count"));
 
-        qb.match(x.val(1000L).isa("tmdb-vote-count")).delete(x).execute();
+        tx.execute(Graql.match(x.val(1000L).isa("tmdb-vote-count")).delete(x));
 
         assertExists(tx, var().has("title", "Godfather"));
         assertNotExists(tx, var().id(id));
@@ -205,24 +205,24 @@ public class DeleteQueryIT {
 
     @Test
     public void whenDeletingMultipleVariables_AllVariablesGetDeleted() {
-        qb.define(label("fake-type").sub(ENTITY)).execute();
-        qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
+        tx.execute(Graql.define(label("fake-type").sub(ENTITY)));
+        tx.execute(Graql.insert(x.isa("fake-type"), y.isa("fake-type")));
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
-        qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete(x, y).execute();
+        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete(x, y));
 
         assertNotExists(tx, var().isa("fake-type"));
     }
 
     @Test
     public void whenDeletingWithNoArguments_AllVariablesGetDeleted() {
-        qb.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
-        qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
+        tx.execute(Graql.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())));
+        tx.execute(Graql.insert(x.isa("fake-type"), y.isa("fake-type")));
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
-        qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete().execute();
+        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete());
 
         assertNotExists(tx, var().isa("fake-type"));
     }
@@ -231,26 +231,26 @@ public class DeleteQueryIT {
     public void whenDeletingAVariableNotInTheQuery_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y));
-        tx.graql().match(x.isa("movie")).delete(y).execute();
+        tx.execute(Graql.match(x.isa("movie")).delete(y));
     }
 
     @Test
     public void whenDeletingASchemaConcept_Throw() {
-        SchemaConcept newType = qb.define(x.label("new-type").sub(ENTITY)).execute().get(0).get(x).asSchemaConcept();
+        SchemaConcept newType = tx.execute(Graql.define(x.label("new-type").sub(ENTITY))).get(0).get(x).asSchemaConcept();
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.deleteSchemaConcept(newType).getMessage());
-        qb.match(x.label("new-type")).delete(x).execute();
+        tx.execute(Graql.match(x.label("new-type")).delete(x));
     }
 
     @Test(expected = Exception.class)
     public void deleteVarNameNullSet() {
-        tx.graql().match(var()).delete(null).execute();
+        tx.execute(Graql.match(var()).delete(null));
     }
 
     @Test(expected = Exception.class)
     public void whenDeleteIsPassedNull_Throw() {
-        tx.graql().match(var()).delete((String) null).execute();
+        tx.execute(Graql.match(var()).delete((String) null));
     }
 
 }

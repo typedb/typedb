@@ -1,14 +1,16 @@
 package grakn.core.graql.reasoner.reasoning;
 
-import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.List;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -31,8 +33,8 @@ public class NeqPredicateIT {
                 QueryBuilder qb = tx.graql();
                 String queryString = "match (related-state: $s) isa holds; get;";
 
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-                List<ConceptMap> exact = qb.<GetQuery>parse("match $s isa state, has name 's2'; get;").execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> exact = tx.execute(Graql.<GetQuery>parse("match $s isa state, has name 's2'; get;"));
                 assertCollectionsEqual(exact, answers);
             }
         }
@@ -49,7 +51,7 @@ public class NeqPredicateIT {
                         "$x != $y;";
                 String queryString = baseQueryString + "$y has name 'c'; get;";
 
-                List<ConceptMap> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
+                List<ConceptMap> baseAnswers = tx.execute(Graql.<GetQuery>parse(baseQueryString + "get;"));
                 assertEquals(6, baseAnswers.size());
                 baseAnswers.forEach(ans -> {
                     assertEquals(2, ans.size());
@@ -61,8 +63,8 @@ public class NeqPredicateIT {
                         "$y has name 'c';" +
                         "{$x has name 'a';} or {$x has name 'b';}; get;";
 
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(explicitString).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(explicitString));
                 assertCollectionsEqual(answers, answers2);
             }
         }
@@ -89,7 +91,7 @@ public class NeqPredicateIT {
                         "(role1: $x, role2: $z) isa binary-base;" +
                         "$y != $z;";
 
-                List<ConceptMap> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
+                List<ConceptMap> baseAnswers = tx.execute(Graql.<GetQuery>parse(baseQueryString + "get;"));
                 assertEquals(18, baseAnswers.size());
                 baseAnswers.forEach(ans -> {
                     assertEquals(3, ans.size());
@@ -135,7 +137,7 @@ public class NeqPredicateIT {
                         "(role1: $y, role2: $z) isa binary-base;" +
                         "$x != $z;";
 
-                List<ConceptMap> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
+                List<ConceptMap> baseAnswers = tx.execute(Graql.<GetQuery>parse(baseQueryString + "get;"));
                 assertEquals(18, baseAnswers.size());
                 baseAnswers.forEach(ans -> {
                     assertEquals(3, ans.size());
@@ -189,7 +191,7 @@ public class NeqPredicateIT {
                         "$y1 != $z1;" +
                         "$y2 != $z2;";
 
-                List<ConceptMap> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
+                List<ConceptMap> baseAnswers = tx.execute(Graql.<GetQuery>parse(baseQueryString + "get;"));
                 assertEquals(108, baseAnswers.size());
                 baseAnswers.forEach(ans -> {
                     assertEquals(5, ans.size());
@@ -199,7 +201,7 @@ public class NeqPredicateIT {
 
                 String queryString = baseQueryString + "$x has name 'a';";
 
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString + "get;").execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString + "get;"));
                 assertEquals(36, answers.size());
                 answers.forEach(ans -> {
                     assertEquals(5, ans.size());
@@ -233,7 +235,7 @@ public class NeqPredicateIT {
                         "(role1: $x, role2: $z1) isa binary-base;" +
                         "(role1: $y, role2: $z2) isa binary-base;";
 
-                List<ConceptMap> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
+                List<ConceptMap> baseAnswers = tx.execute(Graql.<GetQuery>parse(baseQueryString + "get;"));
                 assertEquals(36, baseAnswers.size());
                 baseAnswers.forEach(ans -> {
                     assertEquals(4, ans.size());
@@ -243,7 +245,7 @@ public class NeqPredicateIT {
 
                 String queryString = baseQueryString + "$x has name 'a';";
 
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString + "get;").execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString + "get;"));
                 assertEquals(12, answers.size());
                 answers.forEach(ans -> {
                     assertEquals(4, ans.size());

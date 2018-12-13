@@ -144,7 +144,7 @@ public class ServerRPCTest {
         when(qb.parse(QUERY)).thenReturn(query);
         when(query.executor()).thenReturn(executor);
 
-        when(query.execute()).thenAnswer(params -> Stream.of(new ConceptMap()));
+        when(tx.execute(query)).thenAnswer(params -> Stream.of(new ConceptMap()));
 
         Set<Keyspace> keyspaceSet = new HashSet<>(Arrays.asList(Keyspace.of("testkeyspace1"), Keyspace.of("testkeyspace2")));
         when(mockedKeyspaceStore.keyspaces()).thenReturn(keyspaceSet);
@@ -379,7 +379,7 @@ public class ServerRPCTest {
         ComputeQuery countQuery = mock(ComputeQuery.class);
         when(tx.graql().parse(COUNT_QUERY)).thenReturn(countQuery);
 
-        when(countQuery.execute()).thenReturn(Collections.singletonList(new Value(100)));
+        when(tx.execute(countQuery)).thenReturn(Collections.singletonList(new Value(100)));
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
@@ -404,7 +404,7 @@ public class ServerRPCTest {
         DeleteQuery deleteQuery = mock(DeleteQuery.class);
         when(tx.graql().parse(DELETE_QUERY)).thenReturn(deleteQuery);
 
-        when(deleteQuery.execute()).thenReturn(Collections.emptyList());
+        when(tx.execute(deleteQuery)).thenReturn(Collections.emptyList());
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));

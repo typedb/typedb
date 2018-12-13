@@ -79,29 +79,29 @@ public class QueryBuilderIT {
     public void whenBuildingInsertQueryWithGraphLast_ItExecutes() {
         assertNotExists(tx, var().has("title", "a-movie"));
         InsertQuery query = tx.graql().insert(var().has("title", "a-movie").isa("movie"));
-        query.execute();
+        tx.execute(query);
         assertExists(tx, var().has("title", "a-movie"));
     }
 
     @Test
     public void whenBuildingDeleteQueryWithGraphLast_ItExecutes() {
         // Insert some data to delete
-        tx.graql().insert(var().has("title", "123").isa("movie")).execute();
+        tx.execute(Graql.insert(var().has("title", "123").isa("movie")));
 
         assertExists(tx, var().has("title", "123"));
 
         DeleteQuery query = tx.graql().match(x.has("title", "123")).delete(x);
-        query.execute();
+        tx.execute(query);
 
         assertNotExists(tx, var().has("title", "123"));
     }
 
     @Test
     public void whenBuildingUndefineQueryWithGraphLast_ItExecutes() {
-        tx.graql().define(label("yes").sub("entity")).execute();
+        tx.execute(Graql.define(label("yes").sub("entity")));
 
         UndefineQuery query = tx.graql().undefine(label("yes").sub("entity"));
-        query.execute();
+        tx.execute(query);
         assertNotExists(tx, label("yes").sub("entity"));
     }
 
@@ -111,7 +111,7 @@ public class QueryBuilderIT {
         InsertQuery query =
                 tx.graql().match(x.label("movie"))
                         .insert(var().has("title", "a-movie").isa("movie"));
-        query.execute();
+        tx.execute(query);
         assertExists(tx, var().has("title", "a-movie"));
     }
 
@@ -120,14 +120,7 @@ public class QueryBuilderIT {
         InsertQuery query = insert(var().id(ConceptId.of("another-movie")).isa("movie"));
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
-        query.execute();
-    }
-
-    @Test
-    public void whenExecutingADeleteQueryWithoutAGraph_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage("graph");
-        match(x.isa("movie")).delete(x).execute();
+        tx.execute(query);
     }
 
     @Test

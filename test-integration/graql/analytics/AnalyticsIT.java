@@ -18,8 +18,6 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
@@ -27,9 +25,12 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.Graql;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.exception.InvalidKBException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -102,7 +103,7 @@ public class AnalyticsIT {
 
         // the null role-player caused analytics to fail at some stage
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.graql().compute(CENTRALITY).using(DEGREE).execute();
+            tx.execute(Graql.compute(CENTRALITY).using(DEGREE));
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();
@@ -114,7 +115,7 @@ public class AnalyticsIT {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("rule")).getMessage());
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.graql().compute(COUNT).in("rule", "thing").execute();
+            tx.execute(Graql.compute(COUNT).in("rule", "thing"));
         }
     }
 
@@ -123,7 +124,7 @@ public class AnalyticsIT {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("role")).getMessage());
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.graql().compute(COUNT).in("role").execute();
+            tx.execute(Graql.compute(COUNT).in("role"));
         }
     }
 
@@ -141,7 +142,7 @@ public class AnalyticsIT {
 
         List<?> result = queryList.parallelStream().map(query -> {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                return tx.graql().parse(query).execute().toString();
+                return tx.execute(Graql.parse(query)).toString();
             }
         }).collect(Collectors.toList());
         assertEquals(queryList.size(), result.size());

@@ -111,161 +111,161 @@ public class UndefineQueryIT {
 
     @Test
     public void whenUndefiningDataType_DoNothing() {
-        qb.undefine(label("name").datatype(STRING)).execute();
+        tx.execute(Graql.undefine(label("name").datatype(STRING)));
 
         assertEquals(STRING, tx.getAttributeType("name").dataType());
     }
 
     @Test
     public void whenUndefiningHas_TheHasLinkIsDeleted() {
-        qb.define(label(NEW_TYPE).sub(ENTITY).has("name")).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ENTITY).has("name")));
 
         assertThat(tx.getType(NEW_TYPE).attributes().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
-        qb.undefine(label(NEW_TYPE).has("name")).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).has("name")));
 
         assertThat(tx.getType(NEW_TYPE).attributes().toArray(), not(hasItemInArray(tx.getAttributeType("name"))));
     }
 
     @Test
     public void whenUndefiningHasWhichDoesntExist_DoNothing() {
-        qb.define(label(NEW_TYPE).sub(ENTITY).has("name")).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ENTITY).has("name")));
 
         assertThat(tx.getType(NEW_TYPE).attributes().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
-        qb.undefine(label(NEW_TYPE).has("title")).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).has("title")));
 
         assertThat(tx.getType(NEW_TYPE).attributes().toArray(), hasItemInArray(tx.getAttributeType("name")));
     }
 
     @Test
     public void whenUndefiningKey_TheKeyLinkIsDeleted() {
-        qb.define(label(NEW_TYPE).sub(ENTITY).key("name")).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ENTITY).key("name")));
 
         assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
-        qb.undefine(label(NEW_TYPE).key("name")).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).key("name")));
 
         assertThat(tx.getType(NEW_TYPE).keys().toArray(), not(hasItemInArray(tx.getAttributeType("name"))));
     }
 
     @Test
     public void whenUndefiningKeyWhichDoesntExist_DoNothing() {
-        qb.define(label(NEW_TYPE).sub(ENTITY).key("name")).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ENTITY).key("name")));
 
         assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
-        qb.undefine(label(NEW_TYPE).key("title")).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).key("title")));
 
         assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
     }
 
     @Test
     public void whenUndefiningById_TheSchemaConceptIsDeleted() {
-        Type newType = qb.define(x.label(NEW_TYPE).sub(ENTITY)).execute().get(0).get(x).asType();
+        Type newType = tx.execute(Graql.define(x.label(NEW_TYPE).sub(ENTITY))).get(0).get(x).asType();
 
         assertNotNull(tx.getType(NEW_TYPE));
 
-        qb.undefine(var().id(newType.id()).sub(ENTITY)).execute();
+        tx.execute(Graql.undefine(var().id(newType.id()).sub(ENTITY)));
 
         assertNull(tx.getType(NEW_TYPE));
     }
 
     @Test
     public void whenUndefiningIsAbstract_TheTypeIsNoLongerAbstract() {
-        qb.define(label(NEW_TYPE).sub(ENTITY).isAbstract()).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ENTITY).isAbstract()));
 
         assertTrue(tx.getType(NEW_TYPE).isAbstract());
 
-        qb.undefine(label(NEW_TYPE).isAbstract()).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).isAbstract()));
 
         assertFalse(tx.getType(NEW_TYPE).isAbstract());
     }
 
     @Test
     public void whenUndefiningIsAbstractOnNonAbstractType_DoNothing() {
-        qb.define(label(NEW_TYPE).sub(ENTITY)).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ENTITY)));
 
         assertFalse(tx.getType(NEW_TYPE).isAbstract());
 
-        qb.undefine(label(NEW_TYPE).isAbstract()).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).isAbstract()));
 
         assertFalse(tx.getType(NEW_TYPE).isAbstract());
     }
 
     @Test
     public void whenUndefiningPlays_TheTypeNoLongerPlaysTheRole() {
-        qb.define(label(NEW_TYPE).sub(ENTITY).plays("actor")).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ENTITY).plays("actor")));
 
         assertThat(tx.getType(NEW_TYPE).playing().toArray(), hasItemInArray(tx.getRole("actor")));
 
-        qb.undefine(label(NEW_TYPE).plays("actor")).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).plays("actor")));
 
         assertThat(tx.getType(NEW_TYPE).playing().toArray(), not(hasItemInArray(tx.getRole("actor"))));
     }
 
     @Test
     public void whenUndefiningPlaysWhichDoesntExist_DoNothing() {
-        qb.define(label(NEW_TYPE).sub(ENTITY).plays("production-with-cast")).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ENTITY).plays("production-with-cast")));
 
         assertThat(tx.getType(NEW_TYPE).playing().toArray(), hasItemInArray(tx.getRole("production-with-cast")));
 
-        qb.undefine(label(NEW_TYPE).plays("actor")).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).plays("actor")));
 
         assertThat(tx.getType(NEW_TYPE).playing().toArray(), hasItemInArray(tx.getRole("production-with-cast")));
     }
 
     @Test
     public void whenUndefiningRegexProperty_TheAttributeTypeHasNoRegex() {
-        qb.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(STRING).regex("abc")).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(STRING).regex("abc")));
 
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
 
-        qb.undefine(label(NEW_TYPE).regex("abc")).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).regex("abc")));
 
         assertNull(tx.<AttributeType>getType(NEW_TYPE).regex());
     }
 
     @Test
     public void whenUndefiningRegexPropertyWithWrongRegex_DoNothing() {
-        qb.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(STRING).regex("abc")).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(STRING).regex("abc")));
 
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
 
-        qb.undefine(label(NEW_TYPE).regex("xyz")).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).regex("xyz")));
 
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
     }
 
     @Test
     public void whenUndefiningRelatesProperty_TheRelationshipTypeNoLongerRelatesTheRole() {
-        qb.define(label(NEW_TYPE).sub(RELATIONSHIP).relates("actor")).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(RELATIONSHIP).relates("actor")));
 
         assertThat(tx.<RelationshipType>getType(NEW_TYPE).roles().toArray(), hasItemInArray(tx.getRole("actor")));
 
-        qb.undefine(label(NEW_TYPE).relates("actor")).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).relates("actor")));
 
         assertThat(tx.<RelationshipType>getType(NEW_TYPE).roles().toArray(), not(hasItemInArray(tx.getRole("actor"))));
     }
 
     @Test
     public void whenUndefiningSub_TheSchemaConceptIsDeleted() {
-        qb.define(label(NEW_TYPE).sub(ENTITY)).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ENTITY)));
 
         assertNotNull(tx.getType(NEW_TYPE));
 
-        qb.undefine(label(NEW_TYPE).sub(ENTITY)).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).sub(ENTITY)));
 
         assertNull(tx.getType(NEW_TYPE));
     }
 
     @Test
     public void whenUndefiningSubWhichDoesntExist_DoNothing() {
-        qb.define(label(NEW_TYPE).sub(ENTITY)).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ENTITY)));
 
         assertNotNull(tx.getType(NEW_TYPE));
 
-        qb.undefine(label(NEW_TYPE).sub(THING)).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).sub(THING)));
 
         assertNotNull(tx.getType(NEW_TYPE));
     }
@@ -280,7 +280,7 @@ public class UndefineQueryIT {
                 label("descendant").sub(ROLE)
         );
 
-        qb.define(schema).execute();
+        tx.execute(Graql.define(schema));
 
         EntityType pokemon = tx.getEntityType("pokemon");
         RelationshipType evolution = tx.getRelationshipType("evolution");
@@ -292,7 +292,7 @@ public class UndefineQueryIT {
         assertThat(evolution.roles().toArray(), arrayContainingInAnyOrder(ancestor, descendant));
         assertThat(pokemon.playing().filter(r -> !r.isImplicit()).toArray(), arrayContainingInAnyOrder(ancestor, descendant));
 
-        qb.undefine(schema).execute();
+        tx.execute(Graql.undefine(schema));
 
         assertNull(tx.getEntityType("pokemon"));
         assertNull(tx.getEntityType("evolution"));
@@ -308,7 +308,7 @@ public class UndefineQueryIT {
 
         exception.expect(TransactionException.class);
         exception.expectMessage(allOf(containsString("movie"), containsString("delet")));
-        qb.undefine(label("movie").sub("production")).execute();
+        tx.execute(Graql.undefine(label("movie").sub("production")));
     }
 
     @Test
@@ -317,7 +317,7 @@ public class UndefineQueryIT {
 
         exception.expect(TransactionException.class);
         exception.expectMessage(allOf(containsString("production"), containsString("delet")));
-        qb.undefine(label("production").sub(ENTITY)).execute();
+        tx.execute(Graql.undefine(label("production").sub(ENTITY)));
     }
 
     @Test
@@ -326,26 +326,26 @@ public class UndefineQueryIT {
 
         exception.expect(TransactionException.class);
         exception.expectMessage(allOf(containsString("actor"), containsString("delet")));
-        qb.undefine(label("actor").sub(ROLE)).execute();
+        tx.execute(Graql.undefine(label("actor").sub(ROLE)));
     }
 
     @Test
     public void whenUndefiningAnInstanceProperty_Throw() {
-        Concept movie = qb.insert(x.isa("movie")).execute().get(0).get(x);
+        Concept movie = tx.execute(Graql.insert(x.isa("movie"))).get(0).get(x);
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(IsaProperty.NAME).getMessage());
 
-        qb.undefine(var().id(movie.id()).isa("movie")).execute();
+        tx.execute(Graql.undefine(var().id(movie.id()).isa("movie")));
     }
 
     @Test
     public void whenGettingResultsString_ResultIsEmptyAndQueryExecutes() {
-        qb.define(label(NEW_TYPE).sub(ENTITY)).execute();
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ENTITY)));
         Type newType = tx.getType(NEW_TYPE);
         assertNotNull(newType);
 
-        qb.undefine(label(NEW_TYPE).sub(ENTITY)).execute();
+        tx.execute(Graql.undefine(label(NEW_TYPE).sub(ENTITY)));
         assertNull(tx.getType(NEW_TYPE));
     }
 }

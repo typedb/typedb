@@ -75,6 +75,7 @@ import static org.mockito.Mockito.verify;
 /**
  * Unit Tests for {@link grakn.core.client.Grakn.Transaction}
  */
+@SuppressWarnings("Duplicates")
 public class GraknClientTest {
 
     private final static SessionServiceGrpc.SessionServiceImplBase sessionService = mock(SessionServiceGrpc.SessionServiceImplBase.class);
@@ -229,7 +230,7 @@ public class GraknClientTest {
 
         try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             try {
-                tx.graql().match(var("x")).get().execute();
+                tx.execute(Graql.match(var("x")).get());
             } catch (RuntimeException e) {
                 System.out.println(e.getMessage());
                 assertTrue(e.getMessage().contains(expectedException.getName()));
@@ -250,7 +251,7 @@ public class GraknClientTest {
 
         try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             try {
-                tx.graql().match(var("x")).get().execute();
+                tx.execute(Graql.match(var("x")).get());
             } catch (RuntimeException e) {
                 System.out.println(e.getMessage());
                 assertTrue(e.getMessage().contains(expectedException.getName()));

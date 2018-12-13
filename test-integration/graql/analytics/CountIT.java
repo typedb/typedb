@@ -18,8 +18,7 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Entity;
@@ -27,9 +26,11 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.answer.Value;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.Graql;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -67,8 +68,8 @@ public class CountIT {
 
         // assert the tx is empty
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            Assert.assertEquals(0, tx.graql().compute(COUNT).execute().get(0).number().intValue());
-            Assert.assertEquals(0, tx.graql().compute(COUNT).includeAttributes(true).execute().get(0).number().intValue());
+            Assert.assertEquals(0, tx.execute(Graql.compute(COUNT)).get(0).number().intValue());
+            Assert.assertEquals(0, tx.execute(Graql.compute(COUNT).includeAttributes(true)).get(0).number().intValue());
         }
 
         // add 2 instances
@@ -80,7 +81,7 @@ public class CountIT {
         }
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            Assert.assertEquals(2, tx.graql().compute(COUNT).in(nameThing).execute().get(0).number().intValue());
+            Assert.assertEquals(2, tx.execute(Graql.compute(COUNT).in(nameThing)).get(0).number().intValue());
         }
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
@@ -91,8 +92,8 @@ public class CountIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             // assert computer returns the correct count of instances
-            Assert.assertEquals(2, tx.graql().compute(COUNT).in(nameThing).includeAttributes(true).execute().get(0).number().intValue());
-            Assert.assertEquals(3, tx.graql().compute(COUNT).execute().get(0).number().intValue());
+            Assert.assertEquals(2, tx.execute(Graql.compute(COUNT).in(nameThing).includeAttributes(true)).get(0).number().intValue());
+            Assert.assertEquals(3, tx.execute(Graql.compute(COUNT)).get(0).number().intValue());
         }
     }
 
@@ -145,28 +146,28 @@ public class CountIT {
 
         Value count;
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            count = tx.graql().compute(COUNT).execute().get(0);
+            count = tx.execute(Graql.compute(COUNT)).get(0);
             assertEquals(1, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).includeAttributes(true).execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).includeAttributes(true)).get(0);
             assertEquals(3L, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("name")).get(0);
             assertEquals(1, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("@has-name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("@has-name")).get(0);
             assertEquals(1, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("@has-name", "thing").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("@has-name", "thing")).get(0);
             assertEquals(3, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("@has-name", "name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("@has-name", "name")).get(0);
             assertEquals(2, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("relationship").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("relationship")).get(0);
             assertEquals(0, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("relationship").includeAttributes(true).execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("relationship").includeAttributes(true)).get(0);
             assertEquals(1, count.number().intValue());
         }
 
@@ -193,31 +194,31 @@ public class CountIT {
         }
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            count = tx.graql().compute(COUNT).execute().get(0);
+            count = tx.execute(Graql.compute(COUNT)).get(0);
             assertEquals(2, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).includeAttributes(true).execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).includeAttributes(true)).get(0);
             assertEquals(5, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("name")).get(0);
             assertEquals(1, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).includeAttributes(true).in("name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).includeAttributes(true).in("name")).get(0);
             assertEquals(1, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("@has-name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("@has-name")).get(0);
             assertEquals(2, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("@has-name", "thing").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("@has-name", "thing")).get(0);
             assertEquals(5, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("@has-name", "name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("@has-name", "name")).get(0);
             assertEquals(3, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("relationship").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("relationship")).get(0);
             assertEquals(0, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("relationship").includeAttributes(true).execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("relationship").includeAttributes(true)).get(0);
             assertEquals(2, count.number().intValue());
         }
     }
@@ -252,25 +253,25 @@ public class CountIT {
 
         Value count;
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            count = tx.graql().compute(COUNT).execute().get(0);
+            count = tx.execute(Graql.compute(COUNT)).get(0);
             assertEquals(1, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).includeAttributes(true).execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).includeAttributes(true)).get(0);
             assertEquals(3, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("name")).get(0);
             assertEquals(1, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("@has-name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("@has-name")).get(0);
             assertEquals(1, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("@has-name", "name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("@has-name", "name")).get(0);
             assertEquals(2, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("relationship").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("relationship")).get(0);
             assertEquals(0, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("relationship").includeAttributes(true).execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("relationship").includeAttributes(true)).get(0);
             assertEquals(1, count.number().intValue());
         }
 
@@ -283,29 +284,29 @@ public class CountIT {
         }
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            count = tx.graql().compute(COUNT).includeAttributes(true).execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).includeAttributes(true)).get(0);
             assertEquals(5, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("name")).get(0);
             assertEquals(1, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("@has-name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("@has-name")).get(0);
             assertEquals(2, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("@has-name", "name").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("@has-name", "name")).get(0);
             assertEquals(3, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("relationship").execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("relationship")).get(0);
             assertEquals(0, count.number().intValue());
 
-            count = tx.graql().compute(COUNT).in("relationship").includeAttributes(true).execute().get(0);
+            count = tx.execute(Graql.compute(COUNT).in("relationship").includeAttributes(true)).get(0);
             assertEquals(2, count.number().intValue());
         }
     }
 
     private Long executeCount(Session session) {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            return tx.graql().compute(COUNT).execute().get(0).number().longValue();
+            return tx.execute(Graql.compute(COUNT)).get(0).number().longValue();
         }
     }
 }

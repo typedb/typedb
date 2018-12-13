@@ -101,7 +101,6 @@ public class InsertQueryIT {
     public static SessionImpl session;
 
     private TransactionImpl<?> tx;
-    private QueryBuilder qb;
 
     @BeforeClass
     public static void newSession() {
@@ -112,7 +111,6 @@ public class InsertQueryIT {
     @Before
     public void newTransaction() {
         tx = session.transaction(Transaction.Type.WRITE);
-        qb = tx.graql();
     }
 
     @After
@@ -188,14 +186,14 @@ public class InsertQueryIT {
     @Test
     public void testInsertRepeat() {
         Statement language = var("x").has("name", "123").isa("language");
-        InsertQuery query = qb.insert(language);
+        InsertQuery query = Graql.insert(language);
 
         assertEquals(0, tx.stream(Graql.match(language)).count());
-        query.execute();
+        tx.execute(query);
         assertEquals(1, tx.stream(Graql.match(language)).count());
-        query.execute();
+        tx.execute(query);
         assertEquals(2, tx.stream(Graql.match(language)).count());
-        query.execute();
+        tx.execute(query);
         assertEquals(3, tx.stream(Graql.match(language)).count());
 
         tx.execute(Graql.match(language).delete("x"));
@@ -222,7 +220,7 @@ public class InsertQueryIT {
 
     @Test
     public void testIterateInsertResults() {
-        InsertQuery insert = qb.insert(
+        InsertQuery insert = Graql.insert(
                 var("x").has("name", "123").isa("person"),
                 var("z").has("name", "xyz").isa("language")
         );
@@ -281,11 +279,11 @@ public class InsertQueryIT {
     public void testErrorWhenSubRelation() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertUnsupportedProperty("sub").getMessage());
-        qb.insert(
+        tx.execute(Graql.insert(
                 var().sub("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y"),
                 var("x").id(ConceptId.of("Godfather")).isa("movie"),
                 var("y").id(ConceptId.of("comedy")).isa("genre")
-        ).execute();
+        ));
     }
 
     @Test
@@ -295,24 +293,24 @@ public class InsertQueryIT {
 
     @Test
     public void testKeyCorrectUsage() throws InvalidKBException {
-        qb.define(
+        tx.execute(Graql.define(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
                 label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
-        ).execute();
+        ));
 
         tx.execute(Graql.insert(var().isa("a-new-type").has("a-new-resource-type", "hello")));
     }
 
     @Test
     public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidKBException {
-        qb.define(
+        tx.execute(Graql.define(
                 label("a-new-type").sub("entity").key("a-new-attribute-type"),
                 label("a-new-attribute-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
-        ).execute();
+        ));
 
-        qb.insert(
+        tx.execute(Graql.insert(
                 var().isa("a-new-type").has("a-new-attribute-type", "hello").has("a-new-attribute-type", "goodbye")
-        ).execute();
+        ));
 
         exception.expect(InvalidKBException.class);
         tx.commit();
@@ -321,17 +319,17 @@ public class InsertQueryIT {
     @Ignore // TODO: Un-ignore this when constraints are designed and implemented
     @Test
     public void testKeyUniqueValue() throws InvalidKBException {
-        qb.define(
+        tx.execute(Graql.define(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
                 label("a-new-resource-type")
                         .sub(label(Schema.MetaSchema.ATTRIBUTE.getLabel()))
                         .datatype(AttributeType.DataType.STRING)
-        ).execute();
+        ));
 
-        qb.insert(
+        tx.execute(Graql.insert(
                 var("x").isa("a-new-type").has("a-new-resource-type", "hello"),
                 var("y").isa("a-new-type").has("a-new-resource-type", "hello")
-        ).execute();
+        ));
 
         exception.expect(InvalidKBException.class);
         tx.commit();
@@ -339,10 +337,10 @@ public class InsertQueryIT {
 
     @Test
     public void testKeyRequiredOwner() throws InvalidKBException {
-        qb.define(
+        tx.execute(Graql.define(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
                 label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
-        ).execute();
+        ));
 
         tx.execute(Graql.insert(var().isa("a-new-type")));
 
@@ -356,7 +354,7 @@ public class InsertQueryIT {
         Variable type = var("type");
 
         // Note that two variables refer to the same type. They should both be in the result
-        InsertQuery query = qb.insert(x.isa(type), type.label("movie"));
+        InsertQuery query = Graql.insert(x.isa(type), type.label("movie"));
 
         ConceptMap result = Iterables.getOnlyElement(query);
         assertThat(result.vars(), containsInAnyOrder(x, type));
@@ -366,12 +364,12 @@ public class InsertQueryIT {
 
     @Test
     public void whenAddingAnAttributeRelationshipWithProvenance_TheAttributeAndProvenanceAreAdded() {
-        InsertQuery query = qb.insert(
+        InsertQuery query = Graql.insert(
                 y.has("provenance", z.val("Someone told me")),
                 w.isa("movie").has(title, x.val("My Movie"), y)
         );
 
-        ConceptMap answer = Iterables.getOnlyElement(query.execute());
+        ConceptMap answer = Iterables.getOnlyElement(tx.execute(query));
 
         Entity movie = answer.get(w).asEntity();
         Attribute<String> theTitle = answer.get(x).asAttribute();
@@ -384,11 +382,10 @@ public class InsertQueryIT {
 
     @Test
     public void whenAddingProvenanceToAnExistingRelationship_TheProvenanceIsAdded() {
-        InsertQuery query = qb
-                .match(w.isa("movie").has(title, x.val("The Muppets"), y))
+        InsertQuery query = Graql.match(w.isa("movie").has(title, x.val("The Muppets"), y))
                 .insert(x, w, y.has("provenance", z.val("Someone told me")));
 
-        ConceptMap answer = Iterables.getOnlyElement(query.execute());
+        ConceptMap answer = Iterables.getOnlyElement(tx.execute(query));
 
         Entity movie = answer.get(w).asEntity();
         Attribute<String> theTitle = answer.get(x).asAttribute();
@@ -405,10 +402,10 @@ public class InsertQueryIT {
         exception.expectMessage(
                 allOf(containsString("$y"), containsString("id"), containsString("isa"), containsString("sub"))
         );
-        qb.insert(
+        tx.execute(Graql.insert(
                 var().rel("genre-of-production", "x").rel("production-with-genre", "y").isa("has-genre"),
                 var("x").isa("genre").has("name", "drama")
-        ).execute();
+        ));
     }
 
     @Test
@@ -496,13 +493,13 @@ public class InsertQueryIT {
 
     @Test
     public void whenInsertingMultipleRolePlayers_BothRolePlayersAreAdded() {
-        List<ConceptMap> results = qb.match(
+        List<ConceptMap> results = tx.execute(Graql.match(
                 var("g").has("title", "Godfather"),
                 var("m").has("title", "The Muppets")
         ).insert(
                 var("c").isa("cluster").has("name", "2"),
                 var("r").rel("cluster-of-production", "c").rel("production-with-cluster", "g").rel("production-with-cluster", "m").isa("has-cluster")
-        ).execute();
+        ));
 
         Thing cluster = results.get(0).get("c").asThing();
         Thing godfather = results.get(0).get("g").asThing();
@@ -519,19 +516,19 @@ public class InsertQueryIT {
 
     @Test
     public void whenInsertingWithAMatch_ProjectMatchResultsOnVariablesInTheInsert() {
-        qb.define(
+        tx.execute(Graql.define(
                 label("maybe-friends").relates("friend").sub("relationship"),
                 label("person").plays("friend")
-        ).execute();
+        ));
 
-        InsertQuery query = qb.match(
+        InsertQuery query = Graql.match(
                 var().rel("actor", x).rel("production-with-cast", z),
                 var().rel("actor", y).rel("production-with-cast", z)
         ).insert(
                 w.rel("friend", x).rel("friend", y).isa("maybe-friends")
         );
 
-        List<ConceptMap> answers = query.execute();
+        List<ConceptMap> answers = tx.execute(query);
 
         for (ConceptMap answer : answers) {
             assertThat(
@@ -546,36 +543,36 @@ public class InsertQueryIT {
 
     @Test(expected = Exception.class)
     public void matchInsertNullVar() {
-        tx.graql().match(var("x").isa("movie")).insert((Statement) null).execute();
+        tx.execute(Graql.match(var("x").isa("movie")).insert((Statement) null));
     }
 
     @Test(expected = Exception.class)
     public void matchInsertNullCollection() {
-        tx.graql().match(var("x").isa("movie")).insert((Collection<? extends Statement>) null).execute();
+        tx.execute(Graql.match(var("x").isa("movie")).insert((Collection<? extends Statement>) null));
     }
 
     @Test
     public void whenMatchInsertingAnEmptyPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
-        tx.graql().match(var()).insert(Collections.EMPTY_SET).execute();
+        tx.execute(Graql.match(var()).insert(Collections.EMPTY_SET));
     }
 
     @Test(expected = Exception.class)
     public void insertNullVar() {
-        tx.graql().insert((Statement) null).execute();
+        tx.execute(Graql.insert((Statement) null));
     }
 
     @Test(expected = Exception.class)
     public void insertNullCollection() {
-        tx.graql().insert((Collection<? extends Statement>) null).execute();
+        tx.execute(Graql.insert((Collection<? extends Statement>) null));
     }
 
     @Test
     public void whenInsertingAnEmptyPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
-        tx.graql().insert(Collections.EMPTY_SET).execute();
+        tx.execute(Graql.insert(Collections.EMPTY_SET));
     }
 
     @Test
@@ -597,7 +594,7 @@ public class InsertQueryIT {
                 GraqlQueryException.insertMultipleProperties(varPattern, "isa", person, movie).getMessage()
         ));
 
-        tx.graql().insert(var("x").isa("movie"), var("x").isa("person")).execute();
+        tx.execute(Graql.insert(var("x").isa("movie"), var("x").isa("person")));
     }
 
     @Test
@@ -610,7 +607,7 @@ public class InsertQueryIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
 
-        tx.graql().insert(var("x").id(aMovie.id()).isa("person")).execute();
+        tx.execute(Graql.insert(var("x").id(aMovie.id()).isa("person")));
     }
 
     @Test

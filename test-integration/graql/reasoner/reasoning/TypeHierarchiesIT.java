@@ -18,15 +18,17 @@
 
 package grakn.core.graql.reasoner.reasoning;
 
-import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.List;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static org.hamcrest.Matchers.empty;
@@ -34,6 +36,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("Duplicates")
 public class TypeHierarchiesIT {
 
     private static String resourcePath = "test-integration/graql/reasoner/stubs/";
@@ -48,7 +51,7 @@ public class TypeHierarchiesIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql();
                 String queryString = "match (role2:$x, role3:$y) isa relation2; get;";
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
                 assertThat(answers, empty());
             }
         }
@@ -61,7 +64,7 @@ public class TypeHierarchiesIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql();
                 String queryString = "match (role1:$x, role2:$y) isa relation2; get;";
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
                 assertEquals(1, answers.size());
             }
         }
@@ -78,9 +81,9 @@ public class TypeHierarchiesIT {
                         "$y isa entity1;" +
                         "(role1: $x, role2: $y) isa relation1;";
                 String baseTypeWithBoundQuery = baseTypeQuery + "$y has name 'a';";
-                List<ConceptMap> baseTypes = qb.<GetQuery>parse(baseTypeQuery + " get;").execute();
+                List<ConceptMap> baseTypes = tx.execute(Graql.<GetQuery>parse(baseTypeQuery + " get;"));
                 assertEquals(2, baseTypes.size());
-                List<ConceptMap> specificBaseTypes = qb.<GetQuery>parse(baseTypeWithBoundQuery + " get;").execute();
+                List<ConceptMap> specificBaseTypes = tx.execute(Graql.<GetQuery>parse(baseTypeWithBoundQuery + " get;"));
                 assertEquals(2, specificBaseTypes.size());
 
                 String specialisedTypeQuery = "match " +
@@ -88,9 +91,9 @@ public class TypeHierarchiesIT {
                         "$y isa subEntity1;" +
                         "(role1: $x, role2: $y) isa relation1;";
                 String specialisedTypeWithBoundQuery = specialisedTypeQuery + "$y has name 'a';";
-                List<ConceptMap> specialisedTypes = qb.<GetQuery>parse(specialisedTypeQuery + " get;").execute();
+                List<ConceptMap> specialisedTypes = tx.execute(Graql.<GetQuery>parse(specialisedTypeQuery + " get;"));
                 assertEquals(1, specialisedTypes.size());
-                List<ConceptMap> specificSpecialisedInstances = qb.<GetQuery>parse(specialisedTypeWithBoundQuery + " get;").execute();
+                List<ConceptMap> specificSpecialisedInstances = tx.execute(Graql.<GetQuery>parse(specialisedTypeWithBoundQuery + " get;"));
                 assertEquals(1, specificSpecialisedInstances.size());
 
                 String overwrittenTypeQuery = "match " +
@@ -98,9 +101,9 @@ public class TypeHierarchiesIT {
                         "$y isa entity1;" +
                         "(role1: $x, role2: $y) isa relation1;";
                 String overwrittenTypeWithBoundQuery = overwrittenTypeQuery + "$y has name 'a';";
-                List<ConceptMap> overwrittenTypes = qb.<GetQuery>parse(overwrittenTypeQuery + "get;").execute();
+                List<ConceptMap> overwrittenTypes = tx.execute(Graql.<GetQuery>parse(overwrittenTypeQuery + "get;"));
                 assertEquals(2, overwrittenTypes.size());
-                List<ConceptMap> specificInstancesWithTypeOverwrite = qb.<GetQuery>parse(overwrittenTypeWithBoundQuery + "get;").execute();
+                List<ConceptMap> specificInstancesWithTypeOverwrite = tx.execute(Graql.<GetQuery>parse(overwrittenTypeWithBoundQuery + "get;"));
                 assertEquals(2, specificInstancesWithTypeOverwrite.size());
             }
         }
@@ -118,9 +121,9 @@ public class TypeHierarchiesIT {
                         "$y isa entity1;" +
                         "(role1: $x, role2: $y) isa relation1;";
                 String boundedBaseTypeQuery = baseTypeQuery + "$y has name 'a';";
-                List<ConceptMap> baseRPs = qb.<GetQuery>parse(baseTypeQuery + " get;").execute();
+                List<ConceptMap> baseRPs = tx.execute(Graql.<GetQuery>parse(baseTypeQuery + " get;"));
                 assertEquals(2, baseRPs.size());
-                List<ConceptMap> specificBaseRPs = qb.<GetQuery>parse(boundedBaseTypeQuery + " get;").execute();
+                List<ConceptMap> specificBaseRPs = tx.execute(Graql.<GetQuery>parse(boundedBaseTypeQuery + " get;"));
                 assertEquals(2, specificBaseRPs.size());
 
                 String specialisedTypeQuery = "match " +
@@ -129,9 +132,9 @@ public class TypeHierarchiesIT {
                         "(role1: $x, role2: $y) isa relation1;";
                 String specialisedTypeWithBoundQuery = specialisedTypeQuery + "$y has name 'a';";
 
-                List<ConceptMap> specialisedRPs = qb.<GetQuery>parse(specialisedTypeQuery + " get;").execute();
+                List<ConceptMap> specialisedRPs = tx.execute(Graql.<GetQuery>parse(specialisedTypeQuery + " get;"));
                 assertEquals(1, specialisedRPs.size());
-                List<ConceptMap> specificSpecialisedRPs = qb.<GetQuery>parse(specialisedTypeWithBoundQuery + " get;").execute();
+                List<ConceptMap> specificSpecialisedRPs = tx.execute(Graql.<GetQuery>parse(specialisedTypeWithBoundQuery + " get;"));
                 assertEquals(1, specificSpecialisedRPs.size());
 
                 String typeOverwriteQuery = "match " +
@@ -140,9 +143,9 @@ public class TypeHierarchiesIT {
                         "(role1: $x, role2: $y) isa relation1;";
                 String boundedTypeOverwriteQuery = typeOverwriteQuery + "$y has name 'a';";
 
-                List<ConceptMap> typeOverwriteRps = qb.<GetQuery>parse(typeOverwriteQuery + " get;").execute();
+                List<ConceptMap> typeOverwriteRps = tx.execute(Graql.<GetQuery>parse(typeOverwriteQuery + " get;"));
                 assertEquals(2, typeOverwriteRps.size());
-                List<ConceptMap> specificTypeOverwriteRPs = qb.<GetQuery>parse(boundedTypeOverwriteQuery + " get;").execute();
+                List<ConceptMap> specificTypeOverwriteRPs = tx.execute(Graql.<GetQuery>parse(boundedTypeOverwriteQuery + " get;"));
                 assertEquals(2, specificTypeOverwriteRPs.size());
             }
         }
@@ -157,8 +160,8 @@ public class TypeHierarchiesIT {
                 QueryBuilder qb = tx.graql();
                 String queryString = "match (role1: $x, role2: $y) isa relation1; get;";
                 String queryString2 = "match (role1: $x, role2: $y) isa sub-relation1; get;";
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
                 assertEquals(1, answers.size());
                 assertTrue(answers.containsAll(answers2));
                 assertTrue(answers2.containsAll(answers));
@@ -174,8 +177,8 @@ public class TypeHierarchiesIT {
                 QueryBuilder qb = tx.graql();
                 String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa subEntity; get;";
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
                 assertEquals(1, answers.size());
                 assertTrue(answers.containsAll(answers2));
                 assertTrue(answers2.containsAll(answers));

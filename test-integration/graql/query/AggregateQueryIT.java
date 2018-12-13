@@ -64,7 +64,6 @@ public class AggregateQueryIT {
     public static GraknTestServer graknServer = new GraknTestServer();
     private static Session session;
     private Transaction tx;
-    private QueryBuilder qb;
 
     @BeforeClass
     public static void newSession() {
@@ -75,7 +74,6 @@ public class AggregateQueryIT {
     @Before
     public void newTransaction() {
         tx = session.transaction(Transaction.Type.WRITE);
-        qb = tx.graql();
     }
 
     @After
@@ -90,11 +88,11 @@ public class AggregateQueryIT {
 
     @Test
     public void testCount() {
-        List<Value> count = qb.match(var("x").isa("movie"), var("y").isa("person"), var("r").rel("x").rel("y")).aggregate(count()).execute();
+        List<Value> count = tx.execute(Graql.match(var("x").isa("movie"), var("y").isa("person"), var("r").rel("x").rel("y")).aggregate(count()));
 
         assertEquals(14, count.get(0).number().intValue());
 
-        count = qb.match(var("x").isa("movie"), var("y").isa("person"), var().rel("x").rel("y")).aggregate(count("x")).execute();
+        count = tx.execute(Graql.match(var("x").isa("movie"), var("y").isa("person"), var().rel("x").rel("y")).aggregate(count("x")));
 
         assertEquals(7, count.get(0).number().intValue());
     }
@@ -102,9 +100,8 @@ public class AggregateQueryIT {
     @Test
     public void testGroup() {
         AggregateQuery<AnswerGroup<ConceptMap>> groupQuery =
-                qb.match(var("x").isa("movie"), var("y").isa("person"), var().rel("x").rel("y")).aggregate(group("x"));
-
-        List<AnswerGroup<ConceptMap>> groups = groupQuery.execute();
+                Graql.match(var("x").isa("movie"), var("y").isa("person"), var().rel("x").rel("y")).aggregate(group("x"));
+        List<AnswerGroup<ConceptMap>> groups = tx.execute(groupQuery);
 
         Assert.assertEquals(7, groups.size());
 
@@ -118,9 +115,8 @@ public class AggregateQueryIT {
 
     @Test
     public void testGroupCount() {
-        List<AnswerGroup<Value>> groupCount = qb.match(var("x").isa("movie"), var("r").rel("x"))
-                .aggregate(group("x", count()))
-                .execute();
+        List<AnswerGroup<Value>> groupCount = tx.execute(Graql.match(var("x").isa("movie"), var("r").rel("x"))
+                .aggregate(group("x", count())));
         Thing godfather = tx.getAttributeType("title").attribute("Godfather").owner();
 
         groupCount.forEach(group -> {
@@ -132,12 +128,12 @@ public class AggregateQueryIT {
 
     @Test
     public void testGroupCount2Vars() {
-        List<AnswerGroup<Value>> groupCounts = qb.match(
+        List<AnswerGroup<Value>> groupCounts = tx.execute(Graql.match(
                 var("x").isa("movie"),
                 var("y").isa("person"),
                 var("z").isa("person"),
                 var().rel("x").rel("y")
-        ).aggregate(group("x", count("y", "z"))).execute();
+        ).aggregate(group("x", count("y", "z"))));
 
         Thing chineseCoffee = tx.getAttributeType("title").attribute("Chinese Coffee").owner();
         Thing godfather = tx.getAttributeType("title").attribute("Godfather").owner();
@@ -162,13 +158,11 @@ public class AggregateQueryIT {
     @Test
     public void testGroupMax() {
         List<AnswerGroup<Value>> groupCount =
-                qb.match(
+                tx.execute(Graql.match(
                         var("x").isa("person"),
                         var("y").isa("movie").has("tmdb-vote-count", var("z")),
                         var().rel("x").rel("y")
-                ).aggregate(
-                        group("x", max("z"))
-                ).execute();
+                ).aggregate(group("x", max("z"))));
 
         Thing marlonBrando = tx.getAttributeType("name").attribute("Marlon Brando").owner();
         Thing alPacino = tx.getAttributeType("name").attribute("Al Pacino").owner();
@@ -192,132 +186,118 @@ public class AggregateQueryIT {
 
     @Test
     public void testSumInt() {
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
                 .aggregate(sum("y"));
 
-        assertEquals(1940, query.execute().get(0).number().intValue());
+        assertEquals(1940, tx.execute(query).get(0).number().intValue());
     }
 
     @Test
     public void testSumDouble() {
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
                 .aggregate(sum("y"));
 
-        assertEquals(27.7d, query.execute().get(0).number().doubleValue(), 0.01d);
+        assertEquals(27.7d, tx.execute(query).get(0).number().doubleValue(), 0.01d);
     }
 
     @Test
     public void testSumNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
                 .aggregate(sum("y"));
 
-        assertTrue(query.execute().isEmpty());
+        assertTrue(tx.execute(query).isEmpty());
     }
 
     @Test
     public void testMaxInt() {
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
                 .aggregate(max("y"));
 
-        assertEquals(1000, query.execute().get(0).number().intValue());
+        assertEquals(1000, tx.execute(query).get(0).number().intValue());
     }
 
     @Test
     public void testMaxDouble() {
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
                 .aggregate(max("y"));
 
-        assertEquals(8.6d, query.execute().get(0).number().doubleValue(), 0.01d);
+        assertEquals(8.6d, tx.execute(query).get(0).number().doubleValue(), 0.01d);
     }
 
     @Test
     public void testMaxNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
                 .aggregate(max("y"));
 
-        assertTrue(query.execute().isEmpty());
+        assertTrue(tx.execute(query).isEmpty());
     }
 
     @Test
     public void testMinInt() {
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
                 .aggregate(min("y"));
 
-        assertEquals(5, query.execute().get(0).number().intValue());
+        assertEquals(5, tx.execute(query).get(0).number().intValue());
     }
 
     @Test
     public void testMinNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
                 .aggregate(min("y"));
 
-        assertTrue(query.execute().isEmpty());
+        assertTrue(tx.execute(query).isEmpty());
     }
 
     @Test
     public void testMean() {
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
                 .aggregate(mean("y"));
 
         //noinspection OptionalGetWithoutIsPresent
-        assertEquals((8.6d + 7.6d + 8.4d + 3.1d) / 4d, query.execute().get(0).number().doubleValue(), 0.01d);
+        assertEquals((8.6d + 7.6d + 8.4d + 3.1d) / 4d, tx.execute(query).get(0).number().doubleValue(), 0.01d);
     }
 
     @Test
     public void testMeanNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
                 .aggregate(mean("y"));
 
-        assertTrue(query.execute().isEmpty());
+        assertTrue(tx.execute(query).isEmpty());
     }
 
     @Test
     public void testMedianInt() {
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
                 .aggregate(median("y"));
 
-        assertEquals(400, query.execute().get(0).number().intValue());
+        assertEquals(400, tx.execute(query).get(0).number().intValue());
     }
 
     @Test
     public void testMedianDouble() {
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
                 .aggregate(median("y"));
 
         //noinspection OptionalGetWithoutIsPresent
-        assertEquals(8.0d, query.execute().get(0).number().doubleValue(), 0.01d);
+        assertEquals(8.0d, tx.execute(query).get(0).number().doubleValue(), 0.01d);
     }
 
     @Test
     public void testMedianNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
                 .aggregate(median("y"));
 
-        assertTrue(query.execute().isEmpty());
+        assertTrue(tx.execute(query).isEmpty());
     }
 
     @Test
     public void testStdDouble1() {
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie").has("tmdb-vote-count", var("y")))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie").has("tmdb-vote-count", var("y")))
                 .aggregate(std("y"));
 
         double mean = (1000d + 100d + 400d + 435d + 5d) / 5d;
@@ -325,13 +305,12 @@ public class AggregateQueryIT {
                 + pow(400d - mean, 2d) + pow(435d - mean, 2d) + pow(5d - mean, 2d)) / 4d;
         double expected = sqrt(variance);
 
-        assertEquals(expected, query.execute().get(0).number().doubleValue(), 0.01d);
+        assertEquals(expected, tx.execute(query).get(0).number().doubleValue(), 0.01d);
     }
 
     @Test
     public void testStdDouble2() {
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie").has("tmdb-vote-average", var("y")))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie").has("tmdb-vote-average", var("y")))
                 .aggregate(std("y"));
 
         double mean = (8.6d + 8.4d + 7.6d + 3.1d) / 4d;
@@ -339,46 +318,44 @@ public class AggregateQueryIT {
                 (pow(8.6d - mean, 2d) + pow(8.4d - mean, 2d) + pow(7.6d - mean, 2d) + pow(3.1d - mean, 2d)) / 3d;
         double expected = sqrt(variance);
 
-        assertEquals(expected, query.execute().get(0).number().doubleValue(), 0.01d);
+        assertEquals(expected, tx.execute(query).get(0).number().doubleValue(), 0.01d);
     }
 
     @Test
     public void testStdNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
-        AggregateQuery<Value> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
+        AggregateQuery<Value> query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
                 .aggregate(std("y"));
 
-        assertTrue(query.execute().isEmpty());
+        assertTrue(tx.execute(query).isEmpty());
     }
 
     @Test
     public void testEmptyMatchCount() {
-        assertEquals(0L, tx.graql().match(var().isa("runtime")).aggregate(count()).execute().get(0).number().longValue());
-        tx.graql().match(var()).aggregate(count()).execute();
+        assertEquals(0L, tx.execute(Graql.match(var().isa("runtime")).aggregate(count())).get(0).number().longValue());
+        tx.execute(Graql.match(var()).aggregate(count()));
     }
 
     @Test(expected = Exception.class) // TODO: Would help if the error message is more specific
     public void testVarsNotExist() {
-        tx.graql().match(var("x").isa("movie")).aggregate(min("y")).execute();
-        System.out.println(tx.graql().match(var("x").isa("movie")).aggregate(min("x")).execute());
+        tx.execute(Graql.match(var("x").isa("movie")).aggregate(min("y")));
+        System.out.println(tx.execute(Graql.match(var("x").isa("movie")).aggregate(min("x"))));
     }
 
     @Test(expected = Exception.class)
     public void testMinOnEntity() {
-        tx.graql().match(var("x")).aggregate(min("x")).execute();
+        tx.execute(Graql.match(var("x")).aggregate(min("x")));
     }
 
     @Test(expected = Exception.class)
     public void testIncorrectResourceDataType() {
-        tx.graql().match(var("x").isa("movie").has("title", var("y")))
-                .aggregate(sum("y")).execute();
+        tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).aggregate(sum("y")));
     }
 
     @Test
     public void whenGroupVarIsNotInQuery_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(var("z")));
-        tx.graql().match(var("x").isa("movie").has("title", var("y"))).aggregate(group("z", count())).execute();
+        tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).aggregate(group("z", count())));
     }
 }

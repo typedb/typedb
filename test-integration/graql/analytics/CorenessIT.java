@@ -18,8 +18,7 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
@@ -28,10 +27,11 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.server.exception.InvalidKBException;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.exception.InvalidKBException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -76,14 +76,14 @@ public class CorenessIT {
     @Test(expected = GraqlQueryException.class)
     public void testKSmallerThan2_ThrowsException() {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.graql().compute(CENTRALITY).using(K_CORE).where(min_k(1)).execute();
+            tx.execute(Graql.compute(CENTRALITY).using(K_CORE).where(min_k(1)));
         }
     }
 
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            List<ConceptSetMeasure> result = tx.graql().compute(CENTRALITY).using(K_CORE).execute();
+            List<ConceptSetMeasure> result = tx.execute(Graql.compute(CENTRALITY).using(K_CORE));
             assertTrue(result.isEmpty());
         }
     }
@@ -93,7 +93,7 @@ public class CorenessIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType(thing).create();
             tx.putEntityType(anotherThing).create();
-            List<ConceptSetMeasure> result = tx.graql().compute(CENTRALITY).using(K_CORE).execute();
+            List<ConceptSetMeasure> result = tx.execute(Graql.compute(CENTRALITY).using(K_CORE));
             assertTrue(result.isEmpty());
         }
     }
@@ -123,7 +123,7 @@ public class CorenessIT {
                     .assign(role3, entity1)
                     .assign(role4, entity2);
 
-            List<ConceptSetMeasure> result = tx.graql().compute(CENTRALITY).using(K_CORE).execute();
+            List<ConceptSetMeasure> result = tx.execute(Graql.compute(CENTRALITY).using(K_CORE));
             assertTrue(result.isEmpty());
         }
     }
@@ -133,17 +133,17 @@ public class CorenessIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            List<ConceptSetMeasure> result = tx.graql().compute(CENTRALITY).using(K_CORE).execute();
+            List<ConceptSetMeasure> result = tx.execute(Graql.compute(CENTRALITY).using(K_CORE));
             assertEquals(1, result.size());
             assertEquals(4, result.get(0).set().size());
             assertEquals(3, result.get(0).measurement().intValue());
 
-            result = tx.graql().compute(CENTRALITY).using(K_CORE).of(thing).execute();
+            result = tx.execute(Graql.compute(CENTRALITY).using(K_CORE).of(thing));
             assertEquals(1, result.size());
             assertEquals(2, result.get(0).set().size());
             assertEquals(3, result.get(0).measurement().intValue());
 
-            result = tx.graql().compute(CENTRALITY).using(K_CORE).in(thing, anotherThing, related).execute();
+            result = tx.execute(Graql.compute(CENTRALITY).using(K_CORE).in(thing, anotherThing, related));
             assertEquals(1, result.size());
             assertEquals(4, result.get(0).set().size());
             assertEquals(2, result.get(0).measurement().intValue());
@@ -177,7 +177,7 @@ public class CorenessIT {
 
         List<ConceptSetMeasure> result;
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = tx.graql().compute(CENTRALITY).using(K_CORE).execute();
+            result = tx.execute(Graql.compute(CENTRALITY).using(K_CORE));
             System.out.println("result = " + result);
             assertEquals(2, result.size());
 
@@ -187,7 +187,7 @@ public class CorenessIT {
             assertEquals(5, result.get(1).set().size());
             assertEquals(4, result.get(1).measurement().intValue());
 
-            result = tx.graql().compute(CENTRALITY).using(K_CORE).where(min_k(4L)).execute();
+            result = tx.execute(Graql.compute(CENTRALITY).using(K_CORE).where(min_k(4L)));
             assertEquals(1, result.size());
             assertEquals(5, result.get(0).set().size());
             assertEquals(4, result.get(0).measurement().intValue());
@@ -273,7 +273,7 @@ public class CorenessIT {
 
         List<ConceptSetMeasure> result;
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            result = tx.graql().compute(CENTRALITY).using(K_CORE).execute();
+            result = tx.execute(Graql.compute(CENTRALITY).using(K_CORE));
             assertEquals(2, result.size());
 
             assertEquals(1, result.get(0).set().size());
@@ -282,7 +282,7 @@ public class CorenessIT {
             assertEquals(8, result.get(1).set().size());
             assertEquals(3, result.get(1).measurement().intValue());
 
-            result = tx.graql().compute(CENTRALITY).using(K_CORE).where(min_k(3L)).execute();
+            result = tx.execute(Graql.compute(CENTRALITY).using(K_CORE).where(min_k(3L)));
             assertEquals(1, result.size());
             assertEquals(8, result.get(0).set().size());
             assertEquals(3, result.get(0).measurement().intValue());
@@ -301,7 +301,7 @@ public class CorenessIT {
 
         Set<List<ConceptSetMeasure>> result = list.parallelStream().map(i -> {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                return tx.graql().compute(CENTRALITY).using(K_CORE).where(min_k(3L)).execute();
+                return tx.execute(Graql.compute(CENTRALITY).using(K_CORE).where(min_k(3L)));
             }
         }).collect(Collectors.toSet());
         assertEquals(1, result.size());

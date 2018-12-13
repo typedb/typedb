@@ -104,21 +104,21 @@ public class QueryErrorIT {
     public void testErrorNonExistentResourceType() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("thingy");
-        qb.match(var("x").has("thingy", "value")).delete("x").execute();
+        tx.execute(Graql.match(var("x").has("thingy", "value")).delete("x"));
     }
 
     @Test
     public void whenMatchingWildcardHas_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.noLabelSpecifiedForHas(var("x")).getMessage());
-        qb.match(label("thing").has(var("x"))).get().execute();
+        tx.execute(Graql.match(label("thing").has(var("x"))).get());
     }
 
     @Test
     public void whenMatchingHasWithNonExistentType_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.labelNotFound(Label.of("heffalump")).getMessage());
-        qb.match(var("x").has("heffalump", "foo")).get().execute();
+        tx.execute(Graql.match(var("x").has("heffalump", "foo")).get());
     }
 
     @Test
@@ -154,7 +154,7 @@ public class QueryErrorIT {
         exception.expectMessage(allOf(
                 containsString("abc"), containsString("sub"), containsString("person"), containsString("has-cast")
         ));
-        qb.define(label("abc").sub("person"), label("abc").sub("has-cast")).execute();
+        tx.execute(Graql.define(label("abc").sub("person"), label("abc").sub("has-cast")));
     }
 
     @Test
@@ -187,17 +187,17 @@ public class QueryErrorIT {
         Session newSession = graknServer.sessionWithNewKeyspace();
         try (Transaction newTx = newSession.transaction(Transaction.Type.WRITE)) {
             QueryBuilder emptyQb = newTx.graql();
-            emptyQb.define(
+            tx.execute(Graql.define(
                     label("person").sub("entity"),
                     label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
-            ).execute();
+            ));
 
             exception.expect(TransactionException.class);
             exception.expectMessage(allOf(
                     containsString("person"),
                     containsString("name")
             ));
-            emptyQb.insert(var().isa("person").has("name", "Bob")).execute();
+            tx.execute(Graql.insert(var().isa("person").has("name", "Bob")));
         }
     }
 
@@ -221,11 +221,11 @@ public class QueryErrorIT {
     public void testAdditionalSemicolon() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("id"), containsString("plays product-type")));
-        qb.parse(
+        tx.execute(Graql.<DefineQuery>parse(
                 "define " +
                         "tag-group sub role; product-type sub role;" +
                         "category sub entity, plays tag-group; plays product-type;"
-        ).execute();
+        ));
     }
 
     @Test
@@ -252,6 +252,6 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("person"));
 
-        qb.match(var("x").id(movie.id())).insert(var("x").isa(label(person.label()))).execute();
+        tx.execute(Graql.match(var("x").id(movie.id())).insert(var("x").isa(label(person.label()))));
     }
 }

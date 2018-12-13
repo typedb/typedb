@@ -34,8 +34,8 @@ import grakn.core.graql.internal.gremlin.fragment.OutIsaFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutSubFragment;
 import grakn.core.graql.query.AggregateQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -52,7 +52,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
-@SuppressWarnings("CheckReturnValue")
+@SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class IsaExplicitIT {
 
     @ClassRule
@@ -92,11 +92,9 @@ public class IsaExplicitIT {
 
     @Test
     public void whenInsertIsaExplicit_InsertsADirectInstanceOfAType() {
-        QueryBuilder queryBuilder = tx.graql();
-
-        queryBuilder.insert(var("x").isaExplicit("superType1")).execute();
-        assertEquals(1, queryBuilder.<AggregateQuery<Value>>parse("match $z isa! superType1; aggregate count;").execute().get(0).number().intValue());
-        assertEquals(2, queryBuilder.<AggregateQuery<Value>>parse("match $z isa superType1; aggregate count;").execute().get(0).number().intValue());
+        tx.execute(Graql.insert(var("x").isaExplicit("superType1")));
+        assertEquals(1, tx.execute(Graql.<AggregateQuery<Value>>parse("match $z isa! superType1; aggregate count;")).get(0).number().intValue());
+        assertEquals(2, tx.execute(Graql.<AggregateQuery<Value>>parse("match $z isa superType1; aggregate count;")).get(0).number().intValue());
 
     }
 

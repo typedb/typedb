@@ -1,26 +1,27 @@
 package grakn.core.graql.reasoner.cache;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.UndefineQuery;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.cache.RuleCache;
-import grakn.core.rule.GraknTestServer;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -53,7 +54,7 @@ public class RuleCacheIT {
             InputStream inputStream = RuleCacheIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
-            tx.graql().parser().parseList(s).forEach(Query::execute);
+            Graql.parser().parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e) {
             System.err.println(e);
@@ -158,7 +159,7 @@ public class RuleCacheIT {
     @Ignore
     @Test
     public void whenDeletingARule_cacheContainsUpdatedEntry(){
-        tx.graql().parse("undefine $x sub rule label 'rule-0';").execute();
+        tx.execute(Graql.<UndefineQuery>parse("undefine $x sub rule label 'rule-0';"));
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
         Set<Rule> rules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
