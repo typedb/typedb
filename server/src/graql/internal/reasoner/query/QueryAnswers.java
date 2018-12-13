@@ -22,11 +22,11 @@ import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 
+import javax.annotation.Nonnull;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 /**
  *

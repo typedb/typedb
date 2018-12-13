@@ -21,7 +21,6 @@ package grakn.core.graql.reasoner.reasoning;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -63,7 +62,6 @@ public class VariableRolesIT {
     @Test
     public void binaryRelationWithDifferentVariantsOfVariableRoles(){
         try(TransactionImpl tx = variableRoleSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql();
 
             //9 binary-base instances with {role, role2} = 2 roles for r2 -> 18 answers
             /*
@@ -92,12 +90,12 @@ public class VariableRolesIT {
                     "$r1 label 'role';" +
                     "get $a, $b, $r2;";
 
-            GetQuery query2 = qb.<GetQuery>parse(queryString2);
+            GetQuery query2 = Graql.<GetQuery>parse(queryString2);
             //System.out.println(query2);
             //List<ConceptMap> answers2 = tx.execute(query2);
             //System.out.println();
 
-            GetQuery equivQuery2 = qb.<GetQuery>parse(equivalentQueryString2);
+            GetQuery equivQuery2 = Graql.<GetQuery>parse(equivalentQueryString2);
             System.out.println(equivQuery2);
             List<ConceptMap> equivalentAnswers2 = tx.execute(equivQuery2);
             System.out.println();
@@ -192,8 +190,7 @@ public class VariableRolesIT {
 
     private void ternaryNaryRelationWithVariableRoles(String label, int conceptDOF){
         try(TransactionImpl tx = variableRoleSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql();
-            final int arity = (int) tx.getRelationshipType(label).roles().count();
+                        final int arity = (int) tx.getRelationshipType(label).roles().count();
 
             Statement resourcePattern = var("a1").has("name", "a");
 

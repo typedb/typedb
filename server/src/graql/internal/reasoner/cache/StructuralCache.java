@@ -31,6 +31,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionImpl;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;

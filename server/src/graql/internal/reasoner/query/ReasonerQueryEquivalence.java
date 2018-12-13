@@ -18,11 +18,12 @@
 
 package grakn.core.graql.internal.reasoner.query;
 
+import com.google.common.base.Equivalence;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
-import com.google.common.base.Equivalence;
+
 import java.util.Set;
 import java.util.stream.Collectors;
 

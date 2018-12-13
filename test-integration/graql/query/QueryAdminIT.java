@@ -20,8 +20,6 @@ package grakn.core.graql.query;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
@@ -37,11 +35,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Set;
-import java.util.stream.Stream;
 
-import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.pattern.Pattern.var;
-import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -52,7 +47,6 @@ public class QueryAdminIT {
     public static GraknTestServer graknServer = new GraknTestServer();
     private static SessionImpl session;
     private TransactionImpl<?> tx;
-    private QueryBuilder qb;
 
     @BeforeClass
     public static void newSession() {
@@ -63,7 +57,6 @@ public class QueryAdminIT {
     @Before
     public void newTransaction() {
         tx = session.transaction(Transaction.Type.WRITE);
-        qb = tx.graql();
     }
 
     @After
@@ -79,14 +72,14 @@ public class QueryAdminIT {
 
     @Test
     public void testDefaultGetSelectedNamesInQuery() {
-        MatchClause match = qb.match(var("x").isa(var("y")));
+        MatchClause match = Graql.match(var("x").isa(var("y")));
 
         assertEquals(Sets.newHashSet(var("x"), var("y")), match.getSelectedNames());
     }
 
     @Test
     public void testGetPatternInQuery() {
-        MatchClause match = qb.match(var("x").isa("movie"), var("x").val("Bob"));
+        MatchClause match = Graql.match(var("x").isa("movie"), var("x").val("Bob"));
 
         Conjunction<Pattern> conjunction = match.getPatterns();
         assertNotNull(conjunction);
@@ -107,32 +100,32 @@ public class QueryAdminIT {
 
     @Test
     public void testInsertQueryMatchPatternEmpty() {
-        InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"));
+        InsertQuery query = Graql.insert(var().id(ConceptId.of("123")).isa("movie"));
         assertNull(query.admin().match());
     }
 
     @Test
     public void testInsertQueryWithMatch() {
-        InsertQuery query = qb.match(var("x").isa("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
+        InsertQuery query = Graql.match(var("x").isa("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
         assertEquals("match $x isa movie;", query.admin().match().toString());
 
-        query = qb.match(var("x").isaExplicit("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
+        query = Graql.match(var("x").isaExplicit("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
         assertEquals("match $x isa! movie;", query.admin().match().toString());
     }
 
     @Test
     public void testInsertQueryGetVars() {
-        InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"), var().id(ConceptId.of("123")).val("Hi"));
+        InsertQuery query = Graql.insert(var().id(ConceptId.of("123")).isa("movie"), var().id(ConceptId.of("123")).val("Hi"));
         // Should not merge variables
         assertEquals(2, query.admin().statements().size());
     }
 
     @Test
     public void testDeleteQueryPattern() {
-        DeleteQuery query = qb.match(var("x").isa("movie")).delete("x");
+        DeleteQuery query = Graql.match(var("x").isa("movie")).delete("x");
         assertEquals("match $x isa movie;", query.admin().match().toString());
 
-        query = qb.match(var("x").isaExplicit("movie")).delete("x");
+        query = Graql.match(var("x").isaExplicit("movie")).delete("x");
         assertEquals("match $x isa! movie;", query.admin().match().toString());
     }
 }

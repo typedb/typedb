@@ -24,9 +24,9 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.Variable;
 
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
-import javax.annotation.Nullable;
 
 /**
  * Defines a variable specification in the form:

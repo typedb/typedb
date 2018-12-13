@@ -18,14 +18,14 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Entity;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.graql.internal.Schema;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.After;
 import org.junit.Before;

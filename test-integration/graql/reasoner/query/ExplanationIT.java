@@ -145,7 +145,7 @@
 //                "$x id '" + polibuda.id() + "';" +
 //                "$y id '" + europe.id() + "'; get;";
 //
-//        GetQuery query = iqb.parse(queryString);
+//        GetQuery query = iGraql.parse(queryString);
 //        List<ConceptMap> answers = tx.execute(query);
 //        assertEquals(answers.size(), 1);
 //
@@ -166,7 +166,7 @@
 //                "$z id '" + masovia.id() + "';" +
 //                "get $y;";
 //
-//        GetQuery query = iqb.parse(queryString);
+//        GetQuery query = iGraql.parse(queryString);
 //        List<ConceptMap> answers = tx.execute(query);
 //        assertEquals(answers.size(), 1);
 //        testExplanation(answers);
@@ -179,7 +179,7 @@
 //                "$x id '" + polibuda.id() + "';" +
 //                "$y id '" + uw.id() + "'; get;";
 //
-//        GetQuery query = iqb.parse(queryString);
+//        GetQuery query = iGraql.parse(queryString);
 //        List<ConceptMap> answers = tx.execute(query);
 //        assertEquals(answers.size(), 0);
 //    }
@@ -188,7 +188,7 @@
 //    public void testExplainingNonRuleResolvableQuery(){
 //        String queryString = "match $x isa city, has name $n; get;";
 //
-//        GetQuery query = iqb.parse(queryString);
+//        GetQuery query = iGraql.parse(queryString);
 //        List<ConceptMap> answers = tx.execute(query);
 //        answers.forEach(ans -> assertEquals(ans.explanation().isEmpty(), true));
 //    }
@@ -205,7 +205,7 @@
 //                "$x id '" + a1.id() + "';" +
 //                "$y id '" + a2.id() + "'; get;";
 //
-//        GetQuery query = eiqb.parse(queryString);
+//        GetQuery query = eiGraql.parse(queryString);
 //        List<ConceptMap> answers = tx.execute(query);
 //        assertEquals(answers.size(), 0);
 //    }
@@ -220,7 +220,7 @@
 //                "$x has name $xName;" +
 //                "$w has name $wName; get;";
 //
-//        GetQuery query = eiqb.parse(queryString);
+//        GetQuery query = eiGraql.parse(queryString);
 //        List<ConceptMap> answers = tx.execute(query);
 //        testExplanation(answers);
 //    }
@@ -235,7 +235,7 @@
 //                "($x, $y) isa carried-relation;" +
 //                "get;";
 //
-//        GetQuery query = eiqb.parse(queryString);
+//        GetQuery query = eiGraql.parse(queryString);
 //        List<ConceptMap> answers = tx.execute(query);
 //        testExplanation(answers);
 //        answers.stream()
@@ -254,7 +254,7 @@
 //
 //        String queryString = "match $x isa same-tag-column-link; get;";
 //
-//        GetQuery query = eiqb.parse(queryString);
+//        GetQuery query = eiGraql.parse(queryString);
 //        List<ConceptMap> answers = tx.execute(query);
 //        testExplanation(answers);
 //        answers.stream()

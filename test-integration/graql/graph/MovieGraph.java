@@ -26,6 +26,7 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -33,6 +34,7 @@ import grakn.core.server.Transaction;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@SuppressWarnings("Duplicates")
 public class MovieGraph {
 
     private static EntityType production, movie, person, genre, character, cluster, language;
@@ -295,13 +297,13 @@ public class MovieGraph {
 
     private static void buildRules(Transaction tx) {
         // These rules are totally made up for testing purposes and don't work!
-        Pattern when = tx.graql().parser().parsePattern("$x has name 'expectation-when'");
-        Pattern then = tx.graql().parser().parsePattern("$x has name 'expectation-then'");
+        Pattern when = Graql.parser().parsePattern("$x has name 'expectation-when'");
+        Pattern then = Graql.parser().parsePattern("$x has name 'expectation-then'");
 
         tx.putRule("expectation-rule", when, then);
 
-        when = tx.graql().parser().parsePattern("$x has name 'materialize-when'");
-        then = tx.graql().parser().parsePattern("$x has name 'materialize-then'");
+        when = Graql.parser().parsePattern("$x has name 'materialize-when'");
+        then = Graql.parser().parsePattern("$x has name 'materialize-then'");
         tx.putRule("materialize-rule", when, then);
     }
 

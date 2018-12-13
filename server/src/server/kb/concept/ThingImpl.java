@@ -18,13 +18,14 @@
 
 package grakn.core.server.kb.concept;
 
+import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.LabelId;
 import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
@@ -32,14 +33,13 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.Schema;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.graql.internal.Schema;
-import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;

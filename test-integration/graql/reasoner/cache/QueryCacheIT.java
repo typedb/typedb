@@ -196,7 +196,7 @@ public class QueryCacheIT {
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, Transaction tx) {
-        Set<VarPatternAdmin> vars = tx.graql().parser().parsePattern(patternString).admin()
+        Set<VarPatternAdmin> vars = Graql.parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

@@ -18,11 +18,11 @@
 
 package grakn.core.server.session;
 
+import grakn.core.common.config.Config;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
-import grakn.core.common.config.Config;
 import grakn.core.server.util.LockManager;
 
 import java.util.HashMap;

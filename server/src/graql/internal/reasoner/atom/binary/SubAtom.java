@@ -18,15 +18,15 @@
 
 package grakn.core.graql.internal.reasoner.atom.binary;
 
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.query.pattern.Variable;
+import com.google.auto.value.AutoValue;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.property.SubProperty;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
-import com.google.auto.value.AutoValue;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.SubProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.stream.Collectors;
 

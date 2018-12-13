@@ -21,9 +21,10 @@ package grakn.core.server.kb.concept;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;
@@ -104,7 +105,7 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
         if(value == null) {
             return null;
         } else {
-            return vertex().tx().graql().parser().parsePattern(value);
+            return Graql.parser().parsePattern(value);
         }
     }
 

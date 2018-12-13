@@ -18,10 +18,10 @@
 
 package grakn.core.graql.internal.gremlin.spanningtree.graph;
 
-import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 
 import java.util.Collection;
 import java.util.Map;

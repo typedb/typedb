@@ -174,7 +174,7 @@ public class BenchmarkSmallIT {
         String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
         Transaction tx = session.transaction(Transaction.Type.WRITE);
         executeQuery(queryString, tx, "full");
-        // executeQuery(tx.graql().<GetQuery>parse(queryString).match().limit(limit).get(), "limit " + limit); // TODO: uncomment
+        // executeQuery(Graql.<GetQuery>parse(queryString).match().limit(limit).get(), "limit " + limit); // TODO: uncomment
         tx.close();
         session.close();
     }

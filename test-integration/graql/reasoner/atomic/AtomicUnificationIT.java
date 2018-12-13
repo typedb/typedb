@@ -333,8 +333,8 @@ public class AtomicUnificationIT {
         String childPatternString = "(subRole1: $x, subRole2: $y) isa binary";
         InferenceRule testRule = new InferenceRule(
                 tx.putRule("Checking Rewrite & Unification",
-                        tx.graql().parser().parsePattern(childPatternString),
-                        tx.graql().parser().parsePattern(childPatternString)),
+                        Graql.parser().parsePattern(childPatternString),
+                        Graql.parser().parsePattern(childPatternString)),
                 tx)
                 .rewrite(parentAtom);
 
@@ -509,7 +509,7 @@ public class AtomicUnificationIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
+        Set<Statement> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);

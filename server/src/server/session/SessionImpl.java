@@ -18,13 +18,13 @@
 
 package grakn.core.server.session;
 
+import grakn.core.common.config.Config;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.olap.TransactionOLAP;
 import grakn.core.server.session.oltp.TransactionOLTP;
-import grakn.core.common.config.Config;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

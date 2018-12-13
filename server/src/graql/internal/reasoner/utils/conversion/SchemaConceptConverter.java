@@ -17,11 +17,12 @@
  */
 package grakn.core.graql.internal.reasoner.utils.conversion;
 
-import grakn.core.graql.concept.RelationshipType;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Role;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.SchemaConcept;
+
 import java.util.stream.Stream;
 
 /**

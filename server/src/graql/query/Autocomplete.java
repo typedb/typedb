@@ -18,8 +18,8 @@
 
 package grakn.core.graql.query;
 
-import graql.grammar.GraqlLexer;
 import com.google.common.collect.ImmutableSet;
+import graql.grammar.GraqlLexer;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.Token;
@@ -31,8 +31,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.util.StringUtil.GRAQL_KEYWORDS;
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
+import static grakn.core.graql.util.StringUtil.GRAQL_KEYWORDS;
 
 /**
  * An autocomplete result suggesting keywords, types and variables that the user may wish to type

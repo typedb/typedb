@@ -18,30 +18,31 @@
 
 package grakn.core.graql.internal.reasoner.atom.binary;
 
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
-import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.reasoner.atom.Atom;
-import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
-
-import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
-import grakn.core.server.kb.concept.EntityTypeImpl;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
+import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.server.kb.concept.EntityTypeImpl;
+
+import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import static grakn.core.common.util.CommonUtil.toImmutableList;
 

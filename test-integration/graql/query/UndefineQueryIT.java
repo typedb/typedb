@@ -85,7 +85,6 @@ public class UndefineQueryIT {
 
     public static SessionImpl session;
     private TransactionImpl<?> tx;
-    private QueryBuilder qb;
 
     @BeforeClass
     public static void newSession() {
@@ -96,7 +95,6 @@ public class UndefineQueryIT {
     @Before
     public void newTransaction() {
         tx = session.transaction(Transaction.Type.WRITE);
-        qb = tx.graql();
     }
 
     @After

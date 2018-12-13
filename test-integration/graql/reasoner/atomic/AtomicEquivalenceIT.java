@@ -174,7 +174,7 @@ public class AtomicEquivalenceIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
+        Set<Statement> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);

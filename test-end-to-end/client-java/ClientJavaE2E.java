@@ -1,5 +1,9 @@
 package grakn.core.client;
 
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.Value;
+import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -7,10 +11,6 @@ import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.Value;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -31,8 +31,8 @@ import static grakn.core.client.ClientJavaE2EConstants.assertGraknRunning;
 import static grakn.core.client.ClientJavaE2EConstants.assertGraknStopped;
 import static grakn.core.client.ClientJavaE2EConstants.assertZipExists;
 import static grakn.core.client.ClientJavaE2EConstants.unzipGrakn;
-import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.Graql.count;
+import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -110,7 +110,7 @@ public class ClientJavaE2E {
         LOG.info("clientJavaE2E() - starting client-java E2E...");
 
         localhostGraknTx(tx -> {
-            DefineQuery defineQuery = tx.graql().define(
+            DefineQuery defineQuery = Graql.define(
                     label("child-bearing").sub("relationship").relates("offspring").relates("child-bearer"),
                     label("mating").sub("relationship").relates("male-partner").relates("female-partner").plays("child-bearer"),
                     label("parentship").sub("relationship").relates("parent").relates("child"),
@@ -135,7 +135,7 @@ public class ClientJavaE2E {
         });
 
         localhostGraknTx(tx -> {
-            GetQuery getThingQuery = tx.graql().match(var("t").sub("thing")).get();
+            GetQuery getThingQuery = Graql.match(var("t").sub("thing")).get();
             LOG.info("clientJavaE2E() - assert if schema defined...");
             LOG.info("clientJavaE2E() - '" + getThingQuery + "'");
             List<String> definedSchema = tx.execute(getThingQuery).stream()
@@ -148,7 +148,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             String[] names = lionNames();
-            InsertQuery insertLionQuery = tx.graql().insert(
+            InsertQuery insertLionQuery = Graql.insert(
                     var().isa("lion").has("name").val(names[0]),
                     var().isa("lion").has("name").val(names[1]),
                     var().isa("lion").has("name").val(names[2])
@@ -163,8 +163,7 @@ public class ClientJavaE2E {
         localhostGraknTx(tx -> {
             String[] familyMembers = lionNames();
             LOG.info("clientJavaE2E() - inserting mating relationships...");
-            InsertQuery insertMatingQuery = tx.graql()
-                    .match(
+            InsertQuery insertMatingQuery = Graql.match(
                             var("lion").isa("lion").has("name").val(familyMembers[0]),
                             var("lioness").isa("lion").has("name").val(familyMembers[1]))
                     .insert(var().isa("mating").rel("male-partner", var("lion")).rel("female-partner", var("lioness")));
@@ -172,8 +171,7 @@ public class ClientJavaE2E {
             List<ConceptMap> insertedMating = tx.execute(insertMatingQuery);
 
             LOG.info("clientJavaE2E() - inserting child-bearing relationships...");
-            InsertQuery insertChildBearingQuery = tx.graql()
-                    .match(
+            InsertQuery insertChildBearingQuery = Graql.match(
                             var("lion").isa("lion").has("name").val(familyMembers[0]),
                             var("lioness").isa("lion").has("name").val(familyMembers[1]),
                             var("offspring").isa("lion").has("name").val(familyMembers[2]),
@@ -192,20 +190,20 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - execute match get on the lion instances...");
-            GetQuery getLionQuery = tx.graql().match(var("p").isa("lion").has("name", var("n"))).get();
+            GetQuery getLionQuery = Graql.match(var("p").isa("lion").has("name", var("n"))).get();
             LOG.info("clientJavaE2E() - '" + getLionQuery + "'");
             List<ConceptMap> insertedLions = tx.execute(getLionQuery);
             List<String> insertedNames = insertedLions.stream().map(answer -> answer.get("n").asAttribute().value().toString()).collect(Collectors.toList());
             assertThat(insertedNames, containsInAnyOrder(lionNames()));
 
             LOG.info("clientJavaE2E() - execute match get on the mating relationships...");
-            GetQuery getMatingQuery = tx.graql().match(var().isa("mating")).get();
+            GetQuery getMatingQuery = Graql.match(var().isa("mating")).get();
             LOG.info("clientJavaE2E() - '" + getMatingQuery + "'");
             List<ConceptMap> insertedMating = tx.execute(getMatingQuery);
             assertThat(insertedMating, hasSize(1));
 
             LOG.info("clientJavaE2E() - execute match get on the child-bearing...");
-            GetQuery getChildBearingQuery = tx.graql().match(var().isa("child-bearing")).get();
+            GetQuery getChildBearingQuery = Graql.match(var().isa("child-bearing")).get();
             LOG.info("clientJavaE2E() - '" + getChildBearingQuery + "'");
             List<ConceptMap> insertedChildBearing = tx.execute(getChildBearingQuery);
             assertThat(insertedChildBearing, hasSize(1));
@@ -214,7 +212,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - match get inferred relationships...");
-            GetQuery getParentship = tx.graql().match(
+            GetQuery getParentship = Graql.match(
                     var("parentship")
                             .isa("parentship")
                             .rel("parent", var("parent"))
@@ -227,7 +225,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - match aggregate...");
-            AggregateQuery<Value> aggregateQuery = tx.graql().match(var("p").isa("lion")).aggregate(count());
+            AggregateQuery<Value> aggregateQuery = Graql.match(var("p").isa("lion")).aggregate(count());
             LOG.info("clientJavaE2E() - '" + aggregateQuery + "'");
             int aggregateCount = tx.execute(aggregateQuery).get(0).number().intValue();
             assertThat(aggregateCount, equalTo(lionNames().length));
@@ -236,7 +234,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - compute count...");
-            final ComputeQuery<Value> computeQuery = tx.graql().compute(ComputeQuery.Method.COUNT).in("lion");
+            final ComputeQuery<Value> computeQuery = Graql.compute(ComputeQuery.Method.COUNT).in("lion");
             LOG.info("clientJavaE2E() - '" + computeQuery + "'");
             int computeCount = tx.execute(computeQuery).get(0).number().intValue();
             assertThat(computeCount, equalTo(lionNames().length));
@@ -245,7 +243,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - match delete...");
-            DeleteQuery deleteQuery = tx.graql().match(var("m").isa("mating")).delete(var("m"));
+            DeleteQuery deleteQuery = Graql.match(var("m").isa("mating")).delete(var("m"));
             LOG.info("clientJavaE2E() - '" + deleteQuery + "'");
             List<ConceptSet> answer = tx.execute(deleteQuery);
             List<ConceptMap> matings = tx.execute(Graql.match(var("m").isa("mating")).get());

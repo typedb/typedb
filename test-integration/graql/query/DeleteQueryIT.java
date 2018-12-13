@@ -58,7 +58,6 @@ public class DeleteQueryIT {
     public static final GraknTestServer graknServer = new GraknTestServer();
     public static SessionImpl session;
     public TransactionImpl<?> tx;
-    public QueryBuilder qb;
 
     @Rule
     public  final ExpectedException exception = ExpectedException.none();
@@ -76,13 +75,12 @@ public class DeleteQueryIT {
     @Before
     public void newTransaction() {
         tx = session.transaction(Transaction.Type.WRITE);
-        qb = tx.graql();
 
-        kurtz = qb.match(x.has("name", "Colonel Walter E. Kurtz"));
-        marlonBrando = qb.match(x.has("name", "Marlon Brando"));
-        apocalypseNow = qb.match(x.has("title", "Apocalypse Now"));
+        kurtz = Graql.match(x.has("name", "Colonel Walter E. Kurtz"));
+        marlonBrando = Graql.match(x.has("name", "Marlon Brando"));
+        apocalypseNow = Graql.match(x.has("title", "Apocalypse Now"));
         kurtzCastRelation =
-                qb.match(var("a").rel("character-being-played", var().has("name", "Colonel Walter E. Kurtz")));
+                Graql.match(var("a").rel("character-being-played", var().has("name", "Colonel Walter E. Kurtz")));
     }
 
     @After
@@ -139,7 +137,7 @@ public class DeleteQueryIT {
     @Test
     public void testDeleteAllRolePlayers() {
         ConceptId id = tx.stream(kurtzCastRelation.get("a")).map(ans -> ans.get("a")).findFirst().get().id();
-        MatchClause relation = qb.match(var().id(id));
+        MatchClause relation = Graql.match(var().id(id));
 
         assertExists(tx, kurtz);
         assertExists(tx, marlonBrando);

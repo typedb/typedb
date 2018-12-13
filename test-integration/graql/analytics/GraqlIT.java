@@ -190,8 +190,8 @@ public class GraqlIT {
                     tx.execute(Graql.<ComputeQuery<ConceptSet>>parse("compute cluster using connected-component;"));
             assertTrue(clusterList.isEmpty());
 
-            Query<?> parsed = tx.graql().parse("compute cluster using connected-component, where contains = V123;");
-            Query<?> expected = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(ConceptId.of("V123")));
+            Query<?> parsed = Graql.parse("compute cluster using connected-component, where contains = V123;");
+            Query<?> expected = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(ConceptId.of("V123")));
             assertEquals(expected, parsed);
         }
     }
@@ -201,7 +201,7 @@ public class GraqlIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            ComputeQuery<ConceptList> query = tx.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
+            ComputeQuery<ConceptList> query = Graql.parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
             List<ConceptList> paths = tx.execute(query);
 
             List<ConceptId> path = Collections.emptyList();
@@ -218,7 +218,7 @@ public class GraqlIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            ComputeQuery<ConceptList> query = tx.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
+            ComputeQuery<ConceptList> query = Graql.parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
             List<ConceptList> paths = tx.execute(query);
             assertEquals(1, paths.size());
             List<String> result = paths.get(0).list().stream().map(ConceptId::getValue).collect(Collectors.toList());

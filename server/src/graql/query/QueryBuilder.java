@@ -26,11 +26,8 @@ import grakn.core.graql.parser.Parser;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -44,19 +41,9 @@ import static grakn.core.graql.query.ComputeQuery.Method;
  */
 public class QueryBuilder {
 
-    @Nullable
-    private final Transaction tx;
     private final Parser queryParser = Parser.create(this);
 
-    public QueryBuilder() {
-        this.tx = null;
-    }
-
-    @SuppressWarnings("unused")
-    /** used by {@link TransactionImpl#graql()}*/
-    public QueryBuilder(Transaction tx) {
-        this.tx = tx;
-    }
+    public QueryBuilder() {}
 
     /**
      * @param patterns an array of patterns to match in the graph

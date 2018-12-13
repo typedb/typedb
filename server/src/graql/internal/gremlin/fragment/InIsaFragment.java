@@ -18,14 +18,14 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.query.pattern.Variable;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionImpl;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -37,7 +37,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
 import static grakn.core.graql.internal.Schema.EdgeLabel.ATTRIBUTE;
 import static grakn.core.graql.internal.Schema.EdgeLabel.ISA;
@@ -47,6 +46,7 @@ import static grakn.core.graql.internal.Schema.EdgeLabel.SHARD;
 import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 import static grakn.core.graql.internal.Schema.VertexProperty.IS_IMPLICIT;
 import static grakn.core.graql.internal.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.graql.query.pattern.Pattern.var;
 
 /**
  * A fragment representing traversing an isa edge from type to instance.

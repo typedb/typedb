@@ -18,9 +18,9 @@
 
 package grakn.core.server;
 
-import grakn.core.server.util.PIDManager;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.server.util.PIDManager;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;

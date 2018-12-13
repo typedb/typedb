@@ -18,16 +18,16 @@
 
 package grakn.core.graql.internal.gremlin;
 
-import grakn.core.server.Transaction;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.internal.gremlin.fragment.Fragment;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.gremlin.fragment.Fragment;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.server.Transaction;
 
 import java.util.Collection;
 import java.util.HashSet;

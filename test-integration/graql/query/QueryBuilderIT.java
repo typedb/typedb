@@ -75,7 +75,7 @@ public class QueryBuilderIT {
     @Test
     public void whenBuildingInsertQueryWithGraphLast_ItExecutes() {
         assertNotExists(tx, var().has("title", "a-movie"));
-        InsertQuery query = tx.graql().insert(var().has("title", "a-movie").isa("movie"));
+        InsertQuery query = Graql.insert(var().has("title", "a-movie").isa("movie"));
         tx.execute(query);
         assertExists(tx, var().has("title", "a-movie"));
     }
@@ -87,7 +87,7 @@ public class QueryBuilderIT {
 
         assertExists(tx, var().has("title", "123"));
 
-        DeleteQuery query = tx.graql().match(x.has("title", "123")).delete(x);
+        DeleteQuery query = Graql.match(x.has("title", "123")).delete(x);
         tx.execute(query);
 
         assertNotExists(tx, var().has("title", "123"));
@@ -97,7 +97,7 @@ public class QueryBuilderIT {
     public void whenBuildingUndefineQueryWithGraphLast_ItExecutes() {
         tx.execute(Graql.define(label("yes").sub("entity")));
 
-        UndefineQuery query = tx.graql().undefine(label("yes").sub("entity"));
+        UndefineQuery query = Graql.undefine(label("yes").sub("entity"));
         tx.execute(query);
         assertNotExists(tx, label("yes").sub("entity"));
     }
@@ -106,7 +106,7 @@ public class QueryBuilderIT {
     public void whenBuildingMatchInsertQueryWithGraphLast_ItExecutes() {
         assertNotExists(tx, var().has("title", "a-movie"));
         InsertQuery query =
-                tx.graql().match(x.label("movie"))
+                Graql.match(x.label("movie"))
                         .insert(var().has("title", "a-movie").isa("movie"));
         tx.execute(query);
         assertExists(tx, var().has("title", "a-movie"));

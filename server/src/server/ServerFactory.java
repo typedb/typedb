@@ -18,21 +18,20 @@
 
 package grakn.core.server;
 
+import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
+import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.session.SessionStore;
-import grakn.core.server.util.LockManager;
-import grakn.core.server.util.ServerLockManager;
+import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
+import grakn.core.server.session.SessionStore;
+import grakn.core.server.util.LockManager;
 import grakn.core.server.util.ServerID;
-import grakn.core.server.keyspace.KeyspaceManager;
-import grakn.core.common.config.Config;
+import grakn.core.server.util.ServerLockManager;
 import io.grpc.ServerBuilder;
-
-import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 
 /**
  * This is a factory class which contains methods for instantiating a {@link Server} in different ways.

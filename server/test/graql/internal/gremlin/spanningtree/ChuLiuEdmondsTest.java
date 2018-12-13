@@ -18,6 +18,9 @@
 
 package grakn.core.graql.internal.gremlin.spanningtree;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DenseWeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
@@ -25,16 +28,13 @@ import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
+import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.junit.Assert.assertEquals;
 
 

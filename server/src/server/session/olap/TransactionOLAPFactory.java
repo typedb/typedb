@@ -18,14 +18,14 @@
 
 package grakn.core.server.session.olap;
 
+import com.google.common.collect.ImmutableMap;
+import grakn.core.common.config.ConfigKey;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionFactory;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.oltp.TransactionOLTPFactory;
-import grakn.core.common.config.ConfigKey;
-import grakn.core.common.exception.ErrorMessage;
-import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.slf4j.Logger;

@@ -26,12 +26,13 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.pattern.RelationPattern;
 import grakn.core.graql.reasoner.pattern.ResourcePattern;
-import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.pattern.TypePattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 

@@ -22,12 +22,12 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.reasoner.utils.Pair;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.ArrayList;
 import java.util.List;

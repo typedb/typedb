@@ -18,8 +18,8 @@
 
 package grakn.core.graql.query.predicate;
 
-import grakn.core.graql.exception.GraqlQueryException;
 import com.google.common.collect.ImmutableList;
+import grakn.core.graql.exception.GraqlQueryException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.junit.Rule;
 import org.junit.Test;

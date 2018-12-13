@@ -18,14 +18,14 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.server.Transaction;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.server.Transaction;
 import org.junit.Before;
 import org.junit.Test;
 

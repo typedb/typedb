@@ -21,7 +21,6 @@ package grakn.core.graql.reasoner.reasoning;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.QueryBuilder;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -49,8 +48,7 @@ public class TypeHierarchiesIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet8.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql();
-                String queryString = "match (role2:$x, role3:$y) isa relation2; get;";
+                                String queryString = "match (role2:$x, role3:$y) isa relation2; get;";
                 List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
                 assertThat(answers, empty());
             }
@@ -62,8 +60,7 @@ public class TypeHierarchiesIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet13.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql();
-                String queryString = "match (role1:$x, role2:$y) isa relation2; get;";
+                                String queryString = "match (role1:$x, role2:$y) isa relation2; get;";
                 List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
                 assertEquals(1, answers.size());
             }
@@ -75,8 +72,7 @@ public class TypeHierarchiesIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet19.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql();
-                String baseTypeQuery = "match " +
+                                String baseTypeQuery = "match " +
                         "$x isa entity1;" +
                         "$y isa entity1;" +
                         "(role1: $x, role2: $y) isa relation1;";
@@ -115,8 +111,7 @@ public class TypeHierarchiesIT {
         try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet19-recursive.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql();
-                String baseTypeQuery = "match " +
+                                String baseTypeQuery = "match " +
                         "$x isa entity1;" +
                         "$y isa entity1;" +
                         "(role1: $x, role2: $y) isa relation1;";
@@ -157,8 +152,7 @@ public class TypeHierarchiesIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet20.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql();
-                String queryString = "match (role1: $x, role2: $y) isa relation1; get;";
+                                String queryString = "match (role1: $x, role2: $y) isa relation1; get;";
                 String queryString2 = "match (role1: $x, role2: $y) isa sub-relation1; get;";
                 List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
                 List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
@@ -174,8 +168,7 @@ public class TypeHierarchiesIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet21.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql();
-                String queryString = "match $x isa baseEntity; get;";
+                                String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa subEntity; get;";
                 List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
                 List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));

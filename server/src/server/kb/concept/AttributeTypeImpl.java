@@ -21,9 +21,9 @@ package grakn.core.server.kb.concept;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.Schema;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.graql.internal.Schema;
 
 import javax.annotation.Nullable;
 import java.util.Objects;

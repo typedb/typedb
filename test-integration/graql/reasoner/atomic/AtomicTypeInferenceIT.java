@@ -18,37 +18,35 @@
 
 package grakn.core.graql.reasoner.atomic;
 
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.util.GraqlTestUtil;
-import grakn.core.graql.internal.Schema;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -417,9 +415,8 @@ public class AtomicTypeInferenceIT {
     }
 
     private void typeInferenceQueries(List<SchemaConcept> possibleTypes, String pattern, TransactionImpl<?> tx) {
-        QueryBuilder qb = tx.graql();
         List<ConceptMap> typedAnswers = typedAnswers(possibleTypes, pattern, tx);
-        List<ConceptMap> unTypedAnswers = tx.execute(Graql.match(qb.parser().parsePattern(pattern)).get());
+        List<ConceptMap> unTypedAnswers = tx.execute(Graql.match(Graql.parser().parsePattern(pattern)).get());
         assertEquals(typedAnswers.size(), unTypedAnswers.size());
         GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
     }
@@ -444,7 +441,7 @@ public class AtomicTypeInferenceIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
+        Set<Statement> vars = Graql.parser().parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);

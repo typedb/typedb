@@ -89,7 +89,6 @@ public class DefineQueryIT {
     public static final GraknTestServer graknServer = new GraknTestServer();
     public static SessionImpl session;
     private TransactionImpl<?> tx;
-    private QueryBuilder qb;
 
     @BeforeClass
     public static void newSession() {
@@ -100,7 +99,6 @@ public class DefineQueryIT {
     @Before
     public void newTransaction() {
         tx = session.transaction(Transaction.Type.WRITE);
-        qb = tx.graql();
     }
 
     @After
@@ -154,7 +152,7 @@ public class DefineQueryIT {
                 label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
         ));
 
-        MatchClause match = qb.match(var("x").label("my-type"));
+        MatchClause match = Graql.match(var("x").label("my-type"));
         AttributeType.DataType datatype = tx.stream(match).iterator().next().get("x").asAttributeType().dataType();
 
         Assert.assertEquals(AttributeType.DataType.LONG, datatype);
@@ -167,7 +165,7 @@ public class DefineQueryIT {
                 label("sub-type").sub("my-type")
         ));
 
-        MatchClause match = qb.match(var("x").label("sub-type"));
+        MatchClause match = Graql.match(var("x").label("sub-type"));
         AttributeType.DataType datatype = tx.stream(match).iterator().next().get("x").asAttributeType().dataType();
 
         Assert.assertEquals(AttributeType.DataType.STRING, datatype);
@@ -209,7 +207,7 @@ public class DefineQueryIT {
 
         tx.execute(Graql.insert(var("x").isa("new-type")));
 
-        MatchClause typeQuery = qb.match(var("n").label("new-type"));
+        MatchClause typeQuery = Graql.match(var("n").label("new-type"));
 
         assertEquals(1, tx.stream(typeQuery).count());
 
@@ -285,7 +283,7 @@ public class DefineQueryIT {
     public void testResourceTypeRegex() {
         tx.execute(Graql.define(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING).regex("hello|good day")));
 
-        MatchClause match = qb.match(var("x").label("greeting"));
+        MatchClause match = Graql.match(var("x").label("greeting"));
         assertEquals("hello|good day", tx.stream(match.get("x")).map(ans -> ans.get("x")).findFirst().get().asAttributeType().regex());
     }
 
@@ -295,7 +293,7 @@ public class DefineQueryIT {
         Variable type2 = var("type2");
 
         // Note that two variables refer to the same type. They should both be in the result
-        DefineQuery query = qb.define(type.label("my-type").sub("entity"), type2.label("my-type"));
+        DefineQuery query = Graql.define(type.label("my-type").sub("entity"), type2.label("my-type"));
 
         ConceptMap result = tx.execute(query).get(0);
         assertThat(result.vars(), containsInAnyOrder(type, type2));
@@ -314,8 +312,8 @@ public class DefineQueryIT {
 
     @Test
     public void whenDefiningARule_TheRuleIsInTheKB() {
-        Pattern when = qb.parser().parsePattern("$x isa entity");
-        Pattern then = qb.parser().parsePattern("$x isa entity");
+        Pattern when = Graql.parser().parsePattern("$x isa entity");
+        Pattern then = Graql.parser().parsePattern("$x isa entity");
         Statement vars = label("my-rule").sub(label(RULE.getLabel())).when(when).then(then);
         tx.execute(Graql.define(vars));
 
@@ -494,8 +492,8 @@ public class DefineQueryIT {
 
     @Test
     public void whenDefiningARule_SubRuleDeclarationsCanBeSkipped() {
-        Pattern when = qb.parser().parsePattern("$x isa entity");
-        Pattern then = qb.parser().parsePattern("$x isa entity");
+        Pattern when = Graql.parser().parsePattern("$x isa entity");
+        Pattern then = Graql.parser().parsePattern("$x isa entity");
         Statement vars = label("my-rule").when(when).then(then);
         tx.execute(Graql.define(vars));
 

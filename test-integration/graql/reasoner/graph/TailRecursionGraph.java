@@ -25,9 +25,9 @@ import grakn.core.graql.concept.Role;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 
+import static grakn.core.util.GraqlTestUtil.getInstance;
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
 import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
-import static grakn.core.util.GraqlTestUtil.getInstance;
 
 @SuppressWarnings("CheckReturnValue")
 public class TailRecursionGraph{

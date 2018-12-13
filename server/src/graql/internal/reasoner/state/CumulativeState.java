@@ -23,6 +23,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;

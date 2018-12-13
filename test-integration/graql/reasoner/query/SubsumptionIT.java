@@ -18,26 +18,27 @@
 
 package grakn.core.graql.reasoner.query;
 
-import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
-import java.util.List;
-import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;

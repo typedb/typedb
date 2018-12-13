@@ -23,12 +23,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -58,8 +55,14 @@ import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionImpl;
+
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,7 +74,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import static grakn.core.graql.query.pattern.Pattern.var;
 
@@ -298,7 +300,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     public GetQuery getQuery() {
-        return tx.graql().match(getPattern()).get();
+        return Graql.match(getPattern()).get();
     }
 
     private Stream<IsaAtom> inferEntityTypes(ConceptMap sub) {

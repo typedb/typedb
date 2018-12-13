@@ -19,7 +19,7 @@
 package grakn.core.server.kb.concept;
 
 import com.google.common.collect.Iterables;
-import grakn.core.server.Transaction;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -30,13 +30,13 @@ import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.internal.Schema;
-import grakn.core.server.session.TransactionImpl;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.common.exception.ErrorMessage;
+import grakn.core.server.Transaction;
+import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.exception.TransactionException;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.Matchers;
 import org.junit.After;

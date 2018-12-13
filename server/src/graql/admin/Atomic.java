@@ -20,8 +20,8 @@ package grakn.core.graql.admin;
 
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.HashSet;

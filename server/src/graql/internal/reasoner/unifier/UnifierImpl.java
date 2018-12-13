@@ -18,13 +18,13 @@
 
 package grakn.core.graql.internal.reasoner.unifier;
 
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.admin.Unifier;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.AbstractMap;
 import java.util.Collection;

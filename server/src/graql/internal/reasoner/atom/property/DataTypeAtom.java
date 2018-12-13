@@ -18,14 +18,14 @@
 
 package grakn.core.graql.internal.reasoner.atom.property;
 
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.query.pattern.Variable;
+import com.google.auto.value.AutoValue;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.property.DataTypeProperty;
+import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
-import com.google.auto.value.AutoValue;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.DataTypeProperty;
 
 /**
  *

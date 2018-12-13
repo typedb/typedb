@@ -18,13 +18,13 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.VarProperty;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Set;
 

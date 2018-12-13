@@ -98,7 +98,7 @@ class Visitor extends GraqlBaseVisitor {
     @Override
     public MatchClause visitMatchBase(GraqlParser.MatchBaseContext ctx) {
         Collection<Pattern> patterns = visitPatterns(ctx.patterns());
-        return queryBuilder.match(patterns);
+        return Graql.match(patterns);
     }
 
     @Override
@@ -121,20 +121,20 @@ class Visitor extends GraqlBaseVisitor {
         if (ctx.matchClause() != null) {
             return visitMatchClause(ctx.matchClause()).insert(vars);
         } else {
-            return queryBuilder.insert(vars);
+            return Graql.insert(vars);
         }
     }
 
     @Override
     public DefineQuery visitDefineQuery(GraqlParser.DefineQueryContext ctx) {
         Collection<Statement> vars = this.visitStatements(ctx.statements());
-        return queryBuilder.define(vars);
+        return Graql.define(vars);
     }
 
     @Override
     public Object visitUndefineQuery(GraqlParser.UndefineQueryContext ctx) {
         Collection<Statement> vars = this.visitStatements(ctx.statements());
-        return queryBuilder.undefine(vars);
+        return Graql.undefine(vars);
     }
 
     @Override
@@ -610,7 +610,7 @@ class Visitor extends GraqlBaseVisitor {
         GraqlParser.ComputeMethodContext method = ctx.computeMethod();
         GraqlParser.ComputeConditionsContext conditions = ctx.computeConditions();
 
-        ComputeQuery query = queryBuilder.compute(Method.of(method.getText()));
+        ComputeQuery query = Graql.compute(Method.of(method.getText()));
         if (conditions == null) return query;
 
         for (GraqlParser.ComputeConditionContext conditionContext : conditions.computeCondition()) {

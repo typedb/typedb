@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.pattern;
 import com.google.common.collect.Lists;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
+
 import java.util.List;
 
 public class TypePattern extends QueryPattern {

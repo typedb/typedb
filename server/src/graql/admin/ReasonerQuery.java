@@ -18,13 +18,13 @@
 
 package grakn.core.graql.admin;
 
+import com.google.common.collect.ImmutableMap;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.server.Transaction;
-import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Variable;
-import com.google.common.collect.ImmutableMap;
+import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;

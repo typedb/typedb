@@ -18,22 +18,22 @@
 
 package grakn.core.server.exception;
 
+import com.google.common.base.Preconditions;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.graql.concept.Rule;
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
-import com.google.common.base.Preconditions;
+import grakn.core.server.Transaction;
+import grakn.core.server.keyspace.Keyspace;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 

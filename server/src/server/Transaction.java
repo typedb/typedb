@@ -19,8 +19,6 @@
 package grakn.core.server;
 
 import grakn.core.graql.answer.Answer;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -31,6 +29,7 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -38,12 +37,10 @@ import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.UndefineQuery;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.exception.PropertyNotUniqueException;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.server.keyspace.Keyspace;
 
 import javax.annotation.CheckReturnValue;
@@ -506,16 +503,6 @@ public interface Transaction extends AutoCloseable{
      */
     @CheckReturnValue
     boolean isClosed();
-
-    // TODO: what does this do when the graph is closed?
-    /**
-     * Returns a QueryBuilder
-     *
-     * @return returns a query builder to allow for the creation of graql queries
-     * @see QueryBuilder
-     */
-    @CheckReturnValue
-    QueryBuilder graql();
 
     /**
      * Closes the current transaction. Rendering this graph unusable. You must use the {@link Session} to

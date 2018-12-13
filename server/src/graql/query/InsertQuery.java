@@ -28,10 +28,10 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
- * A query for inserting data, which can be built from a {@link QueryBuilder} or a {@link MatchClause}.
- * When built from a {@code QueryBuilder}, the insert query will execute once, inserting all the variables provided.
- * When built from a {@link MatchClause}, the insert query will execute for each result of the {@link MatchClause},
- * where variable names in the insert query are bound to the concept in the result of the {@link MatchClause}.
+ * A query for inserting data.
+ * When built without a match clause the insert query will execute once, inserting all the variables provided.
+ * When built from a match clause, the insert query will execute for each result of the match clause,
+ * where variable names in the insert query are bound to the concept in the result of the match clause.
  */
 public class InsertQuery implements Query<ConceptMap> {
 

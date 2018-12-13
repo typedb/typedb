@@ -18,9 +18,9 @@
 
 package grakn.core.server.kb.structure;
 
+import grakn.core.graql.internal.Schema;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 /**

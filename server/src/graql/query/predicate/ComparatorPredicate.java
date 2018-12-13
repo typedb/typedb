@@ -20,9 +20,9 @@ package grakn.core.graql.query.predicate;
 
 import grakn.core.graql.concept.AttributeType.DataType;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.internal.Schema;
 import grakn.core.graql.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;

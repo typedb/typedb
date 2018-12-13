@@ -17,11 +17,11 @@
  */
 package grakn.core.server.kb.structure;
 
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.graql.internal.Schema;
+import grakn.core.server.Transaction;
+import grakn.core.server.exception.PropertyNotUniqueException;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.TransactionImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
