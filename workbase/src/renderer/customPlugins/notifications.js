@@ -64,7 +64,7 @@ function registerNotifications() {
     if (e instanceof Object) {
       if ('message' in e) errorMessage = e.message;
       if (errorMessage.includes('14 UNAVAILABLE')) {
-        errorMessage = 'Grakn is not available. <br> - make sure Grakn is running <br> - check that host and port in Grakn URI are correct';
+        errorMessage = 'Grakn is not available. <br> - make sure Grakn Core is running <br> - check that host and port are correct';
       }
       if (errorMessage.includes('3 INVALID_ARGUMENT: GraknTxOperationException') && errorMessage.includes('read only')) {
         errorMessage = 'The transaction is read only - insert and delete queries are not supported';
