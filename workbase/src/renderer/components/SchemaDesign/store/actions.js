@@ -121,57 +121,131 @@ export default {
   async [DEFINE_ENTITY_TYPE]({ state, dispatch }, payload) {
     let graknTx = await dispatch(OPEN_GRAKN_TX);
 
+    // define entity type
     await state.schemaHandler.defineEntityType(payload);
+
+    // add attribute types to entity type
+    await Promise.all(payload.attributeTypes.map(async (attributeType) => {
+      await state.schemaHandler.addAttribute({ schemaLabel: payload.entityLabel, attributeLabel: attributeType });
+    }));
+
+    // add roles to entity type
+    await Promise.all(payload.roleTypes.map(async (roleType) => {
+      await state.schemaHandler.addPlaysRole({ schemaLabel: payload.entityLabel, roleLabel: roleType });
+    }));
 
     dispatch(COMMIT_TX, graknTx).then(async () => {
       graknTx = await dispatch(OPEN_GRAKN_TX);
 
-      const type = await graknTx.getSchemaConcept(payload.label);
+      const type = await graknTx.getSchemaConcept(payload.entityLabel);
       const sup = await type.sup();
       const supLabel = await sup.label();
       let edges;
       // If the supertype is a concept defined by user
       // we just draw the isa edge instead of all edges from relationshipTypes
       if (!META_CONCEPTS.has(supLabel)) {
-        edges = [{ from: type.id, to: sup.id, label: 'isa' }];
+        edges = [{ from: type.id, to: sup.id, label: 'sub' }];
       } else {
         edges = await typeInboundEdges(type, state.visFacade);
       }
       const label = await type.label();
 
-      const nodes = [Object.assign(type, { label })];
+      let nodes = [Object.assign(type, { label })];
+
+      // constuct role edges
+      edges.push(await relationshipTypesOutboundEdges([type]));
 
       state.visFacade.addToCanvas({ nodes, edges });
+
+      nodes = await computeAttributes(nodes);
+      state.visFacade.updateNode(nodes);
+      graknTx.close();
     })
+      .then(() => {
+        dispatch(UPDATE_METATYPE_INSTANCES);
+      })
       .catch((e) => {
+        graknTx.close();
+        logger.error(e.stack);
         throw e;
       });
   },
 
   async [DEFINE_ROLE]({ state, dispatch }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
+
     await state.schemaHandler.defineRole(payload);
+
+    await Promise.all(payload.relationshipTypes.map(async (relationshipType) => {
+      await state.schemaHandler.addRelatesRole({ label: relationshipType, roleLabel: payload.label });
+    }));
+
     dispatch(COMMIT_TX, graknTx)
-      .catch((e) => { throw e; });
+      .catch((e) => {
+        graknTx.close();
+        logger.error(e.stack);
+        throw e;
+      });
   },
 
   async [DEFINE_ATTRIBUTE_TYPE]({ state, dispatch }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
+
+    // define entity type
     await state.schemaHandler.defineAttributeType(payload);
+
+    // add attribute types to attribute type
+    await Promise.all(payload.attributeTypes.map(async (attributeType) => {
+      await state.schemaHandler.addAttribute({ schemaLabel: payload.attributeLabel, attributeLabel: attributeType });
+    }));
+
+    // add roles to attribute type
+    await Promise.all(payload.roleTypes.map(async (roleType) => {
+      await state.schemaHandler.addPlaysRole({ schemaLabel: payload.attributeLabel, roleLabel: roleType });
+    }));
+
     dispatch(COMMIT_TX, graknTx)
-      .catch((e) => { throw e; });
+      .then(() => {
+        dispatch(UPDATE_METATYPE_INSTANCES);
+      })
+      .catch((e) => {
+        graknTx.close();
+        logger.error(e.stack);
+        throw e;
+      });
   },
 
   async [DEFINE_RELATIONSHIP_TYPE]({ state, dispatch }, payload) {
-    const graknTx = await dispatch(OPEN_GRAKN_TX);
+    let graknTx = await dispatch(OPEN_GRAKN_TX);
     await state.schemaHandler.defineRelationshipType(payload);
 
-    dispatch(COMMIT_TX, graknTx).then(async () => {
-      const type = await graknTx.getSchemaConcept(payload.label);
-      const label = await type.getLabel();
-      const sup = await type.sup();
-      const supLabel = await sup.getLabel();
+    // define and relate roles to relationship type
+    await Promise.all(payload.defineRoles.map(async (roleType) => {
+      await state.schemaHandler.defineRole({ roleLabel: roleType.label, superType: roleType.superType });
+      await state.schemaHandler.addRelatesRole({ schemaLabel: payload.relationshipLabel, roleLabel: roleType.label });
+    }));
 
+    // relate roles to relationship type
+    await Promise.all(payload.relateRoles.map(async (roleType) => {
+      await state.schemaHandler.addRelatesRole({ schemaLabel: payload.relationshipLabel, roleLabel: roleType });
+    }));
+
+    // add attribute types to relationship type
+    await Promise.all(payload.attributeTypes.map(async (attributeType) => {
+      await state.schemaHandler.addAttribute({ schemaLabel: payload.relationshipLabel, attributeLabel: attributeType });
+    }));
+
+    // add roles to relationship type
+    await Promise.all(payload.roleTypes.map(async (roleType) => {
+      await state.schemaHandler.addPlaysRole({ schemaLabel: payload.relationshipLabel, roleLabel: roleType });
+    }));
+
+    dispatch(COMMIT_TX, graknTx).then(async () => {
+      graknTx = await dispatch(OPEN_GRAKN_TX);
+      const type = await graknTx.getSchemaConcept(payload.relationshipLabel);
+      const label = await type.label();
+      const sup = await type.sup();
+      const supLabel = await sup.label();
       let edges;
       // If the supertype is a concept defined by user
       // we just draw the isa edge instead of all edges to roleplayers
@@ -182,10 +256,21 @@ export default {
         const plays = await typeInboundEdges(type, state.visFacade);
         edges = plays.concat(relatesEdges);
       }
-      const nodes = [Object.assign(type, { label })];
+      let nodes = [Object.assign(type, { label })];
       state.visFacade.addToCanvas({ nodes, edges });
+
+      nodes = await computeAttributes(nodes);
+      state.visFacade.updateNode(nodes);
+      graknTx.close();
     })
-      .catch((e) => { throw e; });
+      .then(() => {
+        dispatch(UPDATE_METATYPE_INSTANCES);
+      })
+      .catch((e) => {
+        graknTx.close();
+        logger.error(e.stack);
+        throw e;
+      });
   },
 
 
