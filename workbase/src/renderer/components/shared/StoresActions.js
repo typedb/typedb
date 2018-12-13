@@ -23,6 +23,8 @@ export const UPDATE_NODES_COLOUR = 'update-nodes-colour';
 export const DELETE_SELECTED_NODES = 'delete-selected-nodes';
 export const LOAD_NEIGHBOURS = 'load-neighbours';
 export const LOAD_ATTRIBUTES = 'load-attributes';
+export const ADD_ATTRIBUTE_TYPE = 'add-attribute-types';
+
 
 // Common actions shared by the two canvas stores (SchemaDesign && DataManagement)
 export const UPDATE_METATYPE_INSTANCES = 'update-metatype-instances';

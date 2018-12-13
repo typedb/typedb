@@ -16,6 +16,7 @@ import {
   DELETE_PLAYS_ROLE,
   DELETE_RELATES_ROLE,
   DELETE_ATTRIBUTE,
+  ADD_ATTRIBUTE_TYPE,
   ADD_TYPE,
 } from '@/components/shared/StoresActions';
 import logger from '@/../Logger';
@@ -215,6 +216,36 @@ export default {
       });
   },
 
+  async [ADD_ATTRIBUTE_TYPE]({ state, dispatch }, payload) {
+    let graknTx = await dispatch(OPEN_GRAKN_TX);
+
+    // add attribute types to schema concept
+    await Promise.all(payload.attributeTypes.map(async (attributeType) => {
+      await state.schemaHandler.addAttribute({ schemaLabel: payload.label, attributeLabel: attributeType });
+    }));
+
+    await dispatch(COMMIT_TX, graknTx)
+      .then(async () => {
+        const node = state.visFacade.getNode(state.selectedNodes[0].id);
+
+        graknTx = await dispatch(OPEN_GRAKN_TX);
+
+        await Promise.all(payload.attributeTypes.map(async (attributeType) => {
+          const dataType = await (await graknTx.getSchemaConcept(attributeType)).dataType();
+          const attrs = [...node.attributes, { type: attributeType, dataType }];
+          node.attributes = attrs;
+        }));
+        graknTx.close();
+        state.visFacade.updateNode(node);
+      })
+      .catch((e) => {
+        graknTx.close();
+        logger.error(e.stack);
+        throw e;
+      });
+  },
+
+
   async [DEFINE_RELATIONSHIP_TYPE]({ state, dispatch }, payload) {
     let graknTx = await dispatch(OPEN_GRAKN_TX);
     await state.schemaHandler.defineRelationshipType(payload);
@@ -294,7 +325,7 @@ export default {
       .catch((e) => { throw e; });
   },
 
-  async [REFRESH_SELECTED_NODE]({ state, commit }) {
+  [REFRESH_SELECTED_NODE]({ state, commit }) {
     const node = state.selectedNodes[0];
     if (!node) return;
     commit('selectedNodes', null);
