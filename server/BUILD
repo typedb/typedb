@@ -18,7 +18,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@graknlabs_rules_deployment//maven:rules.bzl", "deploy_maven_jar")
+load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 
 
 exports_files(
@@ -98,9 +98,8 @@ java_binary(
 
 deploy_maven_jar(
     name = "deploy-maven-jar",
-    targets = [":server"],
-    version_file = "//:VERSION",
-    deployment_properties = "//:deployment.properties",
+    target = ":server",
+    package = "server",
 )
 
 genrule(

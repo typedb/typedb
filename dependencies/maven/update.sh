@@ -25,6 +25,9 @@ pushd "$GRAKN_CORE_HOME" > /dev/null
 
 bazel run //dependencies/tools:bazel-deps -- generate -r $GRAKN_CORE_HOME -s dependencies/maven/dependencies.bzl -d dependencies/maven/dependencies.yaml
 
+bazel build //dependencies/maven:deployment_rules
+install -m 644 $(bazel info bazel-genfiles)/dependencies/maven/rules.bzl $GRAKN_CORE_HOME/dependencies/maven/rules.bzl
+
 # Fix formatting for Bazel source code
 #bazel run //tools/formatter -- --path $(pwd)/third_party --build &>/dev/null
 

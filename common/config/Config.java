@@ -19,8 +19,8 @@
 package grakn.core.common.config;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.io.Files;
-import grakn.core.common.util.CommonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +51,7 @@ public class Config {
     private static final Logger LOG = LoggerFactory.getLogger(Config.class);
     private static Config defaultConfig = null;
 
-    public static final Path PROJECT_PATH = CommonUtil.getProjectPath();
+    public static final Path PROJECT_PATH = Config.getProjectPath();
     public static final Path CONFIG_FILE_PATH = getConfigFilePath(PROJECT_PATH);
     public static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get(".", "services", "grakn", "grakn-core-ascii.txt"));
 
@@ -64,6 +64,17 @@ public class Config {
             defaultConfig = Config.read(CONFIG_FILE_PATH);
         }
         return defaultConfig;
+    }
+
+    /**
+     * @return The project path. If it is not specified as a JVM parameter it will be set equal to
+     * user.dir folder.
+     */
+    public static Path getProjectPath() {
+        if (SystemProperty.CURRENT_DIRECTORY.value() == null) {
+            SystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
+        }
+        return Paths.get(SystemProperty.CURRENT_DIRECTORY.value());
     }
 
     public static Config read(Path path) {
