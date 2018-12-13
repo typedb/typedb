@@ -64,7 +64,7 @@ import state from './store/state';
 export default {
   name: 'SchemaDesignContent',
   components: {
-    GraphCanvas, TopBar, RightBar, LeftBar, ContextMenu, Preferences
+    GraphCanvas, TopBar, RightBar, LeftBar, ContextMenu, Preferences,
   },
   data() {
     return {

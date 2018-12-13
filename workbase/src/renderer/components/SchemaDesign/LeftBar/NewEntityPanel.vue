@@ -70,6 +70,14 @@
 
 <style scoped>
 
+  .no-types {
+    background-color: var(--gray-1);
+    padding: var(--container-padding);
+    border: var(--container-darkest-border);
+    border-top: 0px;
+  }
+
+
   .has-header {
     width: 100%;
     background-color: var(--gray-1);
