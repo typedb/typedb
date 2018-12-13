@@ -74,7 +74,7 @@ public class QueryBuilder {
     @CheckReturnValue
     public MatchClause match(Collection<? extends Pattern> patterns) {
         Conjunction<Pattern> conjunction = Pattern.and(Sets.newHashSet(patterns));
-        return new MatchClause(tx, conjunction);
+        return new MatchClause(conjunction);
     }
 
     /**
@@ -92,7 +92,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public InsertQuery insert(Collection<? extends Statement> vars) {
-        return new InsertQuery(tx, null, ImmutableList.copyOf(vars));
+        return new InsertQuery(null, ImmutableList.copyOf(vars));
     }
 
     /**
@@ -110,7 +110,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public DefineQuery define(Collection<? extends Statement> varPatterns) {
-        return new DefineQuery(tx, ImmutableList.copyOf(varPatterns));
+        return new DefineQuery(ImmutableList.copyOf(varPatterns));
     }
 
     /**
@@ -128,7 +128,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public UndefineQuery undefine(Collection<? extends Statement> statements) {
-        return new UndefineQuery(tx, statements);
+        return new UndefineQuery(statements);
     }
 
     /**
@@ -136,7 +136,7 @@ public class QueryBuilder {
      */
     @CheckReturnValue
     public <T extends Answer> ComputeQuery<T> compute(Method<T> method) {
-        return new ComputeQuery<>(tx, method);
+        return new ComputeQuery<>(method);
     }
 
     /**

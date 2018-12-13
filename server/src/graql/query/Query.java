@@ -19,11 +19,6 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.Answer;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.server.QueryExecutor;
-import grakn.core.server.Transaction;
-
-import javax.annotation.Nullable;
 
 /**
  * A Graql query of any kind. May read and write to the graph.
@@ -31,25 +26,6 @@ import javax.annotation.Nullable;
  * @param <T> The result type after executing the query
  */
 public interface Query<T extends Answer> {
-
-    /**
-     * @return the special type of {@link QueryExecutor}, depending on whether the query is executed on the client or
-     * server side.
-     */
-    default QueryExecutor executor() {
-        return executor(true);
-    }
-
-    default QueryExecutor executor(boolean infer) {
-        if(tx() == null) throw GraqlQueryException.noTx();
-        return tx().executor(infer);
-    }
-
-    /**
-     * @return the transaction {@link Transaction} associated with this query
-     */
-    @Nullable
-    Transaction tx();
 
     /**
      * Graql commands to determine the type of query

@@ -19,10 +19,8 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.Answer;
-import grakn.core.server.Transaction;
 
 import javax.annotation.Nullable;
-import java.util.stream.Stream;
 
 /**
  * An aggregate query produced from a {@link MatchClause}.
@@ -55,11 +53,6 @@ public class AggregateQuery<T extends Answer> implements Query<T> {
      */
     public Aggregate<T> aggregate() {
         return aggregate;
-    }
-
-    @Override
-    public final Transaction tx() {
-        return match().tx();
     }
 
     @Override

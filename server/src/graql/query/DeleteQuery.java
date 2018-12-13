@@ -21,11 +21,9 @@ package grakn.core.graql.query;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 
@@ -72,11 +70,6 @@ public class DeleteQuery implements Query<ConceptSet> {
     @CheckReturnValue
     public Set<Variable> vars() {
         return vars;
-    }
-
-    @Override
-    public final Transaction tx() {
-        return match().tx();
     }
 
     @CheckReturnValue

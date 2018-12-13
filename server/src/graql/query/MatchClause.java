@@ -26,7 +26,6 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
@@ -46,11 +45,8 @@ import static java.util.stream.Collectors.joining;
 public class MatchClause {
 
     private final Conjunction<Pattern> pattern;
-    private final Transaction tx;
 
-    public MatchClause(Transaction tx, Conjunction<Pattern> pattern) {
-        this.tx = tx;
-
+    public MatchClause(Conjunction<Pattern> pattern) {
         if (pattern.getPatterns().size() == 0) {
             throw GraqlQueryException.noPatterns();
         }
@@ -61,11 +57,6 @@ public class MatchClause {
     @CheckReturnValue
     public final Conjunction<Pattern> getPatterns() {
         return pattern;
-    }
-
-    @CheckReturnValue
-    public Transaction tx() {
-        return tx;
     }
 
     @CheckReturnValue
@@ -140,7 +131,7 @@ public class MatchClause {
     @CheckReturnValue
     public final InsertQuery insert(Collection<? extends Statement> vars) {
         MatchClause match = this;
-        return new InsertQuery(match.tx(), match, ImmutableList.copyOf(vars));
+        return new InsertQuery(match, ImmutableList.copyOf(vars));
     }
 
     /**

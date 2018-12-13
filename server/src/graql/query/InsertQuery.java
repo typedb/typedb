@@ -18,21 +18,14 @@
 
 package grakn.core.graql.query;
 
-import com.google.common.base.Preconditions;
-import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A query for inserting data, which can be built from a {@link QueryBuilder} or a {@link MatchClause}.
@@ -42,33 +35,21 @@ import java.util.stream.Stream;
  */
 public class InsertQuery implements Query<ConceptMap> {
 
-    private final Transaction tx;
     private final MatchClause match;
     private final Collection<Statement> statements;
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
-     *
-     * @param tx         the graph to execute on
-     * @param match      the {@link MatchClause} to insert for each result
+     *  @param match      the {@link MatchClause} to insert for each result
      * @param statements a collection of Vars to insert
      */
-    public InsertQuery(@Nullable Transaction tx, @Nullable MatchClause match, Collection<Statement> statements) {
-        if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
-
+    public InsertQuery(@Nullable MatchClause match, Collection<Statement> statements) {
         if (statements.isEmpty()) {
             throw GraqlQueryException.noPatterns();
         }
 
-        this.tx = tx;
         this.match = match;
         this.statements = statements;
-    }
-
-    @Nullable
-    @Override
-    public Transaction tx() {
-        return tx;
     }
 
     /**
@@ -111,8 +92,7 @@ public class InsertQuery implements Query<ConceptMap> {
         }
         if (o instanceof InsertQuery) {
             InsertQuery that = (InsertQuery) o;
-            return ((this.tx == null) ? (that.tx() == null) : this.tx.equals(that.tx()))
-                    && ((this.match == null) ? (that.match() == null) : this.match.equals(that.match()))
+            return ((this.match == null) ? (that.match() == null) : this.match.equals(that.match()))
                     && (this.statements.equals(that.statements()));
         }
         return false;
@@ -121,8 +101,6 @@ public class InsertQuery implements Query<ConceptMap> {
     @Override
     public int hashCode() {
         int h = 1;
-        h *= 1000003;
-        h ^= (tx == null) ? 0 : this.tx.hashCode();
         h *= 1000003;
         h ^= (match == null) ? 0 : this.match.hashCode();
         h *= 1000003;

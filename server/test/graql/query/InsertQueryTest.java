@@ -40,8 +40,8 @@ public class InsertQueryTest {
 
     @Test
     public void insertQueriesWithTheSameVarsAndQueryAreEqual() {
-        InsertQuery query1 = new InsertQuery(null, match1, ImmutableList.copyOf(vars1));
-        InsertQuery query2 = new InsertQuery(null, match1, ImmutableList.copyOf(vars1));
+        InsertQuery query1 = new InsertQuery(match1, ImmutableList.copyOf(vars1));
+        InsertQuery query2 = new InsertQuery(match1, ImmutableList.copyOf(vars1));
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -51,8 +51,8 @@ public class InsertQueryTest {
     public void insertQueriesWithTheSameVarsAndGraphAreEqual() {
         Transaction graph = mock(Transaction.class);
 
-        InsertQuery query1 = new InsertQuery(graph, null, ImmutableList.copyOf(vars1));
-        InsertQuery query2 = new InsertQuery(graph, null, ImmutableList.copyOf(vars1));
+        InsertQuery query1 = new InsertQuery(null, ImmutableList.copyOf(vars1));
+        InsertQuery query2 = new InsertQuery(null, ImmutableList.copyOf(vars1));
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -60,8 +60,8 @@ public class InsertQueryTest {
 
     @Test
     public void insertQueriesWithDifferentMatchesAreDifferent() {
-        InsertQuery query1 = new InsertQuery(null, match1, ImmutableList.copyOf(vars1));
-        InsertQuery query2 = new InsertQuery(null, match2, ImmutableList.copyOf(vars1));
+        InsertQuery query1 = new InsertQuery(match1, ImmutableList.copyOf(vars1));
+        InsertQuery query2 = new InsertQuery(match2, ImmutableList.copyOf(vars1));
 
         assertNotEquals(query1, query2);
     }
@@ -71,16 +71,16 @@ public class InsertQueryTest {
         Transaction graph1 = mock(Transaction.class);
         Transaction graph2 = mock(Transaction.class);
 
-        InsertQuery query1 = new InsertQuery(graph1, null, ImmutableList.copyOf(vars1));
-        InsertQuery query2 = new InsertQuery(graph2, null, ImmutableList.copyOf(vars2));
+        InsertQuery query1 = new InsertQuery(null, ImmutableList.copyOf(vars1));
+        InsertQuery query2 = new InsertQuery(null, ImmutableList.copyOf(vars2));
 
         assertNotEquals(query1, query2);
     }
 
     @Test
     public void insertQueriesWithDifferentVarsAreDifferent() {
-        InsertQuery query1 = new InsertQuery(null, match1, ImmutableList.copyOf(vars1));
-        InsertQuery query2 = new InsertQuery(null, match1, ImmutableList.copyOf(vars2));
+        InsertQuery query1 = new InsertQuery(match1, ImmutableList.copyOf(vars1));
+        InsertQuery query2 = new InsertQuery(match1, ImmutableList.copyOf(vars2));
 
         assertNotEquals(query1, query2);
     }

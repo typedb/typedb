@@ -142,7 +142,6 @@ public class ServerRPCTest {
         when(txFactory.tx(eq(MYKS), any())).thenReturn(tx);
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);
-        when(query.executor()).thenReturn(executor);
 
         when(tx.execute(query)).thenAnswer(params -> Stream.of(new ConceptMap()));
 

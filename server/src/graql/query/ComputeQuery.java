@@ -30,7 +30,6 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.util.StringUtil;
-import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
@@ -47,7 +46,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
@@ -74,8 +72,6 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
 
     public final static Map<Method, Boolean> INCLUDE_ATTRIBUTES_DEFAULT = includeAttributesDefault();
 
-    private Transaction tx;
-
     private Method method;
     private boolean includeAttributes;
 
@@ -89,13 +85,12 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
 
     private final Map<Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
-    public ComputeQuery(Transaction tx, Method<T> method) {
-        this(tx, method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
+    public ComputeQuery(Method<T> method) {
+        this(method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
     }
 
-    public ComputeQuery(Transaction tx, Method method, boolean includeAttributes) {
+    public ComputeQuery(Method method, boolean includeAttributes) {
         this.method = method;
-        this.tx = tx;
         this.includeAttributes = includeAttributes;
     }
 
@@ -209,11 +204,6 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
         conditions.put(Condition.WHERE, this::where);
 
         return conditions;
-    }
-
-    @Override
-    public final Transaction tx() {
-        return tx;
     }
 
     public final Method method() {
@@ -462,8 +452,7 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
 
         ComputeQuery<?> that = (ComputeQuery<?>) o;
 
-        return (Objects.equals(this.tx(), that.tx()) &&
-                this.method().equals(that.method()) &&
+        return (this.method().equals(that.method()) &&
                 this.from().equals(that.from()) &&
                 this.to().equals(that.to()) &&
                 this.of().equals(that.of()) &&
@@ -475,8 +464,7 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
 
     @Override
     public int hashCode() {
-        int result = tx.hashCode();
-        result = 31 * result + Objects.hashCode(method);
+        int result = Objects.hashCode(method);
         result = 31 * result + Objects.hashCode(fromID);
         result = 31 * result + Objects.hashCode(toID);
         result = 31 * result + Objects.hashCode(ofTypes);
@@ -794,10 +782,11 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
 
         @Override
         public int hashCode() {
-            int result = tx.hashCode();
-            result = 31 * result + argumentsOrdered.hashCode();
+            int h = 1;
+            h *= 1000003;
+            h ^= this.argumentsOrdered.hashCode();
 
-            return result;
+            return h;
         }
     }
 }

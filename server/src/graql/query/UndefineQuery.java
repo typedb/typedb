@@ -21,12 +21,9 @@ package grakn.core.graql.query;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.server.Transaction;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A query for undefining the Schema types.
@@ -34,21 +31,13 @@ import java.util.stream.Stream;
  */
 public class UndefineQuery implements Query<ConceptMap> {
 
-    private final Transaction tx;
     private final Collection<? extends Statement> statements;
 
-    UndefineQuery(@Nullable Transaction tx, Collection<? extends Statement> statements) {
-        this.tx = tx;
+    UndefineQuery(Collection<? extends Statement> statements) {
         if (statements == null) {
             throw new NullPointerException("Null statements");
         }
         this.statements = statements;
-    }
-
-    @Nullable
-    @Override
-    public Transaction tx() {
-        return tx;
     }
 
     /**
@@ -70,8 +59,7 @@ public class UndefineQuery implements Query<ConceptMap> {
         }
         if (o instanceof UndefineQuery) {
             UndefineQuery that = (UndefineQuery) o;
-            return ((this.tx == null) ? (that.tx() == null) : this.tx.equals(that.tx()))
-                    && (this.statements.equals(that.statements()));
+            return this.statements.equals(that.statements());
         }
         return false;
     }
@@ -79,8 +67,6 @@ public class UndefineQuery implements Query<ConceptMap> {
     @Override
     public int hashCode() {
         int h = 1;
-        h *= 1000003;
-        h ^= (tx == null) ? 0 : this.tx.hashCode();
         h *= 1000003;
         h ^= this.statements.hashCode();
         return h;
