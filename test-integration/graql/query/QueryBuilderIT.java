@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.query.pattern.Variable;
@@ -35,8 +34,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static grakn.core.graql.query.Graql.insert;
-import static grakn.core.graql.query.Graql.match;
 import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
@@ -113,14 +110,6 @@ public class QueryBuilderIT {
                         .insert(var().has("title", "a-movie").isa("movie"));
         tx.execute(query);
         assertExists(tx, var().has("title", "a-movie"));
-    }
-
-    @Test
-    public void whenExecutingAnInsertQueryWithoutAGraph_Throw() {
-        InsertQuery query = insert(var().id(ConceptId.of("another-movie")).isa("movie"));
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage("graph");
-        tx.execute(query);
     }
 
     @Test

@@ -60,7 +60,6 @@ public class QueryErrorIT {
     public static final GraknTestServer graknServer = new GraknTestServer();
     private static SessionImpl session;
     private TransactionImpl<?> tx;
-    private QueryBuilder qb;
 
     @BeforeClass
     public static void newSession() {
@@ -71,7 +70,6 @@ public class QueryErrorIT {
     @Before
     public void newTransaction() {
         tx = session.transaction(Transaction.Type.WRITE);
-        qb = tx.graql();
     }
 
     @After
@@ -145,7 +143,7 @@ public class QueryErrorIT {
                 containsString("abc"), containsString("isa"), containsString("person"), containsString("has-cast")
         ));
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var("abc").isa("person").isa("has-cast"));
+        Graql.match(var("abc").isa("person").isa("has-cast"));
     }
 
     @Test
@@ -171,7 +169,7 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
         //noinspection ResultOfMethodCallIgnored
-        qb.match();
+        Graql.match();
     }
 
     @Test
@@ -186,8 +184,7 @@ public class QueryErrorIT {
         // Create a fresh graph, with no has between person and name
         Session newSession = graknServer.sessionWithNewKeyspace();
         try (Transaction newTx = newSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder emptyQb = newTx.graql();
-            tx.execute(Graql.define(
+            newTx.execute(Graql.define(
                     label("person").sub("entity"),
                     label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
             ));
@@ -197,7 +194,7 @@ public class QueryErrorIT {
                     containsString("person"),
                     containsString("name")
             ));
-            tx.execute(Graql.insert(var().isa("person").has("name", "Bob")));
+            newTx.execute(Graql.insert(var().isa("person").has("name", "Bob")));
         }
     }
 
@@ -240,8 +237,8 @@ public class QueryErrorIT {
     @Test
     public void whenUsingInvalidResourceValue_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(INVALID_VALUE.getMessage(qb.getClass()));
-        qb.match(var("x").val(qb));
+        exception.expectMessage(INVALID_VALUE.getMessage(tx.getClass()));
+        Graql.match(var("x").val(tx));
     }
 
     @Test
