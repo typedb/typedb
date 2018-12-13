@@ -91,6 +91,11 @@ describe('Build Explanation Query', () => {
     expect(explanationQuery.query).toBe('match $p id 3333; $c id 4444; ');
     expect(explanationQuery.attributeQuery).toBe(null);
   });
+  test('from attribute and relationship', async () => {
+    const explanationQuery = buildExplanationQuery(MockConcepts.getMockAnswer4(), MockConcepts.getMockQueryPattern4);
+    expect(explanationQuery.query).toBe('match ');
+    expect(explanationQuery.attributeQuery).toBe('$5678 id 6666 has duration $1234;');
+  });
 });
 
 describe('Filters out Answers that contain inferred concepts in their ConceptMap', () => {

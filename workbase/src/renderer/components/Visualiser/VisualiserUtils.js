@@ -57,6 +57,8 @@ export function buildExplanationQuery(answer, queryPattern) {
       // attributeQuery = `has ${queryPattern.match(/(?:has )(\w+)/)[1]} $${graqlVar};`;
     } else if (concept.isEntity()) {
       query += `$${graqlVar} id ${concept.id}; `;
+    } else if (attributeQuery && concept.isRelationship()) { // if answer has a relationship and attribute
+      attributeQuery = `$${graqlVar} id ${concept.id} ${attributeQuery}`;
     }
   });
   return { query, attributeQuery };
