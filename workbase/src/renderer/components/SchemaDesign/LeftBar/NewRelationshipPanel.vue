@@ -481,6 +481,7 @@
             })
               .then(() => {
                 this.showSpinner = false;
+                this.$notifyInfo(`Relationship Type, ${this.relationshipLabel}, has been defined`);
                 this.resetPanel();
               })
               .catch((e) => {
@@ -497,7 +498,6 @@
       },
       resetPanel() {
         this.relationshipLabel = '';
-        debugger;
         this.superTypes = ['relationship', ...this.metaTypeInstances.relationships];
         this.superType = this.superTypes[0];
         this.newRoles = [''];

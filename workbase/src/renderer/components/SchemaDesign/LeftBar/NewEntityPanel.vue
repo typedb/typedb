@@ -333,7 +333,6 @@
           this.showSpinner = true;
           this[DEFINE_ENTITY_TYPE]({ entityLabel: this.entityLabel, superType: this.superType, attributeTypes: this.toggledAttributeTypes, roleTypes: this.toggledRoleTypes })
             .then(() => {
-              this.superTypes.push(this.entityLabel);
               this.showSpinner = false;
               this.$notifyInfo(`Entity Type, ${this.entityLabel}, has been defined`);
               this.resetPanel();

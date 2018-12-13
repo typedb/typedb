@@ -41,7 +41,14 @@
     methods: {
       async deleteNode() {
         this.setContextMenu({ show: false, x: null, y: null });
-        this[DELETE_SCHEMA_CONCEPT](this.selectedNodes[0]).catch((err) => { this.$notifyError(err, 'Delete nodes'); });
+
+        const label = this.selectedNodes[0].label;
+
+        this[DELETE_SCHEMA_CONCEPT](this.selectedNodes[0])
+          .then(() => {
+            this.$notifyInfo(`Schema concept, ${label}, has been deleted`);
+          })
+          .catch((err) => { this.$notifyError(err, 'Delete schema concept'); });
       },
     },
   };
