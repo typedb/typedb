@@ -99,6 +99,14 @@
 
 <style scoped>
 
+  .no-types {
+    background-color: var(--gray-1);
+    padding: var(--container-padding);
+    border: var(--container-darkest-border);
+    border-top: 0px;
+  }
+
+
   .has-header {
     width: 100%;
     background-color: var(--gray-1);
@@ -473,11 +481,10 @@
             })
               .then(() => {
                 this.showSpinner = false;
-                this.superTypes.push(this.relationshipLabel);
+                this.$notifyInfo(`Relationship Type, ${this.relationshipLabel}, has been defined`);
                 this.resetPanel();
               })
               .catch((e) => {
-                debugger;
                 logger.error(e.stack);
                 this.showSpinner = false;
                 this.$notifyError(e.message);

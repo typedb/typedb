@@ -70,6 +70,14 @@
 
 <style scoped>
 
+  .no-types {
+    background-color: var(--gray-1);
+    padding: var(--container-padding);
+    border: var(--container-darkest-border);
+    border-top: 0px;
+  }
+
+
   .has-header {
     width: 100%;
     background-color: var(--gray-1);
@@ -325,7 +333,6 @@
           this.showSpinner = true;
           this[DEFINE_ENTITY_TYPE]({ entityLabel: this.entityLabel, superType: this.superType, attributeTypes: this.toggledAttributeTypes, roleTypes: this.toggledRoleTypes })
             .then(() => {
-              this.superTypes.push(this.entityLabel);
               this.showSpinner = false;
               this.$notifyInfo(`Entity Type, ${this.entityLabel}, has been defined`);
               this.resetPanel();

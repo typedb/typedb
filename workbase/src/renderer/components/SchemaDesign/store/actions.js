@@ -10,7 +10,6 @@ import {
   DEFINE_ROLE,
   DEFINE_ATTRIBUTE_TYPE,
   DEFINE_RELATIONSHIP_TYPE,
-  DELETE_TYPE,
   DELETE_SCHEMA_CONCEPT,
   REFRESH_SELECTED_NODE,
   DELETE_PLAYS_ROLE,
@@ -135,7 +134,7 @@ export default {
       await state.schemaHandler.addPlaysRole({ schemaLabel: payload.entityLabel, roleLabel: roleType });
     }));
 
-    dispatch(COMMIT_TX, graknTx).then(async () => {
+    await dispatch(COMMIT_TX, graknTx).then(async () => {
       graknTx = await dispatch(OPEN_GRAKN_TX);
 
       const type = await graknTx.getSchemaConcept(payload.entityLabel);
@@ -162,8 +161,8 @@ export default {
       state.visFacade.updateNode(nodes);
       graknTx.close();
     })
-      .then(() => {
-        dispatch(UPDATE_METATYPE_INSTANCES);
+      .then(async () => {
+        await dispatch(UPDATE_METATYPE_INSTANCES);
       })
       .catch((e) => {
         graknTx.close();
@@ -205,9 +204,9 @@ export default {
       await state.schemaHandler.addPlaysRole({ schemaLabel: payload.attributeLabel, roleLabel: roleType });
     }));
 
-    dispatch(COMMIT_TX, graknTx)
-      .then(() => {
-        dispatch(UPDATE_METATYPE_INSTANCES);
+    await dispatch(COMMIT_TX, graknTx)
+      .then(async () => {
+        await dispatch(UPDATE_METATYPE_INSTANCES);
       })
       .catch((e) => {
         graknTx.close();
@@ -271,7 +270,7 @@ export default {
       await state.schemaHandler.addPlaysRole({ schemaLabel: payload.relationshipLabel, roleLabel: roleType });
     }));
 
-    dispatch(COMMIT_TX, graknTx).then(async () => {
+    await dispatch(COMMIT_TX, graknTx).then(async () => {
       graknTx = await dispatch(OPEN_GRAKN_TX);
       const type = await graknTx.getSchemaConcept(payload.relationshipLabel);
       const label = await type.label();
@@ -279,9 +278,9 @@ export default {
       const supLabel = await sup.label();
       let edges;
       // If the supertype is a concept defined by user
-      // we just draw the isa edge instead of all edges to roleplayers
+      // we just draw the sub edge instead of all edges to roleplayers
       if (!META_CONCEPTS.has(supLabel)) {
-        edges = [{ from: type.id, to: sup.id, label: 'isa' }];
+        edges = [{ from: type.id, to: sup.id, label: 'sub' }];
       } else {
         const relatesEdges = await relationshipTypesOutboundEdges([type]);
         const plays = await typeInboundEdges(type, state.visFacade);
@@ -294,8 +293,8 @@ export default {
       state.visFacade.updateNode(nodes);
       graknTx.close();
     })
-      .then(() => {
-        dispatch(UPDATE_METATYPE_INSTANCES);
+      .then(async () => {
+        await dispatch(UPDATE_METATYPE_INSTANCES);
       })
       .catch((e) => {
         graknTx.close();
@@ -305,24 +304,41 @@ export default {
   },
 
 
-  async [DELETE_TYPE]({ state, dispatch, commit }, payload) {
-    const graknTx = await dispatch(OPEN_GRAKN_TX);
-    const typeId = await state.schemaHandler.deleteType(payload);
-    dispatch(COMMIT_TX, graknTx).then(() => {
-      state.visFacade.deleteFromCanvas([typeId]);
-      commit('selectedNodes'.null);
-    })
-      .catch((e) => { throw e; });
-  },
-
-  // Difference with action above: this deletes a schema concept that is not shown in canvas
   async [DELETE_SCHEMA_CONCEPT]({ state, dispatch, commit }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
-    await state.schemaHandler.defineRelationshipType(payload);
+
+    const type = await graknTx.getSchemaConcept(payload.label);
+
+    const instances = await (await type.instances()).collect();
+    Promise.all(instances.map(async (thing) => {
+      await thing.delete();
+    }));
+
+    if (payload.baseType === 'RELATIONSHIP_TYPE') {
+      const roles = await (await type.roles()).collect();
+      await Promise.all(roles.map(async (role) => {
+        const roleLabel = await role.label();
+        const rolePlayers = await (await role.players()).collect();
+
+        await Promise.all(rolePlayers.map(async (player) => {
+          await state.schemaHandler.deletePlaysRole({ label: await player.label(), roleLabel });
+        }));
+
+        await state.schemaHandler.deleteRelatesRole({ label: payload.label, roleLabel });
+      }));
+    }
+
+    const typeId = await state.schemaHandler.deleteType(payload);
+
     dispatch(COMMIT_TX, graknTx).then(() => {
-      commit('selectedNodes'.null);
+      state.visFacade.deleteFromCanvas([typeId]);
+      commit('selectedNodes', null);
+      dispatch(UPDATE_METATYPE_INSTANCES);
     })
-      .catch((e) => { throw e; });
+      .catch((e) => {
+        graknTx.close();
+        logger.error(e.stack);
+      });
   },
 
   [REFRESH_SELECTED_NODE]({ state, commit }) {

@@ -404,7 +404,6 @@
           })
             .then(() => {
               this.showSpinner = false;
-              this.superTypes.push(this.attributeLabel);
               this.$notifyInfo(`Attribute Type, ${this.attributeLabel}, has been defined`);
               this.resetPanel();
             })

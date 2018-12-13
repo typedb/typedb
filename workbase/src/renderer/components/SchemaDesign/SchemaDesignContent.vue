@@ -5,7 +5,8 @@
       <div class="row">
         <left-bar v-on:keyspace-not-selected="showKeyspaceToolTip = true"></left-bar>
         <div class="column">
-          <graph-canvas></graph-canvas> 
+          <context-menu></context-menu>
+          <graph-canvas></graph-canvas>
           <preferences v-show="showPreferences" v-on:close-preferences="showPreferences = false"></preferences>
         </div>
         <right-bar></right-bar>
@@ -53,8 +54,8 @@ import TopBar from './TopBar';
 import GraphCanvas from '../shared/GraphCanvas.vue';
 import RightBar from './RightBar';
 import LeftBar from './LeftBar';
+import ContextMenu from './ContextMenu';
 import Preferences from '../shared/Preferences.vue';
-
 import actions from './store/actions';
 import mutations from './store/mutations';
 import getters from './store/getters';
@@ -63,7 +64,7 @@ import state from './store/state';
 export default {
   name: 'SchemaDesignContent',
   components: {
-    GraphCanvas, TopBar, RightBar, LeftBar, Preferences,
+    GraphCanvas, TopBar, RightBar, LeftBar, ContextMenu, Preferences,
   },
   data() {
     return {
