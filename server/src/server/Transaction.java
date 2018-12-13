@@ -51,28 +51,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     A {@link Transaction} holding a database transaction
- * </p>
- *
- * <p>
- *     This is produced by {@link Grakn#session(String, String)} and allows the user to construct and perform
- *     basic look ups to the knowledge base. This also allows the execution of Graql queries.
- * </p>
- *
- *
+ * A Transaction holding a database transaction
+ * This is produced by by calling Session.transaction() and allows the user to construct and perform
+ * basic look ups to the knowledge base. This also allows the execution of Graql queries.
  */
-public interface Transaction extends AutoCloseable{
+public interface Transaction extends AutoCloseable {
 
     /**
      * An enum that determines the type of Grakn Transaction.
-     *
      * This class is used to describe how a transaction on {@link Transaction} should behave.
      * When producing a graph using a {@link Session} one of the following enums must be provided:
      * READ - A read only transaction. If you attempt to mutate the graph with such a transaction an exception will be thrown.
      * WRITE - A transaction which allows you to mutate the graph.
      * BATCH - A transaction which allows mutations to be performed more quickly but disables some consistency checks.
-     *
      */
     enum Type {
         READ(0),  //Read only transaction where mutations to the graph are prohibited
@@ -135,13 +126,14 @@ public interface Transaction extends AutoCloseable{
     }
 
     //------------------------------------- Meta Types ----------------------------------
+
     /**
      * Get the root of all Types.
      *
      * @return The meta type -> type.
      */
     @CheckReturnValue
-    default grakn.core.graql.concept.Type getMetaConcept(){
+    default grakn.core.graql.concept.Type getMetaConcept() {
         return getSchemaConcept(Schema.MetaSchema.THING.getLabel());
     }
 
@@ -151,7 +143,7 @@ public interface Transaction extends AutoCloseable{
      * @return The meta relation type -> relation-type.
      */
     @CheckReturnValue
-    default RelationshipType getMetaRelationType(){
+    default RelationshipType getMetaRelationType() {
         return getSchemaConcept(Schema.MetaSchema.RELATIONSHIP.getLabel());
     }
 
@@ -161,7 +153,7 @@ public interface Transaction extends AutoCloseable{
      * @return The meta role type -> role-type.
      */
     @CheckReturnValue
-    default Role getMetaRole(){
+    default Role getMetaRole() {
         return getSchemaConcept(Schema.MetaSchema.ROLE.getLabel());
     }
 
@@ -171,7 +163,7 @@ public interface Transaction extends AutoCloseable{
      * @return The meta resource type -> resource-type.
      */
     @CheckReturnValue
-    default AttributeType getMetaAttributeType(){
+    default AttributeType getMetaAttributeType() {
         return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getLabel());
     }
 
@@ -181,7 +173,7 @@ public interface Transaction extends AutoCloseable{
      * @return The meta entity type -> entity-type.
      */
     @CheckReturnValue
-    default EntityType getMetaEntityType(){
+    default EntityType getMetaEntityType() {
         return getSchemaConcept(Schema.MetaSchema.ENTITY.getLabel());
     }
 
@@ -191,7 +183,7 @@ public interface Transaction extends AutoCloseable{
      * @return The meta {@link Rule}
      */
     @CheckReturnValue
-    default Rule getMetaRule(){
+    default Rule getMetaRule() {
         return getSchemaConcept(Schema.MetaSchema.RULE.getLabel());
     }
 
@@ -202,8 +194,8 @@ public interface Transaction extends AutoCloseable{
      * {@link Schema.MetaSchema#THING}.
      *
      * <p>
-     *     If you want a more precise type that will exclude {@link Schema.MetaSchema#THING}, use
-     *     {@link SchemaConcept#sups()}.
+     * If you want a more precise type that will exclude {@link Schema.MetaSchema#THING}, use
+     * {@link SchemaConcept#sups()}.
      * </p>
      */
     @CheckReturnValue
@@ -215,14 +207,14 @@ public interface Transaction extends AutoCloseable{
     QueryExecutor executor(boolean infer);
 
     //------------------------------------- Concept Construction ----------------------------------
+
     /**
      * Create a new {@link EntityType} with super-type {@code entity}, or return a pre-existing {@link EntityType},
      * with the specified label.
      *
      * @param label A unique label for the {@link EntityType}
      * @return A new or existing {@link EntityType} with the provided label
-     *
-     * @throws TransactionException if the graph is closed
+     * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
      */
     default EntityType putEntityType(String label) {
@@ -235,8 +227,7 @@ public interface Transaction extends AutoCloseable{
      *
      * @param label A unique label for the {@link EntityType}
      * @return A new or existing {@link EntityType} with the provided label
-     *
-     * @throws TransactionException if the graph is closed
+     * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
      */
     EntityType putEntityType(Label label);
@@ -245,17 +236,16 @@ public interface Transaction extends AutoCloseable{
      * Create a new non-unique {@link AttributeType} with super-type {@code resource}, or return a pre-existing
      * non-unique {@link AttributeType}, with the specified label and data type.
      *
-     * @param label A unique label for the {@link AttributeType}
+     * @param label    A unique label for the {@link AttributeType}
      * @param dataType The data type of the {@link AttributeType}.
-     *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
-     * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
-     *           This should match the parameter type
+     *                 Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
+     * @param <V>      The data type of the resource type. Supported types include: String, Long, Double, Boolean.
+     *                 This should match the parameter type
      * @return A new or existing {@link AttributeType} with the provided label and data type.
-     *
-     * @throws TransactionException if the graph is closed
+     * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link AttributeType}.
-     * @throws TransactionException if the {@param label} is already in use by an existing {@link AttributeType} which is
-     *                          unique or has a different datatype.
+     * @throws TransactionException       if the {@param label} is already in use by an existing {@link AttributeType} which is
+     *                                    unique or has a different datatype.
      */
     default <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType) {
         return putAttributeType(Label.of(label), dataType);
@@ -265,17 +255,16 @@ public interface Transaction extends AutoCloseable{
      * Create a new non-unique {@link AttributeType} with super-type {@code resource}, or return a pre-existing
      * non-unique {@link AttributeType}, with the specified label and data type.
      *
-     * @param label A unique label for the {@link AttributeType}
+     * @param label    A unique label for the {@link AttributeType}
      * @param dataType The data type of the {@link AttributeType}.
-     *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
-     * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
-     *           This should match the parameter type
+     *                 Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
+     * @param <V>      The data type of the resource type. Supported types include: String, Long, Double, Boolean.
+     *                 This should match the parameter type
      * @return A new or existing {@link AttributeType} with the provided label and data type.
-     *
-     * @throws TransactionException if the graph is closed
+     * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link AttributeType}.
-     * @throws TransactionException if the {@param label} is already in use by an existing {@link AttributeType} which is
-     *                          unique or has a different datatype.
+     * @throws TransactionException       if the {@param label} is already in use by an existing {@link AttributeType} which is
+     *                                    unique or has a different datatype.
      */
     <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType);
 
@@ -284,11 +273,10 @@ public interface Transaction extends AutoCloseable{
      * specified label.
      *
      * @param label A unique label for the {@link Rule}
-     * @param when A string representing the when part of the {@link Rule}
-     * @param then A string representing the then part of the {@link Rule}
+     * @param when  A string representing the when part of the {@link Rule}
+     * @param then  A string representing the then part of the {@link Rule}
      * @return new or existing {@link Rule} with the provided label.
-     *
-     * @throws TransactionException if the graph is closed
+     * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Rule}.
      */
     default Rule putRule(String label, Pattern when, Pattern then) {
@@ -301,8 +289,7 @@ public interface Transaction extends AutoCloseable{
      *
      * @param label A unique label for the {@link Rule}
      * @return new or existing {@link Rule} with the provided label.
-     *
-     * @throws TransactionException if the graph is closed
+     * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Rule}.
      */
     Rule putRule(Label label, Pattern when, Pattern then);
@@ -313,8 +300,7 @@ public interface Transaction extends AutoCloseable{
      *
      * @param label A unique label for the {@link RelationshipType}
      * @return A new or existing {@link RelationshipType} with the provided label.
-     *
-     * @throws TransactionException if the graph is closed
+     * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationshipType}.
      */
     default RelationshipType putRelationshipType(String label) {
@@ -327,8 +313,7 @@ public interface Transaction extends AutoCloseable{
      *
      * @param label A unique label for the {@link RelationshipType}
      * @return A new or existing {@link RelationshipType} with the provided label.
-     *
-     * @throws TransactionException if the graph is closed
+     * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationshipType}.
      */
     RelationshipType putRelationshipType(Label label);
@@ -339,8 +324,7 @@ public interface Transaction extends AutoCloseable{
      *
      * @param label A unique label for the {@link Role}
      * @return new or existing {@link Role} with the provided Id.
-     *
-     * @throws TransactionException if the graph is closed
+     * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Role}.
      */
     default Role putRole(String label) {
@@ -353,21 +337,20 @@ public interface Transaction extends AutoCloseable{
      *
      * @param label A unique label for the {@link Role}
      * @return new or existing {@link Role} with the provided Id.
-     *
-     * @throws TransactionException if the graph is closed
+     * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Role}.
      */
     Role putRole(Label label);
 
     //------------------------------------- Concept Lookup ----------------------------------
+
     /**
      * Get the {@link Concept} with identifier provided, if it exists.
      *
      * @param id A unique identifier for the {@link Concept} in the graph.
      * @return The {@link Concept} with the provided id or null if no such {@link Concept} exists.
-     *
      * @throws TransactionException if the graph is closed
-     * @throws ClassCastException if the concept is not an instance of {@link T}
+     * @throws ClassCastException   if the concept is not an instance of {@link T}
      */
     @CheckReturnValue
     @Nullable
@@ -378,9 +361,8 @@ public interface Transaction extends AutoCloseable{
      *
      * @param label A unique label which identifies the {@link SchemaConcept} in the graph.
      * @return The {@link SchemaConcept} with the provided label or null if no such {@link SchemaConcept} exists.
-     *
      * @throws TransactionException if the graph is closed
-     * @throws ClassCastException if the type is not an instance of {@link T}
+     * @throws ClassCastException   if the type is not an instance of {@link T}
      */
     @CheckReturnValue
     @Nullable
@@ -391,9 +373,8 @@ public interface Transaction extends AutoCloseable{
      *
      * @param label A unique label which identifies the {@link grakn.core.graql.concept.Type} in the graph.
      * @return The {@link grakn.core.graql.concept.Type} with the provided label or null if no such {@link grakn.core.graql.concept.Type} exists.
-     *
      * @throws TransactionException if the graph is closed
-     * @throws ClassCastException if the type is not an instance of {@link T}
+     * @throws ClassCastException   if the type is not an instance of {@link T}
      */
     @CheckReturnValue
     @Nullable
@@ -403,9 +384,8 @@ public interface Transaction extends AutoCloseable{
      * Get all {@link Attribute} holding the value provided, if they exist.
      *
      * @param value A value which an {@link Attribute} in the graph may be holding.
-     * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
+     * @param <V>   The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @return The {@link Attribute}s holding the provided value or an empty collection if no such {@link Attribute} exists.
-     *
      * @throws TransactionException if the graph is closed
      */
     @CheckReturnValue
@@ -416,7 +396,6 @@ public interface Transaction extends AutoCloseable{
      *
      * @param label A unique label which identifies the Entity Type in the graph.
      * @return The Entity Type  with the provided label or null if no such Entity Type exists.
-     *
      * @throws TransactionException if the graph is closed
      */
     @CheckReturnValue
@@ -428,7 +407,6 @@ public interface Transaction extends AutoCloseable{
      *
      * @param label A unique label which identifies the {@link RelationshipType} in the graph.
      * @return The {@link RelationshipType} with the provided label or null if no such {@link RelationshipType} exists.
-     *
      * @throws TransactionException if the graph is closed
      */
     @CheckReturnValue
@@ -439,9 +417,8 @@ public interface Transaction extends AutoCloseable{
      * Get the {@link AttributeType} with the label provided, if it exists.
      *
      * @param label A unique label which identifies the {@link AttributeType} in the graph.
-     * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
+     * @param <V>   The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @return The {@link AttributeType} with the provided label or null if no such {@link AttributeType} exists.
-     *
      * @throws TransactionException if the graph is closed
      */
     @CheckReturnValue
@@ -453,7 +430,6 @@ public interface Transaction extends AutoCloseable{
      *
      * @param label A unique label which identifies the Role Type in the graph.
      * @return The Role Type  with the provided label or null if no such Role Type exists.
-     *
      * @throws TransactionException if the graph is closed
      */
     @CheckReturnValue
@@ -465,7 +441,6 @@ public interface Transaction extends AutoCloseable{
      *
      * @param label A unique label which identifies the {@link Rule} in the graph.
      * @return The {@link Rule} with the provided label or null if no such Rule Type exists.
-     *
      * @throws TransactionException if the graph is closed
      */
     @CheckReturnValue
@@ -482,6 +457,7 @@ public interface Transaction extends AutoCloseable{
 
     /**
      * Returns the {@link Session} which was used to create this {@link Transaction}
+     *
      * @return the owner {@link Session}
      */
     Session session();
@@ -514,14 +490,13 @@ public interface Transaction extends AutoCloseable{
      * Reverts any changes done to the graph and closes the transaction. You must use the {@link Session} to
      * get a new open transaction.
      */
-    default void abort(){
+    default void abort() {
         close();
     }
 
     /**
      * Commits any changes to the graph and closes the transaction. You must use the {@link Session} to
      * get a new open transaction.
-     *
      */
     void commit();
 

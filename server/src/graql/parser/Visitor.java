@@ -33,7 +33,6 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
@@ -74,11 +73,7 @@ import static java.util.stream.Collectors.toSet;
 @SuppressWarnings("unchecked")
 class Visitor extends GraqlBaseVisitor {
 
-    private final QueryBuilder queryBuilder;
-
-    Visitor(QueryBuilder queryBuilder) {
-        this.queryBuilder = queryBuilder;
-    }
+    Visitor() {}
 
     @Override
     public Stream<? extends Query<?>> visitQueryList(GraqlParser.QueryListContext ctx) {

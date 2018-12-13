@@ -20,7 +20,6 @@ package grakn.core.graql.parser;
 
 import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.pattern.Pattern;
 import graql.grammar.GraqlLexer;
 import graql.grammar.GraqlParser;
@@ -37,19 +36,7 @@ import java.util.stream.Stream;
  */
 public class Parser {
 
-    private final QueryBuilder queryBuilder;
-
-    private Parser(QueryBuilder queryBuilder) {
-        this.queryBuilder = queryBuilder;
-    }
-
-    public static Parser create(QueryBuilder queryBuilder) {
-        return new Parser(queryBuilder);
-    }
-
-    private Visitor newVisitor() {
-        return new Visitor(queryBuilder);
-    }
+    public Parser() {}
 
     private GraqlParser parse(String queryString, ErrorListener errorListener) {
         CharStream charStream = CharStreams.fromString(queryString);
@@ -75,7 +62,7 @@ public class Parser {
         if (errorListener.hasErrors())
             throw GraqlSyntaxException.create(errorListener.toString());
 
-        return (T) newVisitor().visitQueryEOF(queryEOFContext);
+        return (T) new Visitor().visitQueryEOF(queryEOFContext);
     }
 
     @SuppressWarnings("unchecked")
@@ -87,7 +74,7 @@ public class Parser {
         if (errorListener.hasErrors())
             throw GraqlSyntaxException.create(errorListener.toString());
 
-        return (Stream<T>) newVisitor().visitQueryList(queryListContext);
+        return (Stream<T>) new Visitor().visitQueryList(queryListContext);
     }
 
     public List<Pattern> parsePatterns(String patternsString) {
@@ -98,7 +85,7 @@ public class Parser {
         if (errorListener.hasErrors())
             throw GraqlSyntaxException.create(errorListener.toString());
 
-        return newVisitor().visitPatterns(patternsContext);
+        return new Visitor().visitPatterns(patternsContext);
     }
 
     public Pattern parsePattern(String patternString) {
@@ -109,6 +96,6 @@ public class Parser {
         if (errorListener.hasErrors())
             throw GraqlSyntaxException.create(errorListener.toString());
 
-        return newVisitor().visitPattern(patternContext);
+        return new Visitor().visitPattern(patternContext);
     }
 }

@@ -19,15 +19,11 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.pattern.Statement;
 
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-/**
- * Implementation for {@link DefineQuery}
- */
 public class DefineQuery implements Query<ConceptMap> {
 
     private final Collection<? extends Statement> statements;
@@ -39,9 +35,6 @@ public class DefineQuery implements Query<ConceptMap> {
         this.statements = statements;
     }
 
-    /**
-     * Get the {@link Statement}s describing what {@link SchemaConcept}s to define.
-     */
     public Collection<? extends Statement> statements() {
         return statements;
     }
