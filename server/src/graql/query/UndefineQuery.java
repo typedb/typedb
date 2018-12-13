@@ -22,7 +22,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.pattern.Statement;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -31,9 +31,9 @@ import java.util.stream.Collectors;
  */
 public class UndefineQuery implements Query<ConceptMap> {
 
-    private final Collection<? extends Statement> statements;
+    private final List<? extends Statement> statements;
 
-    UndefineQuery(Collection<? extends Statement> statements) {
+    UndefineQuery(List<? extends Statement> statements) {
         if (statements == null) {
             throw new NullPointerException("Null statements");
         }
@@ -43,7 +43,7 @@ public class UndefineQuery implements Query<ConceptMap> {
     /**
      * Get the {@link Statement}s describing what {@link SchemaConcept}s to define.
      */
-    public Collection<? extends Statement> statements() {
+    public List<? extends Statement> statements() {
         return statements;
     }
 

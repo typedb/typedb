@@ -21,21 +21,21 @@ package grakn.core.graql.query;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.Statement;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class DefineQuery implements Query<ConceptMap> {
 
-    private final Collection<? extends Statement> statements;
+    private final List<? extends Statement> statements;
 
-    public DefineQuery(Collection<? extends Statement> statements) {
+    public DefineQuery(List<? extends Statement> statements) {
         if (statements == null) {
             throw new NullPointerException("Null statements");
         }
         this.statements = statements;
     }
 
-    public Collection<? extends Statement> statements() {
+    public List<? extends Statement> statements() {
         return statements;
     }
 

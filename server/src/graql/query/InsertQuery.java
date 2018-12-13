@@ -24,7 +24,7 @@ import grakn.core.graql.query.pattern.Statement;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -36,14 +36,14 @@ import java.util.stream.Collectors;
 public class InsertQuery implements Query<ConceptMap> {
 
     private final MatchClause match;
-    private final Collection<Statement> statements;
+    private final List<Statement> statements;
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
      *  @param match      the {@link MatchClause} to insert for each result
      * @param statements a collection of Vars to insert
      */
-    public InsertQuery(@Nullable MatchClause match, Collection<Statement> statements) {
+    public InsertQuery(@Nullable MatchClause match, List<Statement> statements) {
         if (statements.isEmpty()) {
             throw GraqlQueryException.noPatterns();
         }
@@ -65,7 +65,7 @@ public class InsertQuery implements Query<ConceptMap> {
      * @return the variables to insert in the insert query
      */
     @CheckReturnValue
-    public Collection<Statement> statements() {
+    public List<Statement> statements() {
         return statements;
     }
 

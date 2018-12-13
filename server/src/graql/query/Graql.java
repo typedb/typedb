@@ -39,6 +39,7 @@ import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
 import javax.annotation.CheckReturnValue;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -90,7 +91,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static InsertQuery insert(Collection<? extends Statement> statements) {
-        return new InsertQuery(null, Collections.unmodifiableCollection(statements));
+        return new InsertQuery(null, Collections.unmodifiableList(new ArrayList<>(statements)));
     }
 
     /**
@@ -108,7 +109,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static DefineQuery define(Collection<? extends Statement> statements) {
-        return new DefineQuery(Collections.unmodifiableCollection(statements));
+        return new DefineQuery(Collections.unmodifiableList(new ArrayList<>(statements)));
     }
 
     /**
@@ -126,7 +127,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static UndefineQuery undefine(Collection<? extends Statement> statements) {
-        return new UndefineQuery(Collections.unmodifiableCollection(statements));
+        return new UndefineQuery(Collections.unmodifiableList(new ArrayList<>(statements)));
     }
 
     @CheckReturnValue

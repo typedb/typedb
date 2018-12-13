@@ -19,7 +19,6 @@
 package grakn.core.graql.parser;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
@@ -51,6 +50,7 @@ import org.junit.rules.Timeout;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -837,7 +837,7 @@ public class ParserTest {
 
         List<Query<?>> queries = Graql.parser().parseList(getString).collect(toList());
 
-        assertEquals(ImmutableList.of(match(var("y").isa("movie")).get()), queries);
+        assertEquals(Arrays.asList(match(var("y").isa("movie")).get()), queries);
     }
 
     @Test
@@ -846,7 +846,7 @@ public class ParserTest {
 
         List<Query<?>> queries = Graql.parser().parseList(insertString).collect(toList());
 
-        assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
+        assertEquals(Arrays.asList(insert(var("x").isa("movie"))), queries);
     }
 
     @Test
@@ -855,7 +855,7 @@ public class ParserTest {
 
         List<Query<?>> queries = Graql.parser().parseList(insertString).collect(toList());
 
-        assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
+        assertEquals(Arrays.asList(insert(var("x").isa("movie"))), queries);
     }
 
     @Test
@@ -864,7 +864,7 @@ public class ParserTest {
 
         List<Query<?>> queries = Graql.parser().parseList(insertString).collect(toList());
 
-        assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
+        assertEquals(Arrays.asList(insert(var("x").isa("movie"))), queries);
     }
 
     @Test
@@ -874,10 +874,7 @@ public class ParserTest {
 
         List<Query<?>> queries = Graql.parser().parseList(insertString + getString).collect(toList());
 
-        assertEquals(ImmutableList.of(
-                insert(var("x").isa("movie")),
-                match(var("y").isa("movie")).get()
-        ), queries);
+        assertEquals(Arrays.asList(insert(var("x").isa("movie")), match(var("y").isa("movie")).get()), queries);
     }
 
     @Test
@@ -887,9 +884,7 @@ public class ParserTest {
 
         List<Query<?>> queries = Graql.parser().parseList(matchString + insertString).collect(toList());
 
-        assertEquals(ImmutableList.of(
-                match(var("y").isa("movie")).insert(var("x").isa("movie"))
-        ), queries);
+        assertEquals(Arrays.asList(match(var("y").isa("movie")).insert(var("x").isa("movie"))), queries);
     }
 
     @Test

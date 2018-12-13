@@ -18,12 +18,13 @@
 
 package grakn.core.graql.query;
 
-import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Collections;
+import java.util.Set;
 
 import static java.util.stream.Collectors.joining;
 
@@ -34,14 +35,14 @@ import static java.util.stream.Collectors.joining;
  */
 public class GetQuery implements Query<ConceptMap> {
 
-    private final ImmutableSet<Variable> vars;
+    private final Set<Variable> vars;
     private final MatchClause match;
 
-    public GetQuery(ImmutableSet<Variable> vars, MatchClause match) {
+    public GetQuery(Set<Variable> vars, MatchClause match) {
         if (vars == null) {
             throw new NullPointerException("Null vars");
         }
-        this.vars = vars;
+        this.vars = Collections.unmodifiableSet(vars);
         if (match == null) {
             throw new NullPointerException("Null match");
         }
@@ -54,7 +55,7 @@ public class GetQuery implements Query<ConceptMap> {
     }
 
     @CheckReturnValue
-    public ImmutableSet<Variable> vars() {
+    public Set<Variable> vars() {
         return vars;
     }
 
