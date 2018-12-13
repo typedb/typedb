@@ -52,7 +52,7 @@ import TopBar from './TopBar.vue';
 import LeftBar from './LeftBar.vue';
 import RightBar from './RightBar.vue';
 import BottomBar from './BottomBar.vue';
-import Preferences from './Preferences.vue';
+import Preferences from '../shared/Preferences.vue';
 
 import GraphCanvas from '../shared/GraphCanvas.vue';
 import ContextMenu from './ContextMenu';

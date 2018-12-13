@@ -43,6 +43,7 @@ beforeAll(() => {
   store.dispatch('initGrakn');
 
   visFacade = {
+    updateNode: jest.fn(),
     fitGraphToWindow: jest.fn(),
     addToCanvas: jest.fn(),
     resetCanvas: jest.fn(),
