@@ -164,6 +164,21 @@ function getMockAnswer3() {
 
 const getMockQueryPattern3 = '{$c id 4444; $p id 3333; $1234 (child: $c, parent: $p) isa parentship;}';
 
+
+function getMockAnswer4() {
+  return {
+    explanation: () => {},
+    map: () => {
+      const map = new Map();
+      map.set('1234', getMockAttribute());
+      map.set('5678', getMockRelationship());
+      return map;
+    },
+  };
+}
+
+const getMockQueryPattern4 = '{$r has duration $1544633775910879; $1544633775910879 < 120;}';
+
 function getMockAnswerContainingImplicitType() {
   return {
     explanation: () => {},
@@ -215,6 +230,8 @@ export default {
   getMockQueryPattern2,
   getMockAnswer3,
   getMockQueryPattern3,
+  getMockAnswer4,
+  getMockQueryPattern4,
   getMockAnswerContainingImplicitType,
   getMockAnswerContainingRelationship,
   getMockAnswerContainingEntity,

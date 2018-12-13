@@ -57,6 +57,8 @@ export function buildExplanationQuery(answer, queryPattern) {
       // attributeQuery = `has ${queryPattern.match(/(?:has )(\w+)/)[1]} $${graqlVar};`;
     } else if (concept.isEntity()) {
       query += `$${graqlVar} id ${concept.id}; `;
+    } else if (attributeQuery && concept.isRelationship()) { // if answer has a relationship and attribute
+      attributeQuery = `$${graqlVar} id ${concept.id} ${attributeQuery}`;
     }
   });
   return { query, attributeQuery };
@@ -133,6 +135,7 @@ export function addResetGraphListener(dispatch, action) {
  */
 export function mapAnswerToExplanationQuery(answer) {
   const queryPattern = answer.explanation().queryPattern();
+  debugger;
   let query = buildExplanationQuery(answer, queryPattern).query;
   if (queryPattern.includes('has')) {
     query += `${buildExplanationQuery(answer, queryPattern).attributeQuery} get;`;
