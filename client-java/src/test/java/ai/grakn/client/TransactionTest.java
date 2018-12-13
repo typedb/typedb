@@ -76,6 +76,7 @@ import static org.mockito.Mockito.when;
 /**
  * Unit Tests for {@link ai.grakn.client.Grakn.Transaction}
  */
+@Ignore
 public class TransactionTest {
 
     @Rule
