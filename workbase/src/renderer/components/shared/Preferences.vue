@@ -44,6 +44,13 @@
             </div>
 
 
+            <div class="logout-container" v-if="userLogged">
+                <div class="keyspaces-content">
+                    <button class="btn" @click="logout">Logout</button>
+
+                </div>
+            </div>
+
         </div>
     </div>
 </template>
@@ -135,6 +142,12 @@
     .keyspaces-container {
         padding: var(--container-padding);
         width: 100%;
+        border-bottom: var(--container-darkest-border);
+    }
+
+    .logout-container {
+        padding: var(--container-padding);
+        width: 100%;
     }
 
     .container-title {
@@ -189,7 +202,7 @@ export default {
     this.connectionTest = (this.isGraknRunning) ? 'Valid' : 'Invalid';
   },
   computed: {
-    ...mapGetters(['isGraknRunning', 'allKeyspaces']),
+    ...mapGetters(['isGraknRunning', 'allKeyspaces', 'userLogged']),
   },
   watch: {
     serverHost(newVal) {
@@ -221,6 +234,10 @@ export default {
         () => this.$store.dispatch('deleteKeyspace', keyspace)
           .then(() => this.$notifyInfo(`Keyspace, ${keyspace}, successfully deleted!`))
           .catch((error) => { this.$notifyError(error, 'Delete keyspace'); }));
+    },
+    async logout() {
+      await this.$store.dispatch('logout');
+      this.$router.push('/login');
     },
   },
 };
