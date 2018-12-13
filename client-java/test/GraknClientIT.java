@@ -364,9 +364,9 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x")).get();
+            GetQuery query = Graql.match(var("x")).get();
 
-            for (ConceptMap answer : query) {
+            remoteTx.stream(query).forEach( answer -> {
                 Concept remoteConcept = answer.get("x");
                 Concept localConcept = localTx.getConcept(remoteConcept.id());
 
@@ -383,7 +383,7 @@ public class GraknClientIT {
                 assertEquals(localConcept.isType(), remoteConcept.isType());
                 assertEquals(localConcept.id(), remoteConcept.id());
                 assertEquals(localConcept.isDeleted(), remoteConcept.isDeleted());
-            }
+            });
         }
     }
 

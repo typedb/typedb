@@ -356,7 +356,7 @@ public class InsertQueryIT {
         // Note that two variables refer to the same type. They should both be in the result
         InsertQuery query = Graql.insert(x.isa(type), type.label("movie"));
 
-        ConceptMap result = Iterables.getOnlyElement(query);
+        ConceptMap result = tx.stream(query).iterator().next();
         assertThat(result.vars(), containsInAnyOrder(x, type));
         assertEquals(result.get(type), result.get(x).asEntity().type());
         assertEquals(result.get(type).asType().label(), Label.of("movie"));

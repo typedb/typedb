@@ -59,11 +59,6 @@ public class UndefineQuery implements Query<ConceptMap> {
     }
 
     @Override
-    public Stream<ConceptMap> stream() {
-        return executor().run(this);
-    }
-
-    @Override
     public String toString() {
         return "undefine " + statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }

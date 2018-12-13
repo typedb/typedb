@@ -88,11 +88,6 @@ public class InsertQuery implements Query<ConceptMap> {
         return statements;
     }
 
-    @Override
-    public Stream<ConceptMap> stream() {
-        return executor().run(this);
-    }
-
     @CheckReturnValue
     public InsertQuery admin() {
         return this;

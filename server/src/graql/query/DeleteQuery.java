@@ -74,12 +74,6 @@ public class DeleteQuery implements Query<ConceptSet> {
         return vars;
     }
 
-
-    @Override
-    public Stream<ConceptSet> stream() {
-        return executor().run(this);
-    }
-
     @Override
     public final Transaction tx() {
         return match().tx();

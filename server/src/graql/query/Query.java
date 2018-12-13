@@ -23,32 +23,14 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.QueryExecutor;
 import grakn.core.server.Transaction;
 
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Iterator;
-import java.util.stream.Stream;
 
 /**
  * A Graql query of any kind. May read and write to the graph.
  *
  * @param <T> The result type after executing the query
  */
-public interface Query<T extends Answer> extends Iterable<T> {
-
-    /**
-     * @return a {@link Stream} of T, where T is a special type of {@link Answer}
-     */
-    @CheckReturnValue
-    Stream<T> stream();
-
-    /**
-     * @return an {@link Iterator} of T, where T is a special type of {@link Answer}
-     */
-    @Override
-    @CheckReturnValue
-    default Iterator<T> iterator() {
-        return stream().iterator();
-    }
+public interface Query<T extends Answer> {
 
     /**
      * @return the special type of {@link QueryExecutor}, depending on whether the query is executed on the client or
