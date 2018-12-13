@@ -22,7 +22,7 @@
               <input class="input left-input" v-model="username">
             </div>
             <div class="row">
-              <button @click="isKgms = !isKgms" class="btn landing-btn non-btn"></button>
+              <button class="btn landing-btn non-btn"></button>
             </div>
           </div>
           <div class="column">

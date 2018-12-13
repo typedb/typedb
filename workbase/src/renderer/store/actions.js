@@ -31,8 +31,10 @@ export const initGrakn = (context, credentials) => {
   context.dispatch('loadKeyspaces');
 };
 
-export const logout = (context) => {
-  context.commit('deleteCredentials');
+export const logout = async (context) => {
+  context.commit('setCredentials', undefined);
+  context.commit('setGrakn', undefined);
+  context.commit('setKeyspaces', undefined);
   context.commit('userLogged', false);
   // Need to notify all the other states that they need to invalidate GraknClient
 };
