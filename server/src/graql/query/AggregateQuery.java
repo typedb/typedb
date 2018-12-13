@@ -23,7 +23,7 @@ import grakn.core.graql.answer.Answer;
 import javax.annotation.Nullable;
 
 /**
- * An aggregate query produced from a {@link MatchClause}.
+ * An aggregate query produced from a match clause
  *
  * @param <T> the type of the result of the aggregate query
  */
@@ -40,17 +40,11 @@ public class AggregateQuery<T extends Answer> implements Query<T> {
         this.aggregate = aggregate;
     }
 
-    /**
-     * Get the {@link MatchClause} that this {@link AggregateQuery} will operate on.
-     */
     @Nullable
     public MatchClause match() {
         return match;
     }
 
-    /**
-     * Get the {@link Aggregate} that will be executed against the results of the {@link #match()}.
-     */
     public Aggregate<T> aggregate() {
         return aggregate;
     }

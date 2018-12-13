@@ -56,7 +56,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public class Graql {
 
-    private static final Parser queryParser = new Parser();
+    private static final Parser parser = new Parser();
 
     /**
      * @param patterns an array of patterns to match in the graph
@@ -139,7 +139,7 @@ public class Graql {
      * Get a parser for parsing queries from strings
      */
     public static Parser parser() {
-        return queryParser;
+        return parser;
     }
 
     /**
@@ -148,7 +148,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static <T extends Query<?>> T parse(String queryString) {
-        return queryParser.parseQueryEOF(queryString);
+        return parser.parseQueryEOF(queryString);
     }
 
     // AGGREGATES

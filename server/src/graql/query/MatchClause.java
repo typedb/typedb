@@ -77,7 +77,7 @@ public class MatchClause {
     }
 
     /**
-     * Construct a get query with all all {@link Variable}s mentioned in the query
+     * Construct a get query with all all variables mentioned in the query
      */
     @CheckReturnValue
     public GetQuery get() {
@@ -86,7 +86,7 @@ public class MatchClause {
 
     /**
      * @param vars an array of variables to select
-     * @return a {@link GetQuery} that selects the given variables
+     * @return a Get Query that selects the given variables
      */
     @CheckReturnValue
     public GetQuery get(String var, String... vars) {
@@ -95,8 +95,8 @@ public class MatchClause {
     }
 
     /**
-     * @param vars an array of {@link Variable}s to select
-     * @return a {@link GetQuery} that selects the given variables
+     * @param vars an array of variables to select
+     * @return a Get Query that selects the given variables
      */
     @CheckReturnValue
     public GetQuery get(Variable var, Variable... vars) {
@@ -106,8 +106,8 @@ public class MatchClause {
     }
 
     /**
-     * @param vars a set of {@link Variable}s to select
-     * @return a {@link GetQuery} that selects the given variables
+     * @param vars a set of variables to select
+     * @return a Get Query that selects the given variables
      */
     @CheckReturnValue
     public GetQuery get(Set<Variable> vars) {
@@ -116,8 +116,8 @@ public class MatchClause {
     }
 
     /**
-     * @param vars an array of variables to insert for each result of this {@link MatchClause}
-     * @return an insert query that will insert the given variables for each result of this {@link MatchClause}
+     * @param vars an array of variables to insert for each result of this match clause
+     * @return an insert query that will insert the given variables for each result of this match clause
      */
     @CheckReturnValue
     public final InsertQuery insert(Statement... vars) {
@@ -125,8 +125,8 @@ public class MatchClause {
     }
 
     /**
-     * @param vars a collection of variables to insert for each result of this {@link MatchClause}
-     * @return an insert query that will insert the given variables for each result of this {@link MatchClause}
+     * @param vars a collection of variables to insert for each result of this match clause
+     * @return an insert query that will insert the given variables for each result of this match clause
      */
     @CheckReturnValue
     public final InsertQuery insert(Collection<? extends Statement> vars) {
@@ -135,7 +135,7 @@ public class MatchClause {
     }
 
     /**
-     * Construct a delete query with all all {@link Variable}s mentioned in the query
+     * Construct a delete query with all all variables mentioned in the query
      */
     @CheckReturnValue
     public DeleteQuery delete() {
@@ -143,8 +143,8 @@ public class MatchClause {
     }
 
     /**
-     * @param vars an array of variables to delete for each result of this {@link MatchClause}
-     * @return a delete query that will delete the given variables for each result of this {@link MatchClause}
+     * @param vars an array of variables to delete for each result of this match clause
+     * @return a delete query that will delete the given variables for each result of this match clause
      */
     @CheckReturnValue
     public final DeleteQuery delete(String var, String... vars) {
@@ -153,8 +153,8 @@ public class MatchClause {
     }
 
     /**
-     * @param vars an array of variables to delete for each result of this {@link MatchClause}
-     * @return a delete query that will delete the given variables for each result of this {@link MatchClause}
+     * @param vars an array of variables to delete for each result of this match clause
+     * @return a delete query that will delete the given variables for each result of this match clause
      */
     @CheckReturnValue
     public final DeleteQuery delete(Variable var, Variable... vars) {
@@ -164,8 +164,8 @@ public class MatchClause {
     }
 
     /**
-     * @param vars a collection of variables to delete for each result of this {@link MatchClause}
-     * @return a delete query that will delete the given variables for each result of this {@link MatchClause}
+     * @param vars a collection of variables to delete for each result of this match clause
+     * @return a delete query that will delete the given variables for each result of this match clause
      */
     @CheckReturnValue
     public final DeleteQuery delete(Set<Variable> vars) {

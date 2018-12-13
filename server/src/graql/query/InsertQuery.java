@@ -38,11 +38,6 @@ public class InsertQuery implements Query<ConceptMap> {
     private final MatchClause match;
     private final List<Statement> statements;
 
-    /**
-     * At least one of {@code tx} and {@code match} must be absent.
-     *  @param match      the {@link MatchClause} to insert for each result
-     * @param statements a collection of Vars to insert
-     */
     public InsertQuery(@Nullable MatchClause match, List<Statement> statements) {
         if (statements.isEmpty()) {
             throw GraqlQueryException.noPatterns();
@@ -52,18 +47,12 @@ public class InsertQuery implements Query<ConceptMap> {
         this.statements = statements;
     }
 
-    /**
-     * @return the {@link MatchClause} that this insert query is using, if it was provided one
-     */
     @Nullable
     @CheckReturnValue
     public MatchClause match() {
         return match;
     }
 
-    /**
-     * @return the variables to insert in the insert query
-     */
     @CheckReturnValue
     public List<Statement> statements() {
         return statements;

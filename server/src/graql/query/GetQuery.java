@@ -29,8 +29,8 @@ import java.util.Set;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A query used for finding data in a knowledge base that matches the given patterns. The {@link GetQuery} is a
- * pattern-matching query. The patterns are described in a declarative fashion, then the {@link GetQuery} will traverse
+ * A query used for finding data in a knowledge base that matches the given patterns. The Get Query is a
+ * pattern-matching query. The patterns are described in a declarative fashion, then the query will traverse
  * the knowledge base in an efficient fashion to find any matching answers.
  */
 public class GetQuery implements Query<ConceptMap> {

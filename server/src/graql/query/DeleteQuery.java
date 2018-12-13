@@ -56,17 +56,11 @@ public class DeleteQuery implements Query<ConceptSet> {
         this.vars = vars;
     }
 
-    /**
-     * @return the {@link MatchClause} this delete query is operating on
-     */
     @CheckReturnValue
     public MatchClause match() {
         return match;
     }
 
-    /**
-     * Get the {@link Variable}s to delete on each result of {@link #match()}.
-     */
     @CheckReturnValue
     public Set<Variable> vars() {
         return vars;

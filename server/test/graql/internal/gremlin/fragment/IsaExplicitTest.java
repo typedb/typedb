@@ -51,7 +51,7 @@ public class IsaExplicitTest {
 
     @Test
     public void testMatchSyntax() {
-                MatchClause matchQuery;
+        MatchClause matchQuery;
         GetQuery getQuery;
 
         matchQuery = Graql.match(x.isaExplicit(thingy1));
