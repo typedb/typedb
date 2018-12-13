@@ -48,6 +48,4 @@ deploy_maven_jar(
     name = "deploy-maven-jar",
     target = ":protocol-java",
     package = "protocol",
-    version_file = "//:VERSION",
-    deployment_properties = "//:deployment.properties",
 )

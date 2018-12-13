@@ -10,4 +10,8 @@ java_library(
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
     visibility = ["//common:__subpackages__"],
+    runtime_deps = [
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
+    ],
 )

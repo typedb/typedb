@@ -100,8 +100,6 @@ deploy_maven_jar(
     name = "deploy-maven-jar",
     target = ":server",
     package = "server",
-    version_file = "//:VERSION",
-    deployment_properties = "//:deployment.properties",
 )
 
 genrule(

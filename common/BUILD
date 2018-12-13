@@ -19,18 +19,15 @@
 package(default_visibility = ["//visibility:public"])
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 
-java_library(
-    name = "common",
-    srcs = ["//common/templates/util:grakn-version"],
-    exports = [
+load("@com_github_google_bazel_common//tools/jarjar:jarjar.bzl", "jarjar_library")
+
+jarjar_library(
+    name="common",
+    jars = [
         "//common/exception",
         "//common/config",
         "//common/http",
-        "//common/util",
-    ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
+        "//common/util"
     ],
     tags = ["maven_coordinates=grakn.core:common:{pom_version}"],
 )
@@ -40,12 +37,4 @@ deploy_maven_jar(
     name = "deploy-maven-jar",
     target = ":common",
     package = "common",
-    deps = [
-        "//common/exception",
-        "//common/config",
-        "//common/http",
-        "//common/util"
-    ],
-    version_file = "//:VERSION",
-    deployment_properties = "//:deployment.properties",
 )

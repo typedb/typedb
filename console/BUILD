@@ -58,8 +58,6 @@ deploy_maven_jar(
     name = "deploy-maven-jar",
     target = ":console",
     package = "console",
-    version_file = "//:VERSION",
-    deployment_properties = "//:deployment.properties",
 )
 
 genrule(

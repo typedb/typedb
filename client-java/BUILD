@@ -57,6 +57,4 @@ deploy_maven_jar(
     name = "deploy-maven-jar",
     target = ":client-java",
     package = "client-java",
-    version_file = "//:VERSION",
-    deployment_properties = "//:deployment.properties",
 )
