@@ -66,20 +66,29 @@ public class GetQuery implements Query<ConceptMap> {
 
     @Override
     public String toString() {
-        return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
+        StringBuilder query = new StringBuilder();
+
+        query.append(match()).append(Char.SPACE).append(Command.GET);
+        if (!vars().isEmpty()) {
+            query.append(Char.SPACE).append(
+                    vars().stream().map(Variable::toString)
+                            .collect(joining(Char.COMMA_SPACE.toString()))
+            );
+        }
+        query.append(Char.SEMICOLON);
+
+        return query.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof GetQuery) {
-            GetQuery that = (GetQuery) o;
-            return (this.vars.equals(that.vars()))
-                    && (this.match.equals(that.match()));
-        }
-        return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        GetQuery that = (GetQuery) o;
+
+        return (this.vars.equals(that.vars()) &&
+                this.match.equals(that.match()));
     }
 
     @Override

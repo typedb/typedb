@@ -32,6 +32,12 @@ public interface Query<T extends Answer> {
      */
     enum Command {
         MATCH("match"),
+        DEFINE("define"),
+        UNDEFINE("undefine"),
+        INSERT("insert"),
+        DELETE("delete"),
+        GET("get"),
+        AGGREGATE("aggregate"),
         COMPUTE("compute");
 
         private final String command;
@@ -66,7 +72,8 @@ public interface Query<T extends Answer> {
         COMMA_SPACE(", "),
         SQUARE_OPEN("["),
         SQUARE_CLOSE("]"),
-        QUOTE("\"");
+        QUOTE("\""),
+        NEW_LINE("\n");
 
         private final String character;
 

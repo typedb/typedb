@@ -69,24 +69,25 @@ public class DeleteQuery implements Query<ConceptSet> {
     @Override
     public String toString() {
         StringBuilder query = new StringBuilder();
-        query.append(match()).append(" ").append("delete");
-        if (!vars().isEmpty())
-            query.append(" ").append(vars().stream().map(Variable::toString).collect(joining(", ")).trim());
-        query.append(";");
+        query.append(match()).append(Char.SPACE).append(Command.DELETE);
+        if (!vars().isEmpty()) {
+            query.append(Char.SPACE).append(
+                    vars().stream().map(Variable::toString)
+                            .collect(joining(Char.COMMA_SPACE.toString())).trim()
+            );
+        }
+        query.append(Char.SEMICOLON);
 
         return query.toString();
     }
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof DeleteQuery) {
-            DeleteQuery that = (DeleteQuery) o;
-            return (this.match.equals(that.match()))
-                    && (this.vars.equals(that.vars()));
-        }
-        return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DeleteQuery that = (DeleteQuery) o;
+        return this.match.equals(that.match()) &&
+                this.vars.equals(that.vars());
     }
 
     @Override

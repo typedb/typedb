@@ -22,7 +22,8 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.Statement;
 
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * A query for undefining the Schema types.
@@ -45,19 +46,24 @@ public class UndefineQuery implements Query<ConceptMap> {
 
     @Override
     public String toString() {
-        return "undefine " + statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+        StringBuilder query = new StringBuilder();
+
+        query.append(Command.UNDEFINE).append(Char.SPACE);
+        query.append(statements().stream()
+                             .map(s -> s + Char.SEMICOLON.toString())
+                             .collect(joining(Char.NEW_LINE.toString())).trim());
+
+        return query.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof UndefineQuery) {
-            UndefineQuery that = (UndefineQuery) o;
-            return this.statements.equals(that.statements());
-        }
-        return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        UndefineQuery that = (UndefineQuery) o;
+
+        return this.statements.equals(that.statements());
     }
 
     @Override

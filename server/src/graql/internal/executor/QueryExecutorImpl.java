@@ -174,12 +174,12 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> run(InsertQuery query) {
-        Collection<Statement> statements = query.admin().statements().stream()
+        Collection<Statement> statements = query.statements().stream()
                 .flatMap(v -> v.innerStatements().stream())
                 .collect(toImmutableList());
 
-        if (query.admin().match() != null) {
-            return runMatchInsert(query.admin().match(), statements);
+        if (query.match() != null) {
+            return runMatchInsert(query.match(), statements);
         } else {
             return Stream.of(QueryOperationExecutor.insertAll(statements, tx));
         }

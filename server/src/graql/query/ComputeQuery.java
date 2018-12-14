@@ -359,8 +359,8 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
     public final String toString() {
         StringBuilder query = new StringBuilder();
 
-        query.append(str(Command.COMPUTE, Char.SPACE, method));
-        if (!conditionsSyntax().isEmpty()) query.append(str(Char.SPACE, conditionsSyntax()));
+        query.append(Command.COMPUTE).append(Char.SPACE).append(method);
+        if (!conditionsSyntax().isEmpty()) query.append(Char.SPACE).append(conditionsSyntax());
         query.append(Char.SEMICOLON);
 
         return query.toString();
