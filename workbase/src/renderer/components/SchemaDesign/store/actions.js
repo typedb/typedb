@@ -19,7 +19,6 @@ import logger from '@/../Logger';
 import Grakn from 'grakn';
 import SchemaHandler from '../SchemaHandler';
 import {
-  META_CONCEPTS,
   computeSubConcepts,
   relationshipTypesOutboundEdges,
   updateNodePositions,
@@ -29,6 +28,19 @@ import {
   ownerHasEdges,
 } from '../SchemaUtils';
 import SchemaCanvasEventsHandler from '../SchemaCanvasEventsHandler';
+
+async function buildSchema(nodes) {
+  // Find nodes that are subconcepts of existing types - these nodes will only have isa edges
+  const subConcepts = await computeSubConcepts(nodes);
+
+  // Draw all edges from relationships to roleplayers
+  const relEdges = await relationshipTypesOutboundEdges(nodes);
+
+  // Draw all edges from owners to attributes
+  const hasEdges = await ownerHasEdges(nodes);
+
+  return { nodes, edges: relEdges.concat(subConcepts.edges, hasEdges) };
+}
 
 export default {
   async [OPEN_GRAKN_TX]({ state, commit }) {
@@ -87,17 +99,12 @@ export default {
         .filter(x => x.label !== 'entity')
         .filter(x => x.label !== 'attribute')
         .filter(x => x.label !== 'relationship');
-      // Find nodes that are subconcepts of existing types - these nodes will only have isa edges
-      const subConcepts = await computeSubConcepts(nodes);
 
-      // Draw all edges from relationships to roleplayers
-      const relEdges = await relationshipTypesOutboundEdges(nodes);
+      const data = await buildSchema(nodes);
 
-      // Draw all edges from owners to attributes
-      const hasEdges = await ownerHasEdges(nodes);
+      data.nodes = updateNodePositions(data.nodes);
 
-      nodes = updateNodePositions(nodes);
-      state.visFacade.addToCanvas({ nodes, edges: relEdges.concat(subConcepts.edges, hasEdges) });
+      state.visFacade.addToCanvas({ nodes: data.nodes, edges: data.edges });
       state.visFacade.fitGraphToWindow();
 
       nodes = await computeAttributes(nodes);
@@ -139,28 +146,17 @@ export default {
       graknTx = await dispatch(OPEN_GRAKN_TX);
 
       const type = await graknTx.getSchemaConcept(payload.entityLabel);
-      const sup = await type.sup();
-      const supLabel = await sup.label();
-      let edges;
 
-      // If the supertype is a concept defined by user
-      // we just draw the isa edge instead of all edges from relationshipTypes
-      if (!META_CONCEPTS.has(supLabel)) {
-        edges = [{ from: type.id, to: sup.id, label: 'sub' }];
-      } else {
-        edges = await typeInboundEdges(type, state.visFacade);
-      }
+      Object.assign(type, { label: payload.entityLabel });
 
-      const label = await type.label();
-      let nodes = [Object.assign(type, { label })];
+      const data = await buildSchema([type]);
 
-      // constuct role edges
-      edges.push(await relationshipTypesOutboundEdges([type]));
+      data.edges.push(...((await typeInboundEdges(type, state.visFacade)).filter(x => x.to === type.id)));
 
-      state.visFacade.addToCanvas({ nodes, edges });
+      state.visFacade.addToCanvas({ nodes: data.nodes, edges: data.edges });
 
-      nodes = await computeAttributes(nodes);
-      state.visFacade.updateNode(nodes);
+      data.nodes = await computeAttributes(data.nodes);
+      state.visFacade.updateNode(data.nodes);
       graknTx.close();
     })
       .catch((e) => {
@@ -171,7 +167,7 @@ export default {
   },
 
   async [DEFINE_ATTRIBUTE_TYPE]({ state, dispatch }, payload) {
-    const graknTx = await dispatch(OPEN_GRAKN_TX);
+    let graknTx = await dispatch(OPEN_GRAKN_TX);
 
     // define entity type
     await state.schemaHandler.defineAttributeType(payload);
@@ -189,6 +185,22 @@ export default {
     await dispatch(COMMIT_TX, graknTx)
       .then(async () => {
         await dispatch(UPDATE_METATYPE_INSTANCES);
+
+        graknTx = await dispatch(OPEN_GRAKN_TX);
+
+        const type = await graknTx.getSchemaConcept(payload.attributeLabel);
+
+        Object.assign(type, { label: payload.attributeLabel });
+
+        const data = await buildSchema([type]);
+
+        data.edges.push(...((await typeInboundEdges(type, state.visFacade)).filter(x => x.to === type.id)));
+
+        state.visFacade.addToCanvas({ nodes: data.nodes, edges: data.edges });
+
+        data.nodes = await computeAttributes(data.nodes);
+        state.visFacade.updateNode(data.nodes);
+        graknTx.close();
       })
       .catch((e) => {
         graknTx.close();
@@ -211,10 +223,17 @@ export default {
 
         const node = state.visFacade.getNode(state.selectedNodes[0].id);
 
+        const edges = [];
         await Promise.all(payload.attributeTypes.map(async (attributeType) => {
-          const dataType = await (await graknTx.getSchemaConcept(attributeType)).dataType();
+          const type = await graknTx.getSchemaConcept(attributeType);
+          const dataType = await type.dataType();
           node.attributes = [...node.attributes, { type: attributeType, dataType }];
+
+          edges.push({ from: state.selectedNodes[0].id, to: type.id, label: 'has' });
         }));
+
+        state.visFacade.addToCanvas({ nodes: [], edges });
+
         graknTx.close();
         state.visFacade.updateNode(node);
       })
@@ -226,7 +245,7 @@ export default {
   },
 
   async [DELETE_ATTRIBUTE]({ state, dispatch }, payload) {
-    const graknTx = await dispatch(OPEN_GRAKN_TX);
+    let graknTx = await dispatch(OPEN_GRAKN_TX);
 
     const type = await graknTx.getSchemaConcept(state.selectedNodes[0].label);
 
@@ -234,11 +253,24 @@ export default {
 
     await state.schemaHandler.deleteAttribute(payload);
 
-    await dispatch(COMMIT_TX, graknTx).then(() => {
+    await dispatch(COMMIT_TX, graknTx).then(async () => {
       const node = state.visFacade.getNode(state.selectedNodes[0].id);
       node.attributes = Object.values(node.attributes).sort((a, b) => ((a.type > b.type) ? 1 : -1));
       node.attributes.splice(payload.index, 1);
       state.visFacade.updateNode(node);
+
+      // delete edge to attribute type
+      graknTx = await dispatch(OPEN_GRAKN_TX);
+
+      const attributeTypeId = (await graknTx.getSchemaConcept(payload.attributeLabel)).id;
+      const edgesIds = state.visFacade.container.visualiser.edgesConnectedToNode(state.selectedNodes[0].id);
+      edgesIds.forEach((edgeId) => {
+        const edge = state.visFacade.container.visualiser.getEdge(edgeId);
+        if (edge.to === attributeTypeId) {
+          state.visFacade.deleteEdge(edgeId);
+        }
+      });
+      graknTx.close();
     })
       .catch((e) => {
         graknTx.close();
@@ -276,26 +308,19 @@ export default {
       await dispatch(UPDATE_METATYPE_INSTANCES);
 
       graknTx = await dispatch(OPEN_GRAKN_TX);
+
       const type = await graknTx.getSchemaConcept(payload.relationshipLabel);
-      const label = await type.label();
-      const sup = await type.sup();
-      const supLabel = await sup.label();
 
-      let edges;
-      // If the supertype is a concept defined by user
-      // we just draw the sub edge instead of all edges to roleplayers
-      if (!META_CONCEPTS.has(supLabel)) {
-        edges = [{ from: type.id, to: sup.id, label: 'sub' }];
-      } else {
-        const relatesEdges = await relationshipTypesOutboundEdges([type]);
-        const plays = await typeInboundEdges(type, state.visFacade);
-        edges = plays.concat(relatesEdges);
-      }
-      let nodes = [Object.assign(type, { label })];
-      state.visFacade.addToCanvas({ nodes, edges });
+      Object.assign(type, { label: payload.relationshipLabel });
 
-      nodes = await computeAttributes(nodes);
-      state.visFacade.updateNode(nodes);
+      const data = await buildSchema([type]);
+
+      data.edges.push(...((await typeInboundEdges(type, state.visFacade)).filter(x => x.to === type.id)));
+
+      state.visFacade.addToCanvas({ nodes: data.nodes, edges: data.edges });
+
+      data.nodes = await computeAttributes(data.nodes);
+      state.visFacade.updateNode(data.nodes);
       graknTx.close();
     })
       .catch((e) => {

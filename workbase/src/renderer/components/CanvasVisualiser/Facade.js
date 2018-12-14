@@ -95,6 +95,10 @@ function deleteNode(node) {
   this.container.visualiser.deleteNode(node);
 }
 
+function deleteEdge(edge) {
+  this.container.visualiser.deleteEdge(edge);
+}
+
 function registerEventHandler(event, fn) {
   this.container.visualiser.getNetwork().on(event, fn);
 }
@@ -122,6 +126,7 @@ const prototype = {
   updateNode,
   getNetwork,
   deleteNode,
+  deleteEdge,
   updateEdge,
 };
 
