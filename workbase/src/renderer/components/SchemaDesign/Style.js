@@ -1,6 +1,4 @@
 
-import NodeSettings from '../Visualiser/RightBar/SettingsTab/DisplaySettings';
-
 
 const DEFAULT_NODE_SHAPE = 'box';
 const DEFAULT_NODE_SIZE = 25;
@@ -8,64 +6,8 @@ const DEFAULT_NODE_BACKGROUND = '#563891';
 const DEFAULT_NODE_HIGHLIGHT = '#973fd8';
 const DEFAULT_NODE_DIMMED = 'rgba(86, 56, 145, 0.2)';
 
-function lightenDarkenColor(col, amt) {
-  let usePound = false;
-
-  if (col[0] === '#') {
-    col = col.slice(1);
-    usePound = true;
-  }
-
-  const num = parseInt(col, 16);
-
-  let r = (num >> 16) + amt; // eslint-disable-line no-bitwise
-
-  if (r > 255) r = 255;
-  else if (r < 0) r = 0;
-
-  let b = ((num >> 8) & 0x00FF) + amt; // eslint-disable-line no-bitwise
-
-  if (b > 255) b = 255;
-  else if (b < 0) b = 0;
-
-  let g = (num & 0x0000FF) + amt; // eslint-disable-line no-bitwise
-
-  if (g > 255) g = 255;
-  else if (g < 0) g = 0;
-
-  return (usePound ? '#' : '') + (g | (b << 8) | (r << 16)).toString(16);// eslint-disable-line no-bitwise
-}
-
-function convertHex(colour, opacity) {
-  const hex = colour.replace('#', '');
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-
-  const result = `rgba(${r},${g},${b},${opacity})`;
-  return result;
-}
-
-function colourFromStorage(colour) {
-  const backgroundCol = colour;
-  const highlightCol = lightenDarkenColor(colour, 30);
-  const dimmedCol = convertHex(colour, 0.2);
-
-  return {
-    background: backgroundCol,
-    border: backgroundCol,
-    dimmedColor: dimmedCol,
-    highlight: { background: highlightCol, border: highlightCol },
-    hover: { background: highlightCol, border: highlightCol },
-  };
-}
-
 
 function nodeColour(node) {
-  const colour = NodeSettings.getTypeColours(node.type);
-  if (colour.length) return colourFromStorage(colour);
-
-
   let backgroundCol;
   let highlightCol;
   let dimmedCol;
@@ -116,7 +58,11 @@ function nodeColour(node) {
 
 
 function nodeFont() {
-  return { color: '#ffffff', dimmedColor: 'rgba(32, 161, 148, 0.5)' };
+  return {
+    color: '#ffffff',
+    dimmedColor: 'rgba(32, 161, 148, 0.5)',
+    face: 'Lekton',
+  };
 }
 
 function nodeShape(node) {
@@ -133,7 +79,7 @@ function nodeShape(node) {
       shape = 'box';
       break;
     case 'ATTRIBUTE_TYPE':
-      shape = 'box';
+      shape = 'ellipse';
       break;
     default:
       shape = DEFAULT_NODE_SHAPE;

@@ -18,9 +18,9 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.internal.Schema;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.CacheOwner;
@@ -28,7 +28,6 @@ import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -39,16 +38,9 @@ import java.util.stream.Stream;
 
 
 /**
- * <p>
- *     The base concept implementation.
- * </p>
- *
- * <p>
- *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
- *     This class forms the basis of assuring the graph follows the Grakn object model.
- * </p>
- *
- *
+ * The base concept implementation.
+ * A concept which can represent anything in the graph which wraps a TinkerPop vertex.
+ * This class forms the basis of assuring the graph follows the Grakn object model.
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner {
     private final Set<Cache> registeredCaches = new HashSet<>();
@@ -62,7 +54,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     private final Cache<ConceptId> conceptId = Cache.createPersistentCache(this, Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
-    ConceptImpl(VertexElement vertexElement){
+    ConceptImpl(VertexElement vertexElement) {
         this.vertexElement = vertexElement;
     }
 
@@ -72,22 +64,18 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     }
 
     @SuppressWarnings("unchecked")
-    <X extends  Concept> X getThis(){
+    <X extends Concept> X getThis() {
         return (X) this;
     }
 
     /**
      * Deletes the concept.
+     *
      * @throws TransactionException Throws an exception if the node has any edges attached to it.
      */
     @Override
     public void delete() throws TransactionException {
         deleteNode();
-    }
-
-    @Override
-    public Keyspace keyspace(){
-        return vertex().tx().keyspace();
     }
 
     @Override
@@ -98,24 +86,23 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     /**
      * Deletes the node and adds it neighbours for validation
      */
-    public void deleteNode(){
+    public void deleteNode() {
         vertex().tx().txCache().remove(this);
         vertex().delete();
     }
 
     @Override
-    public Collection<Cache> caches(){
+    public Collection<Cache> caches() {
         return registeredCaches;
     }
 
     /**
-     *
      * @param direction the direction of the neigouring concept to get
-     * @param label The edge label to traverse
+     * @param label     The edge label to traverse
      * @return The neighbouring concepts found by traversing edges of a specific type
      */
-    <X extends Concept> Stream<X> neighbours(Direction direction, Schema.EdgeLabel label){
-        switch (direction){
+    <X extends Concept> Stream<X> neighbours(Direction direction, Schema.EdgeLabel label) {
+        switch (direction) {
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).
                         flatMap(edge -> Stream.<X>of(
@@ -125,46 +112,44 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
             case IN:
                 return vertex().getEdgesOfType(direction, label).map(edge -> vertex().tx().factory().buildConcept(edge.source()));
             case OUT:
-                return  vertex().getEdgesOfType(direction, label).map(edge -> vertex().tx().factory().buildConcept(edge.target()));
+                return vertex().getEdgesOfType(direction, label).map(edge -> vertex().tx().factory().buildConcept(edge.target()));
             default:
                 throw TransactionException.invalidDirection(direction);
         }
     }
 
-    EdgeElement putEdge(ConceptVertex to, Schema.EdgeLabel label){
+    EdgeElement putEdge(ConceptVertex to, Schema.EdgeLabel label) {
         return vertex().putEdge(to.vertex(), label);
     }
 
-    EdgeElement addEdge(ConceptVertex to, Schema.EdgeLabel label){
+    EdgeElement addEdge(ConceptVertex to, Schema.EdgeLabel label) {
         return vertex().addEdge(to.vertex(), label);
     }
 
     void deleteEdge(Direction direction, Schema.EdgeLabel label, Concept... to) {
         if (to.length == 0) {
             vertex().deleteEdge(direction, label);
-        } else{
+        } else {
             VertexElement[] targets = new VertexElement[to.length];
             for (int i = 0; i < to.length; i++) {
-                targets[i] = ((ConceptImpl)to[i]).vertex();
+                targets[i] = ((ConceptImpl) to[i]).vertex();
             }
             vertex().deleteEdge(direction, label, targets);
         }
     }
 
     /**
-     *
      * @return The base type of this concept which helps us identify the concept
      */
-    public Schema.BaseType baseType(){
+    public Schema.BaseType baseType() {
         return Schema.BaseType.valueOf(vertex().label());
     }
 
     /**
-     *
      * @return A string representing the concept's unique id.
      */
     @Override
-    public ConceptId id(){
+    public ConceptId id() {
         return conceptId.get();
     }
 
@@ -185,8 +170,8 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     }
 
     @Override
-    public final String toString(){
-        if(vertex().tx().isValidElement(vertex().element())){
+    public final String toString() {
+        if (vertex().tx().isValidElement(vertex().element())) {
             return innerToString();
         } else {
             // Vertex has been deleted so all we can do is print the id
@@ -196,7 +181,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
 
     String innerToString() {
         String message = "Base Type [" + baseType() + "] ";
-        if(id() != null) {
+        if (id() != null) {
             message = message + "- Id [" + id() + "] ";
         }
 
@@ -204,29 +189,29 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     }
 
     //----------------------------------- Sharding Functionality
-    public void createShard(){
+    public void createShard() {
         VertexElement shardVertex = vertex().tx().addVertexElement(Schema.BaseType.SHARD);
         Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);
 
         //Updated the cached shard count if needed
-        if(shardCount.isPresent()){
+        if (shardCount.isPresent()) {
             shardCount.set(shardCount() + 1);
         }
     }
 
-    public Stream<Shard> shards(){
+    public Stream<Shard> shards() {
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
                 map(EdgeElement::source).
                 map(edge -> vertex().tx().factory().buildShard(edge));
     }
 
-    public Long shardCount(){
+    public Long shardCount() {
         return shardCount.get();
     }
 
-    public Shard currentShard(){
+    public Shard currentShard() {
         return currentShard.get();
     }
 

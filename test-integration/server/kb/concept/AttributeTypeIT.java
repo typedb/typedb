@@ -18,12 +18,12 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
-import grakn.core.server.exception.TransactionException;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.exception.TransactionException;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;

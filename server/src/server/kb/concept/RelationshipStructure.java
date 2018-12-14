@@ -18,7 +18,6 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
@@ -54,13 +53,6 @@ interface RelationshipStructure extends CacheOwner {
      * @return The {@link ConceptId} of the {@link Relationship}
      */
     ConceptId id();
-
-    /**
-     * Used for determining which {@link Keyspace} a {@link RelationshipStructure} was created in and is bound to.
-     *
-     * @return The {@link Keyspace} this {@link RelationshipStructure} belongs to.
-     */
-    Keyspace keyspace();
 
     /**
      *

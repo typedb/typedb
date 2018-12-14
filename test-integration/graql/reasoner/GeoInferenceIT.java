@@ -18,23 +18,24 @@
 
 package grakn.core.graql.reasoner;
 
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import java.util.Collection;
-import java.util.List;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.Collection;
+import java.util.List;
 
 import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.hamcrest.Matchers.empty;
@@ -42,7 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("CheckReturnValue")
+@SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class GeoInferenceIT {
 
     @ClassRule
@@ -65,11 +66,10 @@ public class GeoInferenceIT {
     @Test
     public void testEntitiesLocatedInThemselves(){
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
             String queryString = "match (geo-entity: $x, entity-location: $x) isa is-located-in; get;";
 
-            GetQuery query = iqb.parse(queryString);
-            List<ConceptMap> answers = query.execute();
+            GetQuery query = Graql.parse(queryString);
+            List<ConceptMap> answers = tx.execute(query);
             assertThat(answers, empty());
         }
     }
@@ -77,8 +77,6 @@ public class GeoInferenceIT {
     @Test
     public void testTransitiveQuery_withGuards() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(false);
-            QueryBuilder iqb = tx.graql().infer(true);
             String queryString = "match " +
                     "$x isa university;$x has name $name;" +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
@@ -88,15 +86,16 @@ public class GeoInferenceIT {
                     "$x isa university;$x has name $name;" +
                     "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';}; get;";
 
-            assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
+            assertCollectionsEqual(
+                    tx.execute(Graql.<GetQuery>parse(queryString)),
+                    tx.execute(Graql.<GetQuery>parse(explicitQuery), false)
+            );
         }
     }
 
     @Test
     public void testTransitiveQuery_withGuards_noRoles() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(false);
-            QueryBuilder iqb = tx.graql().infer(true);
             String queryString = "match " +
                     "$z1 isa university;$z1 has name $name;" +
                     "($z1, $z2) isa is-located-in;" +
@@ -114,15 +113,20 @@ public class GeoInferenceIT {
                     "$z2 isa university;$z2 has name $name;" +
                     "{$z2 has name 'University-of-Warsaw';} or {$z2 has name'Warsaw-Polytechnics';}; get;";
 
-            assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
-            assertQueriesEqual(iqb.parse(queryString2), qb.parse(explicitQuery2));
+            assertCollectionsEqual(
+                    tx.execute(Graql.<GetQuery>parse(queryString)),
+                    tx.execute(Graql.<GetQuery>parse(explicitQuery), false)
+            );
+            assertCollectionsEqual(
+                    tx.execute(Graql.<GetQuery>parse(queryString2)),
+                    tx.execute(Graql.<GetQuery>parse(explicitQuery2), false)
+            );
         }
     }
 
     @Test
     public void testTransitiveQuery_withSpecificResource() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
             String queryString = "match " +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                     "$y has name 'Poland'; get;";
@@ -134,13 +138,13 @@ public class GeoInferenceIT {
             Concept poland = getConcept(tx, "name", "Poland");
             Concept europe = getConcept(tx, "name", "Europe");
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             answers.forEach(ans -> assertEquals(2, ans.size()));
             answers.forEach(ans -> assertEquals(poland.id().getValue(), ans.get(var("y")).id().getValue()));
             assertEquals(6, answers.size());
 
 
-            List<ConceptMap> answers2 = iqb.<GetQuery>parse(queryString2).execute();
+            List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
             answers2.forEach(ans -> assertEquals(2, ans.size()));
             answers2.forEach(ans -> assertEquals(europe.id().getValue(), ans.get(var("y")).id().getValue()));
             assertEquals(21, answers2.size());
@@ -150,7 +154,6 @@ public class GeoInferenceIT {
     @Test
     public void testTransitiveQuery_withSpecificResource_noRoles() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
                     "($x, $y) isa is-located-in;" +
@@ -160,9 +163,9 @@ public class GeoInferenceIT {
                     "(geo-entity: $y, entity-location: $x) isa is-located-in;};" +
                     "$y has name 'Masovia'; get;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
 
-            List<ConceptMap> explicitAnswers = iqb.<GetQuery>parse(explicitString).execute();
+            List<ConceptMap> explicitAnswers = tx.execute(Graql.<GetQuery>parse(explicitString));
             answers.forEach(ans -> assertEquals(2, ans.size()));
             answers.forEach(ans -> assertEquals(masovia.id().getValue(), ans.get(var("y")).id().getValue()));
             assertEquals(5, answers.size());
@@ -173,7 +176,7 @@ public class GeoInferenceIT {
     @Test
     public void testTransitiveQuery_withSubstitution() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
             Concept poland = getConcept(tx, "name", "Poland");
             Concept europe = getConcept(tx, "name", "Europe");
             String queryString = "match " +
@@ -184,22 +187,22 @@ public class GeoInferenceIT {
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                     "$y id '" + europe.id().getValue() + "'; get;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             answers.forEach(ans -> assertEquals(2, ans.size()));
             answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), poland.id().getValue()));
             assertEquals(6, answers.size());
 
-            List<ConceptMap> answers2 = iqb.<GetQuery>parse(queryString2).execute();
+            List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
             answers2.forEach(ans -> assertEquals(2, ans.size()));
             answers2.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), europe.id().getValue()));
-            assertEquals(iqb.parse("match $x isa entity;get;").execute().size() - 1, answers2.size());
+            assertEquals(tx.execute(Graql.parse("match $x isa entity;get;")).size() - 1, answers2.size());
         }
     }
 
     @Test
     public void testTransitiveQuery_withSubstitution_noRoles() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
 
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
@@ -211,11 +214,11 @@ public class GeoInferenceIT {
                     "(geo-entity: $y, entity-location: $x) isa is-located-in;};" +
                     "$y id '" + masovia.id().getValue() + "'; get;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             answers.forEach(ans -> assertEquals(2, ans.size()));
             answers.forEach(ans -> assertEquals(masovia.id().getValue(), ans.get(var("y")).id().getValue()));
             assertEquals(5, answers.size());
-            List<ConceptMap> answers2 = iqb.<GetQuery>parse(queryString2).execute();
+            List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
             assertCollectionsEqual(answers, answers2);
         }
     }
@@ -223,13 +226,13 @@ public class GeoInferenceIT {
     @Test
     public void testTransitiveQuery_withSubstitution_variableRoles() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
                     "($r1: $x, $r2: $y) isa is-located-in;" +
                     "$y id '" + masovia.id().getValue() + "'; get;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
 
             answers.forEach(ans -> assertEquals(ans.size(), 4));
             answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), masovia.id().getValue()));
@@ -240,10 +243,10 @@ public class GeoInferenceIT {
     @Test
     public void testTransitiveQuery_Closure() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
             String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             assertEquals(51, answers.size());
         }
     }
@@ -251,10 +254,10 @@ public class GeoInferenceIT {
     @Test
     public void testTransitiveQuery_Closure_NoRoles() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
             String queryString = "match ($x, $y) isa is-located-in; get;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             assertEquals(102, answers.size());
         }
     }
@@ -262,10 +265,10 @@ public class GeoInferenceIT {
     @Test
     public void testTransitiveQuery_Closure_variableRoles() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
             String queryString = "match ($r1: $x, $r2: $y) isa is-located-in; get;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             answers.forEach(ans -> assertEquals(4, ans.size()));
             assertEquals(408, answers.size());
         }
@@ -274,13 +277,13 @@ public class GeoInferenceIT {
     @Test
     public void testTransitiveQuery_variableRoles_withSubstitution_withRelationVar() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
                     "$x ($r1: $x1, $r2: $x2) isa is-located-in;" +
                     "$x2 id '" + masovia.id().getValue() + "'; get;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             assertEquals(20, answers.size());
             answers.forEach(ans -> assertEquals(5, ans.size()));
         }
@@ -289,13 +292,13 @@ public class GeoInferenceIT {
     @Test
     public void testTransitiveQuery_Closure_variableSpecificRoles() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
 
             Statement rolePattern = var()
                     .rel(var("r1").label("geo-entity"), var("x"))
                     .rel(var("r2").label("entity-location"), var("y"));
 
-            List<ConceptMap> answers = iqb.match(rolePattern).get().execute();
+            List<ConceptMap> answers = tx.execute(Graql.match(rolePattern).get());
 
             answers.forEach(ans -> assertEquals(4, ans.size()));
             assertEquals(51, answers.size());
@@ -305,10 +308,10 @@ public class GeoInferenceIT {
     @Test
     public void testTransitiveQuery_Closure_singleVariableRole() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
             String queryString = "match ($x, $r2: $y) isa is-located-in; get;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
 
             answers.forEach(ans -> assertEquals(3, ans.size()));
             assertEquals(204, answers.size());
@@ -318,13 +321,13 @@ public class GeoInferenceIT {
     @Test
     public void testTransitiveQuery_Closure_singleVariableRole_withSubstitution() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
                     "($x, $r2: $y) isa is-located-in;" +
                     "$y id '" + masovia.id().getValue() + "'; get;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
 
             answers.forEach(ans -> assertEquals(3, ans.size()));
             answers.forEach(ans -> assertEquals(masovia.id().getValue(), ans.get(var("y")).id().getValue()));
@@ -335,10 +338,10 @@ public class GeoInferenceIT {
     @Test
     public void testTransitiveQuery_Closure_withRelationVar() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
             String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in; get;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             assertEquals(51, answers.size());
         }
     }
@@ -346,12 +349,12 @@ public class GeoInferenceIT {
     @Test
     public void testRelationVarQuery_Closure_withAndWithoutRelationPlayers() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
             String queryString = "match $x isa is-located-in; get;";
             String queryString2 = "match $x ($x1, $x2) isa is-located-in;get $x;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
-            List<ConceptMap> answers2 = iqb.<GetQuery>parse(queryString2).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+            List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
 
             assertEquals(51, answers.size());
             assertEquals(51, answers2.size());
@@ -361,29 +364,25 @@ public class GeoInferenceIT {
     @Test
     public void testLazy() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder iqb = tx.graql().infer(true);
+            
             String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; limit 1; get;";
             String queryString2 = "match (geo-entity: $x, entity-location: $y) isa is-located-in; limit 22; get;";
             String queryString3 = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
-            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
-            List<ConceptMap> answers2 = iqb.<GetQuery>parse(queryString2).execute();
-            List<ConceptMap> answers3 = iqb.<GetQuery>parse(queryString3).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+            List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
+            List<ConceptMap> answers3 = tx.execute(Graql.<GetQuery>parse(queryString3));
             assertTrue(answers3.containsAll(answers));
             assertTrue(answers3.containsAll(answers2));
         }
     }
 
     private Concept getConcept(Transaction graph, String typeName, Object val){
-        return graph.graql().match((Pattern) var("x").has(typeName, val)).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().orElse(null);
+        return graph.stream(Graql.match((Pattern) var("x").has(typeName, val)).get("x"))
+                .map(ans -> ans.get("x")).findAny().orElse(null);
     }
 
     private static <T> void assertCollectionsEqual(Collection<T> c1, Collection<T> c2) {
         assertTrue(CollectionUtils.isEqualCollection(c1, c2));
-    }
-
-    private static void assertQueriesEqual(GetQuery q1, GetQuery q2) {
-        assertCollectionsEqual(q1.execute(), q2.execute());
     }
 }

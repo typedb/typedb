@@ -18,20 +18,21 @@
 
 package grakn.core.graql.internal.reasoner.unifier;
 
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.admin.Unifier;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.UnmodifiableIterator;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.pattern.Variable;
+
+import javax.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 /**
  *

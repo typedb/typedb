@@ -18,16 +18,17 @@
 
 package grakn.core.graql.internal.reasoner.atom.binary;
 
+import com.google.common.collect.Sets;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Rule;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import grakn.core.common.exception.ErrorMessage;
-import com.google.common.collect.Sets;
+import grakn.core.graql.query.pattern.Variable;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;

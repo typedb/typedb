@@ -26,6 +26,7 @@ import {
   loadMetaTypeInstances,
   typeInboundEdges,
   computeAttributes,
+  ownerHasEdges,
 } from '../SchemaUtils';
 import SchemaCanvasEventsHandler from '../SchemaCanvasEventsHandler';
 
@@ -81,7 +82,7 @@ export default {
       const labelledNodes = await Promise.all(explicitConcepts.map(async x => Object.assign(x, { label: await x.label() })));
 
       let nodes = labelledNodes
-        .filter(x => !x.isAttributeType())
+        // .filter(x => !x.isAttributeType())
         .filter(x => x.label !== 'thing')
         .filter(x => x.label !== 'entity')
         .filter(x => x.label !== 'attribute')
@@ -92,8 +93,11 @@ export default {
       // Draw all edges from relationships to roleplayers
       const relEdges = await relationshipTypesOutboundEdges(nodes);
 
+      // Draw all edges from owners to attributes
+      const hasEdges = await ownerHasEdges(nodes);
+
       nodes = updateNodePositions(nodes);
-      state.visFacade.addToCanvas({ nodes, edges: relEdges.concat(subConcepts.edges) });
+      state.visFacade.addToCanvas({ nodes, edges: relEdges.concat(subConcepts.edges, hasEdges) });
       state.visFacade.fitGraphToWindow();
 
       nodes = await computeAttributes(nodes);

@@ -18,7 +18,7 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.server.keyspace.Keyspace;
+import com.google.common.collect.Iterables;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
@@ -29,7 +29,6 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.structure.VertexElement;
-import com.google.common.collect.Iterables;
 
 import java.util.Collection;
 import java.util.Map;
@@ -39,22 +38,15 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     Encapsulates relationships between {@link Thing}
- * </p>
- *
- * <p>
- *     A relation which is an instance of a {@link RelationshipType} defines how instances may relate to one another.
- * </p>
- *
- *
+ * Encapsulates relationships between {@link Thing}
+ * A relation which is an instance of a {@link RelationshipType} defines how instances may relate to one another.
  */
 public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner {
     private RelationshipStructure relationshipStructure;
 
     private RelationshipImpl(RelationshipStructure relationshipStructure) {
         this.relationshipStructure = relationshipStructure;
-        if(relationshipStructure.isReified()){
+        if (relationshipStructure.isReified()) {
             relationshipStructure.reify().owner(this);
         }
     }
@@ -66,21 +58,20 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     /**
      * Gets the {@link RelationshipReified} if the {@link Relationship} has been reified.
      * To reify the {@link Relationship} you use {@link RelationshipImpl#reify()}.
-     *
      * NOTE: This approach is done to make sure that only write operations will cause the {@link Relationship} to reify
      *
      * @return The {@link RelationshipReified} if the {@link Relationship} has been reified
      */
-    public Optional<RelationshipReified> reified(){
-        if(!relationshipStructure.isReified()) return Optional.empty();
+    public Optional<RelationshipReified> reified() {
+        if (!relationshipStructure.isReified()) return Optional.empty();
         return Optional.of(relationshipStructure.reify());
     }
 
     /**
      * Reifys and returns the {@link RelationshipReified}
      */
-    public RelationshipReified reify(){
-        if(relationshipStructure.isReified()) return relationshipStructure.reify();
+    public RelationshipReified reify() {
+        if (relationshipStructure.isReified()) return relationshipStructure.reify();
 
         //Get the role players to transfer
         Map<Role, Set<Thing>> rolePlayers = structure().allRolePlayers();
@@ -97,7 +88,7 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
         return relationshipStructure.reify();
     }
 
-    public RelationshipStructure structure(){
+    public RelationshipStructure structure() {
         return relationshipStructure;
     }
 
@@ -141,19 +132,19 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
      * Reads some data from a {@link RelationshipReified}. If the {@link Relationship} has not been reified then an empty
      * {@link Stream} is returned.
      */
-    private <X> Stream<X> readFromReified(Function<RelationshipReified, Stream<X>> producer){
+    private <X> Stream<X> readFromReified(Function<RelationshipReified, Stream<X>> producer) {
         return reified().map(producer).orElseGet(Stream::empty);
     }
 
     /**
      * Retrieve a list of all {@link Thing} involved in the {@link Relationship}, and the {@link Role} they play.
-     * @see Role
      *
      * @return A list of all the {@link Role}s and the {@link Thing}s playing them in this {@link Relationship}.
+     * @see Role
      */
     @Override
-    public Map<Role, Set<Thing>> rolePlayersMap(){
-       return structure().allRolePlayers();
+    public Map<Role, Set<Thing>> rolePlayersMap() {
+        return structure().allRolePlayers();
     }
 
     @Override
@@ -163,7 +154,8 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
 
     /**
      * Expands this {@link Relationship} to include a new role player which is playing a specific {@link Role}.
-     * @param role The role of the new role player.
+     *
+     * @param role   The role of the new role player.
      * @param player The new role player.
      * @return The {@link Relationship} itself
      */
@@ -195,7 +187,7 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     void cleanUp() {
         Stream<Thing> rolePlayers = rolePlayers();
         boolean performDeletion = rolePlayers.noneMatch(thing -> thing != null && thing.id() != null);
-        if(performDeletion) delete();
+        if (performDeletion) delete();
     }
 
     @Override
@@ -211,18 +203,13 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return structure().toString();
     }
 
     @Override
     public ConceptId id() {
         return structure().id();
-    }
-
-    @Override
-    public Keyspace keyspace() {
-        return structure().keyspace();
     }
 
     @Override
@@ -240,7 +227,7 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
         return reify().vertex();
     }
 
-    public static RelationshipImpl from(Relationship relationship){
+    public static RelationshipImpl from(Relationship relationship) {
         return (RelationshipImpl) relationship;
     }
 

@@ -18,8 +18,7 @@
 
 package grakn.core.server.kb;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Entity;
@@ -28,15 +27,16 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.server.exception.TransactionException;
+import grakn.core.graql.internal.Schema;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.structure.Shard;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.After;

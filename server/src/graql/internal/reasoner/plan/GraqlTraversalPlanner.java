@@ -18,11 +18,12 @@
 
 package grakn.core.graql.internal.reasoner.plan;
 
-import grakn.core.graql.concept.ConceptId;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -30,11 +31,10 @@ import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.server.session.TransactionImpl;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;

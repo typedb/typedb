@@ -18,9 +18,10 @@
 
 package grakn.core.graql.internal.reasoner.plan;
 
+import com.google.common.base.Equivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import com.google.common.base.Equivalence;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

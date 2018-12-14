@@ -30,11 +30,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunning;
+import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
 import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsNotRunning;
+import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunning;
 import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
 import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
-import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;

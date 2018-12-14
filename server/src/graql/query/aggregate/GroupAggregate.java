@@ -24,7 +24,6 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Aggregate;
-import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.Nonnull;
@@ -38,7 +37,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
+ * Aggregate that groups results of a match clause by variable name, applying an aggregate to each group.
  *
  * @param <T> the type of each group
  */

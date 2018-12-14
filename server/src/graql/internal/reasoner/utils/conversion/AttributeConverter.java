@@ -20,8 +20,8 @@ package grakn.core.graql.internal.reasoner.utils.conversion;
 
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 /**
  * <p>

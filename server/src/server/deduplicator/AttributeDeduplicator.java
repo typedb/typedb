@@ -18,11 +18,11 @@
 
 package grakn.core.server.deduplicator;
 
-import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
-import grakn.core.server.session.SessionStore;
-import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Lists;
+import grakn.core.graql.internal.Schema;
+import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionStore;
+import grakn.core.server.session.TransactionImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;

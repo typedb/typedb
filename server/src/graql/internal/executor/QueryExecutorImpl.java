@@ -20,26 +20,40 @@ package grakn.core.graql.internal.executor;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.gremlin.GraqlTraversal;
+import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Match;
+import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.UndefineQuery;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.ComputeExecutor;
 import grakn.core.server.QueryExecutor;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -56,18 +70,106 @@ import static java.util.stream.Collectors.toSet;
 public class QueryExecutorImpl implements QueryExecutor {
 
     private final TransactionImpl<?> tx;
+    private final boolean infer;
 
-    private QueryExecutorImpl(TransactionImpl<?> tx) {
+    public QueryExecutorImpl(TransactionImpl<?> tx, boolean infer) {
         this.tx = tx;
+        this.infer = infer;
     }
 
-    public static QueryExecutorImpl create(TransactionImpl<?> tx) {
-        return new QueryExecutorImpl(tx);
+    /**
+     * @param matchClause the match clause containing patterns to query
+     */
+    void validateStatements(MatchClause matchClause) {
+        for (Statement statement : matchClause.getPatterns().statements()) {
+            statement.getProperties().forEach(property -> property.checkValid(tx, statement));
+        }
+    }
+
+    /**
+     * @param commonVars set of variables of interest
+     * @param graqlTraversal gral traversal corresponding to the provided pattern
+     * @return resulting answer stream
+     */
+    public Stream<ConceptMap> streamWithTraversal(Set<Variable> commonVars, GraqlTraversal graqlTraversal) {
+        Set<Variable> vars = Sets.filter(commonVars, Variable::isUserDefinedName);
+
+        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(tx, vars);
+
+        return traversal.toStream()
+                .map(elements -> makeResults(vars, elements))
+                .distinct()
+                .sequential()
+                .map(ConceptMap::new);
+    }
+
+    /**
+     * @param vars set of variables of interest
+     * @param elements a map of vertices and edges where the key is the variable name
+     * @return a map of concepts where the key is the variable name
+     */
+    private Map<Variable, Concept> makeResults(Set<Variable> vars, Map<String, Element> elements) {
+        Map<Variable, Concept> map = new HashMap<>();
+        for (Variable var : vars) {
+            Element element = elements.get(var.symbol());
+            if (element == null) {
+                throw GraqlQueryException.unexpectedResult(var);
+            } else {
+                Concept concept = buildConcept(element);
+                map.put(var, concept);
+            }
+        }
+
+        return map;
+    }
+
+
+
+    private Concept buildConcept(Element element) {
+        if (element instanceof Vertex) {
+            return tx.buildConcept((Vertex) element);
+        } else {
+            return tx.buildConcept((Edge) element);
+        }
+    }
+
+    public Stream<ConceptMap> run(MatchClause matchClause) {
+        validateStatements(matchClause);
+
+        if (!infer || !RuleUtils.hasRules(tx)) {
+            GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), tx);
+            return streamWithTraversal(matchClause.getPatterns().variables(), graqlTraversal);
+        }
+
+        try {
+            Iterator<Conjunction<Statement>> conjIt = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().iterator();
+            Conjunction<Statement> conj = conjIt.next();
+
+            ReasonerQuery conjQuery = ReasonerQueries.create(conj, tx).rewrite();
+            conjQuery.checkValid();
+            Stream<ConceptMap> answerStream = conjQuery.isRuleResolvable() ?
+                    conjQuery.resolve() :
+                    tx.stream(Graql.match(conj), false);
+
+            while (conjIt.hasNext()) {
+                conj = conjIt.next();
+                conjQuery = ReasonerQueries.create(conj, tx).rewrite();
+                Stream<ConceptMap> localStream = conjQuery.isRuleResolvable() ?
+                        conjQuery.resolve() :
+                        tx.stream(Graql.match(conj), false);
+
+                answerStream = Stream.concat(answerStream, localStream);
+            }
+            return answerStream.map(result -> result.project(matchClause.getSelectedNames()));
+        } catch (GraqlQueryException e) {
+            System.err.println(e.getMessage());
+            return Stream.empty();
+        }
     }
 
     @Override
     public Stream<ConceptMap> run(GetQuery query) {
-        return query.match().stream().map(result -> result.project(query.vars())).distinct();
+        return run(query.match()).map(result -> result.project(query.vars())).distinct();
     }
 
     @Override
@@ -83,18 +185,18 @@ public class QueryExecutorImpl implements QueryExecutor {
         }
     }
 
-    private Stream<ConceptMap> runMatchInsert(Match match, Collection<Statement> statements) {
-        Set<Variable> varsInMatch = match.admin().getSelectedNames();
+    private Stream<ConceptMap> runMatchInsert(MatchClause match, Collection<Statement> statements) {
+        Set<Variable> varsInMatch = match.getSelectedNames();
         Set<Variable> varsInInsert = statements.stream().map(statement -> statement.var()).collect(toImmutableSet());
         Set<Variable> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
 
-        Stream<ConceptMap> answers = match.get(projectedVars).stream();
+        Stream<ConceptMap> answers = tx.stream(match.get(projectedVars));
         return answers.map(answer -> QueryOperationExecutor.insertAll(statements, tx, answer)).collect(toList()).stream();
     }
 
     @Override
     public Stream<ConceptSet> run(DeleteQuery query) {
-        Stream<ConceptMap> answers = query.admin().match().stream().map(result -> result.project(query.admin().vars())).distinct();
+        Stream<ConceptMap> answers = run(query.match()).map(result -> result.project(query.vars())).distinct();
         // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
         // Stream.distinct() will then work properly when it calls ConceptImpl.equals()
         Set<Concept> conceptsToDelete = answers.flatMap(answer -> answer.concepts().stream()).collect(toSet());
@@ -131,12 +233,17 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public <T extends Answer> Stream<T> run(AggregateQuery<T> query) {
-        return query.aggregate().apply(query.match().stream()).stream();
+        return query.aggregate().apply(run(query.match())).stream();
     }
 
 
     @Override
-    public <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query) {
-        return new ComputeExecutorImpl<>(tx, query);
+    public <T extends Answer> Stream<T> run(ComputeQuery<T> query) {
+        Optional<GraqlQueryException> exception = query.getException();
+        if (exception.isPresent()) throw exception.get();
+
+        ComputeExecutor<T> job = new ComputeExecutor<>(tx, query);
+
+        return job.stream();
     }
 }

@@ -18,24 +18,25 @@
 
 package grakn.core.graql.reasoner.reasoning;
 
-import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.List;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("Duplicates")
 public class TypeGenerationIT {
-
     private static String resourcePath = "test-integration/graql/reasoner/stubs/";
 
     @ClassRule
@@ -46,13 +47,12 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivation.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
                 String derivedTypeQuery = "match $x isa derivedEntity; get;";
-                List<ConceptMap> answers = qb.<GetQuery>parse(derivedTypeQuery).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(derivedTypeQuery));
                 assertEquals(1, answers.size());
 
                 String variableTypeQuery = "match $x isa $type; get;";
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(variableTypeQuery).execute();
+                List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(variableTypeQuery));
                 assertEquals(4, answers2.size());
                 answers2.forEach(ans -> assertEquals(2, ans.size()));
             }
@@ -64,13 +64,12 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationWithDirect.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
                 String queryString = "match $x isa derivedEntity; get;";
                 String queryString2 = "match $x isa! derivedEntity; get;";
                 String queryString3 = "match $x isa directDerivedEntity; get;";
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
-                List<ConceptMap> answers3 = qb.<GetQuery>parse(queryString3).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
+                List<ConceptMap> answers3 = tx.execute(Graql.<GetQuery>parse(queryString3));
                 assertEquals(2, answers.size());
                 assertEquals(2, answers2.size());
                 assertEquals(1, answers3.size());
@@ -83,13 +82,12 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationRelationsWithDirect.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
                 String queryString = "match ($x, $y) isa derivedRelation; get;";
                 String queryString2 = "match ($x, $y) isa! derivedRelation; get;";
                 String queryString3 = "match ($x, $y) isa directDerivedRelation; get;";
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
-                List<ConceptMap> answers3 = qb.<GetQuery>parse(queryString3).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
+                List<ConceptMap> answers3 = tx.execute(Graql.<GetQuery>parse(queryString3));
                 assertEquals(2, answers.size());
                 assertEquals(2, answers2.size());
                 assertEquals(1, answers3.size());
@@ -102,11 +100,10 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationFromRelations.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
                 String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa derivedEntity; get;";
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
                 assertEquals(2, answers.size());
                 assertTrue(answers.containsAll(answers2));
                 assertTrue(answers2.containsAll(answers));
@@ -119,11 +116,10 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationFromAttribute.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
                 String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa derivedEntity; get;";
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
                 assertEquals(tx.getAttributeType("baseAttribute").instances().count(), answers.size());
                 assertTrue(answers.containsAll(answers2));
                 assertTrue(answers2.containsAll(answers));
@@ -138,11 +134,10 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "freshEntityDerivation.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
                 String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa derivedEntity; get;";
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
                 assertEquals(answers.size(), answers2.size());
                 assertFalse(answers.containsAll(answers2));
                 assertFalse(answers2.containsAll(answers));
@@ -158,12 +153,10 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "freshEntityDerivationFromRelations.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(false);
-                QueryBuilder iqb = tx.graql().infer(true);
                 String queryString = "match $x isa derivedEntity; get;";
                 String explicitQuery = "match $x isa baseEntity; get;";
-                List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
-                List<ConceptMap> answers2 = qb.<GetQuery>parse(explicitQuery).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(explicitQuery), false);
 
                 assertEquals(3, answers2.size());
                 assertTrue(!answers2.containsAll(answers));
@@ -178,9 +171,8 @@ public class TypeGenerationIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "freshRelationDerivation.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                QueryBuilder qb = tx.graql().infer(true);
                 String queryString = "match $x isa baseRelation; get;";
-                List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
                 assertEquals(3, answers.size());
             }
         }

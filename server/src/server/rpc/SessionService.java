@@ -18,7 +18,11 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.server.keyspace.Keyspace;
+import brave.ScopedSpan;
+import brave.Span;
+import brave.propagation.TraceContext;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -28,18 +32,15 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
-import grakn.core.server.session.TransactionImpl;
-import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
-import brave.ScopedSpan;
-import brave.Span;
-import brave.propagation.TraceContext;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
+import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.session.TransactionImpl;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -57,8 +58,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
-import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 
 
 /**
@@ -261,11 +260,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void query(SessionProto.Transaction.Query.Req request) {
-            Query<?> query = tx().graql()
-                    .infer(request.getInfer().equals(Transaction.Query.INFER.TRUE))
-                    .parse(request.getQuery());
+            Query<?> query = Graql.parse(request.getQuery());
 
-            Stream<Transaction.Res> responseStream = query.stream().map(ResponseBuilder.Transaction.Iter::query);
+            Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
             Transaction.Res response = ResponseBuilder.Transaction.queryIterator(iterators.add(responseStream.iterator()));
             onNextResponse(response);
         }
@@ -322,8 +319,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         private void putRule(Transaction.PutRule.Req request) {
             Label label = Label.of(request.getLabel());
-            Pattern when = Graql.parser().parsePattern(request.getWhen());
-            Pattern then = Graql.parser().parsePattern(request.getThen());
+            Pattern when = Pattern.parse(request.getWhen());
+            Pattern then = Pattern.parse(request.getThen());
 
             Rule rule = tx().putRule(label, when, then);
             Transaction.Res response = ResponseBuilder.Transaction.putRule(rule);

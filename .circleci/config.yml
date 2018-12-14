@@ -19,7 +19,7 @@ jobs:
     steps:
       - checkout
       - *install_bazel
-      - run: bazel build //:distribution --sandbox_debug
+      - run: bazel build //... --sandbox_debug
       - run: mkdir dist/ && mv bazel-genfiles/dist/* dist/
       - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace
           root: ~/grakn

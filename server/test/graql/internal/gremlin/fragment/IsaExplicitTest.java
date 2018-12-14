@@ -19,10 +19,10 @@
 package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Match;
+import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.QueryBuilder;
 import org.junit.Test;
 
 import static grakn.core.graql.query.pattern.Pattern.var;
@@ -38,34 +38,32 @@ public class IsaExplicitTest {
 
     @Test
     public void testInsertSyntax() {
-        QueryBuilder queryBuilder = new QueryBuilder();
         InsertQuery insertQuery;
 
-        insertQuery = queryBuilder.insert(x.isaExplicit(thingy));
+        insertQuery = Graql.insert(x.isaExplicit(thingy));
         assertEquals("insert $x isa! thingy;", insertQuery.toString());
 
-        insertQuery = queryBuilder.parse("insert $x isa! thingy;");
-        assertEquals(queryBuilder.insert(x.isaExplicit(thingy)), insertQuery);
+        insertQuery = Graql.parse("insert $x isa! thingy;");
+        assertEquals(Graql.insert(x.isaExplicit(thingy)), insertQuery);
     }
 
 
 
     @Test
     public void testMatchSyntax() {
-        QueryBuilder queryBuilder = new QueryBuilder();
-        Match matchQuery;
+        MatchClause matchQuery;
         GetQuery getQuery;
 
-        matchQuery = queryBuilder.match(x.isaExplicit(thingy1));
+        matchQuery = Graql.match(x.isaExplicit(thingy1));
         assertEquals("match $x isa! thingy1;", matchQuery.toString());
 
-        matchQuery = queryBuilder.match(x.isaExplicit(y));
+        matchQuery = Graql.match(x.isaExplicit(y));
         assertEquals("match $x isa! $y;", matchQuery.toString());
 
-        getQuery = queryBuilder.parse("match $x isa! thingy1; get;");
-        assertEquals(queryBuilder.match(x.isaExplicit(thingy1)), getQuery.match());
+        getQuery = Graql.parse("match $x isa! thingy1; get;");
+        assertEquals(Graql.match(x.isaExplicit(thingy1)), getQuery.match());
 
-        getQuery = queryBuilder.parse("match $x isa! $y; get;");
-        assertEquals(queryBuilder.match(x.isaExplicit(y)), getQuery.match());
+        getQuery = Graql.parse("match $x isa! $y; get;");
+        assertEquals(Graql.match(x.isaExplicit(y)), getQuery.match());
     }
 }

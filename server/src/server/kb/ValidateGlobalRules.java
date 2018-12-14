@@ -18,7 +18,11 @@
 
 package grakn.core.server.kb;
 
-import grakn.core.server.Transaction;
+import com.google.common.collect.Iterables;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.util.CommonUtil;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relationship;
@@ -28,22 +32,18 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.server.Transaction;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.concept.RelationshipTypeImpl;
 import grakn.core.server.kb.concept.RuleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.Casting;
-import grakn.core.common.util.CommonUtil;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.internal.Schema;
 
-import com.google.common.collect.Iterables;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;

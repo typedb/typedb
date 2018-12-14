@@ -61,7 +61,11 @@ public class RequestBuilder {
         }
 
         public static SessionProto.Transaction.Req query(Query<?> query) {
-            return query(query.toString(), query.inferring());
+            return query(query.toString(), true);
+        }
+
+        public static SessionProto.Transaction.Req query(Query<?> query, boolean infer) {
+            return query(query.toString(), infer);
         }
 
         public static SessionProto.Transaction.Req query(String queryString) {

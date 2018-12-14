@@ -18,11 +18,11 @@
 
 package grakn.core.graql.internal.gremlin.spanningtree;
 
+import com.google.common.collect.ImmutableMap;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import grakn.core.graql.internal.util.Partition;
-import com.google.common.collect.ImmutableMap;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -34,9 +34,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
 import static com.google.common.base.Predicates.and;
 import static com.google.common.base.Predicates.not;
+import static grakn.core.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
 
 
 /**

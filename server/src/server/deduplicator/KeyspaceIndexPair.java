@@ -18,8 +18,8 @@
 
 package grakn.core.server.deduplicator;
 
-import grakn.core.server.keyspace.Keyspace;
 import com.google.auto.value.AutoValue;
+import grakn.core.server.keyspace.Keyspace;
 
 /**
  * A class to hold a keyspace and an index together.

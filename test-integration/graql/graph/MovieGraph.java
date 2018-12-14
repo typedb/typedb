@@ -33,6 +33,7 @@ import grakn.core.server.Transaction;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@SuppressWarnings("Duplicates")
 public class MovieGraph {
 
     private static EntityType production, movie, person, genre, character, cluster, language;
@@ -295,13 +296,13 @@ public class MovieGraph {
 
     private static void buildRules(Transaction tx) {
         // These rules are totally made up for testing purposes and don't work!
-        Pattern when = tx.graql().parser().parsePattern("$x has name 'expectation-when'");
-        Pattern then = tx.graql().parser().parsePattern("$x has name 'expectation-then'");
+        Pattern when = Pattern.parse("$x has name 'expectation-when'");
+        Pattern then = Pattern.parse("$x has name 'expectation-then'");
 
         tx.putRule("expectation-rule", when, then);
 
-        when = tx.graql().parser().parsePattern("$x has name 'materialize-when'");
-        then = tx.graql().parser().parsePattern("$x has name 'materialize-then'");
+        when = Pattern.parse("$x has name 'materialize-when'");
+        then = Pattern.parse("$x has name 'materialize-then'");
         tx.putRule("materialize-rule", when, then);
     }
 

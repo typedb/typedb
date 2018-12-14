@@ -1,18 +1,18 @@
 package grakn.core.graql.reasoner.atomic;
 
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.internal.Schema;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.internal.reasoner.atom.Atom;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.graql.internal.Schema;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 
-@SuppressWarnings("CheckReturnValue")
+@SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AtomicEquivalenceIT {
 
     @ClassRule
@@ -42,7 +42,7 @@ public class AtomicEquivalenceIT {
             InputStream inputStream = AtomicEquivalenceIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
-            tx.graql().parser().parseList(s).forEach(Query::execute);
+            Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e){
             System.err.println(e);
@@ -174,7 +174,7 @@ public class AtomicEquivalenceIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
+        Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);

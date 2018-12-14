@@ -18,9 +18,9 @@
 
 package grakn.core.graql.internal.gremlin.spanningtree.graph;
 
-import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 
 import java.util.Collection;
 import java.util.List;

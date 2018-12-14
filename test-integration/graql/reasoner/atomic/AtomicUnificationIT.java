@@ -1,19 +1,16 @@
 package grakn.core.graql.reasoner.atomic;
 
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Role;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.Conjunction;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -21,14 +18,17 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -50,7 +50,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("CheckReturnValue")
+@SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AtomicUnificationIT {
 
     @ClassRule
@@ -63,7 +63,7 @@ public class AtomicUnificationIT {
             InputStream inputStream = AtomicUnificationIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
-            tx.graql().parser().parseList(s).forEach(Query::execute);
+            Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e){
             System.err.println(e);
@@ -117,7 +117,7 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_RelationWithMetaRolesAndIds(){
-        Concept instance = tx.graql().<GetQuery>parse("match $x isa subRoleEntity; get;").execute().iterator().next().get(var("x"));
+        Concept instance = tx.execute(Graql.<GetQuery>parse("match $x isa subRoleEntity; get;")).iterator().next().get(var("x"));
         String relation = "{(role: $x, role: $y) isa binary; $y id '" + instance.id().getValue() + "';}";
         String relation2 = "{(role: $z, role: $v) isa binary; $z id '" + instance.id().getValue() + "';}";
         String relation3 = "{(role: $z, role: $v) isa binary; $v id '" + instance.id().getValue() + "';}";
@@ -267,9 +267,9 @@ public class AtomicUnificationIT {
         Atom parentAtom = parentQuery.getAtom();
         Atom parentAtom2 = parentQuery2.getAtom();
 
-        List<ConceptMap> childAnswers = childQuery.getQuery().execute();
-        List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
-        List<ConceptMap> parentAnswers2 = parentQuery2.getQuery().execute();
+        List<ConceptMap> childAnswers = tx.execute(childQuery.getQuery(), false);
+        List<ConceptMap> parentAnswers = tx.execute(parentQuery.getQuery(), false);
+        List<ConceptMap> parentAnswers2 = tx.execute(parentQuery2.getQuery(), false);
 
         Unifier unifier = childAtom.getUnifier(parentAtom, UnifierType.EXACT);
         Unifier unifier2 = childAtom.getUnifier(parentAtom2, UnifierType.EXACT);
@@ -302,7 +302,7 @@ public class AtomicUnificationIT {
         ReasonerAtomicQuery resourceQuery2 = ReasonerQueries.atomic(conjunction(resource2, tx), tx);
         ReasonerAtomicQuery resourceQuery3 = ReasonerQueries.atomic(conjunction(resource3, tx), tx);
 
-        String type = "{$x isa resource;$x id '" + resourceQuery.getQuery().execute().iterator().next().get("r").id().getValue()  + "';}";
+        String type = "{$x isa resource;$x id '" + tx.execute(resourceQuery.getQuery(), false).iterator().next().get("r").id().getValue()  + "';}";
         ReasonerAtomicQuery typeQuery = ReasonerQueries.atomic(conjunction(type, tx), tx);
         Atom typeAtom = typeQuery.getAtom();
 
@@ -314,10 +314,10 @@ public class AtomicUnificationIT {
         Unifier unifier2 = resourceAtom2.getUnifier(typeAtom, UnifierType.RULE);
         Unifier unifier3 = resourceAtom3.getUnifier(typeAtom, UnifierType.RULE);
 
-        ConceptMap typeAnswer = typeQuery.getQuery().execute().iterator().next();
-        ConceptMap resourceAnswer = resourceQuery.getQuery().execute().iterator().next();
-        ConceptMap resourceAnswer2 = resourceQuery2.getQuery().execute().iterator().next();
-        ConceptMap resourceAnswer3 = resourceQuery3.getQuery().execute().iterator().next();
+        ConceptMap typeAnswer = tx.execute(typeQuery.getQuery(), false).iterator().next();
+        ConceptMap resourceAnswer = tx.execute(resourceQuery.getQuery(), false).iterator().next();
+        ConceptMap resourceAnswer2 = tx.execute(resourceQuery2.getQuery(), false).iterator().next();
+        ConceptMap resourceAnswer3 = tx.execute(resourceQuery3.getQuery(), false).iterator().next();
 
         assertEquals(typeAnswer.get(var("x")), resourceAnswer.unify(unifier).get(var("x")));
         assertEquals(typeAnswer.get(var("x")), resourceAnswer2.unify(unifier2).get(var("x")));
@@ -333,8 +333,8 @@ public class AtomicUnificationIT {
         String childPatternString = "(subRole1: $x, subRole2: $y) isa binary";
         InferenceRule testRule = new InferenceRule(
                 tx.putRule("Checking Rewrite & Unification",
-                        tx.graql().parser().parsePattern(childPatternString),
-                        tx.graql().parser().parsePattern(childPatternString)),
+                           Pattern.parse(childPatternString),
+                           Pattern.parse(childPatternString)),
                 tx)
                 .rewrite(parentAtom);
 
@@ -467,12 +467,12 @@ public class AtomicUnificationIT {
 
         Unifier unifier = childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).getUnifier();
 
-        List<ConceptMap> childAnswers = childQuery.getQuery().execute();
+        List<ConceptMap> childAnswers = tx.execute(childQuery.getQuery(), false);
         List<ConceptMap> unifiedAnswers = childAnswers.stream()
                 .map(a -> a.unify(unifier))
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
-        List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
+        List<ConceptMap> parentAnswers = tx.execute(parentQuery.getQuery(), false);
 
         if (checkInverse) {
             Unifier unifier2 = parentAtom.getUnifier(childAtom, UnifierType.EXACT);
@@ -509,7 +509,7 @@ public class AtomicUnificationIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
+        Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);

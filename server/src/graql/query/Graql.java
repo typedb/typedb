@@ -22,7 +22,6 @@ import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.parser.Parser;
 import grakn.core.graql.query.aggregate.CountAggregate;
 import grakn.core.graql.query.aggregate.GroupAggregate;
@@ -40,116 +39,116 @@ import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
 import javax.annotation.CheckReturnValue;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static grakn.core.graql.query.ComputeQuery.Method;
 import static java.util.stream.Collectors.toSet;
 
 /**
  * Main class containing static methods for creating Graql queries.
- * <p>
  * It is recommended you statically import these methods.
  */
 public class Graql {
 
-    // QUERY BUILDING
+    private static final Parser parser = new Parser();
+
+    public static Parser parser() {
+        return parser;
+    }
+
+    @CheckReturnValue
+    public static <T extends Query<?>> T parse(String queryString) {
+        return parser.parseQueryEOF(queryString);
+    }
+
+    public static <T extends Query<?>> Stream<T> parseList(String queryString) {
+        return parser.parseQueryList(queryString);
+    }
 
     /**
      * @param patterns an array of patterns to match in the graph
-     * @return a {@link Match} that will find matches of the given patterns
+     * @return a match clause that will find matches of the given patterns
      */
     @CheckReturnValue
-    public static Match match(Pattern... patterns) {
-        return new QueryBuilder().match(patterns);
+    public static MatchClause match(Pattern... patterns) {
+        return match(Arrays.asList(patterns));
     }
 
     /**
      * @param patterns a collection of patterns to match in the graph
-     * @return a {@link Match} that will find matches of the given patterns
+     * @return a match clause that will find matches of the given patterns
      */
     @CheckReturnValue
-    public static Match match(Collection<? extends Pattern> patterns) {
-        return new QueryBuilder().match(patterns);
+    public static MatchClause match(Collection<? extends Pattern> patterns) {
+        return new MatchClause(Pattern.and(Collections.unmodifiableSet(new HashSet<>(patterns))));
     }
 
     /**
-     * @param varPatterns an array of variable patterns to insert into the graph
+     * @param statements an array of variable patterns to insert into the graph
      * @return an insert query that will insert the given variable patterns into the graph
      */
     @CheckReturnValue
-    public static InsertQuery insert(Statement... varPatterns) {
-        return new QueryBuilder().insert(varPatterns);
+    public static InsertQuery insert(Statement... statements) {
+        return insert(Arrays.asList(statements));
     }
 
     /**
-     * @param varPatterns a collection of variable patterns to insert into the graph
+     * @param statements a collection of variable patterns to insert into the graph
      * @return an insert query that will insert the given variable patterns into the graph
      */
     @CheckReturnValue
-    public static InsertQuery insert(Collection<? extends Statement> varPatterns) {
-        return new QueryBuilder().insert(varPatterns);
+    public static InsertQuery insert(Collection<? extends Statement> statements) {
+        return new InsertQuery(null, Collections.unmodifiableList(new ArrayList<>(statements)));
     }
 
     /**
-     * @param varPatterns an array of {@link Statement}s defining {@link SchemaConcept}s
-     * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
+     * @param statements an array of of statements to define the schema
+     * @return a define query that will apply the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public static DefineQuery define(Statement... varPatterns) {
-        return new QueryBuilder().define(varPatterns);
+    public static DefineQuery define(Statement... statements) {
+        return define(Arrays.asList(statements));
     }
 
     /**
-     * @param varPatterns a collection of {@link Statement}s defining {@link SchemaConcept}s
-     * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
+     * @param statements a collection of statements to define the schema
+     * @return a define query that will apply the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public static DefineQuery define(Collection<? extends Statement> varPatterns) {
-        return new QueryBuilder().define(varPatterns);
+    public static DefineQuery define(Collection<? extends Statement> statements) {
+        return new DefineQuery(Collections.unmodifiableList(new ArrayList<>(statements)));
     }
 
     /**
-     * @param varPatterns an array of {@link Statement}s undefining {@link SchemaConcept}s
-     * @return a {@link UndefineQuery} that will remove the changes described in the {@code patterns}
+     * @param statements an array of statements to undefine the schema
+     * @return an undefine query that will remove the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public static UndefineQuery undefine(Statement... varPatterns) {
-        return new QueryBuilder().undefine(varPatterns);
+    public static UndefineQuery undefine(Statement... statements) {
+        return undefine(Arrays.asList(statements));
     }
 
     /**
-     * @param varPatterns a collection of {@link Statement}s undefining {@link SchemaConcept}s
-     * @return a {@link UndefineQuery} that will remove the changes described in the {@code patterns}
+     * @param statements a collection of statements to undefine the schema
+     * @return an undefine query that will remove the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public static UndefineQuery undefine(Collection<? extends Statement> varPatterns) {
-        return new QueryBuilder().undefine(varPatterns);
+    public static UndefineQuery undefine(Collection<? extends Statement> statements) {
+        return new UndefineQuery(Collections.unmodifiableList(new ArrayList<>(statements)));
     }
 
     @CheckReturnValue
     public static <T extends Answer> ComputeQuery<T> compute(Method<T> method) {
-        return new QueryBuilder().compute(method);
+        return new ComputeQuery<>(method);
     }
 
-    /**
-     * Get a {@link Parser} for parsing queries from strings
-     */
-    public static Parser parser() {
-        return new QueryBuilder().parser();
-    }
-
-    /**
-     * @param queryString a string representing a query
-     * @return a query, the type will depend on the type of query.
-     */
-    @CheckReturnValue
-    public static <T extends Query<?>> T parse(String queryString) {
-        return new QueryBuilder().parse(queryString);
-    }
 
     // AGGREGATES
 
@@ -162,7 +161,7 @@ public class Graql {
     }
 
     /**
-     * Aggregate that counts results of a {@link Match}.
+     * Aggregate that counts results of a match clause
      */
     @CheckReturnValue
     public static Aggregate<Value> count(Variable var, Variable... vars) {
@@ -304,7 +303,7 @@ public class Graql {
     }
 
     /**
-     * Aggregate that groups results of a {@link Match} by variable name
+     * Aggregate that groups results of a match clause by variable name
      *
      * @param varName the variable name to group results by
      */
@@ -325,7 +324,7 @@ public class Graql {
     }
 
     /**
-     * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
+     * Aggregate that groups results of a match clause by variable name, applying an aggregate to each group.
      *
      * @param <T> the type of each group
      */

@@ -30,8 +30,6 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.util.StringUtil;
-import grakn.core.server.ComputeExecutor;
-import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
@@ -46,10 +44,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
@@ -76,9 +72,6 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
 
     public final static Map<Method, Boolean> INCLUDE_ATTRIBUTES_DEFAULT = includeAttributesDefault();
 
-    private Transaction tx;
-    private Set<ComputeExecutor> runningJobs = ConcurrentHashMap.newKeySet();
-
     private Method method;
     private boolean includeAttributes;
 
@@ -92,13 +85,12 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
 
     private final Map<Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
-    public ComputeQuery(Transaction tx, Method<T> method) {
-        this(tx, method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
+    public ComputeQuery(Method<T> method) {
+        this(method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
     }
 
-    public ComputeQuery(Transaction tx, Method method, boolean includeAttributes) {
+    public ComputeQuery(Method method, boolean includeAttributes) {
         this.method = method;
-        this.tx = tx;
         this.includeAttributes = includeAttributes;
     }
 
@@ -214,38 +206,6 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
         return conditions;
     }
 
-    @Override
-    public final Stream<T> stream() {
-        Optional<GraqlQueryException> exception = getException();
-        if (exception.isPresent()) throw exception.get();
-
-        ComputeExecutor<T> job = executor().run(this);
-
-        runningJobs.add(job);
-
-        try {
-            return job.stream();
-        } finally {
-            runningJobs.remove(job);
-        }
-
-    }
-
-    public final void kill() {
-        runningJobs.forEach(ComputeExecutor::kill);
-    }
-
-    @Override
-    public final ComputeQuery<T> withTx(Transaction tx) {
-        this.tx = tx;
-        return this;
-    }
-
-    @Override
-    public final Transaction tx() {
-        return tx;
-    }
-
     public final Method method() {
         return method;
     }
@@ -349,11 +309,6 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
     @CheckReturnValue
     public final boolean includesAttributes() {
         return includeAttributes;
-    }
-
-    @Override
-    public final Boolean inferring() {
-        return false;
     }
 
     @CheckReturnValue
@@ -497,8 +452,7 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
 
         ComputeQuery<?> that = (ComputeQuery<?>) o;
 
-        return (Objects.equals(this.tx(), that.tx()) &&
-                this.method().equals(that.method()) &&
+        return (this.method().equals(that.method()) &&
                 this.from().equals(that.from()) &&
                 this.to().equals(that.to()) &&
                 this.of().equals(that.of()) &&
@@ -510,8 +464,7 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
 
     @Override
     public int hashCode() {
-        int result = tx.hashCode();
-        result = 31 * result + Objects.hashCode(method);
+        int result = Objects.hashCode(method);
         result = 31 * result + Objects.hashCode(fromID);
         result = 31 * result + Objects.hashCode(toID);
         result = 31 * result + Objects.hashCode(ofTypes);
@@ -521,14 +474,6 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
         result = 31 * result + Objects.hashCode(includeAttributes);
 
         return result;
-    }
-
-    /**
-     * Checks Whether this query will modify the graph
-     */
-    @Override
-    public boolean isReadOnly() {
-        return true;
     }
 
     /**
@@ -837,10 +782,11 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
 
         @Override
         public int hashCode() {
-            int result = tx.hashCode();
-            result = 31 * result + argumentsOrdered.hashCode();
+            int h = 1;
+            h *= 1000003;
+            h ^= this.argumentsOrdered.hashCode();
 
-            return result;
+            return h;
         }
     }
 }

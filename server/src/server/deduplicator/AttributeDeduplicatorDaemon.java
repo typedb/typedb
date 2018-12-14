@@ -18,15 +18,15 @@
 
 package grakn.core.server.deduplicator;
 
-import grakn.core.common.config.ConfigKey;
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.graql.concept.ConceptId;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.RocksDbQueue;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.SessionStore;
 import grakn.core.server.session.TransactionImpl;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

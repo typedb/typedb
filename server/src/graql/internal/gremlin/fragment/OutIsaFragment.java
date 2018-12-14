@@ -18,14 +18,14 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.query.pattern.Variable;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionImpl;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;

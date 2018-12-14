@@ -18,17 +18,17 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import com.google.common.math.IntMath;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import com.google.common.math.IntMath;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 
+import static grakn.core.util.GraqlTestUtil.getInstance;
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
 import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
-import static grakn.core.util.GraqlTestUtil.getInstance;
 
 /**
  * Defines a Graph based on test 6.10 from Cao p. 82.

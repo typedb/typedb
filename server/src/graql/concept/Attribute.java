@@ -18,29 +18,23 @@
 
 package grakn.core.graql.concept;
 
-
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     Represent a literal {@link Attribute} in the graph.
- * </p>
- *
- * <p>
- *     Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
- *     1. It is unique to its {@link AttributeType} based on it's value.
- *     2. It has an {@link AttributeType.DataType} associated with it which constrains the allowed values.
- * </p>
- *
+ * Represent a literal {@link Attribute} in the graph.
+ * Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
+ * 1. It is unique to its {@link AttributeType} based on it's value.
+ * 2. It has an {@link AttributeType.DataType} associated with it which constrains the allowed values.
  *
  * @param <D> The data type of this resource type.
- *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
+ *            Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 public interface Attribute<D> extends Thing {
     //------------------------------------- Accessors ----------------------------------
+
     /**
      * Retrieves the value of the {@link Attribute}.
      *
@@ -82,7 +76,7 @@ public interface Attribute<D> extends Thing {
     @Nullable
     default Thing owner() {
         Iterator<Thing> owners = owners().iterator();
-        if(owners.hasNext()) {
+        if (owners.hasNext()) {
             return owners.next();
         } else {
             return null;
@@ -100,6 +94,7 @@ public interface Attribute<D> extends Thing {
 
     /**
      * Removes the provided {@link Attribute} from this {@link Attribute}
+     *
      * @param attribute the {@link Attribute} to be removed
      * @return The {@link Attribute} itself
      */
@@ -111,14 +106,14 @@ public interface Attribute<D> extends Thing {
     @Deprecated
     @CheckReturnValue
     @Override
-    default Attribute asAttribute(){
+    default Attribute asAttribute() {
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isAttribute(){
+    default boolean isAttribute() {
         return true;
     }
 }

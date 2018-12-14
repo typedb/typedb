@@ -19,7 +19,6 @@
 package grakn.core.graql.concept;
 
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.keyspace.Keyspace;
 
 import javax.annotation.CheckReturnValue;
 
@@ -42,13 +41,6 @@ public interface Concept {
      */
     @CheckReturnValue
     ConceptId id();
-
-    /**
-     * Used for determining which {@link Keyspace} a {@link Concept} was created in and is bound to.
-     *
-     * @return The {@link Keyspace} this {@link Concept} belongs to.
-     */
-    Keyspace keyspace();
 
     //------------------------------------- Other ---------------------------------
 
@@ -273,11 +265,9 @@ public interface Concept {
     }
 
     /**
-     * Delete the Concept.
-     *
-     * @throws TransactionException Throws an exception if this is a type with incoming concepts.
+     * Delete the Concepts
      */
-    void delete() throws TransactionException;
+    void delete();
 
     /**
      * Return whether the concept has been deleted.

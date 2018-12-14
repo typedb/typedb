@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
 
+import static com.google.common.collect.Sets.newHashSet;
 import static grakn.core.graql.internal.analytics.KCoreVertexProgram.IMPLICIT_MESSAGE_COUNT;
 import static grakn.core.graql.internal.analytics.KCoreVertexProgram.K;
 import static grakn.core.graql.internal.analytics.KCoreVertexProgram.K_CORE_EXIST;
@@ -39,7 +40,6 @@ import static grakn.core.graql.internal.analytics.KCoreVertexProgram.filterByDeg
 import static grakn.core.graql.internal.analytics.KCoreVertexProgram.relayOrSaveMessages;
 import static grakn.core.graql.internal.analytics.KCoreVertexProgram.sendMessage;
 import static grakn.core.graql.internal.analytics.KCoreVertexProgram.updateEntityAndAttribute;
-import static com.google.common.collect.Sets.newHashSet;
 
 /**
  * The vertex program for computing coreness using k-core.

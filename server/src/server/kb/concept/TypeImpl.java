@@ -19,24 +19,24 @@
 package grakn.core.server.kb.concept;
 
 import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Type;
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
+import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.Schema;
+import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashMap;

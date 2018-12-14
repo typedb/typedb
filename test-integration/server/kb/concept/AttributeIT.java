@@ -67,13 +67,13 @@ public class AttributeIT {
     private Session session;
 
     @Before
-    public void setUp(){
+    public void setUp() {
         session = server.sessionWithNewKeyspace();
         tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
-    public void tearDown(){
+    public void tearDown() {
         tx.close();
         session.close();
     }
@@ -116,7 +116,7 @@ public class AttributeIT {
     // this is due to the generic of getResourcesByValue
     @SuppressWarnings("unchecked")
     @Test
-    public void whenCreatingResources_EnsureDataTypesAreEnforced(){
+    public void whenCreatingResources_EnsureDataTypesAreEnforced() {
         AttributeType<String> strings = tx.putAttributeType("String Type", AttributeType.DataType.STRING);
         AttributeType<Long> longs = tx.putAttributeType("Long Type", AttributeType.DataType.LONG);
         AttributeType<Double> doubles = tx.putAttributeType("Double Type", AttributeType.DataType.DOUBLE);
@@ -146,7 +146,7 @@ public class AttributeIT {
     // this is deliberately an incorrect type for the test
     @SuppressWarnings("unchecked")
     @Test
-    public void whenCreatingResourceWithAnInvalidDataType_Throw(){
+    public void whenCreatingResourceWithAnInvalidDataType_Throw() {
         String invalidThing = "Invalid Thing";
         AttributeType longAttributeType = tx.putAttributeType("long", AttributeType.DataType.LONG);
         expectedException.expect(TransactionException.class);
@@ -157,7 +157,7 @@ public class AttributeIT {
     // this is deliberately an incorrect type for the test
     @SuppressWarnings("unchecked")
     @Test
-    public void whenCreatingResourceWithAnInvalidDataTypeOnADate_Throw(){
+    public void whenCreatingResourceWithAnInvalidDataTypeOnADate_Throw() {
         String invalidThing = "Invalid Thing";
         AttributeType longAttributeType = tx.putAttributeType("date", AttributeType.DataType.DATE);
         expectedException.expect(TransactionException.class);
@@ -168,7 +168,7 @@ public class AttributeIT {
     // this is deliberately an incorrect type for the test
     @SuppressWarnings("unchecked")
     @Test
-    public void whenCreatingResourceWithAnInvalidDataType_DoNotCreateTheResource(){
+    public void whenCreatingResourceWithAnInvalidDataType_DoNotCreateTheResource() {
         AttributeType longAttributeType = tx.putAttributeType("long", AttributeType.DataType.LONG);
 
         try {
@@ -184,7 +184,7 @@ public class AttributeIT {
     }
 
     @Test
-    public void whenSavingDateIntoResource_DateIsReturnedInSameFormat(){
+    public void whenSavingDateIntoResource_DateIsReturnedInSameFormat() {
         LocalDateTime date = LocalDateTime.now();
         AttributeType<LocalDateTime> attributeType = tx.putAttributeType("My Birthday", AttributeType.DataType.DATE);
         Attribute<LocalDateTime> myBirthday = attributeType.create(date);
@@ -195,7 +195,7 @@ public class AttributeIT {
     }
 
     @Test
-    public void whenLinkingResourcesToThings_EnsureTheRelationIsAnEdge(){
+    public void whenLinkingResourcesToThings_EnsureTheRelationIsAnEdge() {
         AttributeType<String> attributeType = tx.putAttributeType("My attribute type", AttributeType.DataType.STRING);
         Attribute<String> attribute = attributeType.create("A String");
 
@@ -212,7 +212,7 @@ public class AttributeIT {
     }
 
     @Test
-    public void whenAddingRolePlayerToRelationEdge_RelationAutomaticallyReifies(){
+    public void whenAddingRolePlayerToRelationEdge_RelationAutomaticallyReifies() {
         //Create boring attribute which creates a relation edge
         AttributeType<String> attributeType = tx.putAttributeType("My attribute type", AttributeType.DataType.STRING);
         Attribute<String> attribute = attributeType.create("A String");
@@ -256,7 +256,7 @@ public class AttributeIT {
     }
 
     @Test
-    public void whenInsertingAThingWithTwoKeys_Throw(){
+    public void whenInsertingAThingWithTwoKeys_Throw() {
         AttributeType<String> attributeType = tx.putAttributeType("Key Thingy", AttributeType.DataType.STRING);
         EntityType entityType = tx.putEntityType("Entity Type Thingy").key(attributeType);
         Entity entity = entityType.create();
@@ -273,7 +273,7 @@ public class AttributeIT {
     }
 
     @Test
-    public void whenGettingTheRelationsOfResources_EnsureIncomingResourceEdgesAreTakingIntoAccount(){
+    public void whenGettingTheRelationsOfResources_EnsureIncomingResourceEdgesAreTakingIntoAccount() {
         AttributeType<String> attributeType = tx.putAttributeType("Attribute Type Thingy", AttributeType.DataType.STRING);
         Attribute<String> attribute = attributeType.create("Thingy");
 
@@ -293,7 +293,7 @@ public class AttributeIT {
     }
 
     @Test
-    public void whenCreatingAnInferredAttribute_EnsureMarkedAsInferred(){
+    public void whenCreatingAnInferredAttribute_EnsureMarkedAsInferred() {
         AttributeTypeImpl at = AttributeTypeImpl.from(tx.putAttributeType("at", AttributeType.DataType.STRING));
         Attribute attribute = at.create("blergh");
         Attribute attributeInferred = at.putAttributeInferred("bloorg");

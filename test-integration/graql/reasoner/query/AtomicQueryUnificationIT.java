@@ -22,11 +22,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Concept;
@@ -35,23 +32,26 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
@@ -743,12 +743,12 @@ public class AtomicQueryUnificationIT {
         ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentString), tx);
         Unifier unifier = unification(childString, parentString, true, unifierType, tx).getUnifier();
 
-        List<ConceptMap> childAnswers = child.getQuery().execute();
+        List<ConceptMap> childAnswers = tx.execute(child.getQuery(), false);
         List<ConceptMap> unifiedAnswers = childAnswers.stream()
                 .map(a -> a.unify(unifier))
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
-        List<ConceptMap> parentAnswers = parent.getQuery().execute();
+        List<ConceptMap> parentAnswers = tx.execute(parent.getQuery(), false);
 
         if (checkInverse) {
             Unifier inverse = parent.getMultiUnifier(child, unifierType).getUnifier();
@@ -821,7 +821,7 @@ public class AtomicQueryUnificationIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString){
-        Set<Statement> vars = Graql.parser().parsePattern(patternString)
+        Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);

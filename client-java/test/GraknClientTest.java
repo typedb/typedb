@@ -24,12 +24,15 @@ import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.Query;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSyntaxException;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
@@ -37,8 +40,6 @@ import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;
@@ -74,6 +75,7 @@ import static org.mockito.Mockito.verify;
 /**
  * Unit Tests for {@link grakn.core.client.Grakn.Transaction}
  */
+@SuppressWarnings("Duplicates")
 public class GraknClientTest {
 
     private final static SessionServiceGrpc.SessionServiceImplBase sessionService = mock(SessionServiceGrpc.SessionServiceImplBase.class);
@@ -161,7 +163,7 @@ public class GraknClientTest {
 
         try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             verify(server.requestListener()).onNext(any()); // The open request
-            answers = tx.graql().<GetQuery>parse(queryString).stream().limit(numAnswers).collect(toList());
+            answers = tx.stream(Graql.<GetQuery>parse(queryString)).limit(numAnswers).collect(toList());
         }
 
         assertEquals(10, answers.size());
@@ -228,7 +230,7 @@ public class GraknClientTest {
 
         try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             try {
-                tx.graql().match(var("x")).get().execute();
+                tx.execute(Graql.match(var("x")).get());
             } catch (RuntimeException e) {
                 System.out.println(e.getMessage());
                 assertTrue(e.getMessage().contains(expectedException.getName()));
@@ -249,7 +251,7 @@ public class GraknClientTest {
 
         try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             try {
-                tx.graql().match(var("x")).get().execute();
+                tx.execute(Graql.match(var("x")).get());
             } catch (RuntimeException e) {
                 System.out.println(e.getMessage());
                 assertTrue(e.getMessage().contains(expectedException.getName()));

@@ -32,6 +32,8 @@ import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -56,9 +58,8 @@ public class QueryErrorIT {
 
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
-    private static Session session;
-    private Transaction tx;
-    private QueryBuilder qb;
+    private static SessionImpl session;
+    private TransactionImpl<?> tx;
 
     @BeforeClass
     public static void newSession() {
@@ -69,7 +70,6 @@ public class QueryErrorIT {
     @Before
     public void newTransaction() {
         tx = session.transaction(Transaction.Type.WRITE);
-        qb = tx.graql();
     }
 
     @After
@@ -87,7 +87,7 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("film");
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa("film")).stream();
+        tx.stream(Graql.match(var("x").isa("film")));
     }
 
     @Test
@@ -95,28 +95,28 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("role"), containsString("person"), containsString("isa person")));
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa("movie"), var().rel("person", "y").rel("x")).stream();
+        tx.stream(Graql.match(var("x").isa("movie"), var().rel("person", "y").rel("x")));
     }
 
     @Test
     public void testErrorNonExistentResourceType() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("thingy");
-        qb.match(var("x").has("thingy", "value")).delete("x").execute();
+        tx.execute(Graql.match(var("x").has("thingy", "value")).delete("x"));
     }
 
     @Test
     public void whenMatchingWildcardHas_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.noLabelSpecifiedForHas(var("x")).getMessage());
-        qb.match(label("thing").has(var("x"))).get().execute();
+        tx.execute(Graql.match(label("thing").has(var("x"))).get());
     }
 
     @Test
     public void whenMatchingHasWithNonExistentType_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.labelNotFound(Label.of("heffalump")).getMessage());
-        qb.match(var("x").has("heffalump", "foo")).get().execute();
+        tx.execute(Graql.match(var("x").has("heffalump", "foo")).get());
     }
 
     @Test
@@ -125,7 +125,7 @@ public class QueryErrorIT {
         exception.expectMessage(allOf(
                 containsString("relation"), containsString("movie"), containsString("separate"), containsString(";")));
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var().isa("movie").rel("x").rel("y")).stream();
+        tx.stream(Graql.match(var().isa("movie").rel("x").rel("y")));
     }
 
     @Test
@@ -133,7 +133,7 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.NOT_A_ROLE_TYPE.getMessage("character-in-production", "character-in-production"));
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var().isa("has-cast").rel("character-in-production", "x")).stream();
+        tx.stream(Graql.match(var().isa("has-cast").rel("character-in-production", "x")));
     }
 
     @Test
@@ -143,7 +143,7 @@ public class QueryErrorIT {
                 containsString("abc"), containsString("isa"), containsString("person"), containsString("has-cast")
         ));
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var("abc").isa("person").isa("has-cast"));
+        Graql.match(var("abc").isa("person").isa("has-cast"));
     }
 
     @Test
@@ -152,7 +152,7 @@ public class QueryErrorIT {
         exception.expectMessage(allOf(
                 containsString("abc"), containsString("sub"), containsString("person"), containsString("has-cast")
         ));
-        qb.define(label("abc").sub("person"), label("abc").sub("has-cast")).execute();
+        tx.execute(Graql.define(label("abc").sub("person"), label("abc").sub("has-cast")));
     }
 
     @Test
@@ -161,7 +161,7 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.MUST_BE_ATTRIBUTE_TYPE.getMessage("genre"));
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa("movie").has("genre", "Drama")).stream();
+        tx.stream(Graql.match(var("x").isa("movie").has("genre", "Drama")));
     }
 
     @Test
@@ -169,7 +169,7 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
         //noinspection ResultOfMethodCallIgnored
-        qb.match();
+        Graql.match();
     }
 
     @Test
@@ -184,18 +184,17 @@ public class QueryErrorIT {
         // Create a fresh graph, with no has between person and name
         Session newSession = graknServer.sessionWithNewKeyspace();
         try (Transaction newTx = newSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder emptyQb = newTx.graql();
-            emptyQb.define(
+            newTx.execute(Graql.define(
                     label("person").sub("entity"),
                     label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
-            ).execute();
+            ));
 
             exception.expect(TransactionException.class);
             exception.expectMessage(allOf(
                     containsString("person"),
                     containsString("name")
             ));
-            emptyQb.insert(var().isa("person").has("name", "Bob")).execute();
+            newTx.execute(Graql.insert(var().isa("person").has("name", "Bob")));
         }
     }
 
@@ -204,7 +203,7 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("actor")).getMessage());
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa("actor")).stream();
+        tx.stream(Graql.match(var("x").isa("actor")));
     }
 
     @Test
@@ -212,18 +211,18 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("rule")).getMessage());
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa("rule")).stream();
+        tx.stream(Graql.match(var("x").isa("rule")));
     }
 
     @Test
     public void testAdditionalSemicolon() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("id"), containsString("plays product-type")));
-        qb.parse(
+        tx.execute(Graql.<DefineQuery>parse(
                 "define " +
                         "tag-group sub role; product-type sub role;" +
                         "category sub entity, plays tag-group; plays product-type;"
-        ).execute();
+        ));
     }
 
     @Test
@@ -231,15 +230,15 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(var("y")));
 
-        Match match = qb.match(var("x").isa("movie"));
-        Stream<Concept> concepts = match.get("y").stream().map(ans -> ans.get("y"));
+        MatchClause match = Graql.match(var("x").isa("movie"));
+        Stream<Concept> concepts = tx.stream(match.get("y")).map(ans -> ans.get("y"));
     }
 
     @Test
     public void whenUsingInvalidResourceValue_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(INVALID_VALUE.getMessage(qb.getClass()));
-        qb.match(var("x").val(qb));
+        exception.expectMessage(INVALID_VALUE.getMessage(tx.getClass()));
+        Graql.match(var("x").val(tx));
     }
 
     @Test
@@ -250,6 +249,6 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("person"));
 
-        qb.match(var("x").id(movie.id())).insert(var("x").isa(label(person.label()))).execute();
+        tx.execute(Graql.match(var("x").id(movie.id())).insert(var("x").isa(label(person.label()))));
     }
 }

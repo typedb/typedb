@@ -18,27 +18,27 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.server.exception.GraknServerException;
 import grakn.core.common.exception.GraknException;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlSyntaxException;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.exception.PropertyNotUniqueException;
-import grakn.core.server.exception.TemporaryWriteException;
-import grakn.core.graql.admin.Explanation;
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptList;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.answer.Value;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
-import grakn.core.common.util.CommonUtil;
+import grakn.core.server.exception.GraknServerException;
+import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.exception.PropertyNotUniqueException;
+import grakn.core.server.exception.TemporaryWriteException;
+import grakn.core.server.exception.TransactionException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 

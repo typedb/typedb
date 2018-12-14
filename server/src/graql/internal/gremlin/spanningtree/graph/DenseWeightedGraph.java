@@ -18,11 +18,11 @@
 
 package grakn.core.graql.internal.gremlin.spanningtree.graph;
 
-import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 
 import java.util.ArrayList;
 import java.util.Collection;

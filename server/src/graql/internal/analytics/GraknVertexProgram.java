@@ -18,9 +18,9 @@
 
 package grakn.core.graql.internal.analytics;
 
+import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.internal.Schema;
-import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;

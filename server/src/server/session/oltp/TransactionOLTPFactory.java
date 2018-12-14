@@ -18,14 +18,14 @@
 
 package grakn.core.server.session.oltp;
 
+import com.google.common.collect.ImmutableMap;
+import grakn.core.common.config.ConfigKey;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.graql.internal.Schema;
+import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionFactory;
 import grakn.core.server.session.oltp.optimisation.JanusPreviousPropertyStepStrategy;
-import grakn.core.common.config.ConfigKey;
-import grakn.core.server.Transaction;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.internal.Schema;
-import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.LazyBarrierStrategy;

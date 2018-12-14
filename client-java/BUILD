@@ -18,16 +18,16 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@graknlabs_rules_deployment//maven:rules.bzl", "deploy_maven_jar")
+load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
     name = "client-java",
     srcs = glob(["**/*.java"], exclude = ["**/test/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//server",
+        "//common:common",
         "//protocol:protocol-java",
-        "//common",
+        "//server:server",
 
         # External dependencies
         "//dependencies/maven/artifacts/grakn/benchmark:lib",
@@ -55,7 +55,6 @@ java_library(
 
 deploy_maven_jar(
     name = "deploy-maven-jar",
-    targets = [":client-java"],
-    version_file = "//:VERSION",
-    deployment_properties = "//:deployment.properties",
+    target = ":client-java",
+    package = "client-java",
 )

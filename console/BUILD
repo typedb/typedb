@@ -17,7 +17,7 @@
 #
 
 package(default_visibility = ["//visibility:__subpackages__"])
-load("@graknlabs_rules_deployment//maven:rules.bzl", "deploy_maven_jar")
+load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
     name = "console",
@@ -56,9 +56,8 @@ java_binary(
 
 deploy_maven_jar(
     name = "deploy-maven-jar",
-    targets = [":console"],
-    version_file = "//:VERSION",
-    deployment_properties = "//:deployment.properties",
+    target = ":console",
+    package = "console",
 )
 
 genrule(

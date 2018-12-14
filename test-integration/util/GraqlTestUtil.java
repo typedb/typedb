@@ -22,11 +22,13 @@ import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.MatchClause;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.server.session.TransactionImpl;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -34,7 +36,6 @@ import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.collections.CollectionUtils;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertFalse;
@@ -47,28 +48,20 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("CheckReturnValue")
 public class GraqlTestUtil {
 
-    public static void assertExists(Transaction tx, Pattern... patterns) {
-        assertExists(tx.graql(), patterns);
+    public static void assertExists(TransactionImpl<?> tx, Pattern... patterns) {
+        assertTrue(tx.stream(Graql.match(patterns)).iterator().hasNext());
     }
 
-    public static void assertExists(QueryBuilder qb, Pattern... patterns) {
-        assertExists(qb.match(patterns));
+    public static void assertExists(TransactionImpl<?> tx, MatchClause matchClause) {
+        assertTrue(tx.stream(matchClause).iterator().hasNext());
     }
 
-    public static void assertExists(Iterable<?> iterable) {
-        assertTrue(iterable.iterator().hasNext());
+    public static void assertNotExists(TransactionImpl<?> tx, Pattern... patterns) {
+        assertFalse(tx.stream(Graql.match(patterns)).iterator().hasNext());
     }
 
-    public static void assertNotExists(Transaction tx, Pattern... patterns) {
-        assertNotExists(tx.graql(), patterns);
-    }
-
-    public static void assertNotExists(QueryBuilder qb, Pattern... patterns) {
-        assertNotExists(qb.match(patterns));
-    }
-
-    public static void assertNotExists(Iterable<?> iterable) {
-        assertFalse(iterable.iterator().hasNext());
+    public static void assertNotExists(TransactionImpl<?> tx, MatchClause matchClause) {
+        assertFalse(tx.stream(matchClause).iterator().hasNext());
     }
 
     public static <T> void assertCollectionsEqual(Collection<T> c1, Collection<T> c2) {
@@ -79,16 +72,12 @@ public class GraqlTestUtil {
         assertTrue(msg, CollectionUtils.isEqualCollection(c1, c2));
     }
 
-    public static void assertQueriesEqual(GetQuery q1, GetQuery q2) {
-        assertCollectionsEqual(q1.execute(), q2.execute());
-    }
-
     public static void loadFromFile(String gqlPath, String file, Transaction tx) {
         try {
             System.out.println("Loading... " + gqlPath + file);
             InputStream inputStream = GraqlTestUtil.class.getClassLoader().getResourceAsStream(gqlPath + file);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            tx.graql().parser().parseList(s).forEach(q -> q.execute());
+            Graql.parseList(s).forEach(tx::execute);
         } catch (Exception e) {
             System.err.println(e);
             throw new RuntimeException(e);

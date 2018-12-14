@@ -158,7 +158,7 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCa
         }
 
         //TODO should it create a cache entry?
-        List<ConceptMap> answers = ReasonerQueries.create(query, ans).getQuery().execute();
+        List<ConceptMap> answers = query.tx().execute(ReasonerQueries.create(query, ans).getQuery(), false);
         return answers.isEmpty() ? new ConceptMap() : answers.iterator().next();
     }
 }

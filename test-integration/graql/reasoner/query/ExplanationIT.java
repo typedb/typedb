@@ -5,7 +5,7 @@
 //import grakn.core.graql.query.GetQuery;
 //import grakn.core.graql.query.QueryBuilder;
 //import grakn.core.graql.query.pattern.Var;
-//import grakn.core.graql.admin.Explanation;
+//import grakn.core.graql.answer.Explanation;
 //import grakn.core.graql.admin.ReasonerQuery;
 //import grakn.core.graql.answer.ConceptMap;
 //import grakn.core.graql.answer.ConceptMapImpl;
@@ -55,7 +55,7 @@
 //    @BeforeClass
 //    public static void onStartup() throws Exception {
 //        Transaction tx = geoKB.tx();
-//        iqb = tx.graql().infer(true);
+//        iqb = tx.graql();
 //        polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
 //        uw = getConcept(tx, "name", "University-of-Warsaw");
 //        warsaw = getConcept(tx, "name", "Warsaw");
@@ -73,7 +73,7 @@
 //        ConceptMap answer3 = new ConceptMapImpl(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
 //        ConceptMap answer4 = new ConceptMapImpl(ImmutableMap.of(var("x"), polibuda, var("y"), europe));
 //
-//        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+//        List<ConceptMap> answers = itx.execute(Graql.<GetQuery>parse(queryString));
 //        testExplanation(answers);
 //
 //        ConceptMap queryAnswer1 = findAnswer(answer1, answers);
@@ -115,7 +115,7 @@
 //        ConceptMap answer1 = new ConceptMapImpl(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
 //        ConceptMap answer2 = new ConceptMapImpl(ImmutableMap.of(var("x"), uw, var("y"), poland));
 //
-//        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+//        List<ConceptMap> answers = itx.execute(Graql.<GetQuery>parse(queryString));
 //        testExplanation(answers);
 //
 //        ConceptMap queryAnswer1 = findAnswer(answer1, answers);
@@ -145,8 +145,8 @@
 //                "$x id '" + polibuda.id() + "';" +
 //                "$y id '" + europe.id() + "'; get;";
 //
-//        GetQuery query = iqb.parse(queryString);
-//        List<ConceptMap> answers = query.execute();
+//        GetQuery query = iGraql.parse(queryString);
+//        List<ConceptMap> answers = tx.execute(query);
 //        assertEquals(answers.size(), 1);
 //
 //        ConceptMap answer = answers.iterator().next();
@@ -166,8 +166,8 @@
 //                "$z id '" + masovia.id() + "';" +
 //                "get $y;";
 //
-//        GetQuery query = iqb.parse(queryString);
-//        List<ConceptMap> answers = query.execute();
+//        GetQuery query = iGraql.parse(queryString);
+//        List<ConceptMap> answers = tx.execute(query);
 //        assertEquals(answers.size(), 1);
 //        testExplanation(answers);
 //    }
@@ -179,8 +179,8 @@
 //                "$x id '" + polibuda.id() + "';" +
 //                "$y id '" + uw.id() + "'; get;";
 //
-//        GetQuery query = iqb.parse(queryString);
-//        List<ConceptMap> answers = query.execute();
+//        GetQuery query = iGraql.parse(queryString);
+//        List<ConceptMap> answers = tx.execute(query);
 //        assertEquals(answers.size(), 0);
 //    }
 //
@@ -188,8 +188,8 @@
 //    public void testExplainingNonRuleResolvableQuery(){
 //        String queryString = "match $x isa city, has name $n; get;";
 //
-//        GetQuery query = iqb.parse(queryString);
-//        List<ConceptMap> answers = query.execute();
+//        GetQuery query = iGraql.parse(queryString);
+//        List<ConceptMap> answers = tx.execute(query);
 //        answers.forEach(ans -> assertEquals(ans.explanation().isEmpty(), true));
 //    }
 //
@@ -205,8 +205,8 @@
 //                "$x id '" + a1.id() + "';" +
 //                "$y id '" + a2.id() + "'; get;";
 //
-//        GetQuery query = eiqb.parse(queryString);
-//        List<ConceptMap> answers = query.execute();
+//        GetQuery query = eiGraql.parse(queryString);
+//        List<ConceptMap> answers = tx.execute(query);
 //        assertEquals(answers.size(), 0);
 //    }
 //
@@ -220,8 +220,8 @@
 //                "$x has name $xName;" +
 //                "$w has name $wName; get;";
 //
-//        GetQuery query = eiqb.parse(queryString);
-//        List<ConceptMap> answers = query.execute();
+//        GetQuery query = eiGraql.parse(queryString);
+//        List<ConceptMap> answers = tx.execute(query);
 //        testExplanation(answers);
 //    }
 //
@@ -235,8 +235,8 @@
 //                "($x, $y) isa carried-relation;" +
 //                "get;";
 //
-//        GetQuery query = eiqb.parse(queryString);
-//        List<ConceptMap> answers = query.execute();
+//        GetQuery query = eiGraql.parse(queryString);
+//        List<ConceptMap> answers = tx.execute(query);
 //        testExplanation(answers);
 //        answers.stream()
 //                .filter(ans -> ans.explanations().stream().anyMatch(Explanation::isRuleExplanation))
@@ -254,8 +254,8 @@
 //
 //        String queryString = "match $x isa same-tag-column-link; get;";
 //
-//        GetQuery query = eiqb.parse(queryString);
-//        List<ConceptMap> answers = query.execute();
+//        GetQuery query = eiGraql.parse(queryString);
+//        List<ConceptMap> answers = tx.execute(query);
 //        testExplanation(answers);
 //        answers.stream()
 //                .filter(ans -> ans.explanations().stream().anyMatch(Explanation::isRuleExplanation))
@@ -276,7 +276,7 @@
 //                "limit " + limit + ";"+
 //                "get;";
 //
-//        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+//        List<ConceptMap> answers = itx.execute(Graql.<GetQuery>parse(queryString));
 //
 //        assertEquals(answers.size(), limit);
 //        answers.forEach(answer -> {
@@ -287,7 +287,7 @@
 //                    "$y id '" + answer.get(var("y")).id().getValue() + "';" +
 //                    "(cousin: $x, cousin: $y) isa cousins;" +
 //                    "limit 1; get;";
-//            ConceptMap specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
+//            ConceptMap specificAnswer = Iterables.getOnlyElement(itx.execute(Graql.<GetQuery>parse(specificQuery)));
 //            assertEquals(answer, specificAnswer);
 //            testExplanation(specificAnswer);
 //        });

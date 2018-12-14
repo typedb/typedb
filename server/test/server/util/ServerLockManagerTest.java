@@ -18,7 +18,6 @@
 
 package grakn.core.server.util;
 
-import grakn.core.server.util.ServerLockManager;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

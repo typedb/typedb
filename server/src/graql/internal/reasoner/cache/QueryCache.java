@@ -23,9 +23,9 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 
 /**

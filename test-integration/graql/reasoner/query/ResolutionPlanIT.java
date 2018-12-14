@@ -18,29 +18,29 @@
 
 package grakn.core.graql.reasoner.query;
 
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
+import com.google.common.collect.UnmodifiableIterator;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Label;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.plan.ResolutionPlan;
 import grakn.core.graql.internal.reasoner.plan.ResolutionQueryPlan;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
-import com.google.common.collect.UnmodifiableIterator;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -91,7 +91,7 @@ public class ResolutionPlanIT {
             InputStream inputStream = ResolutionPlanIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
-            tx.graql().parser().parseList(s).forEach(Query::execute);
+            Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e){
             System.err.println(e);
@@ -130,7 +130,7 @@ public class ResolutionPlanIT {
                 "$y isa resource;$y 'value';" +
                 "$z isa relation;" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
     }
 
@@ -142,7 +142,7 @@ public class ResolutionPlanIT {
                 "$y isa resource;" +
                 "$z isa relation;" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
     }
 
@@ -155,7 +155,7 @@ public class ResolutionPlanIT {
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$w id 'sampleId';" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
@@ -173,7 +173,7 @@ public class ResolutionPlanIT {
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
                 "$z id 'sampleId';" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "derivedRelation", tx),
                 getAtomOfType(query, "relation", tx)
@@ -192,7 +192,7 @@ public class ResolutionPlanIT {
                 "$z id 'sampleId';" +
                 "$w id 'sampleId2';" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
@@ -211,7 +211,7 @@ public class ResolutionPlanIT {
                 "(someRole:$x, otherRole: $y) isa relation;" +
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "relation", tx),
                 getAtomOfType(query, "derivedRelation", tx)
@@ -230,7 +230,7 @@ public class ResolutionPlanIT {
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
         assertTrue(!new ResolutionPlan(query).plan().get(0).isRuleResolvable());
     }
@@ -244,7 +244,7 @@ public class ResolutionPlanIT {
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$w has resource 'test';" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "resource", tx),
                 getAtomOfType(query, "yetAnotherRelation", tx),
@@ -264,7 +264,7 @@ public class ResolutionPlanIT {
                 "$y isa someEntity;" +
                 "$x has resource 'test';" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "resource", tx),
                 getAtomOfType(query, "derivedRelation", tx)
@@ -283,7 +283,7 @@ public class ResolutionPlanIT {
                 "$x has anotherResource $r;" +
                 "$w has resource 'test';" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "resource", tx),
                 getAtomOfType(query, "yetAnotherRelation", tx),
@@ -303,7 +303,7 @@ public class ResolutionPlanIT {
                 "$x has resource $xr;" +
                 "$y has resource $yr;" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         assertEquals(new ResolutionPlan(query).plan().get(0), getAtomOfType(query, "derivedRelation", tx));
         checkPlanSanity(query);
     }
@@ -328,7 +328,7 @@ public class ResolutionPlanIT {
                 "$end isa someOtherEntity;" +
                 "$anotherlink isa yetAnotherEntity;" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
 
         checkQueryPlanSanity(query);
@@ -358,7 +358,7 @@ public class ResolutionPlanIT {
                 "$end isa someOtherEntity;" +
                 "$anotherlink isa yetAnotherEntity;" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
 
         checkQueryPlanSanity(query);
@@ -391,7 +391,7 @@ public class ResolutionPlanIT {
                 "(someRole: $link, otherRole: $anotherlink) isa derivedRelation;" +
                 "(someRole: $anotherlink, otherRole: $end) isa anotherDerivedRelation;" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
 
         checkQueryPlanSanity(query);
@@ -411,7 +411,7 @@ public class ResolutionPlanIT {
                 "(someRole:$y, otherRole: $yy) isa anotherRelation;$yy isa! $type;" +
                 "$y != $x;" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkAtomPlanComplete(query, new ResolutionPlan(query));
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
     }
@@ -419,8 +419,8 @@ public class ResolutionPlanIT {
     @Test
     @Repeat( times = repeat )
     public void makeSureOptimalOrderPickedWhenResourcesWithSubstitutionsArePresent() {
-        Concept concept = tx.graql().match(var("x").isa("baseEntity")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().orElse(null);
+        Concept concept = tx.stream(Graql.match(var("x").isa("baseEntity")).get("x"))
+                .map(ans -> ans.get("x")).findAny().orElse(null);
         String basePatternString =
                 "(someRole:$x, otherRole: $y) isa relation;" +
                         "$x has resource 'this';" +
@@ -434,8 +434,8 @@ public class ResolutionPlanIT {
                 "$y id '" + concept.id() + "';" +
                 basePatternString +
                 "}";
-        ReasonerQueryImpl queryX = ReasonerQueries.create(conjunction(xPatternString, tx), tx);
-        ReasonerQueryImpl queryY = ReasonerQueries.create(conjunction(yPatternString, tx), tx);
+        ReasonerQueryImpl queryX = ReasonerQueries.create(conjunction(xPatternString), tx);
+        ReasonerQueryImpl queryY = ReasonerQueries.create(conjunction(yPatternString), tx);
 
         checkPlanSanity(queryX);
         checkPlanSanity(queryY);
@@ -454,7 +454,7 @@ public class ResolutionPlanIT {
                 "(someRole:$w, otherRole: $u) isa anotherRelation;" +
                 "(someRole:$u, otherRole: $v) isa relation;" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
     }
 
@@ -469,7 +469,7 @@ public class ResolutionPlanIT {
                 "(someRole:$u, otherRole: $v) isa anotherRelation;" +
                 "(someRole:$v, otherRole: $q) isa yetAnotherRelation;"+
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
     }
 
@@ -495,14 +495,14 @@ public class ResolutionPlanIT {
                         "($g, $h) isa anotherDerivedRelation;";
 
         String queryString = "{" + basePatternString + "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
 
         String attributedQueryString = "{" +
                 "$a has resource 'someValue';" +
                 basePatternString +
                 "}";
-        ReasonerQueryImpl attributedQuery = ReasonerQueries.create(conjunction(attributedQueryString, tx), tx);
+        ReasonerQueryImpl attributedQuery = ReasonerQueries.create(conjunction(attributedQueryString), tx);
         ResolutionPlan attributedResolutionPlan = new ResolutionPlan(attributedQuery);
         checkPlanSanity(attributedQuery);
 
@@ -533,14 +533,14 @@ public class ResolutionPlanIT {
                         "($e, $f) isa derivedRelation;";
 
         String queryString = "{" + basePatternString + "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
 
         String attributedQueryString = "{" +
                 "$g has resource 'someValue';" +
                 basePatternString +
                 "}";
-        ReasonerQueryImpl attributedQuery = ReasonerQueries.create(conjunction(attributedQueryString, tx), tx);
+        ReasonerQueryImpl attributedQuery = ReasonerQueries.create(conjunction(attributedQueryString), tx);
         ResolutionPlan attributedResolutionPlan = new ResolutionPlan(attributedQuery);
         checkPlanSanity(attributedQuery);
 
@@ -563,7 +563,7 @@ public class ResolutionPlanIT {
                 "($e, $f) isa anotherRelation; $f isa yetAnotherEntity;" +
                 "}";
 
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkAtomPlanComplete(query, new ResolutionPlan(query));
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
     }
@@ -583,7 +583,7 @@ public class ResolutionPlanIT {
                 "($g, $h) isa derivedRelation; $h isa yetAnotherEntity;" +
                 "}";
 
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkAtomPlanComplete(query, new ResolutionPlan(query));
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
     }
@@ -604,7 +604,7 @@ public class ResolutionPlanIT {
                 "$x has yetAnotherResource 'someValue';" +
                 "}";
 
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkAtomPlanComplete(query, new ResolutionPlan(query));
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
     }
@@ -622,7 +622,7 @@ public class ResolutionPlanIT {
                 "$y has resource 'someValue';" +
                 "($x, $y) isa derivedRelation;" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ResolutionPlan resolutionPlan = new ResolutionPlan(query);
         checkAtomPlanComplete(query, resolutionPlan);
 
@@ -643,7 +643,7 @@ public class ResolutionPlanIT {
                 "($c, $d) isa yetAnotherRelation; $c isa someOtherEntity;" +
                 "($d, $e) isa relation; $d isa yetAnotherEntity;" +
                 "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, tx), tx);
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
         //todo
     }
@@ -717,8 +717,8 @@ public class ResolutionPlanIT {
         assertEquals(query.selectAtoms().collect(toSet()), plan.queries().stream().flatMap(ReasonerQueryImpl::selectAtoms).collect(toSet()));
     }
 
-    private Conjunction<Statement> conjunction(String patternString, Transaction graph){
-        Set<Statement> vars = graph.graql().parser().parsePattern(patternString)
+    private Conjunction<Statement> conjunction(String patternString){
+        Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);

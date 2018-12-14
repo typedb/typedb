@@ -18,26 +18,26 @@
 
 package grakn.core.graql.internal.gremlin;
 
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.server.Transaction;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.pattern.Pattern.and;
+import static grakn.core.graql.internal.gremlin.GraqlMatchers.feature;
 import static grakn.core.graql.query.Graql.eq;
 import static grakn.core.graql.query.Graql.gt;
-import static grakn.core.graql.internal.gremlin.GraqlMatchers.feature;
+import static grakn.core.graql.query.pattern.Pattern.and;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
