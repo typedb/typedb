@@ -7,16 +7,12 @@ import {
   INITIALISE_VISUALISER,
   DEFINE_ENTITY_TYPE,
   COMMIT_TX,
-  DEFINE_ROLE,
   DEFINE_ATTRIBUTE_TYPE,
   DEFINE_RELATIONSHIP_TYPE,
   DELETE_SCHEMA_CONCEPT,
   REFRESH_SELECTED_NODE,
-  DELETE_PLAYS_ROLE,
-  DELETE_RELATES_ROLE,
   DELETE_ATTRIBUTE,
   ADD_ATTRIBUTE_TYPE,
-  ADD_TYPE,
 } from '@/components/shared/StoresActions';
 import logger from '@/../Logger';
 
@@ -68,7 +64,6 @@ export default {
     commit('setVisFacade', visFacade.initVisualiser(container, state.visStyle));
     SchemaCanvasEventsHandler.registerHandlers({ state, commit, dispatch });
   },
-
 
   async [LOAD_SCHEMA]({ state, commit, dispatch }) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
@@ -139,12 +134,15 @@ export default {
     }));
 
     await dispatch(COMMIT_TX, graknTx).then(async () => {
+      await dispatch(UPDATE_METATYPE_INSTANCES);
+
       graknTx = await dispatch(OPEN_GRAKN_TX);
 
       const type = await graknTx.getSchemaConcept(payload.entityLabel);
       const sup = await type.sup();
       const supLabel = await sup.label();
       let edges;
+
       // If the supertype is a concept defined by user
       // we just draw the isa edge instead of all edges from relationshipTypes
       if (!META_CONCEPTS.has(supLabel)) {
@@ -152,8 +150,8 @@ export default {
       } else {
         edges = await typeInboundEdges(type, state.visFacade);
       }
-      const label = await type.label();
 
+      const label = await type.label();
       let nodes = [Object.assign(type, { label })];
 
       // constuct role edges
@@ -165,26 +163,6 @@ export default {
       state.visFacade.updateNode(nodes);
       graknTx.close();
     })
-      .then(async () => {
-        await dispatch(UPDATE_METATYPE_INSTANCES);
-      })
-      .catch((e) => {
-        graknTx.close();
-        logger.error(e.stack);
-        throw e;
-      });
-  },
-
-  async [DEFINE_ROLE]({ state, dispatch }, payload) {
-    const graknTx = await dispatch(OPEN_GRAKN_TX);
-
-    await state.schemaHandler.defineRole(payload);
-
-    await Promise.all(payload.relationshipTypes.map(async (relationshipType) => {
-      await state.schemaHandler.addRelatesRole({ label: relationshipType, roleLabel: payload.label });
-    }));
-
-    dispatch(COMMIT_TX, graknTx)
       .catch((e) => {
         graknTx.close();
         logger.error(e.stack);
@@ -229,14 +207,13 @@ export default {
 
     await dispatch(COMMIT_TX, graknTx)
       .then(async () => {
-        const node = state.visFacade.getNode(state.selectedNodes[0].id);
-
         graknTx = await dispatch(OPEN_GRAKN_TX);
+
+        const node = state.visFacade.getNode(state.selectedNodes[0].id);
 
         await Promise.all(payload.attributeTypes.map(async (attributeType) => {
           const dataType = await (await graknTx.getSchemaConcept(attributeType)).dataType();
-          const attrs = [...node.attributes, { type: attributeType, dataType }];
-          node.attributes = attrs;
+          node.attributes = [...node.attributes, { type: attributeType, dataType }];
         }));
         graknTx.close();
         state.visFacade.updateNode(node);
@@ -248,6 +225,27 @@ export default {
       });
   },
 
+  async [DELETE_ATTRIBUTE]({ state, dispatch }, payload) {
+    const graknTx = await dispatch(OPEN_GRAKN_TX);
+
+    const type = await graknTx.getSchemaConcept(state.selectedNodes[0].label);
+
+    if (await (await type.instances()).next()) throw Error('Cannot remove attribute type from schema concept with instances.');
+
+    await state.schemaHandler.deleteAttribute(payload);
+
+    await dispatch(COMMIT_TX, graknTx).then(() => {
+      const node = state.visFacade.getNode(state.selectedNodes[0].id);
+      node.attributes = Object.values(node.attributes).sort((a, b) => ((a.type > b.type) ? 1 : -1));
+      node.attributes.splice(payload.index, 1);
+      state.visFacade.updateNode(node);
+    })
+      .catch((e) => {
+        graknTx.close();
+        logger.error(e.stack);
+        throw e;
+      });
+  },
 
   async [DEFINE_RELATIONSHIP_TYPE]({ state, dispatch }, payload) {
     let graknTx = await dispatch(OPEN_GRAKN_TX);
@@ -275,11 +273,14 @@ export default {
     }));
 
     await dispatch(COMMIT_TX, graknTx).then(async () => {
+      await dispatch(UPDATE_METATYPE_INSTANCES);
+
       graknTx = await dispatch(OPEN_GRAKN_TX);
       const type = await graknTx.getSchemaConcept(payload.relationshipLabel);
       const label = await type.label();
       const sup = await type.sup();
       const supLabel = await sup.label();
+
       let edges;
       // If the supertype is a concept defined by user
       // we just draw the sub edge instead of all edges to roleplayers
@@ -297,9 +298,6 @@ export default {
       state.visFacade.updateNode(nodes);
       graknTx.close();
     })
-      .then(async () => {
-        await dispatch(UPDATE_METATYPE_INSTANCES);
-      })
       .catch((e) => {
         graknTx.close();
         logger.error(e.stack);
@@ -307,16 +305,12 @@ export default {
       });
   },
 
-
   async [DELETE_SCHEMA_CONCEPT]({ state, dispatch, commit }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
 
     const type = await graknTx.getSchemaConcept(payload.label);
 
-    const instances = await (await type.instances()).collect();
-    Promise.all(instances.map(async (thing) => {
-      await thing.delete();
-    }));
+    if (await (await type.instances()).next()) throw Error('Cannot delete schema concept which has instances');
 
     if (payload.baseType === 'RELATIONSHIP_TYPE') {
       const roles = await (await type.roles()).collect();
@@ -342,6 +336,7 @@ export default {
       .catch((e) => {
         graknTx.close();
         logger.error(e.stack);
+        throw e;
       });
   },
 
@@ -352,62 +347,53 @@ export default {
     commit('selectedNodes', [node.id]);
   },
 
-  async [DELETE_PLAYS_ROLE]({ state, dispatch }, payload) {
-    const graknTx = await dispatch(OPEN_GRAKN_TX);
-    await state.schemaHandler.deletePlaysRole(payload);
-    dispatch(COMMIT_TX, graknTx).then(async () => {
-      const type = await graknTx.getSchemaConcept(payload.label);
-      state.visFacade.deleteEdgesOnNode(type.id, payload.roleName);
-      dispatch(REFRESH_SELECTED_NODE);
-    })
-      .catch((e) => { throw e; });
-  },
+  // async [DELETE_PLAYS_ROLE]({ state, dispatch }, payload) {
+  //   const graknTx = await dispatch(OPEN_GRAKN_TX);
+  //   await state.schemaHandler.deletePlaysRole(payload);
+  //   dispatch(COMMIT_TX, graknTx).then(async () => {
+  //     const type = await graknTx.getSchemaConcept(payload.label);
+  //     state.visFacade.deleteEdgesOnNode(type.id, payload.roleName);
+  //     dispatch(REFRESH_SELECTED_NODE);
+  //   })
+  //     .catch((e) => { throw e; });
+  // },
 
-  async [DELETE_RELATES_ROLE]({ state, dispatch }, payload) {
-    const graknTx = await dispatch(OPEN_GRAKN_TX);
-    await state.schemaHandler.deleteRelatesRole(payload);
-    dispatch(COMMIT_TX, graknTx).then(async () => {
-      const type = await graknTx.getSchemaConcept(payload.label);
-      state.visFacade.deleteEdgesOnNode(type.id, payload.roleName);
-      dispatch(REFRESH_SELECTED_NODE);
-    })
-      .catch((e) => { throw e; });
-  },
+  // async [DELETE_RELATES_ROLE]({ state, dispatch }, payload) {
+  //   const graknTx = await dispatch(OPEN_GRAKN_TX);
+  //   await state.schemaHandler.deleteRelatesRole(payload);
+  //   dispatch(COMMIT_TX, graknTx).then(async () => {
+  //     const type = await graknTx.getSchemaConcept(payload.label);
+  //     state.visFacade.deleteEdgesOnNode(type.id, payload.roleName);
+  //     dispatch(REFRESH_SELECTED_NODE);
+  //   })
+  //     .catch((e) => { throw e; });
+  // },
 
-  async [DELETE_ATTRIBUTE]({ dispatch }, payload) {
-    const graknTx = await dispatch(OPEN_GRAKN_TX);
-    await this.schemaHandler.deleteAttribute(payload);
-    dispatch(COMMIT_TX, graknTx).then(() => {
-      dispatch(REFRESH_SELECTED_NODE);
-    })
-      .catch((e) => { throw e; });
-  },
+  // async [ADD_TYPE]({ dispatch, state }, payload) {
+  //   const graknTx = await dispatch(OPEN_GRAKN_TX);
 
-  async [ADD_TYPE]({ dispatch, state }, payload) {
-    const graknTx = await dispatch(OPEN_GRAKN_TX);
-
-    switch (payload.type) {
-      case 'attribute': {
-        await this.schemaHandler.addAttribute({ label: state.selectedNodes[0].label, typeLabel: payload.typeLabel });
-        break;
-      }
-      case 'plays': {
-        await this.schemaHandler.addPlaysRole({ label: state.selectedNodes[0].label, typeLabel: payload.typeLabel });
-        const type = await graknTx.getSchemaConcept(state.selectedNodes[0].label);
-        const relatesEdges = await relationshipTypesOutboundEdges([type]);
-        state.visFacade.addToCanvas({ nodes: [], edges: relatesEdges });
-        break;
-      }
-      case 'relates': {
-        await this.schemaHandler.addRelatesRole({ label: state.selectedNodes[0].label, typeLabel: payload.typeLabel });
-        const type = await graknTx.getSchemaConcept(state.selectedNodes[0].label);
-        const relatesEdges = await relationshipTypesOutboundEdges([type]);
-        state.visFacade.addToCanvas({ nodes: [], edges: relatesEdges });
-        break;
-      }
-      default:
-        // do nothing
-    }
-    dispatch(REFRESH_SELECTED_NODE);
-  },
+  //   switch (payload.type) {
+  //     case 'attribute': {
+  //       await this.schemaHandler.addAttribute({ label: state.selectedNodes[0].label, typeLabel: payload.typeLabel });
+  //       break;
+  //     }
+  //     case 'plays': {
+  //       await this.schemaHandler.addPlaysRole({ label: state.selectedNodes[0].label, typeLabel: payload.typeLabel });
+  //       const type = await graknTx.getSchemaConcept(state.selectedNodes[0].label);
+  //       const relatesEdges = await relationshipTypesOutboundEdges([type]);
+  //       state.visFacade.addToCanvas({ nodes: [], edges: relatesEdges });
+  //       break;
+  //     }
+  //     case 'relates': {
+  //       await this.schemaHandler.addRelatesRole({ label: state.selectedNodes[0].label, typeLabel: payload.typeLabel });
+  //       const type = await graknTx.getSchemaConcept(state.selectedNodes[0].label);
+  //       const relatesEdges = await relationshipTypesOutboundEdges([type]);
+  //       state.visFacade.addToCanvas({ nodes: [], edges: relatesEdges });
+  //       break;
+  //     }
+  //     default:
+  //       // do nothing
+  //   }
+  //   dispatch(REFRESH_SELECTED_NODE);
+  // },
 };

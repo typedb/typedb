@@ -48,7 +48,7 @@
           .then(() => {
             this.$notifyInfo(`Schema concept, ${label}, has been deleted`);
           })
-          .catch((err) => { this.$notifyError(err, 'Delete schema concept'); });
+          .catch((e) => { this.$notifyError(e); });
       },
     },
   };
