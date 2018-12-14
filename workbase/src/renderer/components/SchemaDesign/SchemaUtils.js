@@ -32,6 +32,15 @@ export async function relationshipTypesOutboundEdges(nodes) {
   return edges;
 }
 
+export async function ownerHasEdges(nodes) {
+  const edges = [];
+  await Promise.all(nodes.map(async (node) => {
+    const attributes = await (await node.attributes()).collect();
+    attributes.map(attr => edges.push({ from: node.id, to: attr.id, label: 'has' }));
+  }));
+  return edges;
+}
+
 export function updateNodePositions(nodes) {
   let positionMap = storage.get('schema-node-positions');
   if (positionMap) {
