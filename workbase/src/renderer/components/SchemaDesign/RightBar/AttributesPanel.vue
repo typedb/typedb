@@ -10,10 +10,11 @@
             </div>
             <div class="content" v-else>
 
-                <div v-for="(value, key) in attributes" :key="key">
+                <div v-for="(value, index) in attributes" :key="index">
                     <div class="content-item">
                         <div class="label">{{value.type}}</div>
                         <div class="value">{{value.dataType}}</div>
+                        <div class="btn right-bar-btn reset-setting-btn" @click="removeAttributeType(value.type, index)"><vue-icon icon="trash" className="vue-icon" iconSize="12"></vue-icon></div>
                     </div>
                 </div>
 
@@ -48,7 +49,7 @@
 </template>
 
 <script>
-  import { ADD_ATTRIBUTE_TYPE, REFRESH_SELECTED_NODE } from '@/components/shared/StoresActions';
+  import { ADD_ATTRIBUTE_TYPE, REFRESH_SELECTED_NODE, DELETE_ATTRIBUTE } from '@/components/shared/StoresActions';
   import { createNamespacedHelpers } from 'vuex';
   
   export default {
@@ -77,7 +78,7 @@
       // methods
       this.$options.methods = {
         ...(this.$options.methods || {}),
-        ...mapActions([ADD_ATTRIBUTE_TYPE, REFRESH_SELECTED_NODE]),
+        ...mapActions([ADD_ATTRIBUTE_TYPE, REFRESH_SELECTED_NODE, DELETE_ATTRIBUTE]),
       };
     },
     computed: {
@@ -127,6 +128,15 @@
             this[REFRESH_SELECTED_NODE]();
             this.showNewAttributesPanel = false;
             this.toggledAttributeTypes = [];
+          })
+          .catch((e) => {
+            this.$notifyError(e.message);
+          });
+      },
+      removeAttributeType(type, index) {
+        this[DELETE_ATTRIBUTE]({ label: this.selectedNodes[0].label, attributeLabel: type, index })
+          .then(() => {
+            this[REFRESH_SELECTED_NODE]();
           })
           .catch((e) => {
             this.$notifyError(e.message);
