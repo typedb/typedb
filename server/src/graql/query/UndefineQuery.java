@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.Statement;
 
 import java.util.List;
@@ -29,7 +28,7 @@ import static java.util.stream.Collectors.joining;
  * A query for undefining the Schema types.
  * The query will undefine all concepts described in the pattern provided.
  */
-public class UndefineQuery implements Query<ConceptMap> {
+public class UndefineQuery implements Query {
 
     private final List<? extends Statement> statements;
 

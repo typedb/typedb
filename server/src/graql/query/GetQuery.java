@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
 
@@ -33,7 +32,7 @@ import static java.util.stream.Collectors.joining;
  * pattern-matching query. The patterns are described in a declarative fashion, then the query will traverse
  * the knowledge base in an efficient fashion to find any matching answers.
  */
-public class GetQuery implements Query<ConceptMap> {
+public class GetQuery implements Query {
 
     private final Set<Variable> vars;
     private final MatchClause match;

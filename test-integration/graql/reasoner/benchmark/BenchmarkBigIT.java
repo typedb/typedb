@@ -70,7 +70,7 @@ public class BenchmarkBigIT {
             InputStream inputStream = new FileInputStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE);
-            tx.execute(Graql.<Query<?>>parse(s));
+            tx.execute(Graql.<Query>parse(s));
             tx.commit();
         } catch (Exception e){
             System.err.println(e);

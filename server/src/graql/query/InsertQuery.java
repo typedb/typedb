@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Statement;
 
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
  * When built from a match clause, the insert query will execute for each result of the match clause,
  * where variable names in the insert query are bound to the concept in the result of the match clause.
  */
-public class InsertQuery implements Query<ConceptMap> {
+public class InsertQuery implements Query {
 
     private final MatchClause match;
     private final List<Statement> statements;

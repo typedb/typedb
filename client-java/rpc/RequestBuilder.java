@@ -60,11 +60,11 @@ public class RequestBuilder {
                     .build();
         }
 
-        public static SessionProto.Transaction.Req query(Query<?> query) {
+        public static SessionProto.Transaction.Req query(Query query) {
             return query(query.toString(), true);
         }
 
-        public static SessionProto.Transaction.Req query(Query<?> query, boolean infer) {
+        public static SessionProto.Transaction.Req query(Query query, boolean infer) {
             return query(query.toString(), infer);
         }
 

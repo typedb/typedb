@@ -89,12 +89,12 @@ public final class RemoteQueryExecutor implements QueryExecutor {
 
     // Helper methods
 
-    private Stream<ConceptMap> streamConceptMaps(Query<ConceptMap> query) {
+    private Stream<ConceptMap> streamConceptMaps(Query query) {
         Iterable<ConceptMap> iterable = () -> tx.query(query, infer);
         return StreamSupport.stream(iterable.spliterator(), false);
     }
 
-    private Stream<ConceptSet> streamConceptSets(Query<ConceptSet> query) {
+    private Stream<ConceptSet> streamConceptSets(Query query) {
         Iterable<ConceptSet> iterable = () -> tx.query(query, infer);
         return StreamSupport.stream(iterable.spliterator(), false);
     }

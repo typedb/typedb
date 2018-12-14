@@ -56,7 +56,7 @@ import static java.util.stream.Collectors.joining;
  *
  * @param <T> return type of ComputeQuery
  */
-public class ComputeQuery<T extends Answer> implements Query<T> {
+public class ComputeQuery<T extends Answer> implements Query {
 
     public final static Collection<Method> METHODS_ACCEPTED = ImmutableList.copyOf(Method.values());
 

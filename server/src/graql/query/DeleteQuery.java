@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
 
@@ -35,7 +34,7 @@ import static java.util.stream.Collectors.joining;
  * flags are provided, e.g. {@code var("x").has("name")} then only those
  * properties are deleted.
  */
-public class DeleteQuery implements Query<ConceptSet> {
+public class DeleteQuery implements Query {
 
     private final MatchClause match;
     private final Set<Variable> vars;

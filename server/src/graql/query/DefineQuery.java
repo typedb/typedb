@@ -18,14 +18,13 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.Statement;
 
 import java.util.List;
 
 import static java.util.stream.Collectors.joining;
 
-public class DefineQuery implements Query<ConceptMap> {
+public class DefineQuery implements Query {
 
     private final List<? extends Statement> statements;
 

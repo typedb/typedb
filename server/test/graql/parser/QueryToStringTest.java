@@ -237,7 +237,7 @@ public class QueryToStringTest {
         assertEquals(query.toString(), Graql.parse(query.toString()).toString());
     }
 
-    private void assertEquivalent(Query<?> query, String queryString) {
+    private void assertEquivalent(Query query, String queryString) {
         assertEquals(queryString, query.toString());
         assertEquals(query.toString(), Graql.parse(queryString).toString());
     }

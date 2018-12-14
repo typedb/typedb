@@ -236,11 +236,11 @@ public final class Grakn {
             close();
         }
 
-        public java.util.Iterator query(Query<?> query) {
+        public java.util.Iterator query(Query query) {
             return query(query, true);
         }
 
-        public java.util.Iterator query(Query<?> query, boolean infer) {
+        public java.util.Iterator query(Query query, boolean infer) {
             transceiver.send(RequestBuilder.Transaction.query(query.toString(), infer));
             SessionProto.Transaction.Res txResponse = responseOrThrow();
             int iteratorId = txResponse.getQueryIter().getId();

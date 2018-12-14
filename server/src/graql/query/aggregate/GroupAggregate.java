@@ -57,7 +57,7 @@ public class GroupAggregate<T extends Answer> implements Aggregate<AnswerGroup<T
                 collectingAndThen(toList(), list -> innerAggregate.apply(list.stream()));
 
         List<AnswerGroup<T>> answerGroups = new ArrayList<>();
-        conceptMaps.collect(groupingBy(result -> getConcept(result), applyInnerAggregate))
+        conceptMaps.collect(groupingBy(conceptMap -> getConcept(conceptMap), applyInnerAggregate))
                 .forEach((key, values) -> answerGroups.add(new AnswerGroup<>(key, values)));
 
         return answerGroups;

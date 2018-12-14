@@ -223,39 +223,39 @@ public interface Transaction extends AutoCloseable {
 
     // Generic Query
 
-    default <T extends Answer> List<T> execute(Query<T> query) {
+    default List<? extends Answer> execute(Query query) {
         return execute(query, true);
     }
 
-    default <T extends Answer> List<T> execute(Query<T> query, boolean infer) {
+    default List<? extends Answer> execute(Query query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default <T extends Answer> Stream<T> stream(Query<T> query) {
+    default Stream<? extends Answer> stream(Query query) {
         return stream(query, true);
     }
 
-    default <T extends Answer> Stream<T> stream(Query<T> query, boolean infer) {
+    default Stream<? extends Answer> stream(Query query, boolean infer) {
         if (query instanceof DefineQuery) {
-            return (Stream<T>) stream((DefineQuery) query, infer);
+            return stream((DefineQuery) query, infer);
 
         } else if (query instanceof UndefineQuery) {
-            return (Stream<T>) stream((UndefineQuery) query, infer);
+            return stream((UndefineQuery) query, infer);
 
         } else if (query instanceof InsertQuery) {
-            return (Stream<T>) stream((InsertQuery) query, infer);
+            return stream((InsertQuery) query, infer);
 
         } else if (query instanceof DeleteQuery) {
-            return (Stream<T>) stream((DeleteQuery) query, infer);
+            return stream((DeleteQuery) query, infer);
 
         } else if (query instanceof GetQuery) {
-            return (Stream<T>) stream((GetQuery) query, infer);
+            return stream((GetQuery) query, infer);
 
         } else if (query instanceof AggregateQuery<?>) {
-            return (Stream<T>) stream((AggregateQuery<?>) query, infer);
+            return stream((AggregateQuery<?>) query, infer);
 
         } else if (query instanceof ComputeQuery<?>) {
-            return (Stream<T>) stream((ComputeQuery<?>) query, infer);
+            return stream((ComputeQuery<?>) query, infer);
 
         } else {
             throw new IllegalArgumentException("Unrecognised Query object");

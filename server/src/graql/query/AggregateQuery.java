@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
  *
  * @param <T> the type of the result of the aggregate query
  */
-public class AggregateQuery<T extends Answer> implements Query<T> {
+public class AggregateQuery<T extends Answer> implements Query {
 
     private final MatchClause match;
     private final Aggregate<T> aggregate;
