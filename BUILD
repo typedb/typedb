@@ -19,10 +19,11 @@
 exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
 load("@graknlabs_rules_deployment//brew:rules.bzl", deploy_brew = "deploy_brew")
 
-sh_binary(
+py_binary(
     name = "deploy-github-zip",
     srcs = ["@graknlabs_rules_deployment//github:deployment.py"],
-    data = [":distribution", ":VERSION", ":deployment.properties", "@ghr_osx_zip//file:file", "@ghr_linux_tar//file:file"]
+    data = [":distribution", ":VERSION", ":deployment.properties", "@ghr_osx_zip//file:file", "@ghr_linux_tar//file:file"],
+    main = "deployment.py"
 )
 
 genrule(
