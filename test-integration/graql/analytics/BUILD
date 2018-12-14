@@ -1,10 +1,11 @@
 java_test(
     name = "analytics-it",
-    test_class = "grakn.core.graql.analytics.AnalyticsIT",
-    srcs = ["AnalyticsIT.java"],
+    test_class = "grakn.core.graql.analytics.ComputeQueryIT",
+    srcs = ["ComputeQueryIT.java"],
     deps = [
         "//server",
         "//test-integration/rule:grakn-test-server",
+        "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -51,19 +52,6 @@ java_test(
     name = "degree-it",
     test_class = "grakn.core.graql.analytics.DegreeIT",
     srcs = ["DegreeIT.java"],
-    deps = [
-        "//server",
-        "//test-integration/rule:grakn-test-server",
-        "//dependencies/maven/artifacts/com/google/guava:guava"
-    ],
-    size = "large",
-    classpath_resources = ["//test-integration/resources:logback-test"]
-)
-
-java_test(
-    name = "graql-it",
-    test_class = "grakn.core.graql.analytics.GraqlIT",
-    srcs = ["GraqlIT.java"],
     deps = [
         "//server",
         "//test-integration/rule:grakn-test-server",
