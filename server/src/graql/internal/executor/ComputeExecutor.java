@@ -23,8 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.ComputeQuery;
-import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptSet;
@@ -40,6 +39,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.analytics.ClusterMemberMapReduce;
 import grakn.core.graql.internal.analytics.ConnectedComponentVertexProgram;
@@ -63,11 +63,11 @@ import grakn.core.graql.internal.analytics.StatisticsMapReduce;
 import grakn.core.graql.internal.analytics.StdMapReduce;
 import grakn.core.graql.internal.analytics.SumMapReduce;
 import grakn.core.graql.internal.analytics.Utility;
-import grakn.core.server.ComputeExecutor;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.ComputeQuery;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.olap.TransactionOLAP;
-import grakn.core.common.util.CommonUtil;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -105,26 +105,19 @@ import static grakn.core.graql.query.ComputeQuery.Method.SUM;
 
 /**
  * A Graql Compute query job executed against a {@link TransactionOLAP}.
- *
  */
-class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
+class ComputeExecutor<T extends Answer> {
 
     private final ComputeQuery<T> query;
 
-    private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutorImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutor.class);
     private final TransactionImpl<?> tx;
 
-    public ComputeExecutorImpl(TransactionImpl<?> tx, ComputeQuery query) {
+    public ComputeExecutor(TransactionImpl<?> tx, ComputeQuery query) {
         this.tx = tx;
         this.query = query;
     }
 
-    @Override
-    public void kill() { //todo: to be removed;
-        tx.session().getGraphComputer().killJobs();
-    }
-
-    @Override
     public Stream<T> stream() {
         ComputeQuery.Method<?> method = query.method();
         if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
@@ -693,10 +686,10 @@ class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
     private boolean targetContainsInstance() {
         for (Label attributeType : targetTypeLabels()) {
             for (Label type : scopeTypeLabels()) {
-                Boolean patternExist = tx.graql().infer(false).match(
+                Boolean patternExist = tx.stream(Graql.match(
                         Pattern.var("x").has(attributeType, Pattern.var()),
                         Pattern.var("x").isa(Pattern.label(type))
-                ).iterator().hasNext();
+                ), false).iterator().hasNext();
                 if (patternExist) return true;
             }
         }
@@ -779,7 +772,7 @@ class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
         List<Pattern> checkSubtypes = scopeTypeLabels().stream()
                 .map(type -> Pattern.var("x").isa(Pattern.label(type))).collect(Collectors.toList());
 
-        return tx.graql().infer(false).match(Pattern.or(checkSubtypes)).iterator().hasNext();
+        return tx.stream(Graql.match(Pattern.or(checkSubtypes)), false).iterator().hasNext();
     }
 
     /**

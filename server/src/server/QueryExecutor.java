@@ -18,15 +18,15 @@
 
 package grakn.core.server;
 
+import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.answer.Answer;
-import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
 
@@ -53,5 +53,5 @@ public interface QueryExecutor {
 
     <T extends Answer> Stream<T> run(AggregateQuery<T> query);
 
-    <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query);
+    <T extends Answer> Stream<T> run(ComputeQuery<T> query);
 }

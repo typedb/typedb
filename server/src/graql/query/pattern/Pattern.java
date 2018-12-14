@@ -21,10 +21,13 @@ package grakn.core.graql.query.pattern;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Label;
+import grakn.core.graql.parser.Parser;
+import grakn.core.graql.query.Graql;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -41,6 +44,15 @@ import static java.util.stream.Collectors.toSet;
 public interface Pattern {
 
     AtomicLong counter = new AtomicLong(System.currentTimeMillis() * 1000);
+    Parser parser = new Parser();
+
+    static Pattern parse(String pattern) {
+        return parser.parsePattern(pattern);
+    }
+
+    static List<Pattern> parseList(String pattern) {
+        return parser.parsePatterns(pattern);
+    }
 
     /**
      * @param name the name of the variable

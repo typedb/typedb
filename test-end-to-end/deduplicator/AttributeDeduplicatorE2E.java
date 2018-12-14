@@ -4,6 +4,7 @@ package grakn.core.deduplicator;
 import grakn.core.client.Grakn;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.query.Graql;
 import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -98,13 +99,12 @@ public class AttributeDeduplicatorE2E {
 
     private void defineParentChildSchema(Grakn.Session session) {
         try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answer = tx.graql().define(
+            List<ConceptMap> answer = tx.execute(Graql.define(
                     label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
                     label("parent").sub("role"),
                     label("child").sub("role"),
                     label("person").sub("entity").has("name").plays("parent").plays("child"),
-                    label("parentchild").sub("relationship").relates("parent").relates("child")
-            ).execute();
+                    label("parentchild").sub("relationship").relates("parent").relates("child")));
             tx.commit();
         }
     }
@@ -126,7 +126,7 @@ public class AttributeDeduplicatorE2E {
         for (String name: duplicatedNames) {
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
                 try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                    List<ConceptMap> answer = tx.graql().insert(var().isa("name").val(name)).execute();
+                    List<ConceptMap> answer = tx.execute(Graql.insert(var().isa("name").val(name)));
                     tx.commit();
                 }
                 return null;
@@ -173,7 +173,7 @@ public class AttributeDeduplicatorE2E {
 
     private int countTotalNames(Grakn.Session session) {
         try (Grakn.Transaction tx = session.transaction(Transaction.Type.READ)) {
-            return tx.graql().match(var("x").isa("name")).aggregate(count()).execute().get(0).number().intValue();
+            return tx.execute(Graql.match(var("x").isa("name")).aggregate(count())).get(0).number().intValue();
         }
     }
 }

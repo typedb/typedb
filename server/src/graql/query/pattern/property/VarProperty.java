@@ -18,15 +18,14 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.query.Match;
-import grakn.core.server.Transaction;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.common.util.CommonUtil;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -98,7 +97,7 @@ public abstract class VarProperty {
     }
 
     /**
-     * Check if the given property can be used in a {@link Match}
+     * Check if the given property can be used in a match clause
      */
     public final void checkValid(Transaction graph, Statement var) throws GraqlQueryException {
         checkValidProperty(graph, var);

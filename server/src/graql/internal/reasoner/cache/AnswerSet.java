@@ -19,6 +19,7 @@
 package grakn.core.graql.internal.reasoner.cache;
 
 import grakn.core.graql.answer.ConceptMap;
+
 import java.util.Set;
 import java.util.stream.Stream;
 

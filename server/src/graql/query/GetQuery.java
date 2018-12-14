@@ -18,37 +18,36 @@
 
 package grakn.core.graql.query;
 
-import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
-import java.util.stream.Stream;
+import java.util.Collections;
+import java.util.Set;
 
 import static java.util.stream.Collectors.joining;
 
 /**
- * A query used for finding data in a knowledge base that matches the given patterns. The {@link GetQuery} is a
- * pattern-matching query. The patterns are described in a declarative fashion, then the {@link GetQuery} will traverse
+ * A query used for finding data in a knowledge base that matches the given patterns. The Get Query is a
+ * pattern-matching query. The patterns are described in a declarative fashion, then the query will traverse
  * the knowledge base in an efficient fashion to find any matching answers.
  */
 public class GetQuery implements Query<ConceptMap> {
 
-    private final ImmutableSet<Variable> vars;
-    private final Match match;
+    private final Set<Variable> vars;
+    private final MatchClause match;
 
-    public GetQuery(ImmutableSet<Variable> vars, Match match) {
+    public GetQuery(Set<Variable> vars, MatchClause match) {
         if (vars == null) {
             throw new NullPointerException("Null vars");
         }
-        this.vars = vars;
+        this.vars = Collections.unmodifiableSet(vars);
         if (match == null) {
             throw new NullPointerException("Null match");
         }
         for (Variable var : vars) {
-            if (!match.admin().getSelectedNames().contains(var)) {
+            if (!match.getSelectedNames().contains(var)) {
                 throw GraqlQueryException.varNotInQuery(var);
             }
         }
@@ -56,43 +55,18 @@ public class GetQuery implements Query<ConceptMap> {
     }
 
     @CheckReturnValue
-    public ImmutableSet<Variable> vars() {
+    public Set<Variable> vars() {
         return vars;
     }
 
     @CheckReturnValue
-    public Match match() {
+    public MatchClause match() {
         return match;
-    }
-
-    @Override
-    public GetQuery withTx(Transaction tx) {
-        return new GetQuery(vars(), match().withTx(tx).admin());
-    }
-
-    @Override
-    public final Transaction tx() {
-        return match().admin().tx();
-    }
-
-    @Override
-    public boolean isReadOnly() {
-        return true;
-    }
-
-    @Override
-    public final Stream<ConceptMap> stream() {
-        return executor().run(this);
     }
 
     @Override
     public String toString() {
         return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
-    }
-
-    @Override
-    public final Boolean inferring() {
-        return match().admin().inferring();
     }
 
     @Override

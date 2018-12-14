@@ -18,10 +18,10 @@
 
 package grakn.core.server.session;
 
-import grakn.core.server.session.olap.TransactionOLAPFactory;
-import grakn.core.server.session.oltp.TransactionOLTPFactory;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.server.session.olap.TransactionOLAPFactory;
+import grakn.core.server.session.oltp.TransactionOLTPFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

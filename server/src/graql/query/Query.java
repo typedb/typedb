@@ -18,79 +18,14 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.Transaction;
-import grakn.core.server.QueryExecutor;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.answer.Answer;
-
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A Graql query of any kind. May read and write to the graph.
  *
  * @param <T> The result type after executing the query
  */
-public interface Query<T extends Answer> extends Iterable<T> {
-
-    /**
-     * @param tx the graph to execute the query on
-     * @return a new query with the graph set
-     */
-    @CheckReturnValue
-    Query<T> withTx(Transaction tx);
-
-    /**
-     * @return a {@link Stream} of T, where T is a special type of {@link Answer}
-     */
-    @CheckReturnValue
-    Stream<T> stream();
-
-    /**
-     * @return a {@link List} of T, where T is a special type of {@link Answer}
-     */
-    default List<T> execute() {
-        return stream().collect(Collectors.toList());
-    }
-
-    /**
-     * @return an {@link Iterator} of T, where T is a special type of {@link Answer}
-     */
-    @Override
-    @CheckReturnValue
-    default Iterator<T> iterator() {
-        return stream().iterator();
-    }
-
-    /**
-     * @return the special type of {@link QueryExecutor}, depending on whether the query is executed on the client or
-     * server side.
-     */
-    default QueryExecutor executor() {
-        if (tx() == null) throw GraqlQueryException.noTx();
-        return tx().queryExecutor();
-    }
-
-    /**
-     * @return boolean that indicates whether this query will modify the graph
-     */
-    @CheckReturnValue
-    boolean isReadOnly();
-
-    /**
-     * @return the transaction {@link Transaction} associated with this query
-     */
-    @Nullable
-    Transaction tx();
-
-    /**
-     * @return boolean that indicates whether this query will perform rule-based inference during execution
-     */
-    Boolean inferring();
+public interface Query<T extends Answer> {
 
     /**
      * Graql commands to determine the type of query

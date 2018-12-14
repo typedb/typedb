@@ -18,9 +18,9 @@
 
 package grakn.core.graql.query.pattern;
 
-import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.LabelProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

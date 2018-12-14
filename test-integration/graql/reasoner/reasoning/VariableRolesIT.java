@@ -18,27 +18,25 @@
 
 package grakn.core.graql.reasoner.reasoning;
 
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
-import java.util.List;
-
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.List;
+
 import static grakn.core.graql.query.pattern.Pattern.var;
-import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class VariableRolesIT {
 
@@ -64,7 +62,6 @@ public class VariableRolesIT {
     @Test
     public void binaryRelationWithDifferentVariantsOfVariableRoles(){
         try(TransactionImpl tx = variableRoleSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
 
             //9 binary-base instances with {role, role2} = 2 roles for r2 -> 18 answers
             /*
@@ -77,8 +74,8 @@ public class VariableRolesIT {
                     "$r1 label 'role1';" +
                     "get $a, $b, $r2;";
 
-            List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-            List<ConceptMap> equivalentAnswers = qb.<GetQuery>parse(equivalentQueryString).execute();
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+            List<ConceptMap> equivalentAnswers = tx.execute(Graql.<GetQuery>parse(equivalentQueryString));
             assertEquals(18, answers.size());
             assertTrue(CollectionUtils.isEqualCollection(answers, equivalentAnswers));
 
@@ -93,14 +90,14 @@ public class VariableRolesIT {
                     "$r1 label 'role';" +
                     "get $a, $b, $r2;";
 
-            GetQuery query2 = qb.<GetQuery>parse(queryString2);
+            GetQuery query2 = Graql.<GetQuery>parse(queryString2);
             //System.out.println(query2);
-            //List<ConceptMap> answers2 = query2.execute();
+            //List<ConceptMap> answers2 = tx.execute(query2);
             //System.out.println();
 
-            GetQuery equivQuery2 = qb.<GetQuery>parse(equivalentQueryString2);
+            GetQuery equivQuery2 = Graql.<GetQuery>parse(equivalentQueryString2);
             System.out.println(equivQuery2);
-            List<ConceptMap> equivalentAnswers2 = equivQuery2.execute();
+            List<ConceptMap> equivalentAnswers2 = tx.execute(equivQuery2);
             System.out.println();
 
             //assertEquals(27, answers2.size());
@@ -118,8 +115,8 @@ public class VariableRolesIT {
                     "(role1: $a, role2: $b) isa binary-base;" +
                     "get;";
 
-            List<ConceptMap> answers3 = qb.<GetQuery>parse(queryString3).execute();
-            List<ConceptMap> equivalentAnswers3 = qb.<GetQuery>parse(equivalentQueryString3).execute();
+            List<ConceptMap> answers3 = tx.execute(Graql.<GetQuery>parse(queryString3));
+            List<ConceptMap> equivalentAnswers3 = tx.execute(Graql.<GetQuery>parse(equivalentQueryString3));
             assertEquals(9, answers3.size());
             assertCollectionsEqual(answers3, equivalentAnswers3);
 
@@ -128,7 +125,7 @@ public class VariableRolesIT {
                     "($r1: $a, $r2: $b) isa binary-base;" +
                     "get;";
 
-            List<ConceptMap> answers4 = qb.<GetQuery>parse(queryString4).execute();
+            List<ConceptMap> answers4 = tx.execute(Graql.<GetQuery>parse(queryString4));
             assertEquals(63, answers4.size());
             */
         }
@@ -193,8 +190,7 @@ public class VariableRolesIT {
 
     private void ternaryNaryRelationWithVariableRoles(String label, int conceptDOF){
         try(TransactionImpl tx = variableRoleSession.transaction(Transaction.Type.WRITE)) {
-            QueryBuilder qb = tx.graql().infer(true);
-            final int arity = (int) tx.getRelationshipType(label).roles().count();
+                        final int arity = (int) tx.getRelationshipType(label).roles().count();
 
             Statement resourcePattern = var("a1").has("name", "a");
 
@@ -203,11 +199,11 @@ public class VariableRolesIT {
             for (int i = 2; i <= arity; i++) pattern = pattern.rel(var("r" + i), "a" + i);
             pattern = pattern.isa(label);
 
-            List<ConceptMap> answers = qb.match(pattern, resourcePattern).get().execute();
+            List<ConceptMap> answers = tx.execute(Graql.match(pattern, resourcePattern).get());
             assertEquals(answerCombinations(arity - 1, conceptDOF), answers.size());
 
             //We get extra conceptDOF degrees of freedom by removing the resource constraint on $a1 and the set is symmetric.
-            List<ConceptMap> answers2 = qb.match(pattern).get().execute();
+            List<ConceptMap> answers2 = tx.execute(Graql.match(pattern).get());
             assertEquals(answerCombinations(arity - 1, conceptDOF) * conceptDOF, answers2.size());
 
 
@@ -216,7 +212,7 @@ public class VariableRolesIT {
             for (int i = 1; i <= arity; i++) generalPattern = generalPattern.rel(var("r" + i), "a" + i);
             generalPattern = generalPattern.isa(label);
 
-            List<ConceptMap> answers3 = qb.match(generalPattern).get().execute();
+            List<ConceptMap> answers3 = tx.execute(Graql.match(generalPattern).get());
             assertEquals(answerCombinations(arity, conceptDOF), answers3.size());
         }
     }

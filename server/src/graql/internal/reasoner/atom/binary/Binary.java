@@ -18,33 +18,33 @@
 
 package grakn.core.graql.internal.reasoner.atom.binary;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.admin.UnifierComparison;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.admin.UnifierComparison;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
-import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
+
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *

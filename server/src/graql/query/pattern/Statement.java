@@ -18,22 +18,23 @@
 
 package grakn.core.graql.query.pattern;
 
+import com.google.common.collect.ImmutableMultiset;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.util.StringUtil;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.IsAbstractProperty;
+import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.LabelProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
@@ -45,11 +46,10 @@ import grakn.core.graql.query.pattern.property.SubExplicitProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.ThenProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
-import grakn.core.common.util.CommonUtil;
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
+import grakn.core.graql.query.predicate.ValuePredicate;
+import grakn.core.graql.util.StringUtil;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -100,7 +100,19 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Optional<Label> getTypeLabel() {
-        return getProperty(LabelProperty.class).map(LabelProperty::label);
+        return getProperty(LabelProperty.class).map(labelProperty -> labelProperty.label());
+    }
+
+    /**
+     * @return all type names that this variable refers to
+     */
+    @CheckReturnValue
+    public final Set<Label> getTypeLabels() {
+        return getProperties()
+                .flatMap(varProperty -> varProperty.getTypes())
+                .map(statement -> statement.getTypeLabel())
+                .flatMap(optional -> CommonUtil.optionalToStream(optional))
+                .collect(toSet());
     }
 
     /**
@@ -173,17 +185,6 @@ public abstract class Statement implements Pattern {
         }
 
         return vars;
-    }
-
-    /**
-     * @return all type names that this variable refers to
-     */
-    @CheckReturnValue
-    public final Set<Label> getTypeLabels() {
-        return getProperties()
-                .flatMap(VarProperty::getTypes)
-                .map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream)
-                .collect(toSet());
     }
 
     @Override

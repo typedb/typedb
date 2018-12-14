@@ -18,8 +18,8 @@
 
 package grakn.core.distribution;
 
-import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
 import org.junit.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 

@@ -18,12 +18,12 @@
 
 package grakn.core.server.session.oltp;
 
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.internal.Schema;
+import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.graql.internal.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
 import org.apache.tinkerpop.gremlin.structure.Element;

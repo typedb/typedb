@@ -18,7 +18,6 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
@@ -27,12 +26,13 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.server.exception.TransactionException;
+import grakn.core.graql.internal.Schema;
+import grakn.core.server.Transaction;
 import grakn.core.server.exception.PropertyNotUniqueException;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashSet;

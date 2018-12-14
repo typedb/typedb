@@ -18,8 +18,7 @@
 
 package grakn.core.server.kb;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
@@ -27,9 +26,10 @@ import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
-import grakn.core.server.exception.InvalidKBException;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.common.exception.ErrorMessage;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.exception.InvalidKBException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

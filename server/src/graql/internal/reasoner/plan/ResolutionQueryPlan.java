@@ -18,12 +18,12 @@
 
 package grakn.core.graql.internal.reasoner.plan;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.server.session.TransactionImpl;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.Comparator;

@@ -17,12 +17,12 @@
  */
 package grakn.core.server;
 
+import com.google.common.base.Stopwatch;
+import grakn.core.common.config.Config;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.util.LockManager;
 import grakn.core.server.util.ServerID;
-import grakn.core.common.config.Config;
-import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

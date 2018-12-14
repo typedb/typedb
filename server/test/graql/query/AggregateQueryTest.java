@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.query.pattern.Pattern;
 import org.junit.Test;
@@ -29,8 +28,8 @@ import static org.junit.Assert.assertNotEquals;
 
 public class AggregateQueryTest {
 
-    private final MatchAdmin match1 = Graql.match(var("x").isa("movie")).admin();
-    private final MatchAdmin match2 = Graql.match(var("y").isa("movie")).admin();
+    private final MatchClause match1 = Graql.match(var("x").isa("movie"));
+    private final MatchClause match2 = Graql.match(var("y").isa("movie"));
 
     private final Aggregate<Value> aggregate1 = Graql.count();
     private final Aggregate<Value> aggregate2 = Graql.sum(Pattern.var("x"));

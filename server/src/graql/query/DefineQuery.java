@@ -19,67 +19,29 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.server.Transaction;
 
-import javax.annotation.Nullable;
-import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-/**
- * Implementation for {@link DefineQuery}
- */
 public class DefineQuery implements Query<ConceptMap> {
 
-    private final Transaction tx;
-    private final Collection<? extends Statement> statements;
+    private final List<? extends Statement> statements;
 
-    public DefineQuery(@Nullable Transaction tx, Collection<? extends Statement> statements) {
-        this.tx = tx;
+    public DefineQuery(List<? extends Statement> statements) {
         if (statements == null) {
             throw new NullPointerException("Null statements");
         }
         this.statements = statements;
     }
 
-    @Nullable
-    @Override
-    public Transaction tx() {
-        return tx;
-    }
-
-    /**
-     * Get the {@link Statement}s describing what {@link SchemaConcept}s to define.
-     */
-    public Collection<? extends Statement> statements() {
+    public List<? extends Statement> statements() {
         return statements;
-    }
-
-    @Override
-    public Query<ConceptMap> withTx(Transaction tx) {
-        return new DefineQuery(tx, statements);
-    }
-
-    @Override
-    public final Stream<ConceptMap> stream() {
-        return executor().run(this);
-    }
-
-    @Override
-    public boolean isReadOnly() {
-        return false;
     }
 
     @Override
     public String toString() {
         return "define " + statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
-    }
-
-    @Override
-    public Boolean inferring() {
-        return false;
     }
 
     @Override
@@ -89,8 +51,7 @@ public class DefineQuery implements Query<ConceptMap> {
         }
         if (o instanceof DefineQuery) {
             DefineQuery that = (DefineQuery) o;
-            return ((this.tx == null) ? (that.tx() == null) : this.tx.equals(that.tx()))
-                    && (this.statements.equals(that.statements()));
+            return this.statements.equals(that.statements());
         }
         return false;
     }
@@ -98,8 +59,6 @@ public class DefineQuery implements Query<ConceptMap> {
     @Override
     public int hashCode() {
         int h = 1;
-        h *= 1000003;
-        h ^= (tx == null) ? 0 : this.tx.hashCode();
         h *= 1000003;
         h ^= this.statements.hashCode();
         return h;

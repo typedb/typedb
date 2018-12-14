@@ -19,13 +19,13 @@
 package grakn.core.graql.internal.reasoner.rule;
 
 import com.google.common.base.Equivalence;
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 
 import java.util.HashSet;

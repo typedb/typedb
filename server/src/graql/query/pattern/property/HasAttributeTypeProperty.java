@@ -32,7 +32,6 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
-import grakn.core.graql.query.Match;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
@@ -54,7 +53,7 @@ import static grakn.core.graql.query.pattern.Pattern.var;
  * This property is defined as an implicit ontological structure between a {@link Type} and a {@link AttributeType},
  * including one implicit {@link RelationshipType} and two implicit {@link Role}s. The labels of these types are derived
  * from the label of the {@link AttributeType}.
- * Like {@link HasAttributeProperty}, if this is not a key and is used in a {@link Match} it will not use the implicit
+ * Like {@link HasAttributeProperty}, if this is not a key and is used in a match clause it will not use the implicit
  * structure - instead, it will match if there is any kind of relation type connecting the two types.
  */
 public class HasAttributeTypeProperty extends VarProperty {

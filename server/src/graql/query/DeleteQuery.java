@@ -18,20 +18,17 @@
 
 package grakn.core.graql.query;
 
-import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 
 /**
- * A query for deleting concepts from a {@link Match} clause.
+ * A query for deleting concepts from a match clause clause.
  * The delete operation to perform is based on what Statement objects
  * are provided to it. If only variable names are provided, then the delete
  * query will delete the concept bound to each given variable name. If property
@@ -40,10 +37,10 @@ import static java.util.stream.Collectors.joining;
  */
 public class DeleteQuery implements Query<ConceptSet> {
 
-    private final Match match;
+    private final MatchClause match;
     private final Set<Variable> vars;
 
-    public DeleteQuery(Match match, Set<Variable> vars) {
+    public DeleteQuery(MatchClause match, Set<Variable> vars) {
         if (match == null) {
             throw new NullPointerException("Null match");
         }
@@ -52,53 +49,21 @@ public class DeleteQuery implements Query<ConceptSet> {
             throw new NullPointerException("Null vars");
         }
         for (Variable var : vars) {
-            if (!match.admin().getSelectedNames().contains(var)) {
+            if (!match.getSelectedNames().contains(var)) {
                 throw GraqlQueryException.varNotInQuery(var);
             }
         }
         this.vars = vars;
     }
 
-    /**
-     * @return the {@link Match} this delete query is operating on
-     */
     @CheckReturnValue
-    public Match match() {
+    public MatchClause match() {
         return match;
     }
 
-    /**
-     * Get the {@link Variable}s to delete on each result of {@link #match()}.
-     */
     @CheckReturnValue
     public Set<Variable> vars() {
         return vars;
-    }
-
-
-    @Override
-    public Stream<ConceptSet> stream() {
-        return executor().run(this);
-    }
-
-    @Override
-    public final boolean isReadOnly() {
-        return false;
-    }
-
-    @Override
-    public final Transaction tx() {
-        return match().admin().tx();
-    }
-
-    @Override
-    public DeleteQuery withTx(Transaction tx) {
-        return new DeleteQuery(match().withTx(tx).admin(), vars);
-    }
-
-    @CheckReturnValue
-    public DeleteQuery admin() {
-        return this;
     }
 
     @Override
@@ -111,12 +76,6 @@ public class DeleteQuery implements Query<ConceptSet> {
 
         return query.toString();
     }
-
-    @Override
-    public final Boolean inferring() {
-        return match().admin().inferring();
-    }
-
     @Override
     public boolean equals(Object o) {
         if (o == this) {

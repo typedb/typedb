@@ -18,13 +18,12 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
+import com.google.auto.value.AutoValue;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.graql.internal.Schema;
-import com.google.auto.value.AutoValue;
-import java.util.Map;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -32,6 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.Map;
 
 import static grakn.core.graql.util.StringUtil.idToString;
 

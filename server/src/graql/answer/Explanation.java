@@ -16,22 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.admin;
+package grakn.core.graql.answer;
 
-import com.google.common.collect.ImmutableList;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.ReasonerQuery;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Set;
 
 /**
- *
- * <p>
  * Base class for explanation classes.
- * </p>
- *
- *
  */
 public interface Explanation {
 
@@ -62,7 +57,7 @@ public interface Explanation {
      * @return answers this explanation is dependent on
      */
     @CheckReturnValue
-    ImmutableList<ConceptMap> getAnswers();
+    List<ConceptMap> getAnswers();
 
     /**
      * @return set of answers corresponding to the explicit path

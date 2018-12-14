@@ -1,26 +1,27 @@
 package grakn.core.graql.reasoner.cache;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.UndefineQuery;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.cache.RuleCache;
-import grakn.core.rule.GraknTestServer;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -53,7 +54,7 @@ public class RuleCacheIT {
             InputStream inputStream = RuleCacheIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
-            tx.graql().parser().parseList(s).forEach(Query::execute);
+            Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e) {
             System.err.println(e);
@@ -86,8 +87,8 @@ public class RuleCacheIT {
         tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
         String recordPatternString = "{(someRole: $x, subRole: $y) isa reifiable-relation;}";
         String retrievePatternString = "{(someRole: $p1, subRole: $p2) isa reifiable-relation;}";
-        Conjunction<Statement> recordPattern = conjunction(recordPatternString, tx);
-        Conjunction<Statement> retrievePattern = conjunction(retrievePatternString, tx);
+        Conjunction<Statement> recordPattern = conjunction(recordPatternString);
+        Conjunction<Statement> retrievePattern = conjunction(retrievePatternString);
         recordQuery = ReasonerQueries.atomic(recordPattern, tx);
         retrieveQuery = ReasonerQueries.atomic(retrievePattern, tx);
         retrieveToRecordUnifier = retrieveQuery.getMultiUnifier(recordQuery).getUnifier();
@@ -129,8 +130,8 @@ public class RuleCacheIT {
 
     @Test
     public void whenAddingARule_cacheContainsUpdatedEntry(){
-        Pattern when = tx.graql().parser().parsePattern("{$x isa entity;$y isa entity;}");
-        Pattern then = tx.graql().parser().parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
+        Pattern when = Pattern.parse("{$x isa entity;$y isa entity;}");
+        Pattern then = Pattern.parse("{(someRole: $x, subRole: $y) isa binary;}");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
@@ -143,8 +144,8 @@ public class RuleCacheIT {
         tx.close();
         tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
 
-        Pattern when = tx.graql().parser().parsePattern("{$x isa entity;$y isa entity;}");
-        Pattern then = tx.graql().parser().parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
+        Pattern when = Pattern.parse("{$x isa entity;$y isa entity;}");
+        Pattern then = Pattern.parse("{(someRole: $x, subRole: $y) isa binary;}");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
@@ -158,7 +159,7 @@ public class RuleCacheIT {
     @Ignore
     @Test
     public void whenDeletingARule_cacheContainsUpdatedEntry(){
-        tx.graql().parse("undefine $x sub rule label 'rule-0';").execute();
+        tx.execute(Graql.<UndefineQuery>parse("undefine $x sub rule label 'rule-0';"));
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
         Set<Rule> rules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
@@ -166,8 +167,8 @@ public class RuleCacheIT {
     }
 
 
-    private Conjunction<Statement> conjunction(String patternString, Transaction graph){
-        Set<Statement> vars = graph.graql().parser().parsePattern(patternString)
+    private Conjunction<Statement> conjunction(String patternString){
+        Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);

@@ -17,9 +17,16 @@
  */
 package grakn.core.graql.internal.reasoner.atom.binary;
 
-import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
-import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
-import grakn.core.server.Transaction;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.admin.UnifierComparison;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -28,39 +35,30 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.admin.UnifierComparison;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.property.HasAttributeProperty;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
+import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
+import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.HasAttributeProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.concept.AttributeTypeImpl;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.RelationshipImpl;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.internal.Schema;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
-import com.google.common.collect.Iterables;
-
-import java.util.stream.Stream;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 

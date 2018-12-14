@@ -46,7 +46,7 @@ public class RuleCache {
                 .filter(r -> {
                     if (fruitlessRules.contains(r.getRule())) return false;
                     if (r.getBody().isRuleResolvable() || checkedRules.contains(r.getRule())) return true;
-                    boolean fruitless = !r.getBody().getQuery().stream().findFirst().isPresent();
+                    boolean fruitless = !r.getBody().tx().stream(r.getBody().getQuery(), false).findFirst().isPresent();
                     if (fruitless) {
                         fruitlessRules.add(r.getRule());
                         return false;

@@ -18,8 +18,8 @@
 
 package grakn.core.server.session.cache;
 
-import grakn.core.graql.concept.Type;
-import grakn.core.server.Transaction;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
@@ -30,11 +30,11 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
+import grakn.core.graql.concept.Type;
+import grakn.core.server.Transaction;
 import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 
 import java.util.HashMap;
 import java.util.HashSet;

@@ -18,17 +18,17 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Type;
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import grakn.core.server.exception.TransactionException;
+import grakn.core.graql.concept.Type;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.rule.GraknTestServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

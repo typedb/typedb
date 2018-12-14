@@ -25,9 +25,9 @@ java_library(
     srcs = glob(["**/*.java"], exclude = ["**/test/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//server",
+        "//common:common",
         "//protocol:protocol-java",
-        "//common",
+        "//server:server",
 
         # External dependencies
         "//dependencies/maven/artifacts/grakn/benchmark:lib",

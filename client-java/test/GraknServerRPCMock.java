@@ -18,6 +18,9 @@
 
 package grakn.core.client.test;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.KeyspaceServiceGrpc.KeyspaceServiceImplBase;
@@ -25,9 +28,6 @@ import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.protocol.SessionServiceGrpc.SessionServiceImplBase;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import io.grpc.stub.StreamObserver;
 import org.junit.rules.ExternalResource;
 

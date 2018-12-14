@@ -22,8 +22,8 @@ import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.HashSet;
 import java.util.Map;

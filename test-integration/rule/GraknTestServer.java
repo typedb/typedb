@@ -1,8 +1,11 @@
 package grakn.core.rule;
 
+import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
+import grakn.core.common.http.SimpleURI;
+import grakn.core.server.GraknStorage;
 import grakn.core.server.Server;
 import grakn.core.server.ServerFactory;
-import grakn.core.server.GraknStorage;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
@@ -12,12 +15,9 @@ import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.SessionStore;
-import grakn.core.server.util.ServerID;
 import grakn.core.server.util.LockManager;
+import grakn.core.server.util.ServerID;
 import grakn.core.server.util.ServerLockManager;
-import grakn.core.common.config.Config;
-import grakn.core.common.config.ConfigKey;
-import grakn.core.common.http.SimpleURI;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.ExternalResource;

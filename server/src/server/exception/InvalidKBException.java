@@ -18,11 +18,11 @@
 
 package grakn.core.server.exception;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.Transaction;
-import grakn.core.common.exception.ErrorMessage;
 
 import java.util.List;
 

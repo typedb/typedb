@@ -18,17 +18,17 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.util.StringUtil;
-import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.internal.Schema;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
+import grakn.core.graql.query.predicate.ValuePredicate;
+import grakn.core.graql.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;

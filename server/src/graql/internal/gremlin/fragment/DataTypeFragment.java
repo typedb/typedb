@@ -18,10 +18,10 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
+import com.google.auto.value.AutoValue;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionImpl;
-import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

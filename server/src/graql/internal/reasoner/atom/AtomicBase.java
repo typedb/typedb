@@ -18,16 +18,16 @@
 
 package grakn.core.graql.internal.reasoner.atom;
 
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
+import com.google.common.collect.Sets;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.Rule;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.common.exception.ErrorMessage;
-import com.google.common.collect.Sets;
 
 import javax.annotation.Nullable;
 import java.util.Collections;

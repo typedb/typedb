@@ -21,7 +21,7 @@ package grakn.core.server.session;
 import com.google.auto.value.AutoValue;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -35,8 +35,8 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.QueryExecutorImpl;
-import grakn.core.graql.query.QueryBuilder;
-import grakn.core.server.QueryExecutor;
+import grakn.core.graql.query.MatchClause;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
@@ -75,6 +75,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
@@ -297,11 +298,6 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
             graphTraversalSource = getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance());
         }
         return graphTraversalSource;
-    }
-
-    @Override
-    public QueryBuilder graql() {
-        return new QueryBuilder(this);
     }
 
     public ElementFactory factory() {
@@ -796,8 +792,30 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
     }
 
     @Override
-    public final QueryExecutor queryExecutor() {
-        return QueryExecutorImpl.create(this);
+    public final QueryExecutorImpl executor() {
+        return new QueryExecutorImpl(this, true);
+    }
+
+    @Override
+    public final QueryExecutorImpl executor(boolean infer) {
+        return new QueryExecutorImpl(this, infer);
+    }
+
+    public Stream<ConceptMap> stream(MatchClause matchClause) {
+        return executor().run(matchClause);
+
+    }
+
+    public Stream<ConceptMap> stream(MatchClause matchClause, boolean infer) {
+        return executor(infer).run(matchClause);
+    }
+
+    public List<ConceptMap> execute(MatchClause matchClause) {
+        return stream(matchClause).collect(Collectors.toList());
+    }
+
+    public List<ConceptMap> execute(MatchClause matchClause, boolean infer) {
+        return stream(matchClause, infer).collect(Collectors.toList());
     }
 
     /**

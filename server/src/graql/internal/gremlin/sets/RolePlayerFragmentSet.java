@@ -18,23 +18,23 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
-import grakn.core.graql.internal.Schema;
-import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.VarProperty;
 
-import java.util.Objects;
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 

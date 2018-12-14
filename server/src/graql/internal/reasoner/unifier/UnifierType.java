@@ -18,26 +18,21 @@
 
 package grakn.core.graql.internal.reasoner.unifier;
 
-import com.google.common.collect.Sets;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.UnifierComparison;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
 import grakn.core.graql.internal.reasoner.cache.QueryCache;
 import grakn.core.graql.internal.reasoner.cache.StructuralCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;

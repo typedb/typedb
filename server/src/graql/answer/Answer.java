@@ -19,16 +19,15 @@
 package grakn.core.graql.answer;
 
 import grakn.core.server.exception.TransactionException;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.admin.Explanation;
-import com.google.common.collect.Sets;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
- * An object that contains the answer of every Graql {@link Query}
+ * An object that contains the answer of every Graql Query.
+ *
  * @param <T> the data structure in which the specific type of Answer is contained in.
  */
 public interface Answer<T> {
@@ -72,8 +71,9 @@ public interface Answer<T> {
     @CheckReturnValue
     default Set<Explanation> explanations() {
         if (this.explanation() == null) return null;
-        Set<Explanation> explanations = Sets.newHashSet(this.explanation());
-        this.explanation().getAnswers().forEach(ans -> ans.explanations().forEach(explanations::add));
+        Set<Explanation> explanations = new HashSet<>();
+        explanations.add(this.explanation());
+        this.explanation().getAnswers().forEach(ans -> explanations.addAll(ans.explanations()));
         return explanations;
     }
 }

@@ -30,8 +30,6 @@ import grakn.core.client.rpc.Transceiver;
 import grakn.core.common.exception.Validator;
 import grakn.core.common.http.SimpleURI;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.Query;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -42,7 +40,8 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
@@ -197,13 +196,13 @@ public final class Grakn {
         }
 
         @Override
-        public QueryBuilder graql() {
-            return new QueryBuilder(this);
+        public QueryExecutor executor() {
+            return new RemoteQueryExecutor(this, true);
         }
 
         @Override
-        public QueryExecutor queryExecutor() {
-            return RemoteQueryExecutor.create(this);
+        public QueryExecutor executor(boolean infer) {
+            return new RemoteQueryExecutor(this, infer);
         }
 
 
@@ -238,7 +237,11 @@ public final class Grakn {
         }
 
         public java.util.Iterator query(Query<?> query) {
-            transceiver.send(RequestBuilder.Transaction.query(query.toString(), query.inferring()));
+            return query(query, true);
+        }
+
+        public java.util.Iterator query(Query<?> query, boolean infer) {
+            transceiver.send(RequestBuilder.Transaction.query(query.toString(), infer));
             SessionProto.Transaction.Res txResponse = responseOrThrow();
             int iteratorId = txResponse.getQueryIter().getId();
             return new Iterator<>(

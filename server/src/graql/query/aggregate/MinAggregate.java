@@ -19,10 +19,9 @@
 package grakn.core.graql.query.aggregate;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.Aggregate;
-import grakn.core.graql.query.Match;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.answer.Value;
+import grakn.core.graql.query.Aggregate;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.util.PrimitiveNumberComparator;
 
 import java.util.Collections;
@@ -30,7 +29,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Aggregate that finds minimum of a {@link Match}.
+ * Aggregate that finds minimum of a match clause.
  */
 public class MinAggregate implements Aggregate<Value> {
 

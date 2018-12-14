@@ -18,13 +18,13 @@
 
 package grakn.core.graql.internal.reasoner.query;
 
+import com.google.common.collect.Iterables;
 import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.session.TransactionImpl;
-import com.google.common.collect.Iterables;
 
 import java.util.List;
 import java.util.Set;

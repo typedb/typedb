@@ -23,11 +23,11 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  * Base class for storing query resolutions based on alpha-equivalence.

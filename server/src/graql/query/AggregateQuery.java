@@ -19,22 +19,20 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.Answer;
-import grakn.core.server.Transaction;
 
 import javax.annotation.Nullable;
-import java.util.stream.Stream;
 
 /**
- * An aggregate query produced from a {@link Match}.
+ * An aggregate query produced from a match clause
  *
  * @param <T> the type of the result of the aggregate query
  */
 public class AggregateQuery<T extends Answer> implements Query<T> {
 
-    private final Match match;
+    private final MatchClause match;
     private final Aggregate<T> aggregate;
 
-    public AggregateQuery(@Nullable Match match, Aggregate<T> aggregate) {
+    public AggregateQuery(@Nullable MatchClause match, Aggregate<T> aggregate) {
         this.match = match;
         if (aggregate == null) {
             throw new NullPointerException("Null aggregate");
@@ -42,50 +40,18 @@ public class AggregateQuery<T extends Answer> implements Query<T> {
         this.aggregate = aggregate;
     }
 
-    /**
-     * Get the {@link Match} that this {@link AggregateQuery} will operate on.
-     */
     @Nullable
-    public Match match() {
+    public MatchClause match() {
         return match;
     }
 
-    /**
-     * Get the {@link Aggregate} that will be executed against the results of the {@link #match()}.
-     */
     public Aggregate<T> aggregate() {
         return aggregate;
     }
 
     @Override
-    public final AggregateQuery<T> withTx(Transaction tx) {
-        return new AggregateQuery<>(match().withTx(tx).admin(), aggregate());
-    }
-
-    @Override
-    public final Stream<T> stream() {
-        return executor().run(this);
-    }
-
-    @Override
-    public boolean isReadOnly() {
-        //TODO An aggregate query may modify the graph if using a user-defined aggregate method. See TP # 13731.
-        return true;
-    }
-
-    @Override
-    public final Transaction tx() {
-        return match().admin().tx();
-    }
-
-    @Override
     public final String toString() {
         return match().toString() + " aggregate " + aggregate().toString() + ";";
-    }
-
-    @Override
-    public final Boolean inferring() {
-        return match().admin().inferring();
     }
 
     @Override

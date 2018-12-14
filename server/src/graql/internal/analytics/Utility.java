@@ -18,13 +18,14 @@
 
 package grakn.core.graql.internal.analytics;
 
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.Graql;
+import grakn.core.server.Transaction;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -122,12 +123,12 @@ public class Utility {
      */
     public static ConceptId getResourceEdgeId(Transaction graph, ConceptId conceptId1, ConceptId conceptId2) {
         if (mayHaveResourceEdge(graph, conceptId1, conceptId2)) {
-            Optional<Concept> firstConcept = graph.graql().match(
+            Optional<Concept> firstConcept = graph.stream(Graql.match(
                     var("x").id(conceptId1),
                     var("y").id(conceptId2),
                     var("z").rel(var("x")).rel(var("y")))
-                    .get("z")
-                    .stream().map(answer -> answer.get("z"))
+                    .get("z"))
+                    .map(answer -> answer.get("z"))
                     .findFirst();
             if (firstConcept.isPresent()) {
                 return firstConcept.get().id();

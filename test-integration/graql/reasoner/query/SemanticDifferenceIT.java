@@ -21,10 +21,7 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Role;
@@ -36,23 +33,27 @@ import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 
+@SuppressWarnings("Duplicates")
 public class SemanticDifferenceIT {
 
     private static String resourcePath = "test-integration/graql/reasoner/resources/";
@@ -92,7 +93,7 @@ public class SemanticDifferenceIT {
                     )
             );
             assertEquals(expected, semanticPair.getValue());
-            Set<ConceptMap> childAnswers = child.getQuery().stream().collect(Collectors.toSet());
+            Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
             assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
@@ -118,7 +119,7 @@ public class SemanticDifferenceIT {
                     )
             );
             assertEquals(expected, semanticPair.getValue());
-            Set<ConceptMap> childAnswers = child.getQuery().stream().collect(Collectors.toSet());
+            Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
             assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
@@ -144,7 +145,7 @@ public class SemanticDifferenceIT {
                     )
             );
             assertEquals(expected, semanticPair.getValue());
-            Set<ConceptMap> childAnswers = child.getQuery().stream().collect(Collectors.toSet());
+            Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
             assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
@@ -170,7 +171,7 @@ public class SemanticDifferenceIT {
                     )
             );
             assertEquals(expected, semanticPair.getValue());
-            Set<ConceptMap> childAnswers = child.getQuery().stream().collect(Collectors.toSet());
+            Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
             assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
@@ -196,7 +197,7 @@ public class SemanticDifferenceIT {
                     )
             );
             assertEquals(expected, semanticPair.getValue());
-            Set<ConceptMap> childAnswers = child.getQuery().stream().collect(Collectors.toSet());
+            Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
             assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
@@ -222,7 +223,7 @@ public class SemanticDifferenceIT {
                     )
             );
             assertEquals(expected, semanticPair.getValue());
-            Set<ConceptMap> childAnswers = child.getQuery().stream().collect(Collectors.toSet());
+            Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
             assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
@@ -248,14 +249,14 @@ public class SemanticDifferenceIT {
                     )
             );
             assertEquals(expected, semanticPair.getValue());
-            Set<ConceptMap> childAnswers = child.getQuery().stream().collect(Collectors.toSet());
+            Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
             assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
     private Set<ConceptMap> projectAnswersToChild(ReasonerAtomicQuery child, ReasonerAtomicQuery parent, Unifier unifier, SemanticDifference diff){
-        return parent.getQuery().stream()
+        return parent.tx().stream(parent.getQuery(), false)
                 .map(ans -> ans.projectToChild(child.getRoleSubstitution(), child.getVarNames(), new UnifierImpl(), diff))
                 .filter(ans -> !ans.isEmpty())
                 .collect(Collectors.toSet());
@@ -266,7 +267,7 @@ public class SemanticDifferenceIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString){
-        Set<Statement> vars = Graql.parser().parsePattern(patternString)
+        Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);

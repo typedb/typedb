@@ -18,32 +18,32 @@
 
 package grakn.core.graql.internal.reasoner.rule;
 
+import com.google.common.collect.Sets;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.state.RuleState;
+import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionImpl;
-import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
 import java.util.HashSet;

@@ -19,18 +19,19 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionImpl;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -283,14 +284,14 @@ public class QueryIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<Statement> vars = tx.graql().parser().parsePattern(patternString)
+        Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);
     }
 
     private static Concept getConcept(TransactionImpl<?> tx, String typeLabel, Object val){
-        return tx.graql().match((Pattern) Pattern.var("x").has(typeLabel, val)).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get();
+        return tx.stream(Graql.match((Pattern) Pattern.var("x").has(typeLabel, val)).get("x"))
+                .map(ans -> ans.get("x")).findAny().get();
     }
 }

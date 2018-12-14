@@ -18,8 +18,6 @@
 
 package grakn.core.graql.answer;
 
-import grakn.core.graql.admin.Explanation;
-
 /**
  * A type of {@link Answer} object that contains a {@link Number}.
  */

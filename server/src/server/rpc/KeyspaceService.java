@@ -18,10 +18,10 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.Transaction;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
+import grakn.core.server.Transaction;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;

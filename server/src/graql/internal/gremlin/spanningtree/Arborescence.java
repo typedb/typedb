@@ -18,10 +18,10 @@
 
 package grakn.core.graql.internal.gremlin.spanningtree;
 
-import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 
 import java.util.HashSet;
 import java.util.Map;

@@ -28,7 +28,7 @@ java_test(
      srcs = ["ConceptIT.java"],
      test_class = "grakn.core.server.kb.concept.ConceptIT",
      deps = [
-         "//server",
+         "//server:server",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"

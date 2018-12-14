@@ -18,11 +18,11 @@
 
 package grakn.core.server.session.cache;
 
+import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.server.session.TransactionImpl;
 import grakn.core.graql.internal.Schema;
-import com.google.common.collect.Sets;
+import grakn.core.server.session.TransactionImpl;
 
 import java.util.HashMap;
 import java.util.HashSet;
