@@ -67,17 +67,6 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void insertQueriesWithDifferentGraphsAreDifferent() {
-        Transaction graph1 = mock(Transaction.class);
-        Transaction graph2 = mock(Transaction.class);
-
-        InsertQuery query1 = new InsertQuery(null, ImmutableList.copyOf(vars1));
-        InsertQuery query2 = new InsertQuery(null, ImmutableList.copyOf(vars2));
-
-        assertNotEquals(query1, query2);
-    }
-
-    @Test
     public void insertQueriesWithDifferentVarsAreDifferent() {
         InsertQuery query1 = new InsertQuery(match1, ImmutableList.copyOf(vars1));
         InsertQuery query2 = new InsertQuery(match1, ImmutableList.copyOf(vars2));

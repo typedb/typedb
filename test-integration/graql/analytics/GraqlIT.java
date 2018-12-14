@@ -34,7 +34,6 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Query;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -128,14 +127,14 @@ public class GraqlIT {
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithStatistics() {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.parse("compute sum of thingy;"));
+            tx.execute(Graql.<ComputeQuery<?>>parse("compute sum of thingy;"));
         }
     }
 
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithDegree() {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.parse("compute centrality of thingy, using degree;"));
+            tx.execute(Graql.<ComputeQuery<?>>parse("compute centrality of thingy, using degree;"));
         }
     }
 
@@ -190,8 +189,8 @@ public class GraqlIT {
                     tx.execute(Graql.<ComputeQuery<ConceptSet>>parse("compute cluster using connected-component;"));
             assertTrue(clusterList.isEmpty());
 
-            Query<?> parsed = Graql.parse("compute cluster using connected-component, where contains = V123;");
-            Query<?> expected = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(ConceptId.of("V123")));
+            ComputeQuery<?> parsed = Graql.parse("compute cluster using connected-component, where contains = V123;");
+            ComputeQuery<?> expected = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(ConceptId.of("V123")));
             assertEquals(expected, parsed);
         }
     }
@@ -236,18 +235,18 @@ public class GraqlIT {
         }
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.parse("compute sum of thingy;"));
+            tx.execute(Graql.<ComputeQuery<?>>parse("compute sum of thingy;"));
         }
     }
 
     @Test(expected = GraqlQueryException.class)
     public void testErrorWhenNoSubgraphForAnalytics() throws InvalidKBException {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.parse("compute sum;"));
-            tx.execute(Graql.parse("compute min;"));
-            tx.execute(Graql.parse("compute max;"));
-            tx.execute(Graql.parse("compute mean;"));
-            tx.execute(Graql.parse("compute std;"));
+            tx.execute(Graql.<ComputeQuery<?>>parse("compute sum;"));
+            tx.execute(Graql.<ComputeQuery<?>>parse("compute min;"));
+            tx.execute(Graql.<ComputeQuery<?>>parse("compute max;"));
+            tx.execute(Graql.<ComputeQuery<?>>parse("compute mean;"));
+            tx.execute(Graql.<ComputeQuery<?>>parse("compute std;"));
         }
     }
 
@@ -266,9 +265,9 @@ public class GraqlIT {
         analyticsCommands.forEach(command -> {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 // insert a node but do not commit it
-                tx.execute(Graql.parse("define thingy sub entity;"));
+                tx.execute(Graql.<ComputeQuery<?>>parse("define thingy sub entity;"));
                 // use analytics
-                tx.execute(Graql.parse(command));
+                tx.execute(Graql.<ComputeQuery<?>>parse(command));
             }
 
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {

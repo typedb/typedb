@@ -20,7 +20,6 @@ package grakn.core.console;
 
 import com.google.common.base.StandardSystemProperty;
 import grakn.core.client.Grakn;
-import grakn.core.graql.answer.Answer;
 import grakn.core.graql.printer.Printer;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
@@ -156,7 +155,7 @@ public class ConsoleSession implements AutoCloseable {
         // We'll use streams so we can print the answer out much faster and smoother
         try {
             // Parse the string to get a stream of Graql Queries
-            Stream<Query<Answer>> queries = Graql.parseList(queryString);
+            Stream<Query<?>> queries = Graql.parseList(queryString);
 
             // Get the stream of answers for each query (query.stream())
             // Get the  stream of printed answers (printer.toStream(..))

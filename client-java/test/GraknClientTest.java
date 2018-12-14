@@ -31,7 +31,6 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
@@ -146,7 +145,7 @@ public class GraknClientTest {
                 .setQueryIter(SessionProto.Transaction.Query.Iter.newBuilder().setId(ITERATOR))
                 .build();
 
-        Query<?> query = match(var("x").sub("thing")).get();
+        GetQuery query = match(var("x").sub("thing")).get();
         String queryString = query.toString();
         ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
         SessionProto.Transaction.Res iteratorNext = SessionProto.Transaction.Res.newBuilder()
@@ -222,7 +221,7 @@ public class GraknClientTest {
     @SuppressWarnings("CheckReturnValue")
     @Test
     public void whenAnErrorOccurs_TheTxCloses() {
-        Query<?> query = match(var("x")).get();
+        GetQuery query = match(var("x")).get();
 
         SessionProto.Transaction.Req execQueryRequest = RequestBuilder.Transaction.query(query);
         GraknException expectedException = GraqlQueryException.create("well something went wrong.");
@@ -243,7 +242,7 @@ public class GraknClientTest {
     @SuppressWarnings("CheckReturnValue")
     @Test
     public void whenAnErrorOccurs_AllFutureActionsThrow() {
-        Query<?> query = match(var("x")).get();
+        GetQuery query = match(var("x")).get();
 
         SessionProto.Transaction.Req execQueryRequest = RequestBuilder.Transaction.query(query);
         GraknException expectedException = GraqlQueryException.create("well something went wrong.");

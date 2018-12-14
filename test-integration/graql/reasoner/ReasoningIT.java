@@ -27,6 +27,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
@@ -91,7 +92,7 @@ public class ReasoningIT {
                 assertEquals(attributes, attributesFromAPI);
                 assertEquals(attributes, attributesFromImplicitRelation);
 
-                tx.execute(Graql.parse("match $rmn isa model-name 'someName', has specific-indicator 'someIndicator' via $a; insert $a has indicator-name 'someIndicatorName';"));
+                tx.execute(Graql.<InsertQuery>parse("match $rmn isa model-name 'someName', has specific-indicator 'someIndicator' via $a; insert $a has indicator-name 'someIndicatorName';"));
 
                 Set<Attribute<Object>> newAttributes = tx.stream(attributeQuery,false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
                 Set<Attribute<Object>> newAttributesFromImplicitRelation = tx.stream(attributeRelationQuery,false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());

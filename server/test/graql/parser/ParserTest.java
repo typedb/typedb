@@ -912,9 +912,9 @@ public class ParserTest {
         int numQueries = 10_000;
         String matchInsertString = "match $x; insert $y;";
         String longQueryString = Strings.repeat(matchInsertString, numQueries);
-        Query<?> matchInsert = match(var("x")).insert(var("y"));
+        InsertQuery matchInsert = match(var("x")).insert(var("y"));
 
-        List<Query<?>> queries = Graql.parseList(longQueryString).collect(toList());
+        List<InsertQuery> queries = Graql.<InsertQuery>parseList(longQueryString).collect(toList());
 
         assertEquals(Collections.nCopies(numQueries, matchInsert), queries);
     }
@@ -1007,7 +1007,7 @@ public class ParserTest {
 
     @Test
     public void whenValueEqualityToString_CreateValidQueryString() {
-        Query<?> query = match(var("x").val(eq(var("y")))).get();
+        GetQuery query = match(var("x").val(eq(var("y")))).get();
 
         assertEquals(query, Graql.parse(query.toString()));
     }

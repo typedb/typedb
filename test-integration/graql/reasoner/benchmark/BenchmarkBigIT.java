@@ -30,6 +30,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
@@ -69,7 +70,7 @@ public class BenchmarkBigIT {
             InputStream inputStream = new FileInputStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE);
-            tx.execute(Graql.parse(s));
+            tx.execute(Graql.<Query<?>>parse(s));
             tx.commit();
         } catch (Exception e){
             System.err.println(e);

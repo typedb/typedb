@@ -19,6 +19,8 @@
 package grakn.core.server;
 
 import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -93,6 +95,134 @@ public interface Transaction extends AutoCloseable {
         }
     }
 
+    // Define Query
+
+    default List<ConceptMap> execute(DefineQuery query) {
+        return execute(query, true);
+    }
+
+    default List<ConceptMap> execute(DefineQuery query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default Stream<ConceptMap> stream(DefineQuery query) {
+        return stream(query, true);
+    }
+
+    default Stream<ConceptMap> stream(DefineQuery query, boolean infer) {
+        return executor(infer).run(query);
+    }
+
+    // Undefine Query
+
+    default List<ConceptMap> execute(UndefineQuery query) {
+        return execute(query, true);
+    }
+
+    default List<ConceptMap> execute(UndefineQuery query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default Stream<ConceptMap> stream(UndefineQuery query) {
+        return stream(query, true);
+    }
+
+    default Stream<ConceptMap> stream(UndefineQuery query, boolean infer) {
+        return executor(infer).run(query);
+    }
+
+    // Insert Query
+
+    default List<ConceptMap> execute(InsertQuery query) {
+        return execute(query, true);
+    }
+
+    default List<ConceptMap> execute(InsertQuery query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default Stream<ConceptMap> stream(InsertQuery query) {
+        return stream(query, true);
+    }
+
+    default Stream<ConceptMap> stream(InsertQuery query, boolean infer) {
+        return executor(infer).run(query);
+    }
+
+    // Delete Query
+
+    default List<ConceptSet> execute(DeleteQuery query) {
+        return execute(query, true);
+    }
+
+    default List<ConceptSet> execute(DeleteQuery query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default Stream<ConceptSet> stream(DeleteQuery query) {
+        return stream(query, true);
+    }
+
+    default Stream<ConceptSet> stream(DeleteQuery query, boolean infer) {
+        return executor(infer).run(query);
+    }
+
+    // Get Query
+
+    default List<ConceptMap> execute(GetQuery query) {
+        return execute(query, true);
+    }
+
+    default List<ConceptMap> execute(GetQuery query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default Stream<ConceptMap> stream(GetQuery query) {
+        return stream(query, true);
+    }
+
+    default Stream<ConceptMap> stream(GetQuery query, boolean infer) {
+        return executor(infer).run(query);
+    }
+
+    // Aggregate Query
+
+    default <T extends Answer> List<T> execute(AggregateQuery<T> query) {
+        return execute(query, true);
+    }
+
+    default <T extends Answer> List<T> execute(AggregateQuery<T> query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default <T extends Answer> Stream<T> stream(AggregateQuery<T> query) {
+        return stream(query, true);
+    }
+
+    default <T extends Answer> Stream<T> stream(AggregateQuery<T> query, boolean infer) {
+        return executor(infer).run(query);
+    }
+
+    // Compute Query
+
+    default <T extends Answer> List<T> execute(ComputeQuery<T> query) {
+        return execute(query, true);
+    }
+
+    default <T extends Answer> List<T> execute(ComputeQuery<T> query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default <T extends Answer> Stream<T> stream(ComputeQuery<T> query) {
+        return stream(query, true);
+    }
+
+    default <T extends Answer> Stream<T> stream(ComputeQuery<T> query, boolean infer) {
+        return executor(infer).run(query);
+    }
+
+    // Generic Query
+
     default <T extends Answer> List<T> execute(Query<T> query) {
         return execute(query, true);
     }
@@ -107,19 +237,26 @@ public interface Transaction extends AutoCloseable {
 
     default <T extends Answer> Stream<T> stream(Query<T> query, boolean infer) {
         if (query instanceof DefineQuery) {
-            return (Stream<T>) executor(infer).run((DefineQuery) query);
+            return (Stream<T>) stream((DefineQuery) query, infer);
+
         } else if (query instanceof UndefineQuery) {
-            return (Stream<T>) executor(infer).run((UndefineQuery) query);
+            return (Stream<T>) stream((UndefineQuery) query, infer);
+
         } else if (query instanceof InsertQuery) {
-            return (Stream<T>) executor(infer).run((InsertQuery) query);
+            return (Stream<T>) stream((InsertQuery) query, infer);
+
         } else if (query instanceof DeleteQuery) {
-            return (Stream<T>) executor(infer).run((DeleteQuery) query);
+            return (Stream<T>) stream((DeleteQuery) query, infer);
+
         } else if (query instanceof GetQuery) {
-            return (Stream<T>) executor(infer).run((GetQuery) query);
+            return (Stream<T>) stream((GetQuery) query, infer);
+
         } else if (query instanceof AggregateQuery<?>) {
-            return (Stream<T>) executor(infer).run((AggregateQuery<?>) query);
+            return (Stream<T>) stream((AggregateQuery<?>) query, infer);
+
         } else if (query instanceof ComputeQuery<?>) {
-            return (Stream<T>) executor(infer).run((ComputeQuery<?>) query);
+            return (Stream<T>) stream((ComputeQuery<?>) query, infer);
+
         } else {
             throw new IllegalArgumentException("Unrecognised Query object");
         }

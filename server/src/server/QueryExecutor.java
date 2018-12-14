@@ -27,7 +27,6 @@ import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
 
 import java.util.stream.Stream;
@@ -36,7 +35,7 @@ import java.util.stream.Stream;
  * Interface for executing queries and getting a result. Examples of possible implementations are: running the query
  * against a tinkerpop graph, or sending the query to some server to execute via gRPC or a REST API.
  *
- * This class allows us to decouple query representation (in {@link Query}) from query execution
+ * This class allows us to decouple query representation from query execution
  * (here in {@link QueryExecutor}).
  */
 public interface QueryExecutor {

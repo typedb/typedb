@@ -18,6 +18,7 @@
 
 package grakn.core.graql.analytics;
 
+import grakn.core.graql.answer.Answer;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
@@ -26,6 +27,7 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
@@ -142,7 +144,7 @@ public class AnalyticsIT {
 
         List<?> result = queryList.parallelStream().map(query -> {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                return tx.execute(Graql.parse(query)).toString();
+                return tx.execute(Graql.<ComputeQuery<?>>parse(query)).toString();
             }
         }).collect(Collectors.toList());
         assertEquals(queryList.size(), result.size());

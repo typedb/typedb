@@ -195,7 +195,7 @@ public class GeoInferenceIT {
             List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
             answers2.forEach(ans -> assertEquals(2, ans.size()));
             answers2.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), europe.id().getValue()));
-            assertEquals(tx.execute(Graql.parse("match $x isa entity;get;")).size() - 1, answers2.size());
+            assertEquals(tx.execute(Graql.<GetQuery>parse("match $x isa entity; get;")).size() - 1, answers2.size());
         }
     }
 
