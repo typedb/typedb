@@ -263,9 +263,9 @@ export default {
       graknTx = await dispatch(OPEN_GRAKN_TX);
 
       const attributeTypeId = (await graknTx.getSchemaConcept(payload.attributeLabel)).id;
-      const edgesIds = state.visFacade.container.visualiser.edgesConnectedToNode(state.selectedNodes[0].id);
+      const edgesIds = state.visFacade.edgesConnectedToNode(state.selectedNodes[0].id);
       edgesIds.forEach((edgeId) => {
-        const edge = state.visFacade.container.visualiser.getEdge(edgeId);
+        const edge = state.visFacade.getEdge(edgeId);
         if (edge.to === attributeTypeId) {
           state.visFacade.deleteEdge(edgeId);
         }
