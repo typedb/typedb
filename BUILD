@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
+exports_files(["grakn", "VERSION", "deployment.properties", "LICENSE"], visibility = ["//visibility:public"])
 load("@graknlabs_rules_deployment//brew:rules.bzl", deploy_brew = "deploy_brew")
 
 py_binary(
@@ -29,6 +29,7 @@ py_binary(
 genrule(
     name = "distribution",
     srcs = [
+        "//:LICENSE",
         "//:grakn",
         "//console:console-binary_deploy.jar",
         "//server:conf/logback.xml",
@@ -39,7 +40,7 @@ genrule(
         "//server:services/grakn/grakn-core-ascii.txt",
     ],
     outs = ["//:dist/grakn-core-all.zip"],
-    cmd = "$(location distribution.sh) $(location //:dist/grakn-core-all.zip) $(location //:grakn) $(location //server:services/grakn/grakn-core-ascii.txt) $(location //console:console-binary_deploy.jar) $(location //server:server-binary_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:services/cassandra/logback.xml) $(location //server:services/cassandra/cassandra.yaml)",
+    cmd = "$(location distribution.sh) $(location //:dist/grakn-core-all.zip) $(location //:grakn) $(location //server:services/grakn/grakn-core-ascii.txt) $(location //console:console-binary_deploy.jar) $(location //server:server-binary_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:services/cassandra/logback.xml) $(location //server:services/cassandra/cassandra.yaml) $(location //:LICENSE)",
     tools = ["distribution.sh"],
     visibility = ["//visibility:public"]
 )

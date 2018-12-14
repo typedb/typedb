@@ -35,6 +35,7 @@ public enum ErrorMessage {
     UNABLE_TO_START_SERVER_JAR_NOT_FOUND("Unable to start Server, No JAR files found! Please re-download the Grakn distribution."),
     UNABLE_TO_GET_GRAKN_HOME_FOLDER("Unable to find Grakn home folder"),
     UNABLE_TO_GET_GRAKN_CONFIG_FOLDER("Unable to find Grakn config folder"),
+    UNABLE_TO_GET_GRAKN_LICENSE("Unable to find Grakn license"),
     UNCAUGHT_EXCEPTION("Uncaught exception at thread [%s]"),
     PID_ALREADY_EXISTS("Pid file already exists: '[%s]'. Overwriting..."),
     COULD_NOT_GET_PID("Couldn't get the PID of Grakn Server. Received '%s'"),

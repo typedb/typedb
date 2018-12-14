@@ -22,7 +22,6 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import grakn.core.client.Grakn;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.util.GraknVersion;
 import io.grpc.Status;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -57,7 +56,6 @@ public class GraknConsole {
     private static final String URI = "r";
     private static final String NO_INFER = "n";
     private static final String HELP = "h";
-    private static final String VERSION = "v";
 
     private final Options options = getOptions();
     private final CommandLine commandLine;
@@ -89,7 +87,6 @@ public class GraknConsole {
         options.addOption(URI, "address", true, "Grakn Server address");
         options.addOption(NO_INFER, "no_infer", false, "do not perform inference on results");
         options.addOption(HELP, "help", false, "print usage message");
-        options.addOption(VERSION, "version", false, "print version");
 
         return options;
     }
@@ -98,10 +95,6 @@ public class GraknConsole {
         // Print usage guidelines for Grakn Console
         if (commandLine.hasOption(HELP) || !commandLine.getArgList().isEmpty()) {
             printHelp(printOut);
-        }
-        // Print Grakn Console version
-        else if (commandLine.hasOption(VERSION)) {
-            printOut.println(GraknVersion.VERSION);
         }
         // Start a Console Session to load some Graql file(s)
         else if (commandLine.hasOption(FILE)) {

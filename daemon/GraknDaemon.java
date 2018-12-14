@@ -102,6 +102,9 @@ public class GraknDaemon {
         if (!graknProperties.toFile().exists()) {
             throw new RuntimeException(ErrorMessage.UNABLE_TO_GET_GRAKN_CONFIG_FOLDER.getMessage());
         }
+        if (!graknHome.resolve("LICENSE").toFile().exists()) {
+            throw new RuntimeException(ErrorMessage.UNABLE_TO_GET_GRAKN_LICENSE.getMessage());
+        }
     }
 
     private static void printGraknLogo() {
@@ -130,8 +133,11 @@ public class GraknDaemon {
             case "server":
                 server(action, option);
                 break;
-            case "version":
+            case "--version":
                 version();
+                break;
+            case "--license":
+                license();
                 break;
             default:
                 help();
@@ -215,13 +221,26 @@ public class GraknDaemon {
         System.out.println(GraknVersion.VERSION);
     }
 
+    private void license() {
+        try {
+            System.out.println(new String(Files.readAllBytes(Paths.get(".", "LICENSE")), StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            // shouldn't happen because we checked license existence on bootup
+            // if it did, rethrow as runtime exception
+            throw new RuntimeException(e);
+        }
+    }
+
     private void help() {
-        System.out.println("Usage: grakn COMMAND\n" +
+        System.out.println("Usage: grakn <COMMAND|OPTION>\n" +
                                    "\n" +
                                    "COMMAND:\n" +
                                    "server     Manage Grakn components\n" +
-                                   "version    Print Grakn version\n" +
                                    "help       Print this message\n" +
+                                   "\n" +
+                                   "OPTION:\n" +
+                                   "--version    Print Grakn version\n" +
+                                   "--license    Print Grakn license\n" +
                                    "\n" +
                                    "Tips:\n" +
                                    "- Start Grakn with 'grakn server start'\n" +

@@ -35,20 +35,22 @@ if "%1" == "" goto missingargument
 
 if "%1" == "console" goto startconsole
 
-if "%1" == "server" goto startserver
+if "%1" == "server" || "%1" == "--version" || "%1" == "--license" goto startserver
 
-echo   Invalid argument: %1. Possible commands are:
-echo   Server:          grakn server [--help]
-echo   Console:         grakn console [--help]
+call :printarguments "Invalid argument: %1. Possible commands are:"
 goto exiterror
 
 :missingargument
 
- echo   Missing argument. Possible commands are:
+call :printarguments "Missing argument. Possible commands are:"
+goto exiterror
+
+:printarguments
+ echo %~1
  echo   Server:          grakn server [--help]
  echo   Console:         grakn console [--help]
-
-goto exiterror
+ echo   Version:         grakn --version
+ echo   License:         grakn --license
 
 :startconsole
 

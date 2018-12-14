@@ -39,6 +39,14 @@ exit_if_java_not_found() {
   fi
 }
 
+print_arguments() {
+    # First argument to function is a header
+    echo $1
+    echo "  Server:          grakn server [--help]"
+    echo "  Console:         grakn console [--help]"
+    echo "  Version:         grakn --version"
+    echo "  License:         grakn --license"
+}
 # =============================================
 # main routine
 # =============================================
@@ -49,10 +57,7 @@ pushd "$GRAKN_HOME" > /dev/null
 exit_if_java_not_found
 
 if [ -z "$1" ]; then
-    echo "Missing argument. Possible commands are:"
-    echo "  Server:          grakn server [--help]"
-    echo "  Console:         grakn console [--help]"
-    echo "  Version:         grakn version"
+    print_arguments "Missing argument. Possible commands and options are:"
 elif [ "$1" = "console" ]; then
     if [ -f "${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}" ]; then
         CLASSPATH="${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}:${GRAKN_HOME}/conf/"
@@ -61,7 +66,7 @@ elif [ "$1" = "console" ]; then
         echo "Grakn Core Console is not included in this Grakn distribution."
         echo "You may want to install Grakn Core Console or Grakn Core (all)."
     fi
-elif [ "$1" = "server" ] || [ "$1" = "version" ]; then
+elif [ "$1" = "server" ] || [ "$1" = "--version" ] || [ "$1" = "--license" ]; then
     if [ -f "${GRAKN_HOME}/${SERVER_JAR_FILENAME}" ]; then
         CLASSPATH="./${SERVER_JAR_FILENAME}:./conf/"
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dserver.javaopts="${SERVER_JAVAOPTS}" grakn.core.daemon.GraknDaemon $@
@@ -70,10 +75,7 @@ elif [ "$1" = "server" ] || [ "$1" = "version" ]; then
         echo "You may want to install Grakn Core Server or Grakn Core (all)."
     fi
 else
-    echo "Invalid argument: $1. Possible commands are: "
-    echo "  Server:          grakn server [--help]"
-    echo "  Console:         grakn console [--help]"
-    echo "  Version:         grakn version"
+    print_arguments "Invalid argument: $1. Possible commands and options are: "
 fi
 
 exit_code=$?

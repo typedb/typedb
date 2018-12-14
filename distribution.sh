@@ -16,6 +16,7 @@ server_grakn_properties="$6"
 server_logback_xml="$7"
 server_storage_yaml="$8"
 server_storage_logback_xml="$9"
+license="${10}"
 
 # configurations
 base_dir="grakn-core-all"
@@ -46,6 +47,7 @@ echo
 # 3. copying files into the respective locations
 echo "--- copying files into the respective locations ---"
 cp "$script" "$base_dir"
+cp "$license" "$base_dir"
 cp "$console_jar" "$base_dir/$services_dir/$services_dir_lib"
 cp "$server_grakn_properties" "$base_dir/$conf_dir"
 cp "$server_logback_xml" "$base_dir/$conf_dir"
