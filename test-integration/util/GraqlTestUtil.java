@@ -77,7 +77,7 @@ public class GraqlTestUtil {
             System.out.println("Loading... " + gqlPath + file);
             InputStream inputStream = GraqlTestUtil.class.getClassLoader().getResourceAsStream(gqlPath + file);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            Graql.parser().parseList(s).forEach(tx::execute);
+            Graql.parseList(s).forEach(tx::execute);
         } catch (Exception e) {
             System.err.println(e);
             throw new RuntimeException(e);

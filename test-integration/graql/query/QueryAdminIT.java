@@ -123,9 +123,9 @@ public class QueryAdminIT {
     @Test
     public void testDeleteQueryPattern() {
         DeleteQuery query = Graql.match(var("x").isa("movie")).delete("x");
-        assertEquals("match $x isa movie;", query.admin().match().toString());
+        assertEquals("match $x isa movie;", query.match().toString());
 
         query = Graql.match(var("x").isaExplicit("movie")).delete("x");
-        assertEquals("match $x isa! movie;", query.admin().match().toString());
+        assertEquals("match $x isa! movie;", query.match().toString());
     }
 }

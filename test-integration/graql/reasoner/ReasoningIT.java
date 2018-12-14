@@ -27,6 +27,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
@@ -503,12 +504,12 @@ public class ReasoningIT {
                         pattern +
                         pattern2 +
                         "get;";
-                List<ConceptMap> partialAnswers = tx.execute(Graql.match(Graql.parser().parsePatterns(pattern)).get());
+                List<ConceptMap> partialAnswers = tx.execute(Graql.match(Pattern.parseList(pattern)).get());
 
                 //single relation that satisfies the types
                 assertEquals(1, partialAnswers.size());
 
-                List<ConceptMap> partialAnswers2 = tx.execute(Graql.match(Graql.parser().parsePatterns(pattern2)).get());
+                List<ConceptMap> partialAnswers2 = tx.execute(Graql.match(Pattern.parseList(pattern2)).get());
                 //(4 db relations  + 1 inferred + 1 resource) x 2 for variable swap
                 assertEquals(12, partialAnswers2.size());
 
@@ -538,7 +539,7 @@ public class ReasoningIT {
                         "($a, $b);" +
                         "};";
 
-                List<ConceptMap> entryAnswers = tx.execute(Graql.match(Graql.parser().parsePatterns(entryPattern)).get());
+                List<ConceptMap> entryAnswers = tx.execute(Graql.match(Pattern.parseList(entryPattern)).get());
                 assertEquals(3, entryAnswers.size());
 
                 String partialPattern = "{" +
@@ -547,7 +548,7 @@ public class ReasoningIT {
                         "($b, $c);" +
                         "};";
 
-                List<ConceptMap> partialAnswers = tx.execute(Graql.match(Graql.parser().parsePatterns(partialPattern)).get());
+                List<ConceptMap> partialAnswers = tx.execute(Graql.match(Pattern.parseList(partialPattern)).get());
                 assertEquals(4, partialAnswers.size());
                 String queryString = "match " +
                         partialPattern +

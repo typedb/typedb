@@ -66,11 +66,6 @@ public class DeleteQuery implements Query<ConceptSet> {
         return vars;
     }
 
-    @CheckReturnValue
-    public DeleteQuery admin() {
-        return this;
-    }
-
     @Override
     public String toString() {
         StringBuilder query = new StringBuilder();

@@ -196,7 +196,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptSet> run(DeleteQuery query) {
-        Stream<ConceptMap> answers = run(query.admin().match()).map(result -> result.project(query.admin().vars())).distinct();
+        Stream<ConceptMap> answers = run(query.match()).map(result -> result.project(query.vars())).distinct();
         // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
         // Stream.distinct() will then work properly when it calls ConceptImpl.equals()
         Set<Concept> conceptsToDelete = answers.flatMap(answer -> answer.concepts().stream()).collect(toSet());

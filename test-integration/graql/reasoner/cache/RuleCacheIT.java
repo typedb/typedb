@@ -54,7 +54,7 @@ public class RuleCacheIT {
             InputStream inputStream = RuleCacheIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
-            Graql.parser().parseList(s).forEach(tx::execute);
+            Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e) {
             System.err.println(e);
@@ -130,8 +130,8 @@ public class RuleCacheIT {
 
     @Test
     public void whenAddingARule_cacheContainsUpdatedEntry(){
-        Pattern when = Graql.parser().parsePattern("{$x isa entity;$y isa entity;}");
-        Pattern then = Graql.parser().parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
+        Pattern when = Pattern.parse("{$x isa entity;$y isa entity;}");
+        Pattern then = Pattern.parse("{(someRole: $x, subRole: $y) isa binary;}");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
@@ -144,8 +144,8 @@ public class RuleCacheIT {
         tx.close();
         tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
 
-        Pattern when = Graql.parser().parsePattern("{$x isa entity;$y isa entity;}");
-        Pattern then = Graql.parser().parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
+        Pattern when = Pattern.parse("{$x isa entity;$y isa entity;}");
+        Pattern then = Pattern.parse("{(someRole: $x, subRole: $y) isa binary;}");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
@@ -168,7 +168,7 @@ public class RuleCacheIT {
 
 
     private Conjunction<Statement> conjunction(String patternString){
-        Set<Statement> vars = Graql.parser().parsePattern(patternString)
+        Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);

@@ -67,7 +67,7 @@ public class OntologicalQueryIT {
             InputStream inputStream = new FileInputStream("test-integration/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
-            Graql.parser().parseList(s).forEach(tx::execute);
+            Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e) {
             System.err.println(e);

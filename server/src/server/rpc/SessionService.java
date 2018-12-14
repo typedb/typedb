@@ -319,8 +319,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         private void putRule(Transaction.PutRule.Req request) {
             Label label = Label.of(request.getLabel());
-            Pattern when = Graql.parser().parsePattern(request.getWhen());
-            Pattern then = Graql.parser().parsePattern(request.getThen());
+            Pattern when = Pattern.parse(request.getWhen());
+            Pattern then = Pattern.parse(request.getThen());
 
             Rule rule = tx().putRule(label, when, then);
             Transaction.Res response = ResponseBuilder.Transaction.putRule(rule);

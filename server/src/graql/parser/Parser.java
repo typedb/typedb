@@ -106,7 +106,7 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Query<?>> Stream<T> parseList(String queryString) {
+    public <T extends Query<?>> Stream<T> parseQueryList(String queryString) {
         ErrorListener errorListener = ErrorListener.of(queryString);
         GraqlParser parser = parse(queryString, errorListener);
 

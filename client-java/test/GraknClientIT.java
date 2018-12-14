@@ -575,13 +575,13 @@ public class GraknClientIT {
     public void testGettingARule_TheInformationOnTheRuleIsCorrect() {
         try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putAttributeType("name", DataType.STRING);
-            Pattern when = Graql.parser().parsePattern("$x has name 'expectation-when'");
-            Pattern then = Graql.parser().parsePattern("$x has name 'expectation-then'");
+            Pattern when = Pattern.parse("$x has name 'expectation-when'");
+            Pattern then = Pattern.parse("$x has name 'expectation-then'");
 
             tx.putRule("expectation-rule", when, then);
 
-            when = Graql.parser().parsePattern("$x has name 'materialize-when'");
-            then = Graql.parser().parsePattern("$x has name 'materialize-then'");
+            when = Pattern.parse("$x has name 'materialize-when'");
+            then = Pattern.parse("$x has name 'materialize-then'");
             tx.putRule("materialize-rule", when, then);
             tx.commit();
         }

@@ -18,8 +18,6 @@
 
 package grakn.core.graql.query;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Conjunction;
@@ -28,8 +26,10 @@ import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.CheckReturnValue;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -112,7 +112,7 @@ public class MatchClause {
     @CheckReturnValue
     public GetQuery get(Set<Variable> vars) {
         if (vars.isEmpty()) vars = getPatterns().variables();
-        return new GetQuery(ImmutableSet.copyOf(vars), this);
+        return new GetQuery(Collections.unmodifiableSet(vars), this);
     }
 
     /**
@@ -131,7 +131,7 @@ public class MatchClause {
     @CheckReturnValue
     public final InsertQuery insert(Collection<? extends Statement> vars) {
         MatchClause match = this;
-        return new InsertQuery(match, ImmutableList.copyOf(vars));
+        return new InsertQuery(match, Collections.unmodifiableList(new ArrayList<>(vars)));
     }
 
     /**
@@ -170,7 +170,7 @@ public class MatchClause {
     @CheckReturnValue
     public final DeleteQuery delete(Set<Variable> vars) {
         if (vars.isEmpty()) vars = getPatterns().variables();
-        return new DeleteQuery(this, ImmutableSet.copyOf(vars));
+        return new DeleteQuery(this, Collections.unmodifiableSet(vars));
     }
 
     @Override

@@ -51,7 +51,7 @@ public class QueryCacheIT {
             InputStream inputStream = QueryCacheIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
-            Graql.parser().parseList(s).forEach(tx::execute);
+            Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e) {
             System.err.println(e);
@@ -196,7 +196,7 @@ public class QueryCacheIT {
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, Transaction tx) {
-        Set<VarPatternAdmin> vars = Graql.parser().parsePattern(patternString).admin()
+        Set<VarPatternAdmin> vars = Graql.parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

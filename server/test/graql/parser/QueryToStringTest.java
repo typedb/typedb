@@ -25,6 +25,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.Pattern;
 import org.junit.Test;
 
 import static grakn.core.graql.query.ComputeQuery.Algorithm.CONNECTED_COMPONENT;
@@ -100,12 +101,12 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithThenToString() {
-        assertValidToString(Graql.insert(var("x").isa("a-rule-type").then(and(Graql.parser().parsePatterns("$x isa movie;")))));
+        assertValidToString(Graql.insert(var("x").isa("a-rule-type").then(and(Pattern.parseList("$x isa movie;")))));
     }
 
     @Test
     public void testQueryWithWhenToString() {
-        assertValidToString(Graql.insert(var("x").isa("a-rule-type").when(and(Graql.parser().parsePatterns("$x isa movie;")))));
+        assertValidToString(Graql.insert(var("x").isa("a-rule-type").when(and(Pattern.parseList("$x isa movie;")))));
     }
 
     private void assertValidToString(InsertQuery query) {

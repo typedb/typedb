@@ -78,7 +78,7 @@ public class AtomicTypeInferenceIT {
             InputStream inputStream = AtomicTypeInferenceIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
-            Graql.parser().parseList(s).forEach(tx::execute);
+            Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e){
             System.err.println(e);
@@ -416,7 +416,7 @@ public class AtomicTypeInferenceIT {
 
     private void typeInferenceQueries(List<SchemaConcept> possibleTypes, String pattern, TransactionImpl<?> tx) {
         List<ConceptMap> typedAnswers = typedAnswers(possibleTypes, pattern, tx);
-        List<ConceptMap> unTypedAnswers = tx.execute(Graql.match(Graql.parser().parsePattern(pattern)).get());
+        List<ConceptMap> unTypedAnswers = tx.execute(Graql.match(Pattern.parse(pattern)).get());
         assertEquals(typedAnswers.size(), unTypedAnswers.size());
         GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
     }
@@ -441,7 +441,7 @@ public class AtomicTypeInferenceIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<Statement> vars = Graql.parser().parsePattern(patternString)
+        Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);

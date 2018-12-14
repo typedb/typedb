@@ -827,7 +827,7 @@ public class ParserTest {
 
     @Test
     public void testParseListEmpty() {
-        List<Query<?>> queries = Graql.parser().parseList("").collect(toList());
+        List<Query<?>> queries = Graql.parseList("").collect(toList());
         assertEquals(0, queries.size());
     }
 
@@ -835,7 +835,7 @@ public class ParserTest {
     public void testParseListOneMatch() {
         String getString = "match $y isa movie; get;";
 
-        List<Query<?>> queries = Graql.parser().parseList(getString).collect(toList());
+        List<Query<?>> queries = Graql.parseList(getString).collect(toList());
 
         assertEquals(Arrays.asList(match(var("y").isa("movie")).get()), queries);
     }
@@ -844,7 +844,7 @@ public class ParserTest {
     public void testParseListOneInsert() {
         String insertString = "insert $x isa movie;";
 
-        List<Query<?>> queries = Graql.parser().parseList(insertString).collect(toList());
+        List<Query<?>> queries = Graql.parseList(insertString).collect(toList());
 
         assertEquals(Arrays.asList(insert(var("x").isa("movie"))), queries);
     }
@@ -853,7 +853,7 @@ public class ParserTest {
     public void testParseListOneInsertWithWhitespacePrefix() {
         String insertString = " insert $x isa movie;";
 
-        List<Query<?>> queries = Graql.parser().parseList(insertString).collect(toList());
+        List<Query<?>> queries = Graql.parseList(insertString).collect(toList());
 
         assertEquals(Arrays.asList(insert(var("x").isa("movie"))), queries);
     }
@@ -862,7 +862,7 @@ public class ParserTest {
     public void testParseListOneInsertWithPrefixComment() {
         String insertString = "#hola\ninsert $x isa movie;";
 
-        List<Query<?>> queries = Graql.parser().parseList(insertString).collect(toList());
+        List<Query<?>> queries = Graql.parseList(insertString).collect(toList());
 
         assertEquals(Arrays.asList(insert(var("x").isa("movie"))), queries);
     }
@@ -872,7 +872,7 @@ public class ParserTest {
         String insertString = "insert $x isa movie;";
         String getString = "match $y isa movie; get;";
 
-        List<Query<?>> queries = Graql.parser().parseList(insertString + getString).collect(toList());
+        List<Query<?>> queries = Graql.parseList(insertString + getString).collect(toList());
 
         assertEquals(Arrays.asList(insert(var("x").isa("movie")), match(var("y").isa("movie")).get()), queries);
     }
@@ -882,7 +882,7 @@ public class ParserTest {
         String matchString = "match $y isa movie;";
         String insertString = "insert $x isa movie;";
 
-        List<Query<?>> queries = Graql.parser().parseList(matchString + insertString).collect(toList());
+        List<Query<?>> queries = Graql.parseList(matchString + insertString).collect(toList());
 
         assertEquals(Arrays.asList(match(var("y").isa("movie")).insert(var("x").isa("movie"))), queries);
     }
@@ -902,7 +902,7 @@ public class ParserTest {
         );
 
         options.forEach(option -> {
-            List<Query<?>> queries = Graql.parser().parseList(option).collect(toList());
+            List<Query<?>> queries = Graql.parseList(option).collect(toList());
             assertEquals(option, 2, queries.size());
         });
     }
@@ -914,7 +914,7 @@ public class ParserTest {
         String longQueryString = Strings.repeat(matchInsertString, numQueries);
         Query<?> matchInsert = match(var("x")).insert(var("y"));
 
-        List<Query<?>> queries = Graql.parser().parseList(longQueryString).collect(toList());
+        List<Query<?>> queries = Graql.parseList(longQueryString).collect(toList());
 
         assertEquals(Collections.nCopies(numQueries, matchInsert), queries);
     }
@@ -927,7 +927,7 @@ public class ParserTest {
         exception.expectMessage("define person has name"); // Message should refer to line
 
         //noinspection ResultOfMethodCallIgnored
-        Graql.parser().parseList(queryText).collect(toList());
+        Graql.parseList(queryText).collect(toList());
     }
 
     @Test

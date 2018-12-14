@@ -63,7 +63,7 @@ public class AtomicUnificationIT {
             InputStream inputStream = AtomicUnificationIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
-            Graql.parser().parseList(s).forEach(tx::execute);
+            Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e){
             System.err.println(e);
@@ -333,8 +333,8 @@ public class AtomicUnificationIT {
         String childPatternString = "(subRole1: $x, subRole2: $y) isa binary";
         InferenceRule testRule = new InferenceRule(
                 tx.putRule("Checking Rewrite & Unification",
-                        Graql.parser().parsePattern(childPatternString),
-                        Graql.parser().parsePattern(childPatternString)),
+                           Pattern.parse(childPatternString),
+                           Pattern.parse(childPatternString)),
                 tx)
                 .rewrite(parentAtom);
 
@@ -509,7 +509,7 @@ public class AtomicUnificationIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
-        Set<Statement> vars = Graql.parser().parsePattern(patternString)
+        Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);

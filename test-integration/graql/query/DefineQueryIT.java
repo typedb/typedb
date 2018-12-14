@@ -312,8 +312,8 @@ public class DefineQueryIT {
 
     @Test
     public void whenDefiningARule_TheRuleIsInTheKB() {
-        Pattern when = Graql.parser().parsePattern("$x isa entity");
-        Pattern then = Graql.parser().parsePattern("$x isa entity");
+        Pattern when = Pattern.parse("$x isa entity");
+        Pattern then = Pattern.parse("$x isa entity");
         Statement vars = label("my-rule").sub(label(RULE.getLabel())).when(when).then(then);
         tx.execute(Graql.define(vars));
 
@@ -492,8 +492,8 @@ public class DefineQueryIT {
 
     @Test
     public void whenDefiningARule_SubRuleDeclarationsCanBeSkipped() {
-        Pattern when = Graql.parser().parsePattern("$x isa entity");
-        Pattern then = Graql.parser().parsePattern("$x isa entity");
+        Pattern when = Pattern.parse("$x isa entity");
+        Pattern then = Pattern.parse("$x isa entity");
         Statement vars = label("my-rule").when(when).then(then);
         tx.execute(Graql.define(vars));
 

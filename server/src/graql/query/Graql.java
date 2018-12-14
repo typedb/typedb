@@ -46,6 +46,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static grakn.core.graql.query.ComputeQuery.Method;
 import static java.util.stream.Collectors.toSet;
@@ -57,6 +58,19 @@ import static java.util.stream.Collectors.toSet;
 public class Graql {
 
     private static final Parser parser = new Parser();
+
+    public static Parser parser() {
+        return parser;
+    }
+
+    @CheckReturnValue
+    public static <T extends Query<?>> T parse(String queryString) {
+        return parser.parseQueryEOF(queryString);
+    }
+
+    public static <T extends Query<?>> Stream<T> parseList(String queryString) {
+        return parser.parseQueryList(queryString);
+    }
 
     /**
      * @param patterns an array of patterns to match in the graph
@@ -135,21 +149,6 @@ public class Graql {
         return new ComputeQuery<>(method);
     }
 
-    /**
-     * Get a parser for parsing queries from strings
-     */
-    public static Parser parser() {
-        return parser;
-    }
-
-    /**
-     * @param queryString a string representing a query
-     * @return a query, the type will depend on the type of query.
-     */
-    @CheckReturnValue
-    public static <T extends Query<?>> T parse(String queryString) {
-        return parser.parseQueryEOF(queryString);
-    }
 
     // AGGREGATES
 
