@@ -18,7 +18,6 @@
 
 package grakn.core.server.session;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.answer.Answer;
@@ -108,7 +107,8 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
 
     //----------------------------- Transaction Specific
     private final ThreadLocal<TransactionCache> localConceptLog = new ThreadLocal<>();
-    private @Nullable GraphTraversalSource graphTraversalSource = null;
+    private @Nullable
+    GraphTraversalSource graphTraversalSource = null;
     private final RuleCache ruleCache;
 
     public TransactionImpl(SessionImpl session, G graph) {
@@ -166,7 +166,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         return executor(infer).run(query);
     }
 
-    public RuleCache ruleCache(){ return ruleCache;}
+    public RuleCache ruleCache() { return ruleCache;}
 
     /**
      * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
@@ -266,15 +266,6 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
      */
     public <T extends Concept> T buildConcept(Edge edge) {
         return factory().buildConcept(edge);
-    }
-
-    /**
-     * A flag to check if batch loading is enabled and consistency checks are switched off
-     *
-     * @return true if batch loading is enabled
-     */
-    public boolean isBatchTx() {
-        return Type.BATCH.equals(txCache().txType());
     }
 
     @SuppressWarnings("unchecked")
@@ -385,7 +376,6 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
 
     public void checkSchemaMutationAllowed() {
         checkMutationAllowed();
-        if (isBatchTx()) throw TransactionException.schemaMutation();
     }
 
     public void checkMutationAllowed() {
@@ -427,7 +417,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
     @Override
     public EntityType putEntityType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false,
-                v -> factory().buildEntityType(v, getMetaEntityType()));
+                                v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
     /**
@@ -511,23 +501,23 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
     @Override
     public RelationshipType putRelationshipType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, false,
-                v -> factory().buildRelationshipType(v, getMetaRelationType()));
+                                v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
 
     public RelationshipType putRelationTypeImplicit(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, true,
-                v -> factory().buildRelationshipType(v, getMetaRelationType()));
+                                v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
 
     @Override
     public Role putRole(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ROLE, false,
-                v -> factory().buildRole(v, getMetaRole()));
+                                v -> factory().buildRole(v, getMetaRole()));
     }
 
     public Role putRoleTypeImplicit(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ROLE, true,
-                v -> factory().buildRole(v, getMetaRole()));
+                                v -> factory().buildRole(v, getMetaRole()));
     }
 
     @SuppressWarnings("unchecked")
@@ -535,7 +525,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
         AttributeType<V> attributeType = putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false,
-                v -> factory().buildAttributeType(v, getMetaAttributeType(), dataType));
+                                                          v -> factory().buildAttributeType(v, getMetaAttributeType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
@@ -550,10 +540,10 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
         Rule rule = putSchemaConcept(label, Schema.BaseType.RULE, false,
-                v -> factory().buildRule(v, getMetaRule(), when, then));
+                                     v -> factory().buildRule(v, getMetaRule(), when, then));
         //NB: thenTypes() will be empty as type edges added on commit
         //NB: this will cache also non-committed rules
-        if (rule.then() != null){
+        if (rule.then() != null) {
             rule.then().statements().stream()
                     .flatMap(v -> v.getTypeLabels().stream())
                     .map(vl -> this.<SchemaConcept>getSchemaConcept(vl))
@@ -865,17 +855,65 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
      * Stores the commit log of a {@link Transaction} which is uploaded to the jserver when the {@link Session} is closed.
      * The commit log is also uploaded periodically to make sure that if a failure occurs the counts are still roughly maintained.
      */
-    @AutoValue
-    public abstract static class CommitLog {
+    public static class CommitLog {
 
-        public abstract Keyspace keyspace();
+        private final Keyspace keyspace;
+        private final Map<ConceptId, Long> instanceCount;
+        private final Map<String, Set<ConceptId>> attributes;
 
-        public abstract Map<ConceptId, Long> instanceCount();
+        CommitLog(Keyspace keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> attributes) {
+            if (keyspace == null) {
+                throw new NullPointerException("Null keyspace");
+            }
+            this.keyspace = keyspace;
+            if (instanceCount == null) {
+                throw new NullPointerException("Null instanceCount");
+            }
+            this.instanceCount = instanceCount;
+            if (attributes == null) {
+                throw new NullPointerException("Null attributes");
+            }
+            this.attributes = attributes;
+        }
 
-        public abstract Map<String, Set<ConceptId>> attributes();
+        public Keyspace keyspace() {
+            return keyspace;
+        }
 
-        public static CommitLog create(Keyspace keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> newAttributes){
-            return new AutoValue_TransactionImpl_CommitLog(keyspace, instanceCount, newAttributes);
+        public Map<ConceptId, Long> instanceCount() {
+            return instanceCount;
+        }
+
+        public Map<String, Set<ConceptId>> attributes() {
+            return attributes;
+        }
+
+        public static CommitLog create(Keyspace keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> newAttributes) {
+            return new CommitLog(keyspace, instanceCount, newAttributes);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            TransactionImpl.CommitLog that = (TransactionImpl.CommitLog) o;
+
+            return (this.keyspace.equals(that.keyspace()) &&
+                    this.instanceCount.equals(that.instanceCount()) &&
+                    this.attributes.equals(that.attributes()));
+        }
+
+        @Override
+        public int hashCode() {
+            int h = 1;
+            h *= 1000003;
+            h ^= this.keyspace.hashCode();
+            h *= 1000003;
+            h ^= this.instanceCount.hashCode();
+            h *= 1000003;
+            h ^= this.attributes.hashCode();
+            return h;
         }
     }
 }

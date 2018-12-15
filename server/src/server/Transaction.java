@@ -69,8 +69,7 @@ public interface Transaction extends AutoCloseable {
      */
     enum Type {
         READ(0),  //Read only transaction where mutations to the graph are prohibited
-        WRITE(1), //Write transaction where the graph can be mutated
-        BATCH(2); //Batch transaction which enables faster writes by switching off some consistency checks
+        WRITE(1); //Write transaction where the graph can be mutated
 
         private final int type;
 

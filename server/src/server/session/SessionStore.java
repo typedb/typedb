@@ -59,7 +59,7 @@ public class SessionStore {
         return session(keyspace).transaction(type);
     }
 
-    public void closeSessions(){
+    public void closeSessions() {
         this.openedSessions.values().forEach(SessionImpl::close);
     }
 
@@ -70,9 +70,9 @@ public class SessionStore {
      * @param keyspace The {@link Keyspace} of the {@link Session} to retrieve
      * @return a new or existing {@link Session} connecting to the provided {@link Keyspace}
      */
-    private SessionImpl session(Keyspace keyspace){
-        if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace, SessionImpl.create(keyspace, config, TransactionFactoryBuilder.getInstance()));
+    private SessionImpl session(Keyspace keyspace) {
+        if (!openedSessions.containsKey(keyspace)) {
+            openedSessions.put(keyspace, SessionImpl.create(keyspace, config));
         }
         return openedSessions.get(keyspace);
     }

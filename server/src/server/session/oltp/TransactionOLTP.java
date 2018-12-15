@@ -18,18 +18,8 @@
 
 package grakn.core.server.session.oltp;
 
-import grakn.core.graql.answer.Answer;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.AggregateQuery;
-import grakn.core.graql.query.ComputeQuery;
-import grakn.core.graql.query.DefineQuery;
-import grakn.core.graql.query.DeleteQuery;
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.UndefineQuery;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.TemporaryWriteException;
@@ -47,30 +37,23 @@ import org.janusgraph.diskstorage.locking.TemporaryLockingException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 /**
- * <p>
- *     A {@link Transaction} using {@link JanusGraph} as a vendor backend.
- * </p>
- *
- * <p>
- *     Wraps up a {@link JanusGraph} as a method of storing the {@link Transaction} object Model.
- *     With this vendor some issues to be aware of:
- *     1. Whenever a transaction is closed if none remain open then the connection to the graph is closed permanently.
- *     2. Clearing the graph explicitly closes the connection as well.
- * </p>
- *
+ * A {@link Transaction} using {@link JanusGraph} as a vendor backend.
+ * Wraps up a {@link JanusGraph} as a method of storing the {@link Transaction} object Model.
+ * With this vendor some issues to be aware of:
+ * 1. Whenever a transaction is closed if none remain open then the connection to the graph is closed permanently.
+ * 2. Clearing the graph explicitly closes the connection as well.
  */
 public class TransactionOLTP extends TransactionImpl<JanusGraph> {
-    public TransactionOLTP(SessionImpl session, JanusGraph graph){
+    public TransactionOLTP(SessionImpl session, JanusGraph graph) {
         super(session, graph);
     }
 
     @Override
-    public void openTransaction(Type txType){
+    public void openTransaction(Type txType) {
         super.openTransaction(txType);
-        if(getTinkerPopGraph().isOpen() && !getTinkerPopGraph().tx().isOpen()) getTinkerPopGraph().tx().open();
+        if (getTinkerPopGraph().isOpen() && !getTinkerPopGraph().tx().isOpen()) getTinkerPopGraph().tx().open();
     }
 
     @Override
@@ -79,7 +62,7 @@ public class TransactionOLTP extends TransactionImpl<JanusGraph> {
     }
 
 
-    public void closeOpenTransactions(){
+    public void closeOpenTransactions() {
         ((StandardJanusGraph) getTinkerPopGraph()).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close);
         getTinkerPopGraph().close();
     }
@@ -94,7 +77,7 @@ public class TransactionOLTP extends TransactionImpl<JanusGraph> {
     }
 
     @Override
-    public void commitTransactionInternal(){
+    public void commitTransactionInternal() {
         executeLockingMethod(() -> {
             super.commitTransactionInternal();
             return null;
@@ -102,7 +85,7 @@ public class TransactionOLTP extends TransactionImpl<JanusGraph> {
     }
 
     @Override
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId... conceptIds){
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId... conceptIds) {
         return executeLockingMethod(() -> super.addVertexElement(baseType, conceptIds));
     }
 
@@ -112,11 +95,11 @@ public class TransactionOLTP extends TransactionImpl<JanusGraph> {
      *
      * @param method The locking method to execute
      */
-    private <X> X executeLockingMethod(Supplier<X> method){
+    private <X> X executeLockingMethod(Supplier<X> method) {
         try {
             return method.get();
-        } catch (JanusGraphException e){
-            if(e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)){
+        } catch (JanusGraphException e) {
+            if (e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)) {
                 throw TemporaryWriteException.temporaryLock(e);
             } else {
                 throw GraknServerException.unknown(e);

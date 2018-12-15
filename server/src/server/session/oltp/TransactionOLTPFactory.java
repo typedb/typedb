@@ -23,8 +23,8 @@ import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.Transaction;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionFactory;
 import grakn.core.server.session.oltp.optimisation.JanusPreviousPropertyStepStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
@@ -59,17 +59,10 @@ import static java.util.Arrays.stream;
 
 
 /**
- * <p>
- *     A {@link Transaction} on top of {@link JanusGraph}
- * </p>
- *
- * <p>
- *     This produces a grakn graph on top of {@link JanusGraph}.
- *     The base construction process defined by {@link TransactionFactory} ensures the graph factories are singletons.
- * </p>
- *
+ * A {@link Transaction} on top of {@link JanusGraph}
+ * This produces a grakn graph on top of {@link JanusGraph}.
  */
-final public class TransactionOLTPFactory extends TransactionFactory<TransactionOLTP, JanusGraph> {
+final public class TransactionOLTPFactory {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTPFactory.class);
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
     private static final String JANUS_PREFIX = "janusmr.ioformat.conf.";
@@ -79,15 +72,18 @@ final public class TransactionOLTPFactory extends TransactionFactory<Transaction
     private static final String STORAGE_BATCH_LOADING = ConfigKey.STORAGE_BATCH_LOADING.name();
     private static final String STORAGE_REPLICATION_FACTOR = ConfigKey.STORAGE_REPLICATION_FACTOR.name();
 
+    private final SessionImpl session;
+    private TransactionOLTP tx = null;
+    private JanusGraph graph = null;
 
     //These properties are loaded in by default and can optionally be overwritten
     private static final Properties DEFAULT_PROPERTIES;
+
     static {
         String DEFAULT_CONFIG = "resources/default-configs.properties";
         DEFAULT_PROPERTIES = new Properties();
         try (InputStream in = TransactionOLTPFactory.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
             DEFAULT_PROPERTIES.load(in);
-            in.close();
         } catch (IOException e) {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
         }
@@ -102,7 +98,7 @@ final public class TransactionOLTPFactory extends TransactionFactory<Transaction
      * The key of the map refers to the key of the properties file that gets passed in which provides the value to be injected.
      * The value of the map specifies the key to inject into.
      */
-    private static final Map<String, String> overrideMap = ImmutableMap.of(
+    private static final Map<String, String> janusConfig = ImmutableMap.of(
             STORAGE_BACKEND, JANUS_PREFIX + STORAGE_BACKEND,
             STORAGE_HOSTNAME, JANUS_PREFIX + STORAGE_HOSTNAME,
             STORAGE_REPLICATION_FACTOR, JANUS_PREFIX + STORAGE_REPLICATION_FACTOR
@@ -112,31 +108,28 @@ final public class TransactionOLTPFactory extends TransactionFactory<Transaction
     private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
 
     public TransactionOLTPFactory(SessionImpl session) {
-        super(session);
+        this.session = session;
     }
 
-    @Override
-    public JanusGraph getGraphWithNewTransaction(JanusGraph graph, boolean batchloading){
-        if(graph.isClosed()) graph = buildTinkerPopGraph(batchloading);
+    public synchronized TransactionOLTP openOLTP(Transaction.Type txType) {
+        // If transaction is already open throw exception
+        if (tx != null && !tx.isClosed()) throw TransactionException.transactionOpen(tx);
 
-        if(!graph.tx().isOpen()){
-            graph.tx().open();
+        // Create new transaction from a Tinker graph if tx is null or s closed
+        if (tx == null || tx.isTinkerPopGraphClosed()) {
+            if (graph == null) {
+                graph = openGraph();
+            } else {
+                graph = reopenGraph();
+            }
+            tx = new TransactionOLTP(session, graph);
         }
-        return graph;
+        tx.openTransaction(txType);
+        return tx;
     }
 
-    @Override
-    protected TransactionOLTP buildGraknTxFromTinkerGraph(JanusGraph graph) {
-        return new TransactionOLTP(session(), graph);
-    }
-
-    @Override
-    public JanusGraph buildTinkerPopGraph(boolean batchLoading) {
-        return newJanusGraph(batchLoading);
-    }
-
-    private synchronized JanusGraph newJanusGraph(boolean batchLoading){
-        JanusGraph JanusGraph = configureGraph(batchLoading);
+    private synchronized JanusGraph openGraph() {
+        JanusGraph JanusGraph = configureGraph();
         buildJanusIndexes(JanusGraph);
         JanusGraph.tx().onClose(org.apache.tinkerpop.gremlin.structure.Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         if (!strategiesApplied.getAndSet(true)) {
@@ -151,32 +144,41 @@ final public class TransactionOLTPFactory extends TransactionFactory<Transaction
         return JanusGraph;
     }
 
-    private JanusGraph configureGraph(boolean batchLoading){
+    private JanusGraph reopenGraph() {
+        if (graph.isClosed()) graph = openGraph();
+
+        if (!graph.tx().isOpen()) {
+            graph.tx().open();
+        }
+        return graph;
+    }
+
+    private JanusGraph configureGraph() {
         JanusGraphFactory.Builder builder = JanusGraphFactory.build().
-                set(STORAGE_HOSTNAME, session().config().getProperty(ConfigKey.STORAGE_HOSTNAME)).
-                set(STORAGE_KEYSPACE, session().keyspace().getName()).
-                set(STORAGE_BATCH_LOADING, batchLoading);
+                set(STORAGE_HOSTNAME, session.config().getProperty(ConfigKey.STORAGE_HOSTNAME)).
+                set(STORAGE_KEYSPACE, session.keyspace().getName()).
+                set(STORAGE_BATCH_LOADING, false);
 
         //Load Defaults
         DEFAULT_PROPERTIES.forEach((key, value) -> builder.set(key.toString(), value));
 
         //Load Passed in properties
-        session().config().properties().forEach((key, value) -> {
+        session.config().properties().forEach((key, value) -> {
 
             //Overwrite storage
-            if(key.equals(STORAGE_BACKEND)){
+            if (key.equals(STORAGE_BACKEND)) {
                 value = storageBackendMapper.get(value);
             }
 
             //Inject properties into other default properties
-            if(overrideMap.containsKey(key)){
-                builder.set(overrideMap.get(key), value);
+            if (janusConfig.containsKey(key)) {
+                builder.set(janusConfig.get(key), value);
             }
 
             builder.set(key.toString(), value);
         });
 
-        LOG.debug("Opening graph {}", session().keyspace().getName());
+        LOG.debug("Opening graph {}", session.keyspace().getName());
         return builder.open();
     }
 
@@ -194,32 +196,32 @@ final public class TransactionOLTPFactory extends TransactionFactory<Transaction
         management.commit();
     }
 
-    private static void makeEdgeLabels(JanusGraphManagement management){
+    private static void makeEdgeLabels(JanusGraphManagement management) {
         for (Schema.EdgeLabel edgeLabel : Schema.EdgeLabel.values()) {
             EdgeLabel label = management.getEdgeLabel(edgeLabel.getLabel());
-            if(label == null) {
+            if (label == null) {
                 management.makeEdgeLabel(edgeLabel.getLabel()).make();
             }
         }
     }
 
-    private static void makeVertexLabels(JanusGraphManagement management){
+    private static void makeVertexLabels(JanusGraphManagement management) {
         for (Schema.BaseType baseType : Schema.BaseType.values()) {
             VertexLabel foundLabel = management.getVertexLabel(baseType.name());
-            if(foundLabel == null) {
+            if (foundLabel == null) {
                 management.makeVertexLabel(baseType.name()).make();
             }
         }
     }
 
-    private static void makeIndicesVertexCentric(JanusGraphManagement management){
+    private static void makeIndicesVertexCentric(JanusGraphManagement management) {
         ResourceBundle keys = ResourceBundle.getBundle("resources/indices-edges");
         Set<String> edgeLabels = keys.keySet();
-        for(String edgeLabel : edgeLabels){
+        for (String edgeLabel : edgeLabels) {
             String[] propertyKeyStrings = keys.getString(edgeLabel).split(",");
 
             //Get all the property keys we need
-            Set<PropertyKey> propertyKeys = stream(propertyKeyStrings).map(keyId ->{
+            Set<PropertyKey> propertyKeys = stream(propertyKeyStrings).map(keyId -> {
                 PropertyKey key = management.getPropertyKey(keyId);
                 if (key == null) {
                     throw new RuntimeException("Trying to create edge index on label [" + edgeLabel + "] but the property [" + keyId + "] does not exist");
@@ -241,34 +243,34 @@ final public class TransactionOLTPFactory extends TransactionFactory<Transaction
             //Create index on all property keys
             String propertyKeyId = propertyKeys.stream().map(Namifiable::name).collect(Collectors.joining("_"));
             if (management.getRelationIndex(relationType, edgeLabel + "by" + propertyKeyId) == null) {
-                PropertyKey [] allKeys = propertyKeys.toArray(new PropertyKey[propertyKeys.size()]);
+                PropertyKey[] allKeys = propertyKeys.toArray(new PropertyKey[propertyKeys.size()]);
                 management.buildEdgeIndex(label, edgeLabel + "by" + propertyKeyId, Direction.BOTH, Order.decr, allKeys);
             }
         }
     }
 
-    private static void makePropertyKeys(JanusGraphManagement management){
+    private static void makePropertyKeys(JanusGraphManagement management) {
         stream(Schema.VertexProperty.values()).forEach(property ->
-                makePropertyKey(management, property.name(), property.getDataType()));
+                                                               makePropertyKey(management, property.name(), property.getDataType()));
 
         stream(Schema.EdgeProperty.values()).forEach(property ->
-                makePropertyKey(management, property.name(), property.getDataType()));
+                                                             makePropertyKey(management, property.name(), property.getDataType()));
     }
 
-    private static void makePropertyKey(JanusGraphManagement management, String propertyKey, Class type){
+    private static void makePropertyKey(JanusGraphManagement management, String propertyKey, Class type) {
         if (management.getPropertyKey(propertyKey) == null) {
             management.makePropertyKey(propertyKey).dataType(type).make();
         }
     }
 
-    private static void makeIndicesComposite(JanusGraphManagement management){
+    private static void makeIndicesComposite(JanusGraphManagement management) {
         ResourceBundle keys = ResourceBundle.getBundle("resources/indices-composite");
         Set<String> keyString = keys.keySet();
-        for(String propertyKeyLabel : keyString){
+        for (String propertyKeyLabel : keyString) {
             String indexLabel = "by" + propertyKeyLabel;
             JanusGraphIndex index = management.getGraphIndex(indexLabel);
 
-            if(index == null) {
+            if (index == null) {
                 boolean isUnique = Boolean.parseBoolean(keys.getString(propertyKeyLabel));
                 PropertyKey key = management.getPropertyKey(propertyKeyLabel);
                 JanusGraphManagement.IndexBuilder indexBuilder = management.buildIndex(indexLabel, Vertex.class).addKey(key);

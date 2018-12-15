@@ -67,7 +67,6 @@ import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.server.session.olap.TransactionOLAP;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -104,7 +103,7 @@ import static grakn.core.graql.query.ComputeQuery.Method.STD;
 import static grakn.core.graql.query.ComputeQuery.Method.SUM;
 
 /**
- * A Graql Compute query job executed against a {@link TransactionOLAP}.
+ * A Graql Compute query executor
  */
 class ComputeExecutor<T extends Answer> {
 
@@ -113,7 +112,7 @@ class ComputeExecutor<T extends Answer> {
     private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutor.class);
     private final TransactionImpl<?> tx;
 
-    public ComputeExecutor(TransactionImpl<?> tx, ComputeQuery query) {
+    public ComputeExecutor(TransactionImpl<?> tx, ComputeQuery<T> query) {
         this.tx = tx;
         this.query = query;
     }
@@ -144,14 +143,14 @@ class ComputeExecutor<T extends Answer> {
                                         @Nullable Set<LabelId> scope,
                                         Boolean includesRolePlayerEdges) {
 
-        return tx.session().getGraphComputer().compute(program, mapReduce, scope, includesRolePlayerEdges);
+        return tx.session().transactionOLAP().compute(program, mapReduce, scope, includesRolePlayerEdges);
     }
 
     public final ComputerResult compute(@Nullable VertexProgram<?> program,
                                         @Nullable MapReduce<?, ?, ?, ?, ?> mapReduce,
                                         @Nullable Set<LabelId> scope) {
 
-        return tx.session().getGraphComputer().compute(program, mapReduce, scope);
+        return tx.session().transactionOLAP().compute(program, mapReduce, scope);
     }
 
     /**

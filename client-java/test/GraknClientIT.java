@@ -109,7 +109,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Integration Tests for {@link grakn.core.server.Server} RPC
+ * Integration Tests for Grakn Client and Server through RPC communication
  */
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class GraknClientIT {
