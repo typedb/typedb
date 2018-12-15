@@ -23,13 +23,15 @@ import com.google.common.collect.AbstractIterator;
 import grakn.benchmark.lib.clientinstrumentation.ClientTracingInstrumentationInterceptor;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.exception.GraknClientException;
-import grakn.core.client.executor.RemoteQueryExecutor;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.client.rpc.ResponseReader;
 import grakn.core.client.rpc.Transceiver;
 import grakn.core.common.exception.Validator;
 import grakn.core.common.http.SimpleURI;
 import grakn.core.common.util.CommonUtil;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -40,7 +42,14 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.query.AggregateQuery;
+import grakn.core.graql.query.ComputeQuery;
+import grakn.core.graql.query.DefineQuery;
+import grakn.core.graql.query.DeleteQuery;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
@@ -48,7 +57,6 @@ import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.KeyspaceServiceGrpc.KeyspaceServiceBlockingStub;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
-import grakn.core.server.QueryExecutor;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import io.grpc.ManagedChannel;
@@ -56,6 +64,7 @@ import io.grpc.ManagedChannelBuilder;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -67,18 +76,18 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
  * Entry-point which communicates with a running Grakn server using gRPC.
  * For now, only a subset of {@link grakn.core.server.Session} and {@link grakn.core.server.Transaction} features are supported.
  */
-public final class Grakn {
+public final class GraknClient {
 
     public static final String DEFAULT_URI = "localhost:48555";
 
     private ManagedChannel channel;
     private Keyspaces keyspaces;
 
-    public Grakn(String address) {
+    public GraknClient(String address) {
         this(address, false);
     }
 
-    public Grakn(String address, boolean benchmark) {
+    public GraknClient(String address, boolean benchmark) {
         SimpleURI parsedURI = new SimpleURI(address);
         if (benchmark) {
             channel = ManagedChannelBuilder.forAddress(parsedURI.getHost(), parsedURI.getPort())
@@ -91,7 +100,7 @@ public final class Grakn {
         keyspaces = new Keyspaces();
     }
 
-    public Grakn(ManagedChannel channel) {
+    public GraknClient(ManagedChannel channel) {
         this.channel = channel;
         keyspaces = new Keyspaces();
     }
@@ -108,7 +117,7 @@ public final class Grakn {
      * Remote implementation of {@link grakn.core.server.Session} that communicates with a Grakn server using gRPC.
      *
      * @see Transaction
-     * @see Grakn
+     * @see GraknClient
      */
     public class Session implements grakn.core.server.Session {
 
@@ -176,13 +185,54 @@ public final class Grakn {
         }
 
         @Override
-        public Type txType() {
+        public Type type() {
             return type;
         }
 
         @Override
         public grakn.core.server.Session session() {
             return session;
+        }
+
+        @Override
+        public Stream<ConceptMap> stream(DefineQuery query, boolean infer) {
+            Iterable<ConceptMap> iterable = () -> this.rpcIterator(query, infer);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
+        public Stream<ConceptMap> stream(UndefineQuery query, boolean infer) {
+            Iterable<ConceptMap> iterable = () -> this.rpcIterator(query, infer);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
+        public Stream<ConceptMap> stream(InsertQuery query, boolean infer) {
+            Iterable<ConceptMap> iterable = () -> this.rpcIterator(query, infer);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
+        public Stream<ConceptSet> stream(DeleteQuery query, boolean infer) {
+            Iterable<ConceptSet> iterable = () -> this.rpcIterator(query, infer);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
+        public Stream<ConceptMap> stream(GetQuery query, boolean infer) {
+            Iterable<ConceptMap> iterable = () -> this.rpcIterator(query, infer);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        private Iterator rpcIterator(Query query, boolean infer) {
+            transceiver.send(RequestBuilder.Transaction.query(query.toString(), infer));
+            SessionProto.Transaction.Res txResponse = responseOrThrow();
+            int iteratorId = txResponse.getQueryIter().getId();
+            return new RPCIterator<>(
+                    this,
+                    iteratorId,
+                    response -> ResponseReader.answer(response.getQueryIterRes().getAnswer(), this)
+            );
         }
 
         @Override
@@ -194,17 +244,6 @@ public final class Grakn {
         public boolean isClosed() {
             return transceiver.isClosed();
         }
-
-        @Override
-        public QueryExecutor executor() {
-            return new RemoteQueryExecutor(this, true);
-        }
-
-        @Override
-        public QueryExecutor executor(boolean infer) {
-            return new RemoteQueryExecutor(this, infer);
-        }
-
 
         private SessionProto.Transaction.Res responseOrThrow() {
             Transceiver.Response response;
@@ -234,21 +273,6 @@ public final class Grakn {
             transceiver.send(RequestBuilder.Transaction.commit());
             responseOrThrow();
             close();
-        }
-
-        public java.util.Iterator query(Query<?> query) {
-            return query(query, true);
-        }
-
-        public java.util.Iterator query(Query<?> query, boolean infer) {
-            transceiver.send(RequestBuilder.Transaction.query(query.toString(), infer));
-            SessionProto.Transaction.Res txResponse = responseOrThrow();
-            int iteratorId = txResponse.getQueryIter().getId();
-            return new Iterator<>(
-                    this,
-                    iteratorId,
-                    response -> ResponseReader.answer(response.getQueryIterRes().getAnswer(), this)
-            );
         }
 
         @Nullable
@@ -329,7 +353,7 @@ public final class Grakn {
         public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
             transceiver.send(RequestBuilder.Transaction.getAttributes(value));
             int iteratorId = responseOrThrow().getGetAttributesIter().getId();
-            Iterable<Concept> iterable = () -> new Iterator<>(
+            Iterable<Concept> iterable = () -> new RPCIterator<>(
                     this, iteratorId, response -> RemoteConcept.of(response.getGetAttributesIterRes().getAttribute(), this)
             );
 
@@ -367,6 +391,18 @@ public final class Grakn {
         }
 
         @Override
+        public <T extends Answer> Stream<T> stream(AggregateQuery<T> query, boolean infer) {
+            Iterable<T> iterable = () -> rpcIterator(query, infer);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
+        public <T extends Answer> Stream<T> stream(ComputeQuery<T> query, boolean infer) {
+            Iterable<T> iterable = () -> rpcIterator(query, infer);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
         public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
             ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                     .setSchemaConceptSupsReq(ConceptProto.SchemaConcept.Sups.Req.getDefaultInstance()).build();
@@ -374,7 +410,7 @@ public final class Grakn {
             SessionProto.Transaction.Res response = runConceptMethod(schemaConcept.id(), method);
             int iteratorId = response.getConceptMethodRes().getResponse().getSchemaConceptSupsIter().getId();
 
-            Iterable<? extends Concept> iterable = () -> new Iterator<>(
+            Iterable<? extends Concept> iterable = () -> new RPCIterator<>(
                     this, iteratorId, res -> RemoteConcept.of(res.getConceptMethodIterRes().getSchemaConceptSupsIterRes().getSchemaConcept(), this)
             );
 
@@ -396,8 +432,8 @@ public final class Grakn {
             return responseOrThrow().getIterateRes();
         }
 
-        public <T> Iterator<T> iterator(int iteratorId, Function<SessionProto.Transaction.Iter.Res, T> responseReader) {
-            return new Iterator<>(this, iteratorId, responseReader);
+        public <T> RPCIterator<T> iterator(int iteratorId, Function<SessionProto.Transaction.Iter.Res, T> responseReader) {
+            return new RPCIterator<>(this, iteratorId, responseReader);
         }
 
         /**
@@ -406,12 +442,12 @@ public final class Grakn {
          *
          * @param <T> class type of objects being iterated
          */
-        public class Iterator<T> extends AbstractIterator<T> {
+        public class RPCIterator<T> extends AbstractIterator<T> {
             private final int iteratorId;
             private Transaction tx;
             private Function<SessionProto.Transaction.Iter.Res, T> responseReader;
 
-            private Iterator(Transaction tx, int iteratorId, Function<SessionProto.Transaction.Iter.Res, T> responseReader) {
+            private RPCIterator(Transaction tx, int iteratorId, Function<SessionProto.Transaction.Iter.Res, T> responseReader) {
                 this.tx = tx;
                 this.iteratorId = iteratorId;
                 this.responseReader = responseReader;

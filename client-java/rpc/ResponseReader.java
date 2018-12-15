@@ -19,7 +19,7 @@
 
 package grakn.core.client.rpc;
 
-import grakn.core.client.Grakn;
+import grakn.core.client.GraknClient;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.query.pattern.Pattern;
@@ -46,7 +46,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public class ResponseReader {
 
-    public static Answer answer(AnswerProto.Answer res, Grakn.Transaction tx) {
+    public static Answer answer(AnswerProto.Answer res, GraknClient.Transaction tx) {
         switch (res.getAnswerCase()) {
             case ANSWERGROUP:
                 return answerGroup(res.getAnswerGroup(), tx);
@@ -66,13 +66,13 @@ public class ResponseReader {
         }
     }
 
-    static AnswerGroup<?> answerGroup(AnswerProto.AnswerGroup res, Grakn.Transaction tx) {
+    static AnswerGroup<?> answerGroup(AnswerProto.AnswerGroup res, GraknClient.Transaction tx) {
         return new AnswerGroup<>(
                 RemoteConcept.of(res.getOwner(), tx),
                 res.getAnswersList().stream().map(answer -> answer(answer, tx)).collect(toList())
         );
     }
-    static ConceptMap conceptMap(AnswerProto.ConceptMap res, Grakn.Transaction tx) {
+    static ConceptMap conceptMap(AnswerProto.ConceptMap res, GraknClient.Transaction tx) {
         ImmutableMap.Builder<Variable, Concept> map = ImmutableMap.builder();
         res.getMapMap().forEach((resVar, resConcept) -> {
             map.put(Pattern.var(resVar), RemoteConcept.of(resConcept, tx));

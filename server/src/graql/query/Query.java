@@ -18,20 +18,22 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.Answer;
-
 /**
  * A Graql query of any kind. May read and write to the graph.
- *
- * @param <T> The result type after executing the query
  */
-public interface Query<T extends Answer> {
+public interface Query {
 
     /**
      * Graql commands to determine the type of query
      */
     enum Command {
         MATCH("match"),
+        DEFINE("define"),
+        UNDEFINE("undefine"),
+        INSERT("insert"),
+        DELETE("delete"),
+        GET("get"),
+        AGGREGATE("aggregate"),
         COMPUTE("compute");
 
         private final String command;
@@ -66,7 +68,8 @@ public interface Query<T extends Answer> {
         COMMA_SPACE(", "),
         SQUARE_OPEN("["),
         SQUARE_CLOSE("]"),
-        QUOTE("\"");
+        QUOTE("\""),
+        NEW_LINE("\n");
 
         private final String character;
 

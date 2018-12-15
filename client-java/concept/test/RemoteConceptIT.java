@@ -20,7 +20,7 @@ package grakn.core.client.concept.test;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.client.Grakn;
+import grakn.core.client.GraknClient;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -65,8 +65,8 @@ public class RemoteConceptIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
-    private static Grakn.Session session;
-    private Grakn.Transaction tx;
+    private static GraknClient.Session session;
+    private GraknClient.Transaction tx;
 
     // Attribute Type Labels
     private Label EMAIL = Label.of("email");
@@ -144,9 +144,9 @@ public class RemoteConceptIT {
     public void setUp() {
         // move session construction to setupClass
         String randomKeyspace = "a" + UUID.randomUUID().toString().replaceAll("-", "");
-        session = new Grakn(server.grpcUri().toString()).session(randomKeyspace);
+        session = new GraknClient(server.grpcUri().toString()).session(randomKeyspace);
 
-        tx = session.transaction(Grakn.Transaction.Type.WRITE);
+        tx = session.transaction(GraknClient.Transaction.Type.WRITE);
 
         // Attribute Types
         email = tx.putAttributeType(EMAIL, DataType.STRING).regex(EMAIL_REGEX);

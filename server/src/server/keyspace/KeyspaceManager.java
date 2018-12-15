@@ -30,7 +30,6 @@ import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionFactoryBuilder;
 import grakn.core.server.session.TransactionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +58,7 @@ public class KeyspaceManager {
 
     public KeyspaceManager(Config config){
         this.config = config;
-        this.systemKeyspaceSession = SessionImpl.create(SYSTEM_KB_KEYSPACE, config, TransactionFactoryBuilder.getInstance());
+        this.systemKeyspaceSession = SessionImpl.create(SYSTEM_KB_KEYSPACE, config);
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 

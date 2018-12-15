@@ -19,7 +19,7 @@
 
 package grakn.core.client.concept;
 
-import grakn.core.client.Grakn;
+import grakn.core.client.GraknClient;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relationship> implements RelationshipType {
 
-    static RemoteRelationshipType construct(Grakn.Transaction tx, ConceptId id) {
+    static RemoteRelationshipType construct(GraknClient.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRelationshipType(tx, id);
     }
 

@@ -94,7 +94,7 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Query<?>> T parseQueryEOF(String queryString) {
+    public <T extends Query> T parseQueryEOF(String queryString) {
         ErrorListener errorListener = ErrorListener.of(queryString);
         GraqlParser parser = parse(queryString, errorListener);
 
@@ -106,7 +106,7 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Query<?>> Stream<T> parseQueryList(String queryString) {
+    public <T extends Query> Stream<T> parseQueryList(String queryString) {
         ErrorListener errorListener = ErrorListener.of(queryString);
         GraqlParser parser = parse(queryString, errorListener);
 
@@ -140,18 +140,18 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public Stream<? extends Query<?>> visitQueryList(GraqlParser.QueryListContext ctx) {
+    public Stream<? extends Query> visitQueryList(GraqlParser.QueryListContext ctx) {
         return ctx.query().stream().map(this::visitQuery);
     }
 
     @Override
-    public Query<?> visitQueryEOF(GraqlParser.QueryEOFContext ctx) {
+    public Query visitQueryEOF(GraqlParser.QueryEOFContext ctx) {
         return visitQuery(ctx.query());
     }
 
     @Override
-    public Query<?> visitQuery(GraqlParser.QueryContext ctx) {
-        return (Query<?>) super.visitQuery(ctx);
+    public Query visitQuery(GraqlParser.QueryContext ctx) {
+        return (Query) super.visitQuery(ctx);
     }
 
     @Override

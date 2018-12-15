@@ -64,11 +64,11 @@ public class Graql {
     }
 
     @CheckReturnValue
-    public static <T extends Query<?>> T parse(String queryString) {
+    public static <T extends Query> T parse(String queryString) {
         return parser.parseQueryEOF(queryString);
     }
 
-    public static <T extends Query<?>> Stream<T> parseList(String queryString) {
+    public static <T extends Query> Stream<T> parseList(String queryString) {
         return parser.parseQueryList(queryString);
     }
 

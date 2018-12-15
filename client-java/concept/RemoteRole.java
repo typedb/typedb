@@ -19,7 +19,7 @@
 
 package grakn.core.client.concept;
 
-import grakn.core.client.Grakn;
+import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.RelationshipType;
@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
 
-    static RemoteRole construct(Grakn.Transaction tx, ConceptId id) {
+    static RemoteRole construct(GraknClient.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRole(tx, id);
     }
 

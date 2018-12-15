@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
 
@@ -33,7 +32,7 @@ import static java.util.stream.Collectors.joining;
  * pattern-matching query. The patterns are described in a declarative fashion, then the query will traverse
  * the knowledge base in an efficient fashion to find any matching answers.
  */
-public class GetQuery implements Query<ConceptMap> {
+public class GetQuery implements Query {
 
     private final Set<Variable> vars;
     private final MatchClause match;
@@ -66,20 +65,29 @@ public class GetQuery implements Query<ConceptMap> {
 
     @Override
     public String toString() {
-        return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
+        StringBuilder query = new StringBuilder();
+
+        query.append(match()).append(Char.SPACE).append(Command.GET);
+        if (!vars().isEmpty()) {
+            query.append(Char.SPACE).append(
+                    vars().stream().map(Variable::toString)
+                            .collect(joining(Char.COMMA_SPACE.toString()))
+            );
+        }
+        query.append(Char.SEMICOLON);
+
+        return query.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof GetQuery) {
-            GetQuery that = (GetQuery) o;
-            return (this.vars.equals(that.vars()))
-                    && (this.match.equals(that.match()));
-        }
-        return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        GetQuery that = (GetQuery) o;
+
+        return (this.vars.equals(that.vars()) &&
+                this.match.equals(that.match()));
     }
 
     @Override

@@ -19,7 +19,7 @@
 
 package grakn.core.client.concept;
 
-import grakn.core.client.Grakn;
+import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Rule;
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
 
-    static RemoteRule construct(Grakn.Transaction tx, ConceptId id) {
+    static RemoteRule construct(GraknClient.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRule(tx, id);
     }
 

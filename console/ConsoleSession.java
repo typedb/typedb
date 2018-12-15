@@ -19,8 +19,7 @@
 package grakn.core.console;
 
 import com.google.common.base.StandardSystemProperty;
-import grakn.core.client.Grakn;
-import grakn.core.graql.answer.Answer;
+import grakn.core.client.GraknClient;
 import grakn.core.graql.printer.Printer;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
@@ -73,14 +72,14 @@ public class ConsoleSession implements AutoCloseable {
 
     private final FileHistory historyFile;
 
-    private final Grakn client;
-    private final Grakn.Session session;
-    private Grakn.Transaction tx;
+    private final GraknClient client;
+    private final GraknClient.Session session;
+    private GraknClient.Transaction tx;
 
     ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException {
         this.keyspace = keyspace;
         this.infer = infer;
-        this.client = new Grakn(serverAddress);
+        this.client = new GraknClient(serverAddress);
         this.session = client.session(keyspace);
         this.consoleReader = new ConsoleReader(System.in, printOut);
         this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().getName() + ANSI_RESET + "> ");
@@ -94,7 +93,7 @@ public class ConsoleSession implements AutoCloseable {
 
     void load(Path filePath) throws IOException {
         String queries = readFile(filePath);
-        tx = client.session(keyspace).transaction(Grakn.Transaction.Type.WRITE);
+        tx = client.session(keyspace).transaction(GraknClient.Transaction.Type.WRITE);
 
         try {
             consoleReader.print("Loading: " + filePath.toString());
@@ -112,7 +111,7 @@ public class ConsoleSession implements AutoCloseable {
         consoleReader.setExpandEvents(false); // Disable JLine feature when seeing a '!'
         consoleReader.print(COPYRIGHT);
 
-        tx = client.session(keyspace).transaction(Grakn.Transaction.Type.WRITE);
+        tx = client.session(keyspace).transaction(GraknClient.Transaction.Type.WRITE);
         String queryString;
 
         while ((queryString = consoleReader.readLine()) != null) {
@@ -156,7 +155,7 @@ public class ConsoleSession implements AutoCloseable {
         // We'll use streams so we can print the answer out much faster and smoother
         try {
             // Parse the string to get a stream of Graql Queries
-            Stream<Query<Answer>> queries = Graql.parseList(queryString);
+            Stream<Query> queries = Graql.parseList(queryString);
 
             // Get the stream of answers for each query (query.stream())
             // Get the  stream of printed answers (printer.toStream(..))
@@ -226,7 +225,7 @@ public class ConsoleSession implements AutoCloseable {
 
     private void reopenTransaction() {
         if (!tx.isClosed()) tx.close();
-        tx = session.transaction(Grakn.Transaction.Type.WRITE);
+        tx = session.transaction(GraknClient.Transaction.Type.WRITE);
     }
 
     @Override

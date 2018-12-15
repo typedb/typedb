@@ -34,6 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
+import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -43,10 +44,10 @@ import java.util.stream.Collectors;
  * {@link GraphComputer} Used For Analytics Algorithms
  * Wraps a Tinkerpop {@link GraphComputer} which enables the execution of pregel programs.
  * These programs are defined either via a {@link MapReduce} or a {@link VertexProgram}.
- *
+ * <p>
  * A {@link VertexProgram} is a computation executed on each vertex in parallel.
  * Vertices communicate with each other through message passing.
- *
+ * <p>
  * {@link MapReduce} processed the vertices in a parallel manner by aggregating values emitted by vertices.
  * MapReduce can be executed alone or used to collect the results after executing a VertexProgram.
  */
@@ -65,7 +66,7 @@ public class TransactionOLAP {
         }
     }
 
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
                                   @Nullable Set<LabelId> types, Boolean includesRolePlayerEdges) {
         try {
@@ -85,7 +86,7 @@ public class TransactionOLAP {
         }
     }
 
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
                                   @Nullable Set<LabelId> types) {
         return compute(program, mapReduce, types, true);

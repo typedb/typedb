@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Statement;
 
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
  * When built from a match clause, the insert query will execute for each result of the match clause,
  * where variable names in the insert query are bound to the concept in the result of the match clause.
  */
-public class InsertQuery implements Query<ConceptMap> {
+public class InsertQuery implements Query {
 
     private final MatchClause match;
     private final List<Statement> statements;
@@ -58,33 +57,28 @@ public class InsertQuery implements Query<ConceptMap> {
         return statements;
     }
 
-    @CheckReturnValue
-    public InsertQuery admin() {
-        return this;
-    }
-
     @Override
     public final String toString() {
-        StringBuilder builder = new StringBuilder();
+        StringBuilder query = new StringBuilder();
 
-        if (match() != null) builder.append(match()).append("\n");
-        builder.append("insert ");
-        builder.append(statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim());
+        if (match() != null) query.append(match()).append(Char.NEW_LINE);
+        query.append(Command.INSERT).append(Char.SPACE);
+        query.append(statements().stream()
+                             .map(v -> v + Char.SEMICOLON.toString())
+                             .collect(Collectors.joining(Char.NEW_LINE.toString())).trim());
 
-        return builder.toString();
+        return query.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof InsertQuery) {
-            InsertQuery that = (InsertQuery) o;
-            return ((this.match == null) ? (that.match() == null) : this.match.equals(that.match()))
-                    && (this.statements.equals(that.statements()));
-        }
-        return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        InsertQuery that = (InsertQuery) o;
+
+        return (this.match == null ? that.match() == null : this.match.equals(that.match()) &&
+                this.statements.equals(that.statements()));
     }
 
     @Override

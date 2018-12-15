@@ -47,6 +47,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertThat;
 
+@SuppressWarnings("Duplicates")
 public class SchemaMutationIT {
     private Role husband;
     private Role wife;
@@ -138,136 +139,6 @@ public class SchemaMutationIT {
         expectedException.expectMessage(IS_ABSTRACT.getMessage(man.label()));
 
         man.isAbstract(true);
-    }
-
-    @Test
-    public void whenAddingEntityTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
-
-        tx.close();
-        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
-        graknGraphBatch.putEntityType("This Will Fail");
-    }
-
-    @Test
-    public void whenAddingRoleTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
-        tx.close();
-        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
-        graknGraphBatch.putRole("This Will Fail");
-    }
-
-    @Test
-    public void whenAddingResourceTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
-
-        tx.close();
-        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
-        graknGraphBatch.putAttributeType("This Will Fail", AttributeType.DataType.STRING);
-    }
-
-    @Test
-    public void whenAddingRelationTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
-
-
-        tx.close();
-        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
-        graknGraphBatch.putRelationshipType("This Will Fail");
-    }
-
-    @Test
-    public void whenAddingRelatesUsingBatchGraph_Throw(){
-        String roleTypeId = "role-thing";
-        String relationTypeId = "relationtype";
-        tx.putRelationshipType(relationTypeId).relates(tx.putRole(roleTypeId));
-        tx.commit();
-        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
-        Role role = graknGraphBatch.getRole(roleTypeId);
-        RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
-
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
-
-        relationshipType.relates(role);
-    }
-
-    @Test
-    public void whenAddingPlaysUsingBatchGraph_Throw(){
-        String roleTypeId = "role-thing";
-        String entityTypeId = "entityType";
-        tx.putEntityType(entityTypeId);
-        tx.putRelationshipType("reltype").relates(tx.putRole(roleTypeId));
-        tx.commit();
-        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
-        Role role = graknGraphBatch.getRole(roleTypeId);
-        EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
-
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
-
-        entityType.plays(role);
-    }
-
-    @Test
-    public void whenChangingSuperTypesUsingBatchGraph_Throw(){
-        String entityTypeId1 = "entityType1";
-        String entityTypeId2 = "entityType2";
-
-        tx.putEntityType(entityTypeId1);
-        tx.putEntityType(entityTypeId2);
-
-        tx.commit();
-        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
-        EntityType entityType1 = graknGraphBatch.getEntityType(entityTypeId1);
-        EntityType entityType2 = graknGraphBatch.getEntityType(entityTypeId2);
-
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
-
-        entityType1.sup(entityType2);
-    }
-
-
-    @Test
-    public void whenDeletingPlaysUsingBatchGraph_Throw(){
-        String roleTypeId = "role-thing";
-        String entityTypeId = "entityType";
-        Role role = tx.putRole(roleTypeId);
-        tx.putRelationshipType("reltype").relates(role);
-        tx.putEntityType(entityTypeId).plays(role);
-        tx.commit();
-
-        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
-        role = graknGraphBatch.getRole(roleTypeId);
-        EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
-
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
-
-        entityType.unplay(role);
-    }
-
-    @Test
-    public void whenDeletingRelatesUsingBatchGraph_Throw(){
-        String roleTypeId = "role-thing";
-        String relationTypeId = "relationtype";
-        Role role = tx.putRole(roleTypeId);
-        tx.putRelationshipType(relationTypeId).relates(role);
-        tx.commit();
-
-        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
-        role = graknGraphBatch.getRole(roleTypeId);
-        RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
-
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
-
-        relationshipType.unrelate(role);
     }
 
     @Test

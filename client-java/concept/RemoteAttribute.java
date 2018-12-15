@@ -19,7 +19,7 @@
 
 package grakn.core.client.concept;
 
-import grakn.core.client.Grakn;
+import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeType<D>> implements Attribute<D> {
 
-    static <D> RemoteAttribute<D> construct(Grakn.Transaction tx, ConceptId id) {
+    static <D> RemoteAttribute<D> construct(GraknClient.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteAttribute<>(tx, id);
     }
 

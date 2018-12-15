@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
  *
  * @param <T> the type of the result of the aggregate query
  */
-public class AggregateQuery<T extends Answer> implements Query<T> {
+public class AggregateQuery<T extends Answer> implements Query {
 
     private final MatchClause match;
     private final Aggregate<T> aggregate;
@@ -51,20 +51,24 @@ public class AggregateQuery<T extends Answer> implements Query<T> {
 
     @Override
     public final String toString() {
-        return match().toString() + " aggregate " + aggregate().toString() + ";";
+        StringBuilder query = new StringBuilder();
+
+        query.append(match()).append(Char.SPACE)
+                .append(Command.AGGREGATE).append(Char.SPACE).append(aggregate)
+                .append(Char.SEMICOLON);
+
+        return query.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof AggregateQuery) {
-            AggregateQuery<?> that = (AggregateQuery<?>) o;
-            return ((this.match == null) ? (that.match() == null) : this.match.equals(that.match()))
-                    && (this.aggregate.equals(that.aggregate()));
-        }
-        return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AggregateQuery<?> that = (AggregateQuery<?>) o;
+
+        return (this.match == null ? that.match() == null : this.match.equals(that.match()) &&
+                this.aggregate.equals(that.aggregate()));
     }
 
     @Override

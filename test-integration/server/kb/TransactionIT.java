@@ -336,12 +336,10 @@ public class TransactionIT {
     public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw(){
         String keyspace = tx.keyspace().getName();
         failAtOpeningTx(session, Transaction.Type.WRITE, keyspace);
-        failAtOpeningTx(session, Transaction.Type.BATCH, keyspace);
         tx.close();
 
         //noinspection ResultOfMethodCallIgnored
-        session.transaction(Transaction.Type.BATCH);
-        failAtOpeningTx(session, Transaction.Type.WRITE, keyspace);
+        session.transaction(Transaction.Type.WRITE);
         failAtOpeningTx(session, Transaction.Type.READ, keyspace);
     }
 

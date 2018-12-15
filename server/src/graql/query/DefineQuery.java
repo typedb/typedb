@@ -18,13 +18,13 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.pattern.Statement;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class DefineQuery implements Query<ConceptMap> {
+import static java.util.stream.Collectors.joining;
+
+public class DefineQuery implements Query {
 
     private final List<? extends Statement> statements;
 
@@ -41,19 +41,23 @@ public class DefineQuery implements Query<ConceptMap> {
 
     @Override
     public String toString() {
-        return "define " + statements().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+        StringBuilder query = new StringBuilder();
+
+        query.append(Command.DEFINE).append(Char.SPACE);
+        query.append(statements().stream()
+                             .map(s -> s + Char.SEMICOLON.toString())
+                             .collect(joining(Char.NEW_LINE.toString())).trim());
+
+        return query.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof DefineQuery) {
-            DefineQuery that = (DefineQuery) o;
-            return this.statements.equals(that.statements());
-        }
-        return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DefineQuery that = (DefineQuery) o;
+        return this.statements.equals(that.statements());
     }
 
     @Override
