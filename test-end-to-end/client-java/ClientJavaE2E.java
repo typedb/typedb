@@ -258,12 +258,12 @@ public class ClientJavaE2E {
         return new String[] { "male-partner", "female-partner", "young-lion" };
     }
 
-    private void localhostGraknTx(Consumer<Grakn.Transaction> fn) {
+    private void localhostGraknTx(Consumer<GraknClient.Transaction> fn) {
         String host = "localhost:48555";
         String keyspace = "grakn";
 
-        try (Grakn.Session session = new Grakn(host).session(keyspace)) {
-            try (Grakn.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Session session = new GraknClient(host).session(keyspace)) {
+            try (GraknClient.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
                 fn.accept(transaction);
             }
         }

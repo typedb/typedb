@@ -58,9 +58,9 @@ import static java.util.stream.Collectors.toList;
  * A class for executing {@link PropertyExecutor}s on {@link VarProperty}s within Graql queries.
  * Multiple query types share this class, such as InsertQuery and DefineQuery.
  */
-public class QueryOperationExecutor {
+public class WriteExecutor {
 
-    protected final Logger LOG = LoggerFactory.getLogger(QueryOperationExecutor.class);
+    protected final Logger LOG = LoggerFactory.getLogger(WriteExecutor.class);
 
     private final Transaction tx;
 
@@ -79,9 +79,9 @@ public class QueryOperationExecutor {
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
-    private QueryOperationExecutor(Transaction tx, ImmutableSet<VarAndProperty> properties,
-                                   Partition<Variable> equivalentVars,
-                                   ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies) {
+    private WriteExecutor(Transaction tx, ImmutableSet<VarAndProperty> properties,
+                          Partition<Variable> equivalentVars,
+                          ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies) {
         this.tx = tx;
         this.properties = properties;
         this.equivalentVars = equivalentVars;
@@ -128,7 +128,7 @@ public class QueryOperationExecutor {
         return create(properties.build(), transaction).insertAll(new ConceptMap());
     }
 
-    private static QueryOperationExecutor create(ImmutableSet<VarAndProperty> properties, Transaction transaction) {
+    private static WriteExecutor create(ImmutableSet<VarAndProperty> properties, Transaction transaction) {
         /*
             We build several many-to-many relations, indicated by a `Multimap<X, Y>`. These are used to represent
             the dependencies between properties and variables.
@@ -216,7 +216,7 @@ public class QueryOperationExecutor {
          */
         Multimap<VarAndProperty, VarAndProperty> propertyDependencies = propertyDependencies(propToVarDeps, varToPropDeps);
 
-        return new QueryOperationExecutor(transaction, properties, equivalentVars, ImmutableMultimap.copyOf(propertyDependencies));
+        return new WriteExecutor(transaction, properties, equivalentVars, ImmutableMultimap.copyOf(propertyDependencies));
     }
 
     private static Multimap<VarProperty, Variable> equivalentProperties(Set<VarAndProperty> properties) {
@@ -444,8 +444,8 @@ public class QueryOperationExecutor {
             if (o == this) {
                 return true;
             }
-            if (o instanceof QueryOperationExecutor.VarAndProperty) {
-                QueryOperationExecutor.VarAndProperty that = (QueryOperationExecutor.VarAndProperty) o;
+            if (o instanceof WriteExecutor.VarAndProperty) {
+                WriteExecutor.VarAndProperty that = (WriteExecutor.VarAndProperty) o;
                 return (this.var.equals(that.var))
                         && (this.property.equals(that.property))
                         && (this.executor.equals(that.executor));

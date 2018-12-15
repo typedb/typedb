@@ -19,7 +19,7 @@
 
 package grakn.core.client.concept;
 
-import grakn.core.client.Grakn;
+import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.protocol.ConceptProto;
@@ -36,7 +36,7 @@ import java.util.stream.StreamSupport;
  */
 public abstract class RemoteConcept<SomeConcept extends Concept> implements Concept {
 
-    public static Concept of(ConceptProto.Concept concept, Grakn.Transaction tx) {
+    public static Concept of(ConceptProto.Concept concept, GraknClient.Transaction tx) {
         ConceptId id = ConceptId.of(concept.getId());
 
         switch (concept.getBaseType()) {
@@ -64,7 +64,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
         }
     }
 
-    abstract Grakn.Transaction tx();
+    abstract GraknClient.Transaction tx();
 
     @Override
     public abstract ConceptId id();

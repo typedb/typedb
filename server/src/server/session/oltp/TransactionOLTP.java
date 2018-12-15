@@ -18,8 +18,18 @@
 
 package grakn.core.server.session.oltp;
 
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.AggregateQuery;
+import grakn.core.graql.query.ComputeQuery;
+import grakn.core.graql.query.DefineQuery;
+import grakn.core.graql.query.DeleteQuery;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.UndefineQuery;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.TemporaryWriteException;
@@ -37,6 +47,7 @@ import org.janusgraph.diskstorage.locking.TemporaryLockingException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * <p>

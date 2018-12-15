@@ -81,7 +81,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class ConceptBuilder {
 
-    private final QueryOperationExecutor executor;
+    private final WriteExecutor executor;
 
     private final Variable var;
 
@@ -164,7 +164,7 @@ public class ConceptBuilder {
         return set(THEN, then);
     }
 
-    static ConceptBuilder of(QueryOperationExecutor executor, Variable var) {
+    static ConceptBuilder of(WriteExecutor executor, Variable var) {
         return new ConceptBuilder(executor, var);
     }
 
@@ -321,7 +321,7 @@ public class ConceptBuilder {
         }
     }
 
-    private ConceptBuilder(QueryOperationExecutor executor, Variable var) {
+    private ConceptBuilder(WriteExecutor executor, Variable var) {
         this.executor = executor;
         this.var = var;
     }

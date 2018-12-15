@@ -19,7 +19,7 @@
 
 package grakn.core.client.concept;
 
-import grakn.core.client.Grakn;
+import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
@@ -32,7 +32,7 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class RemoteEntity extends RemoteThing<Entity, EntityType> implements Entity {
 
-    static RemoteEntity construct(Grakn.Transaction tx, ConceptId id) {
+    static RemoteEntity construct(GraknClient.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteEntity(tx, id);
     }
 

@@ -1,7 +1,7 @@
 package grakn.core.deduplicator;
 
 
-import grakn.core.client.Grakn;
+import grakn.core.client.GraknClient;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.query.Graql;
@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class AttributeDeduplicatorE2E {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicatorE2E.class);
-    private Grakn localhostGrakn = new Grakn("localhost:48555");
+    private GraknClient localhostGrakn = new GraknClient("localhost:48555");
     private Path queuePath = GRAKN_UNZIPPED_DIRECTORY.resolve("db").resolve("queue");
 
     private static ProcessExecutor commandExecutor = new ProcessExecutor()
@@ -75,7 +75,7 @@ public class AttributeDeduplicatorE2E {
         ExecutorService executorServiceForParallelInsertion = Executors.newFixedThreadPool(8);
 
         LOG.info("initiating the shouldDeduplicate10AttributesWithDuplicates test...");
-        try (Grakn.Session session = localhostGrakn.session("attribute_deduplicator_e2e")) {
+        try (GraknClient.Session session = localhostGrakn.session("attribute_deduplicator_e2e")) {
             // insert 10 attributes, each with 100 duplicates
             LOG.info("defining the schema...");
             defineParentChildSchema(session);
@@ -97,8 +97,8 @@ public class AttributeDeduplicatorE2E {
         }
     }
 
-    private void defineParentChildSchema(Grakn.Session session) {
-        try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+    private void defineParentChildSchema(GraknClient.Session session) {
+        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             List<ConceptMap> answer = tx.execute(Graql.define(
                     label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
                     label("parent").sub("role"),
@@ -109,7 +109,7 @@ public class AttributeDeduplicatorE2E {
         }
     }
 
-    private static void insertNameShuffled(Grakn.Session session, int nameCount, int duplicatePerNameCount, ExecutorService executorService)
+    private static void insertNameShuffled(GraknClient.Session session, int nameCount, int duplicatePerNameCount, ExecutorService executorService)
             throws ExecutionException, InterruptedException {
 
         List<String> duplicatedNames = new ArrayList<>();
@@ -125,7 +125,7 @@ public class AttributeDeduplicatorE2E {
         List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
         for (String name: duplicatedNames) {
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                     List<ConceptMap> answer = tx.execute(Graql.insert(var().isa("name").val(name)));
                     tx.commit();
                 }
@@ -171,8 +171,8 @@ public class AttributeDeduplicatorE2E {
         return count;
     }
 
-    private int countTotalNames(Grakn.Session session) {
-        try (Grakn.Transaction tx = session.transaction(Transaction.Type.READ)) {
+    private int countTotalNames(GraknClient.Session session) {
+        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
             return tx.execute(Graql.match(var("x").isa("name")).aggregate(count())).get(0).number().intValue();
         }
     }

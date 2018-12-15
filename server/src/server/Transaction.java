@@ -109,9 +109,7 @@ public interface Transaction extends AutoCloseable {
         return stream(query, true);
     }
 
-    default Stream<ConceptMap> stream(DefineQuery query, boolean infer) {
-        return executor(infer).run(query);
-    }
+    Stream<ConceptMap> stream(DefineQuery query, boolean infer);
 
     // Undefine Query
 
@@ -127,9 +125,7 @@ public interface Transaction extends AutoCloseable {
         return stream(query, true);
     }
 
-    default Stream<ConceptMap> stream(UndefineQuery query, boolean infer) {
-        return executor(infer).run(query);
-    }
+    Stream<ConceptMap> stream(UndefineQuery query, boolean infer);
 
     // Insert Query
 
@@ -145,9 +141,7 @@ public interface Transaction extends AutoCloseable {
         return stream(query, true);
     }
 
-    default Stream<ConceptMap> stream(InsertQuery query, boolean infer) {
-        return executor(infer).run(query);
-    }
+    Stream<ConceptMap> stream(InsertQuery query, boolean infer);
 
     // Delete Query
 
@@ -163,9 +157,7 @@ public interface Transaction extends AutoCloseable {
         return stream(query, true);
     }
 
-    default Stream<ConceptSet> stream(DeleteQuery query, boolean infer) {
-        return executor(infer).run(query);
-    }
+    Stream<ConceptSet> stream(DeleteQuery query, boolean infer);
 
     // Get Query
 
@@ -181,9 +173,7 @@ public interface Transaction extends AutoCloseable {
         return stream(query, true);
     }
 
-    default Stream<ConceptMap> stream(GetQuery query, boolean infer) {
-        return executor(infer).run(query);
-    }
+    Stream<ConceptMap> stream(GetQuery query, boolean infer);
 
     // Aggregate Query
 
@@ -199,9 +189,7 @@ public interface Transaction extends AutoCloseable {
         return stream(query, true);
     }
 
-    default <T extends Answer> Stream<T> stream(AggregateQuery<T> query, boolean infer) {
-        return executor(infer).run(query);
-    }
+    <T extends Answer> Stream<T> stream(AggregateQuery<T> query, boolean infer);
 
     // Compute Query
 
@@ -217,9 +205,7 @@ public interface Transaction extends AutoCloseable {
         return stream(query, true);
     }
 
-    default <T extends Answer> Stream<T> stream(ComputeQuery<T> query, boolean infer) {
-        return executor(infer).run(query);
-    }
+    <T extends Answer> Stream<T> stream(ComputeQuery<T> query, boolean infer);
 
     // Generic Query
 
@@ -337,11 +323,6 @@ public interface Transaction extends AutoCloseable {
      */
     @CheckReturnValue
     Stream<SchemaConcept> sups(SchemaConcept schemaConcept);
-
-
-    QueryExecutor executor();
-
-    QueryExecutor executor(boolean infer);
 
     //------------------------------------- Concept Construction ----------------------------------
 
@@ -590,7 +571,7 @@ public interface Transaction extends AutoCloseable {
      * @return true if the current transaction is read only
      */
     @CheckReturnValue
-    Type txType();
+    Type type();
 
     /**
      * Returns the {@link Session} which was used to create this {@link Transaction}

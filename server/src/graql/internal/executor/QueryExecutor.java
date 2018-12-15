@@ -42,7 +42,6 @@ import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.QueryExecutor;
 import grakn.core.server.session.TransactionImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -63,16 +62,14 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * A {@link QueryExecutor} that runs queries using a Tinkerpop graph.
- *
+ * The executor class for Graql queries that runs queries using a Tinkerpop graph.
  */
-@SuppressWarnings("unused") // accessed via reflection in TransactionImpl
-public class QueryExecutorImpl implements QueryExecutor {
+public class QueryExecutor {
 
     private final TransactionImpl<?> tx;
     private final boolean infer;
 
-    public QueryExecutorImpl(TransactionImpl<?> tx, boolean infer) {
+    public QueryExecutor(TransactionImpl<?> tx, boolean infer) {
         this.tx = tx;
         this.infer = infer;
     }
@@ -119,11 +116,8 @@ public class QueryExecutorImpl implements QueryExecutor {
                 map.put(var, concept);
             }
         }
-
         return map;
     }
-
-
 
     private Concept buildConcept(Element element) {
         if (element instanceof Vertex) {
@@ -167,12 +161,10 @@ public class QueryExecutorImpl implements QueryExecutor {
         }
     }
 
-    @Override
     public Stream<ConceptMap> run(GetQuery query) {
         return run(query.match()).map(result -> result.project(query.vars())).distinct();
     }
 
-    @Override
     public Stream<ConceptMap> run(InsertQuery query) {
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(v -> v.innerStatements().stream())
@@ -181,7 +173,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         if (query.match() != null) {
             return runMatchInsert(query.match(), statements);
         } else {
-            return Stream.of(QueryOperationExecutor.insertAll(statements, tx));
+            return Stream.of(WriteExecutor.insertAll(statements, tx));
         }
     }
 
@@ -191,10 +183,9 @@ public class QueryExecutorImpl implements QueryExecutor {
         Set<Variable> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
 
         Stream<ConceptMap> answers = tx.stream(match.get(projectedVars));
-        return answers.map(answer -> QueryOperationExecutor.insertAll(statements, tx, answer)).collect(toList()).stream();
+        return answers.map(answer -> WriteExecutor.insertAll(statements, tx, answer)).collect(toList()).stream();
     }
 
-    @Override
     public Stream<ConceptSet> run(DeleteQuery query) {
         Stream<ConceptMap> answers = run(query.match()).map(result -> result.project(query.vars())).distinct();
         // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
@@ -211,33 +202,29 @@ public class QueryExecutorImpl implements QueryExecutor {
         return Stream.of(new ConceptSet(conceptsToDelete.stream().map(Concept::id).collect(toSet())));
     }
 
-    @Override
     public Stream<ConceptMap> run(DefineQuery query) {
         ImmutableList<Statement> allPatterns = query.statements().stream()
                 .flatMap(v -> v.innerStatements().stream())
                 .collect(toImmutableList());
 
-        ConceptMap defined = QueryOperationExecutor.defineAll(allPatterns, tx);
+        ConceptMap defined = WriteExecutor.defineAll(allPatterns, tx);
         return Stream.of(defined);
     }
 
-    @Override
     public Stream<ConceptMap> run(UndefineQuery query) {
         ImmutableList<Statement> allPatterns = query.statements().stream()
                 .flatMap(v -> v.innerStatements().stream())
                 .collect(toImmutableList());
 
-        ConceptMap undefined = QueryOperationExecutor.undefineAll(allPatterns, tx);
+        ConceptMap undefined = WriteExecutor.undefineAll(allPatterns, tx);
         return Stream.of(undefined);
     }
 
-    @Override
     public <T extends Answer> Stream<T> run(AggregateQuery<T> query) {
         return query.aggregate().apply(run(query.match())).stream();
     }
 
 
-    @Override
     public <T extends Answer> Stream<T> run(ComputeQuery<T> query) {
         Optional<GraqlQueryException> exception = query.getException();
         if (exception.isPresent()) throw exception.get();

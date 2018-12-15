@@ -20,7 +20,7 @@ package grakn.core.console;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import grakn.core.client.Grakn;
+import grakn.core.client.GraknClient;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.GraknVersion;
 import io.grpc.Status;
@@ -76,7 +76,7 @@ public class GraknConsole {
         this.infer = !commandLine.hasOption(NO_INFER);
 
         String serverAddressArg = commandLine.getOptionValue(URI);
-        this.serverAddress = serverAddressArg != null ? serverAddressArg : Grakn.DEFAULT_URI;
+        this.serverAddress = serverAddressArg != null ? serverAddressArg : GraknClient.DEFAULT_URI;
 
         String keyspaceArg = commandLine.getOptionValue(KEYSPACE);
         this.keyspace = keyspaceArg != null ? keyspaceArg : DEFAULT_KEYSPACE;
