@@ -47,8 +47,10 @@ import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
+import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Validator;
 import grakn.core.server.kb.concept.ConceptImpl;
@@ -66,8 +68,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.util.JanusGraphCleanup;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.locking.PermanentLockingException;
+import org.janusgraph.diskstorage.locking.TemporaryLockingException;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,44 +95,103 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toSet;
-
 /**
- * The {@link Transaction} Base Implementation.
- * This defines how a grakn graph sits on top of a Tinkerpop {@link Graph}.
- * It mostly act as a construction object which ensure the resulting graph conforms to the Grakn Object model.
- *
- * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
+ * A {@link Transaction} using {@link JanusGraph} as a vendor backend.
+ * Wraps up a {@link JanusGraph} as a method of storing the {@link Transaction} object Model.
+ * With this vendor some issues to be aware of:
+ * 1. Whenever a transaction is closed if none remain open then the connection to the graph is closed permanently.
+ * 2. Clearing the graph explicitly closes the connection as well.
  */
-public abstract class TransactionImpl<G extends Graph> implements Transaction {
-    final Logger LOG = LoggerFactory.getLogger(TransactionImpl.class);
-
+public class TransactionOLTP implements Transaction {
+    final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
     //----------------------------- Shared Variables
     private final SessionImpl session;
-    private final G graph;
+    private final JanusGraph graph;
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
-
-
     //----------------------------- Transaction Specific
     private final ThreadLocal<TransactionCache> localConceptLog = new ThreadLocal<>();
-    private @Nullable
-    GraphTraversalSource graphTraversalSource = null;
     private final RuleCache ruleCache;
 
-    public TransactionImpl(SessionImpl session, G graph) {
+    @Nullable
+    private GraphTraversalSource graphTraversalSource = null;
+
+    public TransactionOLTP(SessionImpl session, JanusGraph graph) {
         this.session = session;
         this.graph = graph;
         this.elementFactory = new ElementFactory(this);
         this.ruleCache = new RuleCache(this);
 
         //Initialise Graph Caches
-        globalCache = new GlobalCache(session.config());
+        this.globalCache = new GlobalCache(session.config());
 
         //Initialise Graph
-        txCache().openTx(Type.WRITE);
+        cache().open(Type.WRITE);
 
+        // TODO: We should initialise meta concepts every time we create a new transaction
         if (initialiseMetaConcepts()) commit();
+    }
+
+    void open(Type type) {
+        cache().open(type);
+        if (getTinkerPopGraph().isOpen() && !getTinkerPopGraph().tx().isOpen()) getTinkerPopGraph().tx().open();
+    }
+
+    boolean isTinkerPopGraphClosed() {
+        return getTinkerPopGraph().isClosed();
+    }
+
+
+    void closeOpenTransactions() {
+        ((StandardJanusGraph) getTinkerPopGraph()).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close);
+        getTinkerPopGraph().close();
+    }
+
+    public void clearGraph() {
+        try {
+            JanusGraphCleanup.clear(getTinkerPopGraph());
+        } catch (BackendException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void commitTransactionInternal() {
+        executeLockingMethod(() -> {
+            try {
+                LOG.trace("Graph is valid. Committing graph . . . ");
+                getTinkerPopGraph().tx().commit();
+                LOG.trace("Graph committed.");
+            } catch (UnsupportedOperationException e) {
+                //IGNORED
+            }
+            return null;
+        });
+    }
+
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId... conceptIds) {
+        return executeLockingMethod(() -> factory().addVertexElement(baseType, conceptIds));
+    }
+
+    /**
+     * Executes a method which has the potential to throw a {@link TemporaryLockingException} or a {@link PermanentLockingException}.
+     * If the exception is thrown it is wrapped in a {@link GraknServerException} so that the transaction can be retried.
+     *
+     * @param method The locking method to execute
+     */
+    private <X> X executeLockingMethod(Supplier<X> method) {
+        try {
+            return method.get();
+        } catch (JanusGraphException e) {
+            if (e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)) {
+                throw TemporaryWriteException.temporaryLock(e);
+            } else {
+                throw GraknServerException.unknown(e);
+            }
+        }
+    }
+
+    public boolean isValidElement(Element element) {
+        return element != null && !((JanusGraphElement) element).isRemoved();
     }
 
     @Override
@@ -166,6 +234,8 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         return executor(infer).run(query);
     }
 
+
+
     public RuleCache ruleCache() { return ruleCache;}
 
     /**
@@ -176,8 +246,8 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
      * @return The matching type id
      */
     public LabelId convertToId(Label label) {
-        if (txCache().isLabelCached(label)) {
-            return txCache().convertLabelToId(label);
+        if (cache().isLabelCached(label)) {
+            return cache().convertLabelToId(label);
         }
         return LabelId.invalid();
     }
@@ -207,14 +277,6 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         return globalCache;
     }
 
-
-    /**
-     * Opens the thread bound transaction
-     */
-    public void openTransaction(Type txType) {
-        txCache().openTx(txType);
-    }
-
     /**
      * Gets the config option which determines the number of instances a {@link grakn.core.graql.concept.Type} must have before the {@link grakn.core.graql.concept.Type}
      * if automatically sharded.
@@ -225,7 +287,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         return session().config().getProperty(ConfigKey.SHARDING_THRESHOLD);
     }
 
-    public TransactionCache txCache() {
+    public TransactionCache cache() {
         TransactionCache transactionCache = localConceptLog.get();
         if (transactionCache == null) {
             localConceptLog.set(transactionCache = new TransactionCache(getGlobalCache()));
@@ -240,14 +302,12 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
 
     @Override
     public boolean isClosed() {
-        return !txCache().isTxOpen();
+        return !cache().isTxOpen();
     }
-
-    public abstract boolean isTinkerPopGraphClosed();
 
     @Override
     public Type type() {
-        return txCache().txType();
+        return cache().txType();
     }
 
     /**
@@ -268,7 +328,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         return factory().buildConcept(edge);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked") // TODO: we shouldn't initialising meta concepts from within a transaction
     private boolean initialiseMetaConcepts() {
         boolean schemaInitialised = false;
         if (isMetaSchemaNotInitialised()) {
@@ -300,7 +360,6 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         return schemaInitialised;
     }
 
-
     /**
      * Copies the {@link SchemaConcept} and it's subs into the {@link TransactionCache}.
      * This is important as lookups for {@link SchemaConcept}s based on {@link Label} depend on this caching.
@@ -318,7 +377,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         return getMetaConcept() == null;
     }
 
-    public G getTinkerPopGraph() {
+    public JanusGraph getTinkerPopGraph() {
         return graph;
     }
 
@@ -382,11 +441,6 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         if (Type.READ.equals(type())) throw TransactionException.transactionReadOnly(this);
     }
 
-
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId... conceptIds) {
-        return factory().addVertexElement(baseType, conceptIds);
-    }
-
     /**
      * Adds a new type vertex which occupies a grakn id. This result in the grakn id count on the meta concept to be
      * incremented.
@@ -410,7 +464,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
      * @throws TransactionException if the graph is closed.
      */
     private <X> X operateOnOpenGraph(Supplier<X> supplier) {
-        if (isClosed()) throw TransactionException.transactionClosed(this, txCache().getClosedReason());
+        if (isClosed()) throw TransactionException.transactionClosed(this, cache().getClosedReason());
         return supplier.get();
     }
 
@@ -491,8 +545,8 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
      * @return The {@link SchemaConcept} which was either cached or built via a DB read or write
      */
     private SchemaConcept buildSchemaConcept(Label label, Supplier<SchemaConcept> dbBuilder) {
-        if (txCache().isTypeCached(label)) {
-            return txCache().getCachedSchemaConcept(label);
+        if (cache().isTypeCached(label)) {
+            return cache().getCachedSchemaConcept(label);
         } else {
             return dbBuilder.get();
         }
@@ -558,8 +612,8 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
         return operateOnOpenGraph(() -> {
-            if (txCache().isConceptCached(id)) {
-                return txCache().getCachedConcept(id);
+            if (cache().isConceptCached(id)) {
+                return cache().getCachedConcept(id);
             } else {
                 if (id.getValue().startsWith(Schema.PREFIX_EDGE)) {
                     Optional<T> concept = getConceptEdge(id);
@@ -652,17 +706,12 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
     }
 
-    //This is overridden by vendors for more efficient clearing approaches
-    public void clearGraph() {
-        getTinkerPopGraph().traversal().V().drop().iterate();
-    }
-
     /**
      * Closes the root session this graph stems from. This will automatically rollback any pending transactions.
      */
     public void closeSession() {
         try {
-            txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
+            cache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
             getTinkerPopGraph().close();
         } catch (Exception e) {
             throw TransactionException.closingFailed(this, e);
@@ -678,7 +727,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
             return;
         }
         try {
-            txCache().writeToGraphCache(type().equals(Type.READ));
+            cache().writeToGraphCache(type().equals(Type.READ));
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", keyspace());
             closeTransaction(closeMessage);
@@ -699,7 +748,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         try {
             validateGraph();
             commitTransactionInternal();
-            txCache().writeToGraphCache(true);
+            cache().writeToGraphCache(true);
         } finally {
             closeTransaction(closeMessage);
         }
@@ -723,29 +772,27 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         }
     }
 
-
     private void closeTransaction(String closedReason) {
         try {
             graph.tx().close();
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         } finally {
-            txCache().closeTx(closedReason);
+            cache().closeTx(closedReason);
             ruleCache().closeTx();
         }
     }
 
-
     private Optional<CommitLog> commitWithLogs() throws InvalidKBException {
         validateGraph();
 
-        Map<ConceptId, Long> newInstances = txCache().getShardingCount();
-        Map<String, Set<ConceptId>> newAttributes = txCache().getNewAttributes();
+        Map<ConceptId, Long> newInstances = cache().getShardingCount();
+        Map<String, Set<ConceptId>> newAttributes = cache().getNewAttributes();
         boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
         commitTransactionInternal();
 
-        txCache().writeToGraphCache(true);
+        cache().writeToGraphCache(true);
 
         //If we have logs to commit get them and add them
         if (logsExist) {
@@ -756,48 +803,12 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         return Optional.empty();
     }
 
-    public void commitTransactionInternal() {
-        try {
-            LOG.trace("Graph is valid. Committing graph . . . ");
-            getTinkerPopGraph().tx().commit();
-            LOG.trace("Graph committed.");
-        } catch (UnsupportedOperationException e) {
-            //IGNORED
-        }
-    }
-
     private void validateGraph() throws InvalidKBException {
         Validator validator = new Validator(this);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();
             if (!errors.isEmpty()) throw InvalidKBException.validationErrors(errors);
         }
-    }
-
-
-    public boolean isValidElement(Element element) {
-        return element != null;
-    }
-
-    //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
-
-    /**
-     * Returns the duplicates of the given concept
-     *
-     * @param mainConcept primary concept - this one is returned by the index and not considered a duplicate
-     * @param conceptIds  Set of Ids containing potential duplicates of the main concept
-     * @return a set containing the duplicates of the given concept
-     */
-    private <X extends ConceptImpl> Set<X> getDuplicates(X mainConcept, Set<ConceptId> conceptIds) {
-        Set<X> duplicated = conceptIds.stream()
-                .map(this::<X>getConcept)
-                //filter non-null, will be null if previously deleted/merged
-                .filter(Objects::nonNull)
-                .collect(toSet());
-
-        duplicated.remove(mainConcept);
-
-        return duplicated;
     }
 
     /**
@@ -897,7 +908,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            TransactionImpl.CommitLog that = (TransactionImpl.CommitLog) o;
+            TransactionOLTP.CommitLog that = (TransactionOLTP.CommitLog) o;
 
             return (this.keyspace.equals(that.keyspace()) &&
                     this.instanceCount.equals(that.instanceCount()) &&

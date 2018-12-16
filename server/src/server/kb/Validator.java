@@ -24,7 +24,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Thing;
 import grakn.core.server.kb.structure.Casting;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,10 +43,10 @@ import java.util.Set;
  *
  */
 public class Validator {
-    private final TransactionImpl<?> graknGraph;
+    private final TransactionOLTP graknGraph;
     private final List<String> errorsFound = new ArrayList<>();
 
-    public Validator(TransactionImpl graknGraph){
+    public Validator(TransactionOLTP graknGraph){
         this.graknGraph = graknGraph;
     }
 
@@ -64,21 +64,21 @@ public class Validator {
      */
     public boolean validate(){
         //Validate Things
-        graknGraph.txCache().getModifiedThings().forEach(this::validateThing);
+        graknGraph.cache().getModifiedThings().forEach(this::validateThing);
 
         //Validate Relationships
-        graknGraph.txCache().getNewRelationships().forEach(this::validateRelationship);
+        graknGraph.cache().getNewRelationships().forEach(this::validateRelationship);
 
         //Validate RoleTypes
-        graknGraph.txCache().getModifiedRoles().forEach(this::validateRole);
+        graknGraph.cache().getModifiedRoles().forEach(this::validateRole);
         //Validate Role Players
-        graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
+        graknGraph.cache().getModifiedCastings().forEach(this::validateCasting);
 
         //Validate Relationship Types
-        graknGraph.txCache().getModifiedRelationshipTypes().forEach(this::validateRelationType);
+        graknGraph.cache().getModifiedRelationshipTypes().forEach(this::validateRelationType);
 
         //Validate Rules
-        graknGraph.txCache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
+        graknGraph.cache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
 
         return errorsFound.size() == 0;
     }
@@ -90,7 +90,7 @@ public class Validator {
      * @param graph the graph to query against
      * @param rule the rule which needs to be validated
      */
-    private void validateRule(TransactionImpl<?> graph, Rule rule){
+    private void validateRule(TransactionOLTP graph, Rule rule){
         Set<String> labelErrors = ValidateGlobalRules.validateRuleSchemaConceptExist(graph, rule);
         errorsFound.addAll(labelErrors);
         if (labelErrors.isEmpty()) {

@@ -36,7 +36,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.After;
@@ -72,7 +72,7 @@ public class TransactionIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionImpl tx;
+    private TransactionOLTP tx;
     private SessionImpl session;
 
     @Before
@@ -314,7 +314,7 @@ public class TransactionIT {
         failMutation(tx, () -> relationT1.relates(roleT2));
         failMutation(tx, () -> relationT2.relates(roleT1));
     }
-    private void failMutation(TransactionImpl<?> graph, Runnable mutator){
+    private void failMutation(TransactionOLTP graph, Runnable mutator){
         int vertexCount = graph.getTinkerTraversal().V().toList().size();
         int eddgeCount = graph.getTinkerTraversal().E().toList().size();
 

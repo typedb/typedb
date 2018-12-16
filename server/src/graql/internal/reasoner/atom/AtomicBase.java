@@ -27,7 +27,7 @@ import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -114,9 +114,9 @@ public abstract class AtomicBase implements Atomic {
     /**
      * @return Transaction this atomic is defined in
      */
-    protected TransactionImpl<?> tx(){
+    protected TransactionOLTP tx(){
         // TODO: This cast is unsafe - ReasonerQuery should return an TransactionImpl
-        return (TransactionImpl<?>) getParentQuery().tx();
+        return (TransactionOLTP) getParentQuery().tx();
     }
 
     @Override

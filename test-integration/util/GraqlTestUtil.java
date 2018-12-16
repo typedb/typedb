@@ -27,7 +27,7 @@ import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.io.BufferedReader;
@@ -48,19 +48,19 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("CheckReturnValue")
 public class GraqlTestUtil {
 
-    public static void assertExists(TransactionImpl<?> tx, Pattern... patterns) {
+    public static void assertExists(TransactionOLTP tx, Pattern... patterns) {
         assertTrue(tx.stream(Graql.match(patterns)).iterator().hasNext());
     }
 
-    public static void assertExists(TransactionImpl<?> tx, MatchClause matchClause) {
+    public static void assertExists(TransactionOLTP tx, MatchClause matchClause) {
         assertTrue(tx.stream(matchClause).iterator().hasNext());
     }
 
-    public static void assertNotExists(TransactionImpl<?> tx, Pattern... patterns) {
+    public static void assertNotExists(TransactionOLTP tx, Pattern... patterns) {
         assertFalse(tx.stream(Graql.match(patterns)).iterator().hasNext());
     }
 
-    public static void assertNotExists(TransactionImpl<?> tx, MatchClause matchClause) {
+    public static void assertNotExists(TransactionOLTP tx, MatchClause matchClause) {
         assertFalse(tx.stream(matchClause).iterator().hasNext());
     }
 

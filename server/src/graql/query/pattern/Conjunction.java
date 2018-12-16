@@ -24,7 +24,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import javax.annotation.CheckReturnValue;
 import java.util.List;
@@ -102,7 +102,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
     public ReasonerQuery toReasonerQuery(Transaction tx) {
         Conjunction<Statement> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
         // TODO: This cast is unsafe - this method should accept an `TransactionImpl`
-        return ReasonerQueries.create(pattern, (TransactionImpl<?>) tx);
+        return ReasonerQueries.create(pattern, (TransactionOLTP) tx);
     }
 
     private static <U extends Pattern> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {

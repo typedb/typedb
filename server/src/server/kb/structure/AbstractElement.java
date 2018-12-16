@@ -22,7 +22,7 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -53,9 +53,9 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
 public abstract class AbstractElement<E extends Element, P extends Enum> {
     private final String prefix;
     private final E element;
-    private final TransactionImpl tx;
+    private final TransactionOLTP tx;
 
-    AbstractElement(TransactionImpl tx, E element, String prefix){
+    AbstractElement(TransactionOLTP tx, E element, String prefix){
         this.tx = tx;
         this.element = element;
         this.prefix = prefix;
@@ -115,7 +115,7 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
      *
      * @return The grakn graph this concept is bound to.
      */
-    public TransactionImpl<?> tx() {
+    public TransactionOLTP tx() {
         return tx;
     }
 

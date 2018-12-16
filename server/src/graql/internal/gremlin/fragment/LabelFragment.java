@@ -25,7 +25,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.util.StringUtil;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -51,7 +51,7 @@ public abstract class LabelFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
 
         Set<Integer> labelIds =
                 labels().stream().map(label -> tx.convertToId(label).getValue()).collect(toSet());
@@ -80,7 +80,7 @@ public abstract class LabelFragment extends Fragment {
     }
 
     @Override
-    public Long getShardCount(TransactionImpl<?> tx) {
+    public Long getShardCount(TransactionOLTP tx) {
         return labels().stream()
                 .map(tx::<SchemaConcept>getSchemaConcept)
                 .filter(schemaConcept -> schemaConcept != null && schemaConcept.isType())

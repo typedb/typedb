@@ -32,7 +32,7 @@ import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -60,7 +60,7 @@ public class AtomicQueryEquivalenceIT {
 
     private static SessionImpl genericSchemaSession;
 
-    private TransactionImpl tx;
+    private TransactionOLTP tx;
 
     @BeforeClass
     public static void loadContext(){
@@ -149,7 +149,7 @@ public class AtomicQueryEquivalenceIT {
         equivalence(hasQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
     }
 
-    private void testEquivalence_DifferentTypeVariants(TransactionImpl<?> tx, String keyword, String label, String label2){
+    private void testEquivalence_DifferentTypeVariants(TransactionOLTP tx, String keyword, String label, String label2){
         String query = "{$x " + keyword + " " + label + ";}";
         String query2 = "{$y " + keyword + " $type;$type label " + label +";}";
         String query3 = "{$z " + keyword + " $t;$t label " + label +";}";
@@ -406,11 +406,11 @@ public class AtomicQueryEquivalenceIT {
         equivalence(query5, queries, Collections.singletonList(query5b), ReasonerQueryEquivalence.StructuralEquivalence, tx);
     }
 
-    private void equivalence(String target, List<String> queries, List<String> equivalentQueries, ReasonerQueryEquivalence equiv, TransactionImpl tx){
+    private void equivalence(String target, List<String> queries, List<String> equivalentQueries, ReasonerQueryEquivalence equiv, TransactionOLTP tx){
         queries.forEach(q -> equivalence(target, q, equivalentQueries.contains(q) || q.equals(target), equiv, tx));
     }
 
-    private void equivalence(String patternA, String patternB, boolean expectation, ReasonerQueryEquivalence equiv, TransactionImpl tx){
+    private void equivalence(String patternA, String patternB, boolean expectation, ReasonerQueryEquivalence equiv, TransactionOLTP tx){
         ReasonerAtomicQuery a = ReasonerQueries.atomic(conjunction(patternA), tx);
         ReasonerAtomicQuery b = ReasonerQueries.atomic(conjunction(patternB), tx);
         queryEquivalence(a, b, expectation, equiv);

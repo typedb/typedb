@@ -42,7 +42,7 @@ import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -66,10 +66,10 @@ import static java.util.stream.Collectors.toSet;
  */
 public class QueryExecutor {
 
-    private final TransactionImpl<?> tx;
+    private final TransactionOLTP tx;
     private final boolean infer;
 
-    public QueryExecutor(TransactionImpl<?> tx, boolean infer) {
+    public QueryExecutor(TransactionOLTP tx, boolean infer) {
         this.tx = tx;
         this.infer = infer;
     }

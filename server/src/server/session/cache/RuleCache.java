@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,9 +40,9 @@ public class RuleCache {
 
     private final Map<SchemaConcept, Set<Rule>> ruleMap = new HashMap<>();
     private final Map<Rule, Object> ruleConversionMap = new HashMap<>();
-    private final TransactionImpl tx;
+    private final TransactionOLTP tx;
 
-    public RuleCache(TransactionImpl tx) {
+    public RuleCache(TransactionOLTP tx) {
         this.tx = tx;
     }
 

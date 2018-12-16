@@ -28,7 +28,7 @@ import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -57,7 +57,7 @@ public class DeleteQueryIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
     public static SessionImpl session;
-    public TransactionImpl<?> tx;
+    public TransactionOLTP tx;
 
     @Rule
     public  final ExpectedException exception = ExpectedException.none();

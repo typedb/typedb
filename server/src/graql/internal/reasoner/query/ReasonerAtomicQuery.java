@@ -43,7 +43,7 @@ import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -67,7 +67,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private final Atom atom;
 
-    ReasonerAtomicQuery(Conjunction<Statement> pattern, TransactionImpl<?> tx) {
+    ReasonerAtomicQuery(Conjunction<Statement> pattern, TransactionOLTP tx) {
         super(pattern, tx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
@@ -82,7 +82,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
-    ReasonerAtomicQuery(Set<Atomic> atoms, TransactionImpl<?> tx){
+    ReasonerAtomicQuery(Set<Atomic> atoms, TransactionOLTP tx){
         super(atoms, tx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }

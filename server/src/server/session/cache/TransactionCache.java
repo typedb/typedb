@@ -362,9 +362,9 @@ public class TransactionCache {
         labelCache.clear();
     }
 
-    public void openTx(Transaction.Type txType) {
+    public void open(Transaction.Type type) {
         isTxOpen = true;
-        this.txType = txType;
+        this.txType = type;
         closedReason = null;
     }
 

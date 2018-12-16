@@ -33,7 +33,7 @@ import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -59,7 +59,7 @@ public class QueryErrorIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
     private static SessionImpl session;
-    private TransactionImpl<?> tx;
+    private TransactionOLTP tx;
 
     @BeforeClass
     public static void newSession() {

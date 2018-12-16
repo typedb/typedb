@@ -60,7 +60,7 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -82,26 +82,26 @@ import static grakn.core.graql.query.pattern.Pattern.var;
  */
 public class ReasonerQueryImpl implements ReasonerQuery {
 
-    private final TransactionImpl<?> tx;
+    private final TransactionOLTP tx;
     private final ImmutableSet<Atomic> atomSet;
     private ConceptMap substitution = null;
     private ImmutableMap<Variable, Type> varTypeMap = null;
 
-    ReasonerQueryImpl(Conjunction<Statement> pattern, TransactionImpl<?> tx) {
+    ReasonerQueryImpl(Conjunction<Statement> pattern, TransactionOLTP tx) {
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
                 .build();
     }
 
-    ReasonerQueryImpl(Set<Atomic> atoms, TransactionImpl<?> tx){
+    ReasonerQueryImpl(Set<Atomic> atoms, TransactionOLTP tx){
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(atoms.stream().map(at -> at.copy(this)).iterator())
                 .build();
     }
 
-    ReasonerQueryImpl(List<Atom> atoms, TransactionImpl<?> tx){
+    ReasonerQueryImpl(List<Atom> atoms, TransactionOLTP tx){
         this.tx = tx;
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(atoms.stream()
@@ -112,7 +112,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     ReasonerQueryImpl(Atom atom) {
         // TODO: This cast is unsafe - ReasonerQuery should return an EmbeeddedGraknTx
-        this(Collections.singletonList(atom), (TransactionImpl<?>) /*TODO anything but this*/ atom.getParentQuery().tx());
+        this(Collections.singletonList(atom), (TransactionOLTP) /*TODO anything but this*/ atom.getParentQuery().tx());
     }
 
     ReasonerQueryImpl(ReasonerQueryImpl q) {
@@ -200,7 +200,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public TransactionImpl<?> tx() {
+    public TransactionOLTP tx() {
         return tx;
     }
 

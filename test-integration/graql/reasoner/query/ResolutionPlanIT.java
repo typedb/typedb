@@ -40,7 +40,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -99,7 +99,7 @@ public class ResolutionPlanIT {
         }
     }
 
-    private TransactionImpl tx;
+    private TransactionOLTP tx;
 
     @BeforeClass
     public static void loadContext(){

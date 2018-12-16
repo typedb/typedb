@@ -31,7 +31,7 @@ import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -49,7 +49,7 @@ import static org.junit.Assert.assertEquals;
 public class QueryIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
-    private TransactionImpl tx;
+    private TransactionOLTP tx;
 
     private static SessionImpl geoGraphSession;
 
@@ -283,14 +283,14 @@ public class QueryIT {
         }
     }
 
-    private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
+    private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx){
         Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);
     }
 
-    private static Concept getConcept(TransactionImpl<?> tx, String typeLabel, Object val){
+    private static Concept getConcept(TransactionOLTP tx, String typeLabel, Object val){
         return tx.stream(Graql.match((Pattern) Pattern.var("x").has(typeLabel, val)).get("x"))
                 .map(ans -> ans.get("x")).findAny().get();
     }

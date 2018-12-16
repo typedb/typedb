@@ -27,7 +27,7 @@ import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.List;
 import java.util.Map;
@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 public class ConceptMethod {
 
     public static Transaction.Res run(Concept concept, ConceptProto.Method.Req req,
-                                      SessionService.Iterators iterators, TransactionImpl tx) {
+                                      SessionService.Iterators iterators, TransactionOLTP tx) {
         ConceptHolder con = new ConceptHolder(concept, tx, iterators);
         switch (req.getReqCase()) {
             // Concept methods
@@ -175,10 +175,10 @@ public class ConceptMethod {
     public static class ConceptHolder {
 
         private grakn.core.graql.concept.Concept concept;
-        private TransactionImpl tx;
+        private TransactionOLTP tx;
         private SessionService.Iterators iterators;
 
-        ConceptHolder(grakn.core.graql.concept.Concept concept, TransactionImpl tx, SessionService.Iterators iterators) {
+        ConceptHolder(grakn.core.graql.concept.Concept concept, TransactionOLTP tx, SessionService.Iterators iterators) {
             this.concept = concept;
             this.tx = tx;
             this.iterators = iterators;

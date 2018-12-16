@@ -97,7 +97,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
                 findAny().
                 ifPresent(casting -> {
                    casting.delete();
-                   vertex().tx().txCache().remove(casting);
+                   vertex().tx().cache().remove(casting);
                 });
     }
 
@@ -141,7 +141,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, this.type().labelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.labelId().getValue());
         Casting casting = Casting.create(edge, owner, role, toThing);
-        vertex().tx().txCache().trackForValidation(casting);
+        vertex().tx().cache().trackForValidation(casting);
     }
 
     /**

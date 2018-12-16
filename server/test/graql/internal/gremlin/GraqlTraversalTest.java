@@ -35,7 +35,7 @@ import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -86,12 +86,12 @@ public class GraqlTraversalTest {
     private static final Fragment yTypeOfX = inIsa(null, y, x, true);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
-    private static TransactionImpl<?> tx;
+    private static TransactionOLTP tx;
     private final String ROLE_PLAYER_EDGE = Schema.EdgeLabel.ROLE_PLAYER.getLabel();
 
     @Before
     public void setUp() {
-        tx = mock(TransactionImpl.class);
+        tx = mock(TransactionOLTP.class);
         Role wife = mock(Role.class);
         when(wife.label()).thenReturn(Label.of("wife"));
         when(wife.isRole()).thenReturn(true);

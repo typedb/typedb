@@ -15,19 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+package grakn.core.server.session.reader;
 
-package grakn.core.server.session.olap.computer;
-
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
-import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
-import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.VertexProgramInterceptor;
+import org.janusgraph.hadoop.formats.util.GiraphInputFormat;
 
 /**
- * Interceptor interface copied from tinkerpop so we can use our own graph computer
- *
- * @param <V> Vertex Program
+ * Override JanusGraph's Cassandra3InputFormat class
  */
-public interface GraknSparkVertexProgramInterceptor<V extends VertexProgram>
-        extends VertexProgramInterceptor<V, JavaPairRDD<Object, VertexWritable>, GraknSparkMemory> {
+public class GraknCassandra3InputFormat extends GiraphInputFormat {
+    public GraknCassandra3InputFormat() {
+        super(new GraknBinaryInputFormat());
+    }
 }

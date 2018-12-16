@@ -30,7 +30,7 @@ import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +70,7 @@ public class KeyspaceManager {
     public void addKeyspace(Keyspace keyspace){
         if(containsKeyspace(keyspace)) return;
 
-        try (TransactionImpl<?> tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
                 throw GraknServerException.initializationException(keyspace);
@@ -112,17 +112,17 @@ public class KeyspaceManager {
 
         SessionImpl session = SessionImpl.create(keyspace, config);
         session.close();
-        try(TransactionImpl tx = session.transaction(Transaction.Type.WRITE)){
+        try(TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)){
             tx.closeSession();
             tx.clearGraph();
-            tx.txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
+            tx.cache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
         }
 
         return deleteReferenceInSystemKeyspace(keyspace);
     }
 
     private boolean deleteReferenceInSystemKeyspace(Keyspace keyspace){
-        try (TransactionImpl<?> tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             Attribute<String> attribute = keyspaceName.attribute(keyspace.getName());
 
@@ -152,7 +152,7 @@ public class KeyspaceManager {
 
     public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
-        try (TransactionImpl<?> tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
                 return;
             }

@@ -60,7 +60,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
         vertexElement.property(Schema.VertexProperty.INDEX, index);
 
         //Track the attribute by index
-        vertexElement.tx().txCache().addNewAttribute(index, attribute.id());
+        vertexElement.tx().cache().addNewAttribute(index, attribute.id());
         return attribute;
     }
 

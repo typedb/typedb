@@ -39,7 +39,7 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -58,7 +58,7 @@ public class IsaExplicitIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private TransactionImpl<?> tx;
+    private TransactionOLTP tx;
 
     @Before
     public void loadSimpleData() {

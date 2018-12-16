@@ -30,7 +30,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -59,7 +59,7 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
      */
     public Stream<ConceptMap> get(Q query){
         Equivalence.Wrapper<Q> structQuery = equivalence.wrap(query);
-        TransactionImpl<?> tx = query.tx();
+        TransactionOLTP tx = query.tx();
 
         CacheEntry<Q, GraqlTraversal> match = structCache.get(structQuery);
         if (match != null){

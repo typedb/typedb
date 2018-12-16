@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.session.olap.computer;
+package grakn.core.server.session.computer;
 
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaSparkContext;

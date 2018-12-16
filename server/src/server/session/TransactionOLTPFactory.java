@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.session.oltp;
+package grakn.core.server.session;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.common.config.ConfigKey;
@@ -24,8 +24,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.oltp.optimisation.JanusPreviousPropertyStepStrategy;
+import grakn.core.server.session.optimisation.JanusPreviousPropertyStepStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.LazyBarrierStrategy;
@@ -111,7 +110,7 @@ final public class TransactionOLTPFactory {
         this.session = session;
     }
 
-    public synchronized TransactionOLTP openOLTP(Transaction.Type txType) {
+    public synchronized TransactionOLTP openOLTP(Transaction.Type type) {
         // If transaction is already open throw exception
         if (tx != null && !tx.isClosed()) throw TransactionException.transactionOpen(tx);
 
@@ -124,7 +123,7 @@ final public class TransactionOLTPFactory {
             }
             tx = new TransactionOLTP(session, graph);
         }
-        tx.openTransaction(txType);
+        tx.open(type);
         return tx;
     }
 

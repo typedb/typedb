@@ -43,7 +43,7 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -63,7 +63,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public class InferenceRule {
 
-    private final TransactionImpl<?> tx;
+    private final TransactionOLTP tx;
     private final Rule rule;
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
@@ -71,7 +71,7 @@ public class InferenceRule {
     private long priority = Long.MAX_VALUE;
     private Boolean requiresMaterialisation = null;
 
-    public InferenceRule(Rule rule, TransactionImpl<?> tx){
+    public InferenceRule(Rule rule, TransactionOLTP tx){
         this.tx = tx;
         this.rule = rule;
         //TODO simplify once changes propagated to rule objects
@@ -79,7 +79,7 @@ public class InferenceRule {
         this.head = ReasonerQueries.atomic(conjunction(rule.then()), tx);
     }
 
-    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, Rule rule, TransactionImpl<?> tx){
+    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, Rule rule, TransactionOLTP tx){
         this.tx = tx;
         this.rule = rule;
         this.head = head;
