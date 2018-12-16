@@ -20,7 +20,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.session.cache.RuleCache;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -79,7 +79,7 @@ public class RuleCacheIT {
     private static ConceptMap singleAnswer;
     private static Unifier retrieveToRecordUnifier;
     private static Unifier recordToRetrieveUnifier;
-    private TransactionImpl tx;
+    private TransactionOLTP tx;
 
 
     @Before

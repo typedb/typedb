@@ -16,12 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.session.olap;
+package grakn.core.server.session;
 
 import grakn.core.common.config.ConfigKey;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.oltp.TransactionOLTPFactory;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.slf4j.Logger;

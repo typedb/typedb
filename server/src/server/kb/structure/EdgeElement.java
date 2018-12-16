@@ -20,7 +20,7 @@ package grakn.core.server.kb.structure;
 
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 /**
@@ -35,7 +35,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  */
 public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
-    public EdgeElement(TransactionImpl graknGraph, Edge e){
+    public EdgeElement(TransactionOLTP graknGraph, Edge e){
         super(graknGraph, e, Schema.PREFIX_EDGE);
     }
 

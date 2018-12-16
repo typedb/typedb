@@ -62,7 +62,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
     public static RelationshipTypeImpl create(VertexElement vertexElement, RelationshipType type){
         RelationshipTypeImpl relationType = new RelationshipTypeImpl(vertexElement, type);
-        vertexElement.tx().txCache().trackForValidation(relationType);
+        vertexElement.tx().cache().trackForValidation(relationType);
         return relationType;
     }
 
@@ -78,7 +78,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
     public Relationship addRelationship(boolean isInferred) {
         Relationship relationship = addInstance(Schema.BaseType.RELATIONSHIP,
                 (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), isInferred);
-        vertex().tx().txCache().addNewRelationship(relationship);
+        vertex().tx().cache().addNewRelationship(relationship);
         return relationship;
     }
 
@@ -117,14 +117,14 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
         RoleImpl roleTypeImpl = (RoleImpl) role;
         //Add roleplayers of role to make sure relations are still valid
-        roleTypeImpl.rolePlayers().forEach(rolePlayer -> vertex().tx().txCache().trackForValidation(rolePlayer));
+        roleTypeImpl.rolePlayers().forEach(rolePlayer -> vertex().tx().cache().trackForValidation(rolePlayer));
 
 
         //Add the Role Type itself
-        vertex().tx().txCache().trackForValidation(roleTypeImpl);
+        vertex().tx().cache().trackForValidation(roleTypeImpl);
 
         //Add the Relationship Type
-        vertex().tx().txCache().trackForValidation(roleTypeImpl);
+        vertex().tx().cache().trackForValidation(roleTypeImpl);
 
         //Remove from internal cache
         cachedRelates.ifPresent(set -> set.remove(role));
@@ -139,7 +139,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
     public void delete(){
         cachedRelates.get().forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
-            vertex().tx().txCache().trackForValidation(role);
+            vertex().tx().cache().trackForValidation(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
         });
 
@@ -151,7 +151,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
         instances().forEach(concept -> {
             RelationshipImpl relation = RelationshipImpl.from(concept);
             if(relation.reified().isPresent()){
-                relation.reified().get().castingsRelation().forEach(rolePlayer -> vertex().tx().txCache().trackForValidation(rolePlayer));
+                relation.reified().get().castingsRelation().forEach(rolePlayer -> vertex().tx().cache().trackForValidation(rolePlayer));
             }
         });
     }

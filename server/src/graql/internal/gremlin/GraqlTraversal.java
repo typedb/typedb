@@ -28,7 +28,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -68,7 +68,7 @@ public abstract class GraqlTraversal {
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(TransactionImpl<?> tx, Set<Variable> vars) {
+    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(TransactionOLTP tx, Set<Variable> vars) {
 
         if (fragments().size() == 1) {
             // If there are no disjunctions, we don't need to union them and get a performance boost
@@ -109,7 +109,7 @@ public abstract class GraqlTraversal {
      * @return a gremlin traversal that represents this inner query
      */
     private GraphTraversal<Vertex, Map<String, Element>> getConjunctionTraversal(
-            TransactionImpl<?> tx, GraphTraversal<Vertex, Vertex> traversal, Set<Variable> vars,
+            TransactionOLTP tx, GraphTraversal<Vertex, Vertex> traversal, Set<Variable> vars,
             ImmutableList<Fragment> fragmentList
     ) {
         GraphTraversal<Vertex, ? extends Element> newTraversal = traversal;
@@ -123,7 +123,7 @@ public abstract class GraqlTraversal {
     }
 
     private GraphTraversal<Vertex, Map<String, Element>> applyFragments(
-            TransactionImpl<?> tx, Set<Variable> vars, ImmutableList<Fragment> fragmentList,
+            TransactionOLTP tx, Set<Variable> vars, ImmutableList<Fragment> fragmentList,
             GraphTraversal<Vertex, ? extends Element> traversal
     ) {
         Set<Variable> foundVars = new HashSet<>();

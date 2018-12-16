@@ -26,7 +26,7 @@ import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -49,7 +49,7 @@ public class RuleUtils {
      * @return set of inference rule contained in the graph
      */
     public static Stream<Rule> getRules(Transaction graph) {
-        return ((TransactionImpl<?>) graph).ruleCache().getRules();
+        return ((TransactionOLTP) graph).ruleCache().getRules();
     }
 
     /**
@@ -66,7 +66,7 @@ public class RuleUtils {
      * @return rules containing specified type in the head
      */
     public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, Transaction graph){
-        return ((TransactionImpl<?>) graph).ruleCache().getRulesWithType(type, direct);
+        return ((TransactionOLTP) graph).ruleCache().getRulesWithType(type, direct);
     }
 
     /**

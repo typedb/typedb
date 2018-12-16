@@ -36,7 +36,7 @@ import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -75,7 +75,7 @@ public class RelationshipIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionImpl tx;
+    private TransactionOLTP tx;
     private SessionImpl session;
 
     @Before
@@ -167,7 +167,7 @@ public class RelationshipIT {
         assertThat(followRolePlayerEdgesToNeighbours(tx, entity6r1r2r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
-    private Set<Concept> followRolePlayerEdgesToNeighbours(TransactionImpl<?> tx, Thing thing) {
+    private Set<Concept> followRolePlayerEdgesToNeighbours(TransactionOLTP tx, Thing thing) {
         List<Vertex> vertices = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.id().getValue()).
                 in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();

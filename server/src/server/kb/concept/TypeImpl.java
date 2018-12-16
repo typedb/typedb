@@ -102,7 +102,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(label())) {
-            vertex().tx().txCache().addedInstance(id());
+            vertex().tx().cache().addedInstance(id());
             if(isInferred) instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
         }
         V instance = producer.apply(instanceVertex, getThis());
@@ -213,7 +213,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     void trackRolePlayers(){
         instances().forEach(concept -> ((ThingImpl<?, ?>)concept).castingsInstance().forEach(
-                rolePlayer -> vertex().tx().txCache().trackForValidation(rolePlayer)));
+                rolePlayer -> vertex().tx().cache().trackForValidation(rolePlayer)));
     }
 
     public T play(Role role, boolean required) {
@@ -334,9 +334,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         cachedIsAbstract.set(isAbstract);
 
         if(isAbstract){
-            vertex().tx().txCache().removeFromValidation(this);
+            vertex().tx().cache().removeFromValidation(this);
         } else {
-            vertex().tx().txCache().trackForValidation(this);
+            vertex().tx().cache().trackForValidation(this);
         }
 
         return getThis();

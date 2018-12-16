@@ -25,7 +25,7 @@ import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.After;
 import org.junit.Before;
@@ -40,7 +40,7 @@ public class EdgeIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private TransactionImpl tx;
+    private TransactionOLTP tx;
     private SessionImpl session;
     private EntityTypeImpl entityType;
     private EntityImpl entity;

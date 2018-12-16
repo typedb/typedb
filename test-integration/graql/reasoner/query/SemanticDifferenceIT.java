@@ -39,7 +39,7 @@ import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -76,7 +76,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesType_typesAreFilteredCorrectly(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
             String base = "(baseRole1: $x, baseRole2: $y) isa binary;";
             String parentPattern = patternise(base);
@@ -101,7 +101,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesType_typesAreFilteredCorrectly(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
             String base = "(baseRole1: $x, baseRole2: $y) isa binary;";
@@ -127,7 +127,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesRole_rolesAreFilteredCorrectly(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             Role role = tx.getRole("baseRole1");
             String base = "($role: $x, baseRole2: $y) isa binary;";
             String parentPattern = patternise(base);
@@ -153,7 +153,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesRole_rolesAreFilteredCorrectly(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             Role baseRole = tx.getRole("baseRole1");
             Role subRole = tx.getRole("subRole1");
             String base = "($role: $x, baseRole2: $y) isa binary;";
@@ -179,7 +179,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesPlayedRole_RPsAreFilteredCorrectly(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             Role subRole1 = tx.getRole("subRole1");
             Role subRole2 = tx.getRole("subSubRole2");
             String parentPattern = patternise("(baseRole1: $x, baseRole2: $y) isa binary;");
@@ -205,7 +205,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesValuePredicate_valuesAreFilteredCorrectly(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             String parentPattern = patternise("$x has resource-long $r;");
             final long value = 0;
             String childPattern = patternise("$x has resource-long " + value + ";");
@@ -231,7 +231,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesValuePredicate_valuesAreFilteredCorrectly(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             String parentPattern = patternise("$x has resource-long >0;");
             final long value = 1;
             String childPattern = patternise("$x has resource-long " + value + ";");

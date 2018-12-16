@@ -23,7 +23,7 @@ import com.google.common.collect.Lists;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -67,7 +67,7 @@ public class ResolutionQueryPlan {
         ResolutionPlan resolutionPlan = new ResolutionPlan(query);
 
         ImmutableList<Atom> plan = resolutionPlan.plan();
-        TransactionImpl<?> tx = query.tx();
+        TransactionOLTP tx = query.tx();
         LinkedList<Atom> atoms = new LinkedList<>(plan);
         List<ReasonerQueryImpl> queries = new LinkedList<>();
 

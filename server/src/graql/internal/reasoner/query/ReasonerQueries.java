@@ -24,7 +24,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.List;
 import java.util.Set;
@@ -45,7 +45,7 @@ public class ReasonerQueries {
      * @param tx corresponding transaction
      * @return reasoner query constructed from provided conjunctive pattern
      */
-    public static ReasonerQueryImpl create(Conjunction<Statement> pattern, TransactionImpl<?> tx) {
+    public static ReasonerQueryImpl create(Conjunction<Statement> pattern, TransactionOLTP tx) {
         ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, tx).inferTypes();
         return query.isAtomic()?
                 new ReasonerAtomicQuery(query.getAtoms(), tx) :
@@ -58,7 +58,7 @@ public class ReasonerQueries {
      * @param tx corresponding transaction
      * @return reasoner query defined by the provided set of atomics
      */
-    public static ReasonerQueryImpl create(Set<Atomic> as, TransactionImpl<?> tx){
+    public static ReasonerQueryImpl create(Set<Atomic> as, TransactionOLTP tx){
         boolean isAtomic = as.stream().filter(Atomic::isSelectable).count() == 1;
         return isAtomic?
                 new ReasonerAtomicQuery(as, tx).inferTypes() :
@@ -72,7 +72,7 @@ public class ReasonerQueries {
      * @param tx corresponding transaction
      * @return reasoner query defined by the provided list of atoms together with their constraints (types and predicates, if any)
      */
-    public static ReasonerQueryImpl create(List<Atom> as, TransactionImpl<?> tx){
+    public static ReasonerQueryImpl create(List<Atom> as, TransactionOLTP tx){
         boolean isAtomic = as.size() == 1;
         return isAtomic?
                 new ReasonerAtomicQuery(Iterables.getOnlyElement(as)).inferTypes() :
@@ -94,7 +94,7 @@ public class ReasonerQueries {
      * @param tx corresponding transaction
      * @return atomic query defined by the provided pattern with inferred types
      */
-    public static ReasonerAtomicQuery atomic(Conjunction<Statement> pattern, TransactionImpl<?> tx){
+    public static ReasonerAtomicQuery atomic(Conjunction<Statement> pattern, TransactionOLTP tx){
         return new ReasonerAtomicQuery(pattern, tx).inferTypes();
     }
 

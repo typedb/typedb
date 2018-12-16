@@ -20,14 +20,14 @@ package grakn.core.server.rpc;
 
 import grakn.core.server.Transaction;
 import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 /**
  * A request transaction opener for RPC Services
  */
 public interface OpenRequest {
 
-    TransactionImpl<?> open(OpenRequest.Arguments arguments);
+    TransactionOLTP open(OpenRequest.Arguments arguments);
 
     /**
      * An argument object for request transaction opener for RPC Services

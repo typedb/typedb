@@ -28,7 +28,7 @@ import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -162,7 +162,7 @@ public abstract class Fragment {
      * @param tx     the graph to execute the traversal on
      */
     public final GraphTraversal<Vertex, ? extends Element> applyTraversal(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> tx,
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx,
             Collection<Variable> vars, @Nullable Variable currentVar) {
         if (currentVar != null) {
             if (!currentVar.equals(start())) {
@@ -209,7 +209,7 @@ public abstract class Fragment {
      * @param vars
      */
     abstract GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> tx, Collection<Variable> vars);
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars);
 
 
     /**
@@ -252,7 +252,7 @@ public abstract class Fragment {
         return this;
     }
 
-    public Long getShardCount(TransactionImpl<?> tx) {
+    public Long getShardCount(TransactionOLTP tx) {
         return 0L;
     }
 

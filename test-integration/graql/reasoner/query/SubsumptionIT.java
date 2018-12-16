@@ -30,7 +30,7 @@ import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -64,7 +64,7 @@ public class SubsumptionIT {
     
     @Test
     public void testSubsumption_differentRelationVariants(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.READ) ){
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ){
             QueryPattern differentRelationVariants = genericSchemaGraph.differentRelationVariants();
             int[][] subsumptionMatrix = new int[][]{
                     //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
@@ -104,7 +104,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentRelationVariantsWithMetaRoles(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.READ) ){
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ){
             QueryPattern differentRelationVariantsWithMetaRoles = genericSchemaGraph.differentRelationVariantsWithMetaRoles();
             int[][] subsumptionMatrix = new int[][]{
                     //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
@@ -145,7 +145,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentRelationVariants_differentRelationVariantsWithMetaRoles(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
             QueryPattern differentRelationVariants = genericSchemaGraph.differentRelationVariants();
             QueryPattern differentRelationVariantsWithMetaRoles = genericSchemaGraph.differentRelationVariantsWithMetaRoles();
             int[][] subsumptionMatrix = new int[][]{
@@ -186,7 +186,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentRelationVariants_differentRelationVariantsWithRelationVariable(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
             QueryPattern differentRelationVariants = genericSchemaGraph.differentRelationVariants();
             QueryPattern differentRelationVariantsWithRelationVariable = genericSchemaGraph.differentRelationVariantsWithRelationVariable();
             int[][] subsumptionMatrix = new int[][]{
@@ -228,7 +228,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentTypeRelationVariants_differentRelationVariants(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
             QueryPattern differentTypeRelationVariants = genericSchemaGraph.differentTypeRelationVariants();
             QueryPattern differentRelationVariants = genericSchemaGraph.differentRelationVariants();
             int[][] subsumptionMatrix = new int[differentTypeRelationVariants.size()][differentRelationVariants.size()];
@@ -244,7 +244,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentTypeRelationVariants_differentRelationVariantsWithRelationVariable(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
             QueryPattern differentTypeRelationVariants = genericSchemaGraph.differentTypeRelationVariants();
             QueryPattern differentRelationVariantsWithRelationVariable = genericSchemaGraph.differentRelationVariantsWithRelationVariable();
             int[][] subsumptionMatrix = new int[][]{
@@ -286,7 +286,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentResourceVariants(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
             QueryPattern differentResourceVariants = genericSchemaGraph.differentResourceVariants();
             int[][] subsumptionMatrix = new int[][]{
                     //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28
@@ -347,7 +347,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentTypeResourceVariants(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
             QueryPattern differentTypeVariants = genericSchemaGraph.differentTypeResourceVariants();
             int[][] subsumptionMatrix = new int[][]{
                     //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
@@ -386,7 +386,7 @@ public class SubsumptionIT {
         }
     }
 
-    private void subsumption(List<String> children, List<String> parents, int[][] resultMatrix, TransactionImpl<?> tx){
+    private void subsumption(List<String> children, List<String> parents, int[][] resultMatrix, TransactionOLTP tx){
         int i = 0;
         int j = 0;
         for (String child : children) {
@@ -399,7 +399,7 @@ public class SubsumptionIT {
         }
     }
 
-    private void subsumption(String childString, String parentString, boolean subsumes, TransactionImpl<?> tx){
+    private void subsumption(String childString, String parentString, boolean subsumes, TransactionOLTP tx){
         ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childString), tx);
         ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentString), tx);
         UnifierType unifierType = UnifierType.SUBSUMPTIVE;

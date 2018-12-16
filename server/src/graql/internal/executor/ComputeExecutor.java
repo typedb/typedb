@@ -66,7 +66,7 @@ import grakn.core.graql.internal.analytics.Utility;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -110,9 +110,9 @@ class ComputeExecutor<T extends Answer> {
     private final ComputeQuery<T> query;
 
     private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutor.class);
-    private final TransactionImpl<?> tx;
+    private final TransactionOLTP tx;
 
-    public ComputeExecutor(TransactionImpl<?> tx, ComputeQuery<T> query) {
+    public ComputeExecutor(TransactionOLTP tx, ComputeQuery<T> query) {
         this.tx = tx;
         this.query = query;
     }

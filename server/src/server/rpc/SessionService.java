@@ -40,7 +40,7 @@ import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -93,7 +93,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private TraceContext receivedTraceContext;
 
         @Nullable
-        private TransactionImpl<?> tx = null;
+        private TransactionOLTP tx = null;
 
         private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
             this.responseSender = responseSender;
@@ -327,7 +327,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
-        private TransactionImpl<?> tx() {
+        private TransactionOLTP tx() {
             return nonNull(tx);
         }
 

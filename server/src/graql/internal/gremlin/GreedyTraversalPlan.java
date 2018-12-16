@@ -49,7 +49,7 @@ import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.LabelProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +84,7 @@ public class GreedyTraversalPlan {
      * @param pattern a pattern to find a query plan for
      * @return a semi-optimal traversal plan
      */
-    public static GraqlTraversal createTraversal(Pattern pattern, TransactionImpl<?> tx) {
+    public static GraqlTraversal createTraversal(Pattern pattern, TransactionOLTP tx) {
         Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         Set<? extends List<Fragment>> fragments = patterns.stream()
@@ -101,7 +101,7 @@ public class GreedyTraversalPlan {
      * @param query the conjunction query to find a traversal plan
      * @return a semi-optimal traversal plan to execute the given conjunction
      */
-    private static List<Fragment> planForConjunction(ConjunctionQuery query, TransactionImpl<?> tx) {
+    private static List<Fragment> planForConjunction(ConjunctionQuery query, TransactionOLTP tx) {
 
         final List<Fragment> plan = new ArrayList<>(); // this will be the final plan
         final Map<NodeId, Node> allNodes = new HashMap<>(); // all the nodes in the spanning tree
@@ -196,7 +196,7 @@ public class GreedyTraversalPlan {
 
     // infer type of relationship type if we know the type of the role players
     // add label fragment and isa fragment if we can infer any
-    private static void inferRelationshipTypes(TransactionImpl<?> tx, Set<Fragment> allFragments) {
+    private static void inferRelationshipTypes(TransactionOLTP tx, Set<Fragment> allFragments) {
 
         Map<Variable, Type> labelVarTypeMap = getLabelVarTypeMap(tx, allFragments);
         if (labelVarTypeMap.isEmpty()) return;
@@ -292,7 +292,7 @@ public class GreedyTraversalPlan {
     }
 
     // find all vars representing types
-    private static Map<Variable, Type> getLabelVarTypeMap(TransactionImpl<?> tx, Set<Fragment> allFragments) {
+    private static Map<Variable, Type> getLabelVarTypeMap(TransactionOLTP tx, Set<Fragment> allFragments) {
         Map<Variable, Type> labelVarTypeMap = new HashMap<>();
         allFragments.stream()
                 .filter(LabelFragment.class::isInstance)
@@ -343,7 +343,7 @@ public class GreedyTraversalPlan {
     private static Collection<Set<Fragment>> getConnectedFragmentSets(
             List<Fragment> plan, Set<Fragment> allFragments,
             Map<NodeId, Node> allNodes, Set<Node> connectedNodes,
-            Map<Node, Double> nodesWithFixedCost, TransactionImpl<?> tx) {
+            Map<Node, Double> nodesWithFixedCost, TransactionOLTP tx) {
 
         allFragments.forEach(fragment -> {
             if (fragment.end() == null) {
@@ -393,7 +393,7 @@ public class GreedyTraversalPlan {
                                                      Map<NodeId, Node> allNodes,
                                                      Set<Node> connectedNodes,
                                                      Map<Node, Double> nodesWithFixedCost,
-                                                     TransactionImpl<?> tx, Fragment fragment) {
+                                                     TransactionOLTP tx, Fragment fragment) {
 
         Node start = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
         connectedNodes.add(start);

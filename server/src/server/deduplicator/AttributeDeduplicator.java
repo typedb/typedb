@@ -22,7 +22,7 @@ import com.google.common.collect.Lists;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionStore;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -51,7 +51,7 @@ public class AttributeDeduplicator {
      * @param keyspaceIndexPair the pair containing information about the attribute keyspace and index
      */
     public static void deduplicate(SessionStore txFactory, KeyspaceIndexPair keyspaceIndexPair) {
-        try (TransactionImpl tx = txFactory.tx(keyspaceIndexPair.keyspace(), Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = txFactory.tx(keyspaceIndexPair.keyspace(), Transaction.Type.WRITE)) {
             GraphTraversalSource tinker = tx.getTinkerTraversal();
             GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceIndexPair.index());
             Vertex mergeTargetV = duplicates.next();

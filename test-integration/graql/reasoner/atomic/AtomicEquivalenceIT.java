@@ -12,7 +12,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -50,7 +50,7 @@ public class AtomicEquivalenceIT {
         }
     }
 
-    private TransactionImpl tx;
+    private TransactionOLTP tx;
 
     @BeforeClass
     public static void loadContext(){
@@ -128,7 +128,7 @@ public class AtomicEquivalenceIT {
         atomicEquality(pattern, pattern8, false, tx);
     }
 
-    private void testEquality_DifferentTypeVariants(TransactionImpl<?> tx, String keyword, String label, String label2){
+    private void testEquality_DifferentTypeVariants(TransactionOLTP tx, String keyword, String label, String label2){
         String variantAString = "{$x " + keyword + " " + label + ";}";
         String variantAString2 = "{$y " + keyword + " " + label + ";}";
         String variantAString3 = "{$y " + keyword + " " + label2 + ";}";
@@ -155,7 +155,7 @@ public class AtomicEquivalenceIT {
         atomicEquality(variantBString, variantCString, false, tx);
     }
 
-    private void atomicEquality(String patternA, String patternB, boolean expectation, TransactionImpl<?> tx){
+    private void atomicEquality(String patternA, String patternB, boolean expectation, TransactionOLTP tx){
         Atom atomA = ReasonerQueries.atomic(conjunction(patternA, tx), tx).getAtom();
         Atom atomB = ReasonerQueries.atomic(conjunction(patternB, tx), tx).getAtom();
         atomicEquality(atomA, atomA, true);
@@ -173,7 +173,7 @@ public class AtomicEquivalenceIT {
         }
     }
 
-    private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
+    private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx){
         Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

@@ -26,7 +26,6 @@ import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.RocksDbQueue;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.SessionStore;
-import grakn.core.server.session.TransactionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

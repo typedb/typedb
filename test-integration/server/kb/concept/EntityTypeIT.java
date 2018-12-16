@@ -33,7 +33,7 @@ import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Before;
@@ -65,7 +65,7 @@ public class EntityTypeIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionImpl tx;
+    private TransactionOLTP tx;
     private SessionImpl session;
 
     @Before

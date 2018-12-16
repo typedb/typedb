@@ -21,7 +21,7 @@ package grakn.core.server.kb.structure;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -48,7 +48,7 @@ import java.util.stream.StreamSupport;
  */
 public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty> {
 
-    public VertexElement(TransactionImpl graknTx, Vertex element) {
+    public VertexElement(TransactionOLTP graknTx, Vertex element) {
         super(graknTx, element, Schema.PREFIX_VERTEX);
     }
 
@@ -71,7 +71,7 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
      * @return The edge created
      */
     public EdgeElement addEdge(VertexElement to, Schema.EdgeLabel type) {
-        tx().txCache().writeOccurred();
+        tx().cache().writeOccurred();
         return tx().factory().buildEdgeElement(element().addEdge(type.getLabel(), to.element()));
     }
 

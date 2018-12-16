@@ -16,7 +16,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -75,7 +75,7 @@ public class AtomicRoleInferenceIT {
 
     @Test
     public void testRoleInference_TypedBinaryRelation(){
-        TransactionImpl<?> tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String patternString = "{($x, $y); $x isa entity1; $y isa entity2;}";
         String patternString2 = "{($x, $y) isa binary; $x isa entity1; $y isa entity2;}";
 
@@ -89,7 +89,7 @@ public class AtomicRoleInferenceIT {
 
     @Test
     public void testRoleInference_TypedBinaryRelation_SingleTypeMissing(){
-        TransactionImpl<?> tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String patternString = "{($x, $y); $x isa entity1;}";
         String patternString2 = "{($x, $y) isa binary; $x isa entity1;}";
 
@@ -103,7 +103,7 @@ public class AtomicRoleInferenceIT {
 
     @Test //each type maps to a specific role
     public void testRoleInference_TypedTernaryRelationWithKnownRole(){
-        TransactionImpl<?> tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String patternString = "{($x, $y, role3: $z);$x isa entity1;$y isa entity2;}";
         String patternString2 = "{($x, $y, role3: $z) isa ternary;$x isa entity1;$y isa entity2;}";
 
@@ -118,7 +118,7 @@ public class AtomicRoleInferenceIT {
 
     @Test //without cardinality constraints the $y variable can be mapped to any of the three roles hence metarole is assigned
     public void testRoleInference_TypedTernaryRelation(){
-        TransactionImpl<?> tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String patternString = "{($x, $y, $z);$x isa entity1;$y isa entity2;}";
         String patternString2 = "{($x, $y, $z) isa ternary;$x isa entity1;$y isa entity2;}";
 
@@ -133,7 +133,7 @@ public class AtomicRoleInferenceIT {
 
     @Test
     public void testRoleInference_TernaryRelationWithRepeatingRolePlayers(){
-        TransactionImpl<?> tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String patternString = "{(role1: $x, role2: $y, $y);}";
         String patternString2 = "{(role1: $x, role2: $y, $y) isa ternary;}";
 
@@ -148,7 +148,7 @@ public class AtomicRoleInferenceIT {
 
     @Test
     public void testRoleInference_TypedTernaryRelation_TypesPlaySubRoles_SubRolesAreCorrectlyIdentified(){
-        TransactionImpl<?> tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String patternString = "{(role: $x, role: $y, role: $z); $x isa anotherEntity1; $y isa anotherEntity2; $z isa anotherEntity3;}";
         String patternString2 = "{(role: $x, role: $y, role: $z) isa ternary; $x isa anotherEntity1; $y isa anotherEntity2; $z isa anotherEntity3;}";
 
@@ -163,7 +163,7 @@ public class AtomicRoleInferenceIT {
 
     @Test
     public void testRoleInference_TypedTernaryRelationWithMetaRoles_MetaRolesShouldBeOverwritten(){
-        TransactionImpl<?> tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String patternString = "{(role: $x, role: $y, role: $z); $x isa entity1; $y isa entity2; $z isa entity3;}";
         String patternString2 = "{(role: $x, role: $y, role: $z) isa ternary; $x isa entity1; $y isa entity2; $z isa entity3;}";
 
@@ -178,7 +178,7 @@ public class AtomicRoleInferenceIT {
 
     @Test
     public void testRoleInference_TypedTernaryRelation_TypesAreSubTypes_TopRolesShouldBeChosen(){
-        TransactionImpl<?> tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String patternString = "{(role: $x, role: $y, role: $z); $x isa subEntity1; $y isa subEntity2; $z isa subEntity3;}";
         String patternString2 = "{(role: $x, role: $y, role: $z) isa ternary; $x isa subEntity1; $y isa subEntity2; $z isa subEntity3;}";
 
@@ -193,7 +193,7 @@ public class AtomicRoleInferenceIT {
 
     @Test
     public void testRoleInference_TypedTernaryRelation_TypesCanPlayMultipleRoles_MetaRoleIsChosen(){
-        TransactionImpl<?> tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String patternString = "{($x, $y, $z); $x isa genericEntity; $y isa genericEntity; $z isa genericEntity;}";
         String patternString2 = "{($x, $y, $z) isa ternary; $x isa genericEntity; $y isa genericEntity; $z isa genericEntity;}";
 
@@ -208,7 +208,7 @@ public class AtomicRoleInferenceIT {
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_NoInformationPresent(){
-        TransactionImpl<?> tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{($x, $y);}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
@@ -217,7 +217,7 @@ public class AtomicRoleInferenceIT {
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_MetaRelationType(){
-        TransactionImpl<?> tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{($x, $y) isa relationship;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
@@ -226,7 +226,7 @@ public class AtomicRoleInferenceIT {
 
     @Test //missing role is ambiguous without cardinality constraints
     public void testRoleInference_RoleHierarchyInvolved() {
-        TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
         String relationString = "{($p, subRole2: $gc) isa binary;}";
         String relationString2 = "{(subRole1: $gp, $p) isa binary;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
@@ -247,7 +247,7 @@ public class AtomicRoleInferenceIT {
 
     @Test //entity1 plays role1 but entity2 plays roles role1, role2 hence ambiguous and metarole has to be assigned, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRoleInference_WithMetaType(){
-        TransactionImpl<?> tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{($x, $y, $z) isa ternary;$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa entity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
@@ -260,7 +260,7 @@ public class AtomicRoleInferenceIT {
 
     @Test //entity1 plays role1, entity2 plays 2 roles, entity3 plays 3 roles hence ambiguous and metarole has to be assigned, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRoleInference_RoleMappingUnambiguous(){
-        TransactionImpl<?> tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{($x, $y, $z) isa ternary;$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
@@ -273,7 +273,7 @@ public class AtomicRoleInferenceIT {
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_AllRolePlayersHaveAmbiguousRoles(){
-        TransactionImpl<?> tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{($x, $y, $z) isa ternary;$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
@@ -282,7 +282,7 @@ public class AtomicRoleInferenceIT {
 
     @Test //relation relates a single role so instead of assigning metarole this role should be assigned
     public void testRoleInference_RelationHasVerticalRoleHierarchy(){
-        TransactionImpl<?> tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{($x, $y) isa reifying-relation;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
@@ -292,7 +292,7 @@ public class AtomicRoleInferenceIT {
         tx.close();
     }
 
-    private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMAp, TransactionImpl<?> tx){
+    private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMAp, TransactionOLTP tx){
         RelationshipAtom atom = (RelationshipAtom) ReasonerQueries.atomic(conjunction(patternString, tx), tx).getAtom();
         Multimap<Role, Variable> roleMap = roleSetMap(atom.getRoleVarMap());
         assertEquals(expectedRoleMAp, roleMap);
@@ -304,7 +304,7 @@ public class AtomicRoleInferenceIT {
         return roleMap;
     }
 
-    private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
+    private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx){
         Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

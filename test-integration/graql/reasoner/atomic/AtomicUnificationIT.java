@@ -28,7 +28,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -71,7 +71,7 @@ public class AtomicUnificationIT {
         }
     }
 
-    private TransactionImpl tx;
+    private TransactionOLTP tx;
 
     @BeforeClass
     public static void loadContext(){
@@ -429,7 +429,7 @@ public class AtomicUnificationIT {
         exactUnification(baseQuery, childQuery, true, true);
     }
 
-    private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMAp, TransactionImpl<?> tx){
+    private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMAp, TransactionOLTP tx){
         RelationshipAtom atom = (RelationshipAtom) ReasonerQueries.atomic(conjunction(patternString, tx), tx).getAtom();
         Multimap<Role, Variable> roleMap = roleSetMap(atom.getRoleVarMap());
         assertEquals(expectedRoleMAp, roleMap);
@@ -447,7 +447,7 @@ public class AtomicUnificationIT {
         assertTrue(childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).isEmpty());
     }
 
-    private void nonExistentUnifier(String parentPatternString, String childPatternString, TransactionImpl<?> tx){
+    private void nonExistentUnifier(String parentPatternString, String childPatternString, TransactionOLTP tx){
         nonExistentUnifier(
                 ReasonerQueries.atomic(conjunction(parentPatternString, tx), tx),
                 ReasonerQueries.atomic(conjunction(childPatternString, tx), tx)
@@ -494,7 +494,7 @@ public class AtomicUnificationIT {
         }
     }
 
-    private void exactUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, TransactionImpl<?> tx){
+    private void exactUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, TransactionOLTP tx){
         exactUnification(
                 ReasonerQueries.atomic(conjunction(parentPatternString, tx), tx),
                 ReasonerQueries.atomic(conjunction(childPatternString, tx), tx),
@@ -508,7 +508,7 @@ public class AtomicUnificationIT {
         return roleMap;
     }
 
-    private Conjunction<Statement> conjunction(String patternString, TransactionImpl<?> tx){
+    private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx){
         Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

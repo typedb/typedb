@@ -33,7 +33,7 @@ import grakn.core.server.kb.structure.AbstractElement;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -61,18 +61,18 @@ import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
  *
  */
 public final class ElementFactory {
-    private final TransactionImpl tx;
+    private final TransactionOLTP tx;
 
-    public ElementFactory(TransactionImpl tx){
+    public ElementFactory(TransactionOLTP tx){
         this.tx = tx;
     }
 
     private <X extends Concept, E extends AbstractElement> X   getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder){
-        if(!tx.txCache().isConceptCached(conceptId)){
+        if(!tx.cache().isConceptCached(conceptId)){
             X newConcept = conceptBuilder.apply(element);
-            tx.txCache().cacheConcept(newConcept);
+            tx.cache().cacheConcept(newConcept);
         }
-        return tx.txCache().getCachedConcept(conceptId);
+        return tx.cache().getCachedConcept(conceptId);
     }
 
     private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder){
@@ -155,7 +155,7 @@ public final class ElementFactory {
         }
 
         ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));
-        if(!tx.txCache().isConceptCached(conceptId)){
+        if(!tx.cache().isConceptCached(conceptId)){
             Concept concept;
             switch (type) {
                 case RELATIONSHIP:
@@ -188,9 +188,9 @@ public final class ElementFactory {
                 default:
                     throw TransactionException.unknownConcept(type.name());
             }
-            tx.txCache().cacheConcept(concept);
+            tx.cache().cacheConcept(concept);
         }
-        return tx.txCache().getCachedConcept(conceptId);
+        return tx.cache().getCachedConcept(conceptId);
     }
 
     /**
@@ -208,7 +208,7 @@ public final class ElementFactory {
         Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
 
         ConceptId conceptId = ConceptId.of(edgeElement.id().getValue());
-        if(!tx.txCache().isConceptCached(conceptId)){
+        if(!tx.cache().isConceptCached(conceptId)){
             Concept concept;
             switch (label) {
                 case ATTRIBUTE:
@@ -217,9 +217,9 @@ public final class ElementFactory {
                 default:
                     throw TransactionException.unknownConcept(label.name());
             }
-            tx.txCache().cacheConcept(concept);
+            tx.cache().cacheConcept(concept);
         }
-        return tx.txCache().getCachedConcept(conceptId);
+        return tx.cache().getCachedConcept(conceptId);
     }
 
     /**
@@ -298,7 +298,7 @@ public final class ElementFactory {
             newConceptId = conceptIds[0].getValue();
         }
         vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
-        tx.txCache().writeOccurred();
+        tx.cache().writeOccurred();
         return new VertexElement(tx, vertex);
     }
 }

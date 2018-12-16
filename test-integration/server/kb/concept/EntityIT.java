@@ -35,7 +35,7 @@ import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -62,7 +62,7 @@ public class EntityIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionImpl tx;
+    private TransactionOLTP tx;
     private SessionImpl session;
 
     @Before

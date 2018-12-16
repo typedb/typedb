@@ -27,7 +27,6 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.cache.Cache;
@@ -76,13 +75,13 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     public T label(Label label){
         try {
-            vertex().tx().txCache().remove(this);
+            vertex().tx().cache().remove(this);
             vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
             cachedLabel.set(label);
-            vertex().tx().txCache().cacheConcept(this);
+            vertex().tx().cache().cacheConcept(this);
             return getThis();
         } catch (PropertyNotUniqueException exception){
-            vertex().tx().txCache().cacheConcept(this);
+            vertex().tx().cache().cacheConcept(this);
             throw TransactionException.labelTaken(label);
         }
     }
@@ -155,7 +154,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             SchemaConceptImpl.from(superConcept).deleteCachedDirectedSubType(getThis());
 
             //Clear Global Cache
-            vertex().tx().txCache().remove(this);
+            vertex().tx().cache().remove(this);
 
             //Clear internal caching
             txCacheClear();

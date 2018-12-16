@@ -26,7 +26,7 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -46,7 +46,7 @@ public class QueryAdminIT {
     @ClassRule
     public static GraknTestServer graknServer = new GraknTestServer();
     private static SessionImpl session;
-    private TransactionImpl<?> tx;
+    private TransactionOLTP tx;
 
     @BeforeClass
     public static void newSession() {

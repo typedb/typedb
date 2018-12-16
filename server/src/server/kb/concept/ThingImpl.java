@@ -106,7 +106,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     private void track(){
         if(type().keys().findAny().isPresent()){
-            vertex().tx().txCache().trackForValidation(this);
+            vertex().tx().cache().trackForValidation(this);
         }
     }
 
@@ -127,7 +127,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             return relationship;
         }).collect(toSet());
 
-        vertex().tx().txCache().removedInstance(type().id());
+        vertex().tx().cache().removedInstance(type().id());
         deleteNode();
 
         relationships.forEach(relation -> {

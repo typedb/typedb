@@ -35,7 +35,7 @@ import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -348,16 +348,16 @@ public class QueryPlannerIT {
         // force the concept to get a new shard
         // shards of thing = 2 (thing = 1 and thing itself)
         // thing 2 = 4, thing3 = 7
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy2).id());
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy2).id());
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy2).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy2).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy2).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy2).id());
 
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy3).id());
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy3).id());
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy3).id());
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy3).id());
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy3).id());
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy3).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy3).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy3).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy3).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy3).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy3).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy3).id());
 
         Pattern pattern;
         ImmutableList<Fragment> plan;
@@ -403,9 +403,9 @@ public class QueryPlannerIT {
         plan = getPlan(pattern);
         assertEquals(z, plan.get(4).end());
 
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy1).id());
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy1).id());
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy1).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy1).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy).id());
         // now thing = 5, thing1 = 3
 
         pattern = and(
@@ -424,8 +424,8 @@ public class QueryPlannerIT {
         plan = getPlan(pattern);
         assertEquals(x, plan.get(3).end());
 
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy1).id());
-        ((TransactionImpl<?>) tx).shard(tx.getEntityType(thingy1).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy1).id());
+        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy1).id());
         // now thing = 7, thing1 = 5
 
         pattern = and(
@@ -446,6 +446,6 @@ public class QueryPlannerIT {
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {
-        return GreedyTraversalPlan.createTraversal(pattern, ((TransactionImpl<?>) tx)).fragments().iterator().next();
+        return GreedyTraversalPlan.createTraversal(pattern, ((TransactionOLTP) tx)).fragments().iterator().next();
     }
 }

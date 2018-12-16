@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.session.olap;
+package grakn.core.server.session;
 
 import grakn.core.graql.concept.LabelId;
 import grakn.core.graql.internal.Schema;
-import grakn.core.server.session.olap.computer.GraknSparkComputer;
+import grakn.core.server.session.computer.GraknSparkComputer;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -31,8 +31,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -59,18 +57,14 @@ public class TransactionOLAP {
 
     public TransactionOLAP(Graph graph) {
         this.graph = graph;
-        if (graph instanceof TinkerGraph) {
-            graphComputerClass = TinkerGraphComputer.class;
-        } else {
-            graphComputerClass = GraknSparkComputer.class;
-        }
+        this.graphComputerClass = GraknSparkComputer.class;
     }
 
     @CheckReturnValue
     public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
                                   @Nullable Set<LabelId> types, Boolean includesRolePlayerEdges) {
         try {
-            graphComputer = getGraphComputer();
+            graphComputer = graph.compute(this.graphComputerClass);
             if (program != null) {
                 graphComputer.program(program);
             } else {
@@ -105,10 +99,6 @@ public class TransactionOLAP {
         } else {
             return new RuntimeException(cause);
         }
-    }
-
-    protected GraphComputer getGraphComputer() {
-        return graph.compute(this.graphComputerClass);
     }
 
     private void applyFilters(Set<LabelId> types, boolean includesRolePlayerEdge) {

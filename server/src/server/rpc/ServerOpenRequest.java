@@ -21,7 +21,7 @@ package grakn.core.server.rpc;
 import grakn.core.server.Transaction;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.SessionStore;
-import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 /**
  * A request transaction opener for RPC Services. It requires the keyspace and transaction type from the argument object
@@ -36,7 +36,7 @@ public class ServerOpenRequest implements OpenRequest {
     }
 
     @Override
-    public TransactionImpl<?> open(OpenRequest.Arguments args) {
+    public TransactionOLTP open(OpenRequest.Arguments args) {
         Keyspace keyspace = args.getKeyspace();
         Transaction.Type txType = args.getTxType();
         return txFactory.tx(keyspace, txType);

@@ -23,10 +23,6 @@ import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.olap.TransactionOLAP;
-import grakn.core.server.session.olap.TransactionOLAPFactory;
-import grakn.core.server.session.oltp.TransactionOLTP;
-import grakn.core.server.session.oltp.TransactionOLTPFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +51,7 @@ public class SessionImpl implements Session {
     private final Config config;
 
     //References so we don't have to open a tx just to check the count of the transactions
-    private TransactionImpl<?> tx = null;
+    private TransactionOLTP tx = null;
 
     /**
      * Instantiates {@link SessionImpl}
@@ -107,8 +103,8 @@ public class SessionImpl implements Session {
 
 
     @Override
-    public TransactionImpl transaction(Transaction.Type transactionType) {
-        tx = transactionOLTPFactory.openOLTP(transactionType);
+    public TransactionOLTP transaction(Transaction.Type type) {
+        tx = transactionOLTPFactory.openOLTP(type);
         return tx;
     }
 
@@ -127,9 +123,7 @@ public class SessionImpl implements Session {
     public void close() throws TransactionException {
         if (tx != null) {
             tx.closeSession();
-            if (tx instanceof TransactionOLTP) {
-                ((TransactionOLTP) tx).closeOpenTransactions();
-            }
+            tx.closeOpenTransactions();
         }
     }
 
