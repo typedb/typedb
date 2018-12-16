@@ -201,37 +201,37 @@ public class TransactionOLTP implements Transaction {
 
     @Override
     public Stream<ConceptMap> stream(DefineQuery query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).define(query);
     }
 
     @Override
     public Stream<ConceptMap> stream(UndefineQuery query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).undefine(query);
     }
 
     @Override
     public Stream<ConceptMap> stream(InsertQuery query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).insert(query);
     }
 
     @Override
     public Stream<ConceptSet> stream(DeleteQuery query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).delete(query);
     }
 
     @Override
     public Stream<ConceptMap> stream(GetQuery query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).get(query);
     }
 
     @Override
     public <T extends Answer> Stream<T> stream(AggregateQuery<T> query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).aggregate(query);
     }
 
     @Override
     public <T extends Answer> Stream<T> stream(ComputeQuery<T> query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).compute(query);
     }
 
 
@@ -845,12 +845,12 @@ public class TransactionOLTP implements Transaction {
     }
 
     public Stream<ConceptMap> stream(MatchClause matchClause) {
-        return executor().run(matchClause);
+        return executor().match(matchClause);
 
     }
 
     public Stream<ConceptMap> stream(MatchClause matchClause, boolean infer) {
-        return executor(infer).run(matchClause);
+        return executor(infer).match(matchClause);
     }
 
     public List<ConceptMap> execute(MatchClause matchClause) {

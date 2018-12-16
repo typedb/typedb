@@ -62,7 +62,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * The executor class for Graql queries that runs queries using a Tinkerpop graph.
+ * QueryExecutor is the class that executes Graql queries onto the database
  */
 public class QueryExecutor {
 
@@ -75,64 +75,55 @@ public class QueryExecutor {
     }
 
     /**
-     * @param matchClause the match clause containing patterns to query
-     */
-    void validateStatements(MatchClause matchClause) {
-        for (Statement statement : matchClause.getPatterns().statements()) {
-            statement.getProperties().forEach(property -> property.checkValid(tx, statement));
-        }
-    }
-
-    /**
-     * @param commonVars set of variables of interest
-     * @param graqlTraversal gral traversal corresponding to the provided pattern
-     * @return resulting answer stream
-     */
-    public Stream<ConceptMap> streamWithTraversal(Set<Variable> commonVars, GraqlTraversal graqlTraversal) {
-        Set<Variable> vars = Sets.filter(commonVars, Variable::isUserDefinedName);
-
-        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(tx, vars);
-
-        return traversal.toStream()
-                .map(elements -> makeResults(vars, elements))
-                .distinct()
-                .sequential()
-                .map(ConceptMap::new);
-    }
-
-    /**
-     * @param vars set of variables of interest
+     * @param vars     set of variables of interest
      * @param elements a map of vertices and edges where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private Map<Variable, Concept> makeResults(Set<Variable> vars, Map<String, Element> elements) {
+    private Map<Variable, Concept> createAnswer(Set<Variable> vars, Map<String, Element> elements) {
         Map<Variable, Concept> map = new HashMap<>();
         for (Variable var : vars) {
             Element element = elements.get(var.symbol());
             if (element == null) {
                 throw GraqlQueryException.unexpectedResult(var);
             } else {
-                Concept concept = buildConcept(element);
+                Concept result;
+                if (element instanceof Vertex) {
+                    result = tx.buildConcept((Vertex) element);
+                } else {
+                    result = tx.buildConcept((Edge) element);
+                }
+                Concept concept = result;
                 map.put(var, concept);
             }
         }
         return map;
     }
 
-    private Concept buildConcept(Element element) {
-        if (element instanceof Vertex) {
-            return tx.buildConcept((Vertex) element);
-        } else {
-            return tx.buildConcept((Edge) element);
-        }
+    /**
+     * @param commonVars     set of variables of interest
+     * @param graqlTraversal gral traversal corresponding to the provided pattern
+     * @return resulting answer stream
+     */
+    public Stream<ConceptMap> traversal(Set<Variable> commonVars, GraqlTraversal graqlTraversal) {
+        Set<Variable> vars = Sets.filter(commonVars, Variable::isUserDefinedName);
+
+        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(tx, vars);
+
+        return traversal.toStream()
+                .map(elements -> createAnswer(vars, elements))
+                .distinct()
+                .sequential()
+                .map(ConceptMap::new);
     }
 
-    public Stream<ConceptMap> run(MatchClause matchClause) {
-        validateStatements(matchClause);
+    public Stream<ConceptMap> match(MatchClause matchClause) {
+        for (Statement statement : matchClause.getPatterns().statements()) {
+            statement.getProperties().forEach(property -> property.checkValid(tx, statement));
+        }
 
         if (!infer || !RuleUtils.hasRules(tx)) {
             GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), tx);
-            return streamWithTraversal(matchClause.getPatterns().variables(), graqlTraversal);
+            return traversal(matchClause.getPatterns().variables(), graqlTraversal);
         }
 
         try {
@@ -161,33 +152,44 @@ public class QueryExecutor {
         }
     }
 
-    public Stream<ConceptMap> run(GetQuery query) {
-        return run(query.match()).map(result -> result.project(query.vars())).distinct();
+    public Stream<ConceptMap> define(DefineQuery query) {
+        ImmutableList<Statement> allPatterns = query.statements().stream()
+                .flatMap(v -> v.innerStatements().stream())
+                .collect(toImmutableList());
+
+        ConceptMap defined = WriteExecutor.defineAll(allPatterns, tx);
+        return Stream.of(defined);
     }
 
-    public Stream<ConceptMap> run(InsertQuery query) {
+    public Stream<ConceptMap> undefine(UndefineQuery query) {
+        ImmutableList<Statement> allPatterns = query.statements().stream()
+                .flatMap(v -> v.innerStatements().stream())
+                .collect(toImmutableList());
+
+        ConceptMap undefined = WriteExecutor.undefineAll(allPatterns, tx);
+        return Stream.of(undefined);
+    }
+
+    public Stream<ConceptMap> insert(InsertQuery query) {
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(v -> v.innerStatements().stream())
                 .collect(toImmutableList());
 
         if (query.match() != null) {
-            return runMatchInsert(query.match(), statements);
+            MatchClause match = query.match();
+            Set<Variable> varsInMatch = match.getSelectedNames();
+            Set<Variable> varsInInsert = statements.stream().map(statement -> statement.var()).collect(toImmutableSet());
+            Set<Variable> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
+
+            Stream<ConceptMap> answers = tx.stream(match.get(projectedVars));
+            return answers.map(answer -> WriteExecutor.insertAll(statements, tx, answer)).collect(toList()).stream();
         } else {
             return Stream.of(WriteExecutor.insertAll(statements, tx));
         }
     }
 
-    private Stream<ConceptMap> runMatchInsert(MatchClause match, Collection<Statement> statements) {
-        Set<Variable> varsInMatch = match.getSelectedNames();
-        Set<Variable> varsInInsert = statements.stream().map(statement -> statement.var()).collect(toImmutableSet());
-        Set<Variable> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
-
-        Stream<ConceptMap> answers = tx.stream(match.get(projectedVars));
-        return answers.map(answer -> WriteExecutor.insertAll(statements, tx, answer)).collect(toList()).stream();
-    }
-
-    public Stream<ConceptSet> run(DeleteQuery query) {
-        Stream<ConceptMap> answers = run(query.match()).map(result -> result.project(query.vars())).distinct();
+    public Stream<ConceptSet> delete(DeleteQuery query) {
+        Stream<ConceptMap> answers = match(query.match()).map(result -> result.project(query.vars())).distinct();
         // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
         // Stream.distinct() will then work properly when it calls ConceptImpl.equals()
         Set<Concept> conceptsToDelete = answers.flatMap(answer -> answer.concepts().stream()).collect(toSet());
@@ -202,30 +204,16 @@ public class QueryExecutor {
         return Stream.of(new ConceptSet(conceptsToDelete.stream().map(Concept::id).collect(toSet())));
     }
 
-    public Stream<ConceptMap> run(DefineQuery query) {
-        ImmutableList<Statement> allPatterns = query.statements().stream()
-                .flatMap(v -> v.innerStatements().stream())
-                .collect(toImmutableList());
-
-        ConceptMap defined = WriteExecutor.defineAll(allPatterns, tx);
-        return Stream.of(defined);
+    public Stream<ConceptMap> get(GetQuery query) {
+        return match(query.match()).map(result -> result.project(query.vars())).distinct();
     }
 
-    public Stream<ConceptMap> run(UndefineQuery query) {
-        ImmutableList<Statement> allPatterns = query.statements().stream()
-                .flatMap(v -> v.innerStatements().stream())
-                .collect(toImmutableList());
-
-        ConceptMap undefined = WriteExecutor.undefineAll(allPatterns, tx);
-        return Stream.of(undefined);
-    }
-
-    public <T extends Answer> Stream<T> run(AggregateQuery<T> query) {
-        return query.aggregate().apply(run(query.match())).stream();
+    public <T extends Answer> Stream<T> aggregate(AggregateQuery<T> query) {
+        return query.aggregate().apply(match(query.match())).stream();
     }
 
 
-    public <T extends Answer> Stream<T> run(ComputeQuery<T> query) {
+    public <T extends Answer> Stream<T> compute(ComputeQuery<T> query) {
         Optional<GraqlQueryException> exception = query.getException();
         if (exception.isPresent()) throw exception.get();
 
