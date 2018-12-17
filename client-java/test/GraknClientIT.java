@@ -781,35 +781,35 @@ public class GraknClientIT {
             person.create().has(name.create("Bob")).has(age.create(22));
 
             AggregateQuery nullQuery =
-                    Graql.match(var("x").isa("person").has("rating", var("y"))).get().aggregate(AggregateQuery.Method.SUM, "y");
+                    Graql.match(var("x").isa("person").has("rating", var("y"))).get().sum("y");
             assertTrue(tx.execute(nullQuery).isEmpty());
 
             AggregateQuery countQuery =
-                    Graql.match(var("x").isa("person").has("age", var("y"))).get().aggregate(AggregateQuery.Method.COUNT, "y");
+                    Graql.match(var("x").isa("person").has("age", var("y"))).get("y").count();
             assertEquals(2L, tx.execute(countQuery).get(0).number().longValue());
 
             AggregateQuery sumAgeQuery =
-                    Graql.match(var("x").isa("person").has("age", var("y"))).get().aggregate(AggregateQuery.Method.SUM, "y");
+                    Graql.match(var("x").isa("person").has("age", var("y"))).get().sum("y");
             assertEquals(42, tx.execute(sumAgeQuery).get(0).number().intValue());
 
             AggregateQuery minAgeQuery =
-                    Graql.match(var("x").isa("person").has("age", var("y"))).get().aggregate(AggregateQuery.Method.MIN, "y");
+                    Graql.match(var("x").isa("person").has("age", var("y"))).get().min("y");
             assertEquals(20, tx.execute(minAgeQuery).get(0).number().intValue());
 
             AggregateQuery maxAgeQuery =
-                    Graql.match(var("x").isa("person").has("age", var("y"))).get().aggregate(AggregateQuery.Method.MAX, "y");
+                    Graql.match(var("x").isa("person").has("age", var("y"))).get().max("y");
             assertEquals(22, tx.execute(maxAgeQuery).get(0).number().intValue());
 
             AggregateQuery meanAgeQuery =
-                    Graql.match(var("x").isa("person").has("age", var("y"))).get().aggregate(AggregateQuery.Method.MEAN, "y");
+                    Graql.match(var("x").isa("person").has("age", var("y"))).get().mean("y");
             assertEquals(21.0d, tx.execute(meanAgeQuery).get(0).number().doubleValue(), 0.01d);
 
             AggregateQuery medianAgeQuery =
-                    Graql.match(var("x").isa("person").has("age", var("y"))).get().aggregate(AggregateQuery.Method.MEDIAN, "y");
+                    Graql.match(var("x").isa("person").has("age", var("y"))).get().median("y");
             assertEquals(21.0d, tx.execute(medianAgeQuery).get(0).number().doubleValue(), 0.01d);
 
             AggregateQuery stdAgeQuery =
-                    Graql.match(var("x").isa("person").has("age", var("y"))).get().aggregate(AggregateQuery.Method.STD, "y");
+                    Graql.match(var("x").isa("person").has("age", var("y"))).get().std("y");
             int n = 2;
             double mean = (20 + 22) / n;
             double var = (Math.pow(20 - mean, 2) + Math.pow(22 - mean, 2)) / (n - 1);
@@ -817,8 +817,7 @@ public class GraknClientIT {
             assertEquals(std, tx.execute(stdAgeQuery).get(0).number().doubleValue(), 0.0001d);
 
             List<AnswerGroup<ConceptMap>> groups = tx.execute(
-                    Graql.match(var("x").isa("person").has("name", var("y"))).get()
-                    .group("y")
+                    Graql.match(var("x").isa("person").has("name", var("y"))).get().group("y")
             );
 
             assertEquals(2, groups.size());
@@ -830,7 +829,7 @@ public class GraknClientIT {
 
             List<AnswerGroup<Value>> counts = tx.execute(
                     Graql.match(var("x").isa("person").has("name", var("y"))).get()
-                    .group("y", AggregateQuery.Method.COUNT)
+                    .group("y").count()
             );
 
             assertEquals(2, counts.size());

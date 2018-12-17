@@ -173,7 +173,7 @@ public class AttributeDeduplicatorE2E {
 
     private int countTotalNames(GraknClient.Session session) {
         try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
-            return tx.execute(Graql.match(var("x").isa("name")).get().aggregate(AggregateQuery.Method.COUNT)).get(0).number().intValue();
+            return tx.execute(Graql.match(var("x").isa("name")).get().count()).get(0).number().intValue();
         }
     }
 }

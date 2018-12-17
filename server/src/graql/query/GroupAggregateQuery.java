@@ -20,36 +20,35 @@ package grakn.core.graql.query;
 
 import grakn.core.graql.query.pattern.Variable;
 
-import java.util.Set;
-
-import static java.util.stream.Collectors.joining;
-
 public class GroupAggregateQuery extends GroupQuery {
 
     private final AggregateQuery.Method method;
-    private final Set<Variable> aggregateVars;
+    private final Variable aggregateVar;
 
-    public GroupAggregateQuery(GetQuery getQuery, Variable var,
-                               AggregateQuery.Method aggregateMethod, Set<Variable> aggregateVars) {
-        super(getQuery, var);
+    public GroupAggregateQuery(GroupQuery groupQuery, AggregateQuery.Method aggregateMethod, Variable aggregateVar) {
+        super(groupQuery.getQuery(), groupQuery.var());
 
         if (aggregateMethod == null) {
             throw new NullPointerException("Method is null");
         }
         this.method = aggregateMethod;
 
-        if (aggregateVars == null) {
-            throw new NullPointerException("Set<Variables> is null");
+        if (aggregateVar == null && !method.equals(AggregateQuery.Method.COUNT)) {
+            throw new NullPointerException("Variable is null");
+        } else if (aggregateVar != null && method.equals(AggregateQuery.Method.COUNT)) {
+            throw new IllegalArgumentException("Aggregate COUNT does not accept a Variable");
+        } else if (aggregateVar != null && !groupQuery.getQuery().vars().contains(aggregateVar)) {
+            throw new IllegalArgumentException("Aggregate variable should be contained in GET query");
         }
-        this.aggregateVars = aggregateVars;
+        this.aggregateVar = aggregateVar;
     }
 
     public AggregateQuery.Method aggregateMethod() {
         return method;
     }
 
-    public Set<Variable> aggregateVars() {
-        return aggregateVars;
+    public Variable aggregateVar() {
+        return aggregateVar;
     }
 
     @Override
@@ -58,16 +57,10 @@ public class GroupAggregateQuery extends GroupQuery {
 
         query.append(getQuery()).append(Char.SPACE)
                 .append(Command.GROUP).append(Char.SPACE)
-                .append(var()).append(Char.COMMA_SPACE)
+                .append(var()).append(Char.SEMICOLON).append(Char.SPACE)
                 .append(method);
 
-        if (!aggregateVars.isEmpty()) {
-            query.append(Char.SPACE).append(
-                    aggregateVars.stream()
-                            .map(Variable::toString)
-                            .collect(joining(Char.COMMA_SPACE.toString()))
-            );
-        }
+        if (aggregateVar != null) query.append(Char.SPACE).append(aggregateVar);
         query.append(Char.SEMICOLON);
 
         return query.toString();
@@ -83,7 +76,9 @@ public class GroupAggregateQuery extends GroupQuery {
         return (this.getQuery().equals(that.getQuery()) &&
                 this.var().equals(that.var()) &&
                 this.aggregateMethod().equals(that.aggregateMethod()) &&
-                this.aggregateVars().equals(that.aggregateVars()));
+                this.aggregateVar() == null ?
+                    that.aggregateVar() == null :
+                    this.aggregateVar().equals(that.aggregateVar()));
     }
 
     @Override
@@ -96,7 +91,7 @@ public class GroupAggregateQuery extends GroupQuery {
         h *= 1000003;
         h ^= this.aggregateMethod().hashCode();
         h *= 1000003;
-        h ^= this.aggregateVars().hashCode();
+        h ^= this.aggregateVar().hashCode();
         return h;
     }
 

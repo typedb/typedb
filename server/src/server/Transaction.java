@@ -275,6 +275,12 @@ public interface Transaction extends AutoCloseable {
         } else if (query instanceof AggregateQuery) {
             return stream((AggregateQuery) query, infer);
 
+        } else if (query instanceof GroupAggregateQuery) {
+            return stream((GroupAggregateQuery) query, infer);
+
+        } else if (query instanceof GroupQuery) {
+            return stream((GroupQuery) query, infer);
+
         } else if (query instanceof ComputeQuery<?>) {
             return stream((ComputeQuery<?>) query, infer);
 

@@ -18,12 +18,8 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Variable;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import static java.util.stream.Collectors.joining;
@@ -32,10 +28,7 @@ public class AggregateQuery implements Query {
 
     private final GetQuery getQuery;
     private final Method method;
-    private final Set<Variable> vars;
-
-    public final static Map<Method, Integer> VARIABLES_MINIMUM = variablesMinimum();
-    public final static Map<Method, Integer> VARIABLES_MAXIMUM = variablesMaximum();
+    private final Variable var;
 
     public enum Method {
         COUNT("count"),
@@ -67,7 +60,7 @@ public class AggregateQuery implements Query {
         }
     }
 
-    public AggregateQuery(GetQuery getQuery, Method method, Set<Variable> vars) {
+    public AggregateQuery(GetQuery getQuery, Method method, Variable var) {
         if (getQuery == null) {
             throw new NullPointerException("GetQuery is null");
         }
@@ -78,40 +71,15 @@ public class AggregateQuery implements Query {
         }
         this.method = method;
 
-        if (vars == null) {
-            throw new NullPointerException("Set<Variables> is null");
-        } else if ((VARIABLES_MINIMUM.containsKey(method) && vars.size() < VARIABLES_MINIMUM.get(method)) ||
-                (VARIABLES_MAXIMUM.containsKey(method) && vars.size() > VARIABLES_MAXIMUM.get(method))) {
-            throw GraqlQueryException.incorrectAggregateArgumentNumber(method.toString(),
-                                                                       VARIABLES_MINIMUM.get(method),
-                                                                       VARIABLES_MAXIMUM.get(method),
-                                                                       vars);
+        if (var == null && !method.equals(Method.COUNT)) {
+            throw new NullPointerException("Variable is null");
+        } else if (var != null && method.equals(Method.COUNT)) {
+            throw new IllegalArgumentException("Aggregate COUNT does not accept a Variable");
+        } else if (var != null && !getQuery.vars().contains(var)) {
+            throw new IllegalArgumentException("Aggregate variable should be contained in GET query");
         }
-        this.vars = vars;
-    }
 
-    private static Map<Method, Integer> variablesMinimum() {
-        Map<Method, Integer> minimum = new HashMap<>();
-        minimum.put(Method.MAX, 1);
-        minimum.put(Method.MEAN, 1);
-        minimum.put(Method.MEDIAN, 1);
-        minimum.put(Method.MIN, 1);
-        minimum.put(Method.STD, 1);
-        minimum.put(Method.SUM, 1);
-
-        return Collections.unmodifiableMap(minimum);
-    }
-
-    private static Map<Method, Integer> variablesMaximum() {
-        Map<Method, Integer> maximum = new HashMap<>();
-        maximum.put(Method.MAX, 1);
-        maximum.put(Method.MEAN, 1);
-        maximum.put(Method.MEDIAN, 1);
-        maximum.put(Method.MIN, 1);
-        maximum.put(Method.STD, 1);
-        maximum.put(Method.SUM, 1);
-
-        return Collections.unmodifiableMap(maximum);
+        this.var = var;
     }
 
     public GetQuery getQuery() {
@@ -122,8 +90,8 @@ public class AggregateQuery implements Query {
         return method;
     }
 
-    public Set<Variable> vars() {
-        return vars;
+    public Variable var() {
+        return var;
     }
 
     @Override
@@ -131,9 +99,10 @@ public class AggregateQuery implements Query {
         StringBuilder query = new StringBuilder();
 
         query.append(getQuery()).append(Char.SPACE)
-                .append(method).append(Char.SPACE)
-                .append(vars.stream().map(Variable::toString).collect(joining(Char.COMMA_SPACE.toString())))
-                .append(Char.SEMICOLON);
+                .append(method).append(Char.SPACE);
+
+        if (var != null) query.append(Char.SPACE).append(var);
+        query.append(Char.SEMICOLON);
 
         return query.toString();
     }
@@ -147,7 +116,9 @@ public class AggregateQuery implements Query {
 
         return (this.getQuery.equals(that.getQuery()) &&
                 this.method.equals(that.method()) &&
-                this.vars.equals(that.vars()));
+                this.var == null ?
+                    that.var() == null :
+                    this.var.equals(that.var()));
     }
 
     @Override
@@ -158,7 +129,7 @@ public class AggregateQuery implements Query {
         h *= 1000003;
         h ^= this.method.hashCode();
         h *= 1000003;
-        h ^= this.vars.hashCode();
+        h ^= this.var.hashCode();
         return h;
     }
 

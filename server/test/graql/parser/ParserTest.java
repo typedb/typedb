@@ -344,15 +344,15 @@ public class ParserTest {
 
     @Test
     public void testAggregateCountQuery() {
-        AggregateQuery expected = match(var().rel("x").rel("y").isa("friendship")).get().aggregate(AggregateQuery.Method.COUNT, "x", "y");
-        AggregateQuery parsed = parse("match ($x, $y) isa friendship; get; count $x, $y;");
+        AggregateQuery expected = match(var().rel("x").rel("y").isa("friendship")).get("x", "y").count();
+        AggregateQuery parsed = parse("match ($x, $y) isa friendship; get $x, $y; count;");
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testAggregateGroupCountQuery() {
-        GroupAggregateQuery expected = match(var().rel("x").rel("y").isa("friendship")).get().group("x", AggregateQuery.Method.COUNT, "x", "y");
-        GroupAggregateQuery parsed = parse("match ($x, $y) isa friendship; get; group $x, count $x, $y;");
+        GroupAggregateQuery expected = match(var().rel("x").rel("y").isa("friendship")).get("x", "y").group("x").count();
+        GroupAggregateQuery parsed = parse("match ($x, $y) isa friendship; get $x, $y; group $x; count;");
         assertEquals(expected, parsed);
     }
 
@@ -362,14 +362,14 @@ public class ParserTest {
                 match(
                         var().rel("x").rel("y").isa("friendship"),
                         var("y").has("age", var("z"))
-                ).get().group("x", AggregateQuery.Method.MAX,"z");
-        GroupAggregateQuery parsed = parse("match ($x, $y) isa friendship; $y has age $z; get; group $x, max $z;");
+                ).get().group("x").max("z");
+        GroupAggregateQuery parsed = parse("match ($x, $y) isa friendship; $y has age $z; get; group $x; max $z;");
         assertEquals(expected, parsed);
     }
 
     @Test
     public void whenComparingCountQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
-        AggregateQuery expected = match(var("x").isa("movie").has("title", "Godfather")).get().aggregate(AggregateQuery.Method.COUNT);
+        AggregateQuery expected = match(var("x").isa("movie").has("title", "Godfather")).get().count();
         AggregateQuery parsed = parse("match $x isa movie has title 'Godfather'; get; count;");
         assertEquals(expected, parsed);
     }
@@ -566,7 +566,7 @@ public class ParserTest {
 
     @Test
     public void whenParsingQueryWithComments_TheyAreIgnored() {
-        AggregateQuery expected = match(var("x").isa("movie")).get().aggregate(AggregateQuery.Method.COUNT);
+        AggregateQuery expected = match(var("x").isa("movie")).get().count();
         AggregateQuery parsed = parse(
                 "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; get; count;"
         );
@@ -614,15 +614,15 @@ public class ParserTest {
 
     @Test
     public void testParseAggregateGroupCount() {
-        GroupAggregateQuery expected = match(var("x").isa("movie")).get().group("x", AggregateQuery.Method.COUNT);
-        GroupAggregateQuery parsed = parse("match $x isa movie; get; group $x, count;");
+        GroupAggregateQuery expected = match(var("x").isa("movie")).get().group("x").count();
+        GroupAggregateQuery parsed = parse("match $x isa movie; get; group $x; count;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseAggregateStd() {
-        AggregateQuery expected = match(var("x").isa("movie")).get().aggregate(AggregateQuery.Method.STD, "x");
+        AggregateQuery expected = match(var("x").isa("movie")).get().std( "x");
         AggregateQuery parsed = parse("match $x isa movie; get; std $x;");
 
         assertEquals(expected, parsed);
@@ -630,7 +630,7 @@ public class ParserTest {
 
     @Test
     public void testParseAggregateToString() {
-        String query = "match $x isa movie; get $x; group $x, count;";
+        String query = "match $x isa movie; get $x; group $x; count;";
         assertEquals(query, parse(query).toString());
     }
 

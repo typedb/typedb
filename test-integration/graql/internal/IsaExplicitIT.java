@@ -92,8 +92,8 @@ public class IsaExplicitIT {
     @Test
     public void whenInsertIsaExplicit_InsertsADirectInstanceOfAType() {
         tx.execute(Graql.insert(var("x").isaExplicit("superType1")));
-        assertEquals(1, tx.execute(Graql.<AggregateQuery>parse("match $z isa! superType1; aggregate count;")).get(0).number().intValue());
-        assertEquals(2, tx.execute(Graql.<AggregateQuery>parse("match $z isa superType1; aggregate count;")).get(0).number().intValue());
+        assertEquals(1, tx.execute(Graql.<AggregateQuery>parse("match $z isa! superType1; get; count;")).get(0).number().intValue());
+        assertEquals(2, tx.execute(Graql.<AggregateQuery>parse("match $z isa superType1; get; count;")).get(0).number().intValue());
 
     }
 

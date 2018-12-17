@@ -223,25 +223,19 @@ public class QueryExecutor {
         Stream<ConceptMap> answers = get(query.getQuery());
         switch (query.method()) {
             case COUNT:
-                return AggregateExecutor.count(answers, query.vars()).stream();
+                return AggregateExecutor.count(answers).stream();
             case MAX:
-                if (query.vars().size() == 1)
-                    return AggregateExecutor.max(answers, query.vars().iterator().next()).stream();
+                return AggregateExecutor.max(answers, query.var()).stream();
             case MEAN:
-                if (query.vars().size() == 1)
-                    return AggregateExecutor.mean(answers, query.vars().iterator().next()).stream();
+                return AggregateExecutor.mean(answers, query.var()).stream();
             case MEDIAN:
-                if (query.vars().size() == 1)
-                    return AggregateExecutor.median(answers, query.vars().iterator().next()).stream();
+                return AggregateExecutor.median(answers, query.var()).stream();
             case MIN:
-                if (query.vars().size() == 1)
-                    return AggregateExecutor.min(answers, query.vars().iterator().next()).stream();
+                return AggregateExecutor.min(answers, query.var()).stream();
             case STD:
-                if (query.vars().size() == 1)
-                    return AggregateExecutor.std(answers, query.vars().iterator().next()).stream();
+                return AggregateExecutor.std(answers, query.var()).stream();
             case SUM:
-                if (query.vars().size() == 1)
-                    return AggregateExecutor.sum(answers, query.vars().iterator().next()).stream();
+                return AggregateExecutor.sum(answers, query.var()).stream();
             default:
                 throw new IllegalArgumentException("Invalid Aggregate query method / variables");
         }
@@ -259,9 +253,7 @@ public class QueryExecutor {
         return group(
                 get(query.getQuery()),
                 query.var(),
-                answers -> AggregateExecutor.aggregate(answers,
-                                                 query.aggregateMethod(),
-                                                 query.aggregateVars())
+                answers -> AggregateExecutor.aggregate(answers, query.aggregateMethod(), query.aggregateVar())
         ).stream();
     }
 
@@ -272,18 +264,10 @@ public class QueryExecutor {
                 collectingAndThen(toList(), list -> function.apply(list.stream()));
 
         List<AnswerGroup<T>> answerGroups = new ArrayList<>();
-        answers.collect(groupingBy(conceptMap -> getConcept(conceptMap, var), applyInnerAggregate))
+        answers.collect(groupingBy(answer -> answer.get(var), applyInnerAggregate))
                 .forEach((key, values) -> answerGroups.add(new AnswerGroup<>(key, values)));
 
         return answerGroups;
-    }
-
-    private static Concept getConcept(ConceptMap answer, Variable var) {
-        Concept concept = answer.get(var);
-        if (concept == null) {
-            throw GraqlQueryException.varNotInQuery(var);
-        }
-        return concept;
     }
 
     public <T extends Answer> Stream<T> compute(ComputeQuery<T> query) {

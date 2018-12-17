@@ -27,7 +27,6 @@ import grakn.core.graql.util.PrimitiveNumberComparator;
 import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.lang.Math.sqrt;
@@ -42,37 +41,27 @@ public class AggregateExecutor {
         else throw new RuntimeException("Invalid attempt to compare non-Numbers in Max Aggregate function");
     }
 
-
-    public static List<Value> aggregate(Stream<ConceptMap> answers, AggregateQuery.Method method, Set<Variable> vars) {
+    public static List<Value> aggregate(Stream<ConceptMap> answers, AggregateQuery.Method method, Variable var) {
         switch (method) {
             case COUNT:
-                return count(answers, vars);
+                return count(answers);
             case MAX:
-                if (vars.size() == 1)
-                    return max(answers, vars.iterator().next());
+                return max(answers, var);
             case MEAN:
-                if (vars.size() == 1)
-                    return mean(answers, vars.iterator().next());
+                return mean(answers, var);
             case MEDIAN:
-                if (vars.size() == 1)
-                    return median(answers, vars.iterator().next());
+                return median(answers, var);
             case MIN:
-                if (vars.size() == 1)
-                    return min(answers, vars.iterator().next());
+                return min(answers, var);
             case SUM:
-                if (vars.size() == 1)
-                    return sum(answers, vars.iterator().next());
+                return sum(answers, var);
             default:
-                throw new IllegalArgumentException("Invalid Aggregate method / variables");
+                throw new IllegalArgumentException("Invalid Aggregate method");
         }
     }
 
-    static List<Value> count(Stream<ConceptMap> answers, Set<Variable> vars) {
-        long count;
-        if (vars.isEmpty()) count = answers.count();
-        else count = answers.count();
-
-        return Collections.singletonList(new Value(count));
+    static List<Value> count(Stream<ConceptMap> answers) {
+        return Collections.singletonList(new Value(answers.count()));
     }
 
     static List<Value> max(Stream<ConceptMap> answers, Variable var) {

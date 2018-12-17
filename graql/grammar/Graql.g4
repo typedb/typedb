@@ -33,7 +33,7 @@ variables      : VARIABLE (',' VARIABLE)* ;
 
 aggregateQuery      : getQuery aggregateFunction ';' ;
 
-aggregateFunction   : aggregateMethod variables? ;                              // method and, optionally, variables
+aggregateFunction   : aggregateMethod VARIABLE? ;                               // method and, optionally, variables
 aggregateMethod     : COUNT | MAX | MEAN | MEDIAN | MIN | STD | SUM             // calculate statistical values
                     ;
 
@@ -46,7 +46,7 @@ aggregateMethod     : COUNT | MAX | MEAN | MEDIAN | MIN | STD | SUM             
 // An aggregate function is composed of 2 things:
 // The aggregate method name, followed by 0 or more variables to be applied to
 
-groupQuery          : getQuery GROUP VARIABLE (',' aggregateFunction)? ';' ;    // 'group' and variable, and optionally
+groupQuery          : getQuery GROUP VARIABLE (';' aggregateFunction)? ';' ;    // 'group' and variable, and optionally
                                                                                 // a value aggregate for each group
 
 // COMPUTE QUERY =======================================================================================================

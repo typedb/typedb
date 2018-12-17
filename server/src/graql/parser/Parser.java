@@ -30,6 +30,7 @@ import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.GroupAggregateQuery;
 import grakn.core.graql.query.GroupQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
@@ -55,7 +56,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -596,11 +596,9 @@ public class Parser extends GraqlBaseVisitor {
     public AggregateQuery visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
         GraqlParser.AggregateFunctionContext function = ctx.aggregateFunction();
         AggregateQuery.Method method = AggregateQuery.Method.of(function.aggregateMethod().getText());
-        Set<Variable> variables = function.variables() != null ?
-                visitVariables(function.variables()) :
-                Collections.emptySet();
+        Variable variable = function.VARIABLE() != null ? getVariable(function.VARIABLE()) : null;
 
-        return visitGetQuery(ctx.getQuery()).aggregate(method, variables);
+        return new AggregateQuery(visitGetQuery(ctx.getQuery()), method, variable);
     }
 
     @Override
@@ -611,11 +609,10 @@ public class Parser extends GraqlBaseVisitor {
         if (function == null) {
             return visitGetQuery(ctx.getQuery()).group(var);
         } else {
-            AggregateQuery.Method method = AggregateQuery.Method.of(function.aggregateMethod().getText());
-            Set<Variable> variables = function.variables() != null ?
-                    visitVariables(function.variables()) :
-                    Collections.emptySet();
-            return visitGetQuery(ctx.getQuery()).group(var, method, variables);
+            AggregateQuery.Method aggregateMethod = AggregateQuery.Method.of(function.aggregateMethod().getText());
+            Variable aggregateVar = function.VARIABLE() != null ? getVariable(function.VARIABLE()) : null;
+
+            return new GroupAggregateQuery(visitGetQuery(ctx.getQuery()).group(var), aggregateMethod, aggregateVar);
         }
     }
 

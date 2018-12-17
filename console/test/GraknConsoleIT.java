@@ -127,7 +127,7 @@ public class GraknConsoleIT {
 
         assertConsoleSessionMatches(
                 ImmutableList.of("-k", "grakn"),
-                "match im-in-the-default-keyspace sub entity; aggregate count;",
+                "match im-in-the-default-keyspace sub entity; get; count;",
                 containsString("1")
         );
     }
@@ -137,10 +137,10 @@ public class GraknConsoleIT {
         runConsoleSessionWithoutExpectingErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
         runConsoleSessionWithoutExpectingErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
 
-        String fooFooInFoo = runConsoleSessionWithoutExpectingErrors("match foo-foo sub entity; aggregate count;\n", "-k", "foo");
-        String fooFooInBar = runConsoleSessionWithoutExpectingErrors("match foo-foo sub entity; aggregate count;\n", "-k", "bar");
-        String barBarInFoo = runConsoleSessionWithoutExpectingErrors("match bar-bar sub entity; aggregate count;\n", "-k", "foo");
-        String barBarInBar = runConsoleSessionWithoutExpectingErrors("match bar-bar sub entity; aggregate count;\n", "-k", "bar");
+        String fooFooInFoo = runConsoleSessionWithoutExpectingErrors("match foo-foo sub entity; get; count;\n", "-k", "foo");
+        String fooFooInBar = runConsoleSessionWithoutExpectingErrors("match foo-foo sub entity; get; count;\n", "-k", "bar");
+        String barBarInFoo = runConsoleSessionWithoutExpectingErrors("match bar-bar sub entity; get; count;\n", "-k", "foo");
+        String barBarInBar = runConsoleSessionWithoutExpectingErrors("match bar-bar sub entity; get; count;\n", "-k", "bar");
         assertThat(fooFooInFoo, containsString("1"));
         assertThat(fooFooInBar, containsString("0"));
         assertThat(barBarInFoo, containsString("0"));
@@ -158,7 +158,7 @@ public class GraknConsoleIT {
         assertConsoleSessionMatches(
                 "load console/test/file-(with-parentheses).gql",
                 anything(),
-                "match movie sub entity; aggregate count;",
+                "match movie sub entity; get; count;",
                 containsString("1")
         );
     }
@@ -168,7 +168,7 @@ public class GraknConsoleIT {
         assertConsoleSessionMatches(
                 "load console/test/file-\\(with-parentheses\\).gql",
                 anything(),
-                "match movie sub entity; aggregate count;",
+                "match movie sub entity; get; count;",
                 containsString("1")
         );
     }
@@ -209,11 +209,11 @@ public class GraknConsoleIT {
         assertConsoleSessionMatches(
                 "define entity2 sub entity;",
                 anything(),
-                "match $x isa entity2; aggregate count $x;",
+                "match $x isa entity2; get $x; count;",
                 containsString("0"),
                 "insert $x isa entity2;",
                 anything(),
-                "match $x isa entity2; aggregate count $x;",
+                "match $x isa entity2; get $x; count;",
                 containsString("1")
         );
     }
@@ -231,7 +231,7 @@ public class GraknConsoleIT {
     public void when_writingAggregateCountQuery_expect_correctCount() throws Exception {
         int NUM_METATYPES = 4;
         assertConsoleSessionMatches(
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;",
+                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get; count;",
                 is(Integer.toString(NUM_METATYPES))
         );
     }
@@ -247,7 +247,7 @@ public class GraknConsoleIT {
                 anything(),
                 "insert $x isa person, has name \"Bob\";",
                 anything(),
-                "match $x isa person, has name $y; aggregate group $x;",
+                "match $x isa person, has name $y; get; group $x;",
                 anyOf(containsString("Alice"), containsString("Bob")),
                 anyOf(containsString("Alice"), containsString("Bob"))
         );
@@ -394,7 +394,7 @@ public class GraknConsoleIT {
     @Test
     public void when_writingMultipleQueries_expect_multipleResponses() throws Exception {
         assertConsoleSessionMatches(
-                "define X sub entity; insert $x isa X; match $y isa X; get; match $y isa X; aggregate count;",
+                "define X sub entity; insert $x isa X; match $y isa X; get; match $y isa X; get; count;",
                 // Make sure we see results from all four queries
                 containsString("{}"),
                 containsString("$x"),
@@ -406,8 +406,8 @@ public class GraknConsoleIT {
     @Test
     public void when_writingMultipleQueriesWithError_expect_multipleResponsesWithError() {
         Response response = runConsoleSession(
-                "match $x sub somerandomstring; aggregate count;\n" +
-                        "match $x sub thing; aggregate count;\n"
+                "match $x sub somerandomstring; get; count;\n" +
+                        "match $x sub thing; get; count;\n"
         );
 
         assertThat(response.err(), not(containsString("error")));

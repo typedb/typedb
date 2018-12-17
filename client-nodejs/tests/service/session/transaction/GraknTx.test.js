@@ -78,7 +78,7 @@ describe("Transaction methods", () => {
   });
 
   test("execute aggregate count on empty graph - Answer of Value", async () => {
-    const result = await tx.query("match $x; aggregate count;");
+    const result = await tx.query("match $x; get; count;");
     const answer = await(result.next());
     expect(answer.number()).toBe(6);
   });
@@ -148,12 +148,12 @@ describe("Transaction methods", () => {
     env.graknClient.keyspaces().delete('computecentralityks');
   });
 
-  test("compute aggregate group - Answer of answerGroup", async ()=>{
+  test("group query - Answer of answerGroup", async ()=>{
     const localSession = env.sessionForKeyspace('groupks');
     let localTx = await localSession.transaction(env.txType().WRITE);
     const parentshipMap = await buildParentship(localTx);
     localTx = await localSession.transaction(env.txType.WRITE);
-    const result = await localTx.query("match $x isa person; $y isa person; (parent: $x, child: $y) isa parentship; aggregate group $x;");
+    const result = await localTx.query("match $x isa person; $y isa person; (parent: $x, child: $y) isa parentship; get; group $x;");
     const answer = await(result.next());
     expect(answer.owner().id).toBe(parentshipMap.parent);
     expect(answer.answers()[0].map().size).toBe(2);
