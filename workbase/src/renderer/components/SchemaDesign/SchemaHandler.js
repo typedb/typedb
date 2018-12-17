@@ -44,7 +44,6 @@ SchemaHandler.prototype.defineAttributeType = async function define({ attributeL
 };
 
 SchemaHandler.prototype.defineRule = async function define({ ruleLabel, when, then }) {
-  debugger;
   return tx.putRule(ruleLabel, when, then);
 };
 
