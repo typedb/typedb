@@ -140,30 +140,31 @@ export default {
       await state.schemaHandler.addPlaysRole({ schemaLabel: payload.entityLabel, roleLabel: roleType });
     }));
 
-    await dispatch(COMMIT_TX, graknTx).then(async () => {
-      await dispatch(UPDATE_METATYPE_INSTANCES);
-
-      graknTx = await dispatch(OPEN_GRAKN_TX);
-
-      const type = await graknTx.getSchemaConcept(payload.entityLabel);
-
-      Object.assign(type, { label: payload.entityLabel });
-
-      const data = await buildSchema([type]);
-
-      data.edges.push(...((await typeInboundEdges(type, state.visFacade)).filter(x => x.to === type.id)));
-
-      state.visFacade.addToCanvas({ nodes: data.nodes, edges: data.edges });
-
-      data.nodes = await computeAttributes(data.nodes);
-      state.visFacade.updateNode(data.nodes);
-      graknTx.close();
-    })
+    await dispatch(COMMIT_TX, graknTx)
       .catch((e) => {
         graknTx.close();
         logger.error(e.stack);
         throw e;
       });
+
+    await dispatch(UPDATE_METATYPE_INSTANCES);
+
+    graknTx = await dispatch(OPEN_GRAKN_TX);
+
+    const type = await graknTx.getSchemaConcept(payload.entityLabel);
+
+    Object.assign(type, { label: payload.entityLabel });
+
+    const data = await buildSchema([type]);
+
+    data.edges.push(...((await typeInboundEdges(type, state.visFacade)).filter(x => x.to === type.id)));
+
+    state.visFacade.addToCanvas({ nodes: data.nodes, edges: data.edges });
+
+    // attach attributes to visnode and update on graph to render the right bar attributes
+    data.nodes = await computeAttributes(data.nodes);
+    state.visFacade.updateNode(data.nodes);
+    graknTx.close();
   },
 
   async [DEFINE_ATTRIBUTE_TYPE]({ state, dispatch }, payload) {
@@ -183,30 +184,30 @@ export default {
     }));
 
     await dispatch(COMMIT_TX, graknTx)
-      .then(async () => {
-        await dispatch(UPDATE_METATYPE_INSTANCES);
-
-        graknTx = await dispatch(OPEN_GRAKN_TX);
-
-        const type = await graknTx.getSchemaConcept(payload.attributeLabel);
-
-        Object.assign(type, { label: payload.attributeLabel });
-
-        const data = await buildSchema([type]);
-
-        data.edges.push(...((await typeInboundEdges(type, state.visFacade)).filter(x => x.to === type.id)));
-
-        state.visFacade.addToCanvas({ nodes: data.nodes, edges: data.edges });
-
-        data.nodes = await computeAttributes(data.nodes);
-        state.visFacade.updateNode(data.nodes);
-        graknTx.close();
-      })
       .catch((e) => {
         graknTx.close();
         logger.error(e.stack);
         throw e;
       });
+
+    await dispatch(UPDATE_METATYPE_INSTANCES);
+
+    graknTx = await dispatch(OPEN_GRAKN_TX);
+
+    const type = await graknTx.getSchemaConcept(payload.attributeLabel);
+
+    Object.assign(type, { label: payload.attributeLabel });
+
+    const data = await buildSchema([type]);
+
+    data.edges.push(...((await typeInboundEdges(type, state.visFacade)).filter(x => x.to === type.id)));
+
+    state.visFacade.addToCanvas({ nodes: data.nodes, edges: data.edges });
+
+    // attach attributes to visnode and update on graph to render the right bar attributes
+    data.nodes = await computeAttributes(data.nodes);
+    state.visFacade.updateNode(data.nodes);
+    graknTx.close();
   },
 
   async [ADD_ATTRIBUTE_TYPE]({ state, dispatch }, payload) {
@@ -218,30 +219,27 @@ export default {
     }));
 
     await dispatch(COMMIT_TX, graknTx)
-      .then(async () => {
-        graknTx = await dispatch(OPEN_GRAKN_TX);
-
-        const node = state.visFacade.getNode(state.selectedNodes[0].id);
-
-        const edges = [];
-        await Promise.all(payload.attributeTypes.map(async (attributeType) => {
-          const type = await graknTx.getSchemaConcept(attributeType);
-          const dataType = await type.dataType();
-          node.attributes = [...node.attributes, { type: attributeType, dataType }];
-
-          edges.push({ from: state.selectedNodes[0].id, to: type.id, label: 'has' });
-        }));
-
-        state.visFacade.addToCanvas({ nodes: [], edges });
-
-        graknTx.close();
-        state.visFacade.updateNode(node);
-      })
       .catch((e) => {
         graknTx.close();
         logger.error(e.stack);
         throw e;
       });
+    graknTx = await dispatch(OPEN_GRAKN_TX);
+
+    const node = state.visFacade.getNode(state.selectedNodes[0].id);
+
+    const edges = await Promise.all(payload.attributeTypes.map(async (attributeType) => {
+      const type = await graknTx.getSchemaConcept(attributeType);
+      const dataType = await type.dataType();
+      node.attributes = [...node.attributes, { type: attributeType, dataType }];
+
+      return { from: state.selectedNodes[0].id, to: type.id, label: 'has' };
+    }));
+
+    state.visFacade.addToCanvas({ nodes: [], edges });
+
+    graknTx.close();
+    state.visFacade.updateNode(node);
   },
 
   async [DELETE_ATTRIBUTE]({ state, dispatch }, payload) {
@@ -253,30 +251,29 @@ export default {
 
     await state.schemaHandler.deleteAttribute(payload);
 
-    await dispatch(COMMIT_TX, graknTx).then(async () => {
-      const node = state.visFacade.getNode(state.selectedNodes[0].id);
-      node.attributes = Object.values(node.attributes).sort((a, b) => ((a.type > b.type) ? 1 : -1));
-      node.attributes.splice(payload.index, 1);
-      state.visFacade.updateNode(node);
-
-      // delete edge to attribute type
-      graknTx = await dispatch(OPEN_GRAKN_TX);
-
-      const attributeTypeId = (await graknTx.getSchemaConcept(payload.attributeLabel)).id;
-      const edgesIds = state.visFacade.edgesConnectedToNode(state.selectedNodes[0].id);
-      edgesIds.forEach((edgeId) => {
-        const edge = state.visFacade.getEdge(edgeId);
-        if (edge.to === attributeTypeId) {
-          state.visFacade.deleteEdge(edgeId);
-        }
-      });
-      graknTx.close();
-    })
+    await dispatch(COMMIT_TX, graknTx)
       .catch((e) => {
         graknTx.close();
         logger.error(e.stack);
         throw e;
       });
+
+    const node = state.visFacade.getNode(state.selectedNodes[0].id);
+    node.attributes = Object.values(node.attributes).sort((a, b) => ((a.type > b.type) ? 1 : -1));
+    node.attributes.splice(payload.index, 1);
+    state.visFacade.updateNode(node);
+
+    // delete edge to attribute type
+    graknTx = await dispatch(OPEN_GRAKN_TX);
+
+    const attributeTypeId = (await graknTx.getSchemaConcept(payload.attributeLabel)).id;
+    const edgesIds = state.visFacade.edgesConnectedToNode(state.selectedNodes[0].id);
+
+    edgesIds
+      .filter(edgeId => state.visFacade.getEdge(edgeId).to === attributeTypeId)
+      .forEach((edgeId) => { state.visFacade.deleteEdge(edgeId); });
+
+    graknTx.close();
   },
 
   async [DEFINE_RELATIONSHIP_TYPE]({ state, dispatch }, payload) {
@@ -304,30 +301,31 @@ export default {
       await state.schemaHandler.addPlaysRole({ schemaLabel: payload.relationshipLabel, roleLabel: roleType });
     }));
 
-    await dispatch(COMMIT_TX, graknTx).then(async () => {
-      await dispatch(UPDATE_METATYPE_INSTANCES);
-
-      graknTx = await dispatch(OPEN_GRAKN_TX);
-
-      const type = await graknTx.getSchemaConcept(payload.relationshipLabel);
-
-      Object.assign(type, { label: payload.relationshipLabel });
-
-      const data = await buildSchema([type]);
-
-      data.edges.push(...((await typeInboundEdges(type, state.visFacade)).filter(x => x.to === type.id)));
-
-      state.visFacade.addToCanvas({ nodes: data.nodes, edges: data.edges });
-
-      data.nodes = await computeAttributes(data.nodes);
-      state.visFacade.updateNode(data.nodes);
-      graknTx.close();
-    })
+    await dispatch(COMMIT_TX, graknTx)
       .catch((e) => {
         graknTx.close();
         logger.error(e.stack);
         throw e;
       });
+
+    await dispatch(UPDATE_METATYPE_INSTANCES);
+
+    graknTx = await dispatch(OPEN_GRAKN_TX);
+
+    const type = await graknTx.getSchemaConcept(payload.relationshipLabel);
+
+    Object.assign(type, { label: payload.relationshipLabel });
+
+    const data = await buildSchema([type]);
+
+    data.edges.push(...((await typeInboundEdges(type, state.visFacade)).filter(x => x.to === type.id)));
+
+    state.visFacade.addToCanvas({ nodes: data.nodes, edges: data.edges });
+
+    // attach attributes to visnode and update on graph to render the right bar attributes
+    data.nodes = await computeAttributes(data.nodes);
+    state.visFacade.updateNode(data.nodes);
+    graknTx.close();
   },
 
   async [DELETE_SCHEMA_CONCEPT]({ state, dispatch, commit }, payload) {
@@ -353,16 +351,15 @@ export default {
 
     const typeId = await state.schemaHandler.deleteType(payload);
 
-    dispatch(COMMIT_TX, graknTx).then(() => {
-      state.visFacade.deleteFromCanvas([typeId]);
-      commit('selectedNodes', null);
-      dispatch(UPDATE_METATYPE_INSTANCES);
-    })
+    dispatch(COMMIT_TX, graknTx)
       .catch((e) => {
         graknTx.close();
         logger.error(e.stack);
         throw e;
       });
+    state.visFacade.deleteFromCanvas([typeId]);
+    commit('selectedNodes', null);
+    await dispatch(UPDATE_METATYPE_INSTANCES);
   },
 
   [REFRESH_SELECTED_NODE]({ state, commit }) {
