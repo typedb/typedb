@@ -8,6 +8,7 @@
       <new-entity-panel :showPanel="showPanel" v-on:show-panel="togglePanel"></new-entity-panel>
       <new-attribute-panel :showPanel="showPanel" v-on:show-panel="togglePanel"></new-attribute-panel>
       <new-relationship-panel :showPanel="showPanel" v-on:show-panel="togglePanel"></new-relationship-panel>
+      <new-rule-panel :showPanel="showPanel" v-on:show-panel="togglePanel"></new-rule-panel>
     </div>
   </div>
 </div>
@@ -45,9 +46,11 @@
   import NewEntityPanel from './LeftBar/NewEntityPanel';
   import NewAttributePanel from './LeftBar/NewAttributePanel';
   import NewRelationshipPanel from './LeftBar/NewRelationshipPanel';
+  import NewRulePanel from './LeftBar/NewRulePanel';
+
 
   export default {
-    components: { NewEntityPanel, NewAttributePanel, NewRelationshipPanel },
+    components: { NewEntityPanel, NewAttributePanel, NewRelationshipPanel, NewRulePanel },
     data() {
       return {
         showPanel: undefined,
