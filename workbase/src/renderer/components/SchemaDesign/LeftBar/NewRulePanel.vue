@@ -42,7 +42,7 @@
     min-width: 308px;
     max-width: 1000px;
     min-height: 100px;
-    max-height: 300px;
+    max-height: 280px;
   }
 
   .rule-input ::-webkit-scrollbar {
