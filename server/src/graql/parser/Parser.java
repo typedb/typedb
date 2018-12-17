@@ -24,13 +24,13 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSyntaxException;
-import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.GroupQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.Query;
@@ -593,59 +593,29 @@ public class Parser extends GraqlBaseVisitor {
      * @return An AggregateQuery object
      */
     @Override
-    public AggregateQuery<?> visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
+    public AggregateQuery visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
         GraqlParser.AggregateFunctionContext function = ctx.aggregateFunction();
-        Aggregate<?> aggregate;
+        AggregateQuery.Method method = AggregateQuery.Method.of(function.aggregateMethod().getText());
+        Set<Variable> variables = function.variables() != null ?
+                visitVariables(function.variables()) :
+                Collections.emptySet();
 
-        if (function.aggregateGroup() != null) {
-            aggregate = visitAggregateGroup(function.aggregateGroup());
-        } else { // function.aggregateValue() != null
-            aggregate = visitAggregateValue(function.aggregateValue());
-        }
-
-        return visitMatchClause(ctx.matchClause()).aggregate(aggregate);
+        return visitGetQuery(ctx.getQuery()).aggregate(method, variables);
     }
 
     @Override
-    public Aggregate<?> visitAggregateGroup(GraqlParser.AggregateGroupContext ctx) {
-        if (ctx.aggregateValue() != null) {
-            return Graql.group(getVariable(ctx.VARIABLE()), visitAggregateValue(ctx.aggregateValue()));
+    public GroupQuery visitGroupQuery(GraqlParser.GroupQueryContext ctx) {
+        Variable var = getVariable(ctx.VARIABLE());
+        GraqlParser.AggregateFunctionContext function = ctx.aggregateFunction();
+
+        if (function == null) {
+            return visitGetQuery(ctx.getQuery()).group(var);
         } else {
-            return Graql.group(getVariable(ctx.VARIABLE()));
-        }
-    }
-
-    @Override
-    public Aggregate<?> visitAggregateValue(GraqlParser.AggregateValueContext ctx) {
-        GraqlParser.AggregateMethodContext method = ctx.aggregateMethod();
-        List<Variable> variables = ctx.variables() != null ?
-                new ArrayList<>(visitVariables(ctx.variables())) :
-                Collections.emptyList();
-
-        // TODO: replace this with ENUM lookup once we split Aggregate Query Language vs Execution
-        switch (method.getText()) {
-            case "count":
-                return Graql.count(variables);
-            case "max":
-                if (variables.size() == 1) return Graql.max(variables.get(0));
-                throw GraqlQueryException.incorrectAggregateArgumentNumber("max", 1, 1, variables);
-            case "mean":
-                if (variables.size() == 1) return Graql.mean(variables.get(0));
-                throw GraqlQueryException.incorrectAggregateArgumentNumber("mean", 1, 1, variables);
-            case "median":
-                if (variables.size() == 1) return Graql.median(variables.get(0));
-                throw GraqlQueryException.incorrectAggregateArgumentNumber("median", 1, 1, variables);
-            case "min":
-                if (variables.size() == 1) return Graql.min(variables.get(0));
-                throw GraqlQueryException.incorrectAggregateArgumentNumber("min", 1, 1, variables);
-            case "std":
-                if (variables.size() == 1) return Graql.std(variables.get(0));
-                throw GraqlQueryException.incorrectAggregateArgumentNumber("std", 1, 1, variables);
-            case "sum":
-                if (variables.size() == 1) return Graql.sum(variables.get(0));
-                throw GraqlQueryException.incorrectAggregateArgumentNumber("sum", 1, 1, variables);
-            default:
-                throw GraqlQueryException.unknownAggregate(method.getText());
+            AggregateQuery.Method method = AggregateQuery.Method.of(function.aggregateMethod().getText());
+            Set<Variable> variables = function.variables() != null ?
+                    visitVariables(function.variables()) :
+                    Collections.emptySet();
+            return visitGetQuery(ctx.getQuery()).group(var, method, variables);
         }
     }
 

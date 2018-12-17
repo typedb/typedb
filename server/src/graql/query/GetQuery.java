@@ -19,11 +19,15 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 
@@ -51,6 +55,52 @@ public class GetQuery implements Query {
             }
         }
         this.match = match;
+    }
+
+    @CheckReturnValue
+    public AggregateQuery aggregate(AggregateQuery.Method method, String... vars) {
+        return aggregate(method, Arrays.stream(vars).map(Pattern::var).collect(Collectors.toSet()));
+    }
+
+    @CheckReturnValue
+    public AggregateQuery aggregate(AggregateQuery.Method method, Variable var, Variable... vars) {
+        Set<Variable> varSet = new HashSet<>(vars.length + 1);
+        varSet.add(var);
+        varSet.addAll(Arrays.asList(vars));
+        return aggregate(method, varSet);
+    }
+
+    @CheckReturnValue
+    public AggregateQuery aggregate(AggregateQuery.Method method, Set<Variable> vars) {
+        return new AggregateQuery(this, method, vars);
+    }
+
+    @CheckReturnValue
+    public GroupQuery group(String var) {
+        return group(Pattern.var(var));
+    }
+
+    @CheckReturnValue
+    public GroupQuery group(Variable var) {
+        return new GroupQuery(this, var);
+    }
+
+    @CheckReturnValue
+    public GroupAggregateQuery group(String var, AggregateQuery.Method method, String... vars) {
+        return group(Pattern.var(var), method, Arrays.stream(vars).map(Pattern::var).collect(Collectors.toSet()));
+    }
+
+    @CheckReturnValue
+    public GroupAggregateQuery group(Variable var, AggregateQuery.Method method, Variable aggregateVar, Variable... aggreagetVars) {
+        Set<Variable> varSet = new HashSet<>(aggreagetVars.length + 1);
+        varSet.add(aggregateVar);
+        varSet.addAll(Arrays.asList(aggreagetVars));
+        return group(var, method, varSet);
+    }
+
+    @CheckReturnValue
+    public GroupAggregateQuery group(Variable var, AggregateQuery.Method method, Set<Variable> aggregateVars) {
+        return new GroupAggregateQuery(this, var, method, aggregateVars);
     }
 
     @CheckReturnValue

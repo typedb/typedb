@@ -19,9 +19,6 @@
 package grakn.core.graql.parser;
 
 import com.google.common.base.Strings;
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlSyntaxException;
@@ -32,6 +29,8 @@ import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.GroupAggregateQuery;
+import grakn.core.graql.query.GroupQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
@@ -61,21 +60,17 @@ import static grakn.core.graql.query.ComputeQuery.Argument.k;
 import static grakn.core.graql.query.ComputeQuery.Argument.size;
 import static grakn.core.graql.query.ComputeQuery.Method.CLUSTER;
 import static grakn.core.graql.query.Graql.contains;
-import static grakn.core.graql.query.Graql.count;
 import static grakn.core.graql.query.Graql.define;
 import static grakn.core.graql.query.Graql.eq;
-import static grakn.core.graql.query.Graql.group;
 import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.query.Graql.gte;
 import static grakn.core.graql.query.Graql.insert;
 import static grakn.core.graql.query.Graql.lt;
 import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
-import static grakn.core.graql.query.Graql.max;
 import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.Graql.parse;
 import static grakn.core.graql.query.Graql.regex;
-import static grakn.core.graql.query.Graql.std;
 import static grakn.core.graql.query.Graql.undefine;
 import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.pattern.Pattern.label;
@@ -275,10 +270,7 @@ public class ParserTest {
 
     @Test
     public void whenSearchingForImplicitType_EnsureQueryCanBeParsed() {
-        GetQuery expected = match(
-                var("x").plays("@has-release-date-owner")
-        ).get();
-
+        GetQuery expected = match(var("x").plays("@has-release-date-owner")).get();
         GetQuery parsed = parse("match $x plays @has-release-date-owner; get;");
 
         assertEquals(expected, parsed);
@@ -352,35 +344,33 @@ public class ParserTest {
 
     @Test
     public void testAggregateCountQuery() {
-        AggregateQuery<Value> expected = match(var().rel("x").rel("y").isa("friendship")).aggregate(count("x", "y"));
-        AggregateQuery<Value> parsed = parse("match ($x, $y) isa friendship; aggregate count $x, $y;");
+        AggregateQuery expected = match(var().rel("x").rel("y").isa("friendship")).get().aggregate(AggregateQuery.Method.COUNT, "x", "y");
+        AggregateQuery parsed = parse("match ($x, $y) isa friendship; get; count $x, $y;");
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testAggregateGroupCountQuery() {
-        AggregateQuery<AnswerGroup<Value>> expected = match(var().rel("x").rel("y").isa("friendship")).aggregate(group("x", count("x", "y")));
-        AggregateQuery<AnswerGroup<Value>> parsed = parse("match ($x, $y) isa friendship; aggregate group $x, count $x, $y;");
+        GroupAggregateQuery expected = match(var().rel("x").rel("y").isa("friendship")).get().group("x", AggregateQuery.Method.COUNT, "x", "y");
+        GroupAggregateQuery parsed = parse("match ($x, $y) isa friendship; get; group $x, count $x, $y;");
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testAggregateGroupMaxQuery() {
-        AggregateQuery<AnswerGroup<Value>> expected =
+        GroupAggregateQuery expected =
                 match(
                         var().rel("x").rel("y").isa("friendship"),
                         var("y").has("age", var("z"))
-                ).aggregate(
-                        group("x", max("z"))
-                );
-        AggregateQuery<AnswerGroup<Value>> parsed = parse("match ($x, $y) isa friendship; $y has age $z; aggregate group $x, max $z;");
+                ).get().group("x", AggregateQuery.Method.MAX,"z");
+        GroupAggregateQuery parsed = parse("match ($x, $y) isa friendship; $y has age $z; get; group $x, max $z;");
         assertEquals(expected, parsed);
     }
 
     @Test
     public void whenComparingCountQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
-        AggregateQuery<Value> expected = match(var("x").isa("movie").has("title", "Godfather")).aggregate(count());
-        AggregateQuery<Value> parsed = parse("match $x isa movie has title 'Godfather'; aggregate count;");
+        AggregateQuery expected = match(var("x").isa("movie").has("title", "Godfather")).get().aggregate(AggregateQuery.Method.COUNT);
+        AggregateQuery parsed = parse("match $x isa movie has title 'Godfather'; get; count;");
         assertEquals(expected, parsed);
     }
 
@@ -576,9 +566,9 @@ public class ParserTest {
 
     @Test
     public void whenParsingQueryWithComments_TheyAreIgnored() {
-        AggregateQuery<Value> expected = match(var("x").isa("movie")).aggregate(count());
-        AggregateQuery<Value> parsed = parse(
-                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; aggregate count;"
+        AggregateQuery expected = match(var("x").isa("movie")).get().aggregate(AggregateQuery.Method.COUNT);
+        AggregateQuery parsed = parse(
+                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; get; count;"
         );
         assertEquals(expected, parsed);
     }
@@ -616,31 +606,31 @@ public class ParserTest {
 
     @Test
     public void testParseAggregateGroup() {
-        AggregateQuery<AnswerGroup<ConceptMap>> expected = match(var("x").isa("movie")).aggregate(group("x"));
-        AggregateQuery<AnswerGroup<ConceptMap>> parsed = parse("match $x isa movie; aggregate group $x;");
+        GroupQuery expected = match(var("x").isa("movie")).get().group("x");
+        GroupQuery parsed = parse("match $x isa movie; get; group $x;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseAggregateGroupCount() {
-        AggregateQuery<AnswerGroup<Value>> expected = match(var("x").isa("movie")).aggregate(group("x", count()));
-        AggregateQuery<AnswerGroup<Value>> parsed = parse("match $x isa movie; aggregate group $x, count;");
+        GroupAggregateQuery expected = match(var("x").isa("movie")).get().group("x", AggregateQuery.Method.COUNT);
+        GroupAggregateQuery parsed = parse("match $x isa movie; get; group $x, count;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseAggregateStd() {
-        AggregateQuery<Value> expected = match(var("x").isa("movie")).aggregate(std("x"));
-        AggregateQuery<Value> parsed = parse("match $x isa movie; aggregate std $x;");
+        AggregateQuery expected = match(var("x").isa("movie")).get().aggregate(AggregateQuery.Method.STD, "x");
+        AggregateQuery parsed = parse("match $x isa movie; get; std $x;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseAggregateToString() {
-        String query = "match $x isa movie; aggregate group $x, count;";
+        String query = "match $x isa movie; get $x; group $x, count;";
         assertEquals(query, parse(query).toString());
     }
 
@@ -970,14 +960,14 @@ public class ParserTest {
     public void whenParsingAggregateWithWrongVariableArgumentNumber_Throw() {
         exception.expect(GraqlSyntaxException.class);
         //noinspection ResultOfMethodCallIgnored
-        parse("match $x isa name; aggregate group;");
+        parse("match $x isa name; get; group;");
     }
 
     @Test
     public void whenParsingAggregateWithWrongName_Throw() {
         exception.expect(GraqlSyntaxException.class);
         //noinspection ResultOfMethodCallIgnored
-        parse("match $x isa name; aggregate hello $x;");
+        parse("match $x isa name; get; hello $x;");
     }
 
     @Test

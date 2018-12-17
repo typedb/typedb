@@ -34,6 +34,7 @@ public interface Query {
         DELETE("delete"),
         GET("get"),
         AGGREGATE("aggregate"),
+        GROUP("group"),
         COMPUTE("compute");
 
         private final String command;

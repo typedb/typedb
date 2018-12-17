@@ -4,6 +4,7 @@ package grakn.core.deduplicator;
 import grakn.core.client.GraknClient;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
@@ -35,7 +36,6 @@ import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGr
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknStopped;
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertZipExists;
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.unzipGrakn;
-import static grakn.core.graql.query.Graql.count;
 import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -173,7 +173,7 @@ public class AttributeDeduplicatorE2E {
 
     private int countTotalNames(GraknClient.Session session) {
         try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
-            return tx.execute(Graql.match(var("x").isa("name")).aggregate(count())).get(0).number().intValue();
+            return tx.execute(Graql.match(var("x").isa("name")).get().aggregate(AggregateQuery.Method.COUNT)).get(0).number().intValue();
         }
     }
 }

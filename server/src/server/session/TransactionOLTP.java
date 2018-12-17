@@ -21,8 +21,10 @@ package grakn.core.server.session;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -41,6 +43,8 @@ import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.GroupAggregateQuery;
+import grakn.core.graql.query.GroupQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.UndefineQuery;
@@ -225,8 +229,18 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public <T extends Answer> Stream<T> stream(AggregateQuery<T> query, boolean infer) {
+    public Stream<Value> stream(AggregateQuery query, boolean infer) {
         return executor(infer).aggregate(query);
+    }
+
+    @Override
+    public Stream<AnswerGroup<ConceptMap>> stream(GroupQuery query, boolean infer) {
+        return executor(infer).group(query);
+    }
+
+    @Override
+    public Stream<AnswerGroup<Value>> stream(GroupAggregateQuery query, boolean infer) {
+        return executor(infer).group(query);
     }
 
     @Override

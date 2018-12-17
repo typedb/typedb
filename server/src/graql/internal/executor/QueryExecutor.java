@@ -22,8 +22,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
@@ -36,6 +38,8 @@ import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.GroupAggregateQuery;
+import grakn.core.graql.query.GroupQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.UndefineQuery;
@@ -48,16 +52,23 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.common.util.CommonUtil.toImmutableList;
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -72,48 +83,6 @@ public class QueryExecutor {
     public QueryExecutor(TransactionOLTP tx, boolean infer) {
         this.tx = tx;
         this.infer = infer;
-    }
-
-    /**
-     * @param vars     set of variables of interest
-     * @param elements a map of vertices and edges where the key is the variable name
-     * @return a map of concepts where the key is the variable name
-     */
-    private Map<Variable, Concept> createAnswer(Set<Variable> vars, Map<String, Element> elements) {
-        Map<Variable, Concept> map = new HashMap<>();
-        for (Variable var : vars) {
-            Element element = elements.get(var.symbol());
-            if (element == null) {
-                throw GraqlQueryException.unexpectedResult(var);
-            } else {
-                Concept result;
-                if (element instanceof Vertex) {
-                    result = tx.buildConcept((Vertex) element);
-                } else {
-                    result = tx.buildConcept((Edge) element);
-                }
-                Concept concept = result;
-                map.put(var, concept);
-            }
-        }
-        return map;
-    }
-
-    /**
-     * @param commonVars     set of variables of interest
-     * @param graqlTraversal gral traversal corresponding to the provided pattern
-     * @return resulting answer stream
-     */
-    public Stream<ConceptMap> traversal(Set<Variable> commonVars, GraqlTraversal graqlTraversal) {
-        Set<Variable> vars = Sets.filter(commonVars, Variable::isUserDefinedName);
-
-        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(tx, vars);
-
-        return traversal.toStream()
-                .map(elements -> createAnswer(vars, elements))
-                .distinct()
-                .sequential()
-                .map(ConceptMap::new);
     }
 
     public Stream<ConceptMap> match(MatchClause matchClause) {
@@ -150,6 +119,48 @@ public class QueryExecutor {
             System.err.println(e.getMessage());
             return Stream.empty();
         }
+    }
+
+    /**
+     * @param commonVars     set of variables of interest
+     * @param graqlTraversal gral traversal corresponding to the provided pattern
+     * @return resulting answer stream
+     */
+    public Stream<ConceptMap> traversal(Set<Variable> commonVars, GraqlTraversal graqlTraversal) {
+        Set<Variable> vars = Sets.filter(commonVars, Variable::isUserDefinedName);
+
+        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(tx, vars);
+
+        return traversal.toStream()
+                .map(elements -> createAnswer(vars, elements))
+                .distinct()
+                .sequential()
+                .map(ConceptMap::new);
+    }
+
+    /**
+     * @param vars     set of variables of interest
+     * @param elements a map of vertices and edges where the key is the variable name
+     * @return a map of concepts where the key is the variable name
+     */
+    private Map<Variable, Concept> createAnswer(Set<Variable> vars, Map<String, Element> elements) {
+        Map<Variable, Concept> map = new HashMap<>();
+        for (Variable var : vars) {
+            Element element = elements.get(var.symbol());
+            if (element == null) {
+                throw GraqlQueryException.unexpectedResult(var);
+            } else {
+                Concept result;
+                if (element instanceof Vertex) {
+                    result = tx.buildConcept((Vertex) element);
+                } else {
+                    result = tx.buildConcept((Edge) element);
+                }
+                Concept concept = result;
+                map.put(var, concept);
+            }
+        }
+        return map;
     }
 
     public Stream<ConceptMap> define(DefineQuery query) {
@@ -208,10 +219,72 @@ public class QueryExecutor {
         return match(query.match()).map(result -> result.project(query.vars())).distinct();
     }
 
-    public <T extends Answer> Stream<T> aggregate(AggregateQuery<T> query) {
-        return query.aggregate().apply(match(query.match())).stream();
+    public Stream<Value> aggregate(AggregateQuery query) {
+        Stream<ConceptMap> answers = get(query.getQuery());
+        switch (query.method()) {
+            case COUNT:
+                return AggregateExecutor.count(answers, query.vars()).stream();
+            case MAX:
+                if (query.vars().size() == 1)
+                    return AggregateExecutor.max(answers, query.vars().iterator().next()).stream();
+            case MEAN:
+                if (query.vars().size() == 1)
+                    return AggregateExecutor.mean(answers, query.vars().iterator().next()).stream();
+            case MEDIAN:
+                if (query.vars().size() == 1)
+                    return AggregateExecutor.median(answers, query.vars().iterator().next()).stream();
+            case MIN:
+                if (query.vars().size() == 1)
+                    return AggregateExecutor.min(answers, query.vars().iterator().next()).stream();
+            case STD:
+                if (query.vars().size() == 1)
+                    return AggregateExecutor.std(answers, query.vars().iterator().next()).stream();
+            case SUM:
+                if (query.vars().size() == 1)
+                    return AggregateExecutor.sum(answers, query.vars().iterator().next()).stream();
+            default:
+                throw new IllegalArgumentException("Invalid Aggregate query method / variables");
+        }
     }
 
+    public Stream<AnswerGroup<ConceptMap>> group(GroupQuery query) {
+        return group(
+                get(query.getQuery()),
+                query.var(),
+                answers -> answers.collect(Collectors.toList())
+        ).stream();
+    }
+
+    public Stream<AnswerGroup<Value>> group(GroupAggregateQuery query) {
+        return group(
+                get(query.getQuery()),
+                query.var(),
+                answers -> AggregateExecutor.aggregate(answers,
+                                                 query.aggregateMethod(),
+                                                 query.aggregateVars())
+        ).stream();
+    }
+
+    private static <T extends Answer> List<AnswerGroup<T>> group(Stream<ConceptMap> answers,
+                                                                 Variable var,
+                                                                 Function<Stream<ConceptMap>, List<T>> function) {
+        Collector<ConceptMap, ?, List<T>> applyInnerAggregate =
+                collectingAndThen(toList(), list -> function.apply(list.stream()));
+
+        List<AnswerGroup<T>> answerGroups = new ArrayList<>();
+        answers.collect(groupingBy(conceptMap -> getConcept(conceptMap, var), applyInnerAggregate))
+                .forEach((key, values) -> answerGroups.add(new AnswerGroup<>(key, values)));
+
+        return answerGroups;
+    }
+
+    private static Concept getConcept(ConceptMap answer, Variable var) {
+        Concept concept = answer.get(var);
+        if (concept == null) {
+            throw GraqlQueryException.varNotInQuery(var);
+        }
+        return concept;
+    }
 
     public <T extends Answer> Stream<T> compute(ComputeQuery<T> query) {
         Optional<GraqlQueryException> exception = query.getException();

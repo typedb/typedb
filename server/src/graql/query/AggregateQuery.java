@@ -18,43 +18,121 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.Answer;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.pattern.Variable;
 
-import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
-/**
- * An aggregate query produced from a match clause
- *
- * @param <T> the type of the result of the aggregate query
- */
-public class AggregateQuery<T extends Answer> implements Query {
+import static java.util.stream.Collectors.joining;
 
-    private final MatchClause match;
-    private final Aggregate<T> aggregate;
+public class AggregateQuery implements Query {
 
-    public AggregateQuery(@Nullable MatchClause match, Aggregate<T> aggregate) {
-        this.match = match;
-        if (aggregate == null) {
-            throw new NullPointerException("Null aggregate");
+    private final GetQuery getQuery;
+    private final Method method;
+    private final Set<Variable> vars;
+
+    public final static Map<Method, Integer> VARIABLES_MINIMUM = variablesMinimum();
+    public final static Map<Method, Integer> VARIABLES_MAXIMUM = variablesMaximum();
+
+    public enum Method {
+        COUNT("count"),
+        MAX("max"),
+        MEAN("mean"),
+        MEDIAN("median"),
+        MIN("min"),
+        STD("std"),
+        SUM("sum");
+
+        private final String method;
+
+        Method(String method) {
+            this.method = method;
         }
-        this.aggregate = aggregate;
+
+        @Override
+        public String toString() {
+            return this.method;
+        }
+
+        public static Method of(String value) {
+            for (Method m : Method.values()) {
+                if (m.method.equals(value)) {
+                    return m;
+                }
+            }
+            return null;
+        }
     }
 
-    @Nullable
-    public MatchClause match() {
-        return match;
+    public AggregateQuery(GetQuery getQuery, Method method, Set<Variable> vars) {
+        if (getQuery == null) {
+            throw new NullPointerException("GetQuery is null");
+        }
+        this.getQuery = getQuery;
+
+        if (method == null) {
+            throw new NullPointerException("Method is null");
+        }
+        this.method = method;
+
+        if (vars == null) {
+            throw new NullPointerException("Set<Variables> is null");
+        } else if ((VARIABLES_MINIMUM.containsKey(method) && vars.size() < VARIABLES_MINIMUM.get(method)) ||
+                (VARIABLES_MAXIMUM.containsKey(method) && vars.size() > VARIABLES_MAXIMUM.get(method))) {
+            throw GraqlQueryException.incorrectAggregateArgumentNumber(method.toString(),
+                                                                       VARIABLES_MINIMUM.get(method),
+                                                                       VARIABLES_MAXIMUM.get(method),
+                                                                       vars);
+        }
+        this.vars = vars;
     }
 
-    public Aggregate<T> aggregate() {
-        return aggregate;
+    private static Map<Method, Integer> variablesMinimum() {
+        Map<Method, Integer> minimum = new HashMap<>();
+        minimum.put(Method.MAX, 1);
+        minimum.put(Method.MEAN, 1);
+        minimum.put(Method.MEDIAN, 1);
+        minimum.put(Method.MIN, 1);
+        minimum.put(Method.STD, 1);
+        minimum.put(Method.SUM, 1);
+
+        return Collections.unmodifiableMap(minimum);
+    }
+
+    private static Map<Method, Integer> variablesMaximum() {
+        Map<Method, Integer> maximum = new HashMap<>();
+        maximum.put(Method.MAX, 1);
+        maximum.put(Method.MEAN, 1);
+        maximum.put(Method.MEDIAN, 1);
+        maximum.put(Method.MIN, 1);
+        maximum.put(Method.STD, 1);
+        maximum.put(Method.SUM, 1);
+
+        return Collections.unmodifiableMap(maximum);
+    }
+
+    public GetQuery getQuery() {
+        return getQuery;
+    }
+
+    public Method method() {
+        return method;
+    }
+
+    public Set<Variable> vars() {
+        return vars;
     }
 
     @Override
     public final String toString() {
         StringBuilder query = new StringBuilder();
 
-        query.append(match()).append(Char.SPACE)
-                .append(Command.AGGREGATE).append(Char.SPACE).append(aggregate)
+        query.append(getQuery()).append(Char.SPACE)
+                .append(method).append(Char.SPACE)
+                .append(vars.stream().map(Variable::toString).collect(joining(Char.COMMA_SPACE.toString())))
                 .append(Char.SEMICOLON);
 
         return query.toString();
@@ -65,19 +143,22 @@ public class AggregateQuery<T extends Answer> implements Query {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        AggregateQuery<?> that = (AggregateQuery<?>) o;
+        AggregateQuery that = (AggregateQuery) o;
 
-        return (this.match == null ? that.match() == null : this.match.equals(that.match()) &&
-                this.aggregate.equals(that.aggregate()));
+        return (this.getQuery.equals(that.getQuery()) &&
+                this.method.equals(that.method()) &&
+                this.vars.equals(that.vars()));
     }
 
     @Override
     public int hashCode() {
         int h = 1;
         h *= 1000003;
-        h ^= (match == null) ? 0 : this.match.hashCode();
+        h ^= this.getQuery.hashCode();
         h *= 1000003;
-        h ^= this.aggregate.hashCode();
+        h ^= this.method.hashCode();
+        h *= 1000003;
+        h ^= this.vars.hashCode();
         return h;
     }
 

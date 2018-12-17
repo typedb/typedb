@@ -36,6 +36,7 @@ import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import static grakn.core.common.exception.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
@@ -88,7 +89,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException incorrectAggregateArgumentNumber(
-            String name, int minArgs, int maxArgs, List<Variable> args) {
+            String name, int minArgs, int maxArgs, Collection<Variable> args) {
         String expectedArgs = (minArgs == maxArgs) ? Integer.toString(minArgs) : minArgs + "-" + maxArgs;
         String message = ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage(name, expectedArgs, args.size());
         return new GraqlQueryException(message);
