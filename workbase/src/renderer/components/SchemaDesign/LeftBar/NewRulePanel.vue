@@ -1,7 +1,7 @@
 <template>
   <div>
     <button class="btn define-btn" :class="(showPanel === 'rule') ? 'green-border': ''" @click="togglePanel">Rule</button>
-    <div class="new-entity-panel-container" v-if="showPanel === 'rule'">
+    <div class="new-rule-panel-container" v-if="showPanel === 'rule'">
       <div class="title">
         Define New Rule
         <div class="close-container" @click="$emit('show-panel', undefined)"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
@@ -76,7 +76,7 @@
     justify-content: space-between;
   }
 
-  .new-entity-panel-container {
+  .new-rule-panel-container {
     position: absolute;
     left: 120px;
     top: 10px;
