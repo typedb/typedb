@@ -26,6 +26,11 @@ function deleteEdgesOnNode(nodeId, label) {
   idsToDelete.forEach((edgeId) => { this.container.visualiser.deleteEdge(edgeId); });
 }
 
+function edgesConnectedToNode(nodeId) {
+  return this.container.visualiser.edgesConnectedToNode(nodeId);
+}
+
+
 /*
    ------------------  CANVAS BASIC OPERATIONS   ------------------------
  */
@@ -68,6 +73,10 @@ function getNode(nodeId) {
   return this.container.visualiser.getNode(nodeId);
 }
 
+function getEdge(edgeId) {
+  return this.container.visualiser.getEdge(edgeId);
+}
+
 function updateNode(node) {
   return this.container.visualiser.updateNode(node);
 }
@@ -95,6 +104,10 @@ function deleteNode(node) {
   this.container.visualiser.deleteNode(node);
 }
 
+function deleteEdge(edge) {
+  this.container.visualiser.deleteEdge(edge);
+}
+
 function registerEventHandler(event, fn) {
   this.container.visualiser.getNetwork().on(event, fn);
 }
@@ -118,11 +131,14 @@ const prototype = {
   fitGraphToWindow,
   getAllNodes,
   getNode,
+  getEdge,
   getAllEdges,
   updateNode,
   getNetwork,
   deleteNode,
+  deleteEdge,
   updateEdge,
+  edgesConnectedToNode,
 };
 
 export default {
