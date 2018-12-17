@@ -19,6 +19,7 @@ import logger from '@/../Logger';
 import Grakn from 'grakn';
 import SchemaHandler from '../SchemaHandler';
 import {
+  META_CONCEPTS,
   computeSubConcepts,
   relationshipTypesOutboundEdges,
   updateNodePositions,
@@ -157,7 +158,13 @@ export default {
 
     const data = await buildSchema([type]);
 
-    data.edges.push(...((await typeInboundEdges(type, state.visFacade)).filter(x => x.to === type.id)));
+    const sup = await type.sup();
+    if (sup) {
+      const supLabel = await sup.label();
+      if (META_CONCEPTS.has(supLabel)) {
+        data.edges.push(...((await typeInboundEdges(type, state.visFacade)).filter(x => x.to === type.id)));
+      }
+    }
 
     state.visFacade.addToCanvas({ nodes: data.nodes, edges: data.edges });
 
@@ -270,7 +277,7 @@ export default {
     const edgesIds = state.visFacade.edgesConnectedToNode(state.selectedNodes[0].id);
 
     edgesIds
-      .filter(edgeId => state.visFacade.getEdge(edgeId).to === attributeTypeId)
+      .filter(edgeId => (state.visFacade.getEdge(edgeId).to === attributeTypeId) && (state.visFacade.getEdge(edgeId).label === 'has'))
       .forEach((edgeId) => { state.visFacade.deleteEdge(edgeId); });
 
     graknTx.close();
@@ -333,6 +340,11 @@ export default {
 
     const type = await graknTx.getSchemaConcept(payload.label);
 
+    const subs = await (await type.subs()).collect();
+    await Promise.all(subs.map(async (x) => {
+      if (await x.label() !== payload.label) throw Error('Cannot delete sub-typed schema concept');
+    }));
+
     if (await (await type.instances()).next()) throw Error('Cannot delete schema concept which has instances');
 
     if (payload.baseType === 'RELATIONSHIP_TYPE') {
@@ -347,11 +359,18 @@ export default {
 
         await state.schemaHandler.deleteRelatesRole({ label: payload.label, roleLabel });
       }));
+    } else if (payload.baseType === 'ATTRIBUTE_TYPE') {
+      const nodes = state.visFacade.getAllNodes();
+      await Promise.all(nodes.map(async (node) => {
+        await state.schemaHandler.deleteAttribute({ label: node.label, attributeLabel: payload.label });
+        node.attributes = node.attributes.filter((x => x.type !== payload.label));
+      }));
+      state.visFacade.updateNode(nodes);
     }
 
     const typeId = await state.schemaHandler.deleteType(payload);
 
-    dispatch(COMMIT_TX, graknTx)
+    await dispatch(COMMIT_TX, graknTx)
       .catch((e) => {
         graknTx.close();
         logger.error(e.stack);

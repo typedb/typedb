@@ -42,13 +42,17 @@
       async deleteNode() {
         this.setContextMenu({ show: false, x: null, y: null });
 
-        const label = this.selectedNodes[0].label;
+        if (this.selectedNodes.length > 1) {
+          this.$notifyError('Cannot delete multiple schema concepts');
+        } else {
+          const label = this.selectedNodes[0].label;
 
-        this[DELETE_SCHEMA_CONCEPT](this.selectedNodes[0])
-          .then(() => {
-            this.$notifyInfo(`Schema concept, ${label}, has been deleted`);
-          })
-          .catch((e) => { this.$notifyError(e); });
+          this[DELETE_SCHEMA_CONCEPT](this.selectedNodes[0])
+            .then(() => {
+              this.$notifyInfo(`Schema concept, ${label}, has been deleted`);
+            })
+            .catch((e) => { this.$notifyError(e); });
+        }
       },
     },
   };

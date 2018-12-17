@@ -30,9 +30,14 @@
 
         <div class="row-2" v-if="showHasPanel">
           <div class="has">
-            <ul class="attribute-type-list" v-if="metaTypeInstances.attributes.length">
-              <li :class="(toggledAttributeTypes.includes(attributeType)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeType(attributeType)" v-for="attributeType in metaTypeInstances.attributes" :key=attributeType>
-                  {{attributeType}}
+            <ul class="inherited-attribute-type-list" v-if="supAttributes.length">
+              <li class="inherited-attribute" v-for="attributeType in supAttributes" :key=attributeType>
+                  <div else>{{attributeType}}</div>
+              </li>
+            </ul>
+            <ul class="attribute-type-list" v-if="hasAttributes.length">
+              <li :class="(toggledAttributeTypes.includes(attributeType)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeType(attributeType)" v-for="attributeType in hasAttributes" :key=attributeType>
+                  <div else>{{attributeType}}</div>
               </li>
             </ul>
             <div v-else class="no-types">There are no attribute types defined</div>
@@ -69,6 +74,14 @@
 </template>
 
 <style scoped>
+
+  .inherited-attribute {
+    align-items: center;
+    padding: 2px;
+    white-space: normal;
+    word-wrap: break-word;
+    background-color: var(--purple-3);
+  }
 
   .no-types {
     background-color: var(--gray-1);
@@ -123,6 +136,15 @@
 
   .attribute-type-list::-webkit-scrollbar-thumb {
     background: var(--green-4);
+  }
+
+  .inherited-attribute-type-list {
+    border: var(--container-darkest-border);
+    border-bottom: none;
+    background-color: var(--gray-1);
+    width: 100%;
+    max-height: 140px;
+    overflow: auto;
   }
 
   /*dynamic*/
@@ -269,7 +291,7 @@
 
 <script>
   import logger from '@/../Logger';
-  import { DEFINE_ENTITY_TYPE } from '@/components/shared/StoresActions';
+  import { DEFINE_ENTITY_TYPE, OPEN_GRAKN_TX } from '@/components/shared/StoresActions';
   import { createNamespacedHelpers } from 'vuex';
 
   export default {
@@ -285,6 +307,8 @@
         showSpinner: false,
         showHasPanel: false,
         showPlaysPanel: false,
+        hasAttributes: [],
+        supAttributes: [],
       };
     },
     beforeCreate() {
@@ -299,13 +323,27 @@
       // methods
       this.$options.methods = {
         ...(this.$options.methods || {}),
-        ...mapActions([DEFINE_ENTITY_TYPE]),
+        ...mapActions([DEFINE_ENTITY_TYPE, OPEN_GRAKN_TX]),
       };
     },
     watch: {
       showPanel(val) {
         if (val === 'entity') {
           this.resetPanel();
+        }
+      },
+      metaTypeInstances(val) {
+        this.hasAttributes = val.attributes;
+      },
+      async superType(val) {
+        if (val !== 'entity') { // if sup-typing an entity do not show inherited attributes in has panel to avoid duplicated attributes
+          const graknTx = await this[OPEN_GRAKN_TX]();
+          const sup = await graknTx.getSchemaConcept(val);
+          this.supAttributes = await Promise.all((await (await sup.attributes()).collect()).map(async x => x.label()));
+          this.hasAttributes = this.hasAttributes.filter(x => !this.supAttributes.includes(x));
+        } else {
+          this.hasAttributes = this.metaTypeInstances.attributes;
+          this.supAttributes = [];
         }
       },
     },

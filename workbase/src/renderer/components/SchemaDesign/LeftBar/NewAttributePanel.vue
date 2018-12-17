@@ -44,9 +44,14 @@
 
         <div class="row-2" v-if="showHasPanel">
           <div class="has">
-            <ul class="attribute-type-list" v-if="metaTypeInstances.attributes.length">
-              <li :class="(toggledAttributeTypes.includes(attributeType)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeType(attributeType)" v-for="attributeType in metaTypeInstances.attributes" :key=attributeType>
-                  {{attributeType}}
+            <ul class="inherited-attribute-type-list" v-if="supAttributes.length">
+              <li class="inherited-attribute" v-for="attributeType in supAttributes" :key=attributeType>
+                  <div else>{{attributeType}}</div>
+              </li>
+            </ul>
+            <ul class="attribute-type-list" v-if="hasAttributes.length">
+              <li :class="(toggledAttributeTypes.includes(attributeType)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeType(attributeType)" v-for="attributeType in hasAttributes" :key=attributeType>
+                  <div else>{{attributeType}}</div>
               </li>
             </ul>
             <div v-else class="no-types">There are no attribute types defined</div>
@@ -82,6 +87,24 @@
 </template>
 
 <style scoped>
+
+  .inherited-attribute {
+    align-items: center;
+    padding: 2px;
+    white-space: normal;
+    word-wrap: break-word;
+    background-color: var(--purple-3);
+  }
+
+  .inherited-attribute-type-list {
+    border: var(--container-darkest-border);
+    border-bottom: none;
+    background-color: var(--gray-1);
+    width: 100%;
+    max-height: 140px;
+    overflow: auto;
+  }
+
 
   .no-types {
     background-color: var(--gray-1);
@@ -359,6 +382,8 @@
         toggledRoleTypes: [],
         showHasPanel: false,
         showPlaysPanel: false,
+        hasAttributes: [],
+        supAttributes: [],
       };
     },
     beforeCreate() {
@@ -382,14 +407,25 @@
           this.resetPanel();
         }
       },
+      metaTypeInstances(val) {
+        this.hasAttributes = val.attributes;
+      },
       async superType(val) {
         if (val !== 'attribute') { // if super type is not 'attribute' set data type of super type
           const graknTx = await this[OPEN_GRAKN_TX]();
           const attributeType = await graknTx.getSchemaConcept(val);
           this.dataType = (await attributeType.dataType()).toLowerCase();
           this.showDataTypeList = false;
+
+          const sup = await graknTx.getSchemaConcept(val);
+          this.supAttributes = await Promise.all((await (await sup.attributes()).collect()).map(async x => x.label()));
+          this.hasAttributes = this.hasAttributes.filter(x => !this.supAttributes.includes(x));
+          graknTx.close();
         } else {
           this.dataType = this.dataTypes[0];
+
+          this.hasAttributes = this.metaTypeInstances.attributes;
+          this.supAttributes = [];
         }
       },
     },
