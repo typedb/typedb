@@ -17,6 +17,6 @@
 </script>
 <style scoped>
     .node-tab-content {
-        width: 214.14px;
+        width: 201px;
     }
 </style>
