@@ -194,6 +194,18 @@ public class AggregateQueryIT {
     }
 
     @Test
+    public void testSumFilteredAnswers() {
+        AggregateQuery query = Graql
+                .match(var("x").isa("movie")
+                               .has("tmdb-vote-count", var("y"))
+                               .has("tmdb-vote-average", var("z")))
+                .get("y", "z")
+                .sum("z");
+
+        assertEquals(tx.execute(query).get(0).asValue().number().doubleValue(), 27.7, 0.01d);
+    }
+
+    @Test
     public void testSumNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
         AggregateQuery query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
