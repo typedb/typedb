@@ -23,8 +23,9 @@ JAVA_BIN=java
 GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 GRAKN_CONFIG="conf/grakn.properties"
 
-CONSOLE_JAR_FILENAME="services/lib/console-binary_deploy.jar"
-SERVER_JAR_FILENAME="services/lib/server-binary_deploy.jar"
+SERVICE_LIB_CP="services/lib/*"
+CONSOLE_JAR_FILENAME="services/lib/libconsole.jar"
+SERVER_JAR_FILENAME="services/lib/libserver.jar"
 
 # ================================================
 # common helper functions
@@ -55,7 +56,7 @@ if [ -z "$1" ]; then
     echo "  Version:         grakn version"
 elif [ "$1" = "console" ]; then
     if [ -f "${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}" ]; then
-        CLASSPATH="${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}:${GRAKN_HOME}/conf/"
+        CLASSPATH="${GRAKN_HOME}/${SERVICE_LIB_CP}:${GRAKN_HOME}/conf/"
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" grakn.core.console.GraknConsole "$@"
     else
         echo "Grakn Core Console is not included in this Grakn distribution."
@@ -63,7 +64,7 @@ elif [ "$1" = "console" ]; then
     fi
 elif [ "$1" = "server" ] || [ "$1" = "version" ]; then
     if [ -f "${GRAKN_HOME}/${SERVER_JAR_FILENAME}" ]; then
-        CLASSPATH="./${SERVER_JAR_FILENAME}:./conf/"
+        CLASSPATH="${GRAKN_HOME}/${SERVICE_LIB_CP}:${GRAKN_HOME}/conf/"
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dserver.javaopts="${SERVER_JAVAOPTS}" grakn.core.daemon.GraknDaemon $@
     else
         echo "Grakn Core Server is not included in this Grakn distribution."

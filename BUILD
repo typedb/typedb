@@ -18,6 +18,8 @@
 
 exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
 load("@graknlabs_rules_deployment//brew:rules.bzl", deploy_brew = "deploy_brew")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", distribution = "distribution")
+
 
 py_binary(
     name = "deploy-github-zip",
@@ -26,21 +28,21 @@ py_binary(
     main = "deployment.py"
 )
 
-genrule(
+distribution(
     name = "distribution",
-    srcs = [
-        "//:grakn",
-        "//console:console-binary_deploy.jar",
-        "//server:conf/logback.xml",
-        "//server:conf/grakn.properties",
-        "//server:server-binary_deploy.jar",
-        "//server:services/cassandra/cassandra.yaml",
-        "//server:services/cassandra/logback.xml",
-        "//server:services/grakn/grakn-core-ascii.txt",
+    targets = ["//server:server-binary", "//console:console-binary"],
+    additional_files = {
+         "//:grakn": 'grakn',
+         "//server:conf/logback.xml": "conf/logback.xml",
+         "//server:conf/grakn.properties": "conf/grakn.properties",
+         "//server:services/cassandra/cassandra.yaml": "services/cassandra/cassandra.yaml",
+         "//server:services/cassandra/logback.xml": "services/cassandra/logback.xml",
+         "//server:services/grakn/grakn-core-ascii.txt": "services/grakn/grakn-core-ascii.txt"
+    },
+    empty_directories = [
+        "db/cassandra",
+        "db/queue"
     ],
-    outs = ["//:dist/grakn-core-all.zip"],
-    cmd = "$(location distribution.sh) $(location //:dist/grakn-core-all.zip) $(location //:grakn) $(location //server:services/grakn/grakn-core-ascii.txt) $(location //console:console-binary_deploy.jar) $(location //server:server-binary_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:services/cassandra/logback.xml) $(location //server:services/cassandra/cassandra.yaml)",
-    tools = ["distribution.sh"],
     visibility = ["//visibility:public"]
 )
 

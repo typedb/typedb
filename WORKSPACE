@@ -123,10 +123,11 @@ node_grpc_compile()
 #     Load Deployment Dependencies     #
 ########################################
 
+# FIXME: Change to graknlabs/deployment once graknlabs/deployment/pull/8 is merged
 git_repository(
     name="graknlabs_rules_deployment",
-    remote="https://github.com/graknlabs/deployment",
-    commit="86f37926946f4fbe57ef1c7052f748d04c57fd02",
+    remote="https://github.com/vmax/graknlabs-deployment",
+    commit="d984215897e9d5f730f4ee1a4f7124e52f9462a8",
 )
 
 load("@graknlabs_rules_deployment//github:dependencies.bzl", "dependencies_for_github_deployment")
@@ -136,7 +137,7 @@ dependencies_for_github_deployment()
 git_repository(
     name="com_github_google_bazel_common",
     remote="https://github.com/graknlabs/bazel-common",
-    commit="ecdfe173fe4f21e896c2eadfde432c9d172ff1d0",
+    commit="2e1a2025f2bd381116855c1bcfc14c99fd81aed3",
 )
 
 load("@com_github_google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")

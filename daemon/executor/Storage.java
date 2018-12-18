@@ -252,10 +252,7 @@ public class Storage {
     }
 
     private String getStorageClassPath() {
-        // TODO:
-        // move server-build-bin_deploy.jar to the folder 'services/lib'
-        // then, this code should be graknHome.resolve("services/lib/*.jar")
-        Path jar = Paths.get("services", "lib", "server-binary_deploy.jar");
+        Path jar = Paths.get("services", "lib", "*");
         return graknHome.resolve(jar) + File.pathSeparator + graknHome.resolve("services").resolve("cassandra");
     }
 
