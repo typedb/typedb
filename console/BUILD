@@ -18,6 +18,7 @@
 
 package(default_visibility = ["//visibility:__subpackages__"])
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", distribution = "distribution")
 
 java_library(
     name = "console",
@@ -60,12 +61,23 @@ deploy_maven_jar(
     package = "console",
 )
 
-genrule(
+distribution(
     name = "distribution",
-    srcs = ["//:grakn", "console-binary_deploy.jar"],
-    outs = ["dist/grakn-core-console.zip"],
-    cmd  = "$(location distribution.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location console-binary_deploy.jar)",
-    tools = ["distribution.sh"]
+    targets = ["//console:console-binary"],
+    additional_files = {
+         "//:grakn": 'grakn',
+         "//server:conf/logback.xml": "conf/logback.xml",
+         "//server:conf/grakn.properties": "conf/grakn.properties",
+         "//server:services/cassandra/cassandra.yaml": "services/cassandra/cassandra.yaml",
+         "//server:services/cassandra/logback.xml": "services/cassandra/logback.xml",
+         "//server:services/grakn/grakn-core-ascii.txt": "services/grakn/grakn-core-ascii.txt"
+    },
+    empty_directories = [
+        "db/cassandra",
+        "db/queue"
+    ],
+    output_filename = "grakn-core-console",
+    visibility = ["//visibility:public"]
 )
 
 test_suite(

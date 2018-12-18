@@ -19,6 +19,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", distribution = "distribution")
 
 
 exports_files(
@@ -32,7 +33,7 @@ java_library(
     deps = [
         # Grakn Core dependencies
         "//common:common",
-        "//graql/java/parser:parser", # TODO: need to just depend on top package //graql/java:graql
+        "//graql/java:graql",
         "//protocol:protocol-java",
 
         # External dependencies
@@ -102,13 +103,21 @@ deploy_maven_jar(
     package = "server",
 )
 
-genrule(
+distribution(
     name = "distribution",
-    srcs = glob(["conf/**", "services/**"]) + [
-        ":server-binary_deploy.jar",
-        "//:grakn",
+    targets = ["//server:server-binary"],
+    additional_files = {
+         "//:grakn": 'grakn',
+         "//server:conf/logback.xml": "conf/logback.xml",
+         "//server:conf/grakn.properties": "conf/grakn.properties",
+         "//server:services/cassandra/cassandra.yaml": "services/cassandra/cassandra.yaml",
+         "//server:services/cassandra/logback.xml": "services/cassandra/logback.xml",
+         "//server:services/grakn/grakn-core-ascii.txt": "services/grakn/grakn-core-ascii.txt"
+    },
+    empty_directories = [
+        "db/cassandra",
+        "db/queue"
     ],
-    outs = ["//server:dist/grakn-core-server.zip"],
-    cmd  = "$(location distribution.sh) $(location //server:dist/grakn-core-server.zip) $(location //:grakn) $(location services/grakn/grakn-core-ascii.txt) $(location server-binary_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:services/cassandra/logback.xml) $(location //server:services/cassandra/cassandra.yaml)",
-    tools = ["distribution.sh"]
+    output_filename = "grakn-core-server",
+    visibility = ["//visibility:public"]
 )

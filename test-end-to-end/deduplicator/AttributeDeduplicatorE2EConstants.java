@@ -33,9 +33,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 public class AttributeDeduplicatorE2EConstants {
-    public static final Path GRAKN_TARGET_DIRECTORY = Paths.get("dist");
+    public static final Path GRAKN_TARGET_DIRECTORY = Paths.get(".").toAbsolutePath();
     public static final Path ZIP_FULLPATH = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "grakn-core-all.zip");
-    public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution test", "grakn-core-all");
+    public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution-test");
 
     public static void assertGraknRunning() {
         Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
@@ -60,7 +60,7 @@ public class AttributeDeduplicatorE2EConstants {
 
     public static void unzipGrakn() throws IOException, InterruptedException, TimeoutException {
         new ProcessExecutor()
-                .command("unzip", ZIP_FULLPATH.toString(), "-d", GRAKN_UNZIPPED_DIRECTORY.getParent().toString()).execute();
+                .command("unzip", ZIP_FULLPATH.toString(), "-d", GRAKN_UNZIPPED_DIRECTORY.toString()).execute();
     }
 
     private static boolean isServerReady(String host, int port) {
