@@ -123,11 +123,10 @@ node_grpc_compile()
 #     Load Deployment Dependencies     #
 ########################################
 
-# FIXME: Change to graknlabs/deployment once graknlabs/deployment/pull/8 is merged
 git_repository(
     name="graknlabs_rules_deployment",
-    remote="https://github.com/vmax/graknlabs-deployment",
-    commit="6651d734945c15cecf44eb35beb6bf1b951e7939",
+    remote="https://github.com/graknlabs/deployment",
+    commit="d68bde38af6405195f5858f9a7cd8cc37dcca4e7",
 )
 
 load("@graknlabs_rules_deployment//github:dependencies.bzl", "dependencies_for_github_deployment")
