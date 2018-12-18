@@ -18,44 +18,91 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.Answer;
+import grakn.core.graql.query.pattern.Variable;
 
-import javax.annotation.Nullable;
+import java.util.Set;
 
-/**
- * An aggregate query produced from a match clause
- *
- * @param <T> the type of the result of the aggregate query
- */
-public class AggregateQuery<T extends Answer> implements Query {
+import static java.util.stream.Collectors.joining;
 
-    private final MatchClause match;
-    private final Aggregate<T> aggregate;
+public class AggregateQuery implements Query {
 
-    public AggregateQuery(@Nullable MatchClause match, Aggregate<T> aggregate) {
-        this.match = match;
-        if (aggregate == null) {
-            throw new NullPointerException("Null aggregate");
+    private final GetQuery getQuery;
+    private final Method method;
+    private final Variable var;
+
+    public enum Method {
+        COUNT("count"),
+        MAX("max"),
+        MEAN("mean"),
+        MEDIAN("median"),
+        MIN("min"),
+        STD("std"),
+        SUM("sum");
+
+        private final String method;
+
+        Method(String method) {
+            this.method = method;
         }
-        this.aggregate = aggregate;
+
+        @Override
+        public String toString() {
+            return this.method;
+        }
+
+        public static Method of(String value) {
+            for (Method m : Method.values()) {
+                if (m.method.equals(value)) {
+                    return m;
+                }
+            }
+            return null;
+        }
     }
 
-    @Nullable
-    public MatchClause match() {
-        return match;
+    public AggregateQuery(GetQuery getQuery, Method method, Variable var) {
+        if (getQuery == null) {
+            throw new NullPointerException("GetQuery is null");
+        }
+        this.getQuery = getQuery;
+
+        if (method == null) {
+            throw new NullPointerException("Method is null");
+        }
+        this.method = method;
+
+        if (var == null && !method.equals(Method.COUNT)) {
+            throw new NullPointerException("Variable is null");
+        } else if (var != null && method.equals(Method.COUNT)) {
+            throw new IllegalArgumentException("Aggregate COUNT does not accept a Variable");
+        } else if (var != null && !getQuery.vars().contains(var)) {
+            throw new IllegalArgumentException("Aggregate variable should be contained in GET query");
+        }
+
+        this.var = var;
     }
 
-    public Aggregate<T> aggregate() {
-        return aggregate;
+    public GetQuery getQuery() {
+        return getQuery;
+    }
+
+    public Method method() {
+        return method;
+    }
+
+    public Variable var() {
+        return var;
     }
 
     @Override
     public final String toString() {
         StringBuilder query = new StringBuilder();
 
-        query.append(match()).append(Char.SPACE)
-                .append(Command.AGGREGATE).append(Char.SPACE).append(aggregate)
-                .append(Char.SEMICOLON);
+        query.append(getQuery()).append(Char.SPACE)
+                .append(method).append(Char.SPACE);
+
+        if (var != null) query.append(Char.SPACE).append(var);
+        query.append(Char.SEMICOLON);
 
         return query.toString();
     }
@@ -65,19 +112,24 @@ public class AggregateQuery<T extends Answer> implements Query {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        AggregateQuery<?> that = (AggregateQuery<?>) o;
+        AggregateQuery that = (AggregateQuery) o;
 
-        return (this.match == null ? that.match() == null : this.match.equals(that.match()) &&
-                this.aggregate.equals(that.aggregate()));
+        return (this.getQuery.equals(that.getQuery()) &&
+                this.method.equals(that.method()) &&
+                this.var == null ?
+                    that.var() == null :
+                    this.var.equals(that.var()));
     }
 
     @Override
     public int hashCode() {
         int h = 1;
         h *= 1000003;
-        h ^= (match == null) ? 0 : this.match.hashCode();
+        h ^= this.getQuery.hashCode();
         h *= 1000003;
-        h ^= this.aggregate.hashCode();
+        h ^= this.method.hashCode();
+        h *= 1000003;
+        h ^= this.var.hashCode();
         return h;
     }
 

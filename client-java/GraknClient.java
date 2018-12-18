@@ -30,8 +30,10 @@ import grakn.core.common.exception.Validator;
 import grakn.core.common.http.SimpleURI;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -47,6 +49,8 @@ import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.GroupAggregateQuery;
+import grakn.core.graql.query.GroupQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
@@ -391,8 +395,20 @@ public final class GraknClient {
         }
 
         @Override
-        public <T extends Answer> Stream<T> stream(AggregateQuery<T> query, boolean infer) {
-            Iterable<T> iterable = () -> rpcIterator(query, infer);
+        public Stream<Value> stream(AggregateQuery query, boolean infer) {
+            Iterable<Value> iterable = () -> rpcIterator(query, infer);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
+        public Stream<AnswerGroup<ConceptMap>> stream(GroupQuery query, boolean infer) {
+            Iterable<AnswerGroup<ConceptMap>> iterable = () -> rpcIterator(query, infer);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
+        public Stream<AnswerGroup<Value>> stream(GroupAggregateQuery query, boolean infer) {
+            Iterable<AnswerGroup<Value>> iterable = () -> rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 

@@ -12,6 +12,7 @@ import {
   DELETE_SCHEMA_CONCEPT,
   REFRESH_SELECTED_NODE,
   DELETE_ATTRIBUTE,
+  DEFINE_RULE,
   ADD_ATTRIBUTE_TYPE,
 } from '@/components/shared/StoresActions';
 import logger from '@/../Logger';
@@ -357,7 +358,20 @@ export default {
           await state.schemaHandler.deletePlaysRole({ label: await player.label(), roleLabel });
         }));
 
-        await state.schemaHandler.deleteRelatesRole({ label: payload.label, roleLabel });
+        // If relationship type is suptyped and inherits a role only unrelate the role
+        // otherwise unrelate and delete role
+        const sup = await type.sup();
+        if (sup) {
+          const supLabel = await sup.label();
+          if (!META_CONCEPTS.has(supLabel)) { // check if relationship type is sub-typed or not
+            const roleSup = await role.sup();
+            const roleSupLabel = await roleSup.label();
+            if (roleSupLabel === 'role') await type.unrelate(role); // check if role is overridden or not
+            else await state.schemaHandler.deleteRelatesRole({ label: payload.label, roleLabel });
+          } else {
+            await state.schemaHandler.deleteRelatesRole({ label: payload.label, roleLabel });
+          }
+        }
       }));
     } else if (payload.baseType === 'ATTRIBUTE_TYPE') {
       const nodes = state.visFacade.getAllNodes();
@@ -386,6 +400,20 @@ export default {
     if (!node) return;
     commit('selectedNodes', null);
     commit('selectedNodes', [node.id]);
+  },
+
+  async [DEFINE_RULE]({ state, dispatch }, payload) {
+    const graknTx = await dispatch(OPEN_GRAKN_TX);
+
+    // define rule
+    await state.schemaHandler.defineRule(payload);
+
+    await dispatch(COMMIT_TX, graknTx)
+      .catch((e) => {
+        graknTx.close();
+        logger.error(e.stack);
+        throw e;
+      });
   },
 
   // async [DELETE_PLAYS_ROLE]({ state, dispatch }, payload) {

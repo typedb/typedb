@@ -173,7 +173,7 @@ class test_Transaction(test_grakn_Base):
         self.assertEqual(answer.number(), 0)
 
     def test_aggr_count_empty_graph_anwer_Value(self):
-        result = self.tx.query("match $x sub entity; aggregate count;")
+        result = self.tx.query("match $x sub entity; get $x; count;")
         answer = next(result)
         self.assertIsInstance(answer, Value)
         self.assertEqual(answer.number(), 2)
@@ -257,7 +257,7 @@ class test_Transaction(test_grakn_Base):
         tx = local_session.transaction(grakn.TxType.WRITE)
         parentship_map = test_Transaction._build_parentship(tx) # this closes the tx
         tx = local_session.transaction(grakn.TxType.WRITE)
-        result = tx.query("match $x isa person; $y isa person; (parent: $x, child: $y) isa parentship; aggregate group $x;")
+        result = tx.query("match $x isa person; $y isa person; (parent: $x, child: $y) isa parentship; get; group $x;")
         answer_group = next(result)
         self.assertIsInstance(answer_group, AnswerGroup)
         self.assertEqual(answer_group.owner().id, parentship_map['parent'])

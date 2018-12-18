@@ -19,6 +19,7 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.CheckReturnValue;
@@ -34,14 +35,14 @@ import static java.util.stream.Collectors.joining;
  */
 public class GetQuery implements Query {
 
-    private final Set<Variable> vars;
+    private final Set<Variable> var;
     private final MatchClause match;
 
     public GetQuery(Set<Variable> vars, MatchClause match) {
         if (vars == null) {
             throw new NullPointerException("Null vars");
         }
-        this.vars = Collections.unmodifiableSet(vars);
+        this.var = Collections.unmodifiableSet(vars);
         if (match == null) {
             throw new NullPointerException("Null match");
         }
@@ -53,9 +54,69 @@ public class GetQuery implements Query {
         this.match = match;
     }
 
+    public AggregateQuery count() {
+        return new AggregateQuery(this, AggregateQuery.Method.COUNT, null);
+    }
+
+    public AggregateQuery max(String var) {
+        return max(Pattern.var(var));
+    }
+
+    public AggregateQuery max(Variable var) {
+        return new AggregateQuery(this, AggregateQuery.Method.MAX, var);
+    }
+
+    public AggregateQuery mean(String var) {
+        return mean(Pattern.var(var));
+    }
+
+    public AggregateQuery mean(Variable var) {
+        return new AggregateQuery(this, AggregateQuery.Method.MEAN, var);
+    }
+
+    public AggregateQuery median(String var) {
+        return median(Pattern.var(var));
+    }
+
+    public AggregateQuery median(Variable var) {
+        return new AggregateQuery(this, AggregateQuery.Method.MEDIAN, var);
+    }
+
+    public AggregateQuery min(String var) {
+        return min(Pattern.var(var));
+    }
+
+    public AggregateQuery min(Variable var) {
+        return new AggregateQuery(this, AggregateQuery.Method.MIN, var);
+    }
+
+    public AggregateQuery std(String var) {
+        return std(Pattern.var(var));
+    }
+
+    public AggregateQuery std(Variable var) {
+        return new AggregateQuery(this, AggregateQuery.Method.STD, var);
+    }
+
+    public AggregateQuery sum(String var) {
+        return sum(Pattern.var(var));
+    }
+
+    public AggregateQuery sum(Variable var) {
+        return new AggregateQuery(this, AggregateQuery.Method.SUM, var);
+    }
+
+    public GroupQuery group(String var) {
+        return group(Pattern.var(var));
+    }
+
+    public GroupQuery group(Variable var) {
+        return new GroupQuery(this, var);
+    }
+
     @CheckReturnValue
     public Set<Variable> vars() {
-        return vars;
+        return var;
     }
 
     @CheckReturnValue
@@ -86,7 +147,7 @@ public class GetQuery implements Query {
 
         GetQuery that = (GetQuery) o;
 
-        return (this.vars.equals(that.vars()) &&
+        return (this.var.equals(that.vars()) &&
                 this.match.equals(that.match()));
     }
 
@@ -94,7 +155,7 @@ public class GetQuery implements Query {
     public int hashCode() {
         int h = 1;
         h *= 1000003;
-        h ^= this.vars.hashCode();
+        h ^= this.var.hashCode();
         h *= 1000003;
         h ^= this.match.hashCode();
         return h;
