@@ -19,8 +19,6 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
@@ -29,22 +27,16 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 
 import java.util.Collection;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
 import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.util.StringUtil.typeLabelToString;
 import static java.util.stream.Collectors.joining;
@@ -142,29 +134,6 @@ public class HasAttributeProperty extends VarProperty {
         if (!schemaConcept.isAttributeType()) {
             throw GraqlQueryException.mustBeAttributeType(type());
         }
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        //NB: HasAttributeProperty always has (type) label specified
-        Variable varName = var.var().asUserDefined();
-
-        Variable relationVariable = relationship().var();
-        Variable attributeVariable = attribute().var().asUserDefined();
-        Variable predicateVariable = Pattern.var();
-        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent);
-
-        IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
-        Statement typeVar = isaProp != null ? isaProp.type() : null;
-        IdPredicate predicate = typeVar != null ? getIdPredicate(predicateVariable, typeVar, vars, parent) : null;
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-
-        //add resource atom
-        Statement resVar = relationVariable.isUserDefinedName() ?
-                varName.has(type(), attributeVariable, relationVariable) :
-                varName.has(type(), attributeVariable);
-        ResourceAtom atom = ResourceAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);
-        return atom;
     }
 
     @Override

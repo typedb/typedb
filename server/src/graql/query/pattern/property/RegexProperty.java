@@ -19,19 +19,14 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.internal.reasoner.atom.property.RegexAtom;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.util.StringUtil;
 
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * Represents the {@code regex} property on a AttributeType. This property can be queried and inserted.
@@ -66,11 +61,6 @@ public class RegexProperty extends VarProperty {
     @Override
     public boolean isUnique() {
         return true;
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        return RegexAtom.create(var.var(), this, parent);
     }
 
     @Override

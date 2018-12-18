@@ -19,24 +19,18 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY;
@@ -98,6 +92,10 @@ public class HasAttributeTypeProperty extends VarProperty {
         this.required = required;
     }
 
+    public Statement type() {
+        return resourceType;
+    }
+
     @Override
     public String getName() {
         return required ? "key" : "has";
@@ -138,20 +136,6 @@ public class HasAttributeTypeProperty extends VarProperty {
     @Override
     public Stream<Statement> implicitInnerStatements() {
         return Stream.of(resourceType, ownerRole, valueRole, relationOwner, relationValue);
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        //NB: HasResourceType is a special case and it doesn't allow variables as resource types
-        Variable varName = var.var().asUserDefined();
-        Label label = resourceType.getTypeLabel().orElse(null);
-
-        Variable predicateVar = var();
-        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
-        ConceptId predicateId = schemaConcept != null ? schemaConcept.id() : null;
-        //isa part
-        Statement resVar = varName.has(Pattern.label(label));
-        return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 
     @Override

@@ -19,24 +19,16 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.internal.reasoner.atom.binary.PlaysAtom;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collection;
-import java.util.Set;
 import java.util.stream.Stream;
-
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
  * Reperesents the {@code plays} property on a Type.
@@ -56,6 +48,10 @@ public class PlaysProperty extends VarProperty {
         }
         this.role = role;
         this.required = required;
+    }
+
+    public Statement role() {
+        return role;
     }
 
     @Override
@@ -86,16 +82,6 @@ public class PlaysProperty extends VarProperty {
     @Override
     public Stream<Statement> innerStatements() {
         return Stream.of(role);
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        Variable varName = var.var().asUserDefined();
-        Statement typeVar = role;
-        Variable typeVariable = typeVar.var();
-        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
-        ConceptId predicateId = predicate == null ? null : predicate.getPredicate();
-        return PlaysAtom.create(varName, typeVariable, predicateId, parent);
     }
 
     @Override

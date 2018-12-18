@@ -19,23 +19,15 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.ConceptBuilder;
-import grakn.core.graql.internal.reasoner.atom.binary.SubAtom;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collection;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
-
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 public abstract class AbstractSubProperty extends VarProperty {
 
@@ -92,15 +84,5 @@ public abstract class AbstractSubProperty extends VarProperty {
         };
 
         return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, superType().var()).build());
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        Variable varName = var.var().asUserDefined();
-        Statement typeVar = this.superType();
-        Variable typeVariable = typeVar.var();
-        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        return SubAtom.create(varName, typeVariable, predicateId, parent);
     }
 }

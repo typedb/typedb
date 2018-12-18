@@ -22,10 +22,6 @@ import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.Role;
@@ -35,8 +31,6 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
@@ -53,7 +47,6 @@ import java.util.stream.Stream;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -224,62 +217,6 @@ public class RelationshipProperty extends VarProperty {
 
     private Statement getRole(RolePlayer relationPlayer) {
         return relationPlayer.getRole().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        //set varName as user defined if reified
-        //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
-        boolean isReified = var.getProperties()
-                .filter(prop -> !RelationshipProperty.class.isInstance(prop))
-                .anyMatch(prop -> !AbstractIsaProperty.class.isInstance(prop));
-        Statement relVar = isReified ? var.var().asUserDefined() : var.var();
-
-        for (RolePlayer rp : relationPlayers()) {
-            Statement rolePattern = rp.getRole().orElse(null);
-            Statement rolePlayer = rp.getPlayer();
-            if (rolePattern != null) {
-                Variable roleVar = rolePattern.var();
-                //look for indirect role definitions
-                IdPredicate roleId = getUserDefinedIdPredicate(roleVar, vars, parent);
-                if (roleId != null) {
-                    Concept concept = parent.tx().getConcept(roleId.getPredicate());
-                    if (concept != null) {
-                        if (concept.isRole()) {
-                            Label roleLabel = concept.asSchemaConcept().label();
-                            rolePattern = roleVar.label(roleLabel);
-                        } else {
-                            throw GraqlQueryException.nonRoleIdAssignedToRoleVariable(var);
-                        }
-                    }
-                }
-                relVar = relVar.rel(rolePattern, rolePlayer);
-            } else relVar = relVar.rel(rolePlayer);
-        }
-
-        //isa part
-        AbstractIsaProperty isaProp = var.getProperty(AbstractIsaProperty.class).orElse(null);
-        IdPredicate predicate = null;
-
-        //if no isa property present generate type variable
-        Variable typeVariable = isaProp != null ? isaProp.type().var() : Pattern.var();
-
-        //Isa present
-        if (isaProp != null) {
-            Statement isaVar = isaProp.type();
-            Label label = isaVar.getTypeLabel().orElse(null);
-            if (label != null) {
-                predicate = IdPredicate.create(typeVariable, label, parent);
-            } else {
-                typeVariable = isaVar.var();
-                predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
-            }
-        }
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        relVar = isaProp instanceof IsaExplicitProperty ?
-                relVar.isaExplicit(typeVariable.asUserDefined()) :
-                relVar.isa(typeVariable.asUserDefined());
-        return RelationshipAtom.create(relVar, typeVariable, predicateId, parent);
     }
 
     @Override

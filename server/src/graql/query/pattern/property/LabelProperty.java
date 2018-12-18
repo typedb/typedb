@@ -19,20 +19,14 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.util.StringUtil;
 
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * Represents the {@code label} property on a Type.
@@ -73,13 +67,6 @@ public class LabelProperty extends VarProperty {
     @Override
     public boolean uniquelyIdentifiesConcept() {
         return true;
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label());
-        if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label());
-        return IdPredicate.create(var.var().asUserDefined(), label(), parent);
     }
 
     @Override

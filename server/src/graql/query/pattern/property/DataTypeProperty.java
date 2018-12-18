@@ -20,18 +20,13 @@ package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.internal.reasoner.atom.property.DataTypeAtom;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * Represents the {@code datatype} property on a AttributeType.
@@ -104,11 +99,6 @@ public class DataTypeProperty extends VarProperty {
         // Doing this is tough because it means the `datatype` property needs to be aware of the context somehow.
         // As a compromise, we make all the cases succeed (where some do nothing)
         return ImmutableSet.of(PropertyExecutor.builder(executor -> {}).build());
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        return DataTypeAtom.create(var.var(), this, parent);
     }
 
     @Override

@@ -19,18 +19,13 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.reasoner.atom.property.IsAbstractAtom;
-import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collection;
-import java.util.Set;
 
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbstract;
 
@@ -69,11 +64,6 @@ public class IsAbstractProperty extends VarProperty {
     @Override
     public String toString() {
         return NAME;
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        return IsAbstractAtom.create(var.var(), parent);
     }
 
     @Override

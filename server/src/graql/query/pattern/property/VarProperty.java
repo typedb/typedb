@@ -19,8 +19,6 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Statement;
@@ -29,7 +27,6 @@ import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -112,17 +109,6 @@ public abstract class VarProperty {
     void checkValidProperty(Transaction graph, Statement var) {
 
     }
-
-    /**
-     * maps this var property to a reasoner atom
-     *
-     * @param var    Statement this property belongs to
-     * @param vars   Vars constituting the pattern this property belongs to
-     * @param parent reasoner query this atom should belong to
-     * @return created atom
-     */
-    @CheckReturnValue
-    public abstract Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent);
 
     /**
      * Return a collection of EquivalentFragmentSet to match the given property in the graph

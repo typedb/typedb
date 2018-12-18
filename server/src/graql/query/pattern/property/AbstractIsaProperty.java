@@ -19,26 +19,17 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
-
-abstract class AbstractIsaProperty extends VarProperty {
+public abstract class AbstractIsaProperty extends VarProperty {
 
     public abstract Statement type();
 
@@ -81,24 +72,4 @@ abstract class AbstractIsaProperty extends VarProperty {
             }
         });
     }
-
-    @Nullable
-    @Override
-    public final Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        //IsaProperty is unique within a var, so skip if this is a relation
-        if (var.hasProperty(RelationshipProperty.class)) return null;
-
-        Variable varName = var.var().asUserDefined();
-        Statement typePattern = this.type();
-        Variable typeVariable = typePattern.var();
-
-        IdPredicate predicate = getIdPredicate(typeVariable, typePattern, vars, parent);
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-
-        //isa part
-        Statement isaVar = statementForAtom(varName, typeVariable);
-        return IsaAtom.create(varName, typeVariable, isaVar, predicateId, parent);
-    }
-
-    protected abstract Statement statementForAtom(Variable varName, Variable typeVariable);
 }

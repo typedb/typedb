@@ -20,17 +20,61 @@ package grakn.core.graql.internal.reasoner.atom;
 
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.PlaysAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.RelatesAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.SubAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.internal.reasoner.atom.property.DataTypeAtom;
+import grakn.core.graql.internal.reasoner.atom.property.IsAbstractAtom;
+import grakn.core.graql.internal.reasoner.atom.property.RegexAtom;
 import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.AbstractIsaProperty;
+import grakn.core.graql.query.pattern.property.AbstractSubProperty;
+import grakn.core.graql.query.pattern.property.DataTypeProperty;
+import grakn.core.graql.query.pattern.property.HasAttributeProperty;
+import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
+import grakn.core.graql.query.pattern.property.IdProperty;
+import grakn.core.graql.query.pattern.property.IsAbstractProperty;
+import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
+import grakn.core.graql.query.pattern.property.LabelProperty;
+import grakn.core.graql.query.pattern.property.NeqProperty;
+import grakn.core.graql.query.pattern.property.PlaysProperty;
+import grakn.core.graql.query.pattern.property.RegexProperty;
+import grakn.core.graql.query.pattern.property.RelatesProperty;
+import grakn.core.graql.query.pattern.property.RelationshipProperty;
+import grakn.core.graql.query.pattern.property.RuleProperty;
+import grakn.core.graql.query.pattern.property.ValueProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
+import static grakn.core.graql.query.pattern.Pattern.var;
+
 /**
  * Factory class for creating {@link Atomic} objects.
  */
+@SuppressWarnings("Duplicates")
 public class AtomicFactory {
 
     /**
@@ -41,7 +85,7 @@ public class AtomicFactory {
     public static Stream<Atomic> createAtoms(Conjunction<Statement> pattern, ReasonerQuery parent) {
         Set<Atomic> atoms = pattern.statements().stream()
                 .flatMap(var -> var.getProperties()
-                        .map(vp -> vp.mapToAtom(var, pattern.statements(), parent))
+                        .map(vp -> mapToAtom(vp, var, pattern.statements(), parent))
                         .filter(Objects::nonNull))
                 .collect(Collectors.toSet());
 
@@ -54,4 +98,237 @@ public class AtomicFactory {
                 );
     }
 
+    /**
+     * maps a var property to a reasoner atom
+     *
+     * @param varProperty   the var property to be converted to a reasoner atom
+     * @param var           Statement this property belongs to
+     * @param vars          Statements constituting the pattern this property belongs to
+     * @param parent        reasoner query this atom should belong to
+     * @return created atom
+     */
+    private static Atomic mapToAtom(VarProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        if (varProperty instanceof AbstractIsaProperty) {
+            return abstractIsaPropertyToAtom((AbstractIsaProperty) varProperty, var, vars, parent);
+
+        } else if (varProperty instanceof AbstractSubProperty) {
+            return abstractSubPropertyToAtom((AbstractSubProperty) varProperty, var, vars, parent);
+
+        } else if (varProperty instanceof DataTypeProperty) {
+            return dataTypePropertyToAtom((DataTypeProperty) varProperty, var, parent);
+
+        } else if (varProperty instanceof HasAttributeProperty) {
+            return hasAttributePropertyToAtom((HasAttributeProperty) varProperty, var, vars, parent);
+
+        } else if (varProperty instanceof HasAttributeTypeProperty) {
+            return hasAttributeTypePropertyToAtom((HasAttributeTypeProperty) varProperty, var, parent);
+
+        } else if (varProperty instanceof IdProperty) {
+            return idPropertyToAtom((IdProperty) varProperty, var, parent);
+
+        } else if (varProperty instanceof IsAbstractProperty) {
+            return isAbstractPropertyToAtom(var, parent);
+
+        } else if (varProperty instanceof LabelProperty) {
+            return labelPropertyToAtom((LabelProperty) varProperty, var, parent);
+
+        } else if (varProperty instanceof NeqProperty) {
+            return neqPropertyToAtom((NeqProperty) varProperty, var, parent);
+
+        } else if (varProperty instanceof PlaysProperty) {
+            return playsPropertyToAtom((PlaysProperty) varProperty, var, vars, parent);
+
+        } else if (varProperty instanceof RegexProperty) {
+            return regexPropertyToAtom((RegexProperty) varProperty, var, parent);
+
+        } else if (varProperty instanceof RelatesProperty) {
+            return relatesPropertyToAtom((RelatesProperty) varProperty, var, vars, parent);
+
+        } else if (varProperty instanceof RelationshipProperty) {
+            return relationshipPropertyToAtom((RelationshipProperty) varProperty, var, vars, parent);
+
+        } else if (varProperty instanceof RuleProperty) {
+            return null; // TODO: Why does this return null?
+
+        } else if (varProperty instanceof ValueProperty) {
+            return valuePropertyToAtom((ValueProperty) varProperty, var, parent);
+
+        }
+
+        else {
+            throw new IllegalArgumentException("Unrecognised subclass of " + VarProperty.class.getName());
+        }
+    }
+
+    private static IsaAtom abstractIsaPropertyToAtom(AbstractIsaProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        //IsaProperty is unique within a var, so skip if this is a relation
+        if (var.hasProperty(RelationshipProperty.class)) return null;
+
+        Variable varName = var.var().asUserDefined();
+        Statement typePattern = varProperty.type();
+        Variable typeVariable = typePattern.var();
+
+        IdPredicate predicate = getIdPredicate(typeVariable, typePattern, vars, parent);
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+
+        //isa part
+        Statement isaVar;
+
+        if (varProperty instanceof IsaProperty) {
+            isaVar = varName.isa(typeVariable);
+        } else if (varProperty instanceof IsaExplicitProperty) {
+            isaVar = varName.isaExplicit(typeVariable);
+        } else {
+            throw new IllegalArgumentException("Unrecognised subclass of " + AbstractIsaProperty.class.getName());
+        }
+
+        return IsaAtom.create(varName, typeVariable, isaVar, predicateId, parent);
+    }
+
+    private static SubAtom abstractSubPropertyToAtom(AbstractSubProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        Variable varName = var.var().asUserDefined();
+        Statement typeVar = varProperty.superType();
+        Variable typeVariable = typeVar.var();
+        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+        return SubAtom.create(varName, typeVariable, predicateId, parent);
+    }
+
+    private static DataTypeAtom dataTypePropertyToAtom(DataTypeProperty varProperty, Statement var, ReasonerQuery parent) {
+        return DataTypeAtom.create(var.var(), varProperty, parent);
+    }
+
+    private static ResourceAtom hasAttributePropertyToAtom(HasAttributeProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        //NB: HasAttributeProperty always has (type) label specified
+        Variable varName = var.var().asUserDefined();
+
+        Variable relationVariable = varProperty.relationship().var();
+        Variable attributeVariable = varProperty.attribute().var().asUserDefined();
+        Variable predicateVariable = Pattern.var();
+        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, varProperty.attribute(), vars, parent);
+
+        IsaProperty isaProp = varProperty.attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
+        Statement typeVar = isaProp != null ? isaProp.type() : null;
+        IdPredicate predicate = typeVar != null ? getIdPredicate(predicateVariable, typeVar, vars, parent) : null;
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+
+        //add resource atom
+        Statement resVar = relationVariable.isUserDefinedName() ?
+                varName.has(varProperty.type(), attributeVariable, relationVariable) :
+                varName.has(varProperty.type(), attributeVariable);
+        ResourceAtom atom = ResourceAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);
+        return atom;
+    }
+
+    private static HasAtom hasAttributeTypePropertyToAtom(HasAttributeTypeProperty varProperty, Statement var, ReasonerQuery parent) {
+        //NB: HasResourceType is a special case and it doesn't allow variables as resource types
+        Variable varName = var.var().asUserDefined();
+        Label label = varProperty.type().getTypeLabel().orElse(null);
+
+        Variable predicateVar = var();
+        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
+        ConceptId predicateId = schemaConcept != null ? schemaConcept.id() : null;
+        //isa part
+        Statement resVar = varName.has(Pattern.label(label));
+        return HasAtom.create(resVar, predicateVar, predicateId, parent);
+    }
+
+    private static IdPredicate idPropertyToAtom(IdProperty varProperty, Statement var, ReasonerQuery parent) {
+        return IdPredicate.create(var.var(), varProperty.id(), parent);
+    }
+
+    private static IsAbstractAtom isAbstractPropertyToAtom(Statement var, ReasonerQuery parent) {
+        return IsAbstractAtom.create(var.var(), parent);
+    }
+
+    private static IdPredicate labelPropertyToAtom(LabelProperty varProperty, Statement var, ReasonerQuery parent) {
+        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(varProperty.label());
+        if (schemaConcept == null) throw GraqlQueryException.labelNotFound(varProperty.label());
+        return IdPredicate.create(var.var().asUserDefined(), varProperty.label(), parent);
+    }
+
+    private static NeqPredicate neqPropertyToAtom(NeqProperty varProperty, Statement var, ReasonerQuery parent) {
+        return NeqPredicate.create(var.var(), varProperty, parent);
+    }
+
+    private static PlaysAtom playsPropertyToAtom(PlaysProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        Variable varName = var.var().asUserDefined();
+        Statement typeVar = varProperty.role();
+        Variable typeVariable = typeVar.var();
+        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
+        ConceptId predicateId = predicate == null ? null : predicate.getPredicate();
+        return PlaysAtom.create(varName, typeVariable, predicateId, parent);
+    }
+
+    private static RegexAtom regexPropertyToAtom(RegexProperty varPoperty, Statement var, ReasonerQuery parent) {
+        return RegexAtom.create(var.var(), varPoperty, parent);
+    }
+
+    private static RelatesAtom relatesPropertyToAtom(RelatesProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        Variable varName = var.var().asUserDefined();
+        Statement roleVar = varProperty.role();
+        Variable roleVariable = roleVar.var();
+        IdPredicate predicate = getIdPredicate(roleVariable, roleVar, vars, parent);
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+        return RelatesAtom.create(varName, roleVariable, predicateId, parent);
+    }
+
+    private static RelationshipAtom relationshipPropertyToAtom(RelationshipProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
+        //set varName as user defined if reified
+        //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
+        boolean isReified = var.getProperties()
+                .filter(prop -> !RelationshipProperty.class.isInstance(prop))
+                .anyMatch(prop -> !AbstractIsaProperty.class.isInstance(prop));
+        Statement relVar = isReified ? var.var().asUserDefined() : var.var();
+
+        for (RelationshipProperty.RolePlayer rp : varProperty.relationPlayers()) {
+            Statement rolePattern = rp.getRole().orElse(null);
+            Statement rolePlayer = rp.getPlayer();
+            if (rolePattern != null) {
+                Variable roleVar = rolePattern.var();
+                //look for indirect role definitions
+                IdPredicate roleId = getUserDefinedIdPredicate(roleVar, vars, parent);
+                if (roleId != null) {
+                    Concept concept = parent.tx().getConcept(roleId.getPredicate());
+                    if (concept != null) {
+                        if (concept.isRole()) {
+                            Label roleLabel = concept.asSchemaConcept().label();
+                            rolePattern = roleVar.label(roleLabel);
+                        } else {
+                            throw GraqlQueryException.nonRoleIdAssignedToRoleVariable(var);
+                        }
+                    }
+                }
+                relVar = relVar.rel(rolePattern, rolePlayer);
+            } else relVar = relVar.rel(rolePlayer);
+        }
+
+        //isa part
+        AbstractIsaProperty isaProp = var.getProperty(AbstractIsaProperty.class).orElse(null);
+        IdPredicate predicate = null;
+
+        //if no isa property present generate type variable
+        Variable typeVariable = isaProp != null ? isaProp.type().var() : Pattern.var();
+
+        //Isa present
+        if (isaProp != null) {
+            Statement isaVar = isaProp.type();
+            Label label = isaVar.getTypeLabel().orElse(null);
+            if (label != null) {
+                predicate = IdPredicate.create(typeVariable, label, parent);
+            } else {
+                typeVariable = isaVar.var();
+                predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
+            }
+        }
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+        relVar = isaProp instanceof IsaExplicitProperty ?
+                relVar.isaExplicit(typeVariable.asUserDefined()) :
+                relVar.isa(typeVariable.asUserDefined());
+        return RelationshipAtom.create(relVar, typeVariable, predicateId, parent);
+    }
+
+    private static ValuePredicate valuePropertyToAtom(ValueProperty varProperty, Statement var, ReasonerQuery parent) {
+        return ValuePredicate.create(var.var(), varProperty.predicate(), parent);
+    }
 }

@@ -74,11 +74,6 @@ public class IsaProperty extends AbstractIsaProperty {
         );
     }
 
-    @Override
-    protected final Statement statementForAtom(Variable varName, Variable typeVariable) {
-        return varName.isa(typeVariable);
-    }
-
     // TODO: These are overridden so we ignore `directType`, which ideally shouldn't be necessary
     @Override
     public boolean equals(Object o) {

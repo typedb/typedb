@@ -67,11 +67,6 @@ public class IsaExplicitProperty extends AbstractIsaProperty {
     }
 
     @Override
-    protected final Statement statementForAtom(Variable varName, Variable typeVariable) {
-        return varName.isaExplicit(typeVariable);
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (o == this) {
             return true;
