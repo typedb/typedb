@@ -334,6 +334,7 @@
       },
       metaTypeInstances(val) {
         this.hasAttributes = val.attributes;
+        this.superTypes = ['entity', ...this.metaTypeInstances.entities];
       },
       async superType(val) {
         if (val !== 'entity') { // if sup-typing an entity do not show inherited attributes in has panel to avoid duplicated attributes

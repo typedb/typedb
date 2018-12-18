@@ -439,6 +439,7 @@
       },
       metaTypeInstances(val) {
         this.hasAttributes = val.attributes;
+        this.superTypes = ['relationship', ...this.metaTypeInstances.relationships];
       },
       async superType(val) {
         if (val !== 'relationship') { // if super type is not 'relationship' then compute roles of supertype for inheriting and overriding
