@@ -408,6 +408,7 @@
         }
       },
       metaTypeInstances(val) {
+        this.superTypes = ['attribute', ...this.metaTypeInstances.attributes];
         this.hasAttributes = val.attributes;
       },
       async superType(val) {
