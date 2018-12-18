@@ -89,12 +89,13 @@
     }
 
     .panel-label {
-        width: 100px;
+        width: 110px;
     }
 
     .panel-value {
         width: 100px;
         justify-content: center;
         display: flex;
+        justify-content: flex-end;
     }
 </style>
