@@ -9,4 +9,5 @@ export default {
   contextMenu: state => state.contextMenu,
   loadingSchema: state => state.loadingSchema,
   schemaHandler: state => state.schemaHandler,
+  visFacade: state => state.visFacade,
 };

@@ -1,12 +1,23 @@
 <template>
   <div class="right-bar-container">
-    <div class="minimize-right-bar" v-bind:style= "[showRightBar ? {} : {'opacity': '1'}]" @click="showRightBar = !showRightBar">
-      <vue-icon :icon="(showRightBar) ? 'double-chevron-right' : 'double-chevron-left'" iconSize="14" className="vue-icon"></vue-icon>
-    </div>
-    <div class="content" v-if="showRightBar">
-      <identity-panel></identity-panel>
-      <attributes-panel></attributes-panel>
-    </div>
+    <div class="right-bar-container">
+      <div class="minimize-right-bar" v-bind:style= "[showRightBar ? {} : {'opacity': '1'}]" @click="showRightBar = !showRightBar">
+        <vue-icon :icon="(showRightBar) ? 'double-chevron-right' : 'double-chevron-left'" iconSize="14" className="vue-icon"></vue-icon>
+      </div>
+
+      <div class="nav" v-if="showRightBar">
+        <div @click="toggleConceptInfoTab" :class="(showConceptInfoTab) ? 'nav-tab nav-tab-selected' : 'nav-tab'" class="concept-info-tab"><vue-icon icon="info-sign" className="right-bar-tab-icon"></vue-icon></div>
+        <div @click="toggleSettingsTab" :class="(showSettingsTab) ? 'nav-tab nav-tab-selected' : 'nav-tab'" class="settings-tab"><vue-icon icon="cog" className="right-bar-tab-icon"></vue-icon></div>
+        <div class="nav-bar-space"></div>
+      </div>
+
+      <div class="content" v-if="showRightBar">
+        <keep-alive>
+          <concept-info-tab v-if="showConceptInfoTab"></concept-info-tab>
+          <settings-tab v-if="showSettingsTab"></settings-tab>
+        </keep-alive>
+      </div>
+  </div>
   </div>
 </template>
 
@@ -51,18 +62,76 @@
   }
 }
 
+    .nav-bar-space {
+        border-bottom: var(--container-darkest-border);
+        display: flex;
+        flex: 1;
+    }
+
+        .handle-ml {
+        height: 100% !important;
+        top: 0% !important;
+        background: none !important;
+        border: none !important;
+    }
+
+     .nav {
+        background-color: var(--gray-2);
+        height: 30px;
+        display: flex;
+        flex-direction: row;
+    }
+
+    .nav-tab {
+        background-color: var(--gray-2);
+        border-right: var(--container-darkest-border);
+        width: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border-bottom: var(--container-darkest-border);
+    }
+
+    .nav-tab-selected {
+        background-color: var(--gray-1);
+        border-right: var(--container-darkest-border);
+        border-bottom: 1px solid var(--gray-1);
+        width: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+
+    }
+
 </style>
 
 <script>
-  import IdentityPanel from './RightBar/IdentityPanel';
-  import AttributesPanel from './RightBar/AttributesPanel';
+  import ConceptInfoTab from './RightBar/ConceptInfoTab';
+  import SettingsTab from './RightBar/SettingsTab';
 
   export default {
-    components: { IdentityPanel, AttributesPanel },
+    components: { ConceptInfoTab, SettingsTab },
     data() {
       return {
+        showConceptInfoTab: true,
+        showSettingsTab: false,
         showRightBar: true,
       };
+    },
+    methods: {
+      toggleConceptInfoTab() {
+        this.showConceptInfoTab = true;
+        this.showSettingsTab = false;
+      },
+      toggleSettingsTab() {
+        this.showSettingsTab = true;
+        this.showConceptInfoTab = false;
+      },
+      toggleRightBar() {
+        this.showRightBar = !this.showRightBar;
+      },
     },
   };
 </script>
