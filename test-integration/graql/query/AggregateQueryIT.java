@@ -120,13 +120,13 @@ public class AggregateQueryIT {
     }
 
     @Test
-    public void testGroupCount2Vars() {
+    public void testGroupCountMultipleVars() {
         List<AnswerGroup<Value>> groupCounts = tx.execute(Graql.match(
                 var("x").isa("movie"),
                 var("y").isa("person"),
                 var("z").isa("person"),
                 var().rel("x").rel("y")
-        ).get("x", "y").group("x").count());
+        ).get("x", "y", "z").group("x").count());
 
         Thing chineseCoffee = tx.getAttributeType("title").attribute("Chinese Coffee").owner();
         Thing godfather = tx.getAttributeType("title").attribute("Godfather").owner();

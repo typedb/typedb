@@ -46,7 +46,7 @@ aggregateMethod     : COUNT | MAX | MEAN | MEDIAN | MIN | STD | SUM             
 // An aggregate function is composed of 2 things:
 // The aggregate method name, followed by 0 or more variables to be applied to
 
-groupQuery          : getQuery GROUP VARIABLE (';' aggregateFunction)? ';' ;    // 'group' and variable, and optionally
+groupQuery          : getQuery GROUP VARIABLE ';' ( aggregateFunction ';' )? ;  // 'group' and variable, and optionally
                                                                                 // a value aggregate for each group
 
 // COMPUTE QUERY =======================================================================================================
@@ -67,7 +67,7 @@ computeMethod       : COUNT                                                     
                     | CENTRALITY                                                // compute density of connected concepts
                     | CLUSTER                                                   // compute detection of cluster
                     ;
-computeConditions   : computeCondition (',' computeCondition)* ;
+computeConditions   : computeCondition ( ',' computeCondition )* ;
 computeCondition    : FROM      id                  # computeConditionFrom      // an instance to start the compute from
                     | TO        id                  # computeConditionTo        // an instance to end the compute at
                     | OF        labels              # computeConditionOf        // type(s) of instances to apply compute
