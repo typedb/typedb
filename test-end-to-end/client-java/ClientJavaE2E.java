@@ -31,7 +31,6 @@ import static grakn.core.client.ClientJavaE2EConstants.assertGraknRunning;
 import static grakn.core.client.ClientJavaE2EConstants.assertGraknStopped;
 import static grakn.core.client.ClientJavaE2EConstants.assertZipExists;
 import static grakn.core.client.ClientJavaE2EConstants.unzipGrakn;
-import static grakn.core.graql.query.Graql.count;
 import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.pattern.Pattern.var;
@@ -225,7 +224,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - match aggregate...");
-            AggregateQuery<Value> aggregateQuery = Graql.match(var("p").isa("lion")).aggregate(count());
+            AggregateQuery aggregateQuery = Graql.match(var("p").isa("lion")).get().count();
             LOG.info("clientJavaE2E() - '" + aggregateQuery + "'");
             int aggregateCount = tx.execute(aggregateQuery).get(0).number().intValue();
             assertThat(aggregateCount, equalTo(lionNames().length));

@@ -21,8 +21,10 @@ package grakn.core.server.session;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -41,6 +43,8 @@ import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.GroupAggregateQuery;
+import grakn.core.graql.query.GroupQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.UndefineQuery;
@@ -201,37 +205,47 @@ public class TransactionOLTP implements Transaction {
 
     @Override
     public Stream<ConceptMap> stream(DefineQuery query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).define(query);
     }
 
     @Override
     public Stream<ConceptMap> stream(UndefineQuery query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).undefine(query);
     }
 
     @Override
     public Stream<ConceptMap> stream(InsertQuery query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).insert(query);
     }
 
     @Override
     public Stream<ConceptSet> stream(DeleteQuery query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).delete(query);
     }
 
     @Override
     public Stream<ConceptMap> stream(GetQuery query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).get(query);
     }
 
     @Override
-    public <T extends Answer> Stream<T> stream(AggregateQuery<T> query, boolean infer) {
-        return executor(infer).run(query);
+    public Stream<Value> stream(AggregateQuery query, boolean infer) {
+        return executor(infer).aggregate(query);
+    }
+
+    @Override
+    public Stream<AnswerGroup<ConceptMap>> stream(GroupQuery query, boolean infer) {
+        return executor(infer).group(query);
+    }
+
+    @Override
+    public Stream<AnswerGroup<Value>> stream(GroupAggregateQuery query, boolean infer) {
+        return executor(infer).group(query);
     }
 
     @Override
     public <T extends Answer> Stream<T> stream(ComputeQuery<T> query, boolean infer) {
-        return executor(infer).run(query);
+        return executor(infer).compute(query);
     }
 
 
@@ -845,12 +859,12 @@ public class TransactionOLTP implements Transaction {
     }
 
     public Stream<ConceptMap> stream(MatchClause matchClause) {
-        return executor().run(matchClause);
+        return executor().match(matchClause);
 
     }
 
     public Stream<ConceptMap> stream(MatchClause matchClause, boolean infer) {
-        return executor(infer).run(matchClause);
+        return executor(infer).match(matchClause);
     }
 
     public List<ConceptMap> execute(MatchClause matchClause) {

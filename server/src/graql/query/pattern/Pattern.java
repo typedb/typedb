@@ -22,7 +22,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.parser.Parser;
-import grakn.core.graql.query.Graql;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Arrays;

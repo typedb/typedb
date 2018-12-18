@@ -19,8 +19,10 @@
 package grakn.core.server;
 
 import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -37,6 +39,8 @@ import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.GroupAggregateQuery;
+import grakn.core.graql.query.GroupQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
@@ -176,19 +180,51 @@ public interface Transaction extends AutoCloseable {
 
     // Aggregate Query
 
-    default <T extends Answer> List<T> execute(AggregateQuery<T> query) {
+    default List<Value> execute(AggregateQuery query) {
         return execute(query, true);
     }
 
-    default <T extends Answer> List<T> execute(AggregateQuery<T> query, boolean infer) {
+    default List<Value> execute(AggregateQuery query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default <T extends Answer> Stream<T> stream(AggregateQuery<T> query) {
+    default Stream<Value> stream(AggregateQuery query) {
         return stream(query, true);
     }
 
-    <T extends Answer> Stream<T> stream(AggregateQuery<T> query, boolean infer);
+    Stream<Value> stream(AggregateQuery query, boolean infer);
+
+    // Group Query
+
+    default List<AnswerGroup<ConceptMap>> execute(GroupQuery query) {
+        return execute(query, true);
+    }
+
+    default List<AnswerGroup<ConceptMap>> execute(GroupQuery query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default Stream<AnswerGroup<ConceptMap>> stream(GroupQuery query) {
+        return stream(query, true);
+    }
+
+    Stream<AnswerGroup<ConceptMap>> stream(GroupQuery query, boolean infer);
+
+    // Group Aggregate Query
+
+    default List<AnswerGroup<Value>> execute(GroupAggregateQuery query) {
+        return execute(query, true);
+    }
+
+    default List<AnswerGroup<Value>> execute(GroupAggregateQuery query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default Stream<AnswerGroup<Value>> stream(GroupAggregateQuery query) {
+        return stream(query, true);
+    }
+
+    Stream<AnswerGroup<Value>> stream(GroupAggregateQuery query, boolean infer);
 
     // Compute Query
 
@@ -236,8 +272,14 @@ public interface Transaction extends AutoCloseable {
         } else if (query instanceof GetQuery) {
             return stream((GetQuery) query, infer);
 
-        } else if (query instanceof AggregateQuery<?>) {
-            return stream((AggregateQuery<?>) query, infer);
+        } else if (query instanceof AggregateQuery) {
+            return stream((AggregateQuery) query, infer);
+
+        } else if (query instanceof GroupAggregateQuery) {
+            return stream((GroupAggregateQuery) query, infer);
+
+        } else if (query instanceof GroupQuery) {
+            return stream((GroupQuery) query, infer);
 
         } else if (query instanceof ComputeQuery<?>) {
             return stream((ComputeQuery<?>) query, infer);

@@ -700,7 +700,7 @@ class ComputeExecutor<T extends Answer> {
 //                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
 //
 //        return tx.get().graql().infer(false)
-//                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
+//                .match(or(checkResourceTypes), or(checkSubtypes)).get().aggregate(ask()).execute();
     }
 
     /**

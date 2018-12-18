@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.Answer;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
@@ -62,18 +61,6 @@ public class MatchClause {
     @CheckReturnValue
     public final Set<Variable> getSelectedNames() {
         return pattern.variables();
-    }
-
-    /**
-     * Aggregate results of a query.
-     *
-     * @param aggregate the aggregate operation to apply
-     * @param <S>       the type of the aggregate result
-     * @return a query that will yield the aggregate result
-     */
-    @CheckReturnValue
-    public final <S extends Answer> AggregateQuery<S> aggregate(Aggregate<S> aggregate) {
-        return new AggregateQuery<>(this, aggregate);
     }
 
     /**
