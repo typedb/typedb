@@ -82,16 +82,6 @@ public class ValueProperty extends VarProperty {
     }
 
     @Override
-    public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Object value = predicate().equalsValue().orElseThrow(GraqlQueryException::insertPredicate);
-            executor.builder(var).value(value);
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (o == this) {
             return true;

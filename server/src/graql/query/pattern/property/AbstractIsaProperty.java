@@ -18,13 +18,8 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 
-import java.util.Collection;
 import java.util.stream.Stream;
 
 public abstract class AbstractIsaProperty extends VarProperty {
@@ -49,15 +44,5 @@ public abstract class AbstractIsaProperty extends VarProperty {
     @Override
     public final Stream<Statement> innerStatements() {
         return Stream.of(type());
-    }
-
-    @Override
-    public final Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Type type = executor.get(this.type().var()).asType();
-            executor.builder(var).isa(type);
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(type().var()).produces(var).build());
     }
 }

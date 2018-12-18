@@ -75,12 +75,6 @@ public class LabelProperty extends VarProperty {
     }
 
     @Override
-    public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
-        // This is supported in insert queries in order to allow looking up schema concepts by label
-        return define(var);
-    }
-
-    @Override
     public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             executor.builder(var).label(label());

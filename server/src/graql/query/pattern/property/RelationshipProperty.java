@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -151,23 +150,13 @@ public class RelationshipProperty extends VarProperty {
         return Stream.of(rolePlayer(this, start, casting, rolePlayer.var(), roleType.var()));
     }
 
-    @Override
-    public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Relationship relationship = executor.get(var).asRelationship();
-            relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relationship, relationPlayer));
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(requiredVars(var)).build());
-    }
-
     /**
      * Add a roleplayer to the given Relationship
      *
      * @param relationship   the concept representing the Relationship
      * @param relationPlayer a casting between a role type and role player
      */
-    private void addRoleplayer(WriteExecutor executor, grakn.core.graql.concept.Relationship relationship, RolePlayer relationPlayer) {
+    public void addRoleplayer(WriteExecutor executor, grakn.core.graql.concept.Relationship relationship, RolePlayer relationPlayer) {
         Statement roleVar = getRole(relationPlayer);
 
         Role role = executor.get(roleVar.var()).asRole();
@@ -175,7 +164,7 @@ public class RelationshipProperty extends VarProperty {
         relationship.assign(role, roleplayer);
     }
 
-    private Set<Variable> requiredVars(Variable var) {
+    public Set<Variable> requiredVars(Variable var) {
         Stream<Variable> relationPlayers = this.relationPlayers().stream()
                 .flatMap(relationPlayer -> Stream.of(relationPlayer.getPlayer(), getRole(relationPlayer)))
                 .map(statement -> statement.var());

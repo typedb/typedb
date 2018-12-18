@@ -76,7 +76,8 @@ public class IdProperty extends VarProperty {
     }
 
     @Override
-    public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
+        // This property works in both insert and define queries, because it is only for look-ups
         PropertyExecutor.Method method = executor -> {
             executor.builder(var).id(id());
         };
@@ -85,15 +86,13 @@ public class IdProperty extends VarProperty {
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        // This property works in both insert and define queries, because it is only for look-ups
-        return insert(var);
-    }
-
-    @Override
     public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         // This property works in undefine queries, because it is only for look-ups
-        return insert(var);
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).id(id());
+        };
+
+        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
     }
 
     @Override

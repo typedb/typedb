@@ -134,7 +134,7 @@ public class PropertyExecutor {
         return h;
     }
 
-    static class Builder {
+    public static class Builder {
 
         private ImmutableSet.Builder<Variable> requiredVarsBuilder;
         private ImmutableSet<Variable> requiredVars;
@@ -172,7 +172,7 @@ public class PropertyExecutor {
             return this;
         }
 
-        PropertyExecutor build() {
+        public PropertyExecutor build() {
             if (requiredVarsBuilder != null) {
                 this.requiredVars = requiredVarsBuilder.build();
             } else if (this.requiredVars == null) {
@@ -198,6 +198,7 @@ public class PropertyExecutor {
     }
 
     @FunctionalInterface
+    public
     interface Method {
         void execute(WriteExecutor writeExecutor);
     }

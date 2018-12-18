@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 
 /**
- * A class for executing {@link PropertyExecutor}s on {@link VarProperty}s within Graql queries.
+ * A class for executing PropertyExecutors on VarPropertys within Graql queries.
  * Multiple query types share this class, such as InsertQuery and DefineQuery.
  */
 public class WriteExecutor {
@@ -192,7 +192,7 @@ public class WriteExecutor {
     }
 
     /**
-     * <a href=https://en.wikipedia.org/wiki/Composition_of_relations>Compose</a> two {@link Multimap}s together,
+     * <a href=https://en.wikipedia.org/wiki/Composition_of_relations>Compose</a> two Multimaps together,
      * treating them like many-to-many relations.
      */
     private static Multimap<VarAndProperty, VarAndProperty> propertyDependencies(Multimap<VarAndProperty, Variable> propToVar, Multimap<Variable, VarAndProperty> varToProp) {
@@ -285,11 +285,11 @@ public class WriteExecutor {
     }
 
     /**
-     * Return a {@link ConceptBuilder} for given {@link Variable}. This can be used to provide information for how to create
+     * Return a ConceptBuilder for given Variable. This can be used to provide information for how to create
      * the concept that the variable represents.
      * This method is expected to be called from implementations of
-     * {@link VarProperty#insert(Variable)}, provided they return the given {@link Variable} in the
-     * response to {@link PropertyExecutor#producedVars()}.
+     * VarProperty#insert(Variable), provided they return the given Variable in the
+     * response to PropertyExecutor#producedVars().
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
      * @throws GraqlQueryException if the concept in question has already been created
      */
@@ -301,11 +301,11 @@ public class WriteExecutor {
     }
 
     /**
-     * Return a {@link ConceptBuilder} for given {@link Variable}. This can be used to provide information for how to create
+     * Return a ConceptBuilder for given Variable. This can be used to provide information for how to create
      * the concept that the variable represents.
      * This method is expected to be called from implementations of
-     * {@link VarProperty#insert(Variable)}, provided they include the given {@link Variable} in
-     * their {@link PropertyExecutor#producedVars()}.
+     * VarProperty#insert(Variable), provided they include the given Variable in
+     * their PropertyExecutor#producedVars().
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
      * If the concept has already been created, this will return empty.
      */
@@ -328,10 +328,10 @@ public class WriteExecutor {
     }
 
     /**
-     * Return a {@link Concept} for a given {@link Variable}.
+     * Return a Concept for a given Variable.
      * This method is expected to be called from implementations of
-     * {@link VarProperty#insert(Variable)}, provided they include the given {@link Variable} in
-     * their {@link PropertyExecutor#requiredVars()}.
+     * VarProperty#insert(Variable), provided they include the given Variable in
+     * their PropertyExecutor#requiredVars().
      */
     public Concept get(Variable var) {
         var = equivalentVars.componentOf(var);
@@ -375,7 +375,7 @@ public class WriteExecutor {
     }
 
     /**
-     * Represents a pairing of a {@link VarProperty} and its subject {@link Variable}.
+     * Represents a pairing of a VarProperty and its subject Variable.
      * e.g. {@code $x} and {@code isa $y}, together are {@code $x isa $y}.
      */
     static class VarAndProperty {

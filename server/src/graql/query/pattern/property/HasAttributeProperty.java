@@ -19,11 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Pattern;
@@ -144,23 +140,6 @@ public class HasAttributeProperty extends VarProperty {
                 rolePlayer(this, relationship().var(), edge2, attribute().var(), null, ImmutableSet.of(hasValueRole, keyValueRole), ImmutableSet.of(has, key)),
                 neq(this, edge1, edge2)
         );
-    }
-
-    @Override
-    public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Attribute attributeConcept = executor.get(attribute().var()).asAttribute();
-            Thing thing = executor.get(var).asThing();
-            ConceptId relationshipId = thing.relhas(attributeConcept).id();
-            executor.builder(relationship().var()).id(relationshipId);
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method)
-                .produces(relationship().var())
-                .requires(var, attribute().var())
-                .build();
-
-        return ImmutableSet.of(executor);
     }
 
     @Override

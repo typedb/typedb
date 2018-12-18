@@ -96,15 +96,6 @@ public abstract class VarProperty {
      */
     public abstract Collection<EquivalentFragmentSet> match(Variable start);
 
-    /**
-     * Returns a PropertyExecutor that describes how to insert the given VarProperty into.
-     *
-     * @throws GraqlQueryException if this VarProperty cannot be inserted
-     */
-    public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
-        throw GraqlQueryException.insertUnsupportedProperty(getName());
-    }
-
     public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
         throw GraqlQueryException.defineUnsupportedProperty(getName());
     }
