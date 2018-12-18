@@ -118,5 +118,6 @@ distribution(
         "db/cassandra",
         "db/queue"
     ],
+    output_filename = "grakn-core-server",
     visibility = ["//visibility:public"]
 )

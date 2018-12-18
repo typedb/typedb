@@ -34,7 +34,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class DistributionE2EConstants {
     public static final Path GRAKN_TARGET_DIRECTORY = Paths.get(".").toAbsolutePath();
-    public static final Path ZIP_FULLPATH = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution.zip");
+    public static final Path ZIP_FULLPATH = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "grakn-core-all.zip");
     public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution-test");
 
     public static void assertGraknIsRunning() {
