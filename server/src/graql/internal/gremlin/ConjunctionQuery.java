@@ -123,12 +123,12 @@ class ConjunctionQuery {
         return var.implicitInnerStatements().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(Statement var) {
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(Statement statement) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        Variable start = var.var();
+        Variable start = statement.var();
 
-        var.getProperties().forEach(property -> {
+        statement.getProperties().forEach(property -> {
             Collection<EquivalentFragmentSet> newTraversals = property.match(start);
             traversals.addAll(newTraversals);
         });

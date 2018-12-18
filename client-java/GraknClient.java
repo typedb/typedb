@@ -199,14 +199,14 @@ public final class GraknClient {
         }
 
         @Override
-        public Stream<ConceptMap> stream(DefineQuery query, boolean infer) {
-            Iterable<ConceptMap> iterable = () -> this.rpcIterator(query, infer);
+        public Stream<ConceptMap> stream(DefineQuery query) {
+            Iterable<ConceptMap> iterable = () -> this.rpcIterator(query);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
         @Override
-        public Stream<ConceptMap> stream(UndefineQuery query, boolean infer) {
-            Iterable<ConceptMap> iterable = () -> this.rpcIterator(query, infer);
+        public Stream<ConceptMap> stream(UndefineQuery query) {
+            Iterable<ConceptMap> iterable = () -> this.rpcIterator(query);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
@@ -226,6 +226,10 @@ public final class GraknClient {
         public Stream<ConceptMap> stream(GetQuery query, boolean infer) {
             Iterable<ConceptMap> iterable = () -> this.rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        private Iterator rpcIterator(Query query) {
+            return rpcIterator(query, true);
         }
 
         private Iterator rpcIterator(Query query, boolean infer) {

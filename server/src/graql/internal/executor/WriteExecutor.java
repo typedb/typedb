@@ -88,47 +88,7 @@ public class WriteExecutor {
         this.dependencies = dependencies;
     }
 
-    static ConceptMap insertAll(Collection<Statement> statements, Transaction transaction) {
-        return insertAll(statements, transaction, new ConceptMap());
-    }
-
-    static ConceptMap insertAll(Collection<Statement> patterns, Transaction transaction, ConceptMap results) {
-        ImmutableSet.Builder<VarAndProperty> properties = ImmutableSet.builder();
-        for (Statement statement : patterns) {
-            for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
-                for (PropertyExecutor executor : property.insert(statement.var())) {
-                    properties.add(new VarAndProperty(statement.var(), property, executor));
-                }
-            }
-        }
-        return create(properties.build(), transaction).insertAll(results);
-    }
-
-    static ConceptMap defineAll(Collection<Statement> patterns, Transaction transaction) {
-        ImmutableSet.Builder<VarAndProperty> properties = ImmutableSet.builder();
-        for (Statement statement : patterns) {
-            for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
-                for (PropertyExecutor executor : property.define(statement.var())) {
-                    properties.add(new VarAndProperty(statement.var(), property, executor));
-                }
-            }
-        }
-        return create(properties.build(), transaction).insertAll(new ConceptMap());
-    }
-
-    static ConceptMap undefineAll(ImmutableList<Statement> patterns, Transaction transaction) {
-        ImmutableSet.Builder<VarAndProperty> properties = ImmutableSet.builder();
-        for (Statement statement : patterns) {
-            for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
-                for (PropertyExecutor executor : property.undefine(statement.var())) {
-                    properties.add(new VarAndProperty(statement.var(), property, executor));
-                }
-            }
-        }
-        return create(properties.build(), transaction).insertAll(new ConceptMap());
-    }
-
-    private static WriteExecutor create(ImmutableSet<VarAndProperty> properties, Transaction transaction) {
+    static WriteExecutor create(ImmutableSet<VarAndProperty> properties, Transaction transaction) {
         /*
             We build several many-to-many relations, indicated by a `Multimap<X, Y>`. These are used to represent
             the dependencies between properties and variables.
@@ -250,7 +210,7 @@ public class WriteExecutor {
         return propertyDependencies;
     }
 
-    private ConceptMap insertAll(ConceptMap map) {
+    ConceptMap insertAll(ConceptMap map) {
         concepts.putAll(map.map());
 
         for (VarAndProperty property : sortProperties()) {
@@ -418,7 +378,7 @@ public class WriteExecutor {
      * Represents a pairing of a {@link VarProperty} and its subject {@link Variable}.
      * e.g. {@code $x} and {@code isa $y}, together are {@code $x isa $y}.
      */
-    private static class VarAndProperty {
+    static class VarAndProperty {
 
         private final Variable var;
         private final VarProperty property;

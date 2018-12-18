@@ -101,34 +101,18 @@ public interface Transaction extends AutoCloseable {
     // Define Query
 
     default List<ConceptMap> execute(DefineQuery query) {
-        return execute(query, true);
+        return stream(query).collect(Collectors.toList());
     }
 
-    default List<ConceptMap> execute(DefineQuery query, boolean infer) {
-        return stream(query, infer).collect(Collectors.toList());
-    }
-
-    default Stream<ConceptMap> stream(DefineQuery query) {
-        return stream(query, true);
-    }
-
-    Stream<ConceptMap> stream(DefineQuery query, boolean infer);
+    Stream<ConceptMap> stream(DefineQuery query);
 
     // Undefine Query
 
     default List<ConceptMap> execute(UndefineQuery query) {
-        return execute(query, true);
+        return stream(query).collect(Collectors.toList());
     }
 
-    default List<ConceptMap> execute(UndefineQuery query, boolean infer) {
-        return stream(query, infer).collect(Collectors.toList());
-    }
-
-    default Stream<ConceptMap> stream(UndefineQuery query) {
-        return stream(query, true);
-    }
-
-    Stream<ConceptMap> stream(UndefineQuery query, boolean infer);
+    Stream<ConceptMap> stream(UndefineQuery query);
 
     // Insert Query
 
@@ -258,10 +242,10 @@ public interface Transaction extends AutoCloseable {
 
     default Stream<? extends Answer> stream(Query query, boolean infer) {
         if (query instanceof DefineQuery) {
-            return stream((DefineQuery) query, infer);
+            return stream((DefineQuery) query);
 
         } else if (query instanceof UndefineQuery) {
-            return stream((UndefineQuery) query, infer);
+            return stream((UndefineQuery) query);
 
         } else if (query instanceof InsertQuery) {
             return stream((InsertQuery) query, infer);
