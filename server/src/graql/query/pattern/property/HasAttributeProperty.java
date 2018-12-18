@@ -22,10 +22,8 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -52,12 +50,12 @@ import static grakn.core.graql.util.StringUtil.typeLabelToString;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Represents the {@code has} property on an {@link Thing}. This property can be queried, inserted or deleted.
- * The property is defined as a {@link Relationship} between an {@link Thing} and a {@link Attribute},
- * where the{@link Attribute} is of a particular type. When matching, {@link  Schema.EdgeLabel#ROLE_PLAYER}
- * edges are used to speed up the traversal. The type of the {@link Relationship} does notmatter.
- * When inserting, an implicit {@link Relationship} is created between the instance and the {@link Attribute},
- * using type labels derived from the label of the {@link AttributeType}.
+ * Represents the {@code has} property on an Thing. This property can be queried, inserted or deleted.
+ * The property is defined as a Relationship between an Thing and a Attribute,
+ * where theAttribute is of a particular type. When matching,  Schema.EdgeLabel#ROLE_PLAYER
+ * edges are used to speed up the traversal. The type of the Relationship does notmatter.
+ * When inserting, an implicit Relationship is created between the instance and the Attribute,
+ * using type labels derived from the label of the AttributeType.
  */
 public class HasAttributeProperty extends VarProperty {
 

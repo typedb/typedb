@@ -28,7 +28,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Implementation of {@link Statement} interface
+ * Implementation of Statement interface
  */
 public class StatementImpl extends Statement {
 

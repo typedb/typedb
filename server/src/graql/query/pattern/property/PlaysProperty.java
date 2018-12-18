@@ -23,7 +23,6 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
@@ -40,10 +39,10 @@ import java.util.stream.Stream;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
- * Reperesents the {@code plays} property on a {@link Type}.
- * This property relates a {@link Type} and a {@link Role}. It indicates that an
- * {@link Thing} whose type is this {@link Type} is permitted to be a role-player
- * playing the role of the given {@link Role}.
+ * Reperesents the {@code plays} property on a Type.
+ * This property relates a Type and a Role. It indicates that an
+ * Thing whose type is this Type is permitted to be a role-player
+ * playing the role of the given Role.
  */
 public class PlaysProperty extends VarProperty {
 

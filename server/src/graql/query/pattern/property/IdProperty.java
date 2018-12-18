@@ -21,7 +21,6 @@ package grakn.core.graql.query.pattern.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
@@ -35,7 +34,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code id} property on a {@link Concept}.
+ * Represents the {@code id} property on a Concept.
  * This property can be queried. While this property cannot be inserted, if used in an insert query any existing concept
  * with the given ID will be retrieved.
  */

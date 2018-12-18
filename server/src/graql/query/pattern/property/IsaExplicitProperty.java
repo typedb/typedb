@@ -19,8 +19,6 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Statement;
@@ -29,9 +27,9 @@ import grakn.core.graql.query.pattern.Variable;
 import java.util.Collection;
 
 /**
- * Represents the {@code isa-explicit} property on a {@link Thing}.
+ * Represents the {@code isa-explicit} property on a Thing.
  * This property can be queried and inserted.
- * THe property is defined as a relationship between an {@link Thing} and a {@link Type}.
+ * THe property is defined as a relationship between an Thing and a Type.
  * When matching, any subtyping is ignored. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it only follows {@code $bob isa man}, not {@code bob isa entity}.
  */

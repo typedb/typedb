@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -42,12 +41,12 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.sub;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
- * Represents the {@code relates} property on a {@link RelationshipType}.
+ * Represents the {@code relates} property on a RelationshipType.
  * <p>
  * This property can be queried, inserted or deleted.
  * <p>
- * This property relates a {@link RelationshipType} and a {@link Role}. It indicates that a {@link Relationship} whose
- * type is this {@link RelationshipType} may have a role-player playing the given {@link Role}.
+ * This property relates a RelationshipType and a Role. It indicates that a Relationship whose
+ * type is this RelationshipType may have a role-player playing the given Role.
  */
 public class RelatesProperty extends VarProperty {
 

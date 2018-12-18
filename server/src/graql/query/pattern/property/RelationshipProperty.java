@@ -60,8 +60,8 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Represents the relation property (e.g. {@code ($x, $y)} or {@code (wife: $x, husband: $y)}) on a relationship.
  * This property can be queried and inserted.
- * This propert is comprised of instances of {@link RolePlayer}, which represents associations between a
- * role-player {@link Thing} and an optional {@link Role}.
+ * This propert is comprised of instances of RolePlayer, which represents associations between a
+ * role-player Thing and an optional Role.
  */
 public class RelationshipProperty extends VarProperty {
 
@@ -201,9 +201,9 @@ public class RelationshipProperty extends VarProperty {
     }
 
     /**
-     * Add a roleplayer to the given {@link grakn.core.graql.concept.Relationship}
+     * Add a roleplayer to the given Relationship
      *
-     * @param relationship   the concept representing the {@link grakn.core.graql.concept.Relationship}
+     * @param relationship   the concept representing the Relationship
      * @param relationPlayer a casting between a role type and role player
      */
     private void addRoleplayer(WriteExecutor executor, grakn.core.graql.concept.Relationship relationship, RolePlayer relationPlayer) {

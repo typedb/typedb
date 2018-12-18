@@ -34,8 +34,8 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code regex} property on a {@link AttributeType}. This property can be queried and inserted.
- * This property introduces a validation constraint on instances of this {@link AttributeType}, stating that their
+ * Represents the {@code regex} property on a AttributeType. This property can be queried and inserted.
+ * This property introduces a validation constraint on instances of this AttributeType, stating that their
  * values must conform to the given regular expression.
  */
 public class RegexProperty extends VarProperty {

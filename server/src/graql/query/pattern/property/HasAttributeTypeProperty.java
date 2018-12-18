@@ -24,8 +24,6 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
-import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -47,13 +45,13 @@ import static grakn.core.graql.internal.Schema.ImplicitType.KEY_VALUE;
 import static grakn.core.graql.query.pattern.Pattern.var;
 
 /**
- * Represents the {@code has} and {@code key} properties on a {@link Type}.
+ * Represents the {@code has} and {@code key} properties on a Type.
  * This property can be queried or inserted. Whether this is a key is indicated by the
- * {@link HasAttributeTypeProperty#required} field.
- * This property is defined as an implicit ontological structure between a {@link Type} and a {@link AttributeType},
- * including one implicit {@link RelationshipType} and two implicit {@link Role}s. The labels of these types are derived
- * from the label of the {@link AttributeType}.
- * Like {@link HasAttributeProperty}, if this is not a key and is used in a match clause it will not use the implicit
+ * HasAttributeTypeProperty#required field.
+ * This property is defined as an implicit ontological structure between a Type and a AttributeType,
+ * including one implicit RelationshipType and two implicit Roles. The labels of these types are derived
+ * from the label of the AttributeType.
+ * Like HasAttributeProperty, if this is not a key and is used in a match clause it will not use the implicit
  * structure - instead, it will match if there is any kind of relation type connecting the two types.
  */
 public class HasAttributeTypeProperty extends VarProperty {

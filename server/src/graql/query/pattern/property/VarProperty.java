@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * A property of a {@link Statement}, such as "isa movie" or "has name 'Jim'"
+ * A property of a Statement, such as "isa movie" or "has name 'Jim'"
  */
 public abstract class VarProperty {
 
@@ -42,7 +42,7 @@ public abstract class VarProperty {
     public abstract String getProperty();
 
     /**
-     * True if there is at most one of these properties for each {@link Statement}
+     * True if there is at most one of these properties for each Statement
      */
     @CheckReturnValue
     public abstract boolean isUnique();
@@ -56,7 +56,7 @@ public abstract class VarProperty {
     }
 
     /**
-     * Get a stream of {@link Statement} that must be types.
+     * Get a stream of Statement that must be types.
      */
     @CheckReturnValue
     public Stream<Statement> getTypes() {
@@ -64,7 +64,7 @@ public abstract class VarProperty {
     }
 
     /**
-     * Get a stream of any inner {@link Statement} within this `VarProperty`.
+     * Get a stream of any inner Statement within this `VarProperty`.
      */
     @CheckReturnValue
     public Stream<Statement> innerStatements() {
@@ -72,7 +72,7 @@ public abstract class VarProperty {
     }
 
     /**
-     * Get a stream of any inner {@link Statement} within this `VarProperty`, including any that may have been
+     * Get a stream of any inner Statement within this `VarProperty`, including any that may have been
      * implicitly created (such as with "has").
      */
     @CheckReturnValue
@@ -116,7 +116,7 @@ public abstract class VarProperty {
     /**
      * maps this var property to a reasoner atom
      *
-     * @param var    {@link Statement} this property belongs to
+     * @param var    Statement this property belongs to
      * @param vars   Vars constituting the pattern this property belongs to
      * @param parent reasoner query this atom should belong to
      * @return created atom
@@ -125,14 +125,14 @@ public abstract class VarProperty {
     public abstract Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent);
 
     /**
-     * Return a collection of {@link EquivalentFragmentSet} to match the given property in the graph
+     * Return a collection of EquivalentFragmentSet to match the given property in the graph
      */
     public abstract Collection<EquivalentFragmentSet> match(Variable start);
 
     /**
-     * Returns a {@link PropertyExecutor} that describes how to insert the given {@link VarProperty} into.
+     * Returns a PropertyExecutor that describes how to insert the given VarProperty into.
      *
-     * @throws GraqlQueryException if this {@link VarProperty} cannot be inserted
+     * @throws GraqlQueryException if this VarProperty cannot be inserted
      */
     public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
         throw GraqlQueryException.insertUnsupportedProperty(getName());

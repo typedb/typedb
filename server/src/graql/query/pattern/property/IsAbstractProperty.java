@@ -35,7 +35,7 @@ import java.util.Set;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbstract;
 
 /**
- * Represents the {@code is-abstract} property on a {@link Type}.
+ * Represents the {@code is-abstract} property on a Type.
  * This property can be matched or inserted.
  * This property states that a type cannot have direct instances.
  */

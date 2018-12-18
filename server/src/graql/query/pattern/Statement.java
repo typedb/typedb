@@ -22,11 +22,9 @@ import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
@@ -118,8 +116,8 @@ public abstract class Statement implements Pattern {
     /**
      * Get a stream of all properties of a particular type on this variable
      *
-     * @param type the class of {@link VarProperty} to return
-     * @param <T>  the type of {@link VarProperty} to return
+     * @param type the class of VarProperty to return
+     * @param <T>  the type of VarProperty to return
      */
     @CheckReturnValue
     public final <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
@@ -129,8 +127,8 @@ public abstract class Statement implements Pattern {
     /**
      * Get a unique property of a particular type on this variable, if it exists
      *
-     * @param type the class of {@link VarProperty} to return
-     * @param <T>  the type of {@link VarProperty} to return
+     * @param type the class of VarProperty to return
+     * @param <T>  the type of VarProperty to return
      */
     @CheckReturnValue
     public final <T extends VarProperty> Optional<T> getProperty(Class<T> type) {
@@ -138,11 +136,11 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * Get whether this {@link Statement} has a {@link VarProperty} of the given type
+     * Get whether this Statement} has a {@link VarProperty of the given type
      *
-     * @param type the type of the {@link VarProperty}
-     * @param <T>  the type of the {@link VarProperty}
-     * @return whether this {@link Statement} has a {@link VarProperty} of the given type
+     * @param type the type of the VarProperty
+     * @param <T>  the type of the VarProperty
+     * @return whether this Statement} has a {@link VarProperty of the given type
      */
     @CheckReturnValue
     public final <T extends VarProperty> boolean hasProperty(Class<T> type) {
@@ -272,10 +270,10 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must have an {@link Attribute} of the given type that matches the given atom
+     * the variable must have an Attribute of the given type that matches the given atom
      *
      * @param type      a resource type in the schema
-     * @param attribute a variable pattern representing an {@link Attribute}
+     * @param attribute a variable pattern representing an Attribute
      * @return this
      */
     @CheckReturnValue
@@ -284,10 +282,10 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must have an {@link Attribute} of the given type that matches the given atom
+     * the variable must have an Attribute of the given type that matches the given atom
      *
      * @param type      a resource type in the schema
-     * @param attribute a variable pattern representing an {@link Attribute}
+     * @param attribute a variable pattern representing an Attribute
      * @return this
      */
     @CheckReturnValue
@@ -296,12 +294,12 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must have an {@link Attribute} of the given type that matches {@code attribute}.
-     * The {@link grakn.core.graql.concept.Relationship} associating the two must match {@code relation}.
+     * the variable must have an Attribute of the given type that matches attribute.
+     * The Relationship associating the two must match relation.
      *
      * @param type         a resource type in the ontology
-     * @param attribute    a variable pattern representing an {@link Attribute}
-     * @param relationship a variable pattern representing a {@link grakn.core.graql.concept.Relationship}
+     * @param attribute    a variable pattern representing an Attribute
+     * @param relationship a variable pattern representing a Relationship
      * @return this
      */
     @CheckReturnValue
@@ -382,7 +380,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param type a {@link Role} id that this relation type variable must have
+     * @param type a Role id that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
@@ -391,7 +389,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param type a {@link Role} that this relation type variable must have
+     * @param type a Role that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
@@ -400,7 +398,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param roleType a {@link Role} id that this relation type variable must have
+     * @param roleType a Role id that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
@@ -409,7 +407,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param roleType a {@link Role} that this relation type variable must have
+     * @param roleType a Role that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
@@ -418,7 +416,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param type a {@link Role} id that this concept type variable must play
+     * @param type a Role id that this concept type variable must play
      * @return this
      */
     @CheckReturnValue
@@ -427,7 +425,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param type a {@link Role} that this concept type variable must play
+     * @param type a Role that this concept type variable must play
      * @return this
      */
     @CheckReturnValue
@@ -494,9 +492,9 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must be a relation with the given roleplayer playing the given {@link Role}
+     * the variable must be a relation with the given roleplayer playing the given Role
      *
-     * @param role       a {@link Role} in the schema
+     * @param role       a Role in the schema
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
@@ -506,9 +504,9 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must be a relation with the given roleplayer playing the given {@link Role}
+     * the variable must be a relation with the given roleplayer playing the given Role
      *
-     * @param role       a variable pattern representing a {@link Role}
+     * @param role       a variable pattern representing a Role
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
@@ -518,9 +516,9 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must be a relation with the given roleplayer playing the given {@link Role}
+     * the variable must be a relation with the given roleplayer playing the given Role
      *
-     * @param role       a {@link Role} in the schema
+     * @param role       a Role in the schema
      * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
@@ -530,9 +528,9 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must be a relation with the given roleplayer playing the given {@link Role}
+     * the variable must be a relation with the given roleplayer playing the given Role
      *
-     * @param role       a variable pattern representing a {@link Role}
+     * @param role       a variable pattern representing a Role
      * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */

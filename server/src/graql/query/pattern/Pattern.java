@@ -138,7 +138,7 @@ public interface Pattern {
     }
 
     /**
-     * Get all common, user-defined {@link Variable}s in the {@link Pattern}.
+     * Get all common, user-defined Variables in the Pattern.
      */
     @CheckReturnValue
     Set<Variable> variables();
@@ -154,7 +154,7 @@ public interface Pattern {
     }
 
     /**
-     * @return this {@link Pattern} as a {@link Statement}, if it is one.
+     * @return this Pattern as a Statement, if it is one.
      */
     @CheckReturnValue
     default Statement asStatement() {
@@ -162,7 +162,7 @@ public interface Pattern {
     }
 
     /**
-     * @return this {@link Pattern} as a {@link Disjunction}, if it is one.
+     * @return this Pattern as a Disjunction, if it is one.
      */
     @CheckReturnValue
     default Disjunction<?> asDisjunction() {
@@ -170,7 +170,7 @@ public interface Pattern {
     }
 
     /**
-     * @return this {@link Pattern} as a {@link Conjunction}, if it is one.
+     * @return this Pattern as a Conjunction, if it is one.
      */
     @CheckReturnValue
     default Conjunction<?> asConjunction() {
@@ -178,7 +178,7 @@ public interface Pattern {
     }
 
     /**
-     * @return true if this {@link Pattern} is a {@link Statement}
+     * @return true if this Pattern is a Statement
      */
     @CheckReturnValue
     default boolean isStatement() {
@@ -186,7 +186,7 @@ public interface Pattern {
     }
 
     /**
-     * @return true if this {@link Pattern} is a {@link Conjunction}
+     * @return true if this Pattern is a Conjunction
      */
     @CheckReturnValue
     default boolean isDisjunction() {
@@ -194,7 +194,7 @@ public interface Pattern {
     }
 
     /**
-     * @return true if this {@link Pattern} is a {@link Disjunction}
+     * @return true if this Pattern is a Disjunction
      */
     @CheckReturnValue
     default boolean isConjunction() {

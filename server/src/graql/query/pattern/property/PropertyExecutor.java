@@ -19,7 +19,6 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.Concept;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 
@@ -28,10 +27,10 @@ import java.util.Arrays;
 // TODO: Add an example of 'undefine' to this description
 
 /**
- * A class describing an operation to perform using a {@link VarProperty}.
- * The behaviour is executed via a {@link WriteExecutor} using {@link #execute}. The class also
- * report its {@link #requiredVars} before it can run and its {@link #producedVars()}, that will be available to
- * other {@link PropertyExecutor}s after it has run.
+ * A class describing an operation to perform using a VarProperty.
+ * The behaviour is executed via a WriteExecutor using #execute. The class also
+ * report its #requiredVars before it can run and its #producedVars(), that will be available to
+ * other PropertyExecutors after it has run.
  * For example:
  * SubProperty property = SubProperty.of(y);
  * PropertyExecutor executor = property.define(x);
@@ -70,27 +69,27 @@ public class PropertyExecutor {
      *
      * @param executor a class providing a map of concepts that are accessible and methods to build new concepts.
      *                 This method can expect any key to be here that is returned from
-     *                 {@link #requiredVars()}. The method may also build a concept provided that key is returned
-     *                 from {@link #producedVars()}.
+     *                 #requiredVars(). The method may also build a concept provided that key is returned
+     *                 from #producedVars().
      */
     public final void execute(WriteExecutor executor) {
         executeMethod().execute(executor);
     }
 
     /**
-     * Get all {@link Variable}s whose {@link Concept} must exist for the subject {@link Variable} to be applied.
-     * For example, for {@link IsaProperty} the type must already be present before an instance can be created.
-     * When calling {@link #execute}, the method can expect any {@link Variable} returned here to be available by calling
-     * {@link WriteExecutor#get}.
+     * Get all Variables whose Concept must exist for the subject Variable to be applied.
+     * For example, for IsaProperty the type must already be present before an instance can be created.
+     * When calling #execute, the method can expect any Variable returned here to be available by calling
+     * WriteExecutor#get.
      */
     public ImmutableSet<Variable> requiredVars() {
         return requiredVars;
     }
 
     /**
-     * Get all {@link Variable}s whose {@link Concept} can only be created after this property is applied.
-     * When calling {@link #execute}, the method must help build a {@link Concept} for every {@link Variable} returned
-     * from this method, using {@link WriteExecutor#builder}.
+     * Get all Variables whose Concept can only be created after this property is applied.
+     * When calling #execute, the method must help build a Concept for every Variable returned
+     * from this method, using WriteExecutor#builder.
      */
     public ImmutableSet<Variable> producedVars() {
         return producedVars;

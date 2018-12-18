@@ -23,7 +23,6 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
@@ -36,7 +35,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code label} property on a {@link Type}.
+ * Represents the {@code label} property on a Type.
  * This property can be queried and inserted. If used in an insert query and there is an existing type with the give
  * label, then that type will be retrieved.
  */

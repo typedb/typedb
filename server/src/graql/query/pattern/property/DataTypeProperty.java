@@ -34,7 +34,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code datatype} property on a {@link AttributeType}.
+ * Represents the {@code datatype} property on a AttributeType.
  * This property can be queried or inserted.
  */
 public class DataTypeProperty extends VarProperty {

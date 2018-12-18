@@ -21,7 +21,6 @@ package grakn.core.graql.query.pattern.property;
 import com.google.common.collect.Sets;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.concept.Concept;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
@@ -33,7 +32,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Represents the {@code !=} property on a {@link Concept}.
+ * Represents the {@code !=} property on a Concept.
  * This property can be queried. It asserts identity inequality between two concepts. Concepts may have shared
  * properties but still be distinct. For example, two instances of a type without any resources are still considered
  * unequal. Similarly, two resources with the same value but of different types are considered unequal.
