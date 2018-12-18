@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
@@ -30,7 +29,6 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.Transaction;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -123,17 +121,6 @@ public class HasAttributeProperty extends VarProperty {
 
     private boolean hasReifiedRelationship() {
         return relationship().getProperties().findAny().isPresent() || relationship().var().isUserDefinedName();
-    }
-
-    @Override
-    void checkValidProperty(Transaction graph, Statement var) {
-        SchemaConcept schemaConcept = graph.getSchemaConcept(type());
-        if (schemaConcept == null) {
-            throw GraqlQueryException.labelNotFound(type());
-        }
-        if (!schemaConcept.isAttributeType()) {
-            throw GraqlQueryException.mustBeAttributeType(type());
-        }
     }
 
     @Override

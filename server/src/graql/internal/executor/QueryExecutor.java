@@ -20,6 +20,7 @@ package grakn.core.graql.internal.executor;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
@@ -27,6 +28,8 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
@@ -46,6 +49,11 @@ import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.AbstractIsaProperty;
+import grakn.core.graql.query.pattern.property.HasAttributeProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
+import grakn.core.graql.query.pattern.property.RelationshipProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -85,9 +93,73 @@ public class QueryExecutor {
         this.infer = infer;
     }
 
+    private void validateIsaProperty(AbstractIsaProperty varProperty) {
+        varProperty.type().getTypeLabel().ifPresent(typeLabel -> {
+            SchemaConcept theSchemaConcept = tx.getSchemaConcept(typeLabel);
+            if (theSchemaConcept != null && !theSchemaConcept.isType()) {
+                throw GraqlQueryException.cannotGetInstancesOfNonType(typeLabel);
+            }
+        });
+    }
+
+    private void validateHasAttributeProperty(HasAttributeProperty varProperty) {
+        SchemaConcept schemaConcept = tx.getSchemaConcept(varProperty.type());
+        if (schemaConcept == null) {
+            throw GraqlQueryException.labelNotFound(varProperty.type());
+        }
+        if (!schemaConcept.isAttributeType()) {
+            throw GraqlQueryException.mustBeAttributeType(varProperty.type());
+        }
+    }
+
+    private void validateRelationshipProperty(RelationshipProperty varProperty, Statement statement) {
+        Set<Label> roleTypes = varProperty.relationPlayers().stream()
+                .map(RelationshipProperty.RolePlayer::getRole).flatMap(CommonUtil::optionalToStream)
+                .map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream)
+                .collect(toSet());
+
+        Optional<Label> maybeLabel =
+                statement.getProperty(IsaProperty.class).map(IsaProperty::type).flatMap(Statement::getTypeLabel);
+
+        maybeLabel.ifPresent(label -> {
+            SchemaConcept schemaConcept = tx.getSchemaConcept(label);
+
+            if (schemaConcept == null || !schemaConcept.isRelationshipType()) {
+                throw GraqlQueryException.notARelationType(label);
+            }
+        });
+
+        // Check all role types exist
+        roleTypes.forEach(roleId -> {
+            SchemaConcept schemaConcept = tx.getSchemaConcept(roleId);
+            if (schemaConcept == null || !schemaConcept.isRole()) {
+                throw GraqlQueryException.notARoleType(roleId);
+            }
+        });
+    }
+
+    private void validateProperty(VarProperty varProperty, Statement statement) {
+        if (varProperty instanceof AbstractIsaProperty) {
+            validateIsaProperty((AbstractIsaProperty) varProperty);
+        } else if (varProperty instanceof HasAttributeProperty) {
+            validateHasAttributeProperty((HasAttributeProperty) varProperty);
+        } else if (varProperty instanceof RelationshipProperty) {
+            validateRelationshipProperty((RelationshipProperty) varProperty, statement);
+        }
+
+        varProperty.innerStatements()
+                .map(Statement::getTypeLabel)
+                .flatMap(CommonUtil::optionalToStream)
+                .forEach(label -> {
+                    if (tx.getSchemaConcept(label) == null) {
+                        throw GraqlQueryException.labelNotFound(label);
+                    }
+                });
+    }
+
     public Stream<ConceptMap> match(MatchClause matchClause) {
         for (Statement statement : matchClause.getPatterns().statements()) {
-            statement.getProperties().forEach(property -> property.checkValid(tx, statement));
+            statement.getProperties().forEach(property -> validateProperty(property, statement));
         }
 
         if (!infer || !RuleUtils.hasRules(tx)) {

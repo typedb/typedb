@@ -19,12 +19,10 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.Transaction;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -61,15 +59,5 @@ public abstract class AbstractIsaProperty extends VarProperty {
         };
 
         return ImmutableSet.of(PropertyExecutor.builder(method).requires(type().var()).produces(var).build());
-    }
-
-    @Override
-    public final void checkValidProperty(Transaction graph, Statement var) throws GraqlQueryException {
-        type().getTypeLabel().ifPresent(typeLabel -> {
-            SchemaConcept theSchemaConcept = graph.getSchemaConcept(typeLabel);
-            if (theSchemaConcept != null && !theSchemaConcept.isType()) {
-                throw GraqlQueryException.cannotGetInstancesOfNonType(typeLabel);
-            }
-        });
     }
 }

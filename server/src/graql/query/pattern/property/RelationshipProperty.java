@@ -22,10 +22,8 @@ import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
@@ -34,7 +32,6 @@ import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -48,7 +45,6 @@ import java.util.stream.Stream;
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Represents the relation property (e.g. {@code ($x, $y)} or {@code (wife: $x, husband: $y)}) on a relationship.
@@ -153,34 +149,6 @@ public class RelationshipProperty extends VarProperty {
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Variable start, Variable casting, Statement roleType, Statement rolePlayer) {
         return Stream.of(rolePlayer(this, start, casting, rolePlayer.var(), roleType.var()));
-    }
-
-    @Override
-    public void checkValidProperty(Transaction graph, Statement var) throws GraqlQueryException {
-
-        Set<Label> roleTypes = relationPlayers().stream()
-                .map(RolePlayer::getRole).flatMap(CommonUtil::optionalToStream)
-                .map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream)
-                .collect(toSet());
-
-        Optional<Label> maybeLabel =
-                var.getProperty(IsaProperty.class).map(IsaProperty::type).flatMap(Statement::getTypeLabel);
-
-        maybeLabel.ifPresent(label -> {
-            SchemaConcept schemaConcept = graph.getSchemaConcept(label);
-
-            if (schemaConcept == null || !schemaConcept.isRelationshipType()) {
-                throw GraqlQueryException.notARelationType(label);
-            }
-        });
-
-        // Check all role types exist
-        roleTypes.forEach(roleId -> {
-            SchemaConcept schemaConcept = graph.getSchemaConcept(roleId);
-            if (schemaConcept == null || !schemaConcept.isRole()) {
-                throw GraqlQueryException.notARoleType(roleId);
-            }
-        });
     }
 
     @Override
