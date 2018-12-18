@@ -43,6 +43,10 @@ SchemaHandler.prototype.defineAttributeType = async function define({ attributeL
   await type.sup(directSuper);
 };
 
+SchemaHandler.prototype.defineRule = async function define({ ruleLabel, when, then }) {
+  return tx.putRule(ruleLabel, when, then);
+};
+
 SchemaHandler.prototype.deleteType = async function deleteType({ label }) {
   const type = await tx.getSchemaConcept(label);
   await type.delete();

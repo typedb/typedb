@@ -12,6 +12,7 @@ import {
   DELETE_SCHEMA_CONCEPT,
   REFRESH_SELECTED_NODE,
   DELETE_ATTRIBUTE,
+  DEFINE_RULE,
   ADD_ATTRIBUTE_TYPE,
 } from '@/components/shared/StoresActions';
 import logger from '@/../Logger';
@@ -399,6 +400,20 @@ export default {
     if (!node) return;
     commit('selectedNodes', null);
     commit('selectedNodes', [node.id]);
+  },
+
+  async [DEFINE_RULE]({ state, dispatch }, payload) {
+    const graknTx = await dispatch(OPEN_GRAKN_TX);
+
+    // define rule
+    await state.schemaHandler.defineRule(payload);
+
+    await dispatch(COMMIT_TX, graknTx)
+      .catch((e) => {
+        graknTx.close();
+        logger.error(e.stack);
+        throw e;
+      });
   },
 
   // async [DELETE_PLAYS_ROLE]({ state, dispatch }, payload) {

@@ -14,6 +14,7 @@ export const COMMIT_TX = 'commit-tx';
 export const REFRESH_SELECTED_NODE = 'refresh-selected-node';
 export const DELETE_PLAYS_ROLE = 'delete-plays-role';
 export const DELETE_RELATES_ROLE = 'delete-relates-role';
+export const DEFINE_RULE = 'define-rule';
 
 // Visualiser store actions
 export const RUN_CURRENT_QUERY = 'run-current-query';
