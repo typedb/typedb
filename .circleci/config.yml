@@ -20,7 +20,7 @@ jobs:
       - checkout
       - *install_bazel
       - run: bazel build //... --sandbox_debug
-      - run: mkdir dist/ && mv bazel-bin/dist/* dist/
+      - run: mkdir dist/ && mv bazel-genfiles/distribution.zip dist/
       - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace
           root: ~/grakn
           paths:
@@ -42,9 +42,9 @@ jobs:
     - checkout
     - *install_bazel
     - run: bazel build //:distribution --sandbox_debug
-    - run: unzip bazel-bin/distribution.zip -d bazel-bin/dist/
-    - run: nohup bazel-bin/dist/grakn server start
-    - run: bazel-bin/dist/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
+    - run: unzip bazel-genfiles/distribution.zip -d bazel-genfiles/dist/
+    - run: nohup bazel-genfiles/dist/grakn server start
+    - run: bazel-genfiles/dist/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
     - run: bazel test //client-nodejs:test-integration --test_output=streamed
 
   client-python:
@@ -54,8 +54,8 @@ jobs:
     - checkout
     - *install_bazel
     - run: bazel build //:distribution --sandbox_debug
-    - run: unzip bazel-bin/distribution.zip -d bazel-bin/dist/
-    - run: nohup bazel-bin/dist/grakn server start
+    - run: unzip bazel-genfiles/distribution.zip -d bazel-genfiles/dist/
+    - run: nohup bazel-genfiles/dist/grakn server start
     - run: bazel test //client_python:test_integration --test_output=streamed
 
   common:
@@ -100,9 +100,9 @@ jobs:
     - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
     - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
     - run: bazel build //:distribution --sandbox_debug
-    - run: unzip bazel-bin/distribution.zip -d bazel-bin/dist/
-    - run: nohup bazel-bin/dist/grakn server start
-    - run: bazel-bin/dist/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
+    - run: unzip bazel-genfiles/distribution.zip -d bazel-genfiles/dist/
+    - run: nohup bazel-genfiles/dist/grakn server start
+    - run: bazel-genfiles/dist/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
     - run: Xvfb :99 &
     - run: export DISPLAY=:99
     - run: bazel test //workbase:tests-e2e --test_output=streamed
