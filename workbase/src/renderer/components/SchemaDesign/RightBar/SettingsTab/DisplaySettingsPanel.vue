@@ -49,7 +49,7 @@
       // computed
       this.$options.computed = {
         ...(this.$options.computed || {}),
-        ...mapGetters(['currentKeyspace']),
+        ...mapGetters(['currentKeyspace', 'visFacade']),
       };
     },
     watch: {
@@ -65,8 +65,8 @@
     },
     methods: {
       showTypes(showType, baseType) {
-        const schemaConcepts = this.$store.state['schema-design'].visFacade.getAllNodes().filter((x => x.baseType === baseType)).map(x => Object.assign(x, { hidden: !showType }));
-        this.$store.state['schema-design'].visFacade.updateNode(schemaConcepts);
+        const schemaConcepts = this.visFacade.getAllNodes().filter((x => x.baseType === baseType)).map(x => Object.assign(x, { hidden: !showType }));
+        this.visFacade.updateNode(schemaConcepts);
       },
     },
 };
