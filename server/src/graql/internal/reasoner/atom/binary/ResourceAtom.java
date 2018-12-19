@@ -91,7 +91,6 @@ public abstract class ResourceAtom extends Binary{
     }
     private static ResourceAtom create(ResourceAtom a, ReasonerQuery parent) {
         ResourceAtom atom = create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
-        atom.applicableRules = a.applicableRules;
         return atom;
     }
 
