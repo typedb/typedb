@@ -4,9 +4,9 @@ references:
       run:
         name: Install bazel
         command: |
-          curl -OL https://github.com/bazelbuild/bazel/releases/download/0.18.0/bazel-0.18.0-installer-linux-x86_64.sh
-          chmod +x bazel-0.18.0-installer-linux-x86_64.sh
-          sudo ./bazel-0.18.0-installer-linux-x86_64.sh
+          curl -OL https://github.com/bazelbuild/bazel/releases/download/0.19.2/bazel-0.19.2-installer-linux-x86_64.sh
+          chmod +x bazel-0.19.2-installer-linux-x86_64.sh
+          sudo ./bazel-0.19.2-installer-linux-x86_64.sh
 
     attach_grakn_workspace: &attach_grakn_workspace
       attach_workspace:
