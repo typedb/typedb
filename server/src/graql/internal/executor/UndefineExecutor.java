@@ -66,7 +66,7 @@ public class UndefineExecutor {
 
         for (Statement statement : allPatterns) {
             for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
-                for (PropertyExecutor executor : propertyExecutors(property, statement.var())) {
+                for (PropertyExecutor executor : propertyExecutors(statement.var(), property)) {
                     properties.add(new WriteExecutor.VarAndProperty(statement.var(), property, executor));
                 }
             }
@@ -74,37 +74,43 @@ public class UndefineExecutor {
         return WriteExecutor.create(properties.build(), transaction).insertAll(new ConceptMap());
     }
 
-    private Set<PropertyExecutor> propertyExecutors(VarProperty varProperty, Variable var) {
-        if (varProperty instanceof AbstractSubProperty) {
-            return subExecutors((AbstractSubProperty) varProperty, var);
-        } else if (varProperty instanceof DataTypeProperty) {
-            return dataTypeExecutors();
-        } else if (varProperty instanceof HasAttributeTypeProperty) {
-            return hasAttributeTypeExecutors((HasAttributeTypeProperty) varProperty, var);
-        } else if (varProperty instanceof IdProperty) {
-            return idExecutors((IdProperty) varProperty, var);
-        } else if (varProperty instanceof IsAbstractProperty) {
-            return isAbstractExecutors(var);
-        } else if (varProperty instanceof LabelProperty) {
-            return labelExecutors((LabelProperty) varProperty, var);
-        } else if (varProperty instanceof PlaysProperty) {
-            return playsExecutor((PlaysProperty) varProperty, var);
-        } else if (varProperty instanceof RegexProperty) {
-            return regexExecutors((RegexProperty) varProperty, var);
-        } else if (varProperty instanceof RelatesProperty) {
-            return relatesExecutor((RelatesProperty) varProperty, var);
-        }
+    private Set<PropertyExecutor> propertyExecutors(Variable var, VarProperty property) {
+        if (property instanceof AbstractSubProperty) {
+            return subExecutors(var, (AbstractSubProperty) property);
 
-        else {
-            throw GraqlQueryException.defineUnsupportedProperty(varProperty.getName());
+        } else if (property instanceof DataTypeProperty) {
+            return dataTypeExecutors();
+
+        } else if (property instanceof HasAttributeTypeProperty) {
+            return hasAttributeTypeExecutors(var, (HasAttributeTypeProperty) property);
+
+        } else if (property instanceof IdProperty) {
+            return idExecutors(var, (IdProperty) property);
+
+        } else if (property instanceof IsAbstractProperty) {
+            return isAbstractExecutors(var);
+        } else if (property instanceof LabelProperty) {
+            return labelExecutors(var, (LabelProperty) property);
+
+        } else if (property instanceof PlaysProperty) {
+            return playsExecutor(var, (PlaysProperty) property);
+
+        } else if (property instanceof RegexProperty) {
+            return regexExecutors(var, (RegexProperty) property);
+
+        } else if (property instanceof RelatesProperty) {
+            return relatesExecutor(var, (RelatesProperty) property);
+
+        } else {
+            throw GraqlQueryException.defineUnsupportedProperty(property.getName());
         }
     }
 
-    private Set<PropertyExecutor> subExecutors(AbstractSubProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> subExecutors(Variable var, AbstractSubProperty property) {
         PropertyExecutor.Method method = executor -> {
             SchemaConcept concept = executor.get(var).asSchemaConcept();
 
-            SchemaConcept expectedSuperConcept = executor.get(varProperty.superType().var()).asSchemaConcept();
+            SchemaConcept expectedSuperConcept = executor.get(property.superType().var()).asSchemaConcept();
             SchemaConcept actualSuperConcept = concept.sup();
 
             if (!concept.isDeleted() && expectedSuperConcept.equals(actualSuperConcept)) {
@@ -113,7 +119,7 @@ public class UndefineExecutor {
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method)
-                .requires(var, varProperty.superType().var())
+                .requires(var, property.superType().var())
                 .build();
 
         return Collections.unmodifiableSet(Collections.singleton(executor));
@@ -134,13 +140,13 @@ public class UndefineExecutor {
         return ImmutableSet.of(PropertyExecutor.builder(executor -> {}).build());
     }
 
-    private Set<PropertyExecutor> hasAttributeTypeExecutors(HasAttributeTypeProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> hasAttributeTypeExecutors(Variable var, HasAttributeTypeProperty property) {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
-            AttributeType<?> attributeType = executor.get(varProperty.type().var()).asAttributeType();
+            AttributeType<?> attributeType = executor.get(property.type().var()).asAttributeType();
 
             if (!type.isDeleted() && !attributeType.isDeleted()) {
-                if (varProperty.isRequired()) {
+                if (property.isRequired()) {
                     type.unkey(attributeType);
                 } else {
                     type.unhas(attributeType);
@@ -148,15 +154,15 @@ public class UndefineExecutor {
             }
         };
 
-        PropertyExecutor executor = PropertyExecutor.builder(method).requires(var, varProperty.type().var()).build();
+        PropertyExecutor executor = PropertyExecutor.builder(method).requires(var, property.type().var()).build();
 
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> idExecutors(IdProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> idExecutors(Variable var, IdProperty property) {
         // This property works in undefine queries, because it is only for look-ups
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).id(varProperty.id());
+            executor.builder(var).id(property.id());
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
@@ -177,10 +183,10 @@ public class UndefineExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> labelExecutors(LabelProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> labelExecutors(Variable var, LabelProperty property) {
         // This is supported in undefine queries in order to allow looking up schema concepts by label
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).label(varProperty.label());
+            executor.builder(var).label(property.label());
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
@@ -188,10 +194,10 @@ public class UndefineExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> playsExecutor(PlaysProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> playsExecutor(Variable var, PlaysProperty property) {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
-            Role role = executor.get(varProperty.role().var()).asRole();
+            Role role = executor.get(property.role().var()).asRole();
 
             if (!type.isDeleted() && !role.isDeleted()) {
                 type.unplay(role);
@@ -199,16 +205,16 @@ public class UndefineExecutor {
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method)
-                .requires(var, varProperty.role().var())
+                .requires(var, property.role().var())
                 .build();
 
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> regexExecutors(RegexProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> regexExecutors(Variable var, RegexProperty property) {
         PropertyExecutor.Method method = executor -> {
             AttributeType<Object> attributeType = executor.get(var).asAttributeType();
-            if (!attributeType.isDeleted() && varProperty.regex().equals(attributeType.regex())) {
+            if (!attributeType.isDeleted() && property.regex().equals(attributeType.regex())) {
                 attributeType.regex(null);
             }
         };
@@ -218,17 +224,17 @@ public class UndefineExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> relatesExecutor(RelatesProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> relatesExecutor(Variable var, RelatesProperty property) {
         PropertyExecutor.Method method = executor -> {
             RelationshipType relationshipType = executor.get(var).asRelationshipType();
-            Role role = executor.get(varProperty.role().var()).asRole();
+            Role role = executor.get(property.role().var()).asRole();
 
             if (!relationshipType.isDeleted() && !role.isDeleted()) {
                 relationshipType.unrelate(role);
             }
         };
 
-        PropertyExecutor executor = PropertyExecutor.builder(method).requires(var, varProperty.role().var()).build();
+        PropertyExecutor executor = PropertyExecutor.builder(method).requires(var, property.role().var()).build();
 
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }

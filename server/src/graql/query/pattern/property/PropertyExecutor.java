@@ -198,8 +198,7 @@ public class PropertyExecutor {
     }
 
     @FunctionalInterface
-    public
-    interface Method {
+    public interface Method {
         void execute(WriteExecutor writeExecutor);
     }
 }
