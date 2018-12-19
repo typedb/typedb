@@ -66,8 +66,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class Atom extends AtomicBase {
 
-    //NB: protected to be able to assign it when copying
-    protected Set<InferenceRule> applicableRules = null;
+    private Set<InferenceRule> applicableRules = null;
 
     public RelationshipAtom toRelationshipAtom() {
         throw GraqlQueryException.illegalAtomConversion(this, RelationshipAtom.class);
