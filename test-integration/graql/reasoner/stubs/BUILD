@@ -32,6 +32,7 @@ filegroup(
     "freshEntityDerivationFromRelations.gql",
     "freshRelationDerivation.gql",
     "appendingRPs.gql",
+    "negation.gql",
     "resourceAttachment.gql",
     "resourcesAsRolePlayers.gql",
     "testSet7.gql",

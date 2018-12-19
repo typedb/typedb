@@ -75,7 +75,6 @@ public class ReasoningIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "resourceDirectionality.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                
 
                 List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse("match $x isa specific-indicator;get;"), false);
 

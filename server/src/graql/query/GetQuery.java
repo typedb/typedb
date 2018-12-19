@@ -19,7 +19,6 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Variable;
 

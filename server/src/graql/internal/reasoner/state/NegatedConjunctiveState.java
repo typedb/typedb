@@ -22,7 +22,6 @@ import com.google.common.collect.Sets;
 
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Concept;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.NegatedAtomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;

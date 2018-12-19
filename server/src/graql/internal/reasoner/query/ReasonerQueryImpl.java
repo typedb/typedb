@@ -36,6 +36,7 @@ import grakn.core.graql.internal.reasoner.ResolutionIterator;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
+import grakn.core.graql.internal.reasoner.atom.NegatedAtomic;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -94,6 +95,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
                 .build();
+
+        //TODO currently fails as we force attribute names to be user defined
+        /*
+        if (!isNegationSafe()){
+            throw new IllegalStateException("Negated pattern unsafe! Negated pattern variables not bound!");
+        }
+        */
     }
 
     ReasonerQueryImpl(Set<Atomic> atoms, TransactionOLTP tx){
@@ -223,6 +231,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getAtoms().stream()
                 .flatMap(at -> at.validateOntologically().stream())
                 .collect(Collectors.toSet());
+    }
+
+    private boolean isNegationSafe(){
+        Set<NegatedAtomic> negated = getAtoms(NegatedAtomic.class).collect(Collectors.toSet());
+        Set<Variable> negatedVars = negated.stream().flatMap(at -> at.getVarNames().stream()).collect(Collectors.toSet());
+        Set<Variable> boundVars = getAtoms().stream().filter(at -> !negated.contains(at)).flatMap(at -> at.getVarNames().stream()).collect(Collectors.toSet());
+        return boundVars.containsAll(negatedVars);
     }
 
     @Override

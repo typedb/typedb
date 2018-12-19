@@ -21,7 +21,6 @@ package grakn.core.graql.query.pattern;
 import grakn.core.graql.parser.Parser;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.CheckReturnValue;
 
 import static java.util.stream.Collectors.toSet;

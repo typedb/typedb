@@ -56,7 +56,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
 
 /**

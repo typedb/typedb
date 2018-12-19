@@ -72,7 +72,7 @@ public class Patterns {
     }
 
     /**
-     * @param patterns an array of patterns to match
+     * @param patterns an array of patterns to form a conjunction
      * @return a pattern that will match only when all contained patterns match
      */
     @CheckReturnValue
@@ -81,7 +81,7 @@ public class Patterns {
     }
 
     /**
-     * @param patterns a collection of patterns to match
+     * @param patterns a collection of patterns to form a conjunction
      * @return a pattern that will match only when all contained patterns match
      */
     @CheckReturnValue
@@ -89,12 +89,19 @@ public class Patterns {
         return and(Sets.newHashSet(patterns));
     }
 
+    /**
+     *
+     * @param patterns a set of patterns to form a conjunction
+     * @param <T> conjunction inner pattern type
+     * @return a pattern that will match only when all contained patterns match
+     */
+    @CheckReturnValue
     public static <T extends Pattern> Conjunction<T> and(Set<T> patterns) {
         return new Conjunction<>(patterns);
     }
 
     /**
-     * @param patterns an array of patterns to match
+     * @param patterns an array of patterns to form a disjunction
      * @return a pattern that will match when any contained pattern matches
      */
     @CheckReturnValue
@@ -103,7 +110,7 @@ public class Patterns {
     }
 
     /**
-     * @param patterns a collection of patterns to match
+     * @param patterns a collection of patterns to form a disjunction
      * @return a pattern that will match when any contained pattern matches
      */
     @CheckReturnValue
@@ -112,26 +119,14 @@ public class Patterns {
         if (patterns.size() == 1) {
             return Iterables.getOnlyElement(patterns);
         }
-
         return or(Sets.newHashSet(patterns));
     }
 
     /**
      *
-     * @param patterns
-     * @param <T>
-     * @return
-     */
-    @CheckReturnValue
-    public static <T extends Pattern> Negation<T> not(Set<T> patterns) {
-        return new Negation<>(patterns);
-    }
-
-    /**
-     *
-     * @param patterns
-     * @param <T>
-     * @return
+     * @param patterns a set of patterns to form a disjunction
+     * @param <T> disjunction inner pattern type
+     * @return a pattern that will match when any contained pattern matches
      */
     @CheckReturnValue
     public static <T extends Pattern> Disjunction<T> or(Set<T> patterns) {
@@ -140,10 +135,40 @@ public class Patterns {
 
     /**
      *
-     * @param name
-     * @param properties
-     * @param positive
-     * @return
+     * @param patterns an array of patterns to form a negation
+     * @return a pattern that will match when no contained pattern matches
+     */
+    @CheckReturnValue
+    public static Pattern not(Pattern... patterns) {
+        return not(Sets.newHashSet(patterns));
+    }
+
+    /**
+     * @param patterns a collection of patterns to form a negation
+     * @return a pattern that will match when no contained pattern matches
+     */
+    @CheckReturnValue
+    public static Pattern not(Collection<? extends Pattern> patterns) {
+        return and(Sets.newHashSet(patterns));
+    }
+
+    /**
+     *
+     * @param patterns a set of patterns to form a negation
+     * @param <T> negation inner pattern type
+     * @return a pattern that will match when no contained pattern matches
+     */
+    @CheckReturnValue
+    public static <T extends Pattern> Negation<T> not(Set<T> patterns) {
+        return new Negation<>(patterns);
+    }
+
+    /**
+     *
+     * @param name statement variable name
+     * @param properties statement consitutent properties
+     * @param positive true if it is a positive statement
+     * @return corresponding statement
      */
     @CheckReturnValue
     public static Statement statement(Variable name, Set<VarProperty> properties, boolean positive) {

@@ -32,7 +32,6 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
