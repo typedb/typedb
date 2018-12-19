@@ -20,7 +20,6 @@ package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Variable;
@@ -73,16 +72,6 @@ public class IdProperty extends VarProperty {
     @Override
     public Collection<EquivalentFragmentSet> match(Variable start) {
         return ImmutableSet.of(EquivalentFragmentSets.id(this, start, id()));
-    }
-
-    @Override
-    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
-        // This property works in undefine queries, because it is only for look-ups
-        PropertyExecutor.Method method = executor -> {
-            executor.builder(var).id(id());
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
     }
 
     @Override

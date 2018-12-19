@@ -19,8 +19,6 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Variable;
 
@@ -68,17 +66,5 @@ public class IsAbstractProperty extends VarProperty {
     @Override
     public Collection<EquivalentFragmentSet> match(Variable start) {
         return ImmutableSet.of(isAbstract(this, start));
-    }
-
-    @Override
-    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Type type = executor.get(var).asType();
-            if (!type.isDeleted()) {
-                type.isAbstract(false);
-            }
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
     }
 }

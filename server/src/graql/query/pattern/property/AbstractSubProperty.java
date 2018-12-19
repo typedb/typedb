@@ -18,13 +18,8 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 
-import java.util.Collection;
 import java.util.stream.Stream;
 
 public abstract class AbstractSubProperty extends VarProperty {
@@ -49,21 +44,5 @@ public abstract class AbstractSubProperty extends VarProperty {
     @Override
     public Stream<Statement> innerStatements() {
         return Stream.of(superType());
-    }
-
-    @Override
-    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            SchemaConcept concept = executor.get(var).asSchemaConcept();
-
-            SchemaConcept expectedSuperConcept = executor.get(superType().var()).asSchemaConcept();
-            SchemaConcept actualSuperConcept = concept.sup();
-
-            if (!concept.isDeleted() && expectedSuperConcept.equals(actualSuperConcept)) {
-                concept.delete();
-            }
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, superType().var()).build());
     }
 }

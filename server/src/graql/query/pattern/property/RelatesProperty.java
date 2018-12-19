@@ -19,9 +19,6 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.RelationshipType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
@@ -98,20 +95,6 @@ public class RelatesProperty extends VarProperty {
     @Override
     public Stream<Statement> innerStatements() {
         return superRole == null ? Stream.of(role) : Stream.of(superRole, role);
-    }
-
-    @Override
-    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            RelationshipType relationshipType = executor.get(var).asRelationshipType();
-            Role role = executor.get(this.role.var()).asRole();
-
-            if (!relationshipType.isDeleted() && !role.isDeleted()) {
-                relationshipType.unrelate(role);
-            }
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role.var()).build());
     }
 
     @Override

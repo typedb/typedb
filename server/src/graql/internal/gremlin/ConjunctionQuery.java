@@ -120,10 +120,10 @@ class ConjunctionQuery {
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(Statement var) {
-        return var.implicitInnerStatements().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
+        return var.implicitInnerStatements().stream().flatMap(ConjunctionQuery::equivalentFragmentSets);
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(Statement statement) {
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSets(Statement statement) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
         Variable start = statement.var();

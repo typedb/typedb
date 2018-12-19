@@ -75,16 +75,6 @@ public class LabelProperty extends VarProperty {
     }
 
     @Override
-    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
-        // This is supported in undefine queries in order to allow looking up schema concepts by label
-        PropertyExecutor.Method method = executor -> {
-            executor.builder(var).label(label());
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (o == this) {
             return true;

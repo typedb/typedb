@@ -96,23 +96,23 @@ public class InsertExecutor {
 
     private Set<PropertyExecutor> propertyExecutors(VarProperty varProperty, Variable var) {
         if (varProperty instanceof AbstractIsaProperty) {
-            return isaPropertyExecutors((AbstractIsaProperty) varProperty, var);
+            return isaExecutors((AbstractIsaProperty) varProperty, var);
         } else if (varProperty instanceof HasAttributeProperty) {
-            return hasAttributePropertyExecutors((HasAttributeProperty) varProperty, var);
+            return hasAttributeExecutors((HasAttributeProperty) varProperty, var);
         } else if (varProperty instanceof IdProperty) {
-            return idProperyExecutors((IdProperty) varProperty, var);
+            return idExecutors((IdProperty) varProperty, var);
         } else if (varProperty instanceof LabelProperty) {
-            return labelPropertyExecutors((LabelProperty) varProperty, var);
+            return labelExecutors((LabelProperty) varProperty, var);
         } else if (varProperty instanceof RelationshipProperty) {
-            return relationshipPropertyExecutors((RelationshipProperty) varProperty, var);
+            return relationshipExecutors((RelationshipProperty) varProperty, var);
         } else if (varProperty instanceof ValueProperty) {
-            return valuePropertyExecutors((ValueProperty) varProperty, var);
+            return valueExecutors((ValueProperty) varProperty, var);
         } else {
             throw GraqlQueryException.insertUnsupportedProperty(varProperty.getName());
         }
     }
 
-    private Set<PropertyExecutor> isaPropertyExecutors(AbstractIsaProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> isaExecutors(AbstractIsaProperty varProperty, Variable var) {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(varProperty.type().var()).asType();
             executor.builder(var).isa(type);
@@ -126,7 +126,7 @@ public class InsertExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> hasAttributePropertyExecutors(HasAttributeProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> hasAttributeExecutors(HasAttributeProperty varProperty, Variable var) {
         PropertyExecutor.Method method = executor -> {
             Attribute attributeConcept = executor.get(varProperty.attribute().var()).asAttribute();
             Thing thing = executor.get(var).asThing();
@@ -142,7 +142,7 @@ public class InsertExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> idProperyExecutors(IdProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> idExecutors(IdProperty varProperty, Variable var) {
         PropertyExecutor.Method method = executor -> {
             executor.builder(var).id(varProperty.id());
         };
@@ -152,7 +152,7 @@ public class InsertExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> labelPropertyExecutors(LabelProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> labelExecutors(LabelProperty varProperty, Variable var) {
         // This is supported in insert queries in the same way it does for define queries
         // in order to allow looking up schema concepts by label
         PropertyExecutor.Method method = executor -> {
@@ -164,7 +164,7 @@ public class InsertExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> relationshipPropertyExecutors(RelationshipProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> relationshipExecutors(RelationshipProperty varProperty, Variable var) {
         PropertyExecutor.Method method = executor -> {
             Relationship relationship = executor.get(var).asRelationship();
             varProperty.relationPlayers().forEach(relationPlayer -> varProperty.addRoleplayer(executor, relationship, relationPlayer));
@@ -175,7 +175,7 @@ public class InsertExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> valuePropertyExecutors(ValueProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> valueExecutors(ValueProperty varProperty, Variable var) {
         PropertyExecutor.Method method = executor -> {
             Object value = varProperty.predicate().equalsValue().orElseThrow(GraqlQueryException::insertPredicate);
             executor.builder(var).value(value);

@@ -18,10 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
@@ -140,24 +137,6 @@ public class HasAttributeTypeProperty extends VarProperty {
     @Override
     public Stream<Statement> implicitInnerStatements() {
         return Stream.of(resourceType, ownerRole, valueRole, relationOwner, relationValue);
-    }
-
-    @Override
-    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Type type = executor.get(var).asType();
-            AttributeType<?> attributeType = executor.get(resourceType.var()).asAttributeType();
-
-            if (!type.isDeleted() && !attributeType.isDeleted()) {
-                if (required) {
-                    type.unkey(attributeType);
-                } else {
-                    type.unhas(attributeType);
-                }
-            }
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, resourceType.var()).build());
     }
 
     @Override

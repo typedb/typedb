@@ -80,33 +80,33 @@ public class DefineExecutor {
 
     private Set<PropertyExecutor> propertyExecutors(VarProperty varProperty, Variable var) {
         if (varProperty instanceof AbstractSubProperty) {
-            return subPropertyExecutors((AbstractSubProperty) varProperty, var);
+            return subExecutors((AbstractSubProperty) varProperty, var);
         } else if (varProperty instanceof DataTypeProperty) {
-            return dataTypePropertyExecutors((DataTypeProperty) varProperty, var);
+            return dataTypeExecutors((DataTypeProperty) varProperty, var);
         } else if (varProperty instanceof HasAttributeTypeProperty) {
-            return hasAttributeTypePropertyExecutors((HasAttributeTypeProperty) varProperty, var);
+            return hasAttributeTypeExecutors((HasAttributeTypeProperty) varProperty, var);
         } else if (varProperty instanceof IdProperty) {
-            return idPropertyExecutors((IdProperty) varProperty, var);
+            return idExecutors((IdProperty) varProperty, var);
         } else if (varProperty instanceof IsAbstractProperty) {
-            return isAbstractPropertyExecutors(var);
+            return isAbstractExecutors(var);
         } else if (varProperty instanceof LabelProperty) {
-            return labelPropertyExecutors((LabelProperty) varProperty, var);
+            return labelExecutors((LabelProperty) varProperty, var);
         } else if (varProperty instanceof PlaysProperty) {
-            return playsPropertyExecutors((PlaysProperty) varProperty, var);
+            return playsExecutors((PlaysProperty) varProperty, var);
         } else if (varProperty instanceof RegexProperty) {
-            return regexPropertyExecutors((RegexProperty) varProperty, var);
+            return regexExecutors((RegexProperty) varProperty, var);
         } else if (varProperty instanceof RelatesProperty) {
-            return relatesPropertyExecutors((RelatesProperty) varProperty, var);
+            return relatesExecutors((RelatesProperty) varProperty, var);
         } else if (varProperty instanceof ThenProperty) {
-            return thenPropertyExecutors((ThenProperty) varProperty, var);
+            return thenExecutors((ThenProperty) varProperty, var);
         } else if (varProperty instanceof WhenProperty) {
-            return whenPropertyExecutors((WhenProperty) varProperty, var);
+            return whenExecutors((WhenProperty) varProperty, var);
         } else {
             throw GraqlQueryException.defineUnsupportedProperty(varProperty.getName());
         }
     }
 
-    private Set<PropertyExecutor> subPropertyExecutors(AbstractSubProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> subExecutors(AbstractSubProperty varProperty, Variable var) {
         PropertyExecutor.Method method = executor -> {
             SchemaConcept superConcept = executor.get(varProperty.superType().var()).asSchemaConcept();
 
@@ -127,7 +127,7 @@ public class DefineExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> dataTypePropertyExecutors(DataTypeProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> dataTypeExecutors(DataTypeProperty varProperty, Variable var) {
         PropertyExecutor.Method method = executor -> {
             executor.builder(var).dataType(varProperty.dataType());
         };
@@ -137,7 +137,7 @@ public class DefineExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> hasAttributeTypePropertyExecutors(HasAttributeTypeProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> hasAttributeTypeExecutors(HasAttributeTypeProperty varProperty, Variable var) {
         PropertyExecutor.Method method = executor -> {
             Type entityTypeConcept = executor.get(var).asType();
             AttributeType attributeTypeConcept = executor.get(varProperty.type().var()).asAttributeType();
@@ -156,7 +156,7 @@ public class DefineExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> idPropertyExecutors(IdProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> idExecutors(IdProperty varProperty, Variable var) {
         // This property works in both insert and define queries, because it is only for look-ups
         PropertyExecutor.Method method = executor -> {
             executor.builder(var).id(varProperty.id());
@@ -167,7 +167,7 @@ public class DefineExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> isAbstractPropertyExecutors(Variable var) {
+    private Set<PropertyExecutor> isAbstractExecutors(Variable var) {
         PropertyExecutor.Method method = executor -> {
             Concept concept = executor.get(var);
             if (concept.isType()) {
@@ -182,7 +182,7 @@ public class DefineExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> labelPropertyExecutors(LabelProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> labelExecutors(LabelProperty varProperty, Variable var) {
         PropertyExecutor.Method method = executor -> {
             executor.builder(var).label(varProperty.label());
         };
@@ -192,7 +192,7 @@ public class DefineExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> playsPropertyExecutors(PlaysProperty varProperty, Variable var) {
+    private Set<PropertyExecutor> playsExecutors(PlaysProperty varProperty, Variable var) {
         PropertyExecutor.Method method = executor -> {
             Role role = executor.get(varProperty.role().var()).asRole();
             executor.get(var).asType().plays(role);
@@ -205,7 +205,7 @@ public class DefineExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> regexPropertyExecutors(RegexProperty varProperty, Variable var) throws GraqlQueryException {
+    private Set<PropertyExecutor> regexExecutors(RegexProperty varProperty, Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             executor.get(var).asAttributeType().regex(varProperty.regex());
         };
@@ -215,7 +215,7 @@ public class DefineExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> relatesPropertyExecutors(RelatesProperty varProperty, Variable var) throws GraqlQueryException {
+    private Set<PropertyExecutor> relatesExecutors(RelatesProperty varProperty, Variable var) throws GraqlQueryException {
         Set<PropertyExecutor> propertyExecutors = new HashSet<>();
         Variable roleVar = varProperty.role().var();
 
@@ -252,7 +252,7 @@ public class DefineExecutor {
         return Collections.unmodifiableSet(propertyExecutors);
     }
 
-    private Set<PropertyExecutor> thenPropertyExecutors(ThenProperty varProperty, Variable var) throws GraqlQueryException {
+    private Set<PropertyExecutor> thenExecutors(ThenProperty varProperty, Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar then { ... }`
             executor.builder(var).isRule().then(varProperty.pattern());
@@ -263,7 +263,7 @@ public class DefineExecutor {
         return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 
-    private Set<PropertyExecutor> whenPropertyExecutors(WhenProperty varProperty, Variable var) throws GraqlQueryException {
+    private Set<PropertyExecutor> whenExecutors(WhenProperty varProperty, Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar when { ... }`
             executor.builder(var).isRule().when(varProperty.pattern());

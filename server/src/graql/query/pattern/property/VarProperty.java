@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
@@ -95,8 +94,4 @@ public abstract class VarProperty {
      * Return a collection of EquivalentFragmentSet to match the given property in the graph
      */
     public abstract Collection<EquivalentFragmentSet> match(Variable start);
-
-    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
-        throw GraqlQueryException.defineUnsupportedProperty(getName());
-    }
 }

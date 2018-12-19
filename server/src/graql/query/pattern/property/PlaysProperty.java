@@ -19,9 +19,6 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Statement;
@@ -82,20 +79,6 @@ public class PlaysProperty extends VarProperty {
     @Override
     public Stream<Statement> innerStatements() {
         return Stream.of(role);
-    }
-
-    @Override
-    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Type type = executor.get(var).asType();
-            Role role = executor.get(this.role.var()).asRole();
-
-            if (!type.isDeleted() && !role.isDeleted()) {
-                type.unplay(role);
-            }
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role.var()).build());
     }
 
     @Override
