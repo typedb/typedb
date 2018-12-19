@@ -35,9 +35,7 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.sub;
 
 /**
  * Represents the {@code relates} property on a RelationshipType.
- * <p>
  * This property can be queried, inserted or deleted.
- * <p>
  * This property relates a RelationshipType and a Role. It indicates that a Relationship whose
  * type is this RelationshipType may have a role-player playing the given Role.
  */
@@ -56,6 +54,10 @@ public class RelatesProperty extends VarProperty {
 
     public Statement role() {
         return role;
+    }
+
+    public Statement superRole() {
+        return superRole;
     }
 
     @Override
@@ -96,39 +98,6 @@ public class RelatesProperty extends VarProperty {
     @Override
     public Stream<Statement> innerStatements() {
         return superRole == null ? Stream.of(role) : Stream.of(superRole, role);
-    }
-
-    @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        Variable roleVar = role.var();
-
-        PropertyExecutor.Method relatesMethod = executor -> {
-            Role role = executor.get(roleVar).asRole();
-            executor.get(var).asRelationshipType().relates(role);
-        };
-
-        PropertyExecutor relatesExecutor = PropertyExecutor.builder(relatesMethod).requires(var, roleVar).build();
-
-        // This allows users to skip stating `$roleVar sub role` when they say `$var relates $roleVar`
-        PropertyExecutor.Method isRoleMethod = executor -> executor.builder(roleVar).isRole();
-
-        PropertyExecutor isRoleExecutor = PropertyExecutor.builder(isRoleMethod).produces(roleVar).build();
-
-        Statement superRoleStatement = superRole;
-        if (superRoleStatement != null) {
-            Variable superRoleVar = superRoleStatement.var();
-            PropertyExecutor.Method subMethod = executor -> {
-                Role superRole = executor.get(superRoleVar).asRole();
-                executor.builder(roleVar).sub(superRole);
-            };
-
-            PropertyExecutor subExecutor = PropertyExecutor.builder(subMethod)
-                    .requires(superRoleVar).produces(roleVar).build();
-
-            return ImmutableSet.of(relatesExecutor, isRoleExecutor, subExecutor);
-        } else {
-            return ImmutableSet.of(relatesExecutor, isRoleExecutor);
-        }
     }
 
     @Override

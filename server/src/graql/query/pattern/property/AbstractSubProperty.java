@@ -21,12 +21,10 @@ package grakn.core.graql.query.pattern.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.executor.ConceptBuilder;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 public abstract class AbstractSubProperty extends VarProperty {
@@ -51,23 +49,6 @@ public abstract class AbstractSubProperty extends VarProperty {
     @Override
     public Stream<Statement> innerStatements() {
         return Stream.of(superType());
-    }
-
-    @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            SchemaConcept superConcept = executor.get(superType().var()).asSchemaConcept();
-
-            Optional<ConceptBuilder> builder = executor.tryBuilder(var);
-
-            if (builder.isPresent()) {
-                builder.get().sub(superConcept);
-            } else {
-                ConceptBuilder.setSuper(executor.get(var).asSchemaConcept(), superConcept);
-            }
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(superType().var()).produces(var).build());
     }
 
     @Override

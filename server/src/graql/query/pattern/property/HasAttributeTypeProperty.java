@@ -96,6 +96,10 @@ public class HasAttributeTypeProperty extends VarProperty {
         return resourceType;
     }
 
+    public boolean isRequired() {
+        return required;
+    }
+
     @Override
     public String getName() {
         return required ? "key" : "has";
@@ -136,22 +140,6 @@ public class HasAttributeTypeProperty extends VarProperty {
     @Override
     public Stream<Statement> implicitInnerStatements() {
         return Stream.of(resourceType, ownerRole, valueRole, relationOwner, relationValue);
-    }
-
-    @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Type entityTypeConcept = executor.get(var).asType();
-            AttributeType attributeTypeConcept = executor.get(resourceType.var()).asAttributeType();
-
-            if (required) {
-                entityTypeConcept.key(attributeTypeConcept);
-            } else {
-                entityTypeConcept.has(attributeTypeConcept);
-            }
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, resourceType.var()).build());
     }
 
     @Override

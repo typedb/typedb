@@ -69,15 +69,6 @@ public class RegexProperty extends VarProperty {
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            executor.get(var).asAttributeType().regex(regex());
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
-    }
-
-    @Override
     public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             AttributeType<Object> attributeType = executor.get(var).asAttributeType();

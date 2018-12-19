@@ -50,7 +50,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -79,13 +78,13 @@ public class WriteExecutor {
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
-    private WriteExecutor(Transaction tx, ImmutableSet<VarAndProperty> properties,
+    private WriteExecutor(Transaction tx, Set<VarAndProperty> properties,
                           Partition<Variable> equivalentVars,
-                          ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies) {
+                          Multimap<VarAndProperty, VarAndProperty> dependencies) {
         this.tx = tx;
-        this.properties = properties;
+        this.properties = ImmutableSet.copyOf(properties);
         this.equivalentVars = equivalentVars;
-        this.dependencies = dependencies;
+        this.dependencies = ImmutableMultimap.copyOf(dependencies);
     }
 
     static WriteExecutor create(ImmutableSet<VarAndProperty> properties, Transaction transaction) {
@@ -176,7 +175,7 @@ public class WriteExecutor {
          */
         Multimap<VarAndProperty, VarAndProperty> propertyDependencies = propertyDependencies(propToVarDeps, varToPropDeps);
 
-        return new WriteExecutor(transaction, properties, equivalentVars, ImmutableMultimap.copyOf(propertyDependencies));
+        return new WriteExecutor(transaction, properties, equivalentVars, propertyDependencies);
     }
 
     private static Multimap<VarProperty, Variable> equivalentProperties(Set<VarAndProperty> properties) {

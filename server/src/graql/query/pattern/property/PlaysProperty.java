@@ -85,16 +85,6 @@ public class PlaysProperty extends VarProperty {
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Role role = executor.get(this.role.var()).asRole();
-            executor.get(var).asType().plays(role);
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role.var()).build());
-    }
-
-    @Override
     public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();

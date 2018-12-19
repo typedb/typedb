@@ -18,12 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
-
-import java.util.Collection;
 
 /**
  * Represents the {@code when} property on a rule.
@@ -51,16 +46,6 @@ public class WhenProperty extends RuleProperty {
     @Override
     public String getName() {
         return NAME;
-    }
-
-    @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar when { ... }`
-            executor.builder(var).isRule().when(pattern());
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
     }
 
     @Override

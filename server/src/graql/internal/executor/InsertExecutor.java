@@ -19,7 +19,6 @@
 package grakn.core.graql.internal.executor;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.ConceptId;
@@ -43,6 +42,7 @@ import grakn.core.server.session.TransactionOLTP;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -51,6 +51,7 @@ import static grakn.core.common.util.CommonUtil.toImmutableList;
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 
+@SuppressWarnings("Duplicates")
 public class InsertExecutor {
 
     private final TransactionOLTP transaction;
@@ -70,7 +71,9 @@ public class InsertExecutor {
             MatchClause match = query.match();
             Set<Variable> matchVars = match.getSelectedNames();
             Set<Variable> insertVars = statements.stream().map(statement -> statement.var()).collect(toImmutableSet());
-            Set<Variable> projectedVars = Sets.intersection(matchVars, insertVars);
+
+            Set<Variable> projectedVars = new HashSet<>(matchVars);
+            projectedVars.retainAll(insertVars);
 
             Stream<ConceptMap> answers = transaction.stream(match.get(projectedVars), infer);
             return answers.map(answer -> insert(statements, answer)).collect(toList()).stream();
@@ -104,9 +107,7 @@ public class InsertExecutor {
             return relationshipPropertyExecutors((RelationshipProperty) varProperty, var);
         } else if (varProperty instanceof ValueProperty) {
             return valuePropertyExecutors((ValueProperty) varProperty, var);
-        }
-
-        else {
+        } else {
             throw GraqlQueryException.insertUnsupportedProperty(varProperty.getName());
         }
     }

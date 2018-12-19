@@ -77,15 +77,6 @@ public class DataTypeProperty extends VarProperty {
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            executor.builder(var).dataType(dataType());
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
-    }
-
-    @Override
     public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         // TODO: resolve the below issue correctly
         // undefine for datatype must be supported, because it is supported in define.

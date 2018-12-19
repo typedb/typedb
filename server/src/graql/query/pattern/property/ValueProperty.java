@@ -20,7 +20,6 @@ package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Statement;

@@ -96,10 +96,6 @@ public abstract class VarProperty {
      */
     public abstract Collection<EquivalentFragmentSet> match(Variable start);
 
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        throw GraqlQueryException.defineUnsupportedProperty(getName());
-    }
-
     public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
         throw GraqlQueryException.defineUnsupportedProperty(getName());
     }
