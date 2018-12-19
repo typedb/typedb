@@ -90,8 +90,7 @@ public abstract class ResourceAtom extends Binary{
         return new AutoValue_ResourceAtom(pattern.var(), pattern, parent, predicateVariable, predicateId, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
     }
     private static ResourceAtom create(ResourceAtom a, ReasonerQuery parent) {
-        ResourceAtom atom = create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
-        return atom;
+        return create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
     }
 
     @Override
