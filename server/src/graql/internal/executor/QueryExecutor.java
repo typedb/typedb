@@ -89,10 +89,14 @@ public class QueryExecutor {
         ReasonerQuery conjQuery = ReasonerQueries.create(conj, tx).rewrite();
         conjQuery.checkValid();
 
-        //TODO handling of empty query is a hack, need to solve in another PR
-        return !conjQuery.getAtoms().isEmpty()?
-                conjQuery.resolve() :
-                tx.stream(Graql.match(conj), false);
+        //TODO
+        // - handling of empty query is a hack, need to solve in another PR
+        // - atom parsing doesn't recognise nested statements so we do not resolve if possible
+        boolean doNotResolve = conjQuery.getAtoms().isEmpty()
+                || (conjQuery.isPositive() && !conjQuery.isRuleResolvable());
+        return doNotResolve?
+                tx.stream(Graql.match(conj), false) :
+                conjQuery.resolve();
     }
 
     public Stream<ConceptMap> match(MatchClause matchClause) {
