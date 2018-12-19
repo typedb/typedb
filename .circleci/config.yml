@@ -224,56 +224,69 @@ jobs:
             - ./artifacts
             - ./workbase
 
+  test-rbe:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *install_bazel
+    - run: bazel test //server/test/server/deduplicator:rocks-db-queue-test --test_output=errors
+    - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace
+        root: ~/grakn
+        paths:
+        - .
+
 workflows:
   version: 2
   grakn-core-ci:
     jobs:
-      - build
-      - client-java
-      - client-nodejs
-      - client-python
-      - common
-      - console
-      - graql
-      - server
-      - workbase
-      - test-integration
-      - test-integration-reasoner
-      - test-integration-reasoner-general
-      - test-integration-reasoner-components
-      - test-integration-analytics
-      - test-end-to-end
+      - test-rbe
+#      - build
+#      - client-java
+#      - client-nodejs
+#      - client-python
+#      - common
+#      - console
+#      - graql
+#      - server
+#      - workbase
+#      - test-integration
+#      - test-integration-reasoner
+#      - test-integration-reasoner-general
+#      - test-integration-reasoner-components
+#      - test-integration-analytics
+#      - test-end-to-end
 
-  build-and-deploy:
-    jobs:
-      - grakn-release-build:
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - build-workbase-mac:
-          requires:
-             - grakn-release-build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - build-workbase-linux:
-          requires:
-             - grakn-release-build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - publish-github-draft:
-          requires:
-            - build-workbase-mac
-            - build-workbase-linux
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
+#  build-and-deploy:
+#    jobs:
+#      - grakn-release-build:
+#          filters:
+#            tags:
+#              only: /^v.*/
+#            branches:
+#              ignore: /.*/
+#      - build-workbase-mac:
+#          requires:
+#             - grakn-release-build
+#          filters:
+#            tags:
+#              only: /^v.*/
+#            branches:
+#              ignore: /.*/
+#      - build-workbase-linux:
+#          requires:
+#             - grakn-release-build
+#          filters:
+#            tags:
+#              only: /^v.*/
+#            branches:
+#              ignore: /.*/
+#      - publish-github-draft:
+#          requires:
+#            - build-workbase-mac
+#            - build-workbase-linux
+#          filters:
+#            tags:
+#              only: /^v.*/
+#            branches:
+#              ignore: /.*/
