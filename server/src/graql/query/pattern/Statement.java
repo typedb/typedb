@@ -162,7 +162,7 @@ public abstract class Statement implements Pattern {
         while (!newVars.isEmpty()) {
             Statement var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(varProperty -> varProperty.innerStatements()).forEach(newVars::add);
+            var.getProperties().flatMap(VarProperty::innerStatements).forEach(newVars::add);
         }
 
         return vars;
@@ -181,24 +181,17 @@ public abstract class Statement implements Pattern {
         while (!newVars.isEmpty()) {
             Statement var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(varProperty -> varProperty.implicitInnerStatements()).forEach(newVars::add);
+            var.getProperties().flatMap(VarProperty::implicitInnerStatements).forEach(newVars::add);
         }
 
         return vars;
     }
 
     @Override
-    public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
-        // a disjunction containing only one option
-        Conjunction<Statement> conjunction = Patterns.and(Collections.singleton(this));
-        return Patterns.or(Collections.singleton(conjunction));
-    }
-
-    @Override
     public final Set<Variable> variables() {
         return innerStatements().stream()
                 .filter(v -> v.var().isUserDefinedName())
-                .map(statement -> statement.var())
+                .map(Statement::var)
                 .collect(toSet());
     }
 

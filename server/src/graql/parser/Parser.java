@@ -67,6 +67,7 @@ import java.util.stream.Stream;
 import static grakn.core.graql.query.Graql.eq;
 import static grakn.core.graql.query.pattern.Patterns.and;
 import static grakn.core.graql.query.pattern.Patterns.label;
+import static grakn.core.graql.query.pattern.Patterns.not;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -229,6 +230,11 @@ public class Parser extends GraqlBaseVisitor {
     @Override
     public Pattern visitPatternConjunction(GraqlParser.PatternConjunctionContext ctx) {
         return and(visitPatterns(ctx.patterns()));
+    }
+
+    @Override
+    public Pattern visitPatternNegation(GraqlParser.PatternNegationContext ctx) {
+        return not(visitPattern(ctx.pattern()));
     }
 
     @Override

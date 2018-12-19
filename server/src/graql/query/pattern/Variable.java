@@ -172,4 +172,9 @@ public class Variable extends Statement {
     public Pattern negate() {
         return new NegativeStatement(var(), properties());
     }
+
+    @Override
+    public boolean isPositive() {
+        return true;
+    }
 }

@@ -56,13 +56,15 @@ public class AtomicFactory {
     }
 
     /**
-     * @param vp
-     * @param var
-     * @param vars
-     * @param parent
-     * @return
+     * maps a provided var property to a reasoner atom
+     *
+     * @param vp {@link VarProperty} to map
+     * @param var    {@link Statement} this property belongs to
+     * @param vars   Vars constituting the pattern this property belongs to
+     * @param parent reasoner query this atom should belong to
+     * @return created atom
      */
-    public static Atomic createAtom(VarProperty vp, Statement var, Set<Statement> vars, ReasonerQuery parent){
+    private static Atomic createAtom(VarProperty vp, Statement var, Set<Statement> vars, ReasonerQuery parent){
         Atomic atomic = vp.mapToAtom(var, vars, parent);
         if (atomic == null) return null;
         return var.isPositive()? atomic : NegatedAtomic.create(atomic);

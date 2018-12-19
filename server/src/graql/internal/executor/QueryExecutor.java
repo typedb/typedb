@@ -29,7 +29,9 @@ import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
+import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -92,6 +94,11 @@ public class QueryExecutor {
         //validatePattern
         for (Statement statement : matchClause.getPatterns().statements()) {
             statement.getProperties().forEach(property -> property.checkValid(tx, statement));
+        }
+
+        if (!infer) {
+            GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), tx);
+            return traversal(matchClause.getPatterns().variables(), graqlTraversal);
         }
 
         try {
