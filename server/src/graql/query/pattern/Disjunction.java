@@ -59,8 +59,11 @@ public class Disjunction<T extends Pattern> implements Pattern {
                 .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
                 .collect(toSet());
 
-        return Pattern.or(dnf);
+        return Patterns.or(dnf);
     }
+
+    @Override
+    public Pattern negate() { return Patterns.and(getPatterns().stream().map(Pattern::negate).collect(toSet())); }
 
     @Override
     public Set<Variable> variables() {

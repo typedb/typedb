@@ -24,6 +24,7 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
@@ -50,7 +51,7 @@ public abstract class HasAtom extends OntologicalAtom {
 
     public static HasAtom create(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
         Label label = parent.tx().getConcept(predicateId).asType().label();
-        return create(var.has(Pattern.label(label)), predicateVar, predicateId, parent);
+        return create(var.has(Patterns.label(label)), predicateVar, predicateId, parent);
     }
 
     private static HasAtom create(TypeAtom a, ReasonerQuery parent) {

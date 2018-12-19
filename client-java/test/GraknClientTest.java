@@ -57,7 +57,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static grakn.core.graql.query.Graql.match;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;

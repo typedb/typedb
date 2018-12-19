@@ -15,6 +15,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
@@ -36,7 +37,7 @@ import java.io.InputStreamReader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -171,6 +172,6 @@ public class RuleCacheIT {
         Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Pattern.and(vars);
+        return Patterns.and(vars);
     }
 }

@@ -20,6 +20,7 @@ package grakn.core.graql.query;
 
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.CheckReturnValue;
@@ -59,7 +60,7 @@ public class GetQuery implements Query {
     }
 
     public AggregateQuery max(String var) {
-        return max(Pattern.var(var));
+        return max(Patterns.var(var));
     }
 
     public AggregateQuery max(Variable var) {
@@ -67,7 +68,7 @@ public class GetQuery implements Query {
     }
 
     public AggregateQuery mean(String var) {
-        return mean(Pattern.var(var));
+        return mean(Patterns.var(var));
     }
 
     public AggregateQuery mean(Variable var) {
@@ -75,7 +76,7 @@ public class GetQuery implements Query {
     }
 
     public AggregateQuery median(String var) {
-        return median(Pattern.var(var));
+        return median(Patterns.var(var));
     }
 
     public AggregateQuery median(Variable var) {
@@ -83,7 +84,7 @@ public class GetQuery implements Query {
     }
 
     public AggregateQuery min(String var) {
-        return min(Pattern.var(var));
+        return min(Patterns.var(var));
     }
 
     public AggregateQuery min(Variable var) {
@@ -91,7 +92,7 @@ public class GetQuery implements Query {
     }
 
     public AggregateQuery std(String var) {
-        return std(Pattern.var(var));
+        return std(Patterns.var(var));
     }
 
     public AggregateQuery std(Variable var) {
@@ -99,7 +100,7 @@ public class GetQuery implements Query {
     }
 
     public AggregateQuery sum(String var) {
-        return sum(Pattern.var(var));
+        return sum(Patterns.var(var));
     }
 
     public AggregateQuery sum(Variable var) {
@@ -107,7 +108,7 @@ public class GetQuery implements Query {
     }
 
     public GroupQuery group(String var) {
-        return group(Pattern.var(var));
+        return group(Patterns.var(var));
     }
 
     public GroupQuery group(Variable var) {

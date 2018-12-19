@@ -21,6 +21,7 @@ package grakn.core.graql.query.pattern;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.LabelProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,14 +31,14 @@ import java.util.Set;
 /**
  * Implementation of {@link Statement} interface
  */
-public class StatementImpl extends Statement {
+abstract class StatementBase extends Statement {
 
     private final Variable var;
     private final Set<VarProperty> properties;
-    protected final Logger LOG = LoggerFactory.getLogger(StatementImpl.class);
+    protected final Logger LOG = LoggerFactory.getLogger(StatementBase.class);
     private int hashCode = 0;
 
-    public StatementImpl(Variable var, Set<VarProperty> properties) {
+    StatementBase(Variable var, Set<VarProperty> properties) {
         if (var == null) {
             throw new NullPointerException("Null var");
         }
@@ -56,6 +57,16 @@ public class StatementImpl extends Statement {
     @Override
     protected Set<VarProperty> properties() {
         return properties;
+    }
+
+    @Override
+    public Conjunction<?> asConjunction() {
+        return Patterns.and(Collections.singleton(this));
+    }
+
+    @Override
+    public boolean isConjunction() {
+        return true;
     }
 
     @Override
@@ -83,12 +94,13 @@ public class StatementImpl extends Statement {
             hashCode = properties().hashCode();
             if (var().isUserDefinedName()) hashCode = 31 * hashCode + var().hashCode();
             hashCode = 31 * hashCode + (var().isUserDefinedName() ? 1 : 0);
+            hashCode = 31 * hashCode + (var().isPositive() ? 1 : 0);
         }
         return hashCode;
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         Collection<Statement> innerVars = innerStatements();
         innerVars.remove(this);
         getProperties(HasAttributeProperty.class)
@@ -96,7 +108,7 @@ public class StatementImpl extends Statement {
                 .flatMap(r -> r.innerStatements().stream())
                 .forEach(innerVars::remove);
 
-        if (innerVars.stream().anyMatch(StatementImpl::invalidInnerVariable)) {
+        if (innerVars.stream().anyMatch(StatementBase::invalidInnerVariable)) {
             LOG.warn("printing a query with inner variables, which is not supported in native Graql");
         }
 

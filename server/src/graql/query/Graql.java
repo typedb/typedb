@@ -21,6 +21,7 @@ package grakn.core.graql.query;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.parser.Parser;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.graql.query.predicate.ValuePredicate;
@@ -72,7 +73,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static MatchClause match(Collection<? extends Pattern> patterns) {
-        return new MatchClause(Pattern.and(Collections.unmodifiableSet(new HashSet<>(patterns))));
+        return new MatchClause(Patterns.and(Collections.unmodifiableSet(new HashSet<>(patterns))));
     }
 
     /**

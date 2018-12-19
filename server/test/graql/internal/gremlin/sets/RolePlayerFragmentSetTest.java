@@ -25,6 +25,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 import org.junit.Before;
@@ -41,7 +42,7 @@ import static org.mockito.Mockito.when;
 
 public class RolePlayerFragmentSetTest {
 
-    private final Variable a = Pattern.var("a"), b = Pattern.var("b"), c = Pattern.var("c"), d = Pattern.var("d");
+    private final Variable a = Patterns.var("a"), b = Patterns.var("b"), c = Patterns.var("c"), d = Patterns.var("d");
     private Transaction tx;
 
     @Before

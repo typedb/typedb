@@ -44,6 +44,7 @@ import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
@@ -108,7 +109,7 @@ public abstract class ResourceAtom extends Binary{
         Transaction tx = getParentQuery().tx();
         Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
         return RelationshipAtom.create(
-                Pattern.var()
+                Patterns.var()
                         .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), getVarName())
                         .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), getAttributeVariable())
                         .isa(typeLabel.getValue()),
@@ -128,7 +129,7 @@ public abstract class ResourceAtom extends Binary{
      */
     @Override
     public IsaAtom toIsaAtom(){
-        return IsaAtom.create(getAttributeVariable(), Pattern.var(), getTypeId(), false, getParentQuery());
+        return IsaAtom.create(getAttributeVariable(), Patterns.var(), getTypeId(), false, getParentQuery());
     }
 
     @Override
@@ -184,7 +185,7 @@ public abstract class ResourceAtom extends Binary{
                 .map(Atomic::getPattern)
                 .collect(Collectors.toSet());
         vars.add(getPattern());
-        return Pattern.and(vars);
+        return Patterns.and(vars);
     }
 
     @Override

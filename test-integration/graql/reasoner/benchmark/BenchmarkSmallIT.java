@@ -27,6 +27,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.reasoner.graph.DiagonalGraph;
@@ -91,23 +92,23 @@ public class BenchmarkSmallIT {
                     .assign(toRole, toEntity);
 
             for (int i = 1; i <= N; i++) {
-                Variable fromVar = Pattern.var().asUserDefined();
-                Variable toVar = Pattern.var().asUserDefined();
-                Statement rulePattern = Pattern
+                Variable fromVar = Patterns.var().asUserDefined();
+                Variable toVar = Patterns.var().asUserDefined();
+                Statement rulePattern = Patterns
                         .label("rule" + i)
                         .when(
-                                Pattern.and(
-                                        Pattern.var()
-                                                .rel(Pattern.label(fromRole.label()), fromVar)
-                                                .rel(Pattern.label(toRole.label()), toVar)
+                                Patterns.and(
+                                        Patterns.var()
+                                                .rel(Patterns.label(fromRole.label()), fromVar)
+                                                .rel(Patterns.label(toRole.label()), toVar)
                                                 .isa("relation" + (i - 1))
                                 )
                         )
                         .then(
-                                Pattern.and(
-                                        Pattern.var()
-                                                .rel(Pattern.label(fromRole.label()), fromVar)
-                                                .rel(Pattern.label(toRole.label()), toVar)
+                                Patterns.and(
+                                        Patterns.var()
+                                                .rel(Patterns.label(fromRole.label()), fromVar)
+                                                .rel(Patterns.label(toRole.label()), toVar)
                                                 .isa("relation" + i)
                                 )
                         );

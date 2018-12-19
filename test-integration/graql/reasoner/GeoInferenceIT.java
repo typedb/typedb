@@ -37,7 +37,7 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.List;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;

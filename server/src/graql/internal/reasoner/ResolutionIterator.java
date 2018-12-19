@@ -46,7 +46,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final ReasonerQueryImpl query;
     private final Set<ConceptMap> answers = new HashSet<>();
 
-    private final MultilevelSemanticCache cache = new MultilevelSemanticCache();
+    private final MultilevelSemanticCache cache;
     private final Stack<ResolutionState> states = new Stack<>();
 
     private ConceptMap nextAnswer = null;
@@ -54,8 +54,9 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionIterator.class);
 
-    public ResolutionIterator(ReasonerQueryImpl q){
+    public ResolutionIterator(ReasonerQueryImpl q, MultilevelSemanticCache cache){
         this.query = q;
+        this.cache = cache;
         this.reiterationRequired = q.requiresReiteration();
         states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, new HashSet<>(), cache));
     }

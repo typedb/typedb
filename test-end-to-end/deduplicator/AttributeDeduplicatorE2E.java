@@ -1,10 +1,26 @@
-package grakn.core.deduplicator;
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
+package grakn.core.deduplicator;
 
 import grakn.core.client.GraknClient;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
@@ -36,8 +52,8 @@ import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGr
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknStopped;
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertZipExists;
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.unzipGrakn;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.label;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 

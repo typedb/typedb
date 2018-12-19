@@ -38,6 +38,7 @@ import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
@@ -118,7 +119,7 @@ public class RelationshipProperty extends VarProperty {
 
         ImmutableSet<EquivalentFragmentSet> traversals = relationPlayers().stream().flatMap(relationPlayer -> {
 
-            Variable castingName = Pattern.var();
+            Variable castingName = Patterns.var();
             castingNames.add(castingName);
 
             return equivalentFragmentSetFromCasting(start, castingName, relationPlayer);
@@ -262,7 +263,7 @@ public class RelationshipProperty extends VarProperty {
         IdPredicate predicate = null;
 
         //if no isa property present generate type variable
-        Variable typeVariable = isaProp != null ? isaProp.type().var() : Pattern.var();
+        Variable typeVariable = isaProp != null ? isaProp.type().var() : Patterns.var();
 
         //Isa present
         if (isaProp != null) {

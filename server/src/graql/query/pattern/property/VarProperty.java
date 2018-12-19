@@ -109,9 +109,14 @@ public abstract class VarProperty {
         });
     }
 
-    void checkValidProperty(Transaction graph, Statement var) {
+    void checkValidProperty(Transaction graph, Statement var) { }
 
-    }
+    /**
+     * @param statement parent statement
+     * @return true if this property has an atomic equivalent
+     */
+    @CheckReturnValue
+    public boolean mapsToAtom(Statement statement){ return true;}
 
     /**
      * maps this var property to a reasoner atom

@@ -19,6 +19,7 @@
 package grakn.core.graql.query.predicate;
 
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -40,7 +41,7 @@ public class EqPredicateTest {
 
     @Test
     public void whenAnEqPredicateContainsAVariable_ItIsNotSpecific() {
-        EqPredicate predicate = new EqPredicate(Pattern.var("x"));
+        EqPredicate predicate = new EqPredicate(Patterns.var("x"));
         assertFalse(predicate.isSpecific());
     }
 }

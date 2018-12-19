@@ -29,12 +29,12 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("unchecked")
 public class PatternTest {
 
-    private final Statement x = Pattern.var("x");
-    private final Statement y = Pattern.var("y");
-    private final Statement z = Pattern.var("z");
-    private final Statement a = Pattern.var("a");
-    private final Statement b = Pattern.var("b");
-    private final Statement c = Pattern.var("c");
+    private final Statement x = Patterns.var("x");
+    private final Statement y = Patterns.var("y");
+    private final Statement z = Patterns.var("z");
+    private final Statement a = Patterns.var("a");
+    private final Statement b = Patterns.var("b");
+    private final Statement c = Patterns.var("c");
 
     @Test
     public void testVarDNF() {
@@ -84,7 +84,7 @@ public class PatternTest {
     @Test
     public void testDNFIdentity() {
         Set disjunction = set(conjunction(x, y, z), conjunction(a, b, c));
-        assertHasDNF(disjunction, Pattern.or(disjunction));
+        assertHasDNF(disjunction, Patterns.or(disjunction));
     }
 
     @Test
@@ -100,11 +100,11 @@ public class PatternTest {
     }
 
     private <T extends Pattern> Conjunction<T> conjunction(T... patterns) {
-        return Pattern.and(Sets.newHashSet(patterns));
+        return Patterns.and(Sets.newHashSet(patterns));
     }
 
     private <T extends Pattern> Disjunction<T> disjunction(T... patterns) {
-        return Pattern.or(Sets.newHashSet(patterns));
+        return Patterns.or(Sets.newHashSet(patterns));
     }
 
     private <T extends Pattern> Set<T> set(T... patterns) {

@@ -34,7 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static grakn.core.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static org.junit.Assert.assertEquals;
 
 

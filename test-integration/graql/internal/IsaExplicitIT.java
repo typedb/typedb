@@ -44,8 +44,8 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.graql.query.pattern.Pattern.and;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.and;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;

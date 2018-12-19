@@ -18,17 +18,11 @@
 
 package grakn.core.graql.query.pattern;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.parser.Parser;
-
-import javax.annotation.CheckReturnValue;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.CheckReturnValue;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -42,7 +36,6 @@ import static java.util.stream.Collectors.toSet;
  */
 public interface Pattern {
 
-    AtomicLong counter = new AtomicLong(System.currentTimeMillis() * 1000);
     Parser parser = new Parser();
 
     static Pattern parse(String pattern) {
@@ -51,90 +44,6 @@ public interface Pattern {
 
     static List<Pattern> parseList(String pattern) {
         return parser.parsePatterns(pattern);
-    }
-
-    /**
-     * @param name the name of the variable
-     * @return a new query variable
-     */
-    @CheckReturnValue
-    static Variable var(String name) {
-        return new Variable(name, Variable.Type.UserDefined);
-    }
-
-    /**
-     * @return a new, anonymous query variable
-     */
-    @CheckReturnValue
-    static Variable var() {
-        return new Variable(Long.toString(counter.getAndIncrement()), Variable.Type.Generated);
-    }
-
-    /**
-     * @param label the label of a concept
-     * @return a variable pattern that identifies a concept by label
-     */
-    @CheckReturnValue
-    static Statement label(String label) {
-        return var().label(label);
-    }
-
-    /**
-     * @param label the label of a concept
-     * @return a variable pattern that identifies a concept by label
-     */
-    @CheckReturnValue
-    static Statement label(Label label) {
-        return var().label(label);
-    }
-
-    /**
-     * @param patterns an array of patterns to match
-     * @return a pattern that will match only when all contained patterns match
-     */
-    @CheckReturnValue
-    static Pattern and(Pattern... patterns) {
-        return and(Arrays.asList(patterns));
-    }
-
-    /**
-     * @param patterns a collection of patterns to match
-     * @return a pattern that will match only when all contained patterns match
-     */
-    @CheckReturnValue
-    static Pattern and(Collection<? extends Pattern> patterns) {
-        return and(Sets.newHashSet(patterns));
-    }
-
-    static <T extends Pattern> Conjunction<T> and(Set<T> patterns) {
-        return new Conjunction<>(patterns);
-    }
-
-    /**
-     * @param patterns an array of patterns to match
-     * @return a pattern that will match when any contained pattern matches
-     */
-    @CheckReturnValue
-    static Pattern or(Pattern... patterns) {
-        return or(Arrays.asList(patterns));
-    }
-
-    /**
-     * @param patterns a collection of patterns to match
-     * @return a pattern that will match when any contained pattern matches
-     */
-    @CheckReturnValue
-    static Pattern or(Collection<? extends Pattern> patterns) {
-        // Simplify representation when there is only one alternative
-        if (patterns.size() == 1) {
-            return Iterables.getOnlyElement(patterns);
-        }
-
-        return or(Sets.newHashSet(patterns));
-    }
-
-    static <T extends Pattern> Disjunction<T> or(Set<T> patterns) {
-        return new Disjunction<>(patterns);
     }
 
     /**
@@ -178,6 +87,14 @@ public interface Pattern {
     }
 
     /**
+     * @return this {@link Pattern} as a {@link Negation}, if it is one.
+     */
+    @CheckReturnValue
+    default Negation<?> asNegation() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * @return true if this {@link Pattern} is a {@link Statement}
      */
     @CheckReturnValue
@@ -202,6 +119,14 @@ public interface Pattern {
     }
 
     /**
+     * @return true if this {@link Pattern} is a {@link Negation}
+     */
+    @CheckReturnValue
+    default boolean isNegation() {
+        return false;
+    }
+
+    /**
      * Get the disjunctive normal form of this pattern group.
      * This means the pattern group will be transformed into a number of conjunctive patterns, where each is disjunct.
      *
@@ -213,4 +138,20 @@ public interface Pattern {
      */
     @CheckReturnValue
     Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm();
+
+    /**
+     * @return this pattern negated
+     */
+    @CheckReturnValue
+    Pattern negate();
+
+    /**
+     * @return true if this pattern contains only positive patterns
+     */
+    @CheckReturnValue
+    default boolean isPositive(){
+        return getDisjunctiveNormalForm().getPatterns().stream()
+                .flatMap(p -> p.getPatterns().stream())
+                .allMatch(Pattern::isPositive);
+    }
 }

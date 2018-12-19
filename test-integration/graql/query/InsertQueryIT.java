@@ -36,8 +36,8 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
@@ -67,8 +67,8 @@ import java.util.Set;
 import static grakn.core.common.exception.ErrorMessage.NO_PATTERNS;
 import static grakn.core.graql.internal.Schema.MetaSchema.ENTITY;
 import static grakn.core.graql.query.Graql.gt;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.label;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static java.util.stream.Collectors.toSet;
@@ -582,7 +582,7 @@ public class InsertQueryIT {
 
         // We have to construct it this way because you can't have two `isa`s normally
         // TODO: less bad way?
-        Statement varPattern = new StatementImpl(
+        Statement varPattern = new PositiveStatement(
                 var("x"),
                 ImmutableSet.of(new IsaProperty(label("movie")), new IsaProperty(label("person")))
         );

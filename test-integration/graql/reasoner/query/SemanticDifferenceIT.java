@@ -35,6 +35,7 @@ import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -89,7 +90,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(Pattern.var("x"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
+                            new VariableDefinition(Patterns.var("x"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -115,7 +116,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(Pattern.var("x"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
+                            new VariableDefinition(Patterns.var("x"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -140,8 +141,8 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(Pattern.var("role"), null, role, new HashSet<>(), new HashSet<>()),
-                            new VariableDefinition(Pattern.var("x"), null, null, Sets.newHashSet(role), new HashSet<>())
+                            new VariableDefinition(Patterns.var("role"), null, role, new HashSet<>(), new HashSet<>()),
+                            new VariableDefinition(Patterns.var("x"), null, null, Sets.newHashSet(role), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -167,7 +168,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(Pattern.var("x"), null, null, Sets.newHashSet(subRole), new HashSet<>())
+                            new VariableDefinition(Patterns.var("x"), null, null, Sets.newHashSet(subRole), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -192,8 +193,8 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(Pattern.var("x"), null, null, Sets.newHashSet(subRole1), new HashSet<>()),
-                            new VariableDefinition(Pattern.var("y"), null, null, Sets.newHashSet(subRole2), new HashSet<>())
+                            new VariableDefinition(Patterns.var("x"), null, null, Sets.newHashSet(subRole1), new HashSet<>()),
+                            new VariableDefinition(Patterns.var("y"), null, null, Sets.newHashSet(subRole2), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -270,6 +271,6 @@ public class SemanticDifferenceIT {
         Set<Statement> vars = Pattern.parse(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Pattern.and(vars);
+        return Patterns.and(vars);
     }
 }

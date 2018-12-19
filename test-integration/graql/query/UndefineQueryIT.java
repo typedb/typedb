@@ -30,6 +30,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
@@ -51,8 +52,8 @@ import java.util.Collection;
 
 import static grakn.core.graql.concept.AttributeType.DataType.INTEGER;
 import static grakn.core.graql.concept.AttributeType.DataType.STRING;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.label;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.arrayContaining;
@@ -69,11 +70,11 @@ import static org.junit.Assert.assertTrue;
 
 public class UndefineQueryIT {
 
-    private static final Statement THING = Pattern.label(Schema.MetaSchema.THING.getLabel());
-    private static final Statement ENTITY = Pattern.label(Schema.MetaSchema.ENTITY.getLabel());
-    private static final Statement RELATIONSHIP = Pattern.label(Schema.MetaSchema.RELATIONSHIP.getLabel());
-    private static final Statement ATTRIBUTE = Pattern.label(Schema.MetaSchema.ATTRIBUTE.getLabel());
-    private static final Statement ROLE = Pattern.label(Schema.MetaSchema.ROLE.getLabel());
+    private static final Statement THING = Patterns.label(Schema.MetaSchema.THING.getLabel());
+    private static final Statement ENTITY = Patterns.label(Schema.MetaSchema.ENTITY.getLabel());
+    private static final Statement RELATIONSHIP = Patterns.label(Schema.MetaSchema.RELATIONSHIP.getLabel());
+    private static final Statement ATTRIBUTE = Patterns.label(Schema.MetaSchema.ATTRIBUTE.getLabel());
+    private static final Statement ROLE = Patterns.label(Schema.MetaSchema.ROLE.getLabel());
     private static final Label NEW_TYPE = Label.of("new-type");
     private static final Variable x = var("x");
 

@@ -47,8 +47,8 @@ import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.INVALID_VALUE;
 import static grakn.core.common.exception.ErrorMessage.NO_PATTERNS;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.label;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 

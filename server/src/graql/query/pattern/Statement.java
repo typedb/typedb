@@ -188,10 +188,10 @@ public abstract class Statement implements Pattern {
     }
 
     @Override
-    public final Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
+    public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
         // a disjunction containing only one option
-        Conjunction<Statement> conjunction = Pattern.and(Collections.singleton(this));
-        return Pattern.or(Collections.singleton(conjunction));
+        Conjunction<Statement> conjunction = Patterns.and(Collections.singleton(this));
+        return Patterns.or(Collections.singleton(conjunction));
     }
 
     @Override
@@ -268,7 +268,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type, ValuePredicate predicate) {
-        return has(type, Pattern.var().val(predicate));
+        return has(type, Patterns.var().val(predicate));
     }
 
     /**
@@ -292,7 +292,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(Label type, Statement attribute) {
-        return has(type, attribute, Pattern.var());
+        return has(type, attribute, Patterns.var());
     }
 
     /**
@@ -315,7 +315,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isaExplicit(String type) {
-        return isaExplicit(Pattern.label(type));
+        return isaExplicit(Patterns.label(type));
     }
 
     /**
@@ -333,7 +333,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isa(String type) {
-        return isa(Pattern.label(type));
+        return isa(Patterns.label(type));
     }
 
     /**
@@ -351,7 +351,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement sub(String type) {
-        return sub(Pattern.label(type));
+        return sub(Patterns.label(type));
     }
 
     /**
@@ -369,7 +369,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement subExplicit(String type) {
-        return subExplicit(Pattern.label(type));
+        return subExplicit(Patterns.label(type));
     }
 
     /**
@@ -405,7 +405,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public Statement relates(String roleType, @Nullable String superRoleType) {
-        return relates(Pattern.label(roleType), superRoleType == null ? null : Pattern.label(superRoleType));
+        return relates(Patterns.label(roleType), superRoleType == null ? null : Patterns.label(superRoleType));
     }
 
     /**
@@ -423,7 +423,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement plays(String type) {
-        return plays(Pattern.label(type));
+        return plays(Patterns.label(type));
     }
 
     /**
@@ -441,7 +441,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type) {
-        return has(Pattern.label(type));
+        return has(Patterns.label(type));
     }
 
     /**
@@ -459,7 +459,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement key(String type) {
-        return key(Pattern.var().label(type));
+        return key(Patterns.var().label(type));
     }
 
     /**
@@ -479,7 +479,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(String roleplayer) {
-        return rel(Pattern.var(roleplayer));
+        return rel(Patterns.var(roleplayer));
     }
 
     /**
@@ -502,7 +502,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(String role, String roleplayer) {
-        return rel(Pattern.label(role), Pattern.var(roleplayer));
+        return rel(Patterns.label(role), Patterns.var(roleplayer));
     }
 
     /**
@@ -514,7 +514,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement role, String roleplayer) {
-        return rel(role, Pattern.var(roleplayer));
+        return rel(role, Patterns.var(roleplayer));
     }
 
     /**
@@ -526,7 +526,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(String role, Statement roleplayer) {
-        return rel(Pattern.label(role), roleplayer);
+        return rel(Patterns.label(role), roleplayer);
     }
 
     /**
@@ -597,7 +597,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement neq(String var) {
-        return neq(Pattern.var(var));
+        return neq(Patterns.var(var));
     }
 
     /**
@@ -660,11 +660,11 @@ public abstract class Statement implements Pattern {
                 throw GraqlQueryException.conflictingProperties(this, property, other);
             });
         }
-        return new StatementImpl(var(), Sets.union(properties(), ImmutableSet.of(property)));
+        return Patterns.statement(var(), Sets.union(properties(), ImmutableSet.of(property)), isPositive());
     }
 
     private Statement removeProperty(VarProperty property) {
-        return new StatementImpl(var(), Sets.difference(properties(), ImmutableSet.of(property)));
+        return Patterns.statement(var(), Sets.difference(properties(), ImmutableSet.of(property)), isPositive());
     }
 
 }

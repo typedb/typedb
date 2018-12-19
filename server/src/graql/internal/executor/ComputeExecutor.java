@@ -66,6 +66,7 @@ import grakn.core.graql.internal.analytics.Utility;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -686,8 +687,8 @@ class ComputeExecutor<T extends Answer> {
         for (Label attributeType : targetTypeLabels()) {
             for (Label type : scopeTypeLabels()) {
                 Boolean patternExist = tx.stream(Graql.match(
-                        Pattern.var("x").has(attributeType, Pattern.var()),
-                        Pattern.var("x").isa(Pattern.label(type))
+                        Patterns.var("x").has(attributeType, Patterns.var()),
+                        Patterns.var("x").isa(Patterns.label(type))
                 ), false).iterator().hasNext();
                 if (patternExist) return true;
             }
@@ -769,9 +770,9 @@ class ComputeExecutor<T extends Answer> {
     private boolean scopeContainsInstance() {
         if (scopeTypeLabels().isEmpty()) return false;
         List<Pattern> checkSubtypes = scopeTypeLabels().stream()
-                .map(type -> Pattern.var("x").isa(Pattern.label(type))).collect(Collectors.toList());
+                .map(type -> Patterns.var("x").isa(Patterns.label(type))).collect(Collectors.toList());
 
-        return tx.stream(Graql.match(Pattern.or(checkSubtypes)), false).iterator().hasNext();
+        return tx.stream(Graql.match(Patterns.or(checkSubtypes)), false).iterator().hasNext();
     }
 
     /**

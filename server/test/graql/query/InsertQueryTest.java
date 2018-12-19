@@ -25,7 +25,7 @@ import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
 import org.junit.Test;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;

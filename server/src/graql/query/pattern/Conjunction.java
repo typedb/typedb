@@ -74,11 +74,14 @@ public class Conjunction<T extends Pattern> implements Pattern {
                 .map(Conjunction::fromConjunctions)
                 .collect(toSet());
 
-        return Pattern.or(dnf);
+        return Patterns.or(dnf);
 
         // Wasn't that a horrible function? Here it is in Haskell:
         //     dnf = map fromConjunctions . sequence . map getDisjunctiveNormalForm . patterns
     }
+
+    @Override
+    public Pattern negate() { return Patterns.or(getPatterns().stream().map(Pattern::negate).collect(toSet())); }
 
     @Override
     public Set<Variable> variables() {
@@ -107,7 +110,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
 
     private static <U extends Pattern> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {
         Set<U> patterns = conjunctions.stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Pattern.and(patterns);
+        return Patterns.and(patterns);
     }
 
     @Override

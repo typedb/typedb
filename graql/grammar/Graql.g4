@@ -88,13 +88,19 @@ computeArg          : MIN_K     '=' INTEGER         # computeArgMinK            
 // =====================================================================================================================
 
 patterns       : (pattern ';')+ ;
-pattern        : statement                     # patternStatement
+pattern        : statement                    # varPatternCase
+               | 'NOT' '{' pattern '}'         # patternNegation
                | pattern 'or' pattern          # patternDisjunction
                | '{' patterns '}'              # patternConjunction
                ;
 
 statements    : (statement ';')+ ;
-statement     : VARIABLE | variable? property (','? property)* ;
+statement     : positiveStatement
+               | negativeStatement
+               ;
+
+positiveStatement : VARIABLE | variable? property (','? property)* ;
+negativeStatement : 'NOT' positiveStatement ;
 
 property       : 'isa' variable                     # isa
                | 'isa!' variable                    # isaExplicit

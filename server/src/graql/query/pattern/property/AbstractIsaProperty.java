@@ -82,11 +82,17 @@ abstract class AbstractIsaProperty extends VarProperty {
         });
     }
 
+    @Override
+    public boolean mapsToAtom(Statement var) {
+        //IsaProperty is unique within a var, so skip if this is a relation
+        return !var.hasProperty(RelationshipProperty.class);
+    }
+
     @Nullable
     @Override
     public final Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
         //IsaProperty is unique within a var, so skip if this is a relation
-        if (var.hasProperty(RelationshipProperty.class)) return null;
+        if (!mapsToAtom(var)) return null;
 
         Variable varName = var.var().asUserDefined();
         Statement typePattern = this.type();

@@ -21,6 +21,7 @@ package grakn.core.graql.query;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
@@ -77,7 +78,7 @@ public class MatchClause {
      */
     @CheckReturnValue
     public GetQuery get(String var, String... vars) {
-        Set<Variable> varSet = Stream.concat(Stream.of(var), Stream.of(vars)).map(Pattern::var).collect(Collectors.toSet());
+        Set<Variable> varSet = Stream.concat(Stream.of(var), Stream.of(vars)).map(Patterns::var).collect(Collectors.toSet());
         return get(varSet);
     }
 
@@ -135,7 +136,7 @@ public class MatchClause {
      */
     @CheckReturnValue
     public final DeleteQuery delete(String var, String... vars) {
-        Set<Variable> varSet = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Pattern::var).collect(Collectors.toSet());
+        Set<Variable> varSet = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Patterns::var).collect(Collectors.toSet());
         return delete(varSet);
     }
 

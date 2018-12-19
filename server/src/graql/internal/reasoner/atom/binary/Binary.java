@@ -36,6 +36,7 @@ import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 
@@ -158,7 +159,7 @@ public abstract class Binary extends Atom {
     protected Pattern createCombinedPattern(){
         Set<Pattern> vars = Sets.newHashSet((Pattern) getPattern());
         if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern());
-        return Pattern.and(vars);
+        return Patterns.and(vars);
     }
 
     @Override

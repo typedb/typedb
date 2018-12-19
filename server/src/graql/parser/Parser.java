@@ -36,6 +36,7 @@ import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.predicate.ValuePredicate;
@@ -64,8 +65,8 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.query.Graql.eq;
-import static grakn.core.graql.query.pattern.Pattern.and;
-import static grakn.core.graql.query.pattern.Pattern.label;
+import static grakn.core.graql.query.pattern.Patterns.and;
+import static grakn.core.graql.query.pattern.Patterns.label;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -217,7 +218,7 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public Pattern visitPatternDisjunction(GraqlParser.PatternDisjunctionContext ctx) {
-        return Pattern.or(ctx.pattern().stream().map(this::visitPattern).collect(toList()));
+        return Patterns.or(ctx.pattern().stream().map(this::visitPattern).collect(toList()));
     }
 
     @Override
@@ -231,14 +232,25 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public Statement visitStatement(GraqlParser.StatementContext ctx) {
+    public Statement visitPositiveStatement(GraqlParser.PositiveStatementContext ctx) {
         Statement var;
+
         if (ctx.VARIABLE() != null) {
             var = getVariable(ctx.VARIABLE());
         } else {
             var = visitVariable(ctx.variable());
         }
         return getVarProperties(ctx.property()).apply(var);
+    }
+
+    @Override
+    public Statement visitNegativeStatement (GraqlParser.NegativeStatementContext ctx) {
+        return visitPositiveStatement(ctx.positiveStatement()).negate().asStatement();
+    }
+
+    @Override
+    public Statement visitStatement(GraqlParser.StatementContext ctx) {
+        return ctx.positiveStatement() != null? visitPositiveStatement(ctx.positiveStatement()) : visitNegativeStatement(ctx.negativeStatement());
     }
 
     @Override
@@ -270,8 +282,8 @@ public class Parser extends GraqlBaseVisitor {
     public UnaryOperator<Statement> visitPropHas(GraqlParser.PropHasContext ctx) {
         Label type = visitLabel(ctx.label());
 
-        Statement relation = Optional.ofNullable(ctx.relation).map(this::getVariable).orElseGet(Pattern::var);
-        Statement resource = Optional.ofNullable(ctx.resource).map(this::getVariable).orElseGet(Pattern::var);
+        Statement relation = Optional.ofNullable(ctx.relation).map(this::getVariable).orElseGet(Patterns::var);
+        Statement resource = Optional.ofNullable(ctx.resource).map(this::getVariable).orElseGet(Patterns::var);
 
         if (ctx.predicate() != null) {
             resource = resource.val(visitPredicate(ctx.predicate()));
@@ -396,7 +408,7 @@ public class Parser extends GraqlBaseVisitor {
     @Override
     public Statement visitVariable(GraqlParser.VariableContext ctx) {
         if (ctx == null) {
-            return Pattern.var();
+            return Patterns.var();
         } else if (ctx.label() != null) {
             return label(visitLabel(ctx.label()));
         } else {
@@ -534,7 +546,7 @@ public class Parser extends GraqlBaseVisitor {
 
     private Variable getVariable(Token variable) {
         // Remove '$' prefix
-        return Pattern.var(variable.getText().substring(1));
+        return Patterns.var(variable.getText().substring(1));
     }
 
     private String getRegex(TerminalNode string) {

@@ -22,15 +22,15 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
+import java.util.Collections;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * A variable in a Graql query
  */
 public class Variable extends Statement {
 
-    private static final Pattern VALID_VAR = Pattern.compile("[a-zA-Z0-9_-]+");
+    private static final java.util.regex.Pattern VALID_VAR = java.util.regex.Pattern.compile("[a-zA-Z0-9_-]+");
 
     private final String name;
     private final Type type;
@@ -161,5 +161,15 @@ public class Variable extends Statement {
         };
 
         public abstract char prefix();
+    }
+
+    @Override
+    public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
+        return Patterns.or(Collections.singleton(Patterns.and(Collections.singleton(this))));
+    }
+
+    @Override
+    public Pattern negate() {
+        return new NegativeStatement(var(), properties());
     }
 }

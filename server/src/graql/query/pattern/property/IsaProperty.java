@@ -24,6 +24,7 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
@@ -44,7 +45,7 @@ public class IsaProperty extends AbstractIsaProperty {
     private final Statement type;
 
     public IsaProperty(Statement type) {
-        this(type, Pattern.var());
+        this(type, Patterns.var());
     }
 
     public IsaProperty(Statement type, Variable directTypeVar) {

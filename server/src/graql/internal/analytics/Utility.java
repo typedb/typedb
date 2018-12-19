@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.var;
 
 /**
  * Some helper methods for MapReduce and vertex program.

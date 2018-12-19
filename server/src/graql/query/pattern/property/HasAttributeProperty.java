@@ -35,19 +35,21 @@ import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
-import static grakn.core.graql.query.pattern.Pattern.label;
+import static grakn.core.graql.query.pattern.Patterns.label;
 import static grakn.core.graql.util.StringUtil.typeLabelToString;
 import static java.util.stream.Collectors.joining;
 
@@ -153,8 +155,8 @@ public class HasAttributeProperty extends VarProperty {
 
         Variable relationVariable = relationship().var();
         Variable attributeVariable = attribute().var().asUserDefined();
-        Variable predicateVariable = Pattern.var();
-        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent);
+        Variable predicateVariable = Patterns.var();
+        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent).collect(Collectors.toSet());
 
         IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
         Statement typeVar = isaProp != null ? isaProp.type() : null;
@@ -180,8 +182,8 @@ public class HasAttributeProperty extends VarProperty {
         Label hasValueRole = Schema.ImplicitType.HAS_VALUE.getLabel(type);
         Label keyValueRole = Schema.ImplicitType.KEY_VALUE.getLabel(type);
 
-        Variable edge1 = Pattern.var();
-        Variable edge2 = Pattern.var();
+        Variable edge1 = Patterns.var();
+        Variable edge2 = Patterns.var();
 
         return ImmutableSet.of(
                 //owner rolePlayer edge

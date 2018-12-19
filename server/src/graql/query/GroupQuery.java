@@ -19,6 +19,7 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Variable;
 
 public class GroupQuery implements Query {
@@ -51,7 +52,7 @@ public class GroupQuery implements Query {
     }
 
     public GroupAggregateQuery max(String var) {
-        return max(Pattern.var(var));
+        return max(Patterns.var(var));
     }
 
     public GroupAggregateQuery max(Variable var) {
@@ -59,7 +60,7 @@ public class GroupQuery implements Query {
     }
 
     public GroupAggregateQuery mean(String var) {
-        return mean(Pattern.var(var));
+        return mean(Patterns.var(var));
     }
 
     public GroupAggregateQuery mean(Variable var) {
@@ -67,7 +68,7 @@ public class GroupQuery implements Query {
     }
 
     public GroupAggregateQuery median(String var) {
-        return median(Pattern.var(var));
+        return median(Patterns.var(var));
     }
 
     public GroupAggregateQuery median(Variable var) {
@@ -75,7 +76,7 @@ public class GroupQuery implements Query {
     }
 
     public GroupAggregateQuery min(String var) {
-        return min(Pattern.var(var));
+        return min(Patterns.var(var));
     }
 
     public GroupAggregateQuery min(Variable var) {
@@ -83,7 +84,7 @@ public class GroupQuery implements Query {
     }
 
     public GroupAggregateQuery std(String var) {
-        return std(Pattern.var(var));
+        return std(Patterns.var(var));
     }
 
     public GroupAggregateQuery std(Variable var) {
@@ -91,7 +92,7 @@ public class GroupQuery implements Query {
     }
 
     public GroupAggregateQuery sum(String var) {
-        return sum(Pattern.var(var));
+        return sum(Patterns.var(var));
     }
 
     public GroupAggregateQuery sum(Variable var) {

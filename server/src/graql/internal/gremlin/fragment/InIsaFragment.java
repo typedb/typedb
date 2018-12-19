@@ -46,7 +46,7 @@ import static grakn.core.graql.internal.Schema.EdgeLabel.SHARD;
 import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 import static grakn.core.graql.internal.Schema.VertexProperty.IS_IMPLICIT;
 import static grakn.core.graql.internal.Schema.VertexProperty.LABEL_ID;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.var;
 
 /**
  * A fragment representing traversing an isa edge from type to instance.

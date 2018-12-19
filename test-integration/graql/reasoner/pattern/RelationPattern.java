@@ -26,6 +26,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
@@ -33,6 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static grakn.core.graql.query.pattern.Patterns.var;
 
 public abstract class RelationPattern extends QueryPattern {
 
@@ -87,13 +90,13 @@ public abstract class RelationPattern extends QueryPattern {
     private static List<Pattern> generateRelationPatterns(
             Multimap<Label, Pair<Label, List<ConceptId>>> spec,
             List<ConceptId> relationIds){
-        Variable relationVar = !relationIds.isEmpty()? Pattern.var().asUserDefined() : Pattern.var();
+        Variable relationVar = !relationIds.isEmpty()? var().asUserDefined() : var();
         Statement[] basePattern = {relationVar};
         List<List<Pattern>> rpTypePatterns = new ArrayList<>();
         List<List<Pattern>> rpIdPatterns = new ArrayList<>();
         Multimap<Label, Statement> rps = HashMultimap.create();
         spec.entries().forEach(entry -> {
-            Statement rolePlayer = Pattern.var().asUserDefined();
+            Statement rolePlayer = var().asUserDefined();
             Label role = entry.getKey();
             Label type = entry.getValue().getKey();
             List<ConceptId> ids = entry.getValue().getValue();
@@ -112,7 +115,7 @@ public abstract class RelationPattern extends QueryPattern {
             rpTypePatterns.add(typePattern);
         });
         List<Pattern> relIdPatterns = new ArrayList<>();
-        relationIds.forEach(relId -> relIdPatterns.add(Pattern.and(basePattern[0], relationVar.id(relId))));
+        relationIds.forEach(relId -> relIdPatterns.add(Patterns.and(basePattern[0], relationVar.id(relId))));
 
         List<Pattern> patterns = new ArrayList<>();
 
@@ -129,7 +132,7 @@ public abstract class RelationPattern extends QueryPattern {
                         .collect(Collectors.toList()))
                 .forEach(product -> {
                     Pattern[] pattern = {basePattern[0]};
-                    product.forEach(p -> pattern[0] = Pattern.and(pattern[0], p));
+                    product.forEach(p -> pattern[0] = Patterns.and(pattern[0], p));
                     if (!patterns.contains(pattern[0])) patterns.add(pattern[0]);
                 });
         return Stream.concat(

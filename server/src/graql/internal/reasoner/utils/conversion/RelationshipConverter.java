@@ -22,6 +22,7 @@ import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
@@ -37,21 +38,21 @@ import java.util.Set;
 class RelationshipConverter implements ConceptConverter<Relationship> {
 
     public Pattern pattern(Relationship concept) {
-        Statement relationPattern = Pattern.var();
+        Statement relationPattern = Patterns.var();
         Set<Pattern> idPatterns = new HashSet<>();
 
         for (Map.Entry<Role, Set<Thing>> entry : concept.rolePlayersMap().entrySet()) {
             for (Thing var : entry.getValue()) {
-                Variable rolePlayer = Pattern.var();
-                relationPattern = relationPattern.rel(Pattern.label(entry.getKey().label()), rolePlayer);
+                Variable rolePlayer = Patterns.var();
+                relationPattern = relationPattern.rel(Patterns.label(entry.getKey().label()), rolePlayer);
                 idPatterns.add(rolePlayer.asUserDefined().id(var.id()));
             }
         }
-        relationPattern = relationPattern.isa(Pattern.label(concept.type().label()));
+        relationPattern = relationPattern.isa(Patterns.label(concept.type().label()));
 
         Pattern pattern = relationPattern;
         for (Pattern idPattern : idPatterns) {
-            pattern = Pattern.and(pattern, idPattern);
+            pattern = Patterns.and(pattern, idPattern);
         }
         return pattern;
     }

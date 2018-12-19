@@ -20,6 +20,7 @@ package grakn.core.graql.internal.reasoner.utils.conversion;
 
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Variable;
 
 /**
@@ -30,9 +31,9 @@ import grakn.core.graql.query.pattern.Variable;
 class EntityConverter implements ConceptConverter<Entity>{
 
     public Pattern pattern(Entity concept) {
-        Variable entityVar = Pattern.var().asUserDefined();
+        Variable entityVar = Patterns.var().asUserDefined();
         return entityVar
-                .isa(Pattern.label(concept.type().label()))
+                .isa(Patterns.label(concept.type().label()))
                 .id(concept.id());
     }
 }

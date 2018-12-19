@@ -50,6 +50,7 @@ import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.internal.reasoner.state.AnswerState;
 import grakn.core.graql.internal.reasoner.state.ConjunctiveState;
 import grakn.core.graql.internal.reasoner.state.CumulativeState;
+import grakn.core.graql.internal.reasoner.state.NegatedConjunctiveState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
@@ -58,6 +59,7 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.session.TransactionOLTP;
@@ -75,7 +77,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.var;
 
 /**
  * Base reasoner query providing resolution and atom handling facilities for conjunctive graql queries.
@@ -208,7 +210,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public void checkValid() { getAtoms().forEach(Atomic::checkValid);}
 
     public Conjunction<Pattern> getPattern() {
-        return Pattern.and(
+        return Patterns.and(
                 getAtoms().stream()
                         .map(Atomic::getCombinedPattern)
                         .flatMap(p -> p.statements().stream())
@@ -227,6 +229,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public boolean isRuleResolvable() {
         return selectAtoms().anyMatch(Atom::isRuleResolvable);
     }
+
+    @Override
+    public boolean isPositive() { return getAtoms().stream().allMatch(Atomic::isPositive); }
 
     /**
      * @return true if this query contains disconnected atoms that are unbounded
@@ -471,7 +476,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Stream<ConceptMap> resolve() {
-        return new ResolutionIterator(this).hasStream();
+        return resolve(new MultilevelSemanticCache());
+    }
+
+    public Stream<ConceptMap> resolve(MultilevelSemanticCache cache){
+        return new ResolutionIterator(this, cache).hasStream();
     }
 
     /**
@@ -483,7 +492,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return resolution subGoal formed from this query
      */
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
-        return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
+        ConjunctiveState conjunctiveState = new ConjunctiveState(this, sub, u, parent, subGoals, cache);
+        return isPositive()? conjunctiveState : new NegatedConjunctiveState(conjunctiveState);
     }
 
     /**

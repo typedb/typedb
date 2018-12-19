@@ -39,8 +39,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static grakn.core.common.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.label;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static org.junit.Assert.assertEquals;

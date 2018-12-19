@@ -65,6 +65,7 @@ import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
@@ -787,7 +788,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     RelationshipProperty.RolePlayer rp = entry.getKey();
                     Variable varName = rp.getPlayer().var();
                     Role role = Iterables.getOnlyElement(entry.getValue());
-                    Statement rolePattern = Pattern.var().label(role.label());
+                    Statement rolePattern = Patterns.var().label(role.label());
                     inferredRelationPlayers.add(new RelationshipProperty.RolePlayer(rolePattern, varName));
                     allocatedRelationPlayers.add(rp);
                 });
@@ -801,7 +802,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
                     rolePattern = rolePattern != null ?
                             rolePattern.var().label(metaRole.label()) :
-                            Pattern.var().label(metaRole.label());
+                            Patterns.var().label(metaRole.label());
                     inferredRelationPlayers.add(new RelationshipProperty.RolePlayer(rolePattern, varName));
                 });
 
@@ -1103,7 +1104,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Override
     public RelationshipAtom rewriteWithRelationVariable(){
-        Statement newVar = Pattern.var().asUserDefined();
+        Statement newVar = Patterns.var().asUserDefined();
         Statement relVar = getPattern().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.type()))
                 .orElse(newVar);

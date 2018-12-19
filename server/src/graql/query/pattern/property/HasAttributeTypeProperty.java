@@ -33,6 +33,7 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
@@ -44,7 +45,7 @@ import java.util.stream.Stream;
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY;
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY_OWNER;
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY_VALUE;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.var;
 
 /**
  * Represents the {@code has} and {@code key} properties on a {@link Type}.
@@ -70,11 +71,11 @@ public class HasAttributeTypeProperty extends VarProperty {
                 () -> GraqlQueryException.noLabelSpecifiedForHas(resourceType)
         );
 
-        Statement role = Pattern.label(Schema.MetaSchema.ROLE.getLabel());
+        Statement role = Patterns.label(Schema.MetaSchema.ROLE.getLabel());
 
         Statement ownerRole = var().sub(role);
         Statement valueRole = var().sub(role);
-        Statement relationType = var().sub(Pattern.label(Schema.MetaSchema.RELATIONSHIP.getLabel()));
+        Statement relationType = var().sub(Patterns.label(Schema.MetaSchema.RELATIONSHIP.getLabel()));
 
         // If a key, limit only to the implicit key type
         if (required) {
@@ -152,7 +153,7 @@ public class HasAttributeTypeProperty extends VarProperty {
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         ConceptId predicateId = schemaConcept != null ? schemaConcept.id() : null;
         //isa part
-        Statement resVar = varName.has(Pattern.label(label));
+        Statement resVar = varName.has(Patterns.label(label));
         return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 

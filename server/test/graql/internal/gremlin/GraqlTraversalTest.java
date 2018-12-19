@@ -30,8 +30,9 @@ import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Patterns;
+import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
@@ -59,8 +60,8 @@ import static grakn.core.graql.internal.gremlin.fragment.Fragments.outRelates;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.outSub;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.value;
 import static grakn.core.graql.query.Graql.gt;
-import static grakn.core.graql.query.pattern.Pattern.and;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.and;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -73,13 +74,13 @@ import static org.mockito.Mockito.when;
 
 public class GraqlTraversalTest {
 
-    private static final Variable a = Pattern.var("a");
-    private static final Variable b = Pattern.var("b");
-    private static final Variable c = Pattern.var("c");
-    private static final Variable x = Pattern.var("x");
-    private static final Variable y = Pattern.var("y");
-    private static final Variable z = Pattern.var("z");
-    private static final Variable xx = Pattern.var("xx");
+    private static final Variable a = Patterns.var("a");
+    private static final Variable b = Patterns.var("b");
+    private static final Variable c = Patterns.var("c");
+    private static final Variable x = Patterns.var("x");
+    private static final Variable y = Patterns.var("y");
+    private static final Variable z = Patterns.var("z");
+    private static final Variable xx = Patterns.var("xx");
     private static final Fragment xId = id(null, x, ConceptId.of("Titanic"));
     private static final Fragment yId = id(null, y, ConceptId.of("movie"));
     private static final Fragment xIsaY = outIsa(null, x, y);
@@ -156,9 +157,9 @@ public class GraqlTraversalTest {
     public void testAllTraversalsSimpleQuery() {
         IdProperty titanicId = new IdProperty(ConceptId.of("Titanic"));
         IdProperty movieId = new IdProperty(ConceptId.of("movie"));
-        SubProperty subProperty = new SubProperty(new StatementImpl(y, ImmutableSet.of(movieId)));
+        SubProperty subProperty = new SubProperty(new PositiveStatement(y, ImmutableSet.of(movieId)));
 
-        Statement pattern = new StatementImpl(x, ImmutableSet.of(titanicId, subProperty));
+        Statement pattern = new PositiveStatement(x, ImmutableSet.of(titanicId, subProperty));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());

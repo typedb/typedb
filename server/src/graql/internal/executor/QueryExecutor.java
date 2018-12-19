@@ -46,7 +46,9 @@ import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
+import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
+import javax.swing.plaf.nimbus.State;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -85,34 +87,23 @@ public class QueryExecutor {
         this.infer = infer;
     }
 
+    private Stream<ConceptMap> resolveConjunction(Conjunction<Statement> conj, TransactionOLTP tx){
+        ReasonerQuery conjQuery = ReasonerQueries.create(conj, tx).rewrite();
+        conjQuery.checkValid();
+        return conjQuery.resolve();
+    }
+
     public Stream<ConceptMap> match(MatchClause matchClause) {
+        //validatePattern
         for (Statement statement : matchClause.getPatterns().statements()) {
             statement.getProperties().forEach(property -> property.checkValid(tx, statement));
         }
 
-        if (!infer || !RuleUtils.hasRules(tx)) {
-            GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), tx);
-            return traversal(matchClause.getPatterns().variables(), graqlTraversal);
-        }
-
         try {
             Iterator<Conjunction<Statement>> conjIt = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().iterator();
-            Conjunction<Statement> conj = conjIt.next();
-
-            ReasonerQuery conjQuery = ReasonerQueries.create(conj, tx).rewrite();
-            conjQuery.checkValid();
-            Stream<ConceptMap> answerStream = conjQuery.isRuleResolvable() ?
-                    conjQuery.resolve() :
-                    tx.stream(Graql.match(conj), false);
-
+            Stream<ConceptMap> answerStream = Stream.empty();
             while (conjIt.hasNext()) {
-                conj = conjIt.next();
-                conjQuery = ReasonerQueries.create(conj, tx).rewrite();
-                Stream<ConceptMap> localStream = conjQuery.isRuleResolvable() ?
-                        conjQuery.resolve() :
-                        tx.stream(Graql.match(conj), false);
-
-                answerStream = Stream.concat(answerStream, localStream);
+                answerStream = Stream.concat(answerStream, resolveConjunction(conjIt.next(), tx));
             }
             return answerStream.map(result -> result.project(matchClause.getSelectedNames()));
         } catch (GraqlQueryException e) {

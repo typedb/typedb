@@ -25,7 +25,7 @@ import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.pattern.Variable;
 import org.junit.Test;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.pattern.Patterns.var;
 import static org.junit.Assert.assertEquals;
 
 public class IsaExplicitTest {

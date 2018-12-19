@@ -19,6 +19,7 @@
 package grakn.core.graql.query.predicate;
 
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.query.pattern.Statement;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
