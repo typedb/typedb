@@ -37,6 +37,7 @@ import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.GroupAggregateQuery;
 import grakn.core.graql.query.GroupQuery;
 import grakn.core.graql.query.InsertQuery;
@@ -87,7 +88,11 @@ public class QueryExecutor {
     private Stream<ConceptMap> resolveConjunction(Conjunction<Statement> conj, TransactionOLTP tx){
         ReasonerQuery conjQuery = ReasonerQueries.create(conj, tx).rewrite();
         conjQuery.checkValid();
-        return conjQuery.resolve();
+
+        //TODO handling of empty query is a hack, need to solve in another PR
+        return !conjQuery.getAtoms().isEmpty()?
+                conjQuery.resolve() :
+                tx.stream(Graql.match(conj), false);
     }
 
     public Stream<ConceptMap> match(MatchClause matchClause) {
