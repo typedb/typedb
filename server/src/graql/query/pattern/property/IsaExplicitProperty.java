@@ -38,8 +38,7 @@ public class IsaExplicitProperty extends AbstractIsaProperty {
     public static final String NAME = "isa!";
     private final Statement type;
 
-    public IsaExplicitProperty(
-            Statement type) {
+    public IsaExplicitProperty(Statement type) {
         if (type == null) {
             throw new NullPointerException("Null type");
         }

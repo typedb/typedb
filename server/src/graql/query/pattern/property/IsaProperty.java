@@ -34,26 +34,16 @@ import java.util.Collection;
  * When matching, any subtyping is respected. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it follows that {@code $bob isa person} and {@code bob isa entity}.
  */
-
 public class IsaProperty extends AbstractIsaProperty {
 
     public static final String NAME = "isa";
-    private final Variable directTypeVar;
     private final Statement type;
 
     public IsaProperty(Statement type) {
-        this(type, Pattern.var());
-    }
-
-    public IsaProperty(Statement type, Variable directTypeVar) {
         if (type == null) {
             throw new NullPointerException("Null type");
         }
         this.type = type;
-        if (directTypeVar == null) {
-            throw new NullPointerException("Null directTypeVar");
-        }
-        this.directTypeVar = directTypeVar;
     }
 
     @Override
@@ -68,6 +58,7 @@ public class IsaProperty extends AbstractIsaProperty {
 
     @Override
     public Collection<EquivalentFragmentSet> match(Variable start) {
+        Variable directTypeVar = Pattern.var();
         return ImmutableSet.of(
                 EquivalentFragmentSets.isa(this, start, directTypeVar, true),
                 EquivalentFragmentSets.sub(this, directTypeVar, type().var())

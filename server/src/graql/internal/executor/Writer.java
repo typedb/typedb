@@ -57,9 +57,9 @@ import static java.util.stream.Collectors.toList;
  * A class for executing PropertyExecutors on VarPropertys within Graql queries.
  * Multiple query types share this class, such as InsertQuery and DefineQuery.
  */
-public class WriteExecutor {
+public class Writer {
 
-    protected final Logger LOG = LoggerFactory.getLogger(WriteExecutor.class);
+    protected final Logger LOG = LoggerFactory.getLogger(Writer.class);
 
     private final Transaction tx;
 
@@ -78,16 +78,16 @@ public class WriteExecutor {
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
-    private WriteExecutor(Transaction tx, Set<VarAndProperty> properties,
-                          Partition<Variable> equivalentVars,
-                          Multimap<VarAndProperty, VarAndProperty> dependencies) {
+    private Writer(Transaction tx, Set<VarAndProperty> properties,
+                   Partition<Variable> equivalentVars,
+                   Multimap<VarAndProperty, VarAndProperty> dependencies) {
         this.tx = tx;
         this.properties = ImmutableSet.copyOf(properties);
         this.equivalentVars = equivalentVars;
         this.dependencies = ImmutableMultimap.copyOf(dependencies);
     }
 
-    static WriteExecutor create(ImmutableSet<VarAndProperty> properties, Transaction transaction) {
+    static Writer create(ImmutableSet<VarAndProperty> properties, Transaction transaction) {
         /*
             We build several many-to-many relations, indicated by a `Multimap<X, Y>`. These are used to represent
             the dependencies between properties and variables.
@@ -175,7 +175,7 @@ public class WriteExecutor {
          */
         Multimap<VarAndProperty, VarAndProperty> propertyDependencies = propertyDependencies(propertyToItsRequiredVars, varToItsProducerProperties);
 
-        return new WriteExecutor(transaction, properties, equivalentVars, propertyDependencies);
+        return new Writer(transaction, properties, equivalentVars, propertyDependencies);
     }
 
     private static Multimap<VarProperty, Variable> propertyToEquivalentVars(Set<VarAndProperty> properties) {
@@ -403,8 +403,8 @@ public class WriteExecutor {
             if (o == this) {
                 return true;
             }
-            if (o instanceof WriteExecutor.VarAndProperty) {
-                WriteExecutor.VarAndProperty that = (WriteExecutor.VarAndProperty) o;
+            if (o instanceof Writer.VarAndProperty) {
+                Writer.VarAndProperty that = (Writer.VarAndProperty) o;
                 return (this.var.equals(that.var))
                         && (this.property.equals(that.property))
                         && (this.executor.equals(that.executor));

@@ -83,15 +83,15 @@ public class InsertExecutor {
     }
 
     private ConceptMap insert(Collection<Statement> statements, ConceptMap results) {
-        ImmutableSet.Builder<WriteExecutor.VarAndProperty> properties = ImmutableSet.builder();
+        ImmutableSet.Builder<Writer.VarAndProperty> properties = ImmutableSet.builder();
         for (Statement statement : statements) {
             for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
                 for (PropertyExecutor executor : propertyExecutors(statement.var(), property)) {
-                    properties.add(new WriteExecutor.VarAndProperty(statement.var(), property, executor));
+                    properties.add(new Writer.VarAndProperty(statement.var(), property, executor));
                 }
             }
         }
-        return WriteExecutor.create(properties.build(), transaction).insertAll(results);
+        return Writer.create(properties.build(), transaction).insertAll(results);
     }
 
     private Set<PropertyExecutor> propertyExecutors(Variable var, VarProperty property) {

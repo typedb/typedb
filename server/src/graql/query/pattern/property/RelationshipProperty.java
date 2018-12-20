@@ -25,7 +25,7 @@ import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.executor.Writer;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Pattern;
@@ -156,7 +156,7 @@ public class RelationshipProperty extends VarProperty {
      * @param relationship   the concept representing the Relationship
      * @param relationPlayer a casting between a role type and role player
      */
-    public void addRoleplayer(WriteExecutor executor, grakn.core.graql.concept.Relationship relationship, RolePlayer relationPlayer) {
+    public void addRoleplayer(Writer executor, grakn.core.graql.concept.Relationship relationship, RolePlayer relationPlayer) {
         Statement roleVar = getRole(relationPlayer);
 
         Role role = executor.getConcept(roleVar.var()).asRole();

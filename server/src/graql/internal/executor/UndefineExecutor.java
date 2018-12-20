@@ -59,7 +59,7 @@ public class UndefineExecutor {
     }
 
     public ConceptMap undefine(UndefineQuery query) {
-        ImmutableSet.Builder<WriteExecutor.VarAndProperty> properties = ImmutableSet.builder();
+        ImmutableSet.Builder<Writer.VarAndProperty> properties = ImmutableSet.builder();
         ImmutableList<Statement> allPatterns = query.statements().stream()
                 .flatMap(v -> v.innerStatements().stream())
                 .collect(toImmutableList());
@@ -67,11 +67,11 @@ public class UndefineExecutor {
         for (Statement statement : allPatterns) {
             for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
                 for (PropertyExecutor executor : propertyExecutors(statement.var(), property)) {
-                    properties.add(new WriteExecutor.VarAndProperty(statement.var(), property, executor));
+                    properties.add(new Writer.VarAndProperty(statement.var(), property, executor));
                 }
             }
         }
-        return WriteExecutor.create(properties.build(), transaction).insertAll(new ConceptMap());
+        return Writer.create(properties.build(), transaction).insertAll(new ConceptMap());
     }
 
     private Set<PropertyExecutor> propertyExecutors(Variable var, VarProperty property) {

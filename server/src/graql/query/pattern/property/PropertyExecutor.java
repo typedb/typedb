@@ -19,7 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.executor.Writer;
 import grakn.core.graql.query.pattern.Variable;
 
 import java.util.Arrays;
@@ -72,7 +72,7 @@ public class PropertyExecutor {
      *                 #requiredVars(). The method may also build a concept provided that key is returned
      *                 from #producedVars().
      */
-    public final void execute(WriteExecutor executor) {
+    public final void execute(Writer executor) {
         executeMethod().execute(executor);
     }
 
@@ -196,6 +196,6 @@ public class PropertyExecutor {
 
     @FunctionalInterface
     public interface Method {
-        void execute(WriteExecutor writeExecutor);
+        void execute(Writer writeExecutor);
     }
 }
