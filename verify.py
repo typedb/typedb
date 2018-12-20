@@ -8,7 +8,7 @@ import sys
 
 java_targets = set(subprocess.check_output([
     'bazel', 'query',
-    '(kind(java_library, //...) + kind(jarjar_library, //...) + kind(java_test, //...)) except //dependencies/...'
+    '(kind(java_library, //...) union kind(java_test, //...)) except //dependencies/...'
 ]).split())
 
 checkstyle_targets = set(map(lambda x: x.replace('-checkstyle', ''), subprocess.check_output([

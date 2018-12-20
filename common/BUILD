@@ -32,16 +32,6 @@ jarjar_library(
     tags = ["maven_coordinates=grakn.core:common:{pom_version}"],
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
-checkstyle_test(
- name = "common-checkstyle",
- target = ":common",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
-)
-
 deploy_maven_jar(
     name = "deploy-maven-jar",
     target = ":common",
