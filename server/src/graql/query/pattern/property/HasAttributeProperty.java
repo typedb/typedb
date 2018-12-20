@@ -116,7 +116,7 @@ public class HasAttributeProperty extends VarProperty {
     }
 
     private boolean hasReifiedRelationship() {
-        return relationship().getProperties().findAny().isPresent() || relationship().var().isUserDefinedName();
+        return relationship().properties().stream().findAny().isPresent() || relationship().var().isUserDefinedName();
     }
 
     @Override

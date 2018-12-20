@@ -22,10 +22,6 @@ import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.executor.Writer;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Pattern;
@@ -38,7 +34,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
@@ -51,18 +46,18 @@ import static java.util.stream.Collectors.joining;
  * This propert is comprised of instances of RolePlayer, which represents associations between a
  * role-player Thing and an optional Role.
  */
-public class RelationshipProperty extends VarProperty {
+public class RelationProperty extends VarProperty {
 
-    private final ImmutableMultiset<RelationshipProperty.RolePlayer> relationPlayers;
+    private final ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers;
 
-    public RelationshipProperty(ImmutableMultiset<RelationshipProperty.RolePlayer> relationPlayers) {
+    public RelationProperty(ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers) {
         if (relationPlayers == null) {
             throw new NullPointerException("Null relationPlayers");
         }
         this.relationPlayers = relationPlayers;
     }
 
-    public ImmutableMultiset<RelationshipProperty.RolePlayer> relationPlayers() {
+    public ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers() {
         return relationPlayers;
     }
 
@@ -150,39 +145,13 @@ public class RelationshipProperty extends VarProperty {
         return Stream.of(rolePlayer(this, start, casting, rolePlayer.var(), roleType.var()));
     }
 
-    /**
-     * Add a roleplayer to the given Relationship
-     *
-     * @param relationship   the concept representing the Relationship
-     * @param relationPlayer a casting between a role type and role player
-     */
-    public void addRoleplayer(Writer executor, grakn.core.graql.concept.Relationship relationship, RolePlayer relationPlayer) {
-        Statement roleVar = getRole(relationPlayer);
-
-        Role role = executor.getConcept(roleVar.var()).asRole();
-        Thing roleplayer = executor.getConcept(relationPlayer.getPlayer().var()).asThing();
-        relationship.assign(role, roleplayer);
-    }
-
-    public Set<Variable> requiredVars(Variable var) {
-        Stream<Variable> relationPlayers = this.relationPlayers().stream()
-                .flatMap(relationPlayer -> Stream.of(relationPlayer.getPlayer(), getRole(relationPlayer)))
-                .map(statement -> statement.var());
-
-        return Stream.concat(relationPlayers, Stream.of(var)).collect(toImmutableSet());
-    }
-
-    private Statement getRole(RolePlayer relationPlayer) {
-        return relationPlayer.getRole().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (o == this) {
             return true;
         }
-        if (o instanceof RelationshipProperty) {
-            RelationshipProperty that = (RelationshipProperty) o;
+        if (o instanceof RelationProperty) {
+            RelationProperty that = (RelationProperty) o;
             return (this.relationPlayers.equals(that.relationPlayers()));
         }
         return false;

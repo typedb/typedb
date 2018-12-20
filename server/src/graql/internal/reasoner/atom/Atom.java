@@ -193,7 +193,7 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public boolean isDirect() {
-        return getPattern().getProperties().anyMatch(VarProperty::isExplicit);
+        return getPattern().properties().stream().anyMatch(VarProperty::isExplicit);
     }
 
     /**

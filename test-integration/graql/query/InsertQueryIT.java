@@ -29,7 +29,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -373,7 +373,7 @@ public class InsertQueryIT {
 
         Entity movie = answer.get(w).asEntity();
         Attribute<String> theTitle = answer.get(x).asAttribute();
-        Relationship hasTitle = answer.get(y).asRelationship();
+        Relation hasTitle = answer.get(y).asRelation();
         Attribute<String> provenance = answer.get(z).asAttribute();
 
         assertThat(hasTitle.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
@@ -389,7 +389,7 @@ public class InsertQueryIT {
 
         Entity movie = answer.get(w).asEntity();
         Attribute<String> theTitle = answer.get(x).asAttribute();
-        Relationship hasTitle = answer.get(y).asRelationship();
+        Relation hasTitle = answer.get(y).asRelation();
         Attribute<String> provenance = answer.get(z).asAttribute();
 
         assertThat(hasTitle.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
@@ -504,7 +504,7 @@ public class InsertQueryIT {
         Thing cluster = results.get(0).get("c").asThing();
         Thing godfather = results.get(0).get("g").asThing();
         Thing muppets = results.get(0).get("m").asThing();
-        Relationship relationship = results.get(0).get("r").asRelationship();
+        Relation relationship = results.get(0).get("r").asRelation();
 
         Role clusterOfProduction = tx.getRole("cluster-of-production");
         Role productionWithCluster = tx.getRole("production-with-cluster");

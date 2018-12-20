@@ -54,7 +54,7 @@ public class StatementImpl extends Statement {
     }
 
     @Override
-    protected Set<VarProperty> properties() {
+    public Set<VarProperty> properties() {
         return properties;
     }
 
@@ -125,6 +125,6 @@ public class StatementImpl extends Statement {
     }
 
     private static boolean invalidInnerVariable(Statement var) {
-        return var.getProperties().anyMatch(p -> !(p instanceof LabelProperty));
+        return var.properties().stream().anyMatch(p -> !(p instanceof LabelProperty));
     }
 }

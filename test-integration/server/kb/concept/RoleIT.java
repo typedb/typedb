@@ -20,7 +20,7 @@ package grakn.core.server.kb.concept;
 
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.rule.GraknTestServer;
@@ -45,7 +45,7 @@ import static org.junit.Assert.assertThat;
 
 public class RoleIT {
     private Role role;
-    private RelationshipType relationshipType;
+    private RelationType relationshipType;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -116,7 +116,7 @@ public class RoleIT {
     public void whenDeletingRoleTypeWithRolePlayers_Throw(){
         Role roleA = tx.putRole("roleA");
         Role roleB = tx.putRole("roleB");
-        RelationshipType relationshipType = tx.putRelationshipType("relationTypes").relates(roleA).relates(roleB);
+        RelationType relationshipType = tx.putRelationshipType("relationTypes").relates(roleA).relates(roleB);
         EntityType entityType = tx.putEntityType("entityType").plays(roleA).plays(roleB);
 
         Entity a = entityType.create();
@@ -135,7 +135,7 @@ public class RoleIT {
         Role roleA = tx.putRole("roleA");
         Role roleB = tx.putRole("roleB");
         relationshipType.relates(roleA).relates(role);
-        RelationshipType relationshipType2 = tx.putRelationshipType("relationshipType2").relates(roleB).relates(role);
+        RelationType relationshipType2 = tx.putRelationshipType("relationshipType2").relates(roleB).relates(role);
         tx.commit();
 
         assertThat(roleA.relationships().collect(toSet()), containsInAnyOrder(relationshipType));

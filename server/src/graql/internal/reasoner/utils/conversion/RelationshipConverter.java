@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.utils.conversion;
 
-import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.query.pattern.Pattern;
@@ -31,12 +31,12 @@ import java.util.Set;
 
 /**
  * <p>
- * Class for conversions from {@link Relationship}s.
+ * Class for conversions from {@link Relation}s.
  * </p>
  */
-class RelationshipConverter implements ConceptConverter<Relationship> {
+class RelationshipConverter implements ConceptConverter<Relation> {
 
-    public Pattern pattern(Relationship concept) {
+    public Pattern pattern(Relation concept) {
         Statement relationPattern = Pattern.var();
         Set<Pattern> idPatterns = new HashSet<>();
 

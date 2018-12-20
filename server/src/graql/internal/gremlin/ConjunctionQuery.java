@@ -128,7 +128,7 @@ class ConjunctionQuery {
 
         Variable start = statement.var();
 
-        statement.getProperties().forEach(property -> {
+        statement.properties().stream().forEach(property -> {
             Collection<EquivalentFragmentSet> newTraversals = property.match(start);
             traversals.addAll(newTraversals);
         });

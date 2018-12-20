@@ -57,7 +57,7 @@ public interface Type extends SchemaConcept {
     Type plays(Role role) throws TransactionException;
 
     /**
-     * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
+     * Creates a {@link RelationType} which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
      *
      * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
      * @return The Type itself.
@@ -66,7 +66,7 @@ public interface Type extends SchemaConcept {
     Type key(AttributeType attributeType) throws TransactionException;
 
     /**
-     * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType}  to be linked.
+     * Creates a {@link RelationType} which allows this type and a {@link AttributeType}  to be linked.
      *
      * @param attributeType The {@link AttributeType}  which instances of this type should be allowed to play.
      * @return The Type itself.

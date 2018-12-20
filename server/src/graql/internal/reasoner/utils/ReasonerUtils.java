@@ -26,7 +26,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
@@ -181,15 +181,15 @@ public class ReasonerUtils {
 
     /**
      * NB: assumes MATCH semantics - all types and their subs are considered
-     * compute the map of compatible {@link RelationshipType}s for a given set of {@link Type}s
+     * compute the map of compatible {@link RelationType}s for a given set of {@link Type}s
      * (intersection of allowed sets of relation types for each entry type) and compatible role types
-     * @param types for which the set of compatible {@link RelationshipType}s is to be computed
+     * @param types for which the set of compatible {@link RelationType}s is to be computed
      * @param schemaConceptConverter converter between {@link SchemaConcept} and relation type-role entries
      * @param <T> type generic
-     * @return map of compatible {@link RelationshipType}s and their corresponding {@link Role}s
+     * @return map of compatible {@link RelationType}s and their corresponding {@link Role}s
      */
-    public static <T extends SchemaConcept> Multimap<RelationshipType, Role> compatibleRelationTypesWithRoles(Set<T> types, SchemaConceptConverter<T> schemaConceptConverter) {
-        Multimap<RelationshipType, Role> compatibleTypes = HashMultimap.create();
+    public static <T extends SchemaConcept> Multimap<RelationType, Role> compatibleRelationTypesWithRoles(Set<T> types, SchemaConceptConverter<T> schemaConceptConverter) {
+        Multimap<RelationType, Role> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> typeIterator = types.iterator();
         compatibleTypes.putAll(schemaConceptConverter.toRelationshipMultimap(typeIterator.next()));

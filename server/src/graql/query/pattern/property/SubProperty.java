@@ -32,7 +32,7 @@ import java.util.Collection;
  * This property relates a Type and another Type. It indicates
  * that every instance of the left type is also an instance of the right type.
  */
-public class SubProperty extends AbstractSubProperty {
+public class SubProperty extends SubAbstractProperty {
 
     public static final String NAME = "sub";
     private final Statement superType;

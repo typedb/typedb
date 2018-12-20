@@ -39,7 +39,7 @@ public interface ConceptConverter<T extends Concept> {
         if (concept.isEntity()) {
             return new EntityConverter().pattern(concept.asEntity());
         } else if (concept.isRelationship()) {
-            return new RelationshipConverter().pattern(concept.asRelationship());
+            return new RelationshipConverter().pattern(concept.asRelation());
         } else if (concept.isAttribute()) {
             return new AttributeConverter().pattern(concept.asAttribute());
         } else {

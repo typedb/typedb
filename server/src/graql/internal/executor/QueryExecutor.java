@@ -43,10 +43,10 @@ import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.AbstractIsaProperty;
+import grakn.core.graql.query.pattern.property.IsaAbstractProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.RelationshipProperty;
+import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -84,7 +84,7 @@ public class QueryExecutor {
         this.transaction = transaction;
     }
 
-    private void validateIsaProperty(AbstractIsaProperty varProperty) {
+    private void validateIsaProperty(IsaAbstractProperty varProperty) {
         varProperty.type().getTypeLabel().ifPresent(typeLabel -> {
             SchemaConcept theSchemaConcept = transaction.getSchemaConcept(typeLabel);
             if (theSchemaConcept != null && !theSchemaConcept.isType()) {
@@ -103,9 +103,9 @@ public class QueryExecutor {
         }
     }
 
-    private void validateRelationshipProperty(RelationshipProperty varProperty, Statement statement) {
+    private void validateRelationshipProperty(RelationProperty varProperty, Statement statement) {
         Set<Label> roleTypes = varProperty.relationPlayers().stream()
-                .map(RelationshipProperty.RolePlayer::getRole).flatMap(CommonUtil::optionalToStream)
+                .map(RelationProperty.RolePlayer::getRole).flatMap(CommonUtil::optionalToStream)
                 .map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
@@ -130,12 +130,12 @@ public class QueryExecutor {
     }
 
     private void validateProperty(VarProperty varProperty, Statement statement) {
-        if (varProperty instanceof AbstractIsaProperty) {
-            validateIsaProperty((AbstractIsaProperty) varProperty);
+        if (varProperty instanceof IsaAbstractProperty) {
+            validateIsaProperty((IsaAbstractProperty) varProperty);
         } else if (varProperty instanceof HasAttributeProperty) {
             validateHasAttributeProperty((HasAttributeProperty) varProperty);
-        } else if (varProperty instanceof RelationshipProperty) {
-            validateRelationshipProperty((RelationshipProperty) varProperty, statement);
+        } else if (varProperty instanceof RelationProperty) {
+            validateRelationshipProperty((RelationProperty) varProperty, statement);
         }
 
         varProperty.innerStatements()
@@ -150,7 +150,7 @@ public class QueryExecutor {
 
     public Stream<ConceptMap> match(MatchClause matchClause) {
         for (Statement statement : matchClause.getPatterns().statements()) {
-            statement.getProperties().forEach(property -> validateProperty(property, statement));
+            statement.properties().stream().forEach(property -> validateProperty(property, statement));
         }
 
         if (!infer || !RuleUtils.hasRules(transaction)) {

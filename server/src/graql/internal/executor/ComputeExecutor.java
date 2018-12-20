@@ -34,7 +34,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
@@ -623,8 +623,8 @@ class ComputeExecutor<T extends Answer> {
         return scopeTypes()
                 .filter(Concept::isRelationshipType)
                 .map(Concept::asRelationshipType)
-                .filter(RelationshipType::isImplicit)
-                .flatMap(RelationshipType::roles)
+                .filter(RelationType::isImplicit)
+                .flatMap(RelationType::roles)
                 .flatMap(Role::players)
                 .map(type -> tx.convertToId(type.label()))
                 .filter(LabelId::isValid)

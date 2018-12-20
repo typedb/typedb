@@ -20,36 +20,37 @@ package grakn.core.graql.internal.executor;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.executor.property.DataTypeExecutor;
+import grakn.core.graql.internal.executor.property.HasAttributeTypeExecutor;
+import grakn.core.graql.internal.executor.property.IdExecutor;
+import grakn.core.graql.internal.executor.property.IsAbstractExecutor;
+import grakn.core.graql.internal.executor.property.LabelExecutor;
+import grakn.core.graql.internal.executor.property.PlaysExecutor;
+import grakn.core.graql.internal.executor.property.PropertyExecutor;
+import grakn.core.graql.internal.executor.property.RegexExecutor;
+import grakn.core.graql.internal.executor.property.RelatesExecutor;
+import grakn.core.graql.internal.executor.property.SubAbstractExecutor;
+import grakn.core.graql.internal.executor.property.ThenExecutor;
+import grakn.core.graql.internal.executor.property.WhenExecutor;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.AbstractSubProperty;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.IsAbstractProperty;
 import grakn.core.graql.query.pattern.property.LabelProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
-import grakn.core.graql.query.pattern.property.PropertyExecutor;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 import grakn.core.graql.query.pattern.property.RelatesProperty;
+import grakn.core.graql.query.pattern.property.SubAbstractProperty;
 import grakn.core.graql.query.pattern.property.ThenProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
 import grakn.core.server.session.TransactionOLTP;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.core.common.util.CommonUtil.toImmutableList;
 
@@ -63,225 +64,55 @@ public class DefineExecutor {
     }
 
     public ConceptMap define(DefineQuery query) {
-        ImmutableSet.Builder<Writer.VarAndProperty> properties = ImmutableSet.builder();
+        ImmutableSet.Builder<PropertyExecutor.WriteExecutor> executors = ImmutableSet.builder();
         List<Statement> statements = query.statements().stream()
                 .flatMap(s -> s.innerStatements().stream())
                 .collect(toImmutableList());
 
         for (Statement statement : statements) {
-            for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
-                for (PropertyExecutor executor : propertyExecutors(statement.var(), property)) {
-                    properties.add(new Writer.VarAndProperty(statement.var(), property, executor));
-                }
+            for (VarProperty property : statement.properties()){
+                executors.addAll(definable(statement.var(), property).defineExecutors());
             }
         }
-        return Writer.create(properties.build(), transaction).insertAll(new ConceptMap());
+        return Writer.create(executors.build(), transaction).write(new ConceptMap());
     }
 
-    private Set<PropertyExecutor> propertyExecutors(Variable var, VarProperty property) {
-        if (property instanceof AbstractSubProperty) {
-            return subExecutors(var, (AbstractSubProperty) property);
+    private PropertyExecutor.Definable definable(Variable var, VarProperty property) {
+        if (property instanceof SubAbstractProperty) {
+            return new SubAbstractExecutor(var, (SubAbstractProperty) property);
 
         } else if (property instanceof DataTypeProperty) {
-            return dataTypeExecutors(var, (DataTypeProperty) property);
+            return new DataTypeExecutor(var, (DataTypeProperty) property);
 
         } else if (property instanceof HasAttributeTypeProperty) {
-            return hasAttributeTypeExecutors(var, (HasAttributeTypeProperty) property);
+            return new HasAttributeTypeExecutor(var, (HasAttributeTypeProperty) property);
 
         } else if (property instanceof IdProperty) {
-            return idExecutors(var, (IdProperty) property);
+            return new IdExecutor(var, (IdProperty) property);
 
         } else if (property instanceof IsAbstractProperty) {
-            return isAbstractExecutors(var);
+            return new IsAbstractExecutor(var, (IsAbstractProperty) property);
 
         } else if (property instanceof LabelProperty) {
-            return labelExecutors(var, (LabelProperty) property);
+            return new LabelExecutor(var, (LabelProperty) property);
 
         } else if (property instanceof PlaysProperty) {
-            return playsExecutors(var, (PlaysProperty) property);
+            return new PlaysExecutor(var, (PlaysProperty) property);
 
         } else if (property instanceof RegexProperty) {
-            return regexExecutors(var, (RegexProperty) property);
+            return new RegexExecutor(var, (RegexProperty) property);
 
         } else if (property instanceof RelatesProperty) {
-            return relatesExecutors(var, (RelatesProperty) property);
+            return new RelatesExecutor(var, (RelatesProperty) property);
 
         } else if (property instanceof ThenProperty) {
-            return thenExecutors(var, (ThenProperty) property);
+            return new ThenExecutor(var, (ThenProperty) property);
 
         } else if (property instanceof WhenProperty) {
-            return whenExecutors(var, (WhenProperty) property);
+            return new WhenExecutor(var, (WhenProperty) property);
 
         } else {
             throw GraqlQueryException.defineUnsupportedProperty(property.getName());
         }
-    }
-
-    private Set<PropertyExecutor> subExecutors(Variable var, AbstractSubProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            SchemaConcept superConcept = executor.getConcept(property.superType().var()).asSchemaConcept();
-
-            Optional<ConceptBuilder> builder = executor.tryBuilder(var);
-
-            if (builder.isPresent()) {
-                builder.get().sub(superConcept);
-            } else {
-                ConceptBuilder.setSuper(executor.getConcept(var).asSchemaConcept(), superConcept);
-            }
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method)
-                .requires(property.superType().var())
-                .produces(var)
-                .build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> dataTypeExecutors(Variable var, DataTypeProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            executor.getBuilder(var).dataType(property.dataType());
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> hasAttributeTypeExecutors(Variable var, HasAttributeTypeProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            Type entityTypeConcept = executor.getConcept(var).asType();
-            AttributeType attributeTypeConcept = executor.getConcept(property.type().var()).asAttributeType();
-
-            if (property.isRequired()) {
-                entityTypeConcept.key(attributeTypeConcept);
-            } else {
-                entityTypeConcept.has(attributeTypeConcept);
-            }
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method)
-                .requires(var, property.type().var())
-                .build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> idExecutors(Variable var, IdProperty property) {
-        // This property works in both insert and define queries, because it is only for look-ups
-        PropertyExecutor.Method method = executor -> {
-            executor.getBuilder(var).id(property.id());
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> isAbstractExecutors(Variable var) {
-        PropertyExecutor.Method method = executor -> {
-            Concept concept = executor.getConcept(var);
-            if (concept.isType()) {
-                concept.asType().isAbstract(true);
-            } else {
-                throw GraqlQueryException.insertAbstractOnNonType(concept.asSchemaConcept());
-            }
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method).requires(var).build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> labelExecutors(Variable var, LabelProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            executor.getBuilder(var).label(property.label());
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> playsExecutors(Variable var, PlaysProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            Role role = executor.getConcept(property.role().var()).asRole();
-            executor.getConcept(var).asType().plays(role);
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method)
-                .requires(var, property.role().var())
-                .build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> regexExecutors(Variable var, RegexProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            executor.getConcept(var).asAttributeType().regex(property.regex());
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method).requires(var).build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> relatesExecutors(Variable var, RelatesProperty property) {
-        Set<PropertyExecutor> propertyExecutors = new HashSet<>();
-        Variable roleVar = property.role().var();
-
-        PropertyExecutor.Method relatesMethod = executor -> {
-            Role role = executor.getConcept(roleVar).asRole();
-            executor.getConcept(var).asRelationshipType().relates(role);
-        };
-
-        PropertyExecutor relatesExecutor = PropertyExecutor.builder(relatesMethod).requires(var, roleVar).build();
-        propertyExecutors.add(relatesExecutor);
-
-        // This allows users to skip stating `$roleVar sub role` when they say `$var relates $roleVar`
-        PropertyExecutor.Method isRoleMethod = executor -> executor.getBuilder(roleVar).isRole();
-
-        PropertyExecutor isRoleExecutor = PropertyExecutor.builder(isRoleMethod).produces(roleVar).build();
-        propertyExecutors.add(isRoleExecutor);
-
-        Statement superRoleStatement = property.superRole();
-        if (superRoleStatement != null) {
-            Variable superRoleVar = superRoleStatement.var();
-            PropertyExecutor.Method subMethod = executor -> {
-                Role superRole = executor.getConcept(superRoleVar).asRole();
-                executor.getBuilder(roleVar).sub(superRole);
-            };
-
-            PropertyExecutor subExecutor = PropertyExecutor.builder(subMethod)
-                    .requires(superRoleVar)
-                    .produces(roleVar)
-                    .build();
-
-            propertyExecutors.add(subExecutor);
-        }
-
-        return Collections.unmodifiableSet(propertyExecutors);
-    }
-
-    private Set<PropertyExecutor> thenExecutors(Variable var, ThenProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar then { ... }`
-            executor.getBuilder(var).isRule().then(property.pattern());
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> whenExecutors(Variable var, WhenProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar when { ... }`
-            executor.getBuilder(var).isRule().when(property.pattern());
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 }

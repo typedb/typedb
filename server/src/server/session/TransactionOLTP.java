@@ -32,7 +32,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
@@ -571,12 +571,12 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public RelationshipType putRelationshipType(Label label) {
+    public RelationType putRelationshipType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, false,
                                 v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
 
-    public RelationshipType putRelationTypeImplicit(Label label) {
+    public RelationType putRelationTypeImplicit(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, true,
                                 v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
@@ -705,7 +705,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public RelationshipType getRelationshipType(String label) {
+    public RelationType getRelationshipType(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RELATIONSHIP_TYPE);
     }
 

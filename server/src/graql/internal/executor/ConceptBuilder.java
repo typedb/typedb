@@ -435,7 +435,7 @@ public class ConceptBuilder {
      *
      * @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
      */
-    static void setSuper(SchemaConcept subConcept, SchemaConcept superConcept) {
+    public static void setSuper(SchemaConcept subConcept, SchemaConcept superConcept) {
         if (superConcept.isEntityType()) {
             subConcept.asEntityType().sup(superConcept.asEntityType());
         } else if (superConcept.isRelationshipType()) {

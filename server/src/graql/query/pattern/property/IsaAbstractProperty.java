@@ -22,7 +22,7 @@ import grakn.core.graql.query.pattern.Statement;
 
 import java.util.stream.Stream;
 
-public abstract class AbstractIsaProperty extends VarProperty {
+public abstract class IsaAbstractProperty extends VarProperty {
 
     public abstract Statement type();
 

@@ -19,7 +19,7 @@ package grakn.core.graql.internal.reasoner.utils.conversion;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 
@@ -41,8 +41,8 @@ public interface SchemaConceptConverter<T extends SchemaConcept>{
      * @param entryConcept to be converted
      * @return map of relation types in which it can play roles and the corresponding role types
      */
-    default Multimap<RelationshipType, Role> toRelationshipMultimap(T entryConcept){
-        Multimap<RelationshipType, Role> relationMap = HashMultimap.create();
+    default Multimap<RelationType, Role> toRelationshipMultimap(T entryConcept){
+        Multimap<RelationType, Role> relationMap = HashMultimap.create();
 
         toCompatibleRoles(entryConcept)
                 .forEach(role -> role.relationships()

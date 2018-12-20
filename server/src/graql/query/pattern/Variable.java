@@ -108,7 +108,7 @@ public class Variable extends Statement {
     }
 
     @Override
-    protected Set<VarProperty> properties() {
+    public Set<VarProperty> properties() {
         return ImmutableSet.of();
     }
 

@@ -34,7 +34,7 @@ import java.util.Collection;
  * When matching, any subtyping is respected. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it follows that {@code $bob isa person} and {@code bob isa entity}.
  */
-public class IsaProperty extends AbstractIsaProperty {
+public class IsaProperty extends IsaAbstractProperty {
 
     public static final String NAME = "isa";
     private final Statement type;

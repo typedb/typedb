@@ -22,7 +22,7 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.internal.Schema;
@@ -96,21 +96,21 @@ public final class ElementFactory {
     }
 
     // ---------------------------------------- Building Relationship Types  -----------------------------------------------
-    public RelationshipTypeImpl buildRelationshipType(VertexElement vertex, RelationshipType type){
+    public RelationshipTypeImpl buildRelationshipType(VertexElement vertex, RelationType type){
         return getOrBuildConcept(vertex, (v) -> RelationshipTypeImpl.create(v, type));
     }
 
     // -------------------------------------------- Building Relations
-    RelationshipImpl buildRelation(VertexElement vertex, RelationshipType type){
+    RelationshipImpl buildRelation(VertexElement vertex, RelationType type){
         return getOrBuildConcept(vertex, (v) -> RelationshipImpl.create(buildRelationReified(v, type)));
     }
-    public RelationshipImpl buildRelation(EdgeElement edge, RelationshipType type, Role owner, Role value){
+    public RelationshipImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value){
         return getOrBuildConcept(edge, (e) -> RelationshipImpl.create(RelationshipEdge.create(type, owner, value, edge)));
     }
     RelationshipImpl buildRelation(EdgeElement edge){
         return getOrBuildConcept(edge, (e) -> RelationshipImpl.create(RelationshipEdge.get(edge)));
     }
-    RelationshipReified buildRelationReified(VertexElement vertex, RelationshipType type){
+    RelationshipReified buildRelationReified(VertexElement vertex, RelationType type){
         return RelationshipReified.create(vertex, type);
     }
 

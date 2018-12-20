@@ -38,7 +38,7 @@ import java.util.Collection;
  * then
  * `$x sub! entity` only returns `person` but not `man`
  */
-public class SubExplicitProperty extends AbstractSubProperty {
+public class SubExplicitProperty extends SubAbstractProperty {
 
     public static final String NAME = "sub!";
 

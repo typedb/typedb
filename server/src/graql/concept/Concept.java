@@ -28,8 +28,8 @@ import javax.annotation.CheckReturnValue;
  * A concept which can every object in the graph.
  * This class forms the basis of assuring the graph follows the Grakn object model.
  * It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
- * ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link Rule} or {@link AttributeType})
- * or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Attribute}).
+ * ({@link EntityType}, {@link Role}, {@link RelationType}, {@link Rule} or {@link AttributeType})
+ * or an {@link Thing} ({@link Entity}, {@link Relation} , {@link Attribute}).
  */
 public interface Concept {
     //------------------------------------- Accessors ----------------------------------
@@ -95,13 +95,13 @@ public interface Concept {
     }
 
     /**
-     * Return as a {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}.
+     * Return as a {@link RelationType} if the {@link Concept} is a {@link RelationType}.
      *
-     * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
+     * @return A {@link RelationType} if the {@link Concept} is a {@link RelationType}
      */
     @CheckReturnValue
-    default RelationshipType asRelationshipType() {
-        throw TransactionException.invalidCasting(this, RelationshipType.class);
+    default RelationType asRelationshipType() {
+        throw TransactionException.invalidCasting(this, RelationType.class);
     }
 
     /**
@@ -135,13 +135,13 @@ public interface Concept {
     }
 
     /**
-     * Return as a {@link Relationship} if the {@link Concept} is a {@link Relationship} {@link Thing}.
+     * Return as a {@link Relation} if the {@link Concept} is a {@link Relation} {@link Thing}.
      *
-     * @return A {@link Relationship}  if the {@link Concept} is a {@link Relationship}
+     * @return A {@link Relation}  if the {@link Concept} is a {@link Relation}
      */
     @CheckReturnValue
-    default Relationship asRelationship() {
-        throw TransactionException.invalidCasting(this, Relationship.class);
+    default Relation asRelation() {
+        throw TransactionException.invalidCasting(this, Relation.class);
     }
 
     /**
@@ -205,9 +205,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link RelationshipType}.
+     * Determine if the {@link Concept} is a {@link RelationType}.
      *
-     * @return true if the {@link Concept} is a {@link RelationshipType}
+     * @return true if the {@link Concept} is a {@link RelationType}
      */
     @CheckReturnValue
     default boolean isRelationshipType() {
@@ -245,9 +245,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Relationship}.
+     * Determine if the {@link Concept} is a {@link Relation}.
      *
-     * @return true if the {@link Concept} is a {@link Relationship}
+     * @return true if the {@link Concept} is a {@link Relation}
      */
     @CheckReturnValue
     default boolean isRelationship() {

@@ -28,8 +28,8 @@ import grakn.core.graql.concept.AttributeType.DataType;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Thing;
@@ -115,12 +115,12 @@ public class RemoteConceptIT {
     private EntityType boy;
     private Role husband;
     private Role wife;
-    private RelationshipType marriage;
+    private RelationType marriage;
     private Role friend;
-    private RelationshipType friendship;
+    private RelationType friendship;
     private Role employer;
     private Role employee;
-    private RelationshipType employment;
+    private RelationType employment;
     private Rule metaRule;
     private Rule testRule;
 
@@ -131,8 +131,8 @@ public class RemoteConceptIT {
     private Attribute<String> nameBob;
     private Entity alice;
     private Entity bob;
-    private Relationship aliceAndBob;
-    private Relationship selfEmployment;
+    private Relation aliceAndBob;
+    private Relation selfEmployment;
 
     @BeforeClass
     public static void setUpClass() {
@@ -541,7 +541,7 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingAddRelationship_TypeIsCorrect() {
-        Relationship newMarriage = marriage.create();
+        Relation newMarriage = marriage.create();
         assertEquals(marriage, newMarriage.type());
     }
 
@@ -586,7 +586,7 @@ public class RemoteConceptIT {
         Entity dylan = person.create();
         Entity emily = person.create();
 
-        Relationship dylanAndEmily = friendship.create()
+        Relation dylanAndEmily = friendship.create()
                 .assign(friend, dylan)
                 .assign(friend, emily);
 

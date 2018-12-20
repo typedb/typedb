@@ -39,7 +39,7 @@ import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 import grakn.core.graql.query.pattern.property.RelatesProperty;
-import grakn.core.graql.query.pattern.property.RelationshipProperty;
+import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.SubExplicitProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.ThenProperty;
@@ -81,7 +81,7 @@ public abstract class Statement implements Pattern {
     @CheckReturnValue
     public abstract Variable var();
 
-    protected abstract Set<VarProperty> properties();
+    public abstract Set<VarProperty> properties();
 
     @Override
     public Statement asStatement() {
@@ -106,7 +106,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Set<Label> getTypeLabels() {
-        return getProperties()
+        return properties().stream()
                 .flatMap(varProperty -> varProperty.getTypes())
                 .map(statement -> statement.getTypeLabel())
                 .flatMap(optional -> CommonUtil.optionalToStream(optional))
@@ -121,7 +121,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
-        return getProperties().filter(type::isInstance).map(type::cast);
+        return properties().stream().filter(type::isInstance).map(type::cast);
     }
 
     /**
@@ -132,7 +132,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final <T extends VarProperty> Optional<T> getProperty(Class<T> type) {
-        return getProperties().filter(type::isInstance).map(type::cast).findFirst();
+        return properties().stream().filter(type::isInstance).map(type::cast).findFirst();
     }
 
     /**
@@ -160,7 +160,7 @@ public abstract class Statement implements Pattern {
         while (!newVars.isEmpty()) {
             Statement var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(varProperty -> varProperty.innerStatements()).forEach(newVars::add);
+            var.properties().stream().flatMap(varProperty -> varProperty.innerStatements()).forEach(newVars::add);
         }
 
         return vars;
@@ -179,7 +179,7 @@ public abstract class Statement implements Pattern {
         while (!newVars.isEmpty()) {
             Statement var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(varProperty -> varProperty.implicitInnerStatements()).forEach(newVars::add);
+            var.properties().stream().flatMap(varProperty -> varProperty.implicitInnerStatements()).forEach(newVars::add);
         }
 
         return vars;
@@ -488,7 +488,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement roleplayer) {
-        return addRolePlayer(new RelationshipProperty.RolePlayer(null, roleplayer));
+        return addRolePlayer(new RelationProperty.RolePlayer(null, roleplayer));
     }
 
     /**
@@ -536,7 +536,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement role, Statement roleplayer) {
-        return addRolePlayer(new RelationshipProperty.RolePlayer(role, roleplayer));
+        return addRolePlayer(new RelationProperty.RolePlayer(role, roleplayer));
     }
 
     /**
@@ -629,25 +629,17 @@ public abstract class Statement implements Pattern {
         return "`" + toString() + "`";
     }
 
-    /**
-     * Get a stream of all properties on this variable
-     */
-    @CheckReturnValue
-    public final Stream<VarProperty> getProperties() {
-        return properties().stream();
-    }
+    private Statement addRolePlayer(RelationProperty.RolePlayer relationPlayer) {
+        Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-    private Statement addRolePlayer(RelationshipProperty.RolePlayer relationPlayer) {
-        Optional<RelationshipProperty> relationProperty = getProperty(RelationshipProperty.class);
-
-        ImmutableMultiset<RelationshipProperty.RolePlayer> oldCastings = relationProperty
-                .map(RelationshipProperty::relationPlayers)
+        ImmutableMultiset<RelationProperty.RolePlayer> oldCastings = relationProperty
+                .map(RelationProperty::relationPlayers)
                 .orElse(ImmutableMultiset.of());
 
-        ImmutableMultiset<RelationshipProperty.RolePlayer> relationPlayers =
+        ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers =
                 Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
-        RelationshipProperty newProperty = new RelationshipProperty(relationPlayers);
+        RelationProperty newProperty = new RelationProperty(relationPlayers);
 
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }

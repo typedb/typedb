@@ -64,8 +64,8 @@ java_test(
 )
 java_test(
      name = "relationship-it",
-     srcs = ["RelationshipIT.java"],
-     test_class = "grakn.core.server.kb.concept.RelationshipIT",
+     srcs = ["RelationIT.java"],
+     test_class = "grakn.core.server.kb.concept.RelationIT",
      deps = [
          "//server",
          "//common",
@@ -79,8 +79,8 @@ java_test(
 )
 java_test(
      name = "relationship-type-it",
-     srcs = ["RelationshipTypeIT.java"],
-     test_class = "grakn.core.server.kb.concept.RelationshipTypeIT",
+     srcs = ["RelationTypeIT.java"],
+     test_class = "grakn.core.server.kb.concept.RelationTypeIT",
      deps = [
          "//server",
          "//test-integration/rule:grakn-test-server",

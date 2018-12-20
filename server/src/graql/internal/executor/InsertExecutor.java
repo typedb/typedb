@@ -20,31 +20,30 @@ package grakn.core.graql.internal.executor;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.executor.property.HasAttributeExecutor;
+import grakn.core.graql.internal.executor.property.IdExecutor;
+import grakn.core.graql.internal.executor.property.IsaAbstractExecutor;
+import grakn.core.graql.internal.executor.property.LabelExecutor;
+import grakn.core.graql.internal.executor.property.PropertyExecutor;
+import grakn.core.graql.internal.executor.property.RelationExecutor;
+import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.AbstractIsaProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.IdProperty;
+import grakn.core.graql.query.pattern.property.IsaAbstractProperty;
 import grakn.core.graql.query.pattern.property.LabelProperty;
-import grakn.core.graql.query.pattern.property.PropertyExecutor;
-import grakn.core.graql.query.pattern.property.RelationshipProperty;
+import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.server.session.TransactionOLTP;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.common.util.CommonUtil.toImmutableList;
@@ -83,112 +82,36 @@ public class InsertExecutor {
     }
 
     private ConceptMap insert(Collection<Statement> statements, ConceptMap results) {
-        ImmutableSet.Builder<Writer.VarAndProperty> properties = ImmutableSet.builder();
+        ImmutableSet.Builder<PropertyExecutor.WriteExecutor> executors = ImmutableSet.builder();
         for (Statement statement : statements) {
-            for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
-                for (PropertyExecutor executor : propertyExecutors(statement.var(), property)) {
-                    properties.add(new Writer.VarAndProperty(statement.var(), property, executor));
-                }
+            for (VarProperty property : statement.properties()){
+                executors.addAll(insertable(statement.var(), property).insertExecutors());
             }
         }
-        return Writer.create(properties.build(), transaction).insertAll(results);
+        return Writer.create(executors.build(), transaction).write(results);
     }
 
-    private Set<PropertyExecutor> propertyExecutors(Variable var, VarProperty property) {
-        if (property instanceof AbstractIsaProperty) {
-            return isaExecutors(var, (AbstractIsaProperty) property);
+    private PropertyExecutor.Insertable insertable(Variable var, VarProperty property) {
+        if (property instanceof IsaAbstractProperty) {
+            return new IsaAbstractExecutor(var, (IsaAbstractProperty) property);
 
         } else if (property instanceof HasAttributeProperty) {
-            return hasAttributeExecutors(var, (HasAttributeProperty) property);
+            return new HasAttributeExecutor(var, (HasAttributeProperty) property);
 
         } else if (property instanceof IdProperty) {
-            return idExecutors(var, (IdProperty) property);
+            return new IdExecutor(var, (IdProperty) property);
 
         } else if (property instanceof LabelProperty) {
-            return labelExecutors(var, (LabelProperty) property);
+            return new LabelExecutor(var, (LabelProperty) property);
 
-        } else if (property instanceof RelationshipProperty) {
-            return relationshipExecutors(var, (RelationshipProperty) property);
+        } else if (property instanceof RelationProperty) {
+            return new RelationExecutor(var, (RelationProperty) property);
 
         } else if (property instanceof ValueProperty) {
-            return valueExecutors(var, (ValueProperty) property);
+            return new ValueExecutor(var, (ValueProperty) property);
 
         } else {
             throw GraqlQueryException.insertUnsupportedProperty(property.getName());
         }
-    }
-
-    private Set<PropertyExecutor> isaExecutors(Variable var, AbstractIsaProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            Type type = executor.getConcept(property.type().var()).asType();
-            executor.getBuilder(var).isa(type);
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method)
-                .requires(property.type().var())
-                .produces(var)
-                .build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> hasAttributeExecutors(Variable var, HasAttributeProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            Attribute attributeConcept = executor.getConcept(property.attribute().var()).asAttribute();
-            Thing thing = executor.getConcept(var).asThing();
-            ConceptId relationshipId = thing.relhas(attributeConcept).id();
-            executor.getBuilder(property.relationship().var()).id(relationshipId);
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method)
-                .produces(property.relationship().var())
-                .requires(var, property.attribute().var())
-                .build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> idExecutors(Variable var, IdProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            executor.getBuilder(var).id(property.id());
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> labelExecutors(Variable var, LabelProperty property) {
-        // This is supported in insert queries in the same way it does for define queries
-        // in order to allow looking up schema concepts by label
-        PropertyExecutor.Method method = executor -> {
-            executor.getBuilder(var).label(property.label());
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> relationshipExecutors(Variable var, RelationshipProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            Relationship relationship = executor.getConcept(var).asRelationship();
-            property.relationPlayers().forEach(relationPlayer -> property.addRoleplayer(executor, relationship, relationPlayer));
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method).requires(property.requiredVars(var)).build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
-    }
-
-    private Set<PropertyExecutor> valueExecutors(Variable var, ValueProperty property) {
-        PropertyExecutor.Method method = executor -> {
-            Object value = property.predicate().equalsValue().orElseThrow(GraqlQueryException::insertPredicate);
-            executor.getBuilder(var).value(value);
-        };
-
-        PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
-
-        return Collections.unmodifiableSet(Collections.singleton(executor));
     }
 }

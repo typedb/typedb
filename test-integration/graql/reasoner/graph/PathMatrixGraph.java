@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner.graph;
 
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -57,7 +57,7 @@ public class PathMatrixGraph {
         Role arcFrom = tx.getRole("arc-from");
         Role arcTo = tx.getRole("arc-to");
 
-        RelationshipType arc = tx.getRelationshipType("arc");
+        RelationType arc = tx.getRelationshipType("arc");
         putEntityWithResource(tx, "a0", startVertex, key);
 
         for(int i = 0 ; i < n ;i++) {

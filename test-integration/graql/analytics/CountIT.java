@@ -24,7 +24,7 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.Graql;
@@ -184,7 +184,7 @@ public class CountIT {
             Role resourceValue = tx.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
             name.plays(resourceValue);
 
-            RelationshipType relationshipType =
+            RelationType relationshipType =
                     tx.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                             .relates(resourceOwner).relates(resourceValue);
             relationshipType.create()
@@ -240,7 +240,7 @@ public class CountIT {
             Role resourceValue = tx.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
             name.plays(resourceValue);
 
-            RelationshipType relationshipType =
+            RelationType relationshipType =
                     tx.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                             .relates(resourceOwner).relates(resourceValue);
             // here relationship type is still implicit

@@ -40,7 +40,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
@@ -301,7 +301,7 @@ public final class GraknClient {
 
         @Nullable
         @Override
-        public RelationshipType getRelationshipType(String label) {
+        public RelationType getRelationshipType(String label) {
             SchemaConcept concept = getSchemaConcept(Label.of(label));
             if (concept == null || !concept.isRelationshipType()) return null;
             return concept.asRelationshipType();
@@ -381,7 +381,7 @@ public final class GraknClient {
         }
 
         @Override
-        public RelationshipType putRelationshipType(Label label) {
+        public RelationType putRelationshipType(Label label) {
             transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
             return RemoteConcept.of(responseOrThrow().getPutRelationTypeRes().getRelationType(), this).asRelationshipType();
         }

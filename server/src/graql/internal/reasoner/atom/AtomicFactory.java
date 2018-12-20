@@ -42,8 +42,8 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.AbstractIsaProperty;
-import grakn.core.graql.query.pattern.property.AbstractSubProperty;
+import grakn.core.graql.query.pattern.property.IsaAbstractProperty;
+import grakn.core.graql.query.pattern.property.SubAbstractProperty;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
@@ -56,7 +56,7 @@ import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 import grakn.core.graql.query.pattern.property.RelatesProperty;
-import grakn.core.graql.query.pattern.property.RelationshipProperty;
+import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.RuleProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -84,7 +84,7 @@ public class AtomicFactory {
      */
     public static Stream<Atomic> createAtoms(Conjunction<Statement> pattern, ReasonerQuery parent) {
         Set<Atomic> atoms = pattern.statements().stream()
-                .flatMap(var -> var.getProperties()
+                .flatMap(var -> var.properties().stream()
                         .map(vp -> mapToAtom(vp, var, pattern.statements(), parent))
                         .filter(Objects::nonNull))
                 .collect(Collectors.toSet());
@@ -108,11 +108,11 @@ public class AtomicFactory {
      * @return created atom
      */
     private static Atomic mapToAtom(VarProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        if (varProperty instanceof AbstractIsaProperty) {
-            return abstractIsaPropertyToAtom((AbstractIsaProperty) varProperty, var, vars, parent);
+        if (varProperty instanceof IsaAbstractProperty) {
+            return abstractIsaPropertyToAtom((IsaAbstractProperty) varProperty, var, vars, parent);
 
-        } else if (varProperty instanceof AbstractSubProperty) {
-            return abstractSubPropertyToAtom((AbstractSubProperty) varProperty, var, vars, parent);
+        } else if (varProperty instanceof SubAbstractProperty) {
+            return abstractSubPropertyToAtom((SubAbstractProperty) varProperty, var, vars, parent);
 
         } else if (varProperty instanceof DataTypeProperty) {
             return dataTypePropertyToAtom((DataTypeProperty) varProperty, var, parent);
@@ -144,8 +144,8 @@ public class AtomicFactory {
         } else if (varProperty instanceof RelatesProperty) {
             return relatesPropertyToAtom((RelatesProperty) varProperty, var, vars, parent);
 
-        } else if (varProperty instanceof RelationshipProperty) {
-            return relationshipPropertyToAtom((RelationshipProperty) varProperty, var, vars, parent);
+        } else if (varProperty instanceof RelationProperty) {
+            return relationshipPropertyToAtom((RelationProperty) varProperty, var, vars, parent);
 
         } else if (varProperty instanceof RuleProperty) {
             return null; // TODO: Why does this return null?
@@ -160,9 +160,9 @@ public class AtomicFactory {
         }
     }
 
-    private static IsaAtom abstractIsaPropertyToAtom(AbstractIsaProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
+    private static IsaAtom abstractIsaPropertyToAtom(IsaAbstractProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
         //IsaProperty is unique within a var, so skip if this is a relation
-        if (var.hasProperty(RelationshipProperty.class)) return null;
+        if (var.hasProperty(RelationProperty.class)) return null;
 
         Variable varName = var.var().asUserDefined();
         Statement typePattern = varProperty.type();
@@ -179,13 +179,13 @@ public class AtomicFactory {
         } else if (varProperty instanceof IsaExplicitProperty) {
             isaVar = varName.isaExplicit(typeVariable);
         } else {
-            throw new IllegalArgumentException("Unrecognised subclass of " + AbstractIsaProperty.class.getName());
+            throw new IllegalArgumentException("Unrecognised subclass of " + IsaAbstractProperty.class.getName());
         }
 
         return IsaAtom.create(varName, typeVariable, isaVar, predicateId, parent);
     }
 
-    private static SubAtom abstractSubPropertyToAtom(AbstractSubProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
+    private static SubAtom abstractSubPropertyToAtom(SubAbstractProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
         Variable varName = var.var().asUserDefined();
         Statement typeVar = varProperty.superType();
         Variable typeVariable = typeVar.var();
@@ -273,15 +273,15 @@ public class AtomicFactory {
         return RelatesAtom.create(varName, roleVariable, predicateId, parent);
     }
 
-    private static RelationshipAtom relationshipPropertyToAtom(RelationshipProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
+    private static RelationshipAtom relationshipPropertyToAtom(RelationProperty varProperty, Statement var, Set<Statement> vars, ReasonerQuery parent) {
         //set varName as user defined if reified
         //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
-        boolean isReified = var.getProperties()
-                .filter(prop -> !RelationshipProperty.class.isInstance(prop))
-                .anyMatch(prop -> !AbstractIsaProperty.class.isInstance(prop));
+        boolean isReified = var.properties().stream()
+                .filter(prop -> !RelationProperty.class.isInstance(prop))
+                .anyMatch(prop -> !IsaAbstractProperty.class.isInstance(prop));
         Statement relVar = isReified ? var.var().asUserDefined() : var.var();
 
-        for (RelationshipProperty.RolePlayer rp : varProperty.relationPlayers()) {
+        for (RelationProperty.RolePlayer rp : varProperty.relationPlayers()) {
             Statement rolePattern = rp.getRole().orElse(null);
             Statement rolePlayer = rp.getPlayer();
             if (rolePattern != null) {
@@ -304,7 +304,7 @@ public class AtomicFactory {
         }
 
         //isa part
-        AbstractIsaProperty isaProp = var.getProperty(AbstractIsaProperty.class).orElse(null);
+        IsaAbstractProperty isaProp = var.getProperty(IsaAbstractProperty.class).orElse(null);
         IdPredicate predicate = null;
 
         //if no isa property present generate type variable

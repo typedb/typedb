@@ -18,8 +18,8 @@
 
 package grakn.core.server.kb;
 
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Thing;
@@ -123,7 +123,7 @@ public class Validator {
      * Validation rules exclusive to relation types
      * @param relationshipType The relationTypes to validate
      */
-    private void validateRelationType(RelationshipType relationshipType){
+    private void validateRelationType(RelationType relationshipType){
         ValidateGlobalRules.validateHasMinimumRoles(relationshipType).ifPresent(errorsFound::add);
         errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationshipType));
     }
@@ -137,10 +137,10 @@ public class Validator {
     }
 
     /**
-     * Validates that {@link Relationship}s can be committed.
-     * @param relationship The {@link Relationship} to validate
+     * Validates that {@link Relation}s can be committed.
+     * @param relationship The {@link Relation} to validate
      */
-    private void validateRelationship(Relationship relationship){
+    private void validateRelationship(Relation relationship){
         ValidateGlobalRules.validateRelationshipHasRolePlayers(relationship).ifPresent(errorsFound::add);
     }
 }

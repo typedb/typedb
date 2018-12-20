@@ -33,7 +33,7 @@ import java.util.Collection;
  * When matching, any subtyping is ignored. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it only follows {@code $bob isa man}, not {@code bob isa entity}.
  */
-public class IsaExplicitProperty extends AbstractIsaProperty {
+public class IsaExplicitProperty extends IsaAbstractProperty {
 
     public static final String NAME = "isa!";
     private final Statement type;
