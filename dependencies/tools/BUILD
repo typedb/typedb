@@ -16,17 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-
-java_import(
-    name = "bazel-deps-jar",
-    jars = ["@bazel_deps//file"],
-)
-
 java_binary(
     name = "bazel-deps",
     main_class = "com.github.johnynek.bazel_deps.ParseProject",
     visibility = ["//visibility:public"],
-    runtime_deps = [":bazel-deps-jar"],
+    runtime_deps = ["@bazel_deps//jar:jar"],
 )
 
 sh_binary(
