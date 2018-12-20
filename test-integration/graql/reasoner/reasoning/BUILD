@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "neq-predicate-it",
     size = "medium",
@@ -10,6 +12,15 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
+)
+
+checkstyle_test(
+ name = "neq-predicate-it-checkstyle",
+ target = ":neq-predicate-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )
 
 java_test(
@@ -41,6 +52,15 @@ java_test(
     ],
 )
 
+checkstyle_test(
+ name = "recursion-it-checkstyle",
+ target = ":recursion-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "resource-attachment-it",
     size = "medium",
@@ -57,6 +77,15 @@ java_test(
     ],
 )
 
+checkstyle_test(
+ name = "resource-attachment-it-checkstyle",
+ target = ":resource-attachment-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "type-generation-it",
     size = "medium",
@@ -69,6 +98,15 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
+)
+
+checkstyle_test(
+ name = "type-generation-it-checkstyle",
+ target = ":type-generation-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )
 
 java_test(
@@ -86,6 +124,15 @@ java_test(
     ],
 )
 
+checkstyle_test(
+ name = "type-hierarchies-it-checkstyle",
+ target = ":type-hierarchies-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "variable-roles-it",
     size = "medium",
@@ -100,4 +147,13 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
+)
+
+checkstyle_test(
+ name = "variable-roles-it-checkstyle",
+ target = ":variable-roles-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )

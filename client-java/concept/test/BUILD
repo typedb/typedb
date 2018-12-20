@@ -37,3 +37,12 @@ java_test(
 )
 
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+checkstyle_test(
+    name = "remote-concept-it-checkstyle",
+    target = ":remote-concept-it",
+    config = "//config/checkstyle:checkstyle.xml",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    allow_failure = True
+)

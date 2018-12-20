@@ -87,6 +87,16 @@ java_library(
 
 )
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+checkstyle_test(
+ name = "server-checkstyle",
+ target = ":server",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_binary(
     name = "server-binary",
     main_class = "grakn.core.daemon.GraknDaemon",

@@ -40,3 +40,13 @@ java_library(
     resource_strip_prefix = "daemon",
     visibility = ["//server:__pkg__"],
 )
+
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+checkstyle_test(
+ name = "daemon-checkstyle",
+ target = ":daemon",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)

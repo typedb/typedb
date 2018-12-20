@@ -11,7 +11,7 @@ java_targets = set(subprocess.check_output([
     '(kind(java_library, //...) + kind(jarjar_library, //...) + kind(java_test, //...)) except //dependencies/...'
 ]).split())
 
-checkstyle_targets = set(map(lambda x: x.rstrip('-checkstyle'), subprocess.check_output([
+checkstyle_targets = set(map(lambda x: x.replace('-checkstyle', ''), subprocess.check_output([
     'bazel', 'query', 'kind(checkstyle_test, //...)'
 ]).split()))
 

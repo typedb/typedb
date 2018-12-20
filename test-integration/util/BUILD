@@ -1,3 +1,4 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_library(
     name = "graql-test-util",
@@ -8,4 +9,13 @@ java_library(
       "//dependencies/maven/artifacts/commons-collections:commons-collections",
       "//dependencies/maven/artifacts/junit:junit"
     ]
+)
+
+checkstyle_test(
+ name = "graql-test-util-checkstyle",
+ target = ":graql-test-util",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )
