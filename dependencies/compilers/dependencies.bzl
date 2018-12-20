@@ -16,22 +16,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
 def antlr_dependencies():
 
-    native.git_repository(
+    git_repository(
         name = "rules_antlr",
-        remote = "https://github.com/marcohu/rules_antlr",
-        tag = "0.1.0" # sync version with //dependencies/maven/artifacts/org/antlr
+        remote = "https://github.com/graknlabs/rules_antlr",
+        commit = "e40680fccd90b6bcf3c746f63d48a201152bb67f"
     )
 
 def grpc_dependencies():
-    native.git_repository(
+    git_repository(
         name = "com_github_grpc_grpc",
         remote = "https://github.com/graknlabs/grpc",
-        commit = "da829a5ac902ab99eef14e6aad1d8e0cd173ec64"
+        commit = "ad6b3949bdbe6d0d25522558ebe73f4044a02146"
     )
 
-    native.git_repository(
+    git_repository(
         name = "stackb_rules_proto",
         remote = "https://github.com/stackb/rules_proto",
         commit = "4c2226458203a9653ae722245cc27e8b07c383f7",
