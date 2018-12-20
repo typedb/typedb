@@ -73,15 +73,11 @@ def collect_sources_impl(target, ctx):
             for f in src.files:
                 if f.extension == 'java':
                     files.append(f)
-    # Get the counts from our dependencies.
-    for dep in ctx.rule.attr.deps:
-        files = files + dep[JavaSourceFiles].files
     return [JavaSourceFiles(files = files)]
 
 
 collect_sources = aspect(
     implementation = collect_sources_impl,
-    attr_aspects = ['deps']
 )
 
 
