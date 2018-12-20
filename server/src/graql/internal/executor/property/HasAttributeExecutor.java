@@ -59,15 +59,15 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
 
         @Override
         public Set<Variable> requiredVars() {
-            return Collections.unmodifiableSet(Collections.singleton(property.relationship().var()));
-        }
-
-        @Override
-        public Set<Variable> producedVars() {
             Set<Variable> produced = new HashSet<>();
             produced.add(var);
             produced.add(property.attribute().var());
             return Collections.unmodifiableSet(produced);
+        }
+
+        @Override
+        public Set<Variable> producedVars() {
+            return Collections.unmodifiableSet(Collections.singleton(property.relationship().var()));
         }
 
         @Override
