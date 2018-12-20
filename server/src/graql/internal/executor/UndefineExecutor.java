@@ -108,9 +108,9 @@ public class UndefineExecutor {
 
     private Set<PropertyExecutor> subExecutors(Variable var, AbstractSubProperty property) {
         PropertyExecutor.Method method = executor -> {
-            SchemaConcept concept = executor.get(var).asSchemaConcept();
+            SchemaConcept concept = executor.getConcept(var).asSchemaConcept();
 
-            SchemaConcept expectedSuperConcept = executor.get(property.superType().var()).asSchemaConcept();
+            SchemaConcept expectedSuperConcept = executor.getConcept(property.superType().var()).asSchemaConcept();
             SchemaConcept actualSuperConcept = concept.sup();
 
             if (!concept.isDeleted() && expectedSuperConcept.equals(actualSuperConcept)) {
@@ -142,8 +142,8 @@ public class UndefineExecutor {
 
     private Set<PropertyExecutor> hasAttributeTypeExecutors(Variable var, HasAttributeTypeProperty property) {
         PropertyExecutor.Method method = executor -> {
-            Type type = executor.get(var).asType();
-            AttributeType<?> attributeType = executor.get(property.type().var()).asAttributeType();
+            Type type = executor.getConcept(var).asType();
+            AttributeType<?> attributeType = executor.getConcept(property.type().var()).asAttributeType();
 
             if (!type.isDeleted() && !attributeType.isDeleted()) {
                 if (property.isRequired()) {
@@ -162,7 +162,7 @@ public class UndefineExecutor {
     private Set<PropertyExecutor> idExecutors(Variable var, IdProperty property) {
         // This property works in undefine queries, because it is only for look-ups
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).id(property.id());
+            executor.getBuilder(var).id(property.id());
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
@@ -172,7 +172,7 @@ public class UndefineExecutor {
 
     private Set<PropertyExecutor> isAbstractExecutors(Variable var) {
         PropertyExecutor.Method method = executor -> {
-            Type type = executor.get(var).asType();
+            Type type = executor.getConcept(var).asType();
             if (!type.isDeleted()) {
                 type.isAbstract(false);
             }
@@ -186,7 +186,7 @@ public class UndefineExecutor {
     private Set<PropertyExecutor> labelExecutors(Variable var, LabelProperty property) {
         // This is supported in undefine queries in order to allow looking up schema concepts by label
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).label(property.label());
+            executor.getBuilder(var).label(property.label());
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
@@ -196,8 +196,8 @@ public class UndefineExecutor {
 
     private Set<PropertyExecutor> playsExecutor(Variable var, PlaysProperty property) {
         PropertyExecutor.Method method = executor -> {
-            Type type = executor.get(var).asType();
-            Role role = executor.get(property.role().var()).asRole();
+            Type type = executor.getConcept(var).asType();
+            Role role = executor.getConcept(property.role().var()).asRole();
 
             if (!type.isDeleted() && !role.isDeleted()) {
                 type.unplay(role);
@@ -213,7 +213,7 @@ public class UndefineExecutor {
 
     private Set<PropertyExecutor> regexExecutors(Variable var, RegexProperty property) {
         PropertyExecutor.Method method = executor -> {
-            AttributeType<Object> attributeType = executor.get(var).asAttributeType();
+            AttributeType<Object> attributeType = executor.getConcept(var).asAttributeType();
             if (!attributeType.isDeleted() && property.regex().equals(attributeType.regex())) {
                 attributeType.regex(null);
             }
@@ -226,8 +226,8 @@ public class UndefineExecutor {
 
     private Set<PropertyExecutor> relatesExecutor(Variable var, RelatesProperty property) {
         PropertyExecutor.Method method = executor -> {
-            RelationshipType relationshipType = executor.get(var).asRelationshipType();
-            Role role = executor.get(property.role().var()).asRole();
+            RelationshipType relationshipType = executor.getConcept(var).asRelationshipType();
+            Role role = executor.getConcept(property.role().var()).asRole();
 
             if (!relationshipType.isDeleted() && !role.isDeleted()) {
                 relationshipType.unrelate(role);

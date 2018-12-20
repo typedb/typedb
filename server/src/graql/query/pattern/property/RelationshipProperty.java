@@ -159,8 +159,8 @@ public class RelationshipProperty extends VarProperty {
     public void addRoleplayer(WriteExecutor executor, grakn.core.graql.concept.Relationship relationship, RolePlayer relationPlayer) {
         Statement roleVar = getRole(relationPlayer);
 
-        Role role = executor.get(roleVar.var()).asRole();
-        Thing roleplayer = executor.get(relationPlayer.getPlayer().var()).asThing();
+        Role role = executor.getConcept(roleVar.var()).asRole();
+        Thing roleplayer = executor.getConcept(relationPlayer.getPlayer().var()).asThing();
         relationship.assign(role, roleplayer);
     }
 

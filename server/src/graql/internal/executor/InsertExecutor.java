@@ -120,8 +120,8 @@ public class InsertExecutor {
 
     private Set<PropertyExecutor> isaExecutors(Variable var, AbstractIsaProperty property) {
         PropertyExecutor.Method method = executor -> {
-            Type type = executor.get(property.type().var()).asType();
-            executor.builder(var).isa(type);
+            Type type = executor.getConcept(property.type().var()).asType();
+            executor.getBuilder(var).isa(type);
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method)
@@ -134,10 +134,10 @@ public class InsertExecutor {
 
     private Set<PropertyExecutor> hasAttributeExecutors(Variable var, HasAttributeProperty property) {
         PropertyExecutor.Method method = executor -> {
-            Attribute attributeConcept = executor.get(property.attribute().var()).asAttribute();
-            Thing thing = executor.get(var).asThing();
+            Attribute attributeConcept = executor.getConcept(property.attribute().var()).asAttribute();
+            Thing thing = executor.getConcept(var).asThing();
             ConceptId relationshipId = thing.relhas(attributeConcept).id();
-            executor.builder(property.relationship().var()).id(relationshipId);
+            executor.getBuilder(property.relationship().var()).id(relationshipId);
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method)
@@ -150,7 +150,7 @@ public class InsertExecutor {
 
     private Set<PropertyExecutor> idExecutors(Variable var, IdProperty property) {
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).id(property.id());
+            executor.getBuilder(var).id(property.id());
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
@@ -162,7 +162,7 @@ public class InsertExecutor {
         // This is supported in insert queries in the same way it does for define queries
         // in order to allow looking up schema concepts by label
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).label(property.label());
+            executor.getBuilder(var).label(property.label());
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
@@ -172,7 +172,7 @@ public class InsertExecutor {
 
     private Set<PropertyExecutor> relationshipExecutors(Variable var, RelationshipProperty property) {
         PropertyExecutor.Method method = executor -> {
-            Relationship relationship = executor.get(var).asRelationship();
+            Relationship relationship = executor.getConcept(var).asRelationship();
             property.relationPlayers().forEach(relationPlayer -> property.addRoleplayer(executor, relationship, relationPlayer));
         };
 
@@ -184,7 +184,7 @@ public class InsertExecutor {
     private Set<PropertyExecutor> valueExecutors(Variable var, ValueProperty property) {
         PropertyExecutor.Method method = executor -> {
             Object value = property.predicate().equalsValue().orElseThrow(GraqlQueryException::insertPredicate);
-            executor.builder(var).value(value);
+            executor.getBuilder(var).value(value);
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();

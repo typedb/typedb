@@ -119,14 +119,14 @@ public class DefineExecutor {
 
     private Set<PropertyExecutor> subExecutors(Variable var, AbstractSubProperty property) {
         PropertyExecutor.Method method = executor -> {
-            SchemaConcept superConcept = executor.get(property.superType().var()).asSchemaConcept();
+            SchemaConcept superConcept = executor.getConcept(property.superType().var()).asSchemaConcept();
 
             Optional<ConceptBuilder> builder = executor.tryBuilder(var);
 
             if (builder.isPresent()) {
                 builder.get().sub(superConcept);
             } else {
-                ConceptBuilder.setSuper(executor.get(var).asSchemaConcept(), superConcept);
+                ConceptBuilder.setSuper(executor.getConcept(var).asSchemaConcept(), superConcept);
             }
         };
 
@@ -140,7 +140,7 @@ public class DefineExecutor {
 
     private Set<PropertyExecutor> dataTypeExecutors(Variable var, DataTypeProperty property) {
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).dataType(property.dataType());
+            executor.getBuilder(var).dataType(property.dataType());
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
@@ -150,8 +150,8 @@ public class DefineExecutor {
 
     private Set<PropertyExecutor> hasAttributeTypeExecutors(Variable var, HasAttributeTypeProperty property) {
         PropertyExecutor.Method method = executor -> {
-            Type entityTypeConcept = executor.get(var).asType();
-            AttributeType attributeTypeConcept = executor.get(property.type().var()).asAttributeType();
+            Type entityTypeConcept = executor.getConcept(var).asType();
+            AttributeType attributeTypeConcept = executor.getConcept(property.type().var()).asAttributeType();
 
             if (property.isRequired()) {
                 entityTypeConcept.key(attributeTypeConcept);
@@ -170,7 +170,7 @@ public class DefineExecutor {
     private Set<PropertyExecutor> idExecutors(Variable var, IdProperty property) {
         // This property works in both insert and define queries, because it is only for look-ups
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).id(property.id());
+            executor.getBuilder(var).id(property.id());
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
@@ -180,7 +180,7 @@ public class DefineExecutor {
 
     private Set<PropertyExecutor> isAbstractExecutors(Variable var) {
         PropertyExecutor.Method method = executor -> {
-            Concept concept = executor.get(var);
+            Concept concept = executor.getConcept(var);
             if (concept.isType()) {
                 concept.asType().isAbstract(true);
             } else {
@@ -195,7 +195,7 @@ public class DefineExecutor {
 
     private Set<PropertyExecutor> labelExecutors(Variable var, LabelProperty property) {
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).label(property.label());
+            executor.getBuilder(var).label(property.label());
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
@@ -205,8 +205,8 @@ public class DefineExecutor {
 
     private Set<PropertyExecutor> playsExecutors(Variable var, PlaysProperty property) {
         PropertyExecutor.Method method = executor -> {
-            Role role = executor.get(property.role().var()).asRole();
-            executor.get(var).asType().plays(role);
+            Role role = executor.getConcept(property.role().var()).asRole();
+            executor.getConcept(var).asType().plays(role);
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method)
@@ -218,7 +218,7 @@ public class DefineExecutor {
 
     private Set<PropertyExecutor> regexExecutors(Variable var, RegexProperty property) {
         PropertyExecutor.Method method = executor -> {
-            executor.get(var).asAttributeType().regex(property.regex());
+            executor.getConcept(var).asAttributeType().regex(property.regex());
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).requires(var).build();
@@ -231,15 +231,15 @@ public class DefineExecutor {
         Variable roleVar = property.role().var();
 
         PropertyExecutor.Method relatesMethod = executor -> {
-            Role role = executor.get(roleVar).asRole();
-            executor.get(var).asRelationshipType().relates(role);
+            Role role = executor.getConcept(roleVar).asRole();
+            executor.getConcept(var).asRelationshipType().relates(role);
         };
 
         PropertyExecutor relatesExecutor = PropertyExecutor.builder(relatesMethod).requires(var, roleVar).build();
         propertyExecutors.add(relatesExecutor);
 
         // This allows users to skip stating `$roleVar sub role` when they say `$var relates $roleVar`
-        PropertyExecutor.Method isRoleMethod = executor -> executor.builder(roleVar).isRole();
+        PropertyExecutor.Method isRoleMethod = executor -> executor.getBuilder(roleVar).isRole();
 
         PropertyExecutor isRoleExecutor = PropertyExecutor.builder(isRoleMethod).produces(roleVar).build();
         propertyExecutors.add(isRoleExecutor);
@@ -248,8 +248,8 @@ public class DefineExecutor {
         if (superRoleStatement != null) {
             Variable superRoleVar = superRoleStatement.var();
             PropertyExecutor.Method subMethod = executor -> {
-                Role superRole = executor.get(superRoleVar).asRole();
-                executor.builder(roleVar).sub(superRole);
+                Role superRole = executor.getConcept(superRoleVar).asRole();
+                executor.getBuilder(roleVar).sub(superRole);
             };
 
             PropertyExecutor subExecutor = PropertyExecutor.builder(subMethod)
@@ -266,7 +266,7 @@ public class DefineExecutor {
     private Set<PropertyExecutor> thenExecutors(Variable var, ThenProperty property) {
         PropertyExecutor.Method method = executor -> {
             // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar then { ... }`
-            executor.builder(var).isRule().then(property.pattern());
+            executor.getBuilder(var).isRule().then(property.pattern());
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();
@@ -277,7 +277,7 @@ public class DefineExecutor {
     private Set<PropertyExecutor> whenExecutors(Variable var, WhenProperty property) {
         PropertyExecutor.Method method = executor -> {
             // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar when { ... }`
-            executor.builder(var).isRule().when(property.pattern());
+            executor.getBuilder(var).isRule().when(property.pattern());
         };
 
         PropertyExecutor executor = PropertyExecutor.builder(method).produces(var).build();

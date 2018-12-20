@@ -190,10 +190,7 @@ public class PropertyExecutor {
             if (!missing.isEmpty()) {
                 throw new IllegalStateException("Missing required properties:" + missing);
             }
-            return new PropertyExecutor(
-                    this.requiredVars,
-                    this.producedVars,
-                    this.executeMethod);
+            return new PropertyExecutor(this.requiredVars, this.producedVars, this.executeMethod);
         }
     }
 
