@@ -66,7 +66,7 @@ public class UndefineExecutor {
 
         for (Statement statement : allPatterns) {
             for (VarProperty property : statement.properties()){
-                executors.addAll(definable(statement.var(), property).defineExecutors());
+                executors.addAll(definable(statement.var(), property).undefineExecutors());
             }
         }
         return Writer.create(executors.build(), transaction).write(new ConceptMap());
