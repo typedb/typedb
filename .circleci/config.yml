@@ -20,6 +20,7 @@ jobs:
       - checkout
       - *install_bazel
       - run: python ./verify.py
+      - run: bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
 
   build:
     machine: true
