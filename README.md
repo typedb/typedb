@@ -52,7 +52,7 @@ You can visit the [Setup Guide](http://dev.grakn.ai/docs/get-started/setup-guide
 > Note: You don't need to compile Grakn Core from source if you just want to use Grakn. See the _"Download and Run"_ section above. 
 
 Grakn is built using [Bazel](https://bazel.build). To compile Grakn Core from source:
-1. Make sure you have Java 8 and Python 2 installed on your machine.
+1. Make sure you have Java 8, Python 2, and Pip installed on your machine.
 2. [Install Bazel](https://docs.bazel.build/versions/master/install-os-x.html)
 3. Prerequisite for building Workbase:
 ```
