@@ -13,6 +13,14 @@ references:
         at: ~/grakn
 
 jobs:
+  lint:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - *install_bazel
+      - run: python ./verify.py
+
   build:
     machine: true
     working_directory: ~/grakn
@@ -228,21 +236,52 @@ workflows:
   version: 2
   grakn-core-ci:
     jobs:
-      - build
-      - client-java
-      - client-nodejs
-      - client-python
-      - common
-      - console
-      - graql
-      - server
-      - workbase
-      - test-integration
-      - test-integration-reasoner
-      - test-integration-reasoner-general
-      - test-integration-reasoner-components
-      - test-integration-analytics
-      - test-end-to-end
+      - lint
+      - build:
+          requires:
+            - lint
+      - client-java:
+          requires:
+            - lint
+      - client-nodejs:
+          requires:
+              - lint
+      - client-python:
+          requires:
+            - lint
+      - common:
+          requires:
+            - lint
+      - console:
+          requires:
+            - lint
+      - graql:
+          requires:
+            - lint
+      - server:
+          requires:
+            - lint
+      - workbase:
+          requires:
+            - lint
+      - test-integration:
+          requires:
+            - lint
+      - test-integration-reasoner:
+          requires:
+            - lint
+      - test-integration-reasoner-general:
+          requires:
+            - lint
+      - test-integration-reasoner-components:
+          requires:
+            - lint
+      - test-integration-analytics:
+          requires:
+            - lint
+      - test-end-to-end:
+          requires:
+            - lint
 
   build-and-deploy:
     jobs:
