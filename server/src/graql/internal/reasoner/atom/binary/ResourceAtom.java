@@ -300,7 +300,7 @@ public abstract class ResourceAtom extends Binary{
             if (owner.isEntity()) {
                 EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
             } else if (owner.isRelationship()) {
-                RelationshipImpl.from(owner.asRelationship()).attributeInferred(attribute);
+                RelationshipImpl.from(owner.asRelation()).attributeInferred(attribute);
             } else if (owner.isAttribute()) {
                 AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
             }

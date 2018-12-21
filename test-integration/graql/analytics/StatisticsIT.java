@@ -26,7 +26,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
@@ -525,7 +525,7 @@ public class StatisticsIT {
             Attribute power1 = power.create(1L);
             Attribute power2 = power.create(2L);
             Attribute power3 = power.create(3L);
-            RelationshipType relationType = tx.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
+            RelationType relationType = tx.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
                     .relates(resourceOwner).relates(resourceValue);
 
             relationType.create()
@@ -579,7 +579,7 @@ public class StatisticsIT {
             Role relation2 = tx.putRole("relation2");
             entityType1.plays(relation1).plays(relation2);
             entityType2.plays(relation1).plays(relation2);
-            RelationshipType related = tx.putRelationshipType("related").relates(relation1).relates(relation2);
+            RelationType related = tx.putRelationshipType("related").relates(relation1).relates(relation2);
 
             related.create()
                     .assign(relation1, entity1)
@@ -666,7 +666,7 @@ public class StatisticsIT {
             Role resourceValue5 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType5)));
             Role resourceValue6 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
 
-            RelationshipType relationshipType1 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)));
+            RelationType relationshipType1 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)));
             relationshipType1.create()
                     .assign(resourceOwner1, entity1)
                     .assign(resourceValue1, tx.<Double>getAttributeType(resourceType1).create(1.2));
@@ -677,7 +677,7 @@ public class StatisticsIT {
                     .assign(resourceOwner1, entity3)
                     .assign(resourceValue1, tx.<Double>getAttributeType(resourceType1).create(1.8));
 
-            RelationshipType relationshipType2 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)));
+            RelationType relationshipType2 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)));
             relationshipType2.create()
                     .assign(resourceOwner2, entity1)
                     .assign(resourceValue2, tx.<Long>getAttributeType(resourceType2).create(4L));
@@ -690,7 +690,7 @@ public class StatisticsIT {
 
             tx.<Long>getAttributeType(resourceType3).create(100L);
 
-            RelationshipType relationshipType5 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)));
+            RelationType relationshipType5 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)));
             relationshipType5.create()
                     .assign(resourceOwner5, entity1)
                     .assign(resourceValue5, tx.<Long>getAttributeType(resourceType5).create(-7L));
@@ -701,7 +701,7 @@ public class StatisticsIT {
                     .assign(resourceOwner5, entity4)
                     .assign(resourceValue5, tx.<Long>getAttributeType(resourceType5).create(-7L));
 
-            RelationshipType relationshipType6 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)));
+            RelationType relationshipType6 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)));
             relationshipType6.create()
                     .assign(resourceOwner6, entity1)
                     .assign(resourceValue6, tx.<Double>getAttributeType(resourceType6).create(7.5));

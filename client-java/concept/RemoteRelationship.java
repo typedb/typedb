@@ -23,8 +23,8 @@ import grakn.core.client.GraknClient;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.protocol.ConceptProto;
@@ -39,10 +39,10 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link Relationship}
+ * Client implementation of {@link Relation}
  */
 @AutoValue
-public abstract class RemoteRelationship extends RemoteThing<Relationship, RelationshipType> implements Relationship {
+public abstract class RemoteRelationship extends RemoteThing<Relation, RelationType> implements Relation {
 
     static RemoteRelationship construct(GraknClient.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRelationship(tx, id);
@@ -83,7 +83,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
     }
 
     @Override
-    public final Relationship assign(Role role, Thing player) {
+    public final Relation assign(Role role, Thing player) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationAssignReq(ConceptProto.Relation.Assign.Req.newBuilder()
                         .setRole(RequestBuilder.Concept.concept(role))
@@ -104,12 +104,12 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
     }
 
     @Override
-    final RelationshipType asCurrentType(Concept concept) {
+    final RelationType asCurrentType(Concept concept) {
         return concept.asRelationshipType();
     }
 
     @Override
-    final Relationship asCurrentBaseType(Concept other) {
-        return other.asRelationship();
+    final Relation asCurrentBaseType(Concept other) {
+        return other.asRelation();
     }
 }

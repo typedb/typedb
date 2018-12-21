@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.sqrt;
 
-@SuppressWarnings("Duplicates") // TODO: remove
 public class AggregateExecutor {
 
     private static Number getValue(ConceptMap answer, Variable var) {

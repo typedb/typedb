@@ -25,8 +25,8 @@ import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
@@ -128,13 +128,13 @@ public final class Schema {
         SCHEMA_CONCEPT(SchemaConcept.class),
         TYPE(Type.class),
         ENTITY_TYPE(EntityType.class),
-        RELATIONSHIP_TYPE(RelationshipType.class),
+        RELATIONSHIP_TYPE(RelationType.class),
         ATTRIBUTE_TYPE(AttributeType.class),
         ROLE(Role.class),
         RULE(Rule.class),
 
         //Instances
-        RELATIONSHIP(Relationship.class),
+        RELATIONSHIP(Relation.class),
         ENTITY(Entity.class),
         ATTRIBUTE(Attribute.class),
 

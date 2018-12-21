@@ -22,11 +22,9 @@ import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
@@ -41,7 +39,7 @@ import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 import grakn.core.graql.query.pattern.property.RelatesProperty;
-import grakn.core.graql.query.pattern.property.RelationshipProperty;
+import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.SubExplicitProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.ThenProperty;
@@ -83,7 +81,7 @@ public abstract class Statement implements Pattern {
     @CheckReturnValue
     public abstract Variable var();
 
-    protected abstract Set<VarProperty> properties();
+    public abstract Set<VarProperty> properties();
 
     @Override
     public Statement asStatement() {
@@ -108,7 +106,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Set<Label> getTypeLabels() {
-        return getProperties()
+        return properties().stream()
                 .flatMap(varProperty -> varProperty.getTypes())
                 .map(statement -> statement.getTypeLabel())
                 .flatMap(optional -> CommonUtil.optionalToStream(optional))
@@ -118,31 +116,31 @@ public abstract class Statement implements Pattern {
     /**
      * Get a stream of all properties of a particular type on this variable
      *
-     * @param type the class of {@link VarProperty} to return
-     * @param <T>  the type of {@link VarProperty} to return
+     * @param type the class of VarProperty to return
+     * @param <T>  the type of VarProperty to return
      */
     @CheckReturnValue
     public final <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
-        return getProperties().filter(type::isInstance).map(type::cast);
+        return properties().stream().filter(type::isInstance).map(type::cast);
     }
 
     /**
      * Get a unique property of a particular type on this variable, if it exists
      *
-     * @param type the class of {@link VarProperty} to return
-     * @param <T>  the type of {@link VarProperty} to return
+     * @param type the class of VarProperty to return
+     * @param <T>  the type of VarProperty to return
      */
     @CheckReturnValue
     public final <T extends VarProperty> Optional<T> getProperty(Class<T> type) {
-        return getProperties().filter(type::isInstance).map(type::cast).findFirst();
+        return properties().stream().filter(type::isInstance).map(type::cast).findFirst();
     }
 
     /**
-     * Get whether this {@link Statement} has a {@link VarProperty} of the given type
+     * Get whether this Statement} has a {@link VarProperty of the given type
      *
-     * @param type the type of the {@link VarProperty}
-     * @param <T>  the type of the {@link VarProperty}
-     * @return whether this {@link Statement} has a {@link VarProperty} of the given type
+     * @param type the type of the VarProperty
+     * @param <T>  the type of the VarProperty
+     * @return whether this Statement} has a {@link VarProperty of the given type
      */
     @CheckReturnValue
     public final <T extends VarProperty> boolean hasProperty(Class<T> type) {
@@ -162,7 +160,7 @@ public abstract class Statement implements Pattern {
         while (!newVars.isEmpty()) {
             Statement var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(varProperty -> varProperty.innerStatements()).forEach(newVars::add);
+            var.properties().stream().flatMap(varProperty -> varProperty.innerStatements()).forEach(newVars::add);
         }
 
         return vars;
@@ -181,7 +179,7 @@ public abstract class Statement implements Pattern {
         while (!newVars.isEmpty()) {
             Statement var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(varProperty -> varProperty.implicitInnerStatements()).forEach(newVars::add);
+            var.properties().stream().flatMap(varProperty -> varProperty.implicitInnerStatements()).forEach(newVars::add);
         }
 
         return vars;
@@ -272,10 +270,10 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must have an {@link Attribute} of the given type that matches the given atom
+     * the variable must have an Attribute of the given type that matches the given atom
      *
      * @param type      a resource type in the schema
-     * @param attribute a variable pattern representing an {@link Attribute}
+     * @param attribute a variable pattern representing an Attribute
      * @return this
      */
     @CheckReturnValue
@@ -284,10 +282,10 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must have an {@link Attribute} of the given type that matches the given atom
+     * the variable must have an Attribute of the given type that matches the given atom
      *
      * @param type      a resource type in the schema
-     * @param attribute a variable pattern representing an {@link Attribute}
+     * @param attribute a variable pattern representing an Attribute
      * @return this
      */
     @CheckReturnValue
@@ -296,12 +294,12 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must have an {@link Attribute} of the given type that matches {@code attribute}.
-     * The {@link grakn.core.graql.concept.Relationship} associating the two must match {@code relation}.
+     * the variable must have an Attribute of the given type that matches attribute.
+     * The Relationship associating the two must match relation.
      *
      * @param type         a resource type in the ontology
-     * @param attribute    a variable pattern representing an {@link Attribute}
-     * @param relationship a variable pattern representing a {@link grakn.core.graql.concept.Relationship}
+     * @param attribute    a variable pattern representing an Attribute
+     * @param relationship a variable pattern representing a Relationship
      * @return this
      */
     @CheckReturnValue
@@ -382,7 +380,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param type a {@link Role} id that this relation type variable must have
+     * @param type a Role id that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
@@ -391,7 +389,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param type a {@link Role} that this relation type variable must have
+     * @param type a Role that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
@@ -400,7 +398,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param roleType a {@link Role} id that this relation type variable must have
+     * @param roleType a Role id that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
@@ -409,7 +407,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param roleType a {@link Role} that this relation type variable must have
+     * @param roleType a Role that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
@@ -418,7 +416,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param type a {@link Role} id that this concept type variable must play
+     * @param type a Role id that this concept type variable must play
      * @return this
      */
     @CheckReturnValue
@@ -427,7 +425,7 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param type a {@link Role} that this concept type variable must play
+     * @param type a Role that this concept type variable must play
      * @return this
      */
     @CheckReturnValue
@@ -490,13 +488,13 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement roleplayer) {
-        return addRolePlayer(new RelationshipProperty.RolePlayer(null, roleplayer));
+        return addRolePlayer(new RelationProperty.RolePlayer(null, roleplayer));
     }
 
     /**
-     * the variable must be a relation with the given roleplayer playing the given {@link Role}
+     * the variable must be a relation with the given roleplayer playing the given Role
      *
-     * @param role       a {@link Role} in the schema
+     * @param role       a Role in the schema
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
@@ -506,9 +504,9 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must be a relation with the given roleplayer playing the given {@link Role}
+     * the variable must be a relation with the given roleplayer playing the given Role
      *
-     * @param role       a variable pattern representing a {@link Role}
+     * @param role       a variable pattern representing a Role
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
@@ -518,9 +516,9 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must be a relation with the given roleplayer playing the given {@link Role}
+     * the variable must be a relation with the given roleplayer playing the given Role
      *
-     * @param role       a {@link Role} in the schema
+     * @param role       a Role in the schema
      * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
@@ -530,15 +528,15 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * the variable must be a relation with the given roleplayer playing the given {@link Role}
+     * the variable must be a relation with the given roleplayer playing the given Role
      *
-     * @param role       a variable pattern representing a {@link Role}
+     * @param role       a variable pattern representing a Role
      * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
     @CheckReturnValue
     public final Statement rel(Statement role, Statement roleplayer) {
-        return addRolePlayer(new RelationshipProperty.RolePlayer(role, roleplayer));
+        return addRolePlayer(new RelationProperty.RolePlayer(role, roleplayer));
     }
 
     /**
@@ -631,25 +629,17 @@ public abstract class Statement implements Pattern {
         return "`" + toString() + "`";
     }
 
-    /**
-     * Get a stream of all properties on this variable
-     */
-    @CheckReturnValue
-    public final Stream<VarProperty> getProperties() {
-        return properties().stream();
-    }
+    private Statement addRolePlayer(RelationProperty.RolePlayer relationPlayer) {
+        Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-    private Statement addRolePlayer(RelationshipProperty.RolePlayer relationPlayer) {
-        Optional<RelationshipProperty> relationProperty = getProperty(RelationshipProperty.class);
-
-        ImmutableMultiset<RelationshipProperty.RolePlayer> oldCastings = relationProperty
-                .map(RelationshipProperty::relationPlayers)
+        ImmutableMultiset<RelationProperty.RolePlayer> oldCastings = relationProperty
+                .map(RelationProperty::relationPlayers)
                 .orElse(ImmutableMultiset.of());
 
-        ImmutableMultiset<RelationshipProperty.RolePlayer> relationPlayers =
+        ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers =
                 Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
-        RelationshipProperty newProperty = new RelationshipProperty(relationPlayers);
+        RelationProperty newProperty = new RelationProperty(relationPlayers);
 
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }

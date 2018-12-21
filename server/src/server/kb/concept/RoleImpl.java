@@ -19,7 +19,7 @@
 package grakn.core.server.kb.concept;
 
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
@@ -36,21 +36,21 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     An {@link SchemaConcept} which defines a {@link Role} which can be played in a {@link RelationshipType}.
+ *     An {@link SchemaConcept} which defines a {@link Role} which can be played in a {@link RelationType}.
  * </p>
  *
  * <p>
- *     This {@link SchemaConcept} defines the roles which make up a {@link RelationshipType}.
+ *     This {@link SchemaConcept} defines the roles which make up a {@link RelationType}.
  *     It has some additional functionality:
  *     1. It cannot play a {@link Role} to itself.
- *     2. It is special in that it is unique to {@link RelationshipType}s.
+ *     2. It is special in that it is unique to {@link RelationType}s.
  * </p>
  *
  *
  */
 public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     private final Cache<Set<Type>> cachedDirectPlayedByTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private final Cache<Set<RelationshipType>> cachedRelationTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<RelationshipType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final Cache<Set<RelationType>> cachedRelationTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     private RoleImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -71,7 +71,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     }
 
     @Override
-    public Stream<RelationshipType> relationships() {
+    public Stream<RelationType> relationships() {
         return cachedRelationTypes.get().stream();
     }
 
@@ -81,7 +81,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      *
      * @param newRelationshipType The new relation type to cache in the role.
      */
-    void addCachedRelationType(RelationshipType newRelationshipType){
+    void addCachedRelationType(RelationType newRelationshipType){
         cachedRelationTypes.ifPresent(set -> set.add(newRelationshipType));
     }
 
@@ -91,7 +91,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      *
      * @param oldRelationshipType The new relation type to cache in the role.
      */
-    void deleteCachedRelationType(RelationshipType oldRelationshipType){
+    void deleteCachedRelationType(RelationType oldRelationshipType){
         cachedRelationTypes.ifPresent(set -> set.remove(oldRelationshipType));
     }
 
@@ -118,7 +118,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      */
     public Stream<Casting> rolePlayers(){
         return relationships().
-                flatMap(RelationshipType::instances).
+                flatMap(RelationType::instances).
                 map(relation -> RelationshipImpl.from(relation).reified()).
                 flatMap(CommonUtil::optionalToStream).
                 flatMap(relation -> relation.castingsRelation(this));

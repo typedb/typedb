@@ -40,7 +40,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
@@ -199,14 +199,14 @@ public final class GraknClient {
         }
 
         @Override
-        public Stream<ConceptMap> stream(DefineQuery query, boolean infer) {
-            Iterable<ConceptMap> iterable = () -> this.rpcIterator(query, infer);
+        public Stream<ConceptMap> stream(DefineQuery query) {
+            Iterable<ConceptMap> iterable = () -> this.rpcIterator(query);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
         @Override
-        public Stream<ConceptMap> stream(UndefineQuery query, boolean infer) {
-            Iterable<ConceptMap> iterable = () -> this.rpcIterator(query, infer);
+        public Stream<ConceptMap> stream(UndefineQuery query) {
+            Iterable<ConceptMap> iterable = () -> this.rpcIterator(query);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
@@ -226,6 +226,10 @@ public final class GraknClient {
         public Stream<ConceptMap> stream(GetQuery query, boolean infer) {
             Iterable<ConceptMap> iterable = () -> this.rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        private Iterator rpcIterator(Query query) {
+            return rpcIterator(query, true);
         }
 
         private Iterator rpcIterator(Query query, boolean infer) {
@@ -297,7 +301,7 @@ public final class GraknClient {
 
         @Nullable
         @Override
-        public RelationshipType getRelationshipType(String label) {
+        public RelationType getRelationshipType(String label) {
             SchemaConcept concept = getSchemaConcept(Label.of(label));
             if (concept == null || !concept.isRelationshipType()) return null;
             return concept.asRelationshipType();
@@ -377,7 +381,7 @@ public final class GraknClient {
         }
 
         @Override
-        public RelationshipType putRelationshipType(Label label) {
+        public RelationType putRelationshipType(Label label) {
             transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
             return RemoteConcept.of(responseOrThrow().getPutRelationTypeRes().getRelationType(), this).asRelationshipType();
         }

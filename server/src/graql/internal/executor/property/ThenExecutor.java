@@ -1,0 +1,79 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package grakn.core.graql.internal.executor.property;
+
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.ThenProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
+
+import java.util.Collections;
+import java.util.Set;
+
+public class ThenExecutor implements PropertyExecutor.Definable {
+
+    private final Variable var;
+    private final ThenProperty property;
+
+    public ThenExecutor(Variable var, ThenProperty property) {
+        this.var = var;
+        this.property = property;
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> defineExecutors() {
+        return Collections.unmodifiableSet(Collections.singleton(new DefineThen()));
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
+        // TODO: Fix this so that Undefining ThenProperty behaves symmetrically to Defining ThenProperty
+        throw GraqlQueryException.defineUnsupportedProperty(property.getName());
+    }
+
+    private class DefineThen implements PropertyExecutor.Writer {
+
+        @Override
+        public Variable var() {
+            return var;
+        }
+
+        @Override
+        public VarProperty property() {
+            return property;
+        }
+
+        @Override
+        public Set<Variable> requiredVars() {
+            return Collections.unmodifiableSet(Collections.emptySet());
+        }
+
+        @Override
+        public Set<Variable> producedVars() {
+            return Collections.unmodifiableSet(Collections.singleton(var));
+        }
+
+        @Override
+        public void execute(WriteExecutor executor) {
+            // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar then { ... }`
+            executor.getBuilder(var).isRule().then(property.pattern());
+        }
+    }
+}

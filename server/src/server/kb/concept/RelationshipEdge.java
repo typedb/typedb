@@ -20,8 +20,8 @@ package grakn.core.server.kb.concept;
 
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.internal.Schema;
@@ -43,11 +43,11 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Encapsulates The {@link Relationship} as a {@link EdgeElement}
+ *     Encapsulates The {@link Relation} as a {@link EdgeElement}
  * </p>
  *
  * <p>
- *     This wraps up a {@link Relationship} as a {@link EdgeElement}. It is used to represent any binary {@link Relationship}.
+ *     This wraps up a {@link Relation} as a {@link EdgeElement}. It is used to represent any binary {@link Relation}.
  *     This also includes the ability to automatically reify a {@link RelationshipEdge} into a {@link RelationshipReified}.
  * </p>
  *
@@ -58,7 +58,7 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
     private final Logger LOG = LoggerFactory.getLogger(RelationshipEdge.class);
     private final EdgeElement edgeElement;
 
-    private final Cache<RelationshipType> relationType = Cache.createTxCache(this, Cacheable.concept(), () ->
+    private final Cache<RelationType> relationType = Cache.createTxCache(this, Cacheable.concept(), () ->
             edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
 
     private final Cache<Role> ownerRole = Cache.createTxCache(this, Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
@@ -79,7 +79,7 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
         this.edgeElement = edgeElement;
     }
 
-    private RelationshipEdge(RelationshipType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
+    private RelationshipEdge(RelationType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
         this(edgeElement);
 
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.labelId().getValue());
@@ -95,7 +95,7 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
         return new RelationshipEdge(edgeElement);
     }
 
-    public static RelationshipEdge create(RelationshipType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
+    public static RelationshipEdge create(RelationType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
         return new RelationshipEdge(relationshipType, ownerRole, valueRole, edgeElement);
     }
 
@@ -127,7 +127,7 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
     }
 
     @Override
-    public RelationshipType type() {
+    public RelationType type() {
         return relationType.get();
     }
 

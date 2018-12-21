@@ -29,7 +29,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.query.Graql;
@@ -306,7 +306,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void putRelationshipType(Transaction.PutRelationType.Req request) {
-            RelationshipType relationshipType = tx().putRelationshipType(Label.of(request.getLabel()));
+            RelationType relationshipType = tx().putRelationshipType(Label.of(request.getLabel()));
             Transaction.Res response = ResponseBuilder.Transaction.putRelationshipType(relationshipType);
             onNextResponse(response);
         }

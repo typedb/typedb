@@ -25,7 +25,7 @@ import grakn.core.client.GraknClient;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
@@ -99,7 +99,7 @@ public class BenchmarkBigIT {
             assertEquals(instances.length, N);
             Role fromRole = transaction.getRole(fromRoleLabel);
             Role toRole = transaction.getRole(toRoleLabel);
-            RelationshipType relationType = transaction.getRelationshipType(relationLabel);
+            RelationType relationType = transaction.getRelationshipType(relationLabel);
 
             Random rand = new Random();
             Multimap<Integer, Integer> assignmentMap = HashMultimap.create();
@@ -212,7 +212,7 @@ public class BenchmarkBigIT {
                         .map(ans -> ans.get(entityVar).id())
                         .toArray(ConceptId[]::new);
 
-                RelationshipType baseRelation = transaction.getRelationshipType(baseRelationLabel);
+                RelationType baseRelation = transaction.getRelationshipType(baseRelationLabel);
                 Role fromRole = transaction.getRole(fromRoleLabel);
                 Role toRole = transaction.getRole(toRoleLabel);
                 transaction.execute(

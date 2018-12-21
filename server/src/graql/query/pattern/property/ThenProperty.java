@@ -18,12 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
-
-import java.util.Collection;
 
 
 /**
@@ -52,16 +47,6 @@ public class ThenProperty extends RuleProperty {
     @Override
     public String getName() {
         return NAME;
-    }
-
-    @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar then { ... }`
-            executor.builder(var).isRule().then(pattern());
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
     }
 
     @Override

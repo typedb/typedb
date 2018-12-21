@@ -22,8 +22,8 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.rule.GraknTestServer;
@@ -77,7 +77,7 @@ public class ValidatorIT {
         Role role1 = tx.putRole("my role");
         Role role2 = tx.putRole("my role 2");
 
-        RelationshipType abstractRelationType = tx.putRelationshipType("my abstract relation type").
+        RelationType abstractRelationType = tx.putRelationshipType("my abstract relation type").
                 relates(role1).
                 isAbstract(true);
         tx.putRelationshipType("my relation type").
@@ -89,7 +89,7 @@ public class ValidatorIT {
 
     @Test
     public void whenCommittingGraphWhichFollowsValidationRules_Commit(){
-        RelationshipType cast = tx.putRelationshipType("Cast");
+        RelationType cast = tx.putRelationshipType("Cast");
         Role feature = tx.putRole("Feature");
         Role actor = tx.putRole("Actor");
         EntityType movie = tx.putEntityType("Movie");
@@ -100,7 +100,7 @@ public class ValidatorIT {
         Role movieOfGenre = tx.putRole("Movie of Genre");
         Role movieGenre = tx.putRole("Movie Genre");
         Thing crime = genre.create();
-        RelationshipType movieHasGenre = tx.putRelationshipType("Movie Has Genre");
+        RelationType movieHasGenre = tx.putRelationshipType("Movie Has Genre");
 
         //Construction
         cast.relates(feature);
@@ -126,7 +126,7 @@ public class ValidatorIT {
     @Test
     public void whenCommittingRelationWithoutSpecifyingSchema_ThrowOnCommit(){
         EntityType fakeType = tx.putEntityType("Fake Concept");
-        RelationshipType relationshipType = tx.putRelationshipType("kicks");
+        RelationType relationshipType = tx.putRelationshipType("kicks");
         Role kicker = tx.putRole("kicker");
         Role kickee = tx.putRole("kickee");
         Thing kyle = fakeType.create();
@@ -155,7 +155,7 @@ public class ValidatorIT {
 
     @Test
     public void whenCommittingNonAbstractRelationTypeNotLinkedToAnyRoleType_Throw(){
-        RelationshipType alone = tx.putRelationshipType("alone");
+        RelationType alone = tx.putRelationshipType("alone");
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(alone.label())));
@@ -168,12 +168,12 @@ public class ValidatorIT {
         Role hunter = tx.putRole("hunter");
         Role monster = tx.putRole("monster");
         EntityType stuff = tx.putEntityType("Stuff").plays(hunter).plays(monster);
-        RelationshipType kills = tx.putRelationshipType("kills").relates(hunter);
+        RelationType kills = tx.putRelationshipType("kills").relates(hunter);
 
         Entity myHunter = stuff.create();
         Entity myMonster = stuff.create();
 
-        Relationship relation = kills.create().assign(hunter, myHunter).assign(monster, myMonster);
+        Relation relation = kills.create().assign(hunter, myHunter).assign(monster, myMonster);
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.id(), monster.label(), kills.label())));
@@ -186,7 +186,7 @@ public class ValidatorIT {
         // schema
         EntityType person = tx.putEntityType("person");
         EntityType movie = tx.putEntityType("movie");
-        RelationshipType cast = tx.putRelationshipType("cast");
+        RelationType cast = tx.putRelationshipType("cast");
         Role feature = tx.putRole("feature");
         Role actor = tx.putRole("actor");
         cast.relates(feature).relates(actor);
@@ -209,10 +209,10 @@ public class ValidatorIT {
 
         // now try to delete all assertions and then the movie
         godfather = tx.getEntityType("movie").instances().iterator().next();
-        Collection<Relationship> assertions = godfather.relationships().collect(Collectors.toSet());
+        Collection<Relation> assertions = godfather.relationships().collect(Collectors.toSet());
         Set<ConceptId> assertionIds = new HashSet<>();
 
-        for (Relationship a : assertions) {
+        for (Relation a : assertions) {
             assertionIds.add(a.id());
             a.delete();
         }
@@ -231,7 +231,7 @@ public class ValidatorIT {
     public void whenManuallyCreatingCorrectBinaryRelation_Commit() throws InvalidKBException {
         Role characterBeingPlayed = tx.putRole("Character being played");
         Role personPlayingCharacter = tx.putRole("Person Playing Char");
-        RelationshipType playsChar = tx.putRelationshipType("Plays Char").relates(characterBeingPlayed).relates(personPlayingCharacter);
+        RelationType playsChar = tx.putRelationshipType("Plays Char").relates(characterBeingPlayed).relates(personPlayingCharacter);
 
         EntityType person = tx.putEntityType("person").plays(characterBeingPlayed).plays(personPlayingCharacter);
         EntityType character = tx.putEntityType("character").plays(characterBeingPlayed);
@@ -291,7 +291,7 @@ public class ValidatorIT {
         EntityType man = tx.putEntityType("man").sup(person);
         EntityType oneEyedMan = tx.putEntityType("oneEyedMan").sup(man);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
+        RelationType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = oneEyedMan.create();
         Entity y = person.create();
@@ -308,7 +308,7 @@ public class ValidatorIT {
         EntityType person = tx.putEntityType("person").plays(parent).plays(child);
         EntityType company = tx.putEntityType("company").plays(parent);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
+        RelationType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = company.create();
         Entity y = person.create();
@@ -325,7 +325,7 @@ public class ValidatorIT {
         EntityType person = tx.putEntityType("person").plays(parent).plays(child);
         EntityType man = tx.putEntityType("man");
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
+        RelationType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = man.create();
         Entity y = person.create();
@@ -345,7 +345,7 @@ public class ValidatorIT {
 
         EntityType person = tx.putEntityType("person").plays(child);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
+        RelationType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = person.create();
         Entity y = person.create();
@@ -366,7 +366,7 @@ public class ValidatorIT {
         EntityType person = tx.putEntityType("person").plays(child);
         tx.putEntityType("man").plays(child);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
+        RelationType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = person.create();
         Entity y = person.create();
@@ -402,7 +402,7 @@ public class ValidatorIT {
                 plays(fChild).
                 plays(mChild);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(pChild);
+        RelationType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(pChild);
         tx.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild);
         tx.putRelationshipType("motherhood").sup(parenthood).relates(mother).relates(mChild);
 
@@ -429,7 +429,7 @@ public class ValidatorIT {
                 plays(pChild).
                 plays(fmChild);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(pChild);
+        RelationType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(pChild);
         tx.putRelationshipType("fathermotherhood").sup(parenthood).relates(father).relates(mother).relates(fmChild);
 
         tx.commit();
@@ -449,7 +449,7 @@ public class ValidatorIT {
                 plays(pChild).
                 plays(fChild);
 
-        RelationshipType parentrelativehood = tx.putRelationshipType("parentrelativehood").
+        RelationType parentrelativehood = tx.putRelationshipType("parentrelativehood").
                 relates(relative).relates(parent).relates(pChild);
         tx.putRelationshipType("fatherhood").sup(parentrelativehood).
                 relates(father).relates(fChild);
@@ -468,8 +468,8 @@ public class ValidatorIT {
         tx.putEntityType("animal").plays(parent).plays(father).plays(pChild).plays(fChild);
         tx.putEntityType("context").plays(inContext);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(pChild);
-        RelationshipType fatherhood = tx.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild).relates(inContext);
+        RelationType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(pChild);
+        RelationType fatherhood = tx.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild).relates(inContext);
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
@@ -489,8 +489,8 @@ public class ValidatorIT {
         tx.putEntityType("animal").plays(parent).plays(father).plays(pChild).plays(fChild);
         tx.putEntityType("context").plays(inContext);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(pChild).relates(inContext);
-        RelationshipType fatherhood = tx.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild);
+        RelationType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(pChild).relates(inContext);
+        RelationType fatherhood = tx.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild);
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
@@ -504,7 +504,7 @@ public class ValidatorIT {
         Role insurer = tx.putRole("insurer");
         Role monoline = tx.putRole("monoline").sup(insurer);
         Role insured = tx.putRole("insured");
-        RelationshipType insure = tx.putRelationshipType("insure").relates(insurer).relates(insured);
+        RelationType insure = tx.putRelationshipType("insure").relates(insurer).relates(insured);
         tx.putRelationshipType("monoline-insure").relates(monoline).relates(insured).sup(insure);
         tx.commit();
     }
@@ -513,7 +513,7 @@ public class ValidatorIT {
     public void whenARoleInARelationIsNotPlayed_TheGraphIsValid() {
         Role role1 = tx.putRole("role-1");
         Role role2 = tx.putRole("role-2");
-        RelationshipType relationshipType = tx.putRelationshipType("my-relation").relates(role1).relates(role2);
+        RelationType relationshipType = tx.putRelationshipType("my-relation").relates(role1).relates(role2);
 
         Thing thing = tx.putEntityType("my-entity").plays(role1).create();
 
@@ -526,13 +526,13 @@ public class ValidatorIT {
     public void whenARoleInARelationIsPlayedTwice_TheGraphIsValid() {
         Role role1 = tx.putRole("role-1");
         Role role2 = tx.putRole("role-2");
-        RelationshipType relationshipType = tx.putRelationshipType("my-relationship").relates(role1).relates(role2);
+        RelationType relationshipType = tx.putRelationshipType("my-relationship").relates(role1).relates(role2);
 
         EntityType entityType = tx.putEntityType("my-entity").plays(role1);
         Thing thing1 = entityType.create();
         Thing thing2 = entityType.create();
 
-        Relationship relationship = relationshipType.create();
+        Relation relationship = relationshipType.create();
         relationship.assign(role1, thing1);
         relationship.assign(role1, thing2);
 
@@ -545,11 +545,11 @@ public class ValidatorIT {
     public void whenARoleInARelationIsPlayedAZillionTimes_TheGraphIsValid() {
         Role role1 = tx.putRole("role-1");
         Role role2 = tx.putRole("role-2");
-        RelationshipType relationshipType = tx.putRelationshipType("my-relationship").relates(role1).relates(role2);
+        RelationType relationshipType = tx.putRelationshipType("my-relationship").relates(role1).relates(role2);
 
         EntityType entityType = tx.putEntityType("my-entity").plays(role1);
 
-        Relationship relationship = relationshipType.create();
+        Relation relationship = relationshipType.create();
 
         Set<Thing> things = new HashSet<>();
 
@@ -578,12 +578,12 @@ public class ValidatorIT {
     public void whenRemovingInvalidRolePlayers_EnsureValidationPasses(){
         Role chased = tx.putRole("chased");
         Role chaser = tx.putRole("chaser");
-        RelationshipType chases = tx.putRelationshipType("chases").relates(chased).relates(chaser);
+        RelationType chases = tx.putRelationshipType("chases").relates(chased).relates(chaser);
 
         EntityType puppy = tx.putEntityType("puppy").plays(chaser);
         Entity dunstan = puppy.create();
 
-        Relationship rel = chases.create();
+        Relation rel = chases.create();
         rel.assign(chaser, dunstan);
         rel.assign(chased, dunstan).unassign(chased, dunstan);
 

@@ -23,7 +23,7 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -239,11 +239,11 @@ public class UndefineQueryIT {
     public void whenUndefiningRelatesProperty_TheRelationshipTypeNoLongerRelatesTheRole() {
         tx.execute(Graql.define(label(NEW_TYPE).sub(RELATIONSHIP).relates("actor")));
 
-        assertThat(tx.<RelationshipType>getType(NEW_TYPE).roles().toArray(), hasItemInArray(tx.getRole("actor")));
+        assertThat(tx.<RelationType>getType(NEW_TYPE).roles().toArray(), hasItemInArray(tx.getRole("actor")));
 
         tx.execute(Graql.undefine(label(NEW_TYPE).relates("actor")));
 
-        assertThat(tx.<RelationshipType>getType(NEW_TYPE).roles().toArray(), not(hasItemInArray(tx.getRole("actor"))));
+        assertThat(tx.<RelationType>getType(NEW_TYPE).roles().toArray(), not(hasItemInArray(tx.getRole("actor"))));
     }
 
     @Test
@@ -281,7 +281,7 @@ public class UndefineQueryIT {
         tx.execute(Graql.define(schema));
 
         EntityType pokemon = tx.getEntityType("pokemon");
-        RelationshipType evolution = tx.getRelationshipType("evolution");
+        RelationType evolution = tx.getRelationshipType("evolution");
         AttributeType<Long> pokedexNo = tx.getAttributeType("pokedex-no");
         Role ancestor = tx.getRole("ancestor");
         Role descendant = tx.getRole("descendant");

@@ -24,7 +24,7 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
@@ -222,12 +222,12 @@ public class KCoreIT {
 
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            RelationshipType relationshipType1 = tx.putRelationshipType(related)
+            RelationType relationshipType1 = tx.putRelationshipType(related)
                     .relates(role1).relates(role2);
 
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
-            RelationshipType relationshipType2 = tx.putRelationshipType(veryRelated)
+            RelationType relationshipType2 = tx.putRelationshipType(veryRelated)
                     .relates(role3).relates(role4);
 
             entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
@@ -332,12 +332,12 @@ public class KCoreIT {
 
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            RelationshipType relationshipType1 = tx.putRelationshipType(related)
+            RelationType relationshipType1 = tx.putRelationshipType(related)
                     .relates(role1).relates(role2);
 
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
-            RelationshipType relationshipType2 = tx.putRelationshipType(veryRelated)
+            RelationType relationshipType2 = tx.putRelationshipType(veryRelated)
                     .relates(role3).relates(role4);
 
             entityType1.plays(role1).plays(role2).plays(role3).plays(role4);

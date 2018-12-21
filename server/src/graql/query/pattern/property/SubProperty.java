@@ -19,7 +19,6 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Statement;
@@ -28,12 +27,12 @@ import grakn.core.graql.query.pattern.Variable;
 import java.util.Collection;
 
 /**
- * Represents the {@code sub} property on a {@link Type}.
+ * Represents the {@code sub} property on a Type.
  * This property can be queried or inserted.
- * This property relates a {@link Type} and another {@link Type}. It indicates
+ * This property relates a Type and another Type. It indicates
  * that every instance of the left type is also an instance of the right type.
  */
-public class SubProperty extends AbstractSubProperty {
+public class SubProperty extends SubAbstractProperty {
 
     public static final String NAME = "sub";
     private final Statement superType;

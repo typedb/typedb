@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.graph;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -59,9 +59,9 @@ public class NguyenGraph{
         EntityType entity = tx.getEntityType("entity2");
         EntityType aEntity = tx.getEntityType("a-entity");
         EntityType bEntity = tx.getEntityType("b-entity");
-        RelationshipType r = tx.getRelationshipType("R");
-        RelationshipType p = tx.getRelationshipType("P");
-        RelationshipType q = tx.getRelationshipType("Q");
+        RelationType r = tx.getRelationshipType("R");
+        RelationType p = tx.getRelationshipType("P");
+        RelationType q = tx.getRelationshipType("Q");
 
         ConceptId cId = putEntityWithResource(tx, "c", entity, key).id();
         ConceptId dId = putEntityWithResource(tx, "d", entity, key).id();

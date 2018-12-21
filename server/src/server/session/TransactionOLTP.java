@@ -32,7 +32,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
@@ -204,23 +204,23 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public Stream<ConceptMap> stream(DefineQuery query, boolean infer) {
-        return executor(infer).define(query);
+    public Stream<ConceptMap> stream(DefineQuery query) {
+        return Stream.of(executor().define(query));
     }
 
     @Override
-    public Stream<ConceptMap> stream(UndefineQuery query, boolean infer) {
-        return executor(infer).undefine(query);
+    public Stream<ConceptMap> stream(UndefineQuery query) {
+        return Stream.of(executor().undefine(query));
     }
 
     @Override
     public Stream<ConceptMap> stream(InsertQuery query, boolean infer) {
-        return executor(infer).insert(query);
+        return executor().insert(query);
     }
 
     @Override
     public Stream<ConceptSet> stream(DeleteQuery query, boolean infer) {
-        return executor(infer).delete(query);
+        return Stream.of(executor(infer).delete(query));
     }
 
     @Override
@@ -567,12 +567,12 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public RelationshipType putRelationshipType(Label label) {
+    public RelationType putRelationshipType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, false,
                                 v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
 
-    public RelationshipType putRelationTypeImplicit(Label label) {
+    public RelationType putRelationTypeImplicit(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, true,
                                 v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
@@ -701,7 +701,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public RelationshipType getRelationshipType(String label) {
+    public RelationType getRelationshipType(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RELATIONSHIP_TYPE);
     }
 

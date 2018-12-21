@@ -123,7 +123,7 @@ public interface AttributeType<D> extends Type {
     Attribute<D> create(D value);
 
     /**
-     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     * Creates a {@link RelationType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
      * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
@@ -132,7 +132,7 @@ public interface AttributeType<D> extends Type {
     AttributeType<D> key(AttributeType attributeType);
 
     /**
-     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked.
+     * Creates a {@link RelationType} which allows this type and a resource type to be linked.
      *
      * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.

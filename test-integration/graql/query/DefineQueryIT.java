@@ -25,7 +25,7 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
@@ -467,7 +467,7 @@ public class DefineQueryIT {
     public void whenDefiningARelationship_SubRoleDeclarationsCanBeSkipped() {
         tx.execute(Graql.define(label("marriage").sub(label(RELATIONSHIP.getLabel())).relates("husband").relates("wife")));
 
-        RelationshipType marriage = tx.getRelationshipType("marriage");
+        RelationType marriage = tx.getRelationshipType("marriage");
         Role husband = tx.getRole("husband");
         Role wife = tx.getRole("wife");
         assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(husband, wife));
@@ -482,7 +482,7 @@ public class DefineQueryIT {
                           .relates("father", "parent")
                           .relates("son", "child")));
 
-        RelationshipType marriage = tx.getRelationshipType("fatherhood");
+        RelationType marriage = tx.getRelationshipType("fatherhood");
         Role father = tx.getRole("father");
         Role son = tx.getRole("son");
         assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(father, son));
@@ -507,7 +507,7 @@ public class DefineQueryIT {
                 label("person").plays("husband").plays("wife")
         ));
 
-        RelationshipType marriage = tx.getRelationshipType("marriage");
+        RelationType marriage = tx.getRelationshipType("marriage");
         EntityType person = tx.getEntityType("person");
         Role husband = tx.getRole("husband");
         Role wife = tx.getRole("wife");

@@ -24,8 +24,8 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
@@ -59,13 +59,13 @@ public class TransactionCache {
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
-    private final Set<Relationship> newRelationships = new HashSet<>();
+    private final Set<Relation> newRelationships = new HashSet<>();
     private final Set<Thing> modifiedThings = new HashSet<>();
 
     private final Set<Role> modifiedRoles = new HashSet<>();
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
-    private final Set<RelationshipType> modifiedRelationshipTypes = new HashSet<>();
+    private final Set<RelationType> modifiedRelationshipTypes = new HashSet<>();
 
     private final Set<Rule> modifiedRules = new HashSet<>();
 
@@ -192,7 +192,7 @@ public class TransactionCache {
         }
 
         if (concept.isRelationship()) {
-            newRelationships.remove(concept.asRelationship());
+            newRelationships.remove(concept.asRelation());
         }
 
         conceptCache.remove(concept.id());
@@ -320,7 +320,7 @@ public class TransactionCache {
         return modifiedRoles;
     }
 
-    public Set<RelationshipType> getModifiedRelationshipTypes() {
+    public Set<RelationType> getModifiedRelationshipTypes() {
         return modifiedRelationshipTypes;
     }
 
@@ -332,11 +332,11 @@ public class TransactionCache {
         return modifiedCastings;
     }
 
-    public void addNewRelationship(Relationship relationship) {
+    public void addNewRelationship(Relation relationship) {
         newRelationships.add(relationship);
     }
 
-    public Set<Relationship> getNewRelationships() {
+    public Set<Relation> getNewRelationships() {
         return newRelationships;
     }
 

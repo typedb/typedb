@@ -22,7 +22,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import grakn.core.rule.GraknTestServer;
@@ -105,7 +105,7 @@ public class SchemaConceptIT {
 
         entityType.has(attributeType);
 
-        RelationshipType relationshipType = tx.getRelationshipType(hasResourceLabel.getValue());
+        RelationType relationshipType = tx.getRelationshipType(hasResourceLabel.getValue());
         Assert.assertEquals(hasResourceLabel, relationshipType.label());
 
         Set<Label> roleLabels = relationshipType.roles().map(SchemaConcept::label).collect(toSet());
