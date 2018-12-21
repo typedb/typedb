@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "query-equivalence-it",
     size = "medium",
@@ -12,6 +14,15 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
+)
+
+checkstyle_test(
+ name = "query-equivalence-it-checkstyle",
+ target = ":query-equivalence-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )
 
 java_test(
@@ -29,6 +40,15 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
+)
+
+checkstyle_test(
+ name = "atomic-query-it-checkstyle",
+ target = ":atomic-query-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )
 
 java_test(
@@ -59,6 +79,15 @@ java_test(
     ],
 )
 
+checkstyle_test(
+ name = "query-unification-it-checkstyle",
+ target = ":query-unification-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "query-validity-it",
     size = "medium",
@@ -73,6 +102,15 @@ java_test(
     ],
 )
 
+checkstyle_test(
+ name = "query-validity-it-checkstyle",
+ target = ":query-validity-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "query-it",
     size = "medium",
@@ -84,6 +122,15 @@ java_test(
         "//test-integration/graql/reasoner/graph:geo-graph",
         "//test-integration/rule:grakn-test-server",
     ],
+)
+
+checkstyle_test(
+ name = "query-it-checkstyle",
+ target = ":query-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )
 
 java_test(
@@ -101,6 +148,15 @@ java_test(
     ],
 )
 
+checkstyle_test(
+ name = "ontological-query-it-checkstyle",
+ target = ":ontological-query-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "resolution-plan-it",
     size = "medium",
@@ -114,6 +170,15 @@ java_test(
         "//server",
         "//test-integration/rule:grakn-test-server",
     ],
+)
+
+checkstyle_test(
+ name = "resolution-plan-it-checkstyle",
+ target = ":resolution-plan-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )
 
 java_test(
@@ -131,6 +196,15 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
+)
+
+checkstyle_test(
+ name = "semantic-difference-it-checkstyle",
+ target = ":semantic-difference-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )
 
 java_test(
@@ -155,4 +229,13 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
+)
+
+checkstyle_test(
+ name = "subsumption-it-checkstyle",
+ target = ":subsumption-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )

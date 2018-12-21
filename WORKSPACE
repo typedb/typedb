@@ -144,3 +144,6 @@ git_repository(
 
 load("@com_github_google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
 google_common_workspace_rules()
+
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_dependencies")
+checkstyle_dependencies()

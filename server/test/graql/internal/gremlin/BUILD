@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "graql-traversal-test",
     test_class = "grakn.core.graql.internal.gremlin.GraqlTraversalTest",
@@ -12,6 +14,15 @@ java_test(
     size = "small"
 )
 
+checkstyle_test(
+ name = "graql-traversal-test-checkstyle",
+ target = ":graql-traversal-test",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "conjunction-query-test",
     test_class = "grakn.core.graql.internal.gremlin.ConjunctionQueryTest",
@@ -21,4 +32,13 @@ java_test(
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
         "//server"],
     size = "small"
+)
+
+checkstyle_test(
+ name = "conjunction-query-test-checkstyle",
+ target = ":conjunction-query-test",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )

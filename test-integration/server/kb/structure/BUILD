@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
   name = "casting-it",
   srcs = ["CastingIT.java"],
@@ -11,6 +13,15 @@ java_test(
   classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
+checkstyle_test(
+ name = "casting-it-checkstyle",
+ target = ":casting-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
   name = "edge-it",
   srcs = ["EdgeIT.java"],
@@ -22,4 +33,13 @@ java_test(
   ],
   size = "medium",
   classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
+checkstyle_test(
+ name = "edge-it-checkstyle",
+ target = ":edge-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )

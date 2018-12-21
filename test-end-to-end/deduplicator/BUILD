@@ -14,3 +14,13 @@ java_test(
     ],
     data = ["//:distribution"]
 )
+
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+checkstyle_test(
+ name = "attribute-deduplicator-e2e-checkstyle",
+ target = ":attribute-deduplicator-e2e",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)

@@ -11,3 +11,13 @@ java_test(
         "//test-integration/rule:grakn-test-server",
     ],
 )
+
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+checkstyle_test(
+ name = "rule-cache-it-checkstyle",
+ target = ":rule-cache-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
