@@ -1,4 +1,4 @@
-def checkstyle_repositories(
+def checkstyle_dependencies(
     omit = [],
     versions = {
       "antlr_antlr": "2.7.7",
