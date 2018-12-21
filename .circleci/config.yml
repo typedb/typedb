@@ -13,21 +13,13 @@ references:
         at: ~/grakn
 
 jobs:
-  lint:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - checkout
-      - *install_bazel
-      - run: python ./verify.py
-      - run: bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
-
   build:
     machine: true
     working_directory: ~/grakn
     steps:
       - checkout
       - *install_bazel
+      - run: python ./check-for-missing-checkstyle-rule.py
       - run: bazel build //... --sandbox_debug
       - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all.zip dist/
       - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace
@@ -237,52 +229,21 @@ workflows:
   version: 2
   grakn-core-ci:
     jobs:
-      - lint
-      - build:
-          requires:
-            - lint
-      - client-java:
-          requires:
-            - build
-      - client-nodejs:
-          requires:
-              - build
-      - client-python:
-          requires:
-            - build
-      - common:
-          requires:
-            - build
-      - console:
-          requires:
-            - build
-      - graql:
-          requires:
-            - build
-      - server:
-          requires:
-            - build
-      - workbase:
-          requires:
-            - build
-      - test-integration:
-          requires:
-            - build
-      - test-integration-reasoner:
-          requires:
-            - build
-      - test-integration-reasoner-general:
-          requires:
-            - build
-      - test-integration-reasoner-components:
-          requires:
-            - build
-      - test-integration-analytics:
-          requires:
-            - build
-      - test-end-to-end:
-          requires:
-            - build
+      - build
+      - client-java
+      - client-nodejs
+      - client-python
+      - common
+      - console
+      - graql
+      - server
+      - workbase
+      - test-integration
+      - test-integration-reasoner
+      - test-integration-reasoner-general
+      - test-integration-reasoner-components
+      - test-integration-analytics
+      - test-end-to-end
 
   build-and-deploy:
     jobs:
