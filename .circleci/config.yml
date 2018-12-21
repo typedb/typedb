@@ -243,46 +243,46 @@ workflows:
             - lint
       - client-java:
           requires:
-            - lint
+            - build
       - client-nodejs:
           requires:
-              - lint
+              - build
       - client-python:
           requires:
-            - lint
+            - build
       - common:
           requires:
-            - lint
+            - build
       - console:
           requires:
-            - lint
+            - build
       - graql:
           requires:
-            - lint
+            - build
       - server:
           requires:
-            - lint
+            - build
       - workbase:
           requires:
-            - lint
+            - build
       - test-integration:
           requires:
-            - lint
+            - build
       - test-integration-reasoner:
           requires:
-            - lint
+            - build
       - test-integration-reasoner-general:
           requires:
-            - lint
+            - build
       - test-integration-reasoner-components:
           requires:
-            - lint
+            - build
       - test-integration-analytics:
           requires:
-            - lint
+            - build
       - test-end-to-end:
           requires:
-            - lint
+            - build
 
   build-and-deploy:
     jobs:
