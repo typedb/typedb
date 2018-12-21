@@ -20,7 +20,7 @@ package grakn.core.graql.internal.executor.property;
 
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.executor.ConceptBuilder;
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.SubAbstractProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -41,16 +41,16 @@ public class SubAbstractExecutor implements PropertyExecutor.Definable {
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> defineExecutors() {
+    public Set<PropertyExecutor.Writer> defineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new DefineSub()));
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> undefineExecutors() {
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new UndefineSub()));
     }
 
-    private abstract class AbstractWriteExecutor {
+    private abstract class SubWriter {
 
         public Variable var() {
             return var;
@@ -61,7 +61,7 @@ public class SubAbstractExecutor implements PropertyExecutor.Definable {
         }
     }
 
-    private class DefineSub extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class DefineSub extends SubWriter implements PropertyExecutor.Writer {
 
         @Override
         public Set<Variable> requiredVars() {
@@ -74,20 +74,20 @@ public class SubAbstractExecutor implements PropertyExecutor.Definable {
         }
 
         @Override
-        public void execute(Writer writer) {
-            SchemaConcept superConcept = writer.getConcept(property.superType().var()).asSchemaConcept();
+        public void execute(WriteExecutor executor) {
+            SchemaConcept superConcept = executor.getConcept(property.superType().var()).asSchemaConcept();
 
-            Optional<ConceptBuilder> builder = writer.tryBuilder(var);
+            Optional<ConceptBuilder> builder = executor.tryBuilder(var);
 
             if (builder.isPresent()) {
                 builder.get().sub(superConcept);
             } else {
-                ConceptBuilder.setSuper(writer.getConcept(var).asSchemaConcept(), superConcept);
+                ConceptBuilder.setSuper(executor.getConcept(var).asSchemaConcept(), superConcept);
             }
         }
     }
 
-    private class UndefineSub extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class UndefineSub extends SubWriter implements PropertyExecutor.Writer {
 
         @Override
         public Set<Variable> requiredVars() {
@@ -104,10 +104,10 @@ public class SubAbstractExecutor implements PropertyExecutor.Definable {
         }
 
         @Override
-        public void execute(Writer writer) {
-            SchemaConcept concept = writer.getConcept(var).asSchemaConcept();
+        public void execute(WriteExecutor executor) {
+            SchemaConcept concept = executor.getConcept(var).asSchemaConcept();
 
-            SchemaConcept expectedSuperConcept = writer.getConcept(property.superType().var()).asSchemaConcept();
+            SchemaConcept expectedSuperConcept = executor.getConcept(property.superType().var()).asSchemaConcept();
             SchemaConcept actualSuperConcept = concept.sup();
 
             if (!concept.isDeleted() && expectedSuperConcept.equals(actualSuperConcept)) {

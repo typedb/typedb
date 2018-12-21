@@ -20,7 +20,7 @@ package grakn.core.graql.internal.executor.property;
 
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.RelatesProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -40,8 +40,8 @@ public class RelatesExecutor implements PropertyExecutor.Definable {
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> defineExecutors() {
-        Set<PropertyExecutor.WriteExecutor> defineExecutors = new HashSet<>();
+    public Set<PropertyExecutor.Writer> defineExecutors() {
+        Set<PropertyExecutor.Writer> defineExecutors = new HashSet<>();
         defineExecutors.add(new DefineRelates());
         defineExecutors.add(new DefineRole());
 
@@ -53,11 +53,11 @@ public class RelatesExecutor implements PropertyExecutor.Definable {
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> undefineExecutors() {
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new UndefineRelates()));
     }
 
-    private abstract class AbstractWriteExecutor {
+    private abstract class RelatesWriter {
 
         public Variable var() {
             return var;
@@ -68,7 +68,7 @@ public class RelatesExecutor implements PropertyExecutor.Definable {
         }
     }
 
-    private class DefineRelates extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class DefineRelates extends RelatesWriter implements PropertyExecutor.Writer {
 
         @Override
         public Set<Variable> requiredVars() {
@@ -85,13 +85,13 @@ public class RelatesExecutor implements PropertyExecutor.Definable {
         }
 
         @Override
-        public void execute(Writer writer) {
-            Role role = writer.getConcept(property.role().var()).asRole();
-            writer.getConcept(var).asRelationshipType().relates(role);
+        public void execute(WriteExecutor executor) {
+            Role role = executor.getConcept(property.role().var()).asRole();
+            executor.getConcept(var).asRelationshipType().relates(role);
         }
     }
 
-    private class DefineRole extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class DefineRole extends RelatesWriter implements PropertyExecutor.Writer {
 
         @Override
         public Set<Variable> requiredVars() {
@@ -104,12 +104,12 @@ public class RelatesExecutor implements PropertyExecutor.Definable {
         }
 
         @Override
-        public void execute(Writer writer) {
-            writer.getBuilder(property.role().var()).isRole();
+        public void execute(WriteExecutor executor) {
+            executor.getBuilder(property.role().var()).isRole();
         }
     }
 
-    private class DefineSuperRole extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class DefineSuperRole extends RelatesWriter implements PropertyExecutor.Writer {
 
         @Override
         public Set<Variable> requiredVars() {
@@ -122,13 +122,13 @@ public class RelatesExecutor implements PropertyExecutor.Definable {
         }
 
         @Override
-        public void execute(Writer writer) {
-            Role superRole = writer.getConcept(property.superRole().var()).asRole();
-            writer.getBuilder(property.role().var()).sub(superRole);
+        public void execute(WriteExecutor executor) {
+            Role superRole = executor.getConcept(property.superRole().var()).asRole();
+            executor.getBuilder(property.role().var()).sub(superRole);
         }
     }
 
-    private class UndefineRelates extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class UndefineRelates extends RelatesWriter implements PropertyExecutor.Writer {
 
         @Override
         public Set<Variable> requiredVars() {
@@ -145,9 +145,9 @@ public class RelatesExecutor implements PropertyExecutor.Definable {
         }
 
         @Override
-        public void execute(Writer writer) {
-            RelationType relationshipType = writer.getConcept(var).asRelationshipType();
-            Role role = writer.getConcept(property.role().var()).asRole();
+        public void execute(WriteExecutor executor) {
+            RelationType relationshipType = executor.getConcept(var).asRelationshipType();
+            Role role = executor.getConcept(property.role().var()).asRole();
 
             if (!relationshipType.isDeleted() && !role.isDeleted()) {
                 relationshipType.unrelate(role);

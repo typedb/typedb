@@ -37,11 +37,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.internal.executor.DefineExecutor;
-import grakn.core.graql.internal.executor.DeleteExecutor;
-import grakn.core.graql.internal.executor.InsertExecutor;
 import grakn.core.graql.internal.executor.QueryExecutor;
-import grakn.core.graql.internal.executor.UndefineExecutor;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -209,22 +205,22 @@ public class TransactionOLTP implements Transaction {
 
     @Override
     public Stream<ConceptMap> stream(DefineQuery query) {
-        return Stream.of(new DefineExecutor(this).define(query));
+        return Stream.of(executor().define(query));
     }
 
     @Override
     public Stream<ConceptMap> stream(UndefineQuery query) {
-        return Stream.of(new UndefineExecutor(this).undefine(query));
+        return Stream.of(executor().undefine(query));
     }
 
     @Override
     public Stream<ConceptMap> stream(InsertQuery query, boolean infer) {
-        return new InsertExecutor(this, infer).insert(query);
+        return executor().insert(query);
     }
 
     @Override
     public Stream<ConceptSet> stream(DeleteQuery query, boolean infer) {
-        return Stream.of(new DeleteExecutor(this, infer).delete(query));
+        return Stream.of(executor(infer).delete(query));
     }
 
     @Override

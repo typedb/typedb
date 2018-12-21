@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.executor.property;
 
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
@@ -38,17 +38,17 @@ public class WhenExecutor implements PropertyExecutor.Definable {
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> defineExecutors() {
+    public Set<PropertyExecutor.Writer> defineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new DefineWhen()));
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> undefineExecutors() {
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
         // TODO: Fix this so that Undefining WhenProperty behaves symmetrically to Defining WhenProperty
         throw GraqlQueryException.defineUnsupportedProperty(property.getName());
     }
 
-    private class DefineWhen implements PropertyExecutor.WriteExecutor {
+    private class DefineWhen implements PropertyExecutor.Writer {
 
         @Override
         public Variable var() {
@@ -71,9 +71,9 @@ public class WhenExecutor implements PropertyExecutor.Definable {
         }
 
         @Override
-        public void execute(Writer writer) {
+        public void execute(WriteExecutor executor) {
             // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar when { ... }`
-            writer.getBuilder(var).isRule().when(property.pattern());
+            executor.getBuilder(var).isRule().when(property.pattern());
         }
     }
 }

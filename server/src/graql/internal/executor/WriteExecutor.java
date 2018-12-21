@@ -31,7 +31,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.executor.property.PropertyExecutor.WriteExecutor;
+import grakn.core.graql.internal.executor.property.PropertyExecutor.Writer;
 import grakn.core.graql.internal.util.Partition;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.StatementImpl;
@@ -57,9 +57,9 @@ import static java.util.stream.Collectors.toList;
  * A class for executing PropertyExecutors on VarPropertys within Graql queries.
  * Multiple query types share this class, such as InsertQuery and DefineQuery.
  */
-public class Writer {
+public class WriteExecutor {
 
-    protected final Logger LOG = LoggerFactory.getLogger(Writer.class);
+    protected final Logger LOG = LoggerFactory.getLogger(WriteExecutor.class);
 
     private final Transaction transaction;
 
@@ -70,26 +70,30 @@ public class Writer {
     private final Map<Variable, ConceptBuilder> conceptBuilders = new HashMap<>();
 
     // An immutable set of all properties
-    private final ImmutableSet<WriteExecutor> properties;
+    private final ImmutableSet<Writer> writers;
 
     // A partition (disjoint set) indicating which `Var`s should refer to the same concept
     private final Partition<Variable> equivalentVars;
 
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
-    private final ImmutableMultimap<WriteExecutor, WriteExecutor> dependencies;
+    private final ImmutableMultimap<Writer, Writer> dependencies;
 
-    private Writer(Transaction transaction, 
-                   Set<WriteExecutor> properties,
-                   Partition<Variable> equivalentVars,
-                   Multimap<WriteExecutor, WriteExecutor> executorDependency
+    private WriteExecutor(Transaction transaction,
+                          Set<Writer> writers,
+                          Partition<Variable> equivalentVars,
+                          Multimap<Writer, Writer> executorDependency
     ) {
         this.transaction = transaction;
-        this.properties = ImmutableSet.copyOf(properties);
+        this.writers = ImmutableSet.copyOf(writers);
         this.equivalentVars = equivalentVars;
         this.dependencies = ImmutableMultimap.copyOf(executorDependency);
     }
 
-    static Writer create(ImmutableSet<WriteExecutor> executors, Transaction transaction) {
+    Transaction tx() {
+        return transaction;
+    }
+
+    static WriteExecutor create(Transaction transaction, ImmutableSet<Writer> writers) {
         /*
             We build several many-to-many relations, indicated by a `Multimap<X, Y>`. These are used to represent
             the dependencies between properties and variables.
@@ -99,11 +103,11 @@ public class Writer {
 
             For example, the property `$x isa $y` depends on the existence of the concept represented by `$y`.
          */
-        Multimap<WriteExecutor, Variable> executorToRequiredVars = HashMultimap.create();
+        Multimap<Writer, Variable> executorToRequiredVars = HashMultimap.create();
 
-        for (WriteExecutor executor : executors) {
-            for (Variable requiredVar : executor.requiredVars()) {
-                executorToRequiredVars.put(executor, requiredVar);
+        for (Writer writer : writers) {
+            for (Variable requiredVar : writer.requiredVars()) {
+                executorToRequiredVars.put(writer, requiredVar);
             }
         }
 
@@ -113,11 +117,11 @@ public class Writer {
 
             For example, the concept represented by `$x` will not exist before the property `$x isa $y` is inserted.
          */
-        Multimap<Variable, WriteExecutor> varToProducerExecutor = HashMultimap.create();
+        Multimap<Variable, Writer> varToProducingWriter = HashMultimap.create();
 
-        for (WriteExecutor executor : executors) {
+        for (Writer executor : writers) {
             for (Variable producedVar : executor.producedVars()) {
-                varToProducerExecutor.put(producedVar, executor);
+                varToProducingWriter.put(producedVar, executor);
             }
         }
 
@@ -146,15 +150,15 @@ public class Writer {
 
         Partition<Variable> equivalentVars = Partition.singletons(Collections.emptyList());
 
-        propertyToEquivalentVars(executors).asMap().values().forEach(vars -> {
+        propertyToEquivalentVars(writers).asMap().values().forEach(vars -> {
             // These vars must refer to the same concept, so share their dependencies
-            Collection<WriteExecutor> producerExecutors =
-                    vars.stream().flatMap(var -> varToProducerExecutor.get(var).stream()).collect(toList());
+            Collection<Writer> producingWriters =
+                    vars.stream().flatMap(var -> varToProducingWriter.get(var).stream()).collect(toList());
 
             Variable first = vars.iterator().next();
 
             vars.forEach(var -> {
-                varToProducerExecutor.replaceValues(var, producerExecutors);
+                varToProducingWriter.replaceValues(var, producingWriters);
                 equivalentVars.merge(first, var);
             });
         });
@@ -175,16 +179,16 @@ public class Writer {
 
             The `propertyDependencies` relation contains all the information to decide what order to execute the properties.
          */
-        Multimap<WriteExecutor, WriteExecutor> executorDependency = 
-                executorDependency(executorToRequiredVars, varToProducerExecutor);
+        Multimap<Writer, Writer> writerDependencies =
+                writerDependencies(executorToRequiredVars, varToProducingWriter);
 
-        return new Writer(transaction, executors, equivalentVars, executorDependency);
+        return new WriteExecutor(transaction, writers, equivalentVars, writerDependencies);
     }
 
-    private static Multimap<VarProperty, Variable> propertyToEquivalentVars(Set<WriteExecutor> executors) {
+    private static Multimap<VarProperty, Variable> propertyToEquivalentVars(Set<Writer> executors) {
         Multimap<VarProperty, Variable> equivalentProperties = HashMultimap.create();
 
-        for (WriteExecutor executor : executors) {
+        for (Writer executor : executors) {
             if (executor.property().uniquelyIdentifiesConcept()) {
                 equivalentProperties.put(executor.property(), executor.var());
             }
@@ -197,17 +201,17 @@ public class Writer {
      * <a href=https://en.wikipedia.org/wiki/Composition_of_relations>Compose</a> two Multimaps together,
      * treating them like many-to-many relations.
      */
-    private static Multimap<WriteExecutor, WriteExecutor> executorDependency(
-            Multimap<WriteExecutor, Variable> executorToVar,
-            Multimap<Variable, WriteExecutor> varToExecutor
+    private static Multimap<Writer, Writer> writerDependencies(
+            Multimap<Writer, Variable> writerToVar,
+            Multimap<Variable, Writer> varToWriter
     ) {
-        Multimap<WriteExecutor, WriteExecutor> dependency = HashMultimap.create();
+        Multimap<Writer, Writer> dependency = HashMultimap.create();
 
-        for (Map.Entry<WriteExecutor, Variable> entry1 : executorToVar.entries()) {
-            WriteExecutor dependant = entry1.getKey();
-            Variable intermediateVar = entry1.getValue();
+        for (Map.Entry<Writer, Variable> entry : writerToVar.entries()) {
+            Writer dependant = entry.getKey();
+            Variable intermediateVar = entry.getValue();
 
-            for (WriteExecutor depended : varToExecutor.get(intermediateVar)) {
+            for (Writer depended : varToWriter.get(intermediateVar)) {
                 dependency.put(dependant, depended);
             }
         }
@@ -215,11 +219,11 @@ public class Writer {
         return dependency;
     }
 
-    ConceptMap write(ConceptMap result) {
-        concepts.putAll(result.map());
+    ConceptMap write(ConceptMap preExisting) {
+        concepts.putAll(preExisting.map());
 
-        for (WriteExecutor executor : sortProperties()) {
-            executor.execute(this);
+        for (Writer writer : sortedWriters()) {
+            writer.execute(this);
         }
 
         conceptBuilders.forEach((var, builder) -> buildConcept(var, builder));
@@ -246,28 +250,28 @@ public class Writer {
      * Produce a valid ordering of the properties by using the given dependency information.
      * This method uses a topological sort (Kahn's algorithm) in order to find a valid ordering.
      */
-    private ImmutableList<WriteExecutor> sortProperties() {
-        ImmutableList.Builder<WriteExecutor> sorted = ImmutableList.builder();
+    private ImmutableList<Writer> sortedWriters() {
+        ImmutableList.Builder<Writer> sorted = ImmutableList.builder();
 
         // invertedDependencies is intended to just be a 'view' on dependencies, so when dependencies is modified
         // we should always also modify invertedDependencies (and vice-versa).
-        Multimap<WriteExecutor, WriteExecutor> dependencies = HashMultimap.create(this.dependencies);
-        Multimap<WriteExecutor, WriteExecutor> invertedDependencies = HashMultimap.create();
+        Multimap<Writer, Writer> dependencies = HashMultimap.create(this.dependencies);
+        Multimap<Writer, Writer> invertedDependencies = HashMultimap.create();
         Multimaps.invertFrom(dependencies, invertedDependencies);
 
-        Queue<WriteExecutor> propertiesWithoutDependencies =
-                new ArrayDeque<>(Sets.filter(properties, property -> dependencies.get(property).isEmpty()));
+        Queue<Writer> writerWithoutDependencies =
+                new ArrayDeque<>(Sets.filter(writers, property -> dependencies.get(property).isEmpty()));
 
-        WriteExecutor property;
+        Writer property;
 
         // Retrieve the next property without any dependencies
-        while ((property = propertiesWithoutDependencies.poll()) != null) {
+        while ((property = writerWithoutDependencies.poll()) != null) {
             sorted.add(property);
 
             // We copy this into a new list because the underlying collection gets modified during iteration
-            Collection<WriteExecutor> dependents = Lists.newArrayList(invertedDependencies.get(property));
+            Collection<Writer> dependents = Lists.newArrayList(invertedDependencies.get(property));
 
-            for (WriteExecutor dependent : dependents) {
+            for (Writer dependent : dependents) {
                 // Because the property has been removed, the dependent no longer needs to depend on it
                 dependencies.remove(dependent, property);
                 invertedDependencies.remove(property, dependent);
@@ -275,7 +279,7 @@ public class Writer {
                 boolean hasNoDependencies = dependencies.get(dependent).isEmpty();
 
                 if (hasNoDependencies) {
-                    propertiesWithoutDependencies.add(dependent);
+                    writerWithoutDependencies.add(dependent);
                 }
             }
         }
@@ -367,16 +371,12 @@ public class Writer {
 
         // This could be faster if we built a dedicated map Var -> VarPattern
         // However, this method is only used for displaying errors, so it's not worth the cost
-        for (WriteExecutor executor : properties) {
+        for (Writer executor : writers) {
             if (executor.var().equals(var)) {
                 propertiesOfVar.add(executor.property());
             }
         }
 
         return new StatementImpl(var, propertiesOfVar.build());
-    }
-
-    Transaction tx() {
-        return transaction;
     }
 }

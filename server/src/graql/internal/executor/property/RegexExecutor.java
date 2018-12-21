@@ -19,13 +19,12 @@
 package grakn.core.graql.internal.executor.property;
 
 import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 public class RegexExecutor implements PropertyExecutor.Definable {
@@ -39,16 +38,16 @@ public class RegexExecutor implements PropertyExecutor.Definable {
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> defineExecutors() {
+    public Set<PropertyExecutor.Writer> defineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new DefineRegex()));
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> undefineExecutors() {
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new UndefineRegex()));
     }
 
-    private abstract class AbstractWriteExecutor {
+    private abstract class RegexWriter {
 
         public Variable var() {
             return var;
@@ -67,19 +66,19 @@ public class RegexExecutor implements PropertyExecutor.Definable {
         }
     }
 
-    private class DefineRegex extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class DefineRegex extends RegexWriter implements PropertyExecutor.Writer {
 
         @Override
-        public void execute(Writer writer) {
-            writer.getConcept(var).asAttributeType().regex(property.regex());
+        public void execute(WriteExecutor executor) {
+            executor.getConcept(var).asAttributeType().regex(property.regex());
         }
     }
 
-    private class UndefineRegex extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class UndefineRegex extends RegexWriter implements PropertyExecutor.Writer {
 
         @Override
-        public void execute(Writer writer) {
-            AttributeType<Object> attributeType = writer.getConcept(var).asAttributeType();
+        public void execute(WriteExecutor executor) {
+            AttributeType<Object> attributeType = executor.getConcept(var).asAttributeType();
             if (!attributeType.isDeleted() && property.regex().equals(attributeType.regex())) {
                 attributeType.regex(null);
             }

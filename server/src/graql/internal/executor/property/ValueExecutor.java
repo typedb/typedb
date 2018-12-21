@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.executor.property;
 
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -38,11 +38,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> insertExecutors() {
+    public Set<PropertyExecutor.Writer> insertExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new InsertValue()));
     }
 
-    class InsertValue implements PropertyExecutor.WriteExecutor {
+    class InsertValue implements PropertyExecutor.Writer {
 
         @Override
         public Variable var() {
@@ -65,9 +65,9 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         }
 
         @Override
-        public void execute(Writer writer) {
+        public void execute(WriteExecutor executor) {
             Object value = property.predicate().equalsValue().orElseThrow(GraqlQueryException::insertPredicate);
-            writer.getBuilder(var).value(value);
+            executor.getBuilder(var).value(value);
         }
     }
 }

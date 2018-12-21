@@ -20,7 +20,7 @@ package grakn.core.graql.internal.executor.property;
 
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -40,16 +40,16 @@ public class PlaysExecutor implements PropertyExecutor.Definable {
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> defineExecutors() {
+    public Set<PropertyExecutor.Writer> defineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new DefinePlays()));
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> undefineExecutors() {
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new UndefinePlays()));
     }
 
-    private abstract class AbstractWriteExecutor {
+    private abstract class PlaysWriter {
 
         public Variable var() {
             return var;
@@ -72,21 +72,21 @@ public class PlaysExecutor implements PropertyExecutor.Definable {
         }
     }
 
-    private class DefinePlays extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class DefinePlays extends PlaysWriter implements PropertyExecutor.Writer {
 
         @Override
-        public void execute(Writer writer) {
-            Role role = writer.getConcept(property.role().var()).asRole();
-            writer.getConcept(var).asType().plays(role);
+        public void execute(WriteExecutor executor) {
+            Role role = executor.getConcept(property.role().var()).asRole();
+            executor.getConcept(var).asType().plays(role);
         }
     }
 
-    private class UndefinePlays extends AbstractWriteExecutor  implements PropertyExecutor.WriteExecutor {
+    private class UndefinePlays extends PlaysWriter implements PropertyExecutor.Writer {
 
         @Override
-        public void execute(Writer writer) {
-            Type type = writer.getConcept(var).asType();
-            Role role = writer.getConcept(property.role().var()).asRole();
+        public void execute(WriteExecutor executor) {
+            Type type = executor.getConcept(var).asType();
+            Role role = executor.getConcept(property.role().var()).asRole();
 
             if (!type.isDeleted() && !role.isDeleted()) {
                 type.unplay(role);

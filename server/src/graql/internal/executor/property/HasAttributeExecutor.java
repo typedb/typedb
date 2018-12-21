@@ -21,7 +21,7 @@ package grakn.core.graql.internal.executor.property;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Thing;
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -41,11 +41,11 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> insertExecutors() {
+    public Set<PropertyExecutor.Writer> insertExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new InsertHasAttribute()));
     }
 
-    private class InsertHasAttribute implements PropertyExecutor.WriteExecutor {
+    private class InsertHasAttribute implements PropertyExecutor.Writer {
 
         @Override
         public Variable var() {
@@ -71,11 +71,11 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
         }
 
         @Override
-        public void execute(Writer writer) {
-            Attribute attributeConcept = writer.getConcept(property.attribute().var()).asAttribute();
-            Thing thing = writer.getConcept(var).asThing();
+        public void execute(WriteExecutor executor) {
+            Attribute attributeConcept = executor.getConcept(property.attribute().var()).asAttribute();
+            Thing thing = executor.getConcept(var).asThing();
             ConceptId relationshipId = thing.relhas(attributeConcept).id();
-            writer.getBuilder(property.relationship().var()).id(relationshipId);
+            executor.getBuilder(property.relationship().var()).id(relationshipId);
         }
     }
 }

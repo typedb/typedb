@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.executor.property;
 
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.LabelProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -37,23 +37,23 @@ public class LabelExecutor implements PropertyExecutor.Definable, PropertyExecut
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> defineExecutors() {
+    public Set<PropertyExecutor.Writer> defineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new LookupLabel()));
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> undefineExecutors() {
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new LookupLabel()));
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> insertExecutors() {
+    public Set<PropertyExecutor.Writer> insertExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new LookupLabel()));
     }
 
     // The WriteExecutor for IdExecutor works for Define, Undefine and Insert queries,
     // because it is used for look-ups of a concept
-    private class LookupLabel implements PropertyExecutor.WriteExecutor {
+    private class LookupLabel implements PropertyExecutor.Writer {
 
         @Override
         public Variable var() {
@@ -76,8 +76,8 @@ public class LabelExecutor implements PropertyExecutor.Definable, PropertyExecut
         }
 
         @Override
-        public void execute(Writer writer) {
-            writer.getBuilder(var).label(property.label());
+        public void execute(WriteExecutor executor) {
+            executor.getBuilder(var).label(property.label());
         }
     }
 }

@@ -20,7 +20,7 @@ package grakn.core.graql.internal.executor.property;
 
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -40,16 +40,16 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> defineExecutors() {
+    public Set<PropertyExecutor.Writer> defineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new DefineHasAttributeType()));
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> undefineExecutors() {
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new UndefineHasAttributeType()));
     }
 
-    private abstract class AbstractWriteExecutor {
+    private abstract class HasAttributeTypeWriter {
 
         public Variable var() {
             return var;
@@ -72,12 +72,12 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         }
     }
 
-    private class DefineHasAttributeType extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class DefineHasAttributeType extends HasAttributeTypeWriter implements PropertyExecutor.Writer {
 
         @Override
-        public void execute(Writer writer) {
-            Type entityTypeConcept = writer.getConcept(var).asType();
-            AttributeType attributeTypeConcept = writer.getConcept(property.type().var()).asAttributeType();
+        public void execute(WriteExecutor executor) {
+            Type entityTypeConcept = executor.getConcept(var).asType();
+            AttributeType attributeTypeConcept = executor.getConcept(property.type().var()).asAttributeType();
 
             if (property.isRequired()) {
                 entityTypeConcept.key(attributeTypeConcept);
@@ -87,12 +87,12 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         }
     }
 
-    private class UndefineHasAttributeType extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class UndefineHasAttributeType extends HasAttributeTypeWriter implements PropertyExecutor.Writer {
 
         @Override
-        public void execute(Writer writer) {
-            Type type = writer.getConcept(var).asType();
-            AttributeType<?> attributeType = writer.getConcept(property.type().var()).asAttributeType();
+        public void execute(WriteExecutor executor) {
+            Type type = executor.getConcept(var).asType();
+            AttributeType<?> attributeType = executor.getConcept(property.type().var()).asAttributeType();
 
             if (!type.isDeleted() && !attributeType.isDeleted()) {
                 if (property.isRequired()) {

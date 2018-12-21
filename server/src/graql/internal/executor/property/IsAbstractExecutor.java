@@ -21,13 +21,12 @@ package grakn.core.graql.internal.executor.property;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsAbstractProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 public class IsAbstractExecutor implements PropertyExecutor.Definable {
@@ -41,16 +40,16 @@ public class IsAbstractExecutor implements PropertyExecutor.Definable {
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> defineExecutors() {
+    public Set<PropertyExecutor.Writer> defineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new DefineIsAbstract()));
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> undefineExecutors() {
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new UndefineIsAbstract()));
     }
 
-    private abstract class AbstractWriteExecutor {
+    private abstract class IsAbstractWriter {
 
         public Variable var() {
             return var;
@@ -69,11 +68,11 @@ public class IsAbstractExecutor implements PropertyExecutor.Definable {
         }
     }
 
-    private class DefineIsAbstract extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class DefineIsAbstract extends IsAbstractWriter implements PropertyExecutor.Writer {
 
         @Override
-        public void execute(Writer writer) {
-            Concept concept = writer.getConcept(var);
+        public void execute(WriteExecutor executor) {
+            Concept concept = executor.getConcept(var);
             if (concept.isType()) {
                 concept.asType().isAbstract(true);
             } else {
@@ -82,11 +81,11 @@ public class IsAbstractExecutor implements PropertyExecutor.Definable {
         }
     }
 
-    private class UndefineIsAbstract extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class UndefineIsAbstract extends IsAbstractWriter implements PropertyExecutor.Writer {
 
         @Override
-        public void execute(Writer writer) {
-            Type type = writer.getConcept(var).asType();
+        public void execute(WriteExecutor executor) {
+            Type type = executor.getConcept(var).asType();
             if (!type.isDeleted()) {
                 type.isAbstract(false);
             }

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.executor.property;
 
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
@@ -43,17 +43,17 @@ public interface PropertyExecutor {
 
     interface Definable {
 
-        Set<WriteExecutor> defineExecutors();
+        Set<Writer> defineExecutors();
 
-        Set<WriteExecutor> undefineExecutors();
+        Set<Writer> undefineExecutors();
     }
 
     interface Insertable {
 
-        Set<WriteExecutor> insertExecutors();
+        Set<Writer> insertExecutors();
     }
 
-    interface WriteExecutor {
+    interface Writer {
 
         Variable var();
 
@@ -77,11 +77,11 @@ public interface PropertyExecutor {
         /**
          * Apply the given property, if possible.
          *
-         * @param writer a class providing a map of concepts that are accessible and methods to build new concepts.
+         * @param executor a class providing a map of concepts that are accessible and methods to build new concepts.
          *                 This method can expect any key to be here that is returned from
          *                 #requiredVars(). The method may also build a concept provided that key is returned
          *                 from #producedVars().
          */
-        void execute(Writer writer);
+        void execute(WriteExecutor executor);
     }
 }

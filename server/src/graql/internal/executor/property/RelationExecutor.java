@@ -22,7 +22,7 @@ import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.RelationProperty;
@@ -44,11 +44,11 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> insertExecutors() {
+    public Set<PropertyExecutor.Writer> insertExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new InsertRelation()));
     }
 
-    class InsertRelation implements PropertyExecutor.WriteExecutor {
+    class InsertRelation implements PropertyExecutor.Writer {
 
         @Override
         public Variable var() {
@@ -78,13 +78,13 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
         }
 
         @Override
-        public void execute(Writer writer) {
-            Relation relation = writer.getConcept(var).asRelation();
+        public void execute(WriteExecutor executor) {
+            Relation relation = executor.getConcept(var).asRelation();
             property.relationPlayers().forEach(relationPlayer -> {
                 Statement roleVar = getRole(relationPlayer);
 
-                Role role = writer.getConcept(roleVar.var()).asRole();
-                Thing roleplayer = writer.getConcept(relationPlayer.getPlayer().var()).asThing();
+                Role role = executor.getConcept(roleVar.var()).asRole();
+                Thing roleplayer = executor.getConcept(relationPlayer.getPlayer().var()).asThing();
                 relation.assign(role, roleplayer);
             });
         }

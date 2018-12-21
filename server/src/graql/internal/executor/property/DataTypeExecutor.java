@@ -18,13 +18,12 @@
 
 package grakn.core.graql.internal.executor.property;
 
-import grakn.core.graql.internal.executor.Writer;
+import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 public class DataTypeExecutor implements PropertyExecutor.Definable {
@@ -38,16 +37,16 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> defineExecutors() {
+    public Set<PropertyExecutor.Writer> defineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new DefineDataType()));
     }
 
     @Override
-    public Set<PropertyExecutor.WriteExecutor> undefineExecutors() {
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
         return Collections.unmodifiableSet(Collections.singleton(new UndefineDataType()));
     }
 
-    private abstract class AbstractWriteExecutor {
+    private abstract class DataTypeWriter {
 
         public Variable var() {
             return var;
@@ -62,11 +61,11 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
         }
     }
 
-    private class DefineDataType extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class DefineDataType extends DataTypeWriter implements PropertyExecutor.Writer {
 
         @Override
-        public void execute(Writer writer) {
-            writer.getBuilder(var).dataType(property.dataType());
+        public void execute(WriteExecutor executor) {
+            executor.getBuilder(var).dataType(property.dataType());
         }
 
         @Override
@@ -75,7 +74,7 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
         }
     }
 
-    private class UndefineDataType extends AbstractWriteExecutor implements PropertyExecutor.WriteExecutor {
+    private class UndefineDataType extends DataTypeWriter implements PropertyExecutor.Writer {
 
         @Override
         public Set<Variable> producedVars() {
@@ -83,7 +82,7 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
         }
 
         @Override
-        public void execute(Writer writer) {
+        public void execute(WriteExecutor executor) {
             // TODO: resolve the below issue correctly
             // undefine for datatype must be supported, because it is supported in define.
             // However, making it do the right thing is difficult. Ideally we want the same as define:
