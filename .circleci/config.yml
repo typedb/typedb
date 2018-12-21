@@ -230,11 +230,12 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - run: bazel test //server/test/server/deduplicator:rocks-db-queue-test --test_output=errors
-    - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace
-        root: ~/grakn
-        paths:
-        - .
+    - run:
+        name: Install Google Cloud Remote Build Execution Credential
+        command: |
+          mkdir -p ~/.config/gcloud/
+          echo $GOOGLE_CLOUD_REMOTE_BUILD_EXECUTION_CREDENTIAL > ~/.config/gcloud/application_default_credentials.json
+    - run: bazel --bazelrc=.bazelrc test //server/test/server/deduplicator:rocks-db-queue-test --config=remote --remote_instance_name=projects/grakn-dev/instances/default_instance --project_id=grakn-dev
 
 workflows:
   version: 2
