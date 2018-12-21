@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -815,8 +815,9 @@ public class AtomicQueryUnificationIT {
     private Concept getConceptByResourceValue(TransactionOLTP tx, String id){
         Set<Concept> instances = tx.getAttributesByValue(id)
                 .stream().flatMap(Attribute::owners).collect(Collectors.toSet());
-        if (instances.size() != 1)
+        if (instances.size() != 1) {
             throw new IllegalStateException("Something wrong, multiple instances with given res value");
+        }
         return instances.iterator().next();
     }
 

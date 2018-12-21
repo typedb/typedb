@@ -20,7 +20,7 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+
 )
 java_test(
      name = "attribute-type-it",
@@ -41,7 +41,7 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+
 )
 java_test(
      name = "concept-it",
@@ -63,7 +63,7 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+
 )
 
 java_test(
@@ -85,7 +85,7 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+
 )
 
 java_test(
@@ -109,7 +109,7 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+
 )
 
 java_test(
@@ -134,7 +134,7 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+
 )
 
 java_test(
@@ -156,7 +156,7 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+
 )
 java_test(
      name = "role-it",
@@ -177,7 +177,7 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+
 )
 java_test(
      name = "schema-concept-it",
@@ -200,7 +200,7 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+
 )
 java_test(
      name = "schema-mutation-it",
@@ -223,5 +223,5 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+
 )

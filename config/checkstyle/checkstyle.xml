@@ -22,6 +22,11 @@
           "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
 
 <module name="Checker">
+    <property name="charset" value="UTF-8"/>
+
+    <module name="SuppressionFilter">
+        <property name="file" value="config/checkstyle/checkstyle-suppressions.xml" />
+    </module>
 
     <!-- Use 4 spaces, not tabs -->
     <module name="FileTabCharacter">
@@ -105,9 +110,9 @@
         <module name="OneStatementPerLine"/>
 
         <!-- Require JavaDoc on types (classes, interfaces, etc.) -->
-        <module name="JavadocType">
-            <property name="scope" value="public"/>
-        </module>
+        <!--<module name="JavadocType">-->
+            <!--<property name="scope" value="public"/>-->
+        <!--</module>-->
 
     </module>
 

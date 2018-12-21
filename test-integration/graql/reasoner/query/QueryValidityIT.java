@@ -71,7 +71,8 @@ public class QueryValidityIT {
 
     @AfterClass
     public static void closeSession(){
-        tx.close(); genericSchemaSession.close();
+        tx.close();
+        genericSchemaSession.close();
     }
 
 

@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -36,11 +36,12 @@ public abstract class QueryPattern {
 
     public static int[][] identity(int N){
         int[][] matrix = new int[N][N];
-        for(int i = 0; i < N ; i++)
-            for(int j = 0; j < N ; j++){
+        for(int i = 0; i < N ; i++) {
+            for (int j = 0; j < N; j++) {
                 if (i == j) matrix[i][j] = 1;
                 else matrix[i][j] = 0;
             }
+        }
         return matrix;
     }
 

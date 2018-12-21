@@ -20,7 +20,7 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+
 )
 
 java_test(
@@ -43,5 +43,5 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+
 )
