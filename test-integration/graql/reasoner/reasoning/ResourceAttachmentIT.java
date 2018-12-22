@@ -149,7 +149,7 @@ public class ResourceAttachmentIT {
     public void whenReasoningWithResourcesWithRelationVar_ResultsAreComplete() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
-            Statement has = var("x").has(Label.of("reattachable-resource-string"), var("y"), var("r"));
+            Statement has = var("x").has("reattachable-resource-string", var("y"), var("r"));
             List<ConceptMap> answers = tx.execute(Graql.match(has).get());
             assertEquals(3, answers.size());
             answers.forEach(a -> assertTrue(a.vars().contains(var("r"))));

@@ -278,18 +278,6 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type, Statement attribute) {
-        return has(Label.of(type), attribute);
-    }
-
-    /**
-     * the variable must have an Attribute of the given type that matches the given atom
-     *
-     * @param type      a resource type in the schema
-     * @param attribute a variable pattern representing an Attribute
-     * @return this
-     */
-    @CheckReturnValue
-    public final Statement has(Label type, Statement attribute) {
         return has(type, attribute, Pattern.var());
     }
 
@@ -303,7 +291,7 @@ public abstract class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final Statement has(Label type, Statement attribute, Statement relationship) {
+    public final Statement has(String type, Statement attribute, Statement relationship) {
         return addProperty(new HasAttributeProperty(type, attribute, relationship));
     }
 

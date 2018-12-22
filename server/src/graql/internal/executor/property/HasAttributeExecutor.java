@@ -53,10 +53,12 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
 
     private final Variable var;
     private final HasAttributeProperty property;
+    private final Label type;
 
     HasAttributeExecutor(Variable var, HasAttributeProperty property) {
         this.var = var;
         this.property = property;
+        this.type = Label.of(property.type());
     }
 
     @Override
@@ -66,7 +68,6 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
-        Label type = property.type();
         Label has = Schema.ImplicitType.HAS.getLabel(type);
         Label key = Schema.ImplicitType.KEY.getLabel(type);
 

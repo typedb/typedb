@@ -88,7 +88,7 @@ public class InsertQueryIT {
     private static final Variable y = var("y");
     private static final Variable z = var("z");
 
-    private static final Label title = Label.of("title");
+    private static final String title = "title";
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

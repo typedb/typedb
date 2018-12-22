@@ -278,7 +278,7 @@ public class Parser extends GraqlBaseVisitor {
 
         Statement finalResource = resource;
 
-        return var -> var.has(type, finalResource, relation);
+        return var -> var.has(type.toString(), finalResource, relation);
     }
 
     @Override

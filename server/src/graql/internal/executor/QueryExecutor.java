@@ -339,12 +339,13 @@ public class QueryExecutor {
     }
 
     private void validateHasAttributeProperty(HasAttributeProperty varProperty) {
-        SchemaConcept schemaConcept = transaction.getSchemaConcept(varProperty.type());
+        Label type = Label.of(varProperty.type());
+        SchemaConcept schemaConcept = transaction.getSchemaConcept(type);
         if (schemaConcept == null) {
-            throw GraqlQueryException.labelNotFound(varProperty.type());
+            throw GraqlQueryException.labelNotFound(type);
         }
         if (!schemaConcept.isAttributeType()) {
-            throw GraqlQueryException.mustBeAttributeType(varProperty.type());
+            throw GraqlQueryException.mustBeAttributeType(type);
         }
     }
 

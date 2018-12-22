@@ -362,7 +362,7 @@ public abstract class AttributeAtom extends Binary{
     public AttributeAtom rewriteWithRelationVariable(){
         Variable attributeVariable = getAttributeVariable();
         Variable relationVariable = getRelationVariable().asUserDefined();
-        Statement newVar = getVarName().has(getSchemaConcept().label(), attributeVariable, relationVariable);
+        Statement newVar = getVarName().has(getSchemaConcept().label().toString(), attributeVariable, relationVariable);
         return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 

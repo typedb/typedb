@@ -18,14 +18,12 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 
 import java.util.stream.Stream;
 
 import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.util.StringUtil.typeLabelToString;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -38,11 +36,11 @@ import static java.util.stream.Collectors.joining;
  */
 public class HasAttributeProperty extends VarProperty {
 
-    private final Label type;
+    private final String type;
     private final Statement attribute;
     private final Statement relationship;
 
-    public HasAttributeProperty(Label type, Statement attribute, Statement relationship) {
+    public HasAttributeProperty(String type, Statement attribute, Statement relationship) {
         attribute = attribute.isa(label(type));
         if (type == null) {
             throw new NullPointerException("Null type");
@@ -55,7 +53,7 @@ public class HasAttributeProperty extends VarProperty {
         this.relationship = relationship;
     }
 
-    public Label type() {
+    public String type() {
         return type;
     }
 
@@ -76,7 +74,7 @@ public class HasAttributeProperty extends VarProperty {
     public String property() {
         Stream.Builder<String> repr = Stream.builder();
 
-        repr.add(typeLabelToString(type()));
+        repr.add(type);
 
         if (attribute().var().isUserDefinedName()) {
             repr.add(attribute().var().toString());

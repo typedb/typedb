@@ -34,7 +34,7 @@ class AttributeConverter implements ConceptConverter<Attribute> {
         Variable owner = Pattern.var().asUserDefined();
         Statement resourceVar = Pattern.var().asUserDefined().val(concept.value());
         return owner
-                .has(concept.type().label(),resourceVar)
+                .has(concept.type().label().toString(),resourceVar)
                 .id(concept.owner().id());
     }
 }
