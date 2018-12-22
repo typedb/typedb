@@ -33,6 +33,7 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
@@ -332,7 +333,7 @@ public class UndefineQueryIT {
         Concept movie = tx.execute(Graql.insert(x.isa("movie"))).get(0).get(x);
 
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(IsaProperty.NAME).getMessage());
+        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(VarProperty.Name.ISA.toString()).getMessage());
 
         tx.execute(Graql.undefine(var().id(movie.id()).isa("movie")));
     }

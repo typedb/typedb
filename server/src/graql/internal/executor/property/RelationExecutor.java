@@ -18,22 +18,33 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class RelationExecutor implements PropertyExecutor.Insertable {
+import static grakn.core.common.util.CommonUtil.toImmutableSet;
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
+
+public class RelationExecutor implements PropertyExecutor.Insertable, PropertyExecutor.Matchable {
 
     private final Variable var;
     private final RelationProperty property;
@@ -45,7 +56,41 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
 
     @Override
     public Set<PropertyExecutor.Writer> insertExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new InsertRelation()));
+        return ImmutableSet.of(new InsertRelation());
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        Collection<Variable> castingNames = new HashSet<>();
+
+        ImmutableSet<EquivalentFragmentSet> traversals = property.relationPlayers().stream().flatMap(relationPlayer -> {
+
+            Variable castingName = Pattern.var();
+            castingNames.add(castingName);
+
+            return fragmentSetsFromRolePlayer(castingName, relationPlayer);
+        }).collect(toImmutableSet());
+
+        ImmutableSet<EquivalentFragmentSet> distinctCastingTraversals = castingNames.stream().flatMap(
+                castingName -> castingNames.stream()
+                        .filter(otherName -> !otherName.equals(castingName))
+                        .map(otherName -> EquivalentFragmentSets.neq(property, castingName, otherName))
+        ).collect(toImmutableSet());
+
+        return Sets.union(traversals, distinctCastingTraversals);
+    }
+
+    private Stream<EquivalentFragmentSet> fragmentSetsFromRolePlayer(Variable castingName,
+                                                                     RelationProperty.RolePlayer relationPlayer) {
+        Optional<Statement> roleType = relationPlayer.getRole();
+
+        if (roleType.isPresent()) {
+            // Add some patterns where this variable is a relation relating the given roleplayer as the given roletype
+            return Stream.of(rolePlayer(property, var, castingName, relationPlayer.getPlayer().var(), roleType.get().var()));
+        } else {
+            // Add some patterns where this variable is a relation and the given variable is a roleplayer of that relationship
+            return Stream.of(rolePlayer(property, var, castingName, relationPlayer.getPlayer().var(), null));
+        }
     }
 
     class InsertRelation implements PropertyExecutor.Writer {
@@ -74,7 +119,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
 
         @Override
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.emptySet());
+            return ImmutableSet.of();
         }
 
         @Override

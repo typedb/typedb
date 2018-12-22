@@ -16,34 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.pattern.property;
+package grakn.core.graql.internal.executor.property;
 
-import grakn.core.common.exception.ErrorMessage;
+import com.google.common.collect.Sets;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.NeqProperty;
 
-import java.util.Collection;
+import java.util.Set;
 
-/**
- * Abstract property for the patterns within rules.
- */
-public abstract class RuleProperty extends VarProperty {
+public class NeqExecutor implements PropertyExecutor.Matchable {
 
-    public abstract Pattern pattern();
+    private final Variable var;
+    private final NeqProperty property;
 
-    @Override
-    public String getProperty() {
-        return pattern().toString();
+    public NeqExecutor(Variable var, NeqProperty property) {
+        this.var = var;
+        this.property = property;
     }
 
     @Override
-    public boolean isUnique() {
-        return true;
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getName()));
+    public Set<EquivalentFragmentSet> matchFragments() {
+        return Sets.newHashSet(
+                EquivalentFragmentSets.notInternalFragmentSet(property, var),
+                EquivalentFragmentSets.notInternalFragmentSet(property, property.statement().var()),
+                EquivalentFragmentSets.neq(property, var, property.statement().var())
+        );
     }
 }

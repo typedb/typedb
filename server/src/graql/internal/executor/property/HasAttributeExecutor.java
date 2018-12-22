@@ -18,10 +18,15 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -30,7 +35,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class HasAttributeExecutor implements PropertyExecutor.Insertable {
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
+
+public class HasAttributeExecutor implements PropertyExecutor.Insertable, PropertyExecutor.Matchable {
 
     private final Variable var;
     private final HasAttributeProperty property;
@@ -42,7 +50,30 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
 
     @Override
     public Set<PropertyExecutor.Writer> insertExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new InsertHasAttribute()));
+        return ImmutableSet.of(new InsertHasAttribute());
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        Label type = property.type();
+        Label has = Schema.ImplicitType.HAS.getLabel(type);
+        Label key = Schema.ImplicitType.KEY.getLabel(type);
+
+        Label hasOwnerRole = Schema.ImplicitType.HAS_OWNER.getLabel(type);
+        Label keyOwnerRole = Schema.ImplicitType.KEY_OWNER.getLabel(type);
+        Label hasValueRole = Schema.ImplicitType.HAS_VALUE.getLabel(type);
+        Label keyValueRole = Schema.ImplicitType.KEY_VALUE.getLabel(type);
+
+        Variable edge1 = Pattern.var();
+        Variable edge2 = Pattern.var();
+
+        return ImmutableSet.of(
+                //owner rolePlayer edge
+                rolePlayer(property, property.relationship().var(), edge1, var, null, ImmutableSet.of(hasOwnerRole, keyOwnerRole), ImmutableSet.of(has, key)),
+                //value rolePlayer edge
+                rolePlayer(property, property.relationship().var(), edge2, property.attribute().var(), null, ImmutableSet.of(hasValueRole, keyValueRole), ImmutableSet.of(has, key)),
+                neq(property, edge1, edge2)
+        );
     }
 
     private class InsertHasAttribute implements PropertyExecutor.Writer {
@@ -67,7 +98,7 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
 
         @Override
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.singleton(property.relationship().var()));
+            return ImmutableSet.of(property.relationship().var());
         }
 
         @Override

@@ -18,18 +18,22 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
+import grakn.core.graql.query.pattern.property.NeqProperty;
+import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
+public class HasAttributeTypeExecutor implements PropertyExecutor.Definable, PropertyExecutor.Matchable {
 
     private final Variable var;
     private final HasAttributeTypeProperty property;
@@ -41,12 +45,28 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
 
     @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new DefineHasAttributeType()));
+        return ImmutableSet.of(new DefineHasAttributeType());
     }
 
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new UndefineHasAttributeType()));
+        return ImmutableSet.of(new UndefineHasAttributeType());
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        Set<EquivalentFragmentSet> fragments = new HashSet<>();
+
+        PlaysExecutor playsOwnerExecutor = new PlaysExecutor(var, new PlaysProperty(property.ownerRole(), property.isRequired()));
+        //TODO: Get this to use real constraints no just the required flag
+        PlaysExecutor playsValueExecutor = new PlaysExecutor(property.attributeType().var(), new PlaysProperty(property.valueRole(), false));
+        NeqExecutor neqExecutor = new NeqExecutor(property.valueRole().var(), new NeqProperty(property.ownerRole()));
+
+        fragments.addAll(playsOwnerExecutor.matchFragments());
+        fragments.addAll(playsValueExecutor.matchFragments());
+        fragments.addAll(neqExecutor.matchFragments());
+
+        return ImmutableSet.copyOf(fragments);
     }
 
     private abstract class HasAttributeTypeWriter {
@@ -62,13 +82,13 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         public Set<Variable> requiredVars() {
             Set<Variable> required = new HashSet<>();
             required.add(var);
-            required.add(property.type().var());
+            required.add(property.attributeType().var());
 
             return Collections.unmodifiableSet(required);
         }
 
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.emptySet());
+            return ImmutableSet.of();
         }
     }
 
@@ -77,7 +97,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         @Override
         public void execute(WriteExecutor executor) {
             Type entityTypeConcept = executor.getConcept(var).asType();
-            AttributeType attributeTypeConcept = executor.getConcept(property.type().var()).asAttributeType();
+            AttributeType attributeTypeConcept = executor.getConcept(property.attributeType().var()).asAttributeType();
 
             if (property.isRequired()) {
                 entityTypeConcept.key(attributeTypeConcept);
@@ -92,7 +112,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         @Override
         public void execute(WriteExecutor executor) {
             Type type = executor.getConcept(var).asType();
-            AttributeType<?> attributeType = executor.getConcept(property.type().var()).asAttributeType();
+            AttributeType<?> attributeType = executor.getConcept(property.attributeType().var()).asAttributeType();
 
             if (!type.isDeleted() && !attributeType.isDeleted()) {
                 if (property.isRequired()) {

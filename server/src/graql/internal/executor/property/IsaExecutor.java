@@ -18,28 +18,54 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.IsaAbstractProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
-import java.util.Collections;
 import java.util.Set;
 
-public class IsaAbstractExecutor implements PropertyExecutor.Insertable {
+public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecutor.Matchable {
 
     private final Variable var;
-    private final IsaAbstractProperty property;
+    private final IsaProperty property;
 
-    public IsaAbstractExecutor(Variable var, IsaAbstractProperty property) {
+    public IsaExecutor(Variable var, IsaProperty property) {
         this.var = var;
         this.property = property;
     }
 
     @Override
     public Set<PropertyExecutor.Writer> insertExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new InsertIsa()));
+        return ImmutableSet.of(new InsertIsa());
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        Variable directTypeVar = Pattern.var();
+        return ImmutableSet.of(
+                EquivalentFragmentSets.isa(property, var, directTypeVar, true),
+                EquivalentFragmentSets.sub(property, directTypeVar, property.type().var())
+        );
+    }
+
+    public static class IsaExplicitExecutor extends IsaExecutor {
+
+        public IsaExplicitExecutor(Variable var, IsaProperty property) {
+            super(var, property);
+        }
+
+        @Override
+        public Set<EquivalentFragmentSet> matchFragments() {
+            return ImmutableSet.of(
+                    EquivalentFragmentSets.isa(super.property, super.var, super.property.type().var(), true)
+            );
+        }
     }
 
     private class InsertIsa implements PropertyExecutor.Writer {
@@ -56,12 +82,12 @@ public class IsaAbstractExecutor implements PropertyExecutor.Insertable {
 
         @Override
         public Set<Variable> requiredVars() {
-            return Collections.unmodifiableSet(Collections.singleton(property.type().var()));
+            return ImmutableSet.of(property.type().var());
         }
 
         @Override
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.singleton(var));
+            return ImmutableSet.of(var);
         }
 
         @Override

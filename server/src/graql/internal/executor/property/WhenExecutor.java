@@ -18,13 +18,13 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
 
-import java.util.Collections;
 import java.util.Set;
 
 public class WhenExecutor implements PropertyExecutor.Definable {
@@ -39,13 +39,13 @@ public class WhenExecutor implements PropertyExecutor.Definable {
 
     @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new DefineWhen()));
+        return ImmutableSet.of(new DefineWhen());
     }
 
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
         // TODO: Fix this so that Undefining WhenProperty behaves symmetrically to Defining WhenProperty
-        throw GraqlQueryException.defineUnsupportedProperty(property.getName());
+        throw GraqlQueryException.defineUnsupportedProperty(property.name());
     }
 
     private class DefineWhen implements PropertyExecutor.Writer {
@@ -62,12 +62,12 @@ public class WhenExecutor implements PropertyExecutor.Definable {
 
         @Override
         public Set<Variable> requiredVars() {
-            return Collections.unmodifiableSet(Collections.emptySet());
+            return ImmutableSet.of();
         }
 
         @Override
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.singleton(var));
+            return ImmutableSet.of(var);
         }
 
         @Override

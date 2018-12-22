@@ -18,13 +18,9 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 
-import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * Represents the {@code sub} property on a Type.
@@ -32,31 +28,44 @@ import java.util.Collection;
  * This property relates a Type and another Type. It indicates
  * that every instance of the left type is also an instance of the right type.
  */
-public class SubProperty extends SubAbstractProperty {
+public class SubProperty extends VarProperty {
 
-    public static final String NAME = "sub";
-    private final Statement superType;
+    private final Statement type;
 
-    public SubProperty(Statement superType) {
-        if (superType == null) {
+    public SubProperty(Statement type) {
+        if (type == null) {
             throw new NullPointerException("Null superType");
         }
-        this.superType = superType;
+        this.type = type;
+    }
+
+    public Statement type() {
+        return type;
     }
 
     @Override
-    public Statement superType() {
-        return superType;
+    public String name() {
+        return Name.SUB.toString();
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String property() {
+        return type().getPrintableName();
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType().var()));
+    public boolean isUnique() {
+        return true;
+    }
+
+    @Override
+    public Stream<Statement> types() {
+        return Stream.of(type());
+    }
+
+    @Override
+    public Stream<Statement> innerStatements() {
+        return Stream.of(type());
     }
 
     @Override
@@ -66,7 +75,7 @@ public class SubProperty extends SubAbstractProperty {
         }
         if (o instanceof SubProperty) {
             SubProperty that = (SubProperty) o;
-            return (this.superType.equals(that.superType()));
+            return (this.type().equals(that.type()));
         }
         return false;
     }
@@ -74,8 +83,10 @@ public class SubProperty extends SubAbstractProperty {
     @Override
     public int hashCode() {
         int h = 1;
+//        h *= 1000003; TODO: Uncomment this once we fix issue #4761
+//        h ^= this.name().hashCode();
         h *= 1000003;
-        h ^= this.superType.hashCode();
+        h ^= this.type().hashCode();
         return h;
     }
 }

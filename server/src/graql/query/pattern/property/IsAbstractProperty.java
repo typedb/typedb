@@ -18,14 +18,6 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.query.pattern.Variable;
-
-import java.util.Collection;
-
-import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbstract;
-
 /**
  * Represents the {@code is-abstract} property on a Type.
  * This property can be matched or inserted.
@@ -35,8 +27,6 @@ public class IsAbstractProperty extends VarProperty {
 
     private static final IsAbstractProperty INSTANCE = new IsAbstractProperty();
 
-    public static final String NAME = "is-abstract";
-
     private IsAbstractProperty() {}
 
     public static IsAbstractProperty get() {
@@ -44,12 +34,12 @@ public class IsAbstractProperty extends VarProperty {
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.IS_ABSTRACT.toString();
     }
 
     @Override
-    public String getProperty() {
+    public String property() {
         return null;
     }
 
@@ -60,11 +50,6 @@ public class IsAbstractProperty extends VarProperty {
 
     @Override
     public String toString() {
-        return NAME;
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(isAbstract(this, start));
+        return name();
     }
 }

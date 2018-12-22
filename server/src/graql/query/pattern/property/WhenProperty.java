@@ -26,9 +26,8 @@ import grakn.core.graql.query.pattern.Pattern;
  * The when side describes the left-hand of an implication, stating that when the when side of a rule is true
  * the then side must hold.
  */
-public class WhenProperty extends RuleProperty {
+public class WhenProperty extends VarProperty {
 
-    public static final String NAME = "when";
     private final Pattern pattern;
 
     public WhenProperty(Pattern pattern) {
@@ -38,14 +37,23 @@ public class WhenProperty extends RuleProperty {
         this.pattern = pattern;
     }
 
-    @Override
     public Pattern pattern() {
         return pattern;
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.WHEN.toString();
+    }
+
+    @Override
+    public String property() {
+        return pattern().toString();
+    }
+
+    @Override
+    public boolean isUnique() {
+        return true;
     }
 
     @Override

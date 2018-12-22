@@ -18,18 +18,21 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsAbstractProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
-import java.util.Collections;
 import java.util.Set;
 
-public class IsAbstractExecutor implements PropertyExecutor.Definable {
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbstract;
+
+public class IsAbstractExecutor implements PropertyExecutor.Definable, PropertyExecutor.Matchable {
 
     private final Variable var;
     private final IsAbstractProperty property;
@@ -41,12 +44,17 @@ public class IsAbstractExecutor implements PropertyExecutor.Definable {
 
     @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new DefineIsAbstract()));
+        return ImmutableSet.of(new DefineIsAbstract());
     }
 
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new UndefineIsAbstract()));
+        return ImmutableSet.of(new UndefineIsAbstract());
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        return ImmutableSet.of(isAbstract(property, var));
     }
 
     private abstract class IsAbstractWriter {
@@ -60,11 +68,11 @@ public class IsAbstractExecutor implements PropertyExecutor.Definable {
         }
 
         public Set<Variable> requiredVars() {
-            return Collections.unmodifiableSet(Collections.singleton(var));
+            return ImmutableSet.of(var);
         }
 
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.emptySet());
+            return ImmutableSet.of();
         }
     }
 

@@ -19,13 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.query.pattern.Variable;
-
-import java.util.Collection;
 
 /**
  * Represents the {@code datatype} property on a AttributeType.
@@ -33,7 +27,6 @@ import java.util.Collection;
  */
 public class DataTypeProperty extends VarProperty {
 
-    public static final String NAME = "datatype";
     private final AttributeType.DataType<?> dataType;
     private static final ImmutableBiMap<String, AttributeType.DataType<?>> DATA_TYPES = ImmutableBiMap.of(
             "long", AttributeType.DataType.LONG,
@@ -56,23 +49,18 @@ public class DataTypeProperty extends VarProperty {
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.DATA_TYPE.toString();
     }
 
     @Override
-    public String getProperty() {
+    public String property() {
         return DATA_TYPES.inverse().get(dataType());
     }
 
     @Override
     public boolean isUnique() {
         return true;
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(EquivalentFragmentSets.dataType(this, start, dataType()));
     }
 
     @Override

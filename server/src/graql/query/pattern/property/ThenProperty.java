@@ -20,16 +20,14 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.pattern.Pattern;
 
-
 /**
  * Represents the {@code then} (right-hand side) property on a rule.
  * This property can be inserted and not queried.
  * The then side describes the right-hand of an implication, stating that when the when side of a rule is
  * true the then side must hold.
  */
-public class ThenProperty extends RuleProperty {
+public class ThenProperty extends VarProperty {
 
-    public static final String NAME = "then";
     private final Pattern pattern;
 
     public ThenProperty(Pattern pattern) {
@@ -39,14 +37,23 @@ public class ThenProperty extends RuleProperty {
         this.pattern = pattern;
     }
 
-    @Override
     public Pattern pattern() {
         return pattern;
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.THEN.toString();
+    }
+
+    @Override
+    public String property() {
+        return pattern().toString();
+    }
+
+    @Override
+    public boolean isUnique() {
+        return true;
     }
 
     @Override

@@ -36,6 +36,7 @@ import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
@@ -426,7 +427,7 @@ public class DefineQueryIT {
     @Test
     public void whenDefiningAThing_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(IsaProperty.NAME).getMessage());
+        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(VarProperty.Name.ISA.toString()).getMessage());
 
         tx.execute(Graql.define(var("x").isa("movie")));
     }
@@ -437,8 +438,8 @@ public class DefineQueryIT {
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(anyOf(
-                is(GraqlQueryException.defineUnsupportedProperty(HasAttributeProperty.NAME).getMessage()),
-                is(GraqlQueryException.defineUnsupportedProperty(ValueProperty.NAME).getMessage())
+                is(GraqlQueryException.defineUnsupportedProperty(VarProperty.Name.HAS.toString()).getMessage()),
+                is(GraqlQueryException.defineUnsupportedProperty(VarProperty.Name.VALUE.toString()).getMessage())
         ));
 
         tx.execute(Graql.define(var().id(id).has("title", "Bob")));
