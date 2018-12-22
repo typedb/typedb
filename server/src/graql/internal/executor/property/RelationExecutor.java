@@ -20,6 +20,11 @@ package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
@@ -27,9 +32,13 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
@@ -43,13 +52,16 @@ import java.util.stream.Stream;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
 
-public class RelationExecutor implements PropertyExecutor.Insertable, PropertyExecutor.Matchable {
+public class RelationExecutor implements PropertyExecutor.Insertable,
+                                         PropertyExecutor.Matchable,
+                                         PropertyExecutor.Atomable {
 
     private final Variable var;
     private final RelationProperty property;
 
-    public RelationExecutor(Variable var, RelationProperty property) {
+    RelationExecutor(Variable var, RelationProperty property) {
         this.var = var;
         this.property = property;
     }
@@ -63,11 +75,10 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
     public Set<EquivalentFragmentSet> matchFragments() {
         Collection<Variable> castingNames = new HashSet<>();
 
-        ImmutableSet<EquivalentFragmentSet> traversals = property.relationPlayers().stream().flatMap(relationPlayer -> {
-
+        ImmutableSet<EquivalentFragmentSet> traversals =
+                property.relationPlayers().stream().flatMap(relationPlayer -> {
             Variable castingName = Pattern.var();
             castingNames.add(castingName);
-
             return fragmentSetsFromRolePlayer(castingName, relationPlayer);
         }).collect(toImmutableSet());
 
@@ -85,12 +96,72 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         Optional<Statement> roleType = relationPlayer.getRole();
 
         if (roleType.isPresent()) {
-            // Add some patterns where this variable is a relation relating the given roleplayer as the given roletype
-            return Stream.of(rolePlayer(property, var, castingName, relationPlayer.getPlayer().var(), roleType.get().var()));
+            // Patterns for variable of a relation with a role player of a given type
+            return Stream.of(rolePlayer(property, var, castingName,
+                                        relationPlayer.getPlayer().var(),
+                                        roleType.get().var()));
         } else {
-            // Add some patterns where this variable is a relation and the given variable is a roleplayer of that relationship
-            return Stream.of(rolePlayer(property, var, castingName, relationPlayer.getPlayer().var(), null));
+            // Patterns for variable of a relation with a role player of a any type
+            return Stream.of(rolePlayer(property, var, castingName,
+                                        relationPlayer.getPlayer().var(),
+                                        null));
         }
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        //set varName as user defined if reified
+        //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
+        boolean isReified = statement.properties().stream()
+                .filter(prop -> !RelationProperty.class.isInstance(prop))
+                .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
+        Statement relVar = isReified ? var.asUserDefined() : var;
+
+        for (RelationProperty.RolePlayer rp : property.relationPlayers()) {
+            Statement rolePattern = rp.getRole().orElse(null);
+            Statement rolePlayer = rp.getPlayer();
+            if (rolePattern != null) {
+                Variable roleVar = rolePattern.var();
+                //look for indirect role definitions
+                IdPredicate roleId = getUserDefinedIdPredicate(roleVar, otherStatements, parent);
+                if (roleId != null) {
+                    Concept concept = parent.tx().getConcept(roleId.getPredicate());
+                    if (concept != null) {
+                        if (concept.isRole()) {
+                            Label roleLabel = concept.asSchemaConcept().label();
+                            rolePattern = roleVar.label(roleLabel);
+                        } else {
+                            throw GraqlQueryException.nonRoleIdAssignedToRoleVariable(statement);
+                        }
+                    }
+                }
+                relVar = relVar.rel(rolePattern, rolePlayer);
+            } else relVar = relVar.rel(rolePlayer);
+        }
+
+        //isa part
+        IsaProperty isaProp = statement.getProperty(IsaProperty.class).orElse(null);
+        IdPredicate predicate = null;
+
+        //if no isa property present generate type variable
+        Variable typeVariable = isaProp != null ? isaProp.type().var() : Pattern.var();
+
+        //Isa present
+        if (isaProp != null) {
+            Statement isaVar = isaProp.type();
+            Label label = isaVar.getTypeLabel().orElse(null);
+            if (label != null) {
+                predicate = IdPredicate.create(typeVariable, label, parent);
+            } else {
+                typeVariable = isaVar.var();
+                predicate = getUserDefinedIdPredicate(typeVariable, otherStatements, parent);
+            }
+        }
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+        relVar = isaProp instanceof IsaExplicitProperty ?
+                relVar.isaExplicit(typeVariable.asUserDefined()) :
+                relVar.isa(typeVariable.asUserDefined());
+        return RelationshipAtom.create(relVar, typeVariable, predicateId, parent);
     }
 
     class InsertRelation implements PropertyExecutor.Writer {

@@ -19,22 +19,28 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.reasoner.atom.property.RegexAtom;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Set;
 
-public class RegexExecutor implements PropertyExecutor.Definable, PropertyExecutor.Matchable {
+public class RegexExecutor implements PropertyExecutor.Definable,
+                                      PropertyExecutor.Matchable,
+                                      PropertyExecutor.Atomable {
 
     private final Variable var;
     private final RegexProperty property;
 
-    public RegexExecutor(Variable var, RegexProperty property) {
+    RegexExecutor(Variable var, RegexProperty property) {
         this.var = var;
         this.property = property;
     }
@@ -52,6 +58,11 @@ public class RegexExecutor implements PropertyExecutor.Definable, PropertyExecut
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(EquivalentFragmentSets.regex(property, var, property.regex()));
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        return RegexAtom.create(var, property, parent);
     }
 
     private abstract class RegexWriter {

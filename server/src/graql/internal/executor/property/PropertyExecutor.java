@@ -19,9 +19,12 @@
 package grakn.core.graql.internal.executor.property;
 
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
@@ -45,21 +48,7 @@ import grakn.core.graql.query.pattern.property.WhenProperty;
 
 import java.util.Set;
 
-/**
- * A class describing an operation to perform using a VarProperty.
- * The behaviour is executed via a WriteExecutor using #execute. The class also
- * report its #requiredVars before it can run and its #producedVars(), that will be available to
- * other PropertyExecutors after it has run.
- * For example:
- * SubProperty property = SubProperty.of(y);
- * PropertyExecutor executor = property.define(x);
- * executor.requiredVars(); // returns `{y}`
- * executor.producedVars(); // returns `{x}`
- * // apply the `sub` property between `x` and `y`
- * // because it requires `y`, it will call `writeExecutor.get(y)`
- * // because it produces `x`, it will call `writeExecutor.builder(x)`
- * executor.execute(writeExecutor);
- */
+// TODO: The exceptions in this class needs to be tidied up
 public interface PropertyExecutor {
 
     interface Definable extends PropertyExecutor {
@@ -69,7 +58,7 @@ public interface PropertyExecutor {
         Set<Writer> undefineExecutors();
     }
 
-    interface Insertable extends PropertyExecutor{
+    interface Insertable extends PropertyExecutor {
 
         Set<Writer> insertExecutors();
     }
@@ -79,35 +68,21 @@ public interface PropertyExecutor {
         Set<EquivalentFragmentSet> matchFragments();
     }
 
+    interface Atomable extends PropertyExecutor {
+
+        Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements);
+    }
+
     interface Writer {
 
         Variable var();
 
         VarProperty property();
 
-        /**
-         * Get all Variables whose Concept must exist for the subject Variable to be applied.
-         * For example, for IsaProperty the type must already be present before an instance can be created.
-         * When calling #execute, the method can expect any Variable returned here to be available by calling
-         * WriteExecutor#get.
-         */
         Set<Variable> requiredVars();
 
-        /**
-         * Get all Variables whose Concept can only be created after this property is applied.
-         * When calling #execute, the method must help build a Concept for every Variable returned
-         * from this method, using WriteExecutor#builder.
-         */
         Set<Variable> producedVars();
 
-        /**
-         * Apply the given property, if possible.
-         *
-         * @param executor a class providing a map of concepts that are accessible and methods to build new concepts.
-         *                 This method can expect any key to be here that is returned from
-         *                 #requiredVars(). The method may also build a concept provided that key is returned
-         *                 from #producedVars().
-         */
         void execute(WriteExecutor executor);
     }
 
@@ -138,6 +113,16 @@ public interface PropertyExecutor {
             return (Matchable) executor;
         } else {
             throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(property.name()));
+        }
+    }
+
+    static Atomable atomable(Variable var, VarProperty property) {
+        PropertyExecutor executor = propertyExecutor(var, property);
+
+        if (executor instanceof Atomable) {
+            return (Atomable) executor;
+        } else {
+            throw new IllegalArgumentException("Unrecognised subclass of " + VarProperty.class.getName());
         }
     }
 

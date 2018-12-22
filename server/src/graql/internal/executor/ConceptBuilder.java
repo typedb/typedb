@@ -34,15 +34,9 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.DataTypeProperty;
-import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.LabelProperty;
-import grakn.core.graql.query.pattern.property.SubProperty;
-import grakn.core.graql.query.pattern.property.ThenProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.property.WhenProperty;
 import grakn.core.server.exception.InvalidKBException;
 
 import javax.annotation.Nullable;

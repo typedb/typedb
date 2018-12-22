@@ -19,21 +19,30 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.LabelProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Set;
 
-public class LabelExecutor implements PropertyExecutor.Definable, PropertyExecutor.Insertable, PropertyExecutor.Matchable {
+public class LabelExecutor implements PropertyExecutor.Definable,
+                                      PropertyExecutor.Insertable,
+                                      PropertyExecutor.Matchable,
+                                      PropertyExecutor.Atomable {
 
     private final Variable var;
     private final LabelProperty property;
 
-    public LabelExecutor(Variable var, LabelProperty property) {
+    LabelExecutor(Variable var, LabelProperty property) {
         this.var = var;
         this.property = property;
     }
@@ -56,6 +65,13 @@ public class LabelExecutor implements PropertyExecutor.Definable, PropertyExecut
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(EquivalentFragmentSets.label(property, var, ImmutableSet.of(property.label())));
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(property.label());
+        if (schemaConcept == null) throw GraqlQueryException.labelNotFound(property.label());
+        return IdPredicate.create(var.asUserDefined(), property.label(), parent);
     }
 
     // The WriteExecutor for IdExecutor works for Define, Undefine and Insert queries,

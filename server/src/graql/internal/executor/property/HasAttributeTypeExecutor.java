@@ -19,10 +19,18 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
@@ -33,12 +41,16 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class HasAttributeTypeExecutor implements PropertyExecutor.Definable, PropertyExecutor.Matchable {
+import static grakn.core.graql.query.pattern.Pattern.var;
+
+public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
+                                                 PropertyExecutor.Matchable,
+                                                 PropertyExecutor.Atomable {
 
     private final Variable var;
     private final HasAttributeTypeProperty property;
 
-    public HasAttributeTypeExecutor(Variable var, HasAttributeTypeProperty property) {
+    HasAttributeTypeExecutor(Variable var, HasAttributeTypeProperty property) {
         this.var = var;
         this.property = property;
     }
@@ -57,16 +69,35 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable, Pro
     public Set<EquivalentFragmentSet> matchFragments() {
         Set<EquivalentFragmentSet> fragments = new HashSet<>();
 
-        PlaysExecutor playsOwnerExecutor = new PlaysExecutor(var, new PlaysProperty(property.ownerRole(), property.isRequired()));
+        PlaysProperty playsOwnerProperty = new PlaysProperty(property.ownerRole(), property.isRequired());
+        PlaysExecutor playsOwnerExecutor = new PlaysExecutor(var, playsOwnerProperty);
+
         //TODO: Get this to use real constraints no just the required flag
-        PlaysExecutor playsValueExecutor = new PlaysExecutor(property.attributeType().var(), new PlaysProperty(property.valueRole(), false));
-        NeqExecutor neqExecutor = new NeqExecutor(property.valueRole().var(), new NeqProperty(property.ownerRole()));
+        PlaysProperty playsValueProperty = new PlaysProperty(property.valueRole(), false);
+        PlaysExecutor playsValueExecutor = new PlaysExecutor(property.attributeType().var(), playsValueProperty);
+
+        NeqProperty neqProperty = new NeqProperty(property.ownerRole());
+        NeqExecutor neqExecutor = new NeqExecutor(property.valueRole().var(), neqProperty);
 
         fragments.addAll(playsOwnerExecutor.matchFragments());
         fragments.addAll(playsValueExecutor.matchFragments());
         fragments.addAll(neqExecutor.matchFragments());
 
         return ImmutableSet.copyOf(fragments);
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        //NB: HasResourceType is a special case and it doesn't allow variables as resource types
+        Variable varName = var.asUserDefined();
+        Label label = property.attributeType().getTypeLabel().orElse(null);
+
+        Variable predicateVar = var();
+        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
+        ConceptId predicateId = schemaConcept != null ? schemaConcept.id() : null;
+        //isa part
+        Statement resVar = varName.has(Pattern.label(label));
+        return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 
     private abstract class HasAttributeTypeWriter {
@@ -97,7 +128,9 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable, Pro
         @Override
         public void execute(WriteExecutor executor) {
             Type entityTypeConcept = executor.getConcept(var).asType();
-            AttributeType attributeTypeConcept = executor.getConcept(property.attributeType().var()).asAttributeType();
+            AttributeType attributeTypeConcept = executor
+                    .getConcept(property.attributeType().var())
+                    .asAttributeType();
 
             if (property.isRequired()) {
                 entityTypeConcept.key(attributeTypeConcept);
@@ -112,7 +145,9 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable, Pro
         @Override
         public void execute(WriteExecutor executor) {
             Type type = executor.getConcept(var).asType();
-            AttributeType<?> attributeType = executor.getConcept(property.attributeType().var()).asAttributeType();
+            AttributeType<?> attributeType = executor
+                    .getConcept(property.attributeType().var())
+                    .asAttributeType();
 
             if (!type.isDeleted() && !attributeType.isDeleted()) {
                 if (property.isRequired()) {

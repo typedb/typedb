@@ -19,11 +19,17 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.executor.ConceptBuilder;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.reasoner.atom.binary.SubAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -33,12 +39,16 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-public class SubExecutor implements PropertyExecutor.Definable, PropertyExecutor.Matchable {
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
+
+public class SubExecutor implements PropertyExecutor.Definable,
+                                    PropertyExecutor.Matchable,
+                                    PropertyExecutor.Atomable {
 
     private final Variable var;
     private final SubProperty property;
 
-    public SubExecutor(Variable var, SubProperty property) {
+    SubExecutor(Variable var, SubProperty property) {
         this.var = var;
         this.property = property;
     }
@@ -56,6 +66,13 @@ public class SubExecutor implements PropertyExecutor.Definable, PropertyExecutor
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(EquivalentFragmentSets.sub(property, var, property.type().var()));
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        IdPredicate predicate = getIdPredicate(property.type().var(), property.type(), otherStatements, parent);
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+        return SubAtom.create(var.asUserDefined(), property.type().var(), predicateId, parent);
     }
 
     public static class SubExplicitExecutor extends SubExecutor {

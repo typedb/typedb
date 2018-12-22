@@ -19,22 +19,28 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Set;
 
-public class ValueExecutor implements PropertyExecutor.Insertable, PropertyExecutor.Matchable {
+public class ValueExecutor implements PropertyExecutor.Insertable,
+                                      PropertyExecutor.Matchable,
+                                      PropertyExecutor.Atomable {
 
     private final Variable var;
     private final ValueProperty property;
 
-    public ValueExecutor(Variable var, ValueProperty property) {
+    ValueExecutor(Variable var, ValueProperty property) {
         this.var = var;
         this.property = property;
     }
@@ -47,6 +53,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable, PropertyExecu
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(EquivalentFragmentSets.value(property, var, property.predicate()));
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        return ValuePredicate.create(var, property.predicate(), parent);
     }
 
     class InsertValue implements PropertyExecutor.Writer {

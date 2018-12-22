@@ -32,7 +32,7 @@ public class ThenExecutor implements PropertyExecutor.Definable {
     private final Variable var;
     private final ThenProperty property;
 
-    public ThenExecutor(Variable var, ThenProperty property) {
+    ThenExecutor(Variable var, ThenProperty property) {
         this.var = var;
         this.property = property;
     }

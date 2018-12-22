@@ -19,21 +19,28 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Set;
 
-public class IdExecutor implements PropertyExecutor.Definable, PropertyExecutor.Insertable, PropertyExecutor.Matchable {
+public class IdExecutor implements PropertyExecutor.Definable,
+                                   PropertyExecutor.Insertable,
+                                   PropertyExecutor.Matchable,
+                                   PropertyExecutor.Atomable {
 
     private final Variable var;
     private final IdProperty property;
 
-    public IdExecutor(Variable var, IdProperty property) {
+    IdExecutor(Variable var, IdProperty property) {
         this.var = var;
         this.property = property;
     }
@@ -56,6 +63,11 @@ public class IdExecutor implements PropertyExecutor.Definable, PropertyExecutor.
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(EquivalentFragmentSets.id(property, var, property.id()));
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        return IdPredicate.create(var, property.id(), parent);
     }
 
     // The WriteExecutor for IdExecutor works for Define, Undefine and Insert queries,

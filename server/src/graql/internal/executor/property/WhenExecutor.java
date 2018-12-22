@@ -32,7 +32,7 @@ public class WhenExecutor implements PropertyExecutor.Definable {
     private final Variable var;
     private final WhenProperty property;
 
-    public WhenExecutor(Variable var, WhenProperty property) {
+    WhenExecutor(Variable var, WhenProperty property) {
         this.var = var;
         this.property = property;
     }

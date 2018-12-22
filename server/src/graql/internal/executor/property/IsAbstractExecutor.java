@@ -19,11 +19,15 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.reasoner.atom.property.IsAbstractAtom;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsAbstractProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -32,12 +36,14 @@ import java.util.Set;
 
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbstract;
 
-public class IsAbstractExecutor implements PropertyExecutor.Definable, PropertyExecutor.Matchable {
+public class IsAbstractExecutor implements PropertyExecutor.Definable,
+                                           PropertyExecutor.Matchable,
+                                           PropertyExecutor.Atomable {
 
     private final Variable var;
     private final IsAbstractProperty property;
 
-    public IsAbstractExecutor(Variable var, IsAbstractProperty property) {
+    IsAbstractExecutor(Variable var, IsAbstractProperty property) {
         this.var = var;
         this.property = property;
     }
@@ -55,6 +61,11 @@ public class IsAbstractExecutor implements PropertyExecutor.Definable, PropertyE
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(isAbstract(property, var));
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        return IsAbstractAtom.create(var, parent);
     }
 
     private abstract class IsAbstractWriter {
