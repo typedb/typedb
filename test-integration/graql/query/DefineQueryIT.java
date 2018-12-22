@@ -359,7 +359,7 @@ public class DefineQueryIT {
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(
-                GraqlQueryException.insertPropertyOnExistingConcept("datatype", Query.DataType.BOOLEAN, name).getMessage()
+                GraqlQueryException.insertPropertyOnExistingConcept("datatype", AttributeType.DataType.BOOLEAN, name).getMessage()
         );
 
         tx.execute(Graql.define(label("name").datatype(Query.DataType.BOOLEAN)));
