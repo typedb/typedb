@@ -34,15 +34,9 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.DataTypeProperty;
-import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.LabelProperty;
-import grakn.core.graql.query.pattern.property.SubProperty;
-import grakn.core.graql.query.pattern.property.ThenProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.property.WhenProperty;
 import grakn.core.server.exception.InvalidKBException;
 
 import javax.annotation.Nullable;
@@ -272,21 +266,25 @@ public class ConceptBuilder {
             return name;
         }
 
+        static <T> BuilderParam<T> of(Object obj) {
+            return of(obj.toString());
+        }
+
         static <T> BuilderParam<T> of(String name) {
             return new BuilderParam<>(name);
         }
     }
 
-    private static final BuilderParam<Type> TYPE = BuilderParam.of(IsaProperty.NAME);
-    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(SubProperty.NAME);
-    private static final BuilderParam<Label> LABEL = BuilderParam.of(LabelProperty.NAME);
-    private static final BuilderParam<ConceptId> ID = BuilderParam.of(IdProperty.NAME);
-    private static final BuilderParam<Object> VALUE = BuilderParam.of(ValueProperty.NAME);
-    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(DataTypeProperty.NAME);
-    private static final BuilderParam<Pattern> WHEN = BuilderParam.of(WhenProperty.NAME);
-    private static final BuilderParam<Pattern> THEN = BuilderParam.of(ThenProperty.NAME);
-    private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role");
-    private static final BuilderParam<Unit> IS_RULE = BuilderParam.of("rule");
+    private static final BuilderParam<Type> TYPE = BuilderParam.of(VarProperty.Name.ISA);
+    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(VarProperty.Name.SUB);
+    private static final BuilderParam<Label> LABEL = BuilderParam.of(VarProperty.Name.LABEL);
+    private static final BuilderParam<ConceptId> ID = BuilderParam.of(VarProperty.Name.ID);
+    private static final BuilderParam<Object> VALUE = BuilderParam.of(VarProperty.Name.VALUE);
+    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(VarProperty.Name.DATA_TYPE);
+    private static final BuilderParam<Pattern> WHEN = BuilderParam.of(VarProperty.Name.WHEN);
+    private static final BuilderParam<Pattern> THEN = BuilderParam.of(VarProperty.Name.THEN);
+    private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role"); // TODO: replace this with a value registered in an enum
+    private static final BuilderParam<Unit> IS_RULE = BuilderParam.of("rule"); // TODO: replace this with a value registered in an enum
 
     /**
      * Class with no fields and exactly one instance.

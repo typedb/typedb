@@ -18,37 +18,60 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.LabelProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
-import java.util.Collections;
 import java.util.Set;
 
-public class LabelExecutor implements PropertyExecutor.Definable, PropertyExecutor.Insertable {
+public class LabelExecutor implements PropertyExecutor.Definable,
+                                      PropertyExecutor.Insertable,
+                                      PropertyExecutor.Matchable,
+                                      PropertyExecutor.Atomable {
 
     private final Variable var;
     private final LabelProperty property;
 
-    public LabelExecutor(Variable var, LabelProperty property) {
+    LabelExecutor(Variable var, LabelProperty property) {
         this.var = var;
         this.property = property;
     }
 
     @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new LookupLabel()));
+        return ImmutableSet.of(new LookupLabel());
     }
 
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new LookupLabel()));
+        return ImmutableSet.of(new LookupLabel());
     }
 
     @Override
     public Set<PropertyExecutor.Writer> insertExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new LookupLabel()));
+        return ImmutableSet.of(new LookupLabel());
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        return ImmutableSet.of(EquivalentFragmentSets.label(property, var, ImmutableSet.of(property.label())));
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(property.label());
+        if (schemaConcept == null) throw GraqlQueryException.labelNotFound(property.label());
+        return IdPredicate.create(var.asUserDefined(), property.label(), parent);
     }
 
     // The WriteExecutor for IdExecutor works for Define, Undefine and Insert queries,
@@ -67,12 +90,12 @@ public class LabelExecutor implements PropertyExecutor.Definable, PropertyExecut
 
         @Override
         public Set<Variable> requiredVars() {
-            return Collections.unmodifiableSet(Collections.emptySet());
+            return ImmutableSet.of();
         }
 
         @Override
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.singleton(var));
+            return ImmutableSet.of(var);
         }
 
         @Override

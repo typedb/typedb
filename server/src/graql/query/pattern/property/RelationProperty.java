@@ -19,25 +19,15 @@
 package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
-import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -62,11 +52,11 @@ public class RelationProperty extends VarProperty {
     }
 
     @Override
-    public String getName() {
-        return "relationship";
+    public String name() {
+        return Name.RELATION.toString();
     }
 
-    public String getProperty() {
+    public String property() {
         return "(" + relationPlayers().stream().map(Object::toString).collect(joining(", ")) + ")";
     }
 
@@ -77,11 +67,11 @@ public class RelationProperty extends VarProperty {
 
     @Override
     public String toString() {
-        return getProperty();
+        return property();
     }
 
     @Override
-    public Stream<Statement> getTypes() {
+    public Stream<Statement> types() {
         return relationPlayers().stream().map(RolePlayer::getRole).flatMap(CommonUtil::optionalToStream);
     }
 
@@ -93,56 +83,6 @@ public class RelationProperty extends VarProperty {
             relationPlayer.getRole().ifPresent(builder::add);
             return builder.build();
         });
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        Collection<Variable> castingNames = new HashSet<>();
-
-        ImmutableSet<EquivalentFragmentSet> traversals = relationPlayers().stream().flatMap(relationPlayer -> {
-
-            Variable castingName = Pattern.var();
-            castingNames.add(castingName);
-
-            return equivalentFragmentSetFromCasting(start, castingName, relationPlayer);
-        }).collect(toImmutableSet());
-
-        ImmutableSet<EquivalentFragmentSet> distinctCastingTraversals = castingNames.stream().flatMap(
-                castingName -> castingNames.stream()
-                        .filter(otherName -> !otherName.equals(castingName))
-                        .map(otherName -> EquivalentFragmentSets.neq(this, castingName, otherName))
-        ).collect(toImmutableSet());
-
-        return Sets.union(traversals, distinctCastingTraversals);
-    }
-
-    private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(Variable start, Variable castingName, RolePlayer relationPlayer) {
-        Optional<Statement> roleType = relationPlayer.getRole();
-
-        if (roleType.isPresent()) {
-            return addRelatesPattern(start, castingName, roleType.get(), relationPlayer.getPlayer());
-        } else {
-            return addRelatesPattern(start, castingName, relationPlayer.getPlayer());
-        }
-    }
-
-    /**
-     * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relationship
-     *
-     * @param rolePlayer a variable that is a roleplayer of this relation
-     */
-    private Stream<EquivalentFragmentSet> addRelatesPattern(Variable start, Variable casting, Statement rolePlayer) {
-        return Stream.of(rolePlayer(this, start, casting, rolePlayer.var(), null));
-    }
-
-    /**
-     * Add some patterns where this variable is a relation relating the given roleplayer as the given roletype
-     *
-     * @param roleType   a variable that is the roletype of the given roleplayer
-     * @param rolePlayer a variable that is a roleplayer of this relation
-     */
-    private Stream<EquivalentFragmentSet> addRelatesPattern(Variable start, Variable casting, Statement roleType, Statement rolePlayer) {
-        return Stream.of(rolePlayer(this, start, casting, rolePlayer.var(), roleType.var()));
     }
 
     @Override

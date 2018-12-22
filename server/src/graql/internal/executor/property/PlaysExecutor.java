@@ -18,9 +18,18 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.reasoner.atom.binary.PlaysAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -29,24 +38,42 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class PlaysExecutor implements PropertyExecutor.Definable {
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
+
+public class PlaysExecutor implements PropertyExecutor.Definable,
+                                      PropertyExecutor.Matchable,
+                                      PropertyExecutor.Atomable {
 
     private final Variable var;
     private final PlaysProperty property;
 
-    public PlaysExecutor(Variable var, PlaysProperty property) {
+    PlaysExecutor(Variable var, PlaysProperty property) {
         this.var = var;
         this.property = property;
     }
 
     @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new DefinePlays()));
+        return ImmutableSet.of(new DefinePlays());
     }
 
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new UndefinePlays()));
+        return ImmutableSet.of(new UndefinePlays());
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        return ImmutableSet.of(
+                EquivalentFragmentSets.plays(property, var, property.role().var(), property.isRequired())
+        );
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        IdPredicate predicate = getIdPredicate(property.role().var(), property.role(), otherStatements, parent);
+        ConceptId predicateId = predicate == null ? null : predicate.getPredicate();
+        return PlaysAtom.create(var.asUserDefined(), property.role().var(), predicateId, parent);
     }
 
     private abstract class PlaysWriter {
@@ -68,7 +95,7 @@ public class PlaysExecutor implements PropertyExecutor.Definable {
         }
 
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.emptySet());
+            return ImmutableSet.of();
         }
     }
 

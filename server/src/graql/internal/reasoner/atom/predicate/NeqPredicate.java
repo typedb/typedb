@@ -50,7 +50,7 @@ public abstract class NeqPredicate extends Predicate<Variable> {
         return new AutoValue_NeqPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
     public static NeqPredicate create(Variable varName, NeqProperty prop, ReasonerQuery parent) {
-        Statement pattern = varName.neq(prop.var().var());
+        Statement pattern = varName.neq(prop.statement().var());
         return create(pattern, parent);
     }
     public static NeqPredicate create(NeqPredicate a, ReasonerQuery parent) {
@@ -58,7 +58,7 @@ public abstract class NeqPredicate extends Predicate<Variable> {
     }
 
     private static Variable extractPredicate(Statement pattern) {
-        return pattern.getProperties(NeqProperty.class).iterator().next().var().var();
+        return pattern.getProperties(NeqProperty.class).iterator().next().statement().var();
     }
 
     private boolean predicateBindingsEquivalent(NeqPredicate that, Equivalence<Atomic> equiv){

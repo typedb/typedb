@@ -18,13 +18,8 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 
-import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
@@ -35,7 +30,6 @@ import java.util.stream.Stream;
  */
 public class PlaysProperty extends VarProperty {
 
-    public static final String NAME = "plays";
     private final Statement role;
     private final boolean required;
 
@@ -51,13 +45,17 @@ public class PlaysProperty extends VarProperty {
         return role;
     }
 
-    @Override
-    public String getName() {
-        return NAME;
+    public boolean isRequired() {
+        return required;
     }
 
     @Override
-    public String getProperty() {
+    public String name() {
+        return Name.PLAYS.toString();
+    }
+
+    @Override
+    public String property() {
         return role.getPrintableName();
     }
 
@@ -67,12 +65,7 @@ public class PlaysProperty extends VarProperty {
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(EquivalentFragmentSets.plays(this, start, role.var(), required));
-    }
-
-    @Override
-    public Stream<Statement> getTypes() {
+    public Stream<Statement> types() {
         return Stream.of(role);
     }
 

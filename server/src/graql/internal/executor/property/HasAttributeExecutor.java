@@ -18,31 +18,98 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class HasAttributeExecutor implements PropertyExecutor.Insertable {
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
+
+public class HasAttributeExecutor implements PropertyExecutor.Insertable,
+                                             PropertyExecutor.Matchable,
+                                             PropertyExecutor.Atomable {
 
     private final Variable var;
     private final HasAttributeProperty property;
 
-    public HasAttributeExecutor(Variable var, HasAttributeProperty property) {
+    HasAttributeExecutor(Variable var, HasAttributeProperty property) {
         this.var = var;
         this.property = property;
     }
 
     @Override
     public Set<PropertyExecutor.Writer> insertExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new InsertHasAttribute()));
+        return ImmutableSet.of(new InsertHasAttribute());
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        Label type = property.type();
+        Label has = Schema.ImplicitType.HAS.getLabel(type);
+        Label key = Schema.ImplicitType.KEY.getLabel(type);
+
+        Label hasOwnerRole = Schema.ImplicitType.HAS_OWNER.getLabel(type);
+        Label keyOwnerRole = Schema.ImplicitType.KEY_OWNER.getLabel(type);
+        Label hasValueRole = Schema.ImplicitType.HAS_VALUE.getLabel(type);
+        Label keyValueRole = Schema.ImplicitType.KEY_VALUE.getLabel(type);
+
+        Variable edge1 = Pattern.var();
+        Variable edge2 = Pattern.var();
+
+        return ImmutableSet.of(
+                //owner rolePlayer edge
+                rolePlayer(property, property.relationship().var(), edge1, var, null,
+                           ImmutableSet.of(hasOwnerRole, keyOwnerRole), ImmutableSet.of(has, key)),
+                //value rolePlayer edge
+                rolePlayer(property, property.relationship().var(), edge2, property.attribute().var(), null,
+                           ImmutableSet.of(hasValueRole, keyValueRole), ImmutableSet.of(has, key)),
+                neq(property, edge1, edge2)
+        );
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        //NB: HasAttributeProperty always has (type) label specified
+        Variable varName = var.asUserDefined();
+
+        Variable relationVariable = property.relationship().var();
+        Variable attributeVariable = property.attribute().var().asUserDefined();
+        Variable predicateVariable = Pattern.var();
+        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements, parent);
+
+        IsaProperty isaProp = property.attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
+        Statement typeVar = isaProp != null ? isaProp.type() : null;
+        IdPredicate predicate = typeVar != null ? getIdPredicate(predicateVariable, typeVar, otherStatements, parent) : null;
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+
+        //add resource atom
+        Statement resVar = relationVariable.isUserDefinedName() ?
+                varName.has(property.type(), attributeVariable, relationVariable) :
+                varName.has(property.type(), attributeVariable);
+        return AttributeAtom.create(resVar, attributeVariable, relationVariable,
+                                    predicateVariable, predicateId, predicates, parent);
     }
 
     private class InsertHasAttribute implements PropertyExecutor.Writer {
@@ -67,7 +134,7 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
 
         @Override
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.singleton(property.relationship().var()));
+            return ImmutableSet.of(property.relationship().var());
         }
 
         @Override

@@ -21,13 +21,9 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY;
@@ -47,16 +43,16 @@ import static grakn.core.graql.query.pattern.Pattern.var;
  */
 public class HasAttributeTypeProperty extends VarProperty {
 
-    private final Statement resourceType;
+    private final Statement attributeType;
     private final Statement ownerRole;
     private final Statement valueRole;
     private final Statement relationOwner;
     private final Statement relationValue;
     private final boolean required;
 
-    public HasAttributeTypeProperty(Statement resourceType, boolean required) {
-        Label resourceLabel = resourceType.getTypeLabel().orElseThrow(
-                () -> GraqlQueryException.noLabelSpecifiedForHas(resourceType)
+    public HasAttributeTypeProperty(Statement attributeType, boolean required) {
+        Label resourceLabel = attributeType.getTypeLabel().orElseThrow(
+                () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType)
         );
 
         Statement role = Pattern.label(Schema.MetaSchema.ROLE.getLabel());
@@ -75,7 +71,7 @@ public class HasAttributeTypeProperty extends VarProperty {
         Statement relationOwner = relationType.relates(ownerRole);
         Statement relationValue = relationType.var().relates(valueRole);
 
-        this.resourceType = resourceType;
+        this.attributeType = attributeType;
         this.ownerRole = ownerRole;
         this.valueRole = valueRole;
         if (relationOwner == null) {
@@ -89,8 +85,16 @@ public class HasAttributeTypeProperty extends VarProperty {
         this.required = required;
     }
 
-    public Statement type() {
-        return resourceType;
+    public Statement attributeType() {
+        return attributeType;
+    }
+
+    public Statement ownerRole() {
+        return ownerRole;
+    }
+
+    public Statement valueRole() {
+        return valueRole;
     }
 
     public boolean isRequired() {
@@ -98,13 +102,13 @@ public class HasAttributeTypeProperty extends VarProperty {
     }
 
     @Override
-    public String getName() {
-        return required ? "key" : "has";
+    public String name() {
+        return required ? Name.KEY.toString() : Name.HAS.toString();
     }
 
     @Override
-    public String getProperty() {
-        return resourceType.getPrintableName();
+    public String property() {
+        return attributeType.getPrintableName();
     }
 
     @Override
@@ -113,30 +117,18 @@ public class HasAttributeTypeProperty extends VarProperty {
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        Collection<EquivalentFragmentSet> traversals = new HashSet<>();
-
-        traversals.addAll(new PlaysProperty(ownerRole, required).match(start));
-        //TODO: Get this to use real constraints no just the required flag
-        traversals.addAll(new PlaysProperty(valueRole, false).match(resourceType.var()));
-        traversals.addAll(new NeqProperty(ownerRole).match(valueRole.var()));
-
-        return traversals;
-    }
-
-    @Override
-    public Stream<Statement> getTypes() {
-        return Stream.of(resourceType);
+    public Stream<Statement> types() {
+        return Stream.of(attributeType);
     }
 
     @Override
     public Stream<Statement> innerStatements() {
-        return Stream.of(resourceType);
+        return Stream.of(attributeType);
     }
 
     @Override
     public Stream<Statement> implicitInnerStatements() {
-        return Stream.of(resourceType, ownerRole, valueRole, relationOwner, relationValue);
+        return Stream.of(attributeType, ownerRole, valueRole, relationOwner, relationValue);
     }
 
     @Override
@@ -146,7 +138,7 @@ public class HasAttributeTypeProperty extends VarProperty {
         }
         if (o instanceof HasAttributeTypeProperty) {
             HasAttributeTypeProperty that = (HasAttributeTypeProperty) o;
-            return (this.resourceType.equals(that.resourceType))
+            return (this.attributeType.equals(that.attributeType))
                     && (this.ownerRole.equals(that.ownerRole))
                     && (this.valueRole.equals(that.valueRole))
                     && (this.relationOwner.equals(that.relationOwner))
@@ -160,7 +152,7 @@ public class HasAttributeTypeProperty extends VarProperty {
     public int hashCode() {
         int h = 1;
         h *= 1000003;
-        h ^= this.resourceType.hashCode();
+        h ^= this.attributeType.hashCode();
         h *= 1000003;
         h ^= this.ownerRole.hashCode();
         h *= 1000003;

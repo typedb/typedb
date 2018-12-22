@@ -32,22 +32,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.executor.property.DataTypeExecutor;
-import grakn.core.graql.internal.executor.property.HasAttributeExecutor;
-import grakn.core.graql.internal.executor.property.HasAttributeTypeExecutor;
-import grakn.core.graql.internal.executor.property.IdExecutor;
-import grakn.core.graql.internal.executor.property.IsAbstractExecutor;
-import grakn.core.graql.internal.executor.property.IsaAbstractExecutor;
-import grakn.core.graql.internal.executor.property.LabelExecutor;
-import grakn.core.graql.internal.executor.property.PlaysExecutor;
 import grakn.core.graql.internal.executor.property.PropertyExecutor;
-import grakn.core.graql.internal.executor.property.RegexExecutor;
-import grakn.core.graql.internal.executor.property.RelatesExecutor;
-import grakn.core.graql.internal.executor.property.RelationExecutor;
-import grakn.core.graql.internal.executor.property.SubAbstractExecutor;
-import grakn.core.graql.internal.executor.property.ThenExecutor;
-import grakn.core.graql.internal.executor.property.ValueExecutor;
-import grakn.core.graql.internal.executor.property.WhenExecutor;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
@@ -66,23 +51,10 @@ import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
-import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
-import grakn.core.graql.query.pattern.property.IdProperty;
-import grakn.core.graql.query.pattern.property.IsAbstractProperty;
-import grakn.core.graql.query.pattern.property.IsaAbstractProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.LabelProperty;
-import grakn.core.graql.query.pattern.property.PlaysProperty;
-import grakn.core.graql.query.pattern.property.RegexProperty;
-import grakn.core.graql.query.pattern.property.RelatesProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
-import grakn.core.graql.query.pattern.property.SubAbstractProperty;
-import grakn.core.graql.query.pattern.property.ThenProperty;
-import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.property.WhenProperty;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -134,21 +106,23 @@ public class QueryExecutor {
         }
 
         try {
-            Iterator<Conjunction<Statement>> conjIt = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().iterator();
-            Conjunction<Statement> conj = conjIt.next();
+            Iterator<Conjunction<Statement>> conjunctionIterator = matchClause.getPatterns()
+                    .getDisjunctiveNormalForm().getPatterns().iterator();
+            Conjunction<Statement> conjunction = conjunctionIterator.next();
 
-            ReasonerQuery conjQuery = ReasonerQueries.create(conj, transaction).rewrite();
-            conjQuery.checkValid();
-            Stream<ConceptMap> answerStream = conjQuery.isRuleResolvable() ?
-                    conjQuery.resolve() :
-                    transaction.stream(Graql.match(conj), false);
+            ReasonerQuery reasonerQuery = ReasonerQueries.create(conjunction, transaction).rewrite();
+            reasonerQuery.checkValid();
 
-            while (conjIt.hasNext()) {
-                conj = conjIt.next();
-                conjQuery = ReasonerQueries.create(conj, transaction).rewrite();
-                Stream<ConceptMap> localStream = conjQuery.isRuleResolvable() ?
-                        conjQuery.resolve() :
-                        transaction.stream(Graql.match(conj), false);
+            Stream<ConceptMap> answerStream = reasonerQuery.isRuleResolvable() ?
+                    reasonerQuery.resolve() :
+                    transaction.stream(Graql.match(conjunction), false);
+
+            while (conjunctionIterator.hasNext()) {
+                conjunction = conjunctionIterator.next();
+                reasonerQuery = ReasonerQueries.create(conjunction, transaction).rewrite();
+                Stream<ConceptMap> localStream = reasonerQuery.isRuleResolvable() ?
+                        reasonerQuery.resolve() :
+                        transaction.stream(Graql.match(conjunction), false);
 
                 answerStream = Stream.concat(answerStream, localStream);
             }
@@ -209,7 +183,7 @@ public class QueryExecutor {
 
         for (Statement statement : statements) {
             for (VarProperty property : statement.properties()) {
-                executors.addAll(definable(statement.var(), property).defineExecutors());
+                executors.addAll(PropertyExecutor.definable(statement.var(), property).defineExecutors());
             }
         }
         return WriteExecutor.create(transaction, executors.build()).write(new ConceptMap());
@@ -217,13 +191,13 @@ public class QueryExecutor {
 
     public ConceptMap undefine(UndefineQuery query) {
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
-        ImmutableList<Statement> allPatterns = query.statements().stream()
+        ImmutableList<Statement> statements = query.statements().stream()
                 .flatMap(v -> v.innerStatements().stream())
                 .collect(toImmutableList());
 
-        for (Statement statement : allPatterns) {
+        for (Statement statement : statements) {
             for (VarProperty property : statement.properties()) {
-                executors.addAll(definable(statement.var(), property).undefineExecutors());
+                executors.addAll(PropertyExecutor.definable(statement.var(), property).undefineExecutors());
             }
         }
         return WriteExecutor.create(transaction, executors.build()).write(new ConceptMap());
@@ -237,7 +211,7 @@ public class QueryExecutor {
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         for (Statement statement : statements) {
             for (VarProperty property : statement.properties()) {
-                executors.addAll(insertable(statement.var(), property).insertExecutors());
+                executors.addAll(PropertyExecutor.insertable(statement.var(), property).insertExecutors());
             }
         }
 
@@ -336,72 +310,9 @@ public class QueryExecutor {
         return job.stream();
     }
 
-    private PropertyExecutor.Definable definable(Variable var, VarProperty property) {
-        if (property instanceof SubAbstractProperty) {
-            return new SubAbstractExecutor(var, (SubAbstractProperty) property);
-
-        } else if (property instanceof DataTypeProperty) {
-            return new DataTypeExecutor(var, (DataTypeProperty) property);
-
-        } else if (property instanceof HasAttributeTypeProperty) {
-            return new HasAttributeTypeExecutor(var, (HasAttributeTypeProperty) property);
-
-        } else if (property instanceof IdProperty) {
-            return new IdExecutor(var, (IdProperty) property);
-
-        } else if (property instanceof IsAbstractProperty) {
-            return new IsAbstractExecutor(var, (IsAbstractProperty) property);
-
-        } else if (property instanceof LabelProperty) {
-            return new LabelExecutor(var, (LabelProperty) property);
-
-        } else if (property instanceof PlaysProperty) {
-            return new PlaysExecutor(var, (PlaysProperty) property);
-
-        } else if (property instanceof RegexProperty) {
-            return new RegexExecutor(var, (RegexProperty) property);
-
-        } else if (property instanceof RelatesProperty) {
-            return new RelatesExecutor(var, (RelatesProperty) property);
-
-        } else if (property instanceof ThenProperty) {
-            return new ThenExecutor(var, (ThenProperty) property);
-
-        } else if (property instanceof WhenProperty) {
-            return new WhenExecutor(var, (WhenProperty) property);
-
-        } else {
-            throw GraqlQueryException.defineUnsupportedProperty(property.getName());
-        }
-    }
-
-    private PropertyExecutor.Insertable insertable(Variable var, VarProperty property) {
-        if (property instanceof IsaAbstractProperty) {
-            return new IsaAbstractExecutor(var, (IsaAbstractProperty) property);
-
-        } else if (property instanceof HasAttributeProperty) {
-            return new HasAttributeExecutor(var, (HasAttributeProperty) property);
-
-        } else if (property instanceof IdProperty) {
-            return new IdExecutor(var, (IdProperty) property);
-
-        } else if (property instanceof LabelProperty) {
-            return new LabelExecutor(var, (LabelProperty) property);
-
-        } else if (property instanceof RelationProperty) {
-            return new RelationExecutor(var, (RelationProperty) property);
-
-        } else if (property instanceof ValueProperty) {
-            return new ValueExecutor(var, (ValueProperty) property);
-
-        } else {
-            throw GraqlQueryException.insertUnsupportedProperty(property.getName());
-        }
-    }
-
     private void validateProperty(VarProperty varProperty, Statement statement) {
-        if (varProperty instanceof IsaAbstractProperty) {
-            validateIsaProperty((IsaAbstractProperty) varProperty);
+        if (varProperty instanceof IsaProperty) {
+            validateIsaProperty((IsaProperty) varProperty);
         } else if (varProperty instanceof HasAttributeProperty) {
             validateHasAttributeProperty((HasAttributeProperty) varProperty);
         } else if (varProperty instanceof RelationProperty) {
@@ -418,7 +329,7 @@ public class QueryExecutor {
                 });
     }
 
-    private void validateIsaProperty(IsaAbstractProperty varProperty) {
+    private void validateIsaProperty(IsaProperty varProperty) {
         varProperty.type().getTypeLabel().ifPresent(typeLabel -> {
             SchemaConcept theSchemaConcept = transaction.getSchemaConcept(typeLabel);
             if (theSchemaConcept != null && !theSchemaConcept.isType()) {

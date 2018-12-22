@@ -107,7 +107,7 @@ public abstract class Statement implements Pattern {
     @CheckReturnValue
     public final Set<Label> getTypeLabels() {
         return properties().stream()
-                .flatMap(varProperty -> varProperty.getTypes())
+                .flatMap(varProperty -> varProperty.types())
                 .map(statement -> statement.getTypeLabel())
                 .flatMap(optional -> CommonUtil.optionalToStream(optional))
                 .collect(toSet());

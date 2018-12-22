@@ -18,11 +18,20 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.executor.ConceptBuilder;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.reasoner.atom.binary.SubAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.SubAbstractProperty;
+import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Collections;
@@ -30,24 +39,52 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-public class SubAbstractExecutor implements PropertyExecutor.Definable {
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
+
+public class SubExecutor implements PropertyExecutor.Definable,
+                                    PropertyExecutor.Matchable,
+                                    PropertyExecutor.Atomable {
 
     private final Variable var;
-    private final SubAbstractProperty property;
+    private final SubProperty property;
 
-    public SubAbstractExecutor(Variable var, SubAbstractProperty property) {
+    SubExecutor(Variable var, SubProperty property) {
         this.var = var;
         this.property = property;
     }
 
     @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new DefineSub()));
+        return ImmutableSet.of(new DefineSub());
     }
 
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new UndefineSub()));
+        return ImmutableSet.of(new UndefineSub());
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        return ImmutableSet.of(EquivalentFragmentSets.sub(property, var, property.type().var()));
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        IdPredicate predicate = getIdPredicate(property.type().var(), property.type(), otherStatements, parent);
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+        return SubAtom.create(var.asUserDefined(), property.type().var(), predicateId, parent);
+    }
+
+    public static class SubExplicitExecutor extends SubExecutor {
+
+        public SubExplicitExecutor(Variable var, SubProperty property) {
+            super(var, property);
+        }
+
+        @Override
+        public Set<EquivalentFragmentSet> matchFragments() {
+            return ImmutableSet.of(EquivalentFragmentSets.sub(super.property, super.var, super.property.type().var(), true));
+        }
     }
 
     private abstract class SubWriter {
@@ -65,17 +102,17 @@ public class SubAbstractExecutor implements PropertyExecutor.Definable {
 
         @Override
         public Set<Variable> requiredVars() {
-            return Collections.unmodifiableSet(Collections.singleton(property.superType().var()));
+            return ImmutableSet.of(property.type().var());
         }
 
         @Override
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.singleton(var));
+            return ImmutableSet.of(var);
         }
 
         @Override
         public void execute(WriteExecutor executor) {
-            SchemaConcept superConcept = executor.getConcept(property.superType().var()).asSchemaConcept();
+            SchemaConcept superConcept = executor.getConcept(property.type().var()).asSchemaConcept();
 
             Optional<ConceptBuilder> builder = executor.tryBuilder(var);
 
@@ -93,21 +130,21 @@ public class SubAbstractExecutor implements PropertyExecutor.Definable {
         public Set<Variable> requiredVars() {
             Set<Variable> required = new HashSet<>();
             required.add(var);
-            required.add(property.superType().var());
+            required.add(property.type().var());
 
             return Collections.unmodifiableSet(required);
         }
 
         @Override
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.emptySet());
+            return ImmutableSet.of();
         }
 
         @Override
         public void execute(WriteExecutor executor) {
             SchemaConcept concept = executor.getConcept(var).asSchemaConcept();
 
-            SchemaConcept expectedSuperConcept = executor.getConcept(property.superType().var()).asSchemaConcept();
+            SchemaConcept expectedSuperConcept = executor.getConcept(property.type().var()).asSchemaConcept();
             SchemaConcept actualSuperConcept = concept.sup();
 
             if (!concept.isDeleted() && expectedSuperConcept.equals(actualSuperConcept)) {

@@ -18,17 +18,10 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
 import java.util.stream.Stream;
-
-import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.relates;
-import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.sub;
 
 /**
  * Represents the {@code relates} property on a RelationshipType.
@@ -58,12 +51,12 @@ public class RelatesProperty extends VarProperty {
     }
 
     @Override
-    public String getName() {
-        return "relates";
+    public String name() {
+        return Name.RELATES.toString();
     }
 
     @Override
-    public String getProperty() {
+    public String property() {
         StringBuilder builder = new StringBuilder(role.getPrintableName());
         if (superRole != null) {
             builder.append(" as ").append(superRole.getPrintableName());
@@ -77,18 +70,7 @@ public class RelatesProperty extends VarProperty {
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        Statement superRole = this.superRole;
-        EquivalentFragmentSet relates = relates(this, start, role.var());
-        if (superRole == null) {
-            return ImmutableSet.of(relates);
-        } else {
-            return ImmutableSet.of(relates, sub(this, role.var(), superRole.var()));
-        }
-    }
-
-    @Override
-    public Stream<Statement> getTypes() {
+    public Stream<Statement> types() {
         return Stream.of(role);
     }
 

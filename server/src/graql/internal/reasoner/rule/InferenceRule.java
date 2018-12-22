@@ -27,7 +27,7 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
@@ -216,7 +216,7 @@ public class InferenceRule {
 
         //if head is a resource merge vps into head
         if (headAtom.isResource()) {
-            ResourceAtom resourceHead = (ResourceAtom) headAtom;
+            AttributeAtom resourceHead = (AttributeAtom) headAtom;
 
             if (resourceHead.getMultiPredicate().isEmpty()) {
                 Set<ValuePredicate> innerVps = parentAtom.getInnerPredicates(ValuePredicate.class)
@@ -224,7 +224,7 @@ public class InferenceRule {
                         .collect(toSet());
                 bodyAtoms.addAll(innerVps);
 
-                headAtom = ResourceAtom.create(
+                headAtom = AttributeAtom.create(
                         resourceHead.getPattern(),
                         resourceHead.getAttributeVariable(),
                         resourceHead.getRelationVariable(),

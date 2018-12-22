@@ -18,13 +18,13 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.ThenProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
-import java.util.Collections;
 import java.util.Set;
 
 public class ThenExecutor implements PropertyExecutor.Definable {
@@ -32,20 +32,20 @@ public class ThenExecutor implements PropertyExecutor.Definable {
     private final Variable var;
     private final ThenProperty property;
 
-    public ThenExecutor(Variable var, ThenProperty property) {
+    ThenExecutor(Variable var, ThenProperty property) {
         this.var = var;
         this.property = property;
     }
 
     @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new DefineThen()));
+        return ImmutableSet.of(new DefineThen());
     }
 
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
         // TODO: Fix this so that Undefining ThenProperty behaves symmetrically to Defining ThenProperty
-        throw GraqlQueryException.defineUnsupportedProperty(property.getName());
+        throw GraqlQueryException.defineUnsupportedProperty(property.name());
     }
 
     private class DefineThen implements PropertyExecutor.Writer {
@@ -62,12 +62,12 @@ public class ThenExecutor implements PropertyExecutor.Definable {
 
         @Override
         public Set<Variable> requiredVars() {
-            return Collections.unmodifiableSet(Collections.emptySet());
+            return ImmutableSet.of();
         }
 
         @Override
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.singleton(var));
+            return ImmutableSet.of(var);
         }
 
         @Override

@@ -18,33 +18,51 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.reasoner.atom.property.RegexAtom;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
-import java.util.Collections;
 import java.util.Set;
 
-public class RegexExecutor implements PropertyExecutor.Definable {
+public class RegexExecutor implements PropertyExecutor.Definable,
+                                      PropertyExecutor.Matchable,
+                                      PropertyExecutor.Atomable {
 
     private final Variable var;
     private final RegexProperty property;
 
-    public RegexExecutor(Variable var, RegexProperty property) {
+    RegexExecutor(Variable var, RegexProperty property) {
         this.var = var;
         this.property = property;
     }
 
     @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new DefineRegex()));
+        return ImmutableSet.of(new DefineRegex());
     }
 
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new UndefineRegex()));
+        return ImmutableSet.of(new UndefineRegex());
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        return ImmutableSet.of(EquivalentFragmentSets.regex(property, var, property.regex()));
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        return RegexAtom.create(var, property, parent);
     }
 
     private abstract class RegexWriter {
@@ -58,11 +76,11 @@ public class RegexExecutor implements PropertyExecutor.Definable {
         }
 
         public Set<Variable> requiredVars() {
-            return Collections.unmodifiableSet(Collections.singleton(var));
+            return ImmutableSet.of(var);
         }
 
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.emptySet());
+            return ImmutableSet.of();
         }
     }
 

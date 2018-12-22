@@ -18,19 +18,11 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.internal.Schema;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 
-import java.util.Collection;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
-import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.util.StringUtil.typeLabelToString;
 import static java.util.stream.Collectors.joining;
@@ -44,8 +36,6 @@ import static java.util.stream.Collectors.joining;
  * using type labels derived from the label of the AttributeType.
  */
 public class HasAttributeProperty extends VarProperty {
-
-    public static final String NAME = "has";
 
     private final Label type;
     private final Statement attribute;
@@ -77,12 +67,12 @@ public class HasAttributeProperty extends VarProperty {
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.HAS.toString();
     }
 
     @Override
-    public String getProperty() {
+    public String property() {
         Stream.Builder<String> repr = Stream.builder();
 
         repr.add(typeLabelToString(type()));
@@ -106,7 +96,7 @@ public class HasAttributeProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> getTypes() {
+    public Stream<Statement> types() {
         return Stream.of(label(type()));
     }
 
@@ -117,29 +107,6 @@ public class HasAttributeProperty extends VarProperty {
 
     private boolean hasReifiedRelationship() {
         return relationship().properties().stream().findAny().isPresent() || relationship().var().isUserDefinedName();
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        Label type = type();
-        Label has = Schema.ImplicitType.HAS.getLabel(type);
-        Label key = Schema.ImplicitType.KEY.getLabel(type);
-
-        Label hasOwnerRole = Schema.ImplicitType.HAS_OWNER.getLabel(type);
-        Label keyOwnerRole = Schema.ImplicitType.KEY_OWNER.getLabel(type);
-        Label hasValueRole = Schema.ImplicitType.HAS_VALUE.getLabel(type);
-        Label keyValueRole = Schema.ImplicitType.KEY_VALUE.getLabel(type);
-
-        Variable edge1 = Pattern.var();
-        Variable edge2 = Pattern.var();
-
-        return ImmutableSet.of(
-                //owner rolePlayer edge
-                rolePlayer(this, relationship().var(), edge1, start, null, ImmutableSet.of(hasOwnerRole, keyOwnerRole), ImmutableSet.of(has, key)),
-                //value rolePlayer edge
-                rolePlayer(this, relationship().var(), edge2, attribute().var(), null, ImmutableSet.of(hasValueRole, keyValueRole), ImmutableSet.of(has, key)),
-                neq(this, edge1, edge2)
-        );
     }
 
     @Override

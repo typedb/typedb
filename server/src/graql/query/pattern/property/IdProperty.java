@@ -18,14 +18,8 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.util.StringUtil;
-
-import java.util.Collection;
 
 /**
  * Represents the {@code id} property on a Concept.
@@ -33,8 +27,6 @@ import java.util.Collection;
  * with the given ID will be retrieved.
  */
 public class IdProperty extends VarProperty {
-
-    public static final String NAME = "id";
 
     private final ConceptId id;
 
@@ -50,12 +42,12 @@ public class IdProperty extends VarProperty {
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.ID.toString();
     }
 
     @Override
-    public String getProperty() {
+    public String property() {
         return StringUtil.idToString(id());
     }
 
@@ -67,11 +59,6 @@ public class IdProperty extends VarProperty {
     @Override
     public boolean uniquelyIdentifiesConcept() {
         return true;
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(EquivalentFragmentSets.id(this, start, id()));
     }
 
     @Override

@@ -18,37 +18,56 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
-import java.util.Collections;
 import java.util.Set;
 
-public class IdExecutor implements PropertyExecutor.Definable, PropertyExecutor.Insertable {
+public class IdExecutor implements PropertyExecutor.Definable,
+                                   PropertyExecutor.Insertable,
+                                   PropertyExecutor.Matchable,
+                                   PropertyExecutor.Atomable {
 
     private final Variable var;
     private final IdProperty property;
 
-    public IdExecutor(Variable var, IdProperty property) {
+    IdExecutor(Variable var, IdProperty property) {
         this.var = var;
         this.property = property;
     }
 
     @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new LookupId()));
+        return ImmutableSet.of(new LookupId());
     }
 
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new LookupId()));
+        return ImmutableSet.of(new LookupId());
     }
 
     @Override
     public Set<PropertyExecutor.Writer> insertExecutors() {
-        return Collections.unmodifiableSet(Collections.singleton(new LookupId()));
+        return ImmutableSet.of(new LookupId());
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        return ImmutableSet.of(EquivalentFragmentSets.id(property, var, property.id()));
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        return IdPredicate.create(var, property.id(), parent);
     }
 
     // The WriteExecutor for IdExecutor works for Define, Undefine and Insert queries,
@@ -67,12 +86,12 @@ public class IdExecutor implements PropertyExecutor.Definable, PropertyExecutor.
 
         @Override
         public Set<Variable> requiredVars() {
-            return Collections.unmodifiableSet(Collections.emptySet());
+            return ImmutableSet.of();
         }
 
         @Override
         public Set<Variable> producedVars() {
-            return Collections.unmodifiableSet(Collections.singleton(var));
+            return ImmutableSet.of(var);
         }
 
         @Override

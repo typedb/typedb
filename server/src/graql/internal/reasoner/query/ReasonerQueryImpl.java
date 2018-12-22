@@ -32,10 +32,10 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.internal.reasoner.ResolutionIterator;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
-import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -90,7 +90,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     ReasonerQueryImpl(Conjunction<Statement> pattern, TransactionOLTP tx) {
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
-                .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
+                .addAll(createAtoms(pattern, this).iterator())
                 .build();
     }
 
@@ -120,6 +120,28 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(q.getAtoms().stream().map(at -> at.copy(this)).iterator())
                 .build();
+    }
+
+    /**
+     * @param pattern conjunction of patterns to be converted to atoms
+     * @param parent query the created atoms should belong to
+     * @return set of atoms
+     */
+    public static Stream<Atomic> createAtoms(Conjunction<Statement> pattern, ReasonerQuery parent) {
+        Set<Atomic> atoms = pattern.statements().stream()
+                .flatMap(statement -> statement.properties().stream()
+                        .map(property -> PropertyExecutor.atomable(statement.var(), property)
+                                .atomic(parent, statement, pattern.statements()))
+                        .filter(Objects::nonNull))
+                .collect(Collectors.toSet());
+
+        return atoms.stream()
+                .filter(at -> atoms.stream()
+                        .filter(Atom.class::isInstance)
+                        .map(Atom.class::cast)
+                        .flatMap(Atom::getInnerPredicates)
+                        .noneMatch(at::equals)
+                );
     }
 
     @Override

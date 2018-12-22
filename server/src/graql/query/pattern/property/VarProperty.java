@@ -18,12 +18,9 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
@@ -31,9 +28,50 @@ import java.util.stream.Stream;
  */
 public abstract class VarProperty {
 
-    public abstract String getName();
+    public enum Name {
+        DATA_TYPE("datatype"),
+        HAS("has"),
+        KEY("key"),
+        ID("id"),
+        IS_ABSTRACT("is-abstract"),
+        ISA("isa"),
+        ISA_EXP("isa!"),
+        LABEL("label"),
+        NEQ("!="),
+        PLAYS("plays"),
+        REGEX("regex"),
+        RELATES("relates"),
+        RELATION("relationship"), // TODO: Relationship syntax need to be updated
+        SUB("sub"),
+        SUB_EXP("sub!"),
+        THEN("then"),
+        WHEN("when"),
+        VALUE("");
 
-    public abstract String getProperty();
+        private final String name;
+
+        Name(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return this.name;
+        }
+
+        public static VarProperty.Name of(String value) {
+            for (VarProperty.Name c : VarProperty.Name.values()) {
+                if (c.name.equals(value)) {
+                    return c;
+                }
+            }
+            return null;
+        }
+    }
+
+    public abstract String name();
+
+    public abstract String property();
 
     /**
      * True if there is at most one of these properties for each Statement
@@ -53,7 +91,7 @@ public abstract class VarProperty {
      * Get a stream of Statement that must be types.
      */
     @CheckReturnValue
-    public Stream<Statement> getTypes() {
+    public Stream<Statement> types() {
         return Stream.empty();
     }
 
@@ -87,11 +125,6 @@ public abstract class VarProperty {
      */
     @Override
     public String toString() {
-        return getName() + " " + getProperty();
+        return name() + " " + property();
     }
-
-    /**
-     * Return a collection of EquivalentFragmentSet to match the given property in the graph
-     */
-    public abstract Collection<EquivalentFragmentSet> match(Variable start);
 }

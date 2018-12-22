@@ -18,15 +18,8 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.util.StringUtil;
-
-import java.util.Collection;
 
 /**
  * Represents the {@code label} property on a Type.
@@ -35,7 +28,6 @@ import java.util.Collection;
  */
 public class LabelProperty extends VarProperty {
 
-    public static final String NAME = "label";
     private final Label label;
 
     public LabelProperty(Label label) {
@@ -50,12 +42,12 @@ public class LabelProperty extends VarProperty {
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.LABEL.toString();
     }
 
     @Override
-    public String getProperty() {
+    public String property() {
         return StringUtil.typeLabelToString(label());
     }
 
@@ -67,11 +59,6 @@ public class LabelProperty extends VarProperty {
     @Override
     public boolean uniquelyIdentifiesConcept() {
         return true;
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(EquivalentFragmentSets.label(this, start, ImmutableSet.of(label())));
     }
 
     @Override
