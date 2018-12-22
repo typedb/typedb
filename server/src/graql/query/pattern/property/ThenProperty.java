@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
 
 /**
@@ -43,7 +44,7 @@ public class ThenProperty extends VarProperty {
 
     @Override
     public String name() {
-        return Name.THEN.toString();
+        return Query.Property.THEN.toString();
     }
 
     @Override

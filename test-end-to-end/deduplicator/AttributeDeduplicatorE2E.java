@@ -3,9 +3,8 @@ package grakn.core.deduplicator;
 
 import grakn.core.client.GraknClient;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Query;
 import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -100,7 +99,7 @@ public class AttributeDeduplicatorE2E {
     private void defineParentChildSchema(GraknClient.Session session) {
         try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             List<ConceptMap> answer = tx.execute(Graql.define(
-                    label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
+                    label("name").sub("attribute").datatype(Query.DataType.STRING),
                     label("parent").sub("role"),
                     label("child").sub("role"),
                     label("person").sub("entity").has("name").plays("parent").plays("child"),

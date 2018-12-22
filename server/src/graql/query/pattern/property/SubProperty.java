@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 
 import java.util.stream.Stream;
@@ -45,7 +46,7 @@ public class SubProperty extends VarProperty {
 
     @Override
     public String name() {
-        return Name.SUB.toString();
+        return Query.Property.SUB.toString();
     }
 
     @Override

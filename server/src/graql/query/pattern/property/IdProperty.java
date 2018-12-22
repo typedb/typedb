@@ -19,6 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.util.StringUtil;
 
 /**
@@ -43,7 +44,7 @@ public class IdProperty extends VarProperty {
 
     @Override
     public String name() {
-        return Name.ID.toString();
+        return Query.Property.ID.toString();
     }
 
     @Override

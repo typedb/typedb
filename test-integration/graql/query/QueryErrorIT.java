@@ -186,7 +186,7 @@ public class QueryErrorIT {
         try (Transaction newTx = newSession.transaction(Transaction.Type.WRITE)) {
             newTx.execute(Graql.define(
                     label("person").sub("entity"),
-                    label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
+                    label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
             ));
 
             exception.expect(TransactionException.class);

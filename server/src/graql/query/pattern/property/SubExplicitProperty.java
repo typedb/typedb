@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 
 /**
@@ -40,7 +41,7 @@ public class SubExplicitProperty extends SubProperty {
 
     @Override
     public String name() {
-        return Name.SUB_EXP.toString();
+        return Query.Property.SUB_EXP.toString();
     }
 
     @Override

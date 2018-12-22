@@ -22,11 +22,11 @@ import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
@@ -554,7 +554,7 @@ public abstract class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final Statement datatype(AttributeType.DataType<?> datatype) {
+    public final Statement datatype(Query.DataType datatype) {
         return addProperty(new DataTypeProperty(datatype));
     }
 

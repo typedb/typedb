@@ -19,6 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.concept.Label;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 
 import java.util.stream.Stream;
@@ -68,7 +69,7 @@ public class HasAttributeProperty extends VarProperty {
 
     @Override
     public String name() {
-        return Name.HAS.toString();
+        return Query.Property.HAS.toString();
     }
 
     @Override

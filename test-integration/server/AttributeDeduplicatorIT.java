@@ -1,11 +1,11 @@
 package grakn.core.server;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.Query;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.deduplicator.AttributeDeduplicator;
 import grakn.core.server.deduplicator.KeyspaceIndexPair;
@@ -50,7 +50,7 @@ public class AttributeDeduplicatorIT {
 
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.define(label(testAttributeLabel).sub("attribute").datatype(AttributeType.DataType.STRING)));
+            tx.execute(Graql.define(label(testAttributeLabel).sub("attribute").datatype(Query.DataType.STRING)));
             tx.commit();
         }
 
@@ -80,7 +80,7 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    label(ownedAttributeLabel).sub("attribute").datatype(AttributeType.DataType.STRING),
+                    label(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
                     label("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
@@ -125,8 +125,8 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    label(ownedAttributeLabel).sub("attribute").datatype(AttributeType.DataType.STRING),
-                    label(ownerLabel).sub("attribute").datatype(AttributeType.DataType.STRING).has(ownedAttributeLabel)
+                    label(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
+                    label(ownerLabel).sub("attribute").datatype(Query.DataType.STRING).has(ownedAttributeLabel)
             ));
             tx.commit();
         }
@@ -169,7 +169,7 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    label(ownedAttributeLabel).sub("attribute").datatype(AttributeType.DataType.STRING),
+                    label(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
                     label("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
@@ -211,7 +211,7 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    label(ownedAttributeLabel).sub("attribute").datatype(AttributeType.DataType.STRING),
+                    label(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
                     label("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
@@ -257,7 +257,7 @@ public class AttributeDeduplicatorIT {
             tx.execute(Graql.define(
                     label("owner").sub("relationship").relates("entity-role-player").relates("attribute-role-player"),
                     label("owned-entity").sub("entity").plays("entity-role-player"),
-                    label(ownedAttributeLabel).sub("attribute").plays("attribute-role-player").datatype(AttributeType.DataType.STRING)
+                    label(ownedAttributeLabel).sub("attribute").plays("attribute-role-player").datatype(Query.DataType.STRING)
             ));
             tx.commit();
         }

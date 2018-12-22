@@ -3,7 +3,6 @@ package grakn.core.client;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.Value;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -11,6 +10,7 @@ import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.Query;
 import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -114,7 +114,7 @@ public class ClientJavaE2E {
                     label("mating").sub("relationship").relates("male-partner").relates("female-partner").plays("child-bearer"),
                     label("parentship").sub("relationship").relates("parent").relates("child"),
 
-                    label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
+                    label("name").sub("attribute").datatype(Query.DataType.STRING),
                     label("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring"),
 
                     label("infer-parentship-from-mating-and-child-bearing").sub("rule")

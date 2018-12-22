@@ -19,7 +19,6 @@
 package grakn.core.graql.parser;
 
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -492,17 +491,17 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public AttributeType.DataType<?> visitDatatype(GraqlParser.DatatypeContext datatype) {
+    public Query.DataType visitDatatype(GraqlParser.DatatypeContext datatype) {
         if (datatype.BOOLEAN_TYPE() != null) {
-            return AttributeType.DataType.BOOLEAN;
+            return Query.DataType.BOOLEAN;
         } else if (datatype.DATE_TYPE() != null) {
-            return AttributeType.DataType.DATE;
+            return Query.DataType.DATE;
         } else if (datatype.DOUBLE_TYPE() != null) {
-            return AttributeType.DataType.DOUBLE;
+            return Query.DataType.DOUBLE;
         } else if (datatype.LONG_TYPE() != null) {
-            return AttributeType.DataType.LONG;
+            return Query.DataType.LONG;
         } else if (datatype.STRING_TYPE() != null) {
-            return AttributeType.DataType.STRING;
+            return Query.DataType.STRING;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised " + datatype);
         }

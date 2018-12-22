@@ -19,6 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.concept.Label;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.util.StringUtil;
 
 /**
@@ -43,7 +44,7 @@ public class LabelProperty extends VarProperty {
 
     @Override
     public String name() {
-        return Name.LABEL.toString();
+        return Query.Property.LABEL.toString();
     }
 
     @Override

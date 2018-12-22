@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 
 /**
@@ -35,7 +36,7 @@ public class IsaExplicitProperty extends IsaProperty {
 
     @Override
     public String name() {
-        return Name.ISA_EXP.toString();
+        return Query.Property.ISA_EXP.toString();
     }
 
     @Override

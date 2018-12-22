@@ -21,6 +21,7 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 
@@ -103,7 +104,7 @@ public class HasAttributeTypeProperty extends VarProperty {
 
     @Override
     public String name() {
-        return required ? Name.KEY.toString() : Name.HAS.toString();
+        return required ? Query.Property.KEY.toString() : Query.Property.HAS.toString();
     }
 
     @Override

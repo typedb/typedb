@@ -18,12 +18,15 @@
 
 package grakn.core.graql.internal.executor.property;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.property.DataTypeAtom;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
@@ -38,10 +41,37 @@ public class DataTypeExecutor implements PropertyExecutor.Definable,
 
     private final Variable var;
     private final DataTypeProperty property;
+    private final AttributeType.DataType dataType;
+    public static final ImmutableMap<Query.DataType, AttributeType.DataType<?>> DATA_TYPES = dataTypes();
 
     DataTypeExecutor(Variable var, DataTypeProperty property) {
+        if (var == null) {
+            throw new NullPointerException("Variable is null");
+        }
         this.var = var;
+
+        if (property == null) {
+            throw new NullPointerException("Property is null");
+        }
         this.property = property;
+
+        if (!DATA_TYPES.containsKey(property.dataType())) {
+            throw new IllegalArgumentException("Unrecognised Attribute data type");
+        }
+        this.dataType = DATA_TYPES.get(property.dataType());
+    }
+
+    private static ImmutableMap<Query.DataType, AttributeType.DataType<?>> dataTypes() {
+        ImmutableMap.Builder<Query.DataType, AttributeType.DataType<?>> dataTypes = new ImmutableMap.Builder<>();
+        dataTypes.put(Query.DataType.BOOLEAN, AttributeType.DataType.BOOLEAN);
+        dataTypes.put(Query.DataType.DATE, AttributeType.DataType.DATE);
+        dataTypes.put(Query.DataType.DOUBLE, AttributeType.DataType.DOUBLE);
+        dataTypes.put(Query.DataType.FLOAT, AttributeType.DataType.FLOAT);
+        dataTypes.put(Query.DataType.INTEGER, AttributeType.DataType.INTEGER);
+        dataTypes.put(Query.DataType.LONG, AttributeType.DataType.LONG);
+        dataTypes.put(Query.DataType.STRING, AttributeType.DataType.STRING);
+
+        return dataTypes.build();
     }
 
     @Override
@@ -57,12 +87,12 @@ public class DataTypeExecutor implements PropertyExecutor.Definable,
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return Collections.unmodifiableSet(Collections.singleton(
-                EquivalentFragmentSets.dataType(property, var, property.dataType())
+                EquivalentFragmentSets.dataType(property, var, dataType)
         ));
     }
 
     public DataTypeAtom atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        return DataTypeAtom.create(var, property, parent);
+        return DataTypeAtom.create(var, property, parent, dataType);
     }
 
     private abstract class DataTypeWriter {
@@ -84,7 +114,7 @@ public class DataTypeExecutor implements PropertyExecutor.Definable,
 
         @Override
         public void execute(WriteExecutor executor) {
-            executor.getBuilder(var).dataType(property.dataType());
+            executor.getBuilder(var).dataType(dataType);
         }
 
         @Override

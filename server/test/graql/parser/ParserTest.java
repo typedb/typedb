@@ -19,7 +19,6 @@
 package grakn.core.graql.parser;
 
 import com.google.common.base.Strings;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.internal.Schema;
@@ -528,7 +527,7 @@ public class ParserTest {
 
     @Test
     public void testMatchDataTypeQuery() {
-        GetQuery expected = match(var("x").datatype(AttributeType.DataType.DOUBLE)).get();
+        GetQuery expected = match(var("x").datatype(Query.DataType.DOUBLE)).get();
         GetQuery parsed = parse("match $x datatype double; get;");
 
         assertEquals(expected, parsed);
@@ -536,7 +535,7 @@ public class ParserTest {
 
     @Test
     public void whenParsingDateKeyword_ParseAsTheCorrectDataType() {
-        GetQuery expected = match(var("x").datatype(AttributeType.DataType.DATE)).get();
+        GetQuery expected = match(var("x").datatype(Query.DataType.DATE)).get();
         GetQuery parsed = parse("match $x datatype date; get;");
 
         assertEquals(expected, parsed);
@@ -544,7 +543,7 @@ public class ParserTest {
 
     @Test
     public void testInsertDataTypeQuery() {
-        InsertQuery expected = insert(label("my-type").sub("resource").datatype(AttributeType.DataType.LONG));
+        InsertQuery expected = insert(label("my-type").sub("resource").datatype(Query.DataType.LONG));
         InsertQuery parsed = parse("insert my-type sub resource, datatype long;");
         assertEquals(expected, parsed);
     }
@@ -813,7 +812,7 @@ public class ParserTest {
         //noinspection OptionalGetWithoutIsPresent
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
 
-        Assert.assertEquals(AttributeType.DataType.BOOLEAN, property.dataType());
+        Assert.assertEquals(Query.DataType.BOOLEAN, property.dataType());
     }
 
     @Test

@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 
 import javax.annotation.Nullable;
@@ -52,7 +53,7 @@ public class RelatesProperty extends VarProperty {
 
     @Override
     public String name() {
-        return Name.RELATES.toString();
+        return Query.Property.RELATES.toString();
     }
 
     @Override

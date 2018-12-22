@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.Query;
 import grakn.core.graql.util.StringUtil;
 
 /**
@@ -42,7 +43,7 @@ public class RegexProperty extends VarProperty {
 
     @Override
     public String name() {
-        return Name.REGEX.toString();
+        return Query.Property.REGEX.toString();
     }
 
     @Override

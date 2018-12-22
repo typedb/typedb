@@ -32,8 +32,6 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
@@ -50,8 +48,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
 
-import static grakn.core.graql.concept.AttributeType.DataType.INTEGER;
-import static grakn.core.graql.concept.AttributeType.DataType.STRING;
 import static grakn.core.graql.query.pattern.Pattern.label;
 import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
@@ -110,9 +106,9 @@ public class UndefineQueryIT {
 
     @Test
     public void whenUndefiningDataType_DoNothing() {
-        tx.execute(Graql.undefine(label("name").datatype(STRING)));
+        tx.execute(Graql.undefine(label("name").datatype(Query.DataType.STRING)));
 
-        assertEquals(STRING, tx.getAttributeType("name").dataType());
+        assertEquals(AttributeType.DataType.STRING, tx.getAttributeType("name").dataType());
     }
 
     @Test
@@ -216,7 +212,7 @@ public class UndefineQueryIT {
 
     @Test
     public void whenUndefiningRegexProperty_TheAttributeTypeHasNoRegex() {
-        tx.execute(Graql.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(STRING).regex("abc")));
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(Query.DataType.STRING).regex("abc")));
 
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
 
@@ -227,7 +223,7 @@ public class UndefineQueryIT {
 
     @Test
     public void whenUndefiningRegexPropertyWithWrongRegex_DoNothing() {
-        tx.execute(Graql.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(STRING).regex("abc")));
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(Query.DataType.STRING).regex("abc")));
 
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
 
@@ -273,7 +269,7 @@ public class UndefineQueryIT {
     public void whenUndefiningComplexSchema_TheEntireSchemaIsRemoved() {
         Collection<Statement> schema = ImmutableList.of(
                 label("pokemon").sub(ENTITY).has("pokedex-no").plays("ancestor").plays("descendant"),
-                label("pokedex-no").sub(ATTRIBUTE).datatype(INTEGER),
+                label("pokedex-no").sub(ATTRIBUTE).datatype(Query.DataType.INTEGER),
                 label("evolution").sub(RELATIONSHIP).relates("ancestor").relates("descendant"),
                 label("ancestor").sub(ROLE),
                 label("descendant").sub(ROLE)
@@ -333,7 +329,7 @@ public class UndefineQueryIT {
         Concept movie = tx.execute(Graql.insert(x.isa("movie"))).get(0).get(x);
 
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(VarProperty.Name.ISA.toString()).getMessage());
+        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(Query.Property.ISA.toString()).getMessage());
 
         tx.execute(Graql.undefine(var().id(movie.id()).isa("movie")));
     }

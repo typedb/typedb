@@ -33,10 +33,6 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.HasAttributeProperty;
-import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.ValueProperty;
-import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
@@ -52,7 +48,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static grakn.core.graql.concept.AttributeType.DataType.BOOLEAN;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;
@@ -150,7 +145,7 @@ public class DefineQueryIT {
     @Test
     public void testDefineDataType() {
         tx.execute(Graql.define(
-                label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
+                label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.LONG)
         ));
 
         MatchClause match = Graql.match(var("x").label("my-type"));
@@ -162,7 +157,7 @@ public class DefineQueryIT {
     @Test
     public void testDefineSubResourceType() {
         tx.execute(Graql.define(
-                label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
+                label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING),
                 label("sub-type").sub("my-type")
         ));
 
@@ -227,8 +222,8 @@ public class DefineQueryIT {
 
         tx.execute(Graql.define(
                 label("a-new-type").sub("entity").has(resourceType),
-                label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
-                label("an-unconnected-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
+                label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING),
+                label("an-unconnected-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.LONG)
         ));
 
         // Make sure a-new-type can have the given resource type, but not other resource types
@@ -257,7 +252,7 @@ public class DefineQueryIT {
 
         tx.execute(Graql.define(
                 label("a-new-type").sub("entity").key(resourceType),
-                label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
+                label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
         ));
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
@@ -282,7 +277,7 @@ public class DefineQueryIT {
 
     @Test
     public void testResourceTypeRegex() {
-        tx.execute(Graql.define(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING).regex("hello|good day")));
+        tx.execute(Graql.define(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING).regex("hello|good day")));
 
         MatchClause match = Graql.match(var("x").label("greeting"));
         assertEquals("hello|good day", tx.stream(match.get("x")).map(ans -> ans.get("x")).findFirst().get().asAttributeType().regex());
@@ -364,10 +359,10 @@ public class DefineQueryIT {
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(
-                GraqlQueryException.insertPropertyOnExistingConcept("datatype", BOOLEAN, name).getMessage()
+                GraqlQueryException.insertPropertyOnExistingConcept("datatype", Query.DataType.BOOLEAN, name).getMessage()
         );
 
-        tx.execute(Graql.define(label("name").datatype(BOOLEAN)));
+        tx.execute(Graql.define(label("name").datatype(Query.DataType.BOOLEAN)));
     }
 
     @Test
@@ -377,7 +372,7 @@ public class DefineQueryIT {
                 allOf(containsString("unexpected property"), containsString("datatype"), containsString("my-type"))
         );
 
-        tx.execute(Graql.define(label("my-type").sub("entity").datatype(BOOLEAN)));
+        tx.execute(Graql.define(label("my-type").sub("entity").datatype(Query.DataType.BOOLEAN)));
     }
 
     @Test
@@ -427,7 +422,7 @@ public class DefineQueryIT {
     @Test
     public void whenDefiningAThing_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(VarProperty.Name.ISA.toString()).getMessage());
+        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(Query.Property.ISA.toString()).getMessage());
 
         tx.execute(Graql.define(var("x").isa("movie")));
     }
@@ -438,8 +433,8 @@ public class DefineQueryIT {
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(anyOf(
-                is(GraqlQueryException.defineUnsupportedProperty(VarProperty.Name.HAS.toString()).getMessage()),
-                is(GraqlQueryException.defineUnsupportedProperty(VarProperty.Name.VALUE.toString()).getMessage())
+                is(GraqlQueryException.defineUnsupportedProperty(Query.Property.HAS.toString()).getMessage()),
+                is(GraqlQueryException.defineUnsupportedProperty(Query.Property.VALUE.toString()).getMessage())
         ));
 
         tx.execute(Graql.define(var().id(id).has("title", "Bob")));
