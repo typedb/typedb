@@ -1,3 +1,21 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package grakn.core.graql.reasoner.atomic;
 
 import com.google.common.collect.HashMultimap;
@@ -5,6 +23,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
@@ -708,7 +727,7 @@ public class AtomicRuleApplicabilityIT {
     }
 
     @Test
-    public void testRuleApplicability_ReifiedResourceBoolean(){
+    public void testRuleApplicability_ReifiedResourceBoolean() {
         TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction(Transaction.Type.WRITE);
         String queryString = "{$x isa res-boolean 'true';($x, $y);}";
         String queryString2 = "{$x isa res-boolean 'false';($x, $y);}";
@@ -718,6 +737,39 @@ public class AtomicRuleApplicabilityIT {
 
         assertEquals(1, atom.getApplicableRules().count());
         assertThat(atom2.getApplicableRules().collect(toSet()), empty());
+        tx.close();
+    }
+
+    @Test
+    public void testRuleApplicability_whenMatchingRulesForGroundAtomRedefinedViaRule_ruleIsMatched(){
+        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.READ);
+        Relation instance = tx.getRelationshipType("reifiable-relation").instances().findFirst().orElse(null);
+        String queryString = "{$r has description 'typed-reified'; $r id '" + instance.id().getValue() + "';}";
+        Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
+
+        assertTrue(atom.getApplicableRules().findFirst().isPresent());
+        tx.close();
+    }
+
+    @Test
+    public void testRuleApplicability_whenMatchingRulesForGroundTypeWhichIsNotRedefined_noRulesAreMatched(){
+        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.READ);
+        Relation instance = tx.getRelationshipType("binary").instances().findFirst().orElse(null);
+        String queryString = "{$x isa binary; $x id '" + instance.id().getValue() + "';}";
+        Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
+
+        assertThat(atom.getApplicableRules().collect(toSet()), empty());
+        tx.close();
+    }
+
+    @Test
+    public void testRuleApplicability_whenMatchingRulesForASpecificRelation_noRulesAreMatched(){
+        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.READ);
+        Relation instance = tx.getRelationshipType("binary").instances().findFirst().orElse(null);
+        String queryString = "{$r ($x, $y) isa binary; $r id '" + instance.id().getValue() + "';}";
+        Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
+
+        assertThat(atom.getApplicableRules().collect(toSet()), empty());
         tx.close();
     }
 
