@@ -161,7 +161,7 @@ public class UndefineQueryIT {
 
         assertNotNull(tx.getType(NEW_TYPE));
 
-        tx.execute(Graql.undefine(var().id(newType.id()).sub(ENTITY)));
+        tx.execute(Graql.undefine(var().id(newType.id().getValue()).sub(ENTITY)));
 
         assertNull(tx.getType(NEW_TYPE));
     }
@@ -331,7 +331,7 @@ public class UndefineQueryIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(Query.Property.ISA.toString()).getMessage());
 
-        tx.execute(Graql.undefine(var().id(movie.id()).isa("movie")));
+        tx.execute(Graql.undefine(var().id(movie.id().getValue()).isa("movie")));
     }
 
     @Test

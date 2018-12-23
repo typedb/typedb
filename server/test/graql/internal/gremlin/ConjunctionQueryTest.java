@@ -98,7 +98,7 @@ public class ConjunctionQueryTest {
     @Test
     public void whenQueryUsesHasSyntax_UseResourceIndex() {
         assertThat(
-                x.has(resourceTypeWithoutSubTypesLabel.toString(), y.val(literalValue)),
+                x.has(resourceTypeWithoutSubTypesLabel.getValue(), y.val(literalValue)),
                 usesResourceIndex(y, literalValue)
         );
     }
@@ -106,7 +106,7 @@ public class ConjunctionQueryTest {
     @Test
     public void whenVarCanUseResourceIndexAndHasOtherProperties_UseResourceIndex() {
         assertThat(
-                x.isa(resourceTypeWithoutSubTypes).val(literalValue).id(ConceptId.of("123")),
+                x.isa(resourceTypeWithoutSubTypes).val(literalValue).id("123"),
                 usesResourceIndex()
         );
     }

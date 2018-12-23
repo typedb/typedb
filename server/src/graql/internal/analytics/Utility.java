@@ -124,8 +124,8 @@ public class Utility {
     public static ConceptId getResourceEdgeId(Transaction graph, ConceptId conceptId1, ConceptId conceptId2) {
         if (mayHaveResourceEdge(graph, conceptId1, conceptId2)) {
             Optional<Concept> firstConcept = graph.stream(Graql.match(
-                    var("x").id(conceptId1),
-                    var("y").id(conceptId2),
+                    var("x").id(conceptId1.getValue()),
+                    var("y").id(conceptId2.getValue()),
                     var("z").rel(var("x")).rel(var("y")))
                     .get("z"))
                     .map(answer -> answer.get("z"))

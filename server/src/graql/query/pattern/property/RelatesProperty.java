@@ -22,6 +22,7 @@ import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -77,7 +78,7 @@ public class RelatesProperty extends VarProperty {
 
     @Override
     public Stream<Statement> innerStatements() {
-        return superRole == null ? Stream.of(role) : Stream.of(superRole, role);
+        return superRole == null ? Stream.of(role) : Stream.of(role, superRole);
     }
 
     @Override
@@ -87,8 +88,8 @@ public class RelatesProperty extends VarProperty {
         }
         if (o instanceof RelatesProperty) {
             RelatesProperty that = (RelatesProperty) o;
-            return (this.role.equals(that.role))
-                    && ((this.superRole == null) ? (that.superRole == null) : this.superRole.equals(that.superRole));
+            return (this.role.equals(that.role) &&
+                    Objects.equals(this.superRole, that.superRole));
         }
         return false;
     }

@@ -249,6 +249,6 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("person"));
 
-        tx.execute(Graql.match(var("x").id(movie.id())).insert(var("x").isa(label(person.label()))));
+        tx.execute(Graql.match(var("x").id(movie.id().getValue())).insert(var("x").isa(label(person.label()))));
     }
 }

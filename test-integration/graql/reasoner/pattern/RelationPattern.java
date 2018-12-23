@@ -104,7 +104,7 @@ public abstract class RelationPattern extends QueryPattern {
             if(type != null) typePattern.add(rolePlayer.isa(type.getValue()));
 
             ids.forEach(id -> {
-                Statement idPattern = rolePlayer.id(id);
+                Statement idPattern = rolePlayer.id(id.getValue());
                 rpPattern.add(idPattern);
             });
 
@@ -112,7 +112,7 @@ public abstract class RelationPattern extends QueryPattern {
             rpTypePatterns.add(typePattern);
         });
         List<Pattern> relIdPatterns = new ArrayList<>();
-        relationIds.forEach(relId -> relIdPatterns.add(Pattern.and(basePattern[0], relationVar.id(relId))));
+        relationIds.forEach(relId -> relIdPatterns.add(Pattern.and(basePattern[0], relationVar.id(relId.getValue()))));
 
         List<Pattern> patterns = new ArrayList<>();
 

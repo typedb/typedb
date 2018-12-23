@@ -43,7 +43,7 @@ abstract class IdFragment extends Fragment {
     public Fragment transform(Map<Variable, ConceptId> transform) {
         ConceptId toId = transform.get(start());
         if (toId == null) return this;
-        return new AutoValue_IdFragment(new IdProperty(toId), start(), toId);
+        return new AutoValue_IdFragment(new IdProperty(toId.getValue()), start(), toId);
     }
 
     @Override

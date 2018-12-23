@@ -205,7 +205,7 @@ public abstract class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final Statement id(ConceptId id) {
+    public final Statement id(String id) {
         return addProperty(new IdProperty(id));
     }
 

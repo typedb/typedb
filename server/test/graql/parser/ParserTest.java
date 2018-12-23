@@ -583,7 +583,7 @@ public class ParserTest {
         String when = "$x isa movie;";
         String then = "id '123' isa movie;";
         Pattern whenPattern = and(var("x").isa("movie"));
-        Pattern thenPattern = and(var().id(ConceptId.of("123")).isa("movie"));
+        Pattern thenPattern = and(var().id("123").isa("movie"));
 
         InsertQuery expected = insert(
                 label("my-rule-thing").sub("rule"), var().isa("my-rule-thing").when(whenPattern).then(thenPattern)

@@ -68,7 +68,7 @@ public abstract class Binary extends Atom {
     @Nullable
     public IdPredicate getTypePredicate(){
         if (typePredicate == null && getTypeId() != null) {
-            typePredicate = IdPredicate.create(getPredicateVariable().id(getTypeId()), getParentQuery());
+            typePredicate = IdPredicate.create(getPredicateVariable().id(getTypeId().getValue()), getParentQuery());
         }
         return typePredicate;
     }

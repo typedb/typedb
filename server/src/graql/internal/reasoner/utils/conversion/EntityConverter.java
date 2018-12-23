@@ -33,6 +33,6 @@ class EntityConverter implements ConceptConverter<Entity>{
         Variable entityVar = Pattern.var().asUserDefined();
         return entityVar
                 .isa(Pattern.label(concept.type().label()))
-                .id(concept.id());
+                .id(concept.id().getValue());
     }
 }

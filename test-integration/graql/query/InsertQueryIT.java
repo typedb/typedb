@@ -23,7 +23,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
@@ -250,14 +249,14 @@ public class InsertQueryIT {
     public void testErrorWhenInsertWithPredicate() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("predicate");
-        tx.execute(Graql.insert(var().id(ConceptId.of("123")).val(gt(3))));
+        tx.execute(Graql.insert(var().id("123").val(gt(3))));
     }
 
     @Test
     public void testErrorWhenInsertWithMultipleIds() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("id"), containsString("123"), containsString("456")));
-        tx.execute(Graql.insert(var().id(ConceptId.of("123")).id(ConceptId.of("456")).isa("movie")));
+        tx.execute(Graql.insert(var().id("123").id("456").isa("movie")));
     }
 
     @Test
@@ -279,8 +278,8 @@ public class InsertQueryIT {
         exception.expectMessage(GraqlQueryException.insertUnsupportedProperty("sub").getMessage());
         tx.execute(Graql.insert(
                 var().sub("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y"),
-                var("x").id(ConceptId.of("Godfather")).isa("movie"),
-                var("y").id(ConceptId.of("comedy")).isa("genre")
+                var("x").id("Godfather").isa("movie"),
+                var("y").id("comedy").isa("genre")
         ));
     }
 
@@ -447,9 +446,9 @@ public class InsertQueryIT {
         ConceptId apocalypseNow = tx.stream(Graql.match(var("x").has("title", "Apocalypse Now")).get("x"))
                 .map(ans -> ans.get("x")).findAny().get().id();
 
-        assertNotExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
-        tx.execute(Graql.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")));
-        assertExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
+        assertNotExists(tx, var().id(apocalypseNow.getValue()).has("title", "Apocalypse Maybe Tomorrow"));
+        tx.execute(Graql.insert(var().id(apocalypseNow.getValue()).has("title", "Apocalypse Maybe Tomorrow")));
+        assertExists(tx, var().id(apocalypseNow.getValue()).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
     @Test
@@ -457,9 +456,9 @@ public class InsertQueryIT {
         ConceptId apocalypseNow = tx.stream(Graql.match(var("x").has("title", "Apocalypse Now")).get("x"))
                 .map(ans -> ans.get("x")).findAny().get().id();
 
-        assertNotExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
-        tx.execute(Graql.insert(var().id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")));
-        assertExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
+        assertNotExists(tx, var().id(apocalypseNow.getValue()).has("title", "Apocalypse Maybe Tomorrow"));
+        tx.execute(Graql.insert(var().id(apocalypseNow.getValue()).isa("movie").has("title", "Apocalypse Maybe Tomorrow")));
+        assertExists(tx, var().id(apocalypseNow.getValue()).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
     @Test
@@ -467,9 +466,9 @@ public class InsertQueryIT {
         ConceptId apocalypseNow = tx.stream(Graql.match(var("x").val("Apocalypse Now")).get("x"))
                 .map(ans -> ans.get("x")).findAny().get().id();
 
-        assertNotExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Not Right Now"));
-        tx.execute(Graql.insert(var().id(apocalypseNow).has("title", "Apocalypse Not Right Now")));
-        assertExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Not Right Now"));
+        assertNotExists(tx, var().id(apocalypseNow.getValue()).has("title", "Apocalypse Not Right Now"));
+        tx.execute(Graql.insert(var().id(apocalypseNow.getValue()).has("title", "Apocalypse Not Right Now")));
+        assertExists(tx, var().id(apocalypseNow.getValue()).has("title", "Apocalypse Not Right Now"));
     }
 
     @Test
@@ -477,9 +476,9 @@ public class InsertQueryIT {
         ConceptId apocalypseNow = tx.stream(Graql.match(var("x").val("Apocalypse Now")).get("x"))
                 .map(ans -> ans.get("x")).findAny().get().id();
 
-        assertNotExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
-        tx.execute(Graql.insert(var().id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")));
-        assertExists(tx, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
+        assertNotExists(tx, var().id(apocalypseNow.getValue()).has("title", "Apocalypse Maybe Tomorrow"));
+        tx.execute(Graql.insert(var().id(apocalypseNow.getValue()).isa("title").has("title", "Apocalypse Maybe Tomorrow")));
+        assertExists(tx, var().id(apocalypseNow.getValue()).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
     @Test
@@ -605,7 +604,7 @@ public class InsertQueryIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
 
-        tx.execute(Graql.insert(var("x").id(aMovie.id()).isa("person")));
+        tx.execute(Graql.insert(var("x").id(aMovie.id().getValue()).isa("person")));
     }
 
     @Test

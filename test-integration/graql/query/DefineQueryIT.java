@@ -437,7 +437,7 @@ public class DefineQueryIT {
                 is(GraqlQueryException.defineUnsupportedProperty(Query.Property.VALUE.toString()).getMessage())
         ));
 
-        tx.execute(Graql.define(var().id(id).has("title", "Bob")));
+        tx.execute(Graql.define(var().id(id.getValue()).has("title", "Bob")));
     }
 
     @Test
@@ -447,7 +447,7 @@ public class DefineQueryIT {
         EntityType type = tx.getEntityType("a-new-type");
         Label newLabel = Label.of("a-new-new-type");
 
-        tx.execute(Graql.define(label(newLabel).id(type.id())));
+        tx.execute(Graql.define(label(newLabel).id(type.id().getValue())));
 
         assertEquals(newLabel, type.label());
     }

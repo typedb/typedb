@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
@@ -82,7 +83,7 @@ public class ReasonerUtils {
                 .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(LabelProperty.class)?
                         v.getProperties(LabelProperty.class).map(np -> IdPredicate.create(typeVariable, np.label(), parent)) :
-                        v.getProperties(IdProperty.class).map(np -> IdPredicate.create(typeVariable, np.id(), parent)))
+                        v.getProperties(IdProperty.class).map(np -> IdPredicate.create(typeVariable, ConceptId.of(np.id()), parent)))
                 .findFirst().orElse(null);
     }
 

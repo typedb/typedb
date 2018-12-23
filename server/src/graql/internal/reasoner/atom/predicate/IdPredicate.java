@@ -62,17 +62,17 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
     }
 
     private static ConceptId extractPredicate(Statement var){
-        return var.getProperty(IdProperty.class).map(IdProperty::id).orElse(null);
+        return var.getProperty(IdProperty.class).map(idProperty -> ConceptId.of(idProperty.id())).orElse(null);
     }
 
     private static Statement createIdVar(Variable varName, ConceptId typeId){
-        return varName.id(typeId);
+        return varName.id(typeId.getValue());
     }
 
     private static Statement createIdVar(Variable varName, Label label, Transaction graph){
         SchemaConcept schemaConcept = graph.getSchemaConcept(label);
         if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label);
-        return varName.id(schemaConcept.id());
+        return varName.id(schemaConcept.id().getValue());
     }
 
     @Override

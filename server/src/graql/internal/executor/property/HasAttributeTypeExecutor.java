@@ -69,7 +69,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
     public Set<EquivalentFragmentSet> matchFragments() {
         Set<EquivalentFragmentSet> fragments = new HashSet<>();
 
-        PlaysProperty playsOwnerProperty = new PlaysProperty(property.ownerRole(), property.isRequired());
+        PlaysProperty playsOwnerProperty = new PlaysProperty(property.ownerRole(), property.isKey());
         PlaysExecutor playsOwnerExecutor = new PlaysExecutor(var, playsOwnerProperty);
 
         //TODO: Get this to use real constraints no just the required flag
@@ -132,7 +132,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
                     .getConcept(property.attributeType().var())
                     .asAttributeType();
 
-            if (property.isRequired()) {
+            if (property.isKey()) {
                 entityTypeConcept.key(attributeTypeConcept);
             } else {
                 entityTypeConcept.has(attributeTypeConcept);
@@ -150,7 +150,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
                     .asAttributeType();
 
             if (!type.isDeleted() && !attributeType.isDeleted()) {
-                if (property.isRequired()) {
+                if (property.isKey()) {
                     type.unkey(attributeType);
                 } else {
                     type.unhas(attributeType);

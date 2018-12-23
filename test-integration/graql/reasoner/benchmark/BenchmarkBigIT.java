@@ -114,8 +114,8 @@ public class BenchmarkBigIT {
                         var().rel(Pattern.label(fromRole.label()), fromRolePlayer)
                                 .rel(Pattern.label(toRole.label()), toRolePlayer)
                                 .isa(Pattern.label(relationType.label())),
-                        fromRolePlayer.asUserDefined().id(instances[from]),
-                        toRolePlayer.asUserDefined().id(instances[to])
+                        fromRolePlayer.asUserDefined().id(instances[from].getValue()),
+                        toRolePlayer.asUserDefined().id(instances[to].getValue())
                 );
                 transaction.execute(Graql.insert(relationInsert.statements()));
             }
@@ -219,7 +219,7 @@ public class BenchmarkBigIT {
                         Graql.insert(
                                 Pattern.var().asUserDefined()
                                         .has(attributeLabel, "first")
-                                        .id(instances[0])
+                                        .id(instances[0].getValue())
                                         .statements()
                         )
                 );
@@ -232,14 +232,14 @@ public class BenchmarkBigIT {
                             var().rel(Pattern.label(fromRole.label()), fromRolePlayer)
                                     .rel(Pattern.label(toRole.label()), toRolePlayer)
                                     .isa(Pattern.label(baseRelation.label())),
-                            fromRolePlayer.asUserDefined().id(instances[i - 1]),
-                            toRolePlayer.asUserDefined().id(instances[i])
+                            fromRolePlayer.asUserDefined().id(instances[i - 1].getValue()),
+                            toRolePlayer.asUserDefined().id(instances[i].getValue())
                     );
                     transaction.execute(Graql.insert(relationInsert.statements()));
 
                     Pattern resourceInsert = Pattern.var().asUserDefined()
                             .has(attributeLabel, String.valueOf(i))
-                            .id(instances[i]);
+                            .id(instances[i].getValue());
                     transaction.execute(Graql.insert(resourceInsert.statements()));
                 }
 

@@ -278,7 +278,7 @@ public class Parser extends GraqlBaseVisitor {
 
         Statement finalResource = resource;
 
-        return var -> var.has(type.toString(), finalResource, relation);
+        return var -> var.has(type.getValue(), finalResource, relation);
     }
 
     @Override
@@ -379,8 +379,8 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public ConceptId visitId(GraqlParser.IdContext ctx) {
-        return ConceptId.of(visitIdentifier(ctx.identifier()));
+    public String visitId(GraqlParser.IdContext ctx) {
+        return visitIdentifier(ctx.identifier());
     }
 
     @Override
@@ -631,10 +631,10 @@ public class Parser extends GraqlBaseVisitor {
 
         for (GraqlParser.ComputeConditionContext conditionContext : conditions.computeCondition()) {
             if (conditionContext instanceof GraqlParser.ComputeConditionFromContext) {
-                query.from(visitId((((GraqlParser.ComputeConditionFromContext) conditionContext).id())));
+                query.from(ConceptId.of(visitId((((GraqlParser.ComputeConditionFromContext) conditionContext).id()))));
 
             } else if (conditionContext instanceof GraqlParser.ComputeConditionToContext) {
-                query.to(visitId(((GraqlParser.ComputeConditionToContext) conditionContext).id()));
+                query.to(ConceptId.of(visitId(((GraqlParser.ComputeConditionToContext) conditionContext).id())));
 
             } else if (conditionContext instanceof GraqlParser.ComputeConditionOfContext) {
                 query.of(visitLabels(((GraqlParser.ComputeConditionOfContext) conditionContext).labels()));
@@ -689,7 +689,7 @@ public class Parser extends GraqlBaseVisitor {
                 argList.add(ComputeQuery.Argument.size(getInteger(((GraqlParser.ComputeArgSizeContext) argContext).INTEGER())));
 
             } else if (argContext instanceof GraqlParser.ComputeArgContainsContext) {
-                argList.add(ComputeQuery.Argument.contains(visitId(((GraqlParser.ComputeArgContainsContext) argContext).id())));
+                argList.add(ComputeQuery.Argument.contains(ConceptId.of(visitId(((GraqlParser.ComputeArgContainsContext) argContext).id()))));
             }
         }
 

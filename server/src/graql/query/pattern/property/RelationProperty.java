@@ -79,10 +79,10 @@ public class RelationProperty extends VarProperty {
     @Override
     public Stream<Statement> innerStatements() {
         return relationPlayers().stream().flatMap(relationPlayer -> {
-            Stream.Builder<Statement> builder = Stream.builder();
-            builder.add(relationPlayer.getPlayer());
-            relationPlayer.getRole().ifPresent(builder::add);
-            return builder.build();
+            Stream.Builder<Statement> stream = Stream.builder();
+            stream.add(relationPlayer.getPlayer());
+            relationPlayer.getRole().ifPresent(stream::add);
+            return stream.build();
         });
     }
 

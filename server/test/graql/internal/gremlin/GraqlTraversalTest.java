@@ -154,8 +154,8 @@ public class GraqlTraversalTest {
 
     @Test
     public void testAllTraversalsSimpleQuery() {
-        IdProperty titanicId = new IdProperty(ConceptId.of("Titanic"));
-        IdProperty movieId = new IdProperty(ConceptId.of("movie"));
+        IdProperty titanicId = new IdProperty("Titanic");
+        IdProperty movieId = new IdProperty("movie");
         SubProperty subProperty = new SubProperty(new StatementImpl(y, ImmutableSet.of(movieId)));
 
         Statement pattern = new StatementImpl(x, ImmutableSet.of(titanicId, subProperty));
@@ -188,32 +188,32 @@ public class GraqlTraversalTest {
 
     @Test
     public void testOptimalShortQuery() {
-        assertNearlyOptimal(x.isa(y.id(ConceptId.of("movie"))));
+        assertNearlyOptimal(x.isa(y.id("movie")));
     }
 
     @Test
     public void testOptimalBothId() {
-        assertNearlyOptimal(x.id(ConceptId.of("Titanic")).isa(y.id(ConceptId.of("movie"))));
+        assertNearlyOptimal(x.id("Titanic").isa(y.id("movie")));
     }
 
     @Test
     public void testOptimalByValue() {
-        assertNearlyOptimal(x.val("hello").isa(y.id(ConceptId.of("movie"))));
+        assertNearlyOptimal(x.val("hello").isa(y.id("movie")));
     }
 
     @Ignore // TODO: This is now super-slow
     @Test
     public void testOptimalAttachedResource() {
         assertNearlyOptimal(var()
-                .rel(x.isa(y.id(ConceptId.of("movie"))))
-                .rel(z.val("Titanic").isa(var("a").id(ConceptId.of("title")))));
+                .rel(x.isa(y.id("movie")))
+                .rel(z.val("Titanic").isa(var("a").id("title"))));
     }
 
     @Ignore // TODO: This is now super-slow
     @Test
     public void makeSureTypeIsCheckedBeforeFollowingARolePlayer() {
         assertNearlyOptimal(and(
-                x.id(ConceptId.of("xid")),
+                x.id("xid"),
                 var().rel(x).rel(y),
                 y.isa(b.label("person")),
                 var().rel(y).rel(z)

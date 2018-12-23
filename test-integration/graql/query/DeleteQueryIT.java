@@ -137,7 +137,7 @@ public class DeleteQueryIT {
     @Test
     public void testDeleteAllRolePlayers() {
         ConceptId id = tx.stream(kurtzCastRelation.get("a")).map(ans -> ans.get("a")).findFirst().get().id();
-        MatchClause relation = Graql.match(var().id(id));
+        MatchClause relation = Graql.match(var().id(id.getValue()));
 
         assertExists(tx, kurtz);
         assertExists(tx, marlonBrando);
@@ -174,13 +174,13 @@ public class DeleteQueryIT {
         ).get("a")).map(ans -> ans.get("a")).findFirst().get().id();
 
         assertExists(tx, var().has("title", "Godfather"));
-        assertExists(tx, var().id(id));
+        assertExists(tx, var().id(id.getValue()));
         assertExists(tx, var().val(1000L).isa("tmdb-vote-count"));
 
         tx.execute(Graql.match(x.val(1000L).isa("tmdb-vote-count")).delete(x));
 
         assertExists(tx, var().has("title", "Godfather"));
-        assertNotExists(tx, var().id(id));
+        assertNotExists(tx, var().id(id.getValue()));
         assertNotExists(tx, var().val(1000L).isa("tmdb-vote-count"));
     }
 

@@ -44,7 +44,7 @@ class RelationshipConverter implements ConceptConverter<Relation> {
             for (Thing var : entry.getValue()) {
                 Variable rolePlayer = Pattern.var();
                 relationPattern = relationPattern.rel(Pattern.label(entry.getKey().label()), rolePlayer);
-                idPatterns.add(rolePlayer.asUserDefined().id(var.id()));
+                idPatterns.add(rolePlayer.asUserDefined().id(var.id().getValue()));
             }
         }
         relationPattern = relationPattern.isa(Pattern.label(concept.type().label()));

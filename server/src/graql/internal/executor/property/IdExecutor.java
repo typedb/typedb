@@ -21,6 +21,7 @@ package grakn.core.graql.internal.executor.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
@@ -39,10 +40,12 @@ public class IdExecutor implements PropertyExecutor.Definable,
 
     private final Variable var;
     private final IdProperty property;
+    private final ConceptId id;
 
     IdExecutor(Variable var, IdProperty property) {
         this.var = var;
         this.property = property;
+        this.id = ConceptId.of(property.id());
     }
 
     @Override
@@ -62,12 +65,12 @@ public class IdExecutor implements PropertyExecutor.Definable,
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
-        return ImmutableSet.of(EquivalentFragmentSets.id(property, var, property.id()));
+        return ImmutableSet.of(EquivalentFragmentSets.id(property, var, id));
     }
 
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        return IdPredicate.create(var, property.id(), parent);
+        return IdPredicate.create(var, id, parent);
     }
 
     // The WriteExecutor for IdExecutor works for Define, Undefine and Insert queries,
@@ -96,7 +99,7 @@ public class IdExecutor implements PropertyExecutor.Definable,
 
         @Override
         public void execute(WriteExecutor executor) {
-            executor.getBuilder(var).id(property.id());
+            executor.getBuilder(var).id(id);
         }
     }
 }
