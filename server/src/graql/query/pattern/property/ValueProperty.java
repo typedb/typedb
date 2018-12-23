@@ -18,19 +18,10 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
-import java.util.Collection;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -40,7 +31,6 @@ import java.util.stream.Stream;
  */
 public class ValueProperty extends VarProperty {
 
-    public static final String NAME = "";
     private final ValuePredicate predicate;
 
     public ValueProperty(ValuePredicate predicate) {
@@ -55,12 +45,12 @@ public class ValueProperty extends VarProperty {
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.VALUE.toString();
     }
 
     @Override
-    public String getProperty() {
+    public String property() {
         return predicate().toString();
     }
 
@@ -71,32 +61,12 @@ public class ValueProperty extends VarProperty {
 
     @Override
     public String toString() {
-        return getProperty();
+        return property();
     }
 
     @Override
     public Stream<Statement> innerStatements() {
         return CommonUtil.optionalToStream(predicate().getInnerVar());
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        return grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var.var(), this.predicate(), parent);
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(EquivalentFragmentSets.value(this, start, predicate()));
-    }
-
-    @Override
-    public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Object value = predicate().equalsValue().orElseThrow(GraqlQueryException::insertPredicate);
-            executor.builder(var).value(value);
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
     }
 
     @Override

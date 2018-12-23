@@ -18,6 +18,9 @@
 
 workspace(name = "grakn_core")
 
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
 
 ####################
 # Load Build Tools #
@@ -126,7 +129,7 @@ node_grpc_compile()
 git_repository(
     name="graknlabs_rules_deployment",
     remote="https://github.com/graknlabs/deployment",
-    commit="d68bde38af6405195f5858f9a7cd8cc37dcca4e7",
+    commit="a883f333d830d8eeffaabcabc486caa263e97b8b",
 )
 
 load("@graknlabs_rules_deployment//github:dependencies.bzl", "dependencies_for_github_deployment")
@@ -141,3 +144,6 @@ git_repository(
 
 load("@com_github_google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
 google_common_workspace_rules()
+
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_dependencies")
+checkstyle_dependencies()

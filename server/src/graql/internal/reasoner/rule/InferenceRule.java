@@ -27,7 +27,7 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
@@ -207,26 +207,33 @@ public class InferenceRule {
         Set<Atomic> bodyAtoms = new HashSet<>(body.getAtoms());
 
         //transfer value predicates
-        parentAtom.getPredicates(ValuePredicate.class)
+        Set<Variable> bodyVars = body.getVarNames();
+        Set<ValuePredicate> vpsToPropagate = parentAtom.getPredicates(ValuePredicate.class)
                 .flatMap(vp -> vp.unify(unifier).stream())
-                .forEach(bodyAtoms::add);
+                .filter(vp -> bodyVars.contains(vp.getVarName()))
+                .collect(toSet());
+        bodyAtoms.addAll(vpsToPropagate);
 
         //if head is a resource merge vps into head
-        if (headAtom.isResource() && ((ResourceAtom) headAtom).getMultiPredicate().isEmpty()) {
-            ResourceAtom resourceHead = (ResourceAtom) headAtom;
-            Set<ValuePredicate> innerVps = parentAtom.getInnerPredicates(ValuePredicate.class)
-                    .flatMap(vp -> vp.unify(unifier).stream())
-                    .peek(bodyAtoms::add)
-                    .collect(toSet());
-            headAtom = ResourceAtom.create(
-                    resourceHead.getPattern(),
-                    resourceHead.getAttributeVariable(),
-                    resourceHead.getRelationVariable(),
-                    resourceHead.getPredicateVariable(),
-                    resourceHead.getTypeId(),
-                    innerVps,
-                    resourceHead.getParentQuery()
-            );
+        if (headAtom.isResource()) {
+            AttributeAtom resourceHead = (AttributeAtom) headAtom;
+
+            if (resourceHead.getMultiPredicate().isEmpty()) {
+                Set<ValuePredicate> innerVps = parentAtom.getInnerPredicates(ValuePredicate.class)
+                        .flatMap(vp -> vp.unify(unifier).stream())
+                        .collect(toSet());
+                bodyAtoms.addAll(innerVps);
+
+                headAtom = AttributeAtom.create(
+                        resourceHead.getPattern(),
+                        resourceHead.getAttributeVariable(),
+                        resourceHead.getRelationVariable(),
+                        resourceHead.getPredicateVariable(),
+                        resourceHead.getTypeId(),
+                        innerVps,
+                        resourceHead.getParentQuery()
+                );
+            }
         }
 
         Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints()

@@ -23,8 +23,8 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.Variable;
@@ -64,9 +64,9 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * Describes the edge connecting a {@link Relationship} to a role-player.
+     * Describes the edge connecting a {@link Relation} to a role-player.
      * <p>
-     * Can be constrained with information about the possible {@link Role}s or {@link RelationshipType}s.
+     * Can be constrained with information about the possible {@link Role}s or {@link RelationType}s.
      *
          */
     public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role, @Nullable ImmutableSet<Label> roleLabels, @Nullable ImmutableSet<Label> relTypeLabels) {

@@ -18,70 +18,57 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 
-import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
- * Represents the {@code isa} property on a {@link Thing}.
+ * Represents the {@code isa} property on a Thing.
  * This property can be queried and inserted.
- * THe property is defined as a relationship between an {@link Thing} and a {@link Type}.
+ * THe property is defined as a relationship between an Thing and a Type.
  * When matching, any subtyping is respected. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it follows that {@code $bob isa person} and {@code bob isa entity}.
  */
+public class IsaProperty extends VarProperty {
 
-public class IsaProperty extends AbstractIsaProperty {
-
-    public static final String NAME = "isa";
-    private final Variable directTypeVar;
     private final Statement type;
 
     public IsaProperty(Statement type) {
-        this(type, Pattern.var());
-    }
-
-    public IsaProperty(Statement type, Variable directTypeVar) {
         if (type == null) {
             throw new NullPointerException("Null type");
         }
         this.type = type;
-        if (directTypeVar == null) {
-            throw new NullPointerException("Null directTypeVar");
-        }
-        this.directTypeVar = directTypeVar;
     }
 
-    @Override
     public Statement type() {
         return type;
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.ISA.toString();
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(
-                EquivalentFragmentSets.isa(this, start, directTypeVar, true),
-                EquivalentFragmentSets.sub(this, directTypeVar, type().var())
-        );
+    public final String property() {
+        return type().getPrintableName();
     }
 
     @Override
-    protected final Statement statementForAtom(Variable varName, Variable typeVariable) {
-        return varName.isa(typeVariable);
+    public final boolean isUnique() {
+        return true;
     }
 
-    // TODO: These are overridden so we ignore `directType`, which ideally shouldn't be necessary
+    @Override
+    public final Stream<Statement> types() {
+        return Stream.of(type());
+    }
+
+    @Override
+    public final Stream<Statement> innerStatements() {
+        return Stream.of(type());
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == this) {
@@ -89,6 +76,8 @@ public class IsaProperty extends AbstractIsaProperty {
         }
         if (o instanceof IsaProperty) {
             IsaProperty that = (IsaProperty) o;
+
+            // We ignore `directType` because the object is irrelevant
             return this.type().equals(that.type());
         }
         return false;
@@ -97,9 +86,10 @@ public class IsaProperty extends AbstractIsaProperty {
     @Override
     public int hashCode() {
         int h = 1;
+//        h *= 1000003; TODO: Uncomment this once we fix issue #4761
+//        h ^= this.name().hashCode();
         h *= 1000003;
         h ^= this.type().hashCode();
         return h;
     }
-
 }

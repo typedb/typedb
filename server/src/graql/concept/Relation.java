@@ -25,11 +25,11 @@ import java.util.stream.Stream;
 
 /**
  * Encapsulates relationships between {@link Thing}
- * A relation which is an instance of a {@link RelationshipType} defines how instances may relate to one another.
+ * A relation which is an instance of a {@link RelationType} defines how instances may relate to one another.
  * It represents how different entities relate to one another.
- * {@link Relationship} are used to model n-ary relationships between instances.
+ * {@link Relation} are used to model n-ary relationships between instances.
  */
-public interface Relationship extends Thing {
+public interface Relation extends Thing {
     //------------------------------------- Modifiers ----------------------------------
 
     /**
@@ -39,62 +39,62 @@ public interface Relationship extends Thing {
      * @return The instance itself
      */
     @Override
-    Relationship has(Attribute attribute);
+    Relation has(Attribute attribute);
 
     //------------------------------------- Accessors ----------------------------------
 
     /**
-     * Retrieve the associated {@link RelationshipType} for this {@link Relationship}.
+     * Retrieve the associated {@link RelationType} for this {@link Relation}.
      *
-     * @return The associated {@link RelationshipType} for this {@link Relationship}.
-     * @see RelationshipType
+     * @return The associated {@link RelationType} for this {@link Relation}.
+     * @see RelationType
      */
     @Override
-    RelationshipType type();
+    RelationType type();
 
     /**
-     * Retrieve a list of all Instances involved in the {@link Relationship}, and the {@link Role} they play.
+     * Retrieve a list of all Instances involved in the {@link Relation}, and the {@link Role} they play.
      *
-     * @return A list of all the role types and the instances playing them in this {@link Relationship}.
+     * @return A list of all the role types and the instances playing them in this {@link Relation}.
      * @see Role
      */
     @CheckReturnValue
     Map<Role, Set<Thing>> rolePlayersMap();
 
     /**
-     * Retrieves a list of every {@link Thing} involved in the {@link Relationship}, filtered by {@link Role} played.
+     * Retrieves a list of every {@link Thing} involved in the {@link Relation}, filtered by {@link Role} played.
      *
      * @param roles used to filter the returned instances only to ones that play any of the role types.
      *              If blank, returns all role players.
-     * @return a list of every {@link Thing} involved in the {@link Relationship}.
+     * @return a list of every {@link Thing} involved in the {@link Relation}.
      */
     @CheckReturnValue
     Stream<Thing> rolePlayers(Role... roles);
 
     /**
-     * Expands this {@link Relationship} to include a new role player which is playing a specific role.
+     * Expands this {@link Relation} to include a new role player which is playing a specific role.
      *
      * @param role   The Role Type of the new role player.
      * @param player The new role player.
-     * @return The {@link Relationship} itself.
+     * @return The {@link Relation} itself.
      */
-    Relationship assign(Role role, Thing player);
+    Relation assign(Role role, Thing player);
 
     /**
-     * Removes the provided {@link Attribute} from this {@link Relationship}
+     * Removes the provided {@link Attribute} from this {@link Relation}
      *
      * @param attribute the {@link Attribute} to be removed
-     * @return The {@link Relationship} itself
+     * @return The {@link Relation} itself
      */
     @Override
-    Relationship unhas(Attribute attribute);
+    Relation unhas(Attribute attribute);
 
     /**
-     * Removes the {@link Thing} which is playing a {@link Role} in this {@link Relationship}.
-     * If the {@link Thing} is not playing any {@link Role} in this {@link Relationship} nothing happens.
+     * Removes the {@link Thing} which is playing a {@link Role} in this {@link Relation}.
+     * If the {@link Thing} is not playing any {@link Role} in this {@link Relation} nothing happens.
      *
      * @param role   The {@link Role} being played by the {@link Thing}
-     * @param player The {@link Thing} playing the {@link Role} in this {@link Relationship}
+     * @param player The {@link Thing} playing the {@link Role} in this {@link Relation}
      */
     void unassign(Role role, Thing player);
 
@@ -102,7 +102,7 @@ public interface Relationship extends Thing {
     @Deprecated
     @CheckReturnValue
     @Override
-    default Relationship asRelationship() {
+    default Relation asRelation() {
         return this;
     }
 

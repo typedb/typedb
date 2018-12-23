@@ -24,8 +24,8 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.pattern.RelationPattern;
 import grakn.core.graql.reasoner.pattern.ResourcePattern;
@@ -62,8 +62,8 @@ public class GenericSchemaGraph {
         EntityType anotherEntityType = tx.getEntityType("anotherBaseRoleEntity");
         AttributeType<Object> resourceType = tx.getAttributeType("resource");
         AttributeType<Object> anotherResourceType = tx.getAttributeType("resource-long");
-        RelationshipType binary = tx.getRelationshipType("binary");
-        RelationshipType ternary = tx.getRelationshipType("ternary");
+        RelationType binary = tx.getRelationshipType("binary");
+        RelationType ternary = tx.getRelationshipType("ternary");
 
         Iterator<Entity> entities = entityType.instances()
                 .filter(et -> !et.type().equals(subRoleEntityType) )
@@ -73,9 +73,9 @@ public class GenericSchemaGraph {
         Entity anotherBaseEntity = anotherEntityType.instances().findFirst().orElse(null);
         Entity subEntity = subRoleEntityType.instances().findFirst().orElse(null);
 
-        Iterator<Relationship> relations = binary.subs().flatMap(RelationshipType::instances).iterator();
-        Relationship relation = relations.next();
-        Relationship anotherRelation = relations.next();
+        Iterator<Relation> relations = binary.subs().flatMap(RelationType::instances).iterator();
+        Relation relation = relations.next();
+        Relation anotherRelation = relations.next();
 
         Iterator<Attribute<Object>> resources = resourceType.instances().collect(toSet()).iterator();
         Attribute<Object> resource = resources.next();

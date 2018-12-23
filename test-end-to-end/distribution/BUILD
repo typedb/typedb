@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "grakn-graql-commands-e2e",
     test_class = "grakn.core.distribution.GraknGraqlCommandsE2E",
@@ -12,6 +14,15 @@ java_test(
     data = ["//:distribution"]
 )
 
+checkstyle_test(
+ name = "grakn-graql-commands-e2e-checkstyle",
+ target = ":grakn-graql-commands-e2e",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "grakn-graql-commands-with-a-running-grakn-e2e",
     test_class = "grakn.core.distribution.GraknGraqlCommands_WithARunningGraknE2E",
@@ -24,4 +35,13 @@ java_test(
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec"
     ],
     data = ["//:distribution"]
+)
+
+checkstyle_test(
+ name = "grakn-graql-commands-with-a-running-grakn-e2e-checkstyle",
+ target = ":grakn-graql-commands-with-a-running-grakn-e2e",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )

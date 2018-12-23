@@ -21,7 +21,7 @@ package grakn.core.graql.query.predicate;
 import grakn.core.graql.query.pattern.Statement;
 
 /**
- * Factory method for {@link ValuePredicate} implementations.
+ * Factory method for ValuePredicate implementations.
  *
  */
 public class Predicates {

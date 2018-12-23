@@ -29,7 +29,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -40,8 +40,7 @@ import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.PlaysProperty;
-import grakn.core.graql.query.pattern.property.SubProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
@@ -373,7 +372,7 @@ public class InsertQueryIT {
 
         Entity movie = answer.get(w).asEntity();
         Attribute<String> theTitle = answer.get(x).asAttribute();
-        Relationship hasTitle = answer.get(y).asRelationship();
+        Relation hasTitle = answer.get(y).asRelation();
         Attribute<String> provenance = answer.get(z).asAttribute();
 
         assertThat(hasTitle.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
@@ -389,7 +388,7 @@ public class InsertQueryIT {
 
         Entity movie = answer.get(w).asEntity();
         Attribute<String> theTitle = answer.get(x).asAttribute();
-        Relationship hasTitle = answer.get(y).asRelationship();
+        Relation hasTitle = answer.get(y).asRelation();
         Attribute<String> provenance = answer.get(z).asAttribute();
 
         assertThat(hasTitle.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
@@ -504,7 +503,7 @@ public class InsertQueryIT {
         Thing cluster = results.get(0).get("c").asThing();
         Thing godfather = results.get(0).get("g").asThing();
         Thing muppets = results.get(0).get("m").asThing();
-        Relationship relationship = results.get(0).get("r").asRelationship();
+        Relation relationship = results.get(0).get("r").asRelation();
 
         Role clusterOfProduction = tx.getRole("cluster-of-production");
         Role productionWithCluster = tx.getRole("production-with-cluster");
@@ -613,7 +612,7 @@ public class InsertQueryIT {
     @Test
     public void whenInsertingASchemaConcept_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(SubProperty.NAME).getMessage());
+        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(VarProperty.Name.SUB.toString()).getMessage());
 
         tx.execute(Graql.insert(label("new-type").sub(label(ENTITY.getLabel()))));
     }
@@ -621,7 +620,7 @@ public class InsertQueryIT {
     @Test
     public void whenModifyingASchemaConceptInAnInsertQuery_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(PlaysProperty.NAME).getMessage());
+        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(VarProperty.Name.PLAYS.toString()).getMessage());
 
         tx.execute(Graql.insert(label("movie").plays("actor")));
     }

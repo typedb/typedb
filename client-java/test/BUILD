@@ -17,6 +17,8 @@
 #
 
 package(default_visibility = ["//visibility:__pkg__"])
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 
 java_test(
     name = "grakn-client-test",
@@ -44,6 +46,14 @@ java_test(
     size = "small",
 )
 
+checkstyle_test(
+    name = "grakn-client-test-checkstyle",
+    target = ":grakn-client-test",
+    config = "//config/checkstyle:checkstyle.xml",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+)
+
 java_test(
     name = "grakn-client-it",
     srcs = ["GraknClientIT.java"],
@@ -62,4 +72,13 @@ java_test(
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
+checkstyle_test(
+    name = "grakn-client-it-checkstyle",
+    target = ":grakn-client-it",
+    config = "//config/checkstyle:checkstyle.xml",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    allow_failure = True
 )

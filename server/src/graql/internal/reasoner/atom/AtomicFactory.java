@@ -20,9 +20,9 @@ package grakn.core.graql.internal.reasoner.atom;
 
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
-
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -40,8 +40,9 @@ public class AtomicFactory {
      */
     public static Stream<Atomic> createAtoms(Conjunction<Statement> pattern, ReasonerQuery parent) {
         Set<Atomic> atoms = pattern.statements().stream()
-                .flatMap(var -> var.getProperties()
-                        .map(vp -> vp.mapToAtom(var, pattern.statements(), parent))
+                .flatMap(statement -> statement.properties().stream()
+                        .map(property -> PropertyExecutor.atomable(statement.var(), property)
+                                .atomic(parent, statement, pattern.statements()))
                         .filter(Objects::nonNull))
                 .collect(Collectors.toSet());
 
@@ -55,3 +56,4 @@ public class AtomicFactory {
     }
 
 }
+

@@ -25,7 +25,7 @@ import java.util.stream.Stream;
  * A data instance in the graph belonging to a specific {@link Type}
  * Instances represent data in the graph.
  * Every instance belongs to a {@link Type} which serves as a way of categorising them.
- * Instances can relate to one another via {@link Relationship}
+ * Instances can relate to one another via {@link Relation}
  */
 public interface Thing extends Concept {
     //------------------------------------- Accessors ----------------------------------
@@ -45,10 +45,10 @@ public interface Thing extends Concept {
      * @param roles An optional parameter which allows you to specify the role of the relations you wish to retrieve.
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      * @see Role
-     * @see Relationship
+     * @see Relation
      */
     @CheckReturnValue
-    Stream<Relationship> relationships(Role... roles);
+    Stream<Relation> relationships(Role... roles);
 
     /**
      * Determine the {@link Role}s that this {@link Thing} is currently playing.
@@ -60,27 +60,27 @@ public interface Thing extends Concept {
     Stream<Role> roles();
 
     /**
-     * Creates a {@link Relationship} from this {@link Thing} to the provided {@link Attribute}.
+     * Creates a {@link Relation} from this {@link Thing} to the provided {@link Attribute}.
      * <p>
      * This has the same effect as {@link #relhas(Attribute)}, but returns the instance itself to allow
      * method chaining.
      * </p>
      *
-     * @param attribute The {@link Attribute} to which a {@link Relationship} is created
+     * @param attribute The {@link Attribute} to which a {@link Relation} is created
      * @return The instance itself
      */
     Thing has(Attribute attribute);
 
     /**
-     * Creates a {@link Relationship} from this instance to the provided {@link Attribute}.
+     * Creates a {@link Relation} from this instance to the provided {@link Attribute}.
      * <p>
-     * This has the same effect as {@link #has(Attribute)}, but returns the new {@link Relationship}.
+     * This has the same effect as {@link #has(Attribute)}, but returns the new {@link Relation}.
      * </p>
      *
-     * @param attribute The {@link Attribute} to which a {@link Relationship} is created
-     * @return The {@link Relationship} connecting the {@link Thing} and the {@link Attribute}
+     * @param attribute The {@link Attribute} to which a {@link Relation} is created
+     * @return The {@link Relation} connecting the {@link Thing} and the {@link Attribute}
      */
-    Relationship relhas(Attribute attribute);
+    Relation relhas(Attribute attribute);
 
     /**
      * Retrieves a collection of {@link Attribute} attached to this {@link Thing}

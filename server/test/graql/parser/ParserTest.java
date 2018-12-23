@@ -574,6 +574,12 @@ public class ParserTest {
     }
 
     @Test
+    public void testParsingPattern() {
+        String when = "{(parent: $p, child: $c) isa parentship; $c has gender \"male\"; $p has gender \"female\";}";
+        assertEquals(when, Pattern.parse(when).toString());
+    }
+
+    @Test
     public void testInsertRules() {
         String when = "$x isa movie;";
         String then = "id '123' isa movie;";

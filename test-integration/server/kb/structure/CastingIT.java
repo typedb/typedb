@@ -20,7 +20,7 @@ package grakn.core.server.kb.structure;
 
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.rule.GraknTestServer;
@@ -47,7 +47,7 @@ public class CastingIT {
     private Transaction tx;
     private Session session;
 
-    private RelationshipType relationshipType;
+    private RelationType relationshipType;
     private EntityType entityType;
     private Role role3;
     private Role role2;

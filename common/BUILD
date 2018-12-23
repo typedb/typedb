@@ -32,7 +32,6 @@ jarjar_library(
     tags = ["maven_coordinates=grakn.core:common:{pom_version}"],
 )
 
-
 deploy_maven_jar(
     name = "deploy-maven-jar",
     target = ":common",

@@ -24,8 +24,8 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
@@ -58,8 +58,8 @@ import java.util.stream.Stream;
  * </p>
  *
  *
- * @param <T> The leaf interface of the object concept. For example an {@link EntityType} or {@link RelationshipType}
- * @param <V> The instance of this type. For example {@link Entity} or {@link Relationship}
+ * @param <T> The leaf interface of the object concept. For example an {@link EntityType} or {@link RelationType}
+ * @param <V> The instance of this type. For example {@link Entity} or {@link Relation}
  */
 public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type {
 
@@ -244,9 +244,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     /**
-     * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationshipType}s from their
-     * {@link RelationshipEdge}s. This Disconnection happens because {@link RelationshipType#instances()} depends on the
-     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationshipType}.
+     * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationType}s from their
+     * {@link RelationshipEdge}s. This Disconnection happens because {@link RelationType#instances()} depends on the
+     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationType}.
      *
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.
      *
@@ -349,12 +349,12 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     private void updateAttributeRelationHierarchy(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner,
-                                                  Role ownerRole, Role valueRole, RelationshipType relationshipType){
+                                                  Role ownerRole, Role valueRole, RelationType relationshipType){
         AttributeType attributeTypeSuper = attributeType.sup();
         Label superLabel = attributeTypeSuper.label();
         Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
         Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-        RelationshipType relationshipTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
+        RelationType relationshipTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
                 relates(ownerRoleSuper).relates(valueRoleSuper);
 
         //Create the super type edges from sub role/relations to super roles/relation
@@ -382,7 +382,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Label attributeLabel = attributeType.label();
         Role ownerRole = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
         Role valueRole = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
-        RelationshipType relationshipType = vertex().tx().putRelationTypeImplicit(has.getLabel(attributeLabel)).
+        RelationType relationshipType = vertex().tx().putRelationTypeImplicit(has.getLabel(attributeLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 

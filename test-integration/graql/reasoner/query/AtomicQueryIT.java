@@ -169,13 +169,13 @@ public class AtomicQueryIT {
                                            "$x has resource $r via $rel;" +
                                            "$x id " + secondEntity.id().getValue() + ";" +
                                            "$r id " + resource.id().getValue() + ";" +
-                                           "get;"), false)).get("rel").asRelationship().isInferred(), true);
+                                           "get;"), false)).get("rel").asRelation().isInferred(), true);
         assertEquals(Iterables.getOnlyElement(
                 tx.execute(Graql.<GetQuery>parse("match" +
                                            "$x has resource $r via $rel;" +
                                            "$x id " + firstEntity.id().getValue() + ";" +
                                            "$r id " + resource.id().getValue() + ";" +
-                                           "get;"), false)).get("rel").asRelationship().isInferred(), false);
+                                           "get;"), false)).get("rel").asRelation().isInferred(), false);
         tx.close();
     }
 
@@ -195,7 +195,7 @@ public class AtomicQueryIT {
                                                                    tx
         );
 
-        assertEquals(relationQuery.materialise(new ConceptMap()).findFirst().orElse(null).get("r").asRelationship().isInferred(), true);
+        assertEquals(relationQuery.materialise(new ConceptMap()).findFirst().orElse(null).get("r").asRelation().isInferred(), true);
         tx.close();
     }
 

@@ -21,8 +21,8 @@ package grakn.core.graql.graph;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.internal.Schema;
@@ -41,7 +41,7 @@ public class MovieGraph {
     private static AttributeType<Long> tmdbVoteCount, runtime;
     private static AttributeType<Double> tmdbVoteAverage;
     private static AttributeType<LocalDateTime> releaseDate;
-    private static RelationshipType hasCast, authoredBy, directedBy, hasGenre, hasCluster;
+    private static RelationType hasCast, authoredBy, directedBy, hasGenre, hasCluster;
     private static Role productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
     private static Role genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
     private static Role work, author;
@@ -320,7 +320,7 @@ public class MovieGraph {
     }
 
     private static void hasCluster(Thing cluster, Thing... movies) {
-        Relationship relationship = hasCluster.create().assign(clusterOfProduction, cluster);
+        Relation relationship = hasCluster.create().assign(clusterOfProduction, cluster);
         for (Thing movie : movies) {
             relationship.assign(productionWithCluster, movie);
         }

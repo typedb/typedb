@@ -18,49 +18,39 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.Sets;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 
-import java.util.Collection;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Represents the {@code !=} property on a {@link Concept}.
+ * Represents the {@code !=} property on a Concept.
  * This property can be queried. It asserts identity inequality between two concepts. Concepts may have shared
  * properties but still be distinct. For example, two instances of a type without any resources are still considered
  * unequal. Similarly, two resources with the same value but of different types are considered unequal.
  */
 public class NeqProperty extends VarProperty {
 
-    private final Statement var;
+    private final Statement statement;
 
-    public NeqProperty(Statement var) {
-        if (var == null) {
+    public NeqProperty(Statement statement) {
+        if (statement == null) {
             throw new NullPointerException("Null var");
         }
-        this.var = var;
+        this.statement = statement;
     }
 
-    public Statement var() {
-        return var;
-    }
-
-    @Override
-    public String getName() {
-        return "!=";
+    public Statement statement() {
+        return statement;
     }
 
     @Override
-    public String getProperty() {
-        return var().getPrintableName();
+    public String name() {
+        return Name.NEQ.toString();
+    }
+
+    @Override
+    public String property() {
+        return statement().getPrintableName();
     }
 
     @Override
@@ -70,21 +60,7 @@ public class NeqProperty extends VarProperty {
 
     @Override
     public Stream<Statement> innerStatements() {
-        return Stream.of(var());
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        return NeqPredicate.create(var.var(), this, parent);
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return Sets.newHashSet(
-                EquivalentFragmentSets.notInternalFragmentSet(this, start),
-                EquivalentFragmentSets.notInternalFragmentSet(this, var().var()),
-                EquivalentFragmentSets.neq(this, start, var().var())
-        );
+        return Stream.of(statement());
     }
 
     @Override
@@ -94,7 +70,7 @@ public class NeqProperty extends VarProperty {
         }
         if (o instanceof NeqProperty) {
             NeqProperty that = (NeqProperty) o;
-            return (this.var.equals(that.var()));
+            return (this.statement.equals(that.statement()));
         }
         return false;
     }
@@ -103,7 +79,7 @@ public class NeqProperty extends VarProperty {
     public int hashCode() {
         int h = 1;
         h *= 1000003;
-        h ^= this.var.hashCode();
+        h ^= this.statement.hashCode();
         return h;
     }
 }

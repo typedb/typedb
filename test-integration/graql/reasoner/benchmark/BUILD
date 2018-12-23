@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "benchmark-big-it",
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkBigIT",
@@ -16,6 +18,15 @@ java_test(
            "//test-integration/graql/reasoner/resources:linear-transivity"
            ],
     classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
+checkstyle_test(
+ name = "benchmark-big-it-checkstyle",
+ target = ":benchmark-big-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )
 
 java_test(
@@ -39,4 +50,13 @@ java_test(
         "//test-integration/graql/reasoner/resources:unification-with-types"
         ],
     classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
+checkstyle_test(
+ name = "benchmark-small-it-checkstyle",
+ target = ":benchmark-small-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )

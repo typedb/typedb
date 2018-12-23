@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "concept-map-test",
     test_class = "grakn.core.graql.query.ConceptMapTest",
@@ -25,6 +27,15 @@ java_test(
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
         "//server"],
     size = "small"
+)
+
+checkstyle_test(
+ name = "concept-map-test-checkstyle",
+ target = ":concept-map-test",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )
 
 java_test(
@@ -37,6 +48,15 @@ java_test(
     size = "small"
 )
 
+checkstyle_test(
+ name = "delete-query-test-checkstyle",
+ target = ":delete-query-test",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "insert-query-test",
     test_class = "grakn.core.graql.query.InsertQueryTest",
@@ -47,4 +67,13 @@ java_test(
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
     ],
     size = "small"
+)
+
+checkstyle_test(
+ name = "insert-query-test-checkstyle",
+ target = ":insert-query-test",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )

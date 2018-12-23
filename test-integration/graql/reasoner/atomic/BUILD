@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "atomic-type-inference-it",
     srcs = ["AtomicTypeInferenceIT.java"],
@@ -13,6 +15,16 @@ java_test(
     size = "medium",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
+
+checkstyle_test(
+ name = "atomic-type-inference-it-checkstyle",
+ target = ":atomic-type-inference-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "atomic-unification-it",
     srcs = ["AtomicUnificationIT.java"],
@@ -29,6 +41,16 @@ java_test(
     size = "medium",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
+
+checkstyle_test(
+ name = "atomic-unification-it-checkstyle",
+ target = ":atomic-unification-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "atomic-rule-applicability-it",
     srcs = ["AtomicRuleApplicabilityIT.java"],
@@ -46,6 +68,16 @@ java_test(
     size = "medium",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
+
+checkstyle_test(
+ name = "atomic-rule-applicability-it-checkstyle",
+ target = ":atomic-rule-applicability-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "atomic-role-inference-it",
     srcs = ["AtomicRoleInferenceIT.java"],
@@ -62,6 +94,16 @@ java_test(
     size = "medium",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
+
+checkstyle_test(
+ name = "atomic-role-inference-it-checkstyle",
+ target = ":atomic-role-inference-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "atomic-equivalence-it",
     srcs = ["AtomicEquivalenceIT.java"],
@@ -75,4 +117,13 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
     size = "medium",
     classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
+checkstyle_test(
+ name = "atomic-equivalence-it-checkstyle",
+ target = ":atomic-equivalence-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )

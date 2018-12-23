@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.graph;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -53,8 +53,8 @@ public class DiagonalGraph{
         Role relTo = tx.getRole("rel-to");
 
         EntityType entity1 = tx.getEntityType("entity1");
-        RelationshipType horizontal = tx.getRelationshipType("horizontal");
-        RelationshipType vertical = tx.getRelationshipType("vertical");
+        RelationType horizontal = tx.getRelationshipType("horizontal");
+        RelationType vertical = tx.getRelationshipType("vertical");
         ConceptId[][] instanceIds = new ConceptId[n][m];
         long inserts = 0;
         for (int i = 0; i < n; i++) {

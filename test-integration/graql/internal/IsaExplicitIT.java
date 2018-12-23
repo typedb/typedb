@@ -21,7 +21,7 @@ package grakn.core.graql.internal;
 import com.google.common.collect.ImmutableList;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -77,7 +77,7 @@ public class IsaExplicitIT {
         superType1.plays(role1).plays(role2).plays(role3);
         entityType2.plays(role1).plays(role2).plays(role3);
         entityType3.plays(role1).plays(role2).plays(role3);
-        RelationshipType relationshipType = tx.putRelationshipType("related")
+        RelationType relationshipType = tx.putRelationshipType("related")
                 .relates(role1).relates(role2).relates(role3);
 
         Entity entity1 = entityType1.create();

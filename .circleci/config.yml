@@ -4,9 +4,9 @@ references:
       run:
         name: Install bazel
         command: |
-          curl -OL https://github.com/bazelbuild/bazel/releases/download/0.18.0/bazel-0.18.0-installer-linux-x86_64.sh
-          chmod +x bazel-0.18.0-installer-linux-x86_64.sh
-          sudo ./bazel-0.18.0-installer-linux-x86_64.sh
+          curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-linux-x86_64.sh
+          chmod +x bazel-0.20.0-installer-linux-x86_64.sh
+          sudo ./bazel-0.20.0-installer-linux-x86_64.sh
 
     attach_grakn_workspace: &attach_grakn_workspace
       attach_workspace:
@@ -19,6 +19,7 @@ jobs:
     steps:
       - checkout
       - *install_bazel
+      - run: python ./check-for-missing-checkstyle-rule.py
       - run: bazel build //... --sandbox_debug
       - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all.zip dist/
       - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace

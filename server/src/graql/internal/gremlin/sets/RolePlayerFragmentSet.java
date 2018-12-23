@@ -23,7 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
@@ -147,7 +147,7 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
             @Nullable ImmutableSet<Label> roleLabels = rolePlayer.roleLabels();
             if(relLabels == null || roleLabels == null) continue;
 
-            Set<RelationshipType> relTypes = relLabels.stream()
+            Set<RelationType> relTypes = relLabels.stream()
                     .map(tx::<SchemaConcept>getSchemaConcept)
                     .filter(Objects::nonNull)
                     .filter(Concept::isRelationshipType)
@@ -175,10 +175,10 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
     };
 
     /**
-     * A query can use the {@link RelationshipType} {@link Label}s on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
+     * A query can use the {@link RelationType} {@link Label}s on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
      * <ol>
      *     <li>There is a {@link RolePlayerFragmentSet} {@code $r-[role-player:$e ...]->$p}
-     *         without any {@link RelationshipType} {@link Label}s specified
+     *         without any {@link RelationType} {@link Label}s specified
      *     <li>There is a {@link IsaFragmentSet} {@code $r-[isa]->$R}
      *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo,bar]}
      * </ol>
@@ -193,7 +193,7 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
      * referred to elsewhere in the query.
      * <p>
      * We also keep the {@link IsaFragmentSet}, although the results will still be correct without it. This is because
-     * it can help with performance: there are some instances where it makes sense to navigate from the {@link RelationshipType}
+     * it can help with performance: there are some instances where it makes sense to navigate from the {@link RelationType}
      * {@code foo} to all instances. In order to do that, the {@link IsaFragmentSet} must be present.
      */
     static final FragmentSetOptimisation RELATION_TYPE_OPTIMISATION = (fragmentSets, graph) -> {
@@ -226,9 +226,9 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
         return false;
     };
 
-    private RolePlayerFragmentSet substituteLabels(Set<Role> roles, Set<RelationshipType> relTypes){
+    private RolePlayerFragmentSet substituteLabels(Set<Role> roles, Set<RelationType> relTypes){
         ImmutableSet<Label> newRoleTypeLabels = relTypes != null?
-                relTypes.stream().flatMap(RelationshipType::subs).map(SchemaConcept::label).collect(toImmutableSet()) :
+                relTypes.stream().flatMap(RelationType::subs).map(SchemaConcept::label).collect(toImmutableSet()) :
                 null;
         ImmutableSet<Label> newRoleLabels = roles != null?
                 roles.stream().flatMap(Role::subs).map(SchemaConcept::label).collect(toImmutableSet()) :
@@ -261,7 +261,7 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
 
     /**
      * NB: doesn't allow overwrites
-     * Apply an optimisation where we check the {@link RelationshipType} property.
+     * Apply an optimisation where we check the {@link RelationType} property.
      * @param relTypeLabels the role-player fragment must link to any of these (not including sub-types)
      * @return a new {@link RolePlayerFragmentSet} with the same properties excepting relation-type labels
      */

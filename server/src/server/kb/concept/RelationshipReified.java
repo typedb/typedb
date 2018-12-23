@@ -18,8 +18,8 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.internal.Schema;
@@ -45,17 +45,17 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Encapsulates The {@link Relationship} as a {@link VertexElement}
+ *     Encapsulates The {@link Relation} as a {@link VertexElement}
  * </p>
  *
  * <p>
- *     This wraps up a {@link Relationship} as a {@link VertexElement}. It is used to represent any {@link Relationship} which
+ *     This wraps up a {@link Relation} as a {@link VertexElement}. It is used to represent any {@link Relation} which
  *     has been reified.
  * </p>
  *
  *
  */
-public class RelationshipReified extends ThingImpl<Relationship, RelationshipType> implements RelationshipStructure {
+public class RelationshipReified extends ThingImpl<Relation, RelationType> implements RelationshipStructure {
 
     @Nullable private RelationshipImpl owner;
 
@@ -63,7 +63,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         super(vertexElement);
     }
 
-    private RelationshipReified(VertexElement vertexElement, RelationshipType type) {
+    private RelationshipReified(VertexElement vertexElement, RelationType type) {
         super(vertexElement, type);
     }
 
@@ -71,7 +71,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         return new RelationshipReified(vertexElement);
     }
 
-    public static RelationshipReified create(VertexElement vertexElement, RelationshipType type){
+    public static RelationshipReified create(VertexElement vertexElement, RelationType type){
         return new RelationshipReified(vertexElement, type);
     }
 
@@ -113,12 +113,12 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
 
     /**
      * If the edge does not exist then it adds a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from
-     * this {@link Relationship} to a target {@link Thing} which is playing some {@link Role}.
+     * this {@link Relation} to a target {@link Thing} which is playing some {@link Role}.
      *
      * If the edge does exist nothing is done.
      *
-     * @param role The {@link Role} being played by the {@link Thing} in this {@link Relationship}
-     * @param toThing The {@link Thing} playing a {@link Role} in this {@link Relationship}
+     * @param role The {@link Role} being played by the {@link Thing} in this {@link Relation}
+     * @param toThing The {@link Thing} playing a {@link Role} in this {@link Relation}
      */
     public void putRolePlayerEdge(Role role, Thing toThing) {
         //Checking if the edge exists
@@ -145,10 +145,10 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
     }
 
     /**
-     * Castings are retrieved from the perspective of the {@link Relationship}
+     * Castings are retrieved from the perspective of the {@link Relation}
      *
      * @param roles The {@link Role} which the {@link Thing}s are playing
-     * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relationship}
+     * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relation}
      */
     public Stream<Casting> castingsRelation(Role... roles){
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
@@ -190,7 +190,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
 
     /**
      * Sets the owner of this structure to a specific {@link RelationshipImpl}.
-     * This is so that the internal structure can use the {@link Relationship} reference;
+     * This is so that the internal structure can use the {@link Relation} reference;
      *
      * @param relationship the owner of this {@link RelationshipReified}
      */

@@ -29,7 +29,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
@@ -101,34 +101,18 @@ public interface Transaction extends AutoCloseable {
     // Define Query
 
     default List<ConceptMap> execute(DefineQuery query) {
-        return execute(query, true);
+        return stream(query).collect(Collectors.toList());
     }
 
-    default List<ConceptMap> execute(DefineQuery query, boolean infer) {
-        return stream(query, infer).collect(Collectors.toList());
-    }
-
-    default Stream<ConceptMap> stream(DefineQuery query) {
-        return stream(query, true);
-    }
-
-    Stream<ConceptMap> stream(DefineQuery query, boolean infer);
+    Stream<ConceptMap> stream(DefineQuery query);
 
     // Undefine Query
 
     default List<ConceptMap> execute(UndefineQuery query) {
-        return execute(query, true);
+        return stream(query).collect(Collectors.toList());
     }
 
-    default List<ConceptMap> execute(UndefineQuery query, boolean infer) {
-        return stream(query, infer).collect(Collectors.toList());
-    }
-
-    default Stream<ConceptMap> stream(UndefineQuery query) {
-        return stream(query, true);
-    }
-
-    Stream<ConceptMap> stream(UndefineQuery query, boolean infer);
+    Stream<ConceptMap> stream(UndefineQuery query);
 
     // Insert Query
 
@@ -258,10 +242,10 @@ public interface Transaction extends AutoCloseable {
 
     default Stream<? extends Answer> stream(Query query, boolean infer) {
         if (query instanceof DefineQuery) {
-            return stream((DefineQuery) query, infer);
+            return stream((DefineQuery) query);
 
         } else if (query instanceof UndefineQuery) {
-            return stream((UndefineQuery) query, infer);
+            return stream((UndefineQuery) query);
 
         } else if (query instanceof InsertQuery) {
             return stream((InsertQuery) query, infer);
@@ -302,12 +286,12 @@ public interface Transaction extends AutoCloseable {
     }
 
     /**
-     * Get the root of all {@link RelationshipType}.
+     * Get the root of all {@link RelationType}.
      *
      * @return The meta relation type -> relation-type.
      */
     @CheckReturnValue
-    default RelationshipType getMetaRelationType() {
+    default RelationType getMetaRelationType() {
         return getSchemaConcept(Schema.MetaSchema.RELATIONSHIP.getLabel());
     }
 
@@ -454,28 +438,28 @@ public interface Transaction extends AutoCloseable {
     Rule putRule(Label label, Pattern when, Pattern then);
 
     /**
-     * Create a {@link RelationshipType} with super-type {@code relation}, or return a pre-existing {@link RelationshipType},
+     * Create a {@link RelationType} with super-type {@code relation}, or return a pre-existing {@link RelationType},
      * with the specified label.
      *
-     * @param label A unique label for the {@link RelationshipType}
-     * @return A new or existing {@link RelationshipType} with the provided label.
+     * @param label A unique label for the {@link RelationType}
+     * @return A new or existing {@link RelationType} with the provided label.
      * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationshipType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
      */
-    default RelationshipType putRelationshipType(String label) {
+    default RelationType putRelationshipType(String label) {
         return putRelationshipType(Label.of(label));
     }
 
     /**
-     * Create a {@link RelationshipType} with super-type {@code relation}, or return a pre-existing {@link RelationshipType},
+     * Create a {@link RelationType} with super-type {@code relation}, or return a pre-existing {@link RelationType},
      * with the specified label.
      *
-     * @param label A unique label for the {@link RelationshipType}
-     * @return A new or existing {@link RelationshipType} with the provided label.
+     * @param label A unique label for the {@link RelationType}
+     * @return A new or existing {@link RelationType} with the provided label.
      * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationshipType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
      */
-    RelationshipType putRelationshipType(Label label);
+    RelationType putRelationshipType(Label label);
 
     /**
      * Create a {@link Role} with super-type {@code role}, or return a pre-existing {@link Role}, with the
@@ -562,15 +546,15 @@ public interface Transaction extends AutoCloseable {
     EntityType getEntityType(String label);
 
     /**
-     * Get the {@link RelationshipType} with the label provided, if it exists.
+     * Get the {@link RelationType} with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the {@link RelationshipType} in the graph.
-     * @return The {@link RelationshipType} with the provided label or null if no such {@link RelationshipType} exists.
+     * @param label A unique label which identifies the {@link RelationType} in the graph.
+     * @return The {@link RelationType} with the provided label or null if no such {@link RelationType} exists.
      * @throws TransactionException if the graph is closed
      */
     @CheckReturnValue
     @Nullable
-    RelationshipType getRelationshipType(String label);
+    RelationType getRelationshipType(String label);
 
     /**
      * Get the {@link AttributeType} with the label provided, if it exists.

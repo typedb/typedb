@@ -24,8 +24,8 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.internal.Schema;
@@ -88,7 +88,7 @@ public class EntityIT {
     public void whenDeletingInstanceInRelationShip_TheInstanceAndCastingsAreDeletedAndTheRelationRemains() throws TransactionException {
         //Schema
         EntityType type = tx.putEntityType("Concept Type");
-        RelationshipType relationshipType = tx.putRelationshipType("relationTypes");
+        RelationType relationshipType = tx.putRelationshipType("relationTypes");
         Role role1 = tx.putRole("role1");
         Role role2 = tx.putRole("role2");
         Role role3 = tx.putRole("role3");
@@ -125,11 +125,11 @@ public class EntityIT {
     @Test
     public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws TransactionException {
         EntityType type = tx.putEntityType("Concept Type");
-        RelationshipType relationshipType = tx.putRelationshipType("relationTypes");
+        RelationType relationshipType = tx.putRelationshipType("relationTypes");
         Role role1 = tx.putRole("role1");
         Thing rolePlayer1 = type.create();
 
-        Relationship relationship = relationshipType.create().
+        Relation relationship = relationshipType.create().
                 assign(role1, rolePlayer1);
 
         assertNotNull(tx.getConcept(relationship.id()));
@@ -150,7 +150,7 @@ public class EntityIT {
         Attribute attribute = attributeType.create("A attribute thing");
 
         entity.has(attribute);
-        Relationship relationship = entity.relationships().iterator().next();
+        Relation relationship = entity.relationships().iterator().next();
 
         checkImplicitStructure(attributeType, relationship, entity, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_OWNER, Schema.ImplicitType.HAS_VALUE);
     }
@@ -200,7 +200,7 @@ public class EntityIT {
         Attribute attribute = attributeType.create("A attribute thing");
 
         entity.has(attribute);
-        Relationship relationship = entity.relationships().iterator().next();
+        Relation relationship = entity.relationships().iterator().next();
 
         checkImplicitStructure(attributeType, relationship, entity, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_OWNER, Schema.ImplicitType.KEY_VALUE);
     }
@@ -219,7 +219,7 @@ public class EntityIT {
         tx.commit();
     }
 
-    private void checkImplicitStructure(AttributeType<?> attributeType, Relationship relationship, Entity entity, Schema.ImplicitType has, Schema.ImplicitType hasOwner, Schema.ImplicitType hasValue){
+    private void checkImplicitStructure(AttributeType<?> attributeType, Relation relationship, Entity entity, Schema.ImplicitType has, Schema.ImplicitType hasOwner, Schema.ImplicitType hasValue){
         assertEquals(2, relationship.rolePlayersMap().size());
         assertEquals(has.getLabel(attributeType.label()), relationship.type().label());
         relationship.rolePlayersMap().entrySet().forEach(entry -> {

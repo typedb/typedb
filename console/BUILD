@@ -48,6 +48,15 @@ java_library(
     tags = ["maven_coordinates=grakn.core:console:{pom_version}"],
 )
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+checkstyle_test(
+ name = "console-checkstyle",
+ target = ":console",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+)
+
 java_binary(
     name = "console-binary",
     main_class = "grakn.core.console.GraknConsole",

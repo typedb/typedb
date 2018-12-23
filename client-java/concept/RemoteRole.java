@@ -22,7 +22,7 @@ package grakn.core.client.concept;
 import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.protocol.ConceptProto;
@@ -41,7 +41,7 @@ public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Ro
     }
 
     @Override
-    public final Stream<RelationshipType> relationships() {
+    public final Stream<RelationType> relationships() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRoleRelationsReq(ConceptProto.Role.Relations.Req.getDefaultInstance()).build();
         int iteratorId = runMethod(method).getRoleRelationsIter().getId();

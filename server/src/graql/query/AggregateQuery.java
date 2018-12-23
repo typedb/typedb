@@ -20,10 +20,6 @@ package grakn.core.graql.query;
 
 import grakn.core.graql.query.pattern.Variable;
 
-import java.util.Set;
-
-import static java.util.stream.Collectors.joining;
-
 public class AggregateQuery implements Query {
 
     private final GetQuery getQuery;
