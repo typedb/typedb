@@ -95,7 +95,7 @@ public abstract class SemanticCache<
         ReasonerAtomicQuery query = entry.query();
         updateFamily(query);
         computeParents(query);
-        propagateAnswersTo(entry.query(), query.isGround());
+        propagateAnswersTo(query, query.isGround());
         return cacheEntry;
     }
 
