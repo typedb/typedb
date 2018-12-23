@@ -206,7 +206,10 @@ public abstract class Atom extends AtomicBase {
     public Set<Variable> getRoleExpansionVariables() { return new HashSet<>();}
 
     private boolean isRuleApplicable(InferenceRule child) {
-        return isRuleApplicableViaAtom(child.getRuleConclusionAtom());
+        return (getIdPredicate(getVarName()) == null
+                || child.redefinesType()
+                || child.appendsRolePlayers())
+                && isRuleApplicableViaAtom(child.getRuleConclusionAtom());
     }
 
     protected abstract boolean isRuleApplicableViaAtom(Atom headAtom);
@@ -252,7 +255,7 @@ public abstract class Atom extends AtomicBase {
     public boolean requiresDecomposition() {
         return this.getPotentialRules()
                 .map(r -> tx().ruleCache().getRule(r, () -> new InferenceRule(r, tx())))
-                .anyMatch(InferenceRule::isAppendRule);
+                .anyMatch(InferenceRule::appendsRolePlayers);
     }
 
     /**
