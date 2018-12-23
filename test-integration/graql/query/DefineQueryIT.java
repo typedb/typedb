@@ -32,7 +32,7 @@ import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
@@ -285,15 +285,15 @@ public class DefineQueryIT {
 
     @Test
     public void whenExecutingADefineQuery_ResultContainsAllInsertedVars() {
-        Variable type = var("type");
-        Variable type2 = var("type2");
+        StatementImpl type = var("type");
+        StatementImpl type2 = var("type2");
 
         // Note that two variables refer to the same type. They should both be in the result
         DefineQuery query = Graql.define(type.label("my-type").sub("entity"), type2.label("my-type"));
 
         ConceptMap result = tx.execute(query).get(0);
-        assertThat(result.vars(), containsInAnyOrder(type, type2));
-        assertEquals(result.get(type), result.get(type2));
+        assertThat(result.vars(), containsInAnyOrder(type.var(), type2.var()));
+        assertEquals(result.get(type.var()), result.get(type2.var()));
     }
 
     @Test

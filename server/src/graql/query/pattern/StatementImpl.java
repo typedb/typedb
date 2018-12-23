@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -36,6 +37,10 @@ public class StatementImpl extends Statement {
     private final Set<VarProperty> properties;
     protected final Logger LOG = LoggerFactory.getLogger(StatementImpl.class);
     private int hashCode = 0;
+
+    public StatementImpl(Variable var) {
+        this(var, Collections.emptySet());
+    }
 
     public StatementImpl(Variable var, Set<VarProperty> properties) {
         if (var == null) {
@@ -64,15 +69,15 @@ public class StatementImpl extends Statement {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Statement var = (Statement) o;
+        Statement other = (Statement) o;
 
-        if (var().isUserDefinedName() != var.var().isUserDefinedName()) return false;
+        if (var().isUserDefinedName() != other.var().isUserDefinedName()) return false;
 
         // "simplifying" this makes it harder to read
         //noinspection SimplifiableIfStatement
-        if (!properties().equals(var.properties())) return false;
+        if (!properties().equals(other.properties())) return false;
 
-        return !var().isUserDefinedName() || var().equals(var.var());
+        return !var().isUserDefinedName() || var().equals(other.var());
 
     }
 

@@ -24,10 +24,10 @@ import grakn.core.graql.parser.Parser;
 import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
  */
 public interface Pattern {
 
-    AtomicLong counter = new AtomicLong(System.currentTimeMillis() * 1000);
     Parser parser = new Parser();
 
     static Pattern parse(String pattern) {
@@ -56,16 +55,16 @@ public interface Pattern {
      * @return a new query variable
      */
     @CheckReturnValue
-    static Variable var(String name) {
-        return new Variable(name, Variable.Type.UserDefined);
+    static StatementImpl var(String name) {
+        return new StatementImpl(new Variable(name), Collections.emptySet());
     }
 
     /**
      * @return a new, anonymous query variable
      */
     @CheckReturnValue
-    static Variable var() {
-        return new Variable(Long.toString(counter.getAndIncrement()), Variable.Type.Generated);
+    static StatementImpl var() {
+        return new StatementImpl(new Variable(), Collections.emptySet());
     }
 
     /**

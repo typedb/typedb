@@ -28,8 +28,8 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
@@ -59,7 +59,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable,
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
-        Variable directTypeVar = Pattern.var();
+        Variable directTypeVar = new Variable();
         return ImmutableSet.of(
                 EquivalentFragmentSets.isa(property, var, directTypeVar, true),
                 EquivalentFragmentSets.sub(property, directTypeVar, property.type().var())
@@ -81,9 +81,9 @@ public class IsaExecutor implements PropertyExecutor.Insertable,
         Statement isaVar;
 
         if (property instanceof IsaExplicitProperty) {
-            isaVar = varName.isaExplicit(typeVar);
+            isaVar = new StatementImpl(varName).isaExplicit(new StatementImpl(typeVar));
         } else {
-            isaVar = varName.isa(typeVar);
+            isaVar = new StatementImpl(varName).isa(new StatementImpl(typeVar));
         }
 
         return IsaAtom.create(varName, typeVar, isaVar, predicateId, parent);

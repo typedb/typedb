@@ -20,10 +20,10 @@ package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -112,14 +112,14 @@ public class ResourceAttachmentIT {
             String queryString2 = "match $x isa subResource; get;";
             List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
             assertEquals(1, answers2.size());
-            assertTrue(answers2.iterator().next().get(var("x")).isAttribute());
+            assertTrue(answers2.iterator().next().get("x").isAttribute());
 
             String queryString3 = "match $x isa reattachable-resource-string; $y isa subResource;get;";
             List<ConceptMap> answers3 = tx.execute(Graql.<GetQuery>parse(queryString3));
             assertEquals(1, answers3.size());
 
-            assertTrue(answers3.iterator().next().get(var("x")).isAttribute());
-            assertTrue(answers3.iterator().next().get(var("y")).isAttribute());
+            assertTrue(answers3.iterator().next().get("x").isAttribute());
+            assertTrue(answers3.iterator().next().get("y").isAttribute());
         }
     }
 
@@ -152,7 +152,7 @@ public class ResourceAttachmentIT {
             Statement has = var("x").has("reattachable-resource-string", var("y"), var("r"));
             List<ConceptMap> answers = tx.execute(Graql.match(has).get());
             assertEquals(3, answers.size());
-            answers.forEach(a -> assertTrue(a.vars().contains(var("r"))));
+            answers.forEach(a -> assertTrue(a.vars().contains(new Variable("r"))));
         }
     }
 
@@ -188,9 +188,9 @@ public class ResourceAttachmentIT {
             assertEquals(2, answers.size());
             answers.forEach(ans ->
                     {
-                        assertTrue(ans.get(var("x")).isEntity());
-                        assertTrue(ans.get(var("y")).isAttribute());
-                        assertTrue(ans.get(var("z")).isRelationship());
+                        assertTrue(ans.get("x").isEntity());
+                        assertTrue(ans.get("y").isAttribute());
+                        assertTrue(ans.get("z").isRelationship());
                     }
             );
 
@@ -199,8 +199,8 @@ public class ResourceAttachmentIT {
             assertEquals(1, answers2.size());
             answers2.forEach(ans ->
                     {
-                        assertTrue(ans.get(var("x")).isRelationship());
-                        assertTrue(ans.get(var("y")).isAttribute());
+                        assertTrue(ans.get("x").isRelationship());
+                        assertTrue(ans.get("y").isAttribute());
                     }
             );
         }

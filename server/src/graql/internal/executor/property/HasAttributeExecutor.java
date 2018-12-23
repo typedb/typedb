@@ -31,8 +31,8 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
@@ -76,8 +76,8 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
         Label hasValueRole = Schema.ImplicitType.HAS_VALUE.getLabel(type);
         Label keyValueRole = Schema.ImplicitType.KEY_VALUE.getLabel(type);
 
-        Variable edge1 = Pattern.var();
-        Variable edge2 = Pattern.var();
+        Variable edge1 = new Variable();
+        Variable edge2 = new Variable();
 
         return ImmutableSet.of(
                 //owner rolePlayer edge
@@ -97,7 +97,7 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
 
         Variable relationVariable = property.relationship().var();
         Variable attributeVariable = property.attribute().var().asUserDefined();
-        Variable predicateVariable = Pattern.var();
+        Variable predicateVariable = new Variable();
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements, parent);
 
         IsaProperty isaProp = property.attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
@@ -107,8 +107,8 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
 
         //add resource atom
         Statement resVar = relationVariable.isUserDefinedName() ?
-                varName.has(property.type(), attributeVariable, relationVariable) :
-                varName.has(property.type(), attributeVariable);
+                new StatementImpl(varName).has(property.type(), new StatementImpl(attributeVariable), new StatementImpl(relationVariable)) :
+                new StatementImpl(varName).has(property.type(), new StatementImpl(attributeVariable));
         return AttributeAtom.create(resVar, attributeVariable, relationVariable,
                                     predicateVariable, predicateId, predicates, parent);
     }

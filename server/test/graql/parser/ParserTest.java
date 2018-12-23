@@ -19,7 +19,6 @@
 package grakn.core.graql.parser;
 
 import com.google.common.base.Strings;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.AggregateQuery;
@@ -35,7 +34,7 @@ import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -325,6 +324,13 @@ public class ParserTest {
     }
 
     @Test
+    public void testParseRelatesTypeVariable() {
+        GetQuery expected = match(var("x").isa(var("type")), var("type").relates("someRole")).get();
+        GetQuery parsed = parse("match $x isa $type; $type relates someRole; get;");
+        assertEquals(expected, parsed);
+    }
+
+    @Test
     public void testOrQuery() {
         GetQuery expected = match(
                 var("x").isa("movie"),
@@ -382,10 +388,10 @@ public class ParserTest {
 
     @Test
     public void whenParsingDeleteQuery_ResultIsSameAsJavaGraql() {
-        Variable x = var("x");
-        Variable y = var("y");
+        StatementImpl x = var("x");
+        StatementImpl y = var("y");
 
-        DeleteQuery expected = match(x.isa("movie").has("title", "The Title"), y.isa("movie")).delete(x, y);
+        DeleteQuery expected = match(x.isa("movie").has("title", "The Title"), y.isa("movie")).delete(x.var(), y.var());
         DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; $y isa movie; delete $x, $y;");
         assertEquals(expected, parsed);
     }

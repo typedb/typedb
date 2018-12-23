@@ -33,7 +33,6 @@ import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.CheckReturnValue;
@@ -104,7 +103,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      */
     @CheckReturnValue
     public Concept get(String var) {
-        return get(Pattern.var(var));
+        return get(new Variable(var));
     }
 
     /**

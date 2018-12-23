@@ -22,7 +22,7 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.StatementImpl;
 import org.junit.Test;
 
 import static grakn.core.graql.query.pattern.Pattern.var;
@@ -30,8 +30,8 @@ import static org.junit.Assert.assertEquals;
 
 public class IsaExplicitTest {
 
-    private static final Variable x = var("x");
-    private static final Variable y = var("y");
+    private static final StatementImpl x = var("x");
+    private static final StatementImpl y = var("y");
 
     private static final String thingy = "thingy";
     private static final String thingy1 = "thingy1";

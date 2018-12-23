@@ -70,7 +70,7 @@ public class HasAttributeTypeProperty extends VarProperty {
         }
 
         Statement relationOwner = relationType.relates(ownerRole);
-        Statement relationValue = relationType.var().relates(valueRole);
+        Statement relationValue = relationType.relates(valueRole);
 
         this.attributeType = attributeType;
         this.ownerRole = ownerRole;

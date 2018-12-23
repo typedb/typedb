@@ -82,10 +82,10 @@ import static org.junit.Assert.assertThat;
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "Duplicates"})
 public class InsertQueryIT {
 
-    private static final Variable w = var("w");
-    private static final Variable x = var("x");
-    private static final Variable y = var("y");
-    private static final Variable z = var("z");
+    private static final StatementImpl w = var("w");
+    private static final StatementImpl x = var("x");
+    private static final StatementImpl y = var("y");
+    private static final StatementImpl z = var("z");
 
     private static final String title = "title";
 
@@ -225,7 +225,7 @@ public class InsertQueryIT {
         Set<ConceptMap> results = tx.stream(insert).collect(toSet());
         assertEquals(1, results.size());
         ConceptMap result = results.iterator().next();
-        assertEquals(ImmutableSet.of(var("x"), var("z")), result.vars());
+        assertEquals(ImmutableSet.of(new Variable("x"), new Variable("z")), result.vars());
         assertThat(result.concepts(), Matchers.everyItem(notNullValue(Concept.class)));
     }
 
@@ -347,16 +347,16 @@ public class InsertQueryIT {
 
     @Test
     public void whenExecutingAnInsertQuery_ResultContainsAllInsertedVars() {
-        Variable x = var("x");
-        Variable type = var("type");
+        StatementImpl x = var("x");
+        StatementImpl type = var("type");
 
         // Note that two variables refer to the same type. They should both be in the result
         InsertQuery query = Graql.insert(x.isa(type), type.label("movie"));
 
         ConceptMap result = tx.stream(query).iterator().next();
-        assertThat(result.vars(), containsInAnyOrder(x, type));
-        assertEquals(result.get(type), result.get(x).asEntity().type());
-        assertEquals(result.get(type).asType().label(), Label.of("movie"));
+        assertThat(result.vars(), containsInAnyOrder(x.var(), type.var()));
+        assertEquals(result.get(type.var()), result.get(x.var()).asEntity().type());
+        assertEquals(result.get(type.var()).asType().label(), Label.of("movie"));
     }
 
     @Test
@@ -368,10 +368,10 @@ public class InsertQueryIT {
 
         ConceptMap answer = Iterables.getOnlyElement(tx.execute(query));
 
-        Entity movie = answer.get(w).asEntity();
-        Attribute<String> theTitle = answer.get(x).asAttribute();
-        Relation hasTitle = answer.get(y).asRelation();
-        Attribute<String> provenance = answer.get(z).asAttribute();
+        Entity movie = answer.get(w.var()).asEntity();
+        Attribute<String> theTitle = answer.get(x.var()).asAttribute();
+        Relation hasTitle = answer.get(y.var()).asRelation();
+        Attribute<String> provenance = answer.get(z.var()).asAttribute();
 
         assertThat(hasTitle.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
         assertThat(hasTitle.attributes().toArray(), arrayContaining(provenance));
@@ -384,10 +384,10 @@ public class InsertQueryIT {
 
         ConceptMap answer = Iterables.getOnlyElement(tx.execute(query));
 
-        Entity movie = answer.get(w).asEntity();
-        Attribute<String> theTitle = answer.get(x).asAttribute();
-        Relation hasTitle = answer.get(y).asRelation();
-        Attribute<String> provenance = answer.get(z).asAttribute();
+        Entity movie = answer.get(w.var()).asEntity();
+        Attribute<String> theTitle = answer.get(x.var()).asAttribute();
+        Relation hasTitle = answer.get(y.var()).asRelation();
+        Attribute<String> provenance = answer.get(z.var()).asAttribute();
 
         assertThat(hasTitle.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
         assertThat(hasTitle.attributes().toArray(), arrayContaining(provenance));
@@ -531,7 +531,7 @@ public class InsertQueryIT {
             assertThat(
                     "Should contain only variables mentioned in the insert (so excludes `$z`)",
                     answer.vars(),
-                    containsInAnyOrder(x, y, w)
+                    containsInAnyOrder(x.var(), y.var(), w.var())
             );
         }
 
@@ -580,7 +580,7 @@ public class InsertQueryIT {
         // We have to construct it this way because you can't have two `isa`s normally
         // TODO: less bad way?
         Statement varPattern = new StatementImpl(
-                var("x"),
+                new Variable("x"),
                 ImmutableSet.of(new IsaProperty(label("movie")), new IsaProperty(label("person")))
         );
 

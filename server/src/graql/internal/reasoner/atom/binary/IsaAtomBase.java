@@ -27,12 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- *
- * <p>
  * Base class for isa atoms.
- * </p>
- *
- *
  */
 public abstract class IsaAtomBase extends TypeAtom{
 

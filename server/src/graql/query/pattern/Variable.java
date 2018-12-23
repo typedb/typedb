@@ -23,18 +23,28 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 /**
  * A variable in a Graql query
  */
-public class Variable extends Statement {
+public class Variable {
 
+    private static AtomicLong counter = new AtomicLong(System.currentTimeMillis() * 1000);
     private static final Pattern VALID_VAR = Pattern.compile("[a-zA-Z0-9_-]+");
 
     private final String name;
     private final Type type;
     private volatile String symbol;
+
+    public Variable() {
+        this(Long.toString(counter.getAndIncrement()), Variable.Type.Generated);
+    }
+
+    public Variable(String name) {
+        this(name, Variable.Type.UserDefined);
+    }
 
     public Variable(String name, Type type) {
         if (name == null) {
@@ -102,12 +112,10 @@ public class Variable extends Statement {
         return symbol;
     }
 
-    @Override
     public Variable var() {
         return this;
     }
 
-    @Override
     public Set<VarProperty> properties() {
         return ImmutableSet.of();
     }

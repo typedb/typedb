@@ -74,6 +74,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("Duplicates")
 public class ResolutionPlanIT {
 
     private static final int repeat = 20;
@@ -506,8 +507,8 @@ public class ResolutionPlanIT {
         ResolutionPlan attributedResolutionPlan = new ResolutionPlan(attributedQuery);
         checkPlanSanity(attributedQuery);
 
-        Atom efAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(var("e"), var("f")));
-        Atom ghAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(var("g"), var("h")));
+        Atom efAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("e"), new Variable("f")));
+        Atom ghAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("g"), new Variable("h")));
 
         ImmutableList<Atom> atomPlan = attributedResolutionPlan.plan();
         assertThat(atomPlan.get(atomPlan.size()-1), anyOf(is(efAtom), is(ghAtom)));
@@ -544,8 +545,8 @@ public class ResolutionPlanIT {
         ResolutionPlan attributedResolutionPlan = new ResolutionPlan(attributedQuery);
         checkPlanSanity(attributedQuery);
 
-        Atom efAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(var("e"), var("f")));
-        Atom cdAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(var("c"), var("d")));
+        Atom efAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("e"), new Variable("f")));
+        Atom cdAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("c"), new Variable("d")));
 
         ImmutableList<Atom> atomPlan = attributedResolutionPlan.plan();
         assertThat(atomPlan.get(atomPlan.size()-1), anyOf(is(efAtom), is(cdAtom)));
@@ -626,7 +627,7 @@ public class ResolutionPlanIT {
         ResolutionPlan resolutionPlan = new ResolutionPlan(query);
         checkAtomPlanComplete(query, resolutionPlan);
 
-        Atom resolvableIsa = getAtomWithVariables(query, Sets.newHashSet(var("x"), var("type")));
+        Atom resolvableIsa = getAtomWithVariables(query, Sets.newHashSet(new Variable("x"), new Variable("type")));
         assertThat(resolutionPlan.plan().get(3), is(resolvableIsa));
 
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));

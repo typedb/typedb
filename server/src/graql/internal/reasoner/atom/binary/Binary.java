@@ -36,6 +36,7 @@ import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 
@@ -68,7 +69,7 @@ public abstract class Binary extends Atom {
     @Nullable
     public IdPredicate getTypePredicate(){
         if (typePredicate == null && getTypeId() != null) {
-            typePredicate = IdPredicate.create(getPredicateVariable().id(getTypeId().getValue()), getParentQuery());
+            typePredicate = IdPredicate.create(new StatementImpl(getPredicateVariable()).id(getTypeId().getValue()), getParentQuery());
         }
         return typePredicate;
     }

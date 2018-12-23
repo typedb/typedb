@@ -19,6 +19,7 @@
 
 package grakn.core.client.concept;
 
+import com.google.auto.value.AutoValue;
 import grakn.core.client.GraknClient;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.graql.concept.Concept;
@@ -27,7 +28,6 @@ import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.protocol.ConceptProto;
-import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
 

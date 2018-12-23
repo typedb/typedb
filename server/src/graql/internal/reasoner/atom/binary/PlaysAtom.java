@@ -23,17 +23,13 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 /**
- *
- * <p>
  * TypeAtom corresponding to graql a {@link PlaysProperty} property.
- * </p>
- *
- *
  */
 @AutoValue
 public abstract class PlaysAtom extends OntologicalAtom {
@@ -43,7 +39,7 @@ public abstract class PlaysAtom extends OntologicalAtom {
     @Override public abstract ReasonerQuery getParentQuery();
 
     public static PlaysAtom create(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return new AutoValue_PlaysAtom(var, predicateId, predicateVar, var.plays(predicateVar), parent);
+        return new AutoValue_PlaysAtom(var, predicateId, predicateVar, new StatementImpl(var).plays(new StatementImpl(predicateVar)), parent);
     }
 
     private static PlaysAtom create(PlaysAtom a, ReasonerQuery parent) {

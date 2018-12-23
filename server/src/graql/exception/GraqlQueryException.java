@@ -36,8 +36,6 @@ import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
 import static grakn.core.common.exception.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
 import static grakn.core.common.exception.ErrorMessage.INSERT_RECURSIVE;

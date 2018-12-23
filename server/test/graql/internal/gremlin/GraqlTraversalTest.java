@@ -73,17 +73,17 @@ import static org.mockito.Mockito.when;
 
 public class GraqlTraversalTest {
 
-    private static final Variable a = Pattern.var("a");
-    private static final Variable b = Pattern.var("b");
-    private static final Variable c = Pattern.var("c");
-    private static final Variable x = Pattern.var("x");
-    private static final Variable y = Pattern.var("y");
-    private static final Variable z = Pattern.var("z");
-    private static final Variable xx = Pattern.var("xx");
-    private static final Fragment xId = id(null, x, ConceptId.of("Titanic"));
-    private static final Fragment yId = id(null, y, ConceptId.of("movie"));
-    private static final Fragment xIsaY = outIsa(null, x, y);
-    private static final Fragment yTypeOfX = inIsa(null, y, x, true);
+    private static final StatementImpl a = Pattern.var("a");
+    private static final StatementImpl b = Pattern.var("b");
+    private static final StatementImpl c = Pattern.var("c");
+    private static final StatementImpl x = Pattern.var("x");
+    private static final StatementImpl y = Pattern.var("y");
+    private static final StatementImpl z = Pattern.var("z");
+    private static final StatementImpl xx = Pattern.var("xx");
+    private static final Fragment xId = id(null, x.var(), ConceptId.of("Titanic"));
+    private static final Fragment yId = id(null, y.var(), ConceptId.of("movie"));
+    private static final Fragment xIsaY = outIsa(null, x.var(), y.var());
+    private static final Fragment yTypeOfX = inIsa(null, y.var(), x.var(), true);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
     private static TransactionOLTP tx;
@@ -115,8 +115,8 @@ public class GraqlTraversalTest {
 
     @Test
     public void testComplexityConnectedVsDisconnected() {
-        GraqlTraversal connectedDoubleIsa = traversal(xIsaY, outIsa(null, y, z));
-        GraqlTraversal disconnectedDoubleIsa = traversal(xIsaY, inIsa(null, z, y, true));
+        GraqlTraversal connectedDoubleIsa = traversal(xIsaY, outIsa(null, y.var(), z.var()));
+        GraqlTraversal disconnectedDoubleIsa = traversal(xIsaY, inIsa(null, z.var(), y.var(), true));
         assertFaster(connectedDoubleIsa, disconnectedDoubleIsa);
     }
 
@@ -129,25 +129,25 @@ public class GraqlTraversalTest {
 
     @Test
     public void testRelatesFasterFromRoleType() {
-        GraqlTraversal relatesFromRelationType = traversal(yId, outRelates(null, y, x), xId);
-        GraqlTraversal relatesFromRoleType = traversal(xId, inRelates(null, x, y), yId);
+        GraqlTraversal relatesFromRelationType = traversal(yId, outRelates(null, y.var(), x.var()), xId);
+        GraqlTraversal relatesFromRoleType = traversal(xId, inRelates(null, x.var(), y.var()), yId);
         assertFaster(relatesFromRoleType, relatesFromRelationType);
     }
 
     @Test
     public void testResourceWithTypeFasterFromType() {
         GraqlTraversal fromInstance =
-                traversal(outIsa(null, x, xx), id(null, xx, ConceptId.of("_")), inRolePlayer(x, z), outRolePlayer(z, y));
+                traversal(outIsa(null, x.var(), xx.var()), id(null, xx.var(), ConceptId.of("_")), inRolePlayer(x.var(), z.var()), outRolePlayer(z.var(), y.var()));
         GraqlTraversal fromType =
-                traversal(id(null, xx, ConceptId.of("_")), inIsa(null, xx, x, true), inRolePlayer(x, z), outRolePlayer(z, y));
+                traversal(id(null, xx.var(), ConceptId.of("_")), inIsa(null, xx.var(), x.var(), true), inRolePlayer(x.var(), z.var()), outRolePlayer(z.var(), y.var()));
         assertFaster(fromType, fromInstance);
     }
 
     @Ignore //TODO: No longer applicable. Think of a new test to replace this.
     @Test
     public void valueFilteringIsBetterThanANonFilteringOperation() {
-        GraqlTraversal valueFilterFirst = traversal(value(null, x, gt(1)), inRolePlayer(x, b), outRolePlayer(b, y), outIsa(null, y, z));
-        GraqlTraversal rolePlayerFirst = traversal(outIsa(null, y, z), inRolePlayer(y, b), outRolePlayer(b, x), value(null, x, gt(1)));
+        GraqlTraversal valueFilterFirst = traversal(value(null, x.var(), gt(1)), inRolePlayer(x.var(), b.var()), outRolePlayer(b.var(), y.var()), outIsa(null, y.var(), z.var()));
+        GraqlTraversal rolePlayerFirst = traversal(outIsa(null, y.var(), z.var()), inRolePlayer(y.var(), b.var()), outRolePlayer(b.var(), x.var()), value(null, x.var(), gt(1)));
 
         assertFaster(valueFilterFirst, rolePlayerFirst);
     }
@@ -156,17 +156,17 @@ public class GraqlTraversalTest {
     public void testAllTraversalsSimpleQuery() {
         IdProperty titanicId = new IdProperty("Titanic");
         IdProperty movieId = new IdProperty("movie");
-        SubProperty subProperty = new SubProperty(new StatementImpl(y, ImmutableSet.of(movieId)));
+        SubProperty subProperty = new SubProperty(new StatementImpl(y.var(), ImmutableSet.of(movieId)));
 
-        Statement pattern = new StatementImpl(x, ImmutableSet.of(titanicId, subProperty));
+        Statement pattern = new StatementImpl(x.var(), ImmutableSet.of(titanicId, subProperty));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
 
-        Fragment xId = id(titanicId, x, ConceptId.of("Titanic"));
-        Fragment yId = id(movieId, y, ConceptId.of("movie"));
-        Fragment xSubY = outSub(subProperty, x, y, Fragments.TRAVERSE_ALL_SUB_EDGES);
-        Fragment ySubX = inSub(subProperty, y, x, Fragments.TRAVERSE_ALL_SUB_EDGES);
+        Fragment xId = id(titanicId, x.var(), ConceptId.of("Titanic"));
+        Fragment yId = id(movieId, y.var(), ConceptId.of("movie"));
+        Fragment xSubY = outSub(subProperty, x.var(), y.var(), Fragments.TRAVERSE_ALL_SUB_EDGES);
+        Fragment ySubX = inSub(subProperty, y.var(), x.var(), Fragments.TRAVERSE_ALL_SUB_EDGES);
 
         Set<GraqlTraversal> expected = ImmutableSet.of(
                 traversal(xId, xSubY, yId),
@@ -327,11 +327,11 @@ public class GraqlTraversalTest {
     }
 
     private static Fragment outRolePlayer(Variable relation, Variable rolePlayer) {
-        return Fragments.outRolePlayer(null, relation, a, rolePlayer, null, null, null);
+        return Fragments.outRolePlayer(null, relation, a.var(), rolePlayer, null, null, null);
     }
 
     private static Fragment inRolePlayer(Variable rolePlayer, Variable relation) {
-        return Fragments.inRolePlayer(null, rolePlayer, c, relation, null, null, null);
+        return Fragments.inRolePlayer(null, rolePlayer, c.var(), relation, null, null, null);
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {

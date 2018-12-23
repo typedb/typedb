@@ -23,18 +23,14 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.RelatesProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 
 /**
- *
- * <p>
  * TypeAtom corresponding to a graql {@link RelatesProperty} property.
- * </p>
- *
- *
  */
 @AutoValue
 public abstract class RelatesAtom extends OntologicalAtom {
@@ -44,7 +40,7 @@ public abstract class RelatesAtom extends OntologicalAtom {
     @Override public abstract ReasonerQuery getParentQuery();
 
     public static RelatesAtom create(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return new AutoValue_RelatesAtom(var, predicateId, predicateVar, var.relates(predicateVar), parent);
+        return new AutoValue_RelatesAtom(var, predicateId, predicateVar, new StatementImpl(var).relates(new StatementImpl(predicateVar)), parent);
     }
 
     private static RelatesAtom create(RelatesAtom a, ReasonerQuery parent) {

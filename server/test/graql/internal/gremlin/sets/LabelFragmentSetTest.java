@@ -23,7 +23,6 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 import org.junit.Before;
@@ -41,9 +40,9 @@ import static org.mockito.Mockito.when;
 
 public class LabelFragmentSetTest {
 
-    private static final Variable generatedVar = Pattern.var();
-    private static final Variable otherGeneratedVar = Pattern.var();
-    private static final Variable userDefinedVar = Pattern.var("x");
+    private static final Variable generatedVar = new Variable();
+    private static final Variable otherGeneratedVar = new Variable();
+    private static final Variable userDefinedVar = new Variable("x");
     private static final Label EXISTING_LABEL = Label.of("something");
     private static final Label NON_EXISTENT_LABEL = Label.of("doesn't exist");
 
@@ -63,7 +62,7 @@ public class LabelFragmentSetTest {
 
         Set<EquivalentFragmentSet> originalFragmentSets = ImmutableSet.of(
                 labelFragment,
-                isa(null, Pattern.var("abc"), Pattern.var("def"), true)
+                isa(null, new Variable("abc"), new Variable("def"), true)
         );
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);

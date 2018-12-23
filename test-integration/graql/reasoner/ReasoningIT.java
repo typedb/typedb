@@ -45,7 +45,6 @@ import java.util.stream.Stream;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;
-import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
@@ -443,7 +442,11 @@ public class ReasoningIT {
                         "$rel2 (role1: $c, role2: $b) isa relation1; get;";
                 List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
                 assertEquals(2, answers2.size());
-                Set<Variable> vars = Sets.newHashSet(var("b"), var("p"), var("c"), var("rel1"), var("rel2"));
+                Set<Variable> vars = Sets.newHashSet(new Variable("b"),
+                                                     new Variable("p"),
+                                                     new Variable("c"),
+                                                     new Variable("rel1"),
+                                                     new Variable("rel2"));
                 answers2.forEach(ans -> assertTrue(ans.vars().containsAll(vars)));
             }
         }
@@ -581,7 +584,7 @@ public class ReasoningIT {
                         Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse("match $r (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z); get;"), false)),
                         Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse("match $r (anotherRole: $x, andYetAnotherRole: $y); get;"),false))
                 )
-                        .map(ans -> ans.project(Sets.newHashSet(var("r"))))
+                        .map(ans -> ans.project(Sets.newHashSet(new Variable("r"))))
                         .collect(Collectors.toSet());
 
                 assertCollectionsEqual("Rules are not matched correctly!", variants, inferredRelations);
@@ -630,7 +633,7 @@ public class ReasoningIT {
                 assertEquals(1, answers2.size());
                 assertEquals(1, answers3.size());
                 answers2.stream()
-                        .map(a -> a.project(Sets.newHashSet(var("x"), var("y"))))
+                        .map(a -> a.project(Sets.newHashSet(new Variable("x"), new Variable("y"))))
                         .forEach(a -> assertTrue(answers3.contains(a)));
             }
         }

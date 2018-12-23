@@ -19,6 +19,7 @@
 
 package grakn.core.client.concept;
 
+import com.google.auto.value.AutoValue;
 import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -26,7 +27,6 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Thing;
 import grakn.core.protocol.ConceptProto;
-import com.google.auto.value.AutoValue;
 
 import java.time.Instant;
 import java.time.LocalDateTime;

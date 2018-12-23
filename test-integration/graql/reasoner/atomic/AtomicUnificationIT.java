@@ -117,7 +117,7 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_RelationWithMetaRolesAndIds(){
-        Concept instance = tx.execute(Graql.<GetQuery>parse("match $x isa subRoleEntity; get;")).iterator().next().get(var("x"));
+        Concept instance = tx.execute(Graql.<GetQuery>parse("match $x isa subRoleEntity; get;")).iterator().next().get("x");
         String relation = "{(role: $x, role: $y) isa binary; $y id '" + instance.id().getValue() + "';}";
         String relation2 = "{(role: $z, role: $v) isa binary; $z id '" + instance.id().getValue() + "';}";
         String relation3 = "{(role: $z, role: $v) isa binary; $v id '" + instance.id().getValue() + "';}";
@@ -319,9 +319,9 @@ public class AtomicUnificationIT {
         ConceptMap resourceAnswer2 = tx.execute(resourceQuery2.getQuery(), false).iterator().next();
         ConceptMap resourceAnswer3 = tx.execute(resourceQuery3.getQuery(), false).iterator().next();
 
-        assertEquals(typeAnswer.get(var("x")), resourceAnswer.unify(unifier).get(var("x")));
-        assertEquals(typeAnswer.get(var("x")), resourceAnswer2.unify(unifier2).get(var("x")));
-        assertEquals(typeAnswer.get(var("x")), resourceAnswer3.unify(unifier3).get(var("x")));
+        assertEquals(typeAnswer.get("x"), resourceAnswer.unify(unifier).get("x"));
+        assertEquals(typeAnswer.get("x"), resourceAnswer2.unify(unifier2).get("x"));
+        assertEquals(typeAnswer.get("x"), resourceAnswer3.unify(unifier3).get("x"));
     }
 
     @Test
@@ -344,7 +344,7 @@ public class AtomicUnificationIT {
         Unifier unifier = Iterables.getOnlyElement(testRule.getMultiUnifier(parentAtom));
         Unifier correctUnifier = new UnifierImpl(
                 ImmutableMap.of(
-                        var("x"), var("x"),
+                        new Variable("x"), new Variable("x"),
                         headVarName, parentVarName)
         );
 
@@ -353,7 +353,7 @@ public class AtomicUnificationIT {
         Multimap<Role, Variable> roleMap = roleSetMap(headAtom.getRoleVarMap());
         Collection<Variable> wifeEntry = roleMap.get(tx.getRole("subRole1"));
         assertEquals(wifeEntry.size(), 1);
-        assertEquals(wifeEntry.iterator().next(), var("x"));
+        assertEquals(wifeEntry.iterator().next(), new Variable("x"));
     }
 
     @Test
@@ -366,14 +366,14 @@ public class AtomicUnificationIT {
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, UnifierType.RULE);
         Unifier correctUnifier = new UnifierImpl(
                 ImmutableMap.of(
-                        var("z"), var("a"),
-                        var("b"), var("x"),
+                        new Variable("z"), new Variable("a"),
+                        new Variable("b"), new Variable("x"),
                         child.getVarName(), parent.getVarName())
         );
         Unifier correctUnifier2 = new UnifierImpl(
                 ImmutableMap.of(
-                        var("z"), var("x"),
-                        var("b"), var("a"),
+                        new Variable("z"), new Variable("x"),
+                        new Variable("b"), new Variable("a"),
                         child.getVarName(), parent.getVarName())
         );
         assertEquals(multiUnifier.size(), 2);

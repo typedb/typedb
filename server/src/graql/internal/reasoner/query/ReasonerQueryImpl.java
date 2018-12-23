@@ -75,8 +75,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
-
 /**
  * Base reasoner query providing resolution and atom handling facilities for conjunctive graql queries.
  */
@@ -335,7 +333,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(p -> new Pair<>(p, tx().<Concept>getConcept(p.getPredicate())))
                 .filter(p -> Objects.nonNull(p.getValue()))
                 .filter(p -> p.getValue().isEntity())
-                .map(p -> IsaAtom.create(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), false,this));
+                .map(p -> IsaAtom.create(p.getKey().getVarName(), new Variable(), p.getValue().asEntity().type(), false,this));
     }
 
     private Map<Variable, Type> getVarTypeMap(Stream<IsaAtomBase> isas){

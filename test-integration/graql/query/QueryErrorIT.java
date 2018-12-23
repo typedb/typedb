@@ -19,7 +19,6 @@
 package grakn.core.graql.query;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;

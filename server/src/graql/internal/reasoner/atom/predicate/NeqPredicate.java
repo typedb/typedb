@@ -25,6 +25,7 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 
@@ -50,7 +51,7 @@ public abstract class NeqPredicate extends Predicate<Variable> {
         return new AutoValue_NeqPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
     public static NeqPredicate create(Variable varName, NeqProperty prop, ReasonerQuery parent) {
-        Statement pattern = varName.neq(prop.statement().var());
+        Statement pattern = new StatementImpl(varName).neq(prop.statement());
         return create(pattern, parent);
     }
     public static NeqPredicate create(NeqPredicate a, ReasonerQuery parent) {

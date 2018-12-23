@@ -19,15 +19,15 @@
 
 package grakn.core.client.concept;
 
+import com.google.auto.value.AutoValue;
 import grakn.core.client.GraknClient;
 import grakn.core.client.rpc.RequestBuilder;
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.protocol.ConceptProto;
-import grakn.core.common.util.CommonUtil;
-import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
 

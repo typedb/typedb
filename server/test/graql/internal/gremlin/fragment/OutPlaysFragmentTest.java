@@ -20,7 +20,6 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -35,8 +34,8 @@ import static org.junit.Assert.assertThat;
 
 public class OutPlaysFragmentTest {
 
-    private final Variable start = Pattern.var();
-    private final Variable end = Pattern.var();
+    private final Variable start = new Variable();
+    private final Variable end = new Variable();
     private final Fragment fragment = Fragments.outPlays(null, start, end, false);
 
     @Test

@@ -138,7 +138,7 @@ public class ClientJavaE2E {
             LOG.info("clientJavaE2E() - assert if schema defined...");
             LOG.info("clientJavaE2E() - '" + getThingQuery + "'");
             List<String> definedSchema = tx.execute(getThingQuery).stream()
-                    .map(answer -> answer.get(var("t")).asType().label().getValue()).collect(Collectors.toList());
+                    .map(answer -> answer.get("t").asType().label().getValue()).collect(Collectors.toList());
             String[] correctSchema = new String[] { "thing", "entity", "relationship", "attribute",
                     "lion", "mating", "parentship", "child-bearing", "@has-name", "name" };
             assertThat(definedSchema, hasItems(correctSchema));
@@ -242,7 +242,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - match delete...");
-            DeleteQuery deleteQuery = Graql.match(var("m").isa("mating")).delete(var("m"));
+            DeleteQuery deleteQuery = Graql.match(var("m").isa("mating")).delete("m");
             LOG.info("clientJavaE2E() - '" + deleteQuery + "'");
             List<ConceptSet> answer = tx.execute(deleteQuery);
             List<ConceptMap> matings = tx.execute(Graql.match(var("m").isa("mating")).get());

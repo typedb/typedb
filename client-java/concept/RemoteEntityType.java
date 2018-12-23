@@ -19,6 +19,7 @@
 
 package grakn.core.client.concept;
 
+import com.google.auto.value.AutoValue;
 import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -26,7 +27,6 @@ import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Type;
 import grakn.core.protocol.ConceptProto;
-import com.google.auto.value.AutoValue;
 
 /**
  * Client implementation of a MetaType, a special type of {@link Type}

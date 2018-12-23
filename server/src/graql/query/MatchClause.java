@@ -77,7 +77,7 @@ public class MatchClause {
      */
     @CheckReturnValue
     public GetQuery get(String var, String... vars) {
-        Set<Variable> varSet = Stream.concat(Stream.of(var), Stream.of(vars)).map(Pattern::var).collect(Collectors.toSet());
+        Set<Variable> varSet = Stream.concat(Stream.of(var), Stream.of(vars)).map(Variable::new).collect(Collectors.toSet());
         return get(varSet);
     }
 
@@ -135,7 +135,7 @@ public class MatchClause {
      */
     @CheckReturnValue
     public final DeleteQuery delete(String var, String... vars) {
-        Set<Variable> varSet = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Pattern::var).collect(Collectors.toSet());
+        Set<Variable> varSet = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Variable::new).collect(Collectors.toSet());
         return delete(varSet);
     }
 

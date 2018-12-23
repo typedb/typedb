@@ -46,7 +46,6 @@ import static grakn.core.graql.internal.Schema.EdgeLabel.SHARD;
 import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 import static grakn.core.graql.internal.Schema.VertexProperty.IS_IMPLICIT;
 import static grakn.core.graql.internal.Schema.VertexProperty.LABEL_ID;
-import static grakn.core.graql.query.pattern.Pattern.var;
 
 /**
  * A fragment representing traversing an isa edge from type to instance.
@@ -104,8 +103,8 @@ public abstract class InIsaFragment extends Fragment {
     }
 
     private GraphTraversal<Vertex, Edge> toEdgeInstances() {
-        Variable type = var();
-        Variable labelId = var();
+        Variable type = new Variable();
+        Variable labelId = new Variable();
 
         // There is no fast way to retrieve all edge instances, because edges cannot be globally indexed.
         // This is a best-effort, that uses the schema to limit the search space...

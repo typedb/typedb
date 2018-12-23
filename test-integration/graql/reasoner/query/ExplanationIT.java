@@ -283,8 +283,8 @@
 //            testExplanation(answer);
 //
 //            String specificQuery = "match " +
-//                    "$x id '" + answer.get(var("x")).id().getValue() + "';" +
-//                    "$y id '" + answer.get(var("y")).id().getValue() + "';" +
+//                    "$x id '" + answer.get("x").id().getValue() + "';" +
+//                    "$y id '" + answer.get("y").id().getValue() + "';" +
 //                    "(cousin: $x, cousin: $y) isa cousins;" +
 //                    "limit 1; get;";
 //            ConceptMap specificAnswer = Iterables.getOnlyElement(itx.execute(Graql.<GetQuery>parse(specificQuery)));

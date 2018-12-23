@@ -36,6 +36,7 @@ import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
@@ -54,12 +55,7 @@ import java.util.stream.Stream;
 import static grakn.core.common.util.CommonUtil.toImmutableList;
 
 /**
- *
- * <p>
  * TypeAtom corresponding to graql a {@link IsaProperty} property.
- * </p>
- *
- *
  */
 @AutoValue
 public abstract class IsaAtom extends IsaAtomBase {
@@ -73,12 +69,18 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     public static IsaAtom create(Variable var, Variable predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent) {
-        Statement pattern = isDirect ? var.isaExplicit(predicateVar) : var.isa(predicateVar);
+        Statement pattern = isDirect ?
+                new StatementImpl(var).isaExplicit(new StatementImpl(predicateVar)) :
+                new StatementImpl(var).isa(new StatementImpl(predicateVar));
+
         return new AutoValue_IsaAtom(var, predicateId, predicateVar, pattern, parent);
     }
 
     public static IsaAtom create(Variable var, Variable predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent) {
-        Statement pattern = isDirect ? var.isaExplicit(predicateVar) : var.isa(predicateVar);
+        Statement pattern = isDirect ?
+                new StatementImpl(var).isaExplicit(new StatementImpl(predicateVar)) :
+                new StatementImpl(var).isa(new StatementImpl(predicateVar));
+
         return new AutoValue_IsaAtom(var, type.id(), predicateVar, pattern, parent);
     }
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
@@ -131,10 +133,10 @@ public abstract class IsaAtom extends IsaAtomBase {
     protected Pattern createCombinedPattern(){
         if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
         return getSchemaConcept() == null?
-                getVarName().isa(getPredicateVariable()) :
+                new StatementImpl(getVarName()).isa(new StatementImpl(getPredicateVariable())) :
                 isDirect()?
-                        getVarName().isaExplicit(getSchemaConcept().label().getValue()) :
-                        getVarName().isa(getSchemaConcept().label().getValue()) ;
+                        new StatementImpl(getVarName()).isaExplicit(getSchemaConcept().label().getValue()) :
+                        new StatementImpl(getVarName()).isa(getSchemaConcept().label().getValue()) ;
     }
 
     @Override

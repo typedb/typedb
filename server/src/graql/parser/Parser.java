@@ -36,6 +36,7 @@ import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.util.StringUtil;
@@ -233,7 +234,7 @@ public class Parser extends GraqlBaseVisitor {
     public Statement visitStatement(GraqlParser.StatementContext ctx) {
         Statement var;
         if (ctx.VARIABLE() != null) {
-            var = getVariable(ctx.VARIABLE());
+            var = new StatementImpl(getVariable(ctx.VARIABLE()));
         } else {
             var = visitVariable(ctx.variable());
         }
@@ -269,8 +270,19 @@ public class Parser extends GraqlBaseVisitor {
     public UnaryOperator<Statement> visitPropHas(GraqlParser.PropHasContext ctx) {
         Label type = visitLabel(ctx.label());
 
-        Statement relation = Optional.ofNullable(ctx.relation).map(this::getVariable).orElseGet(Pattern::var);
-        Statement resource = Optional.ofNullable(ctx.resource).map(this::getVariable).orElseGet(Pattern::var);
+        Statement relation;
+        if (ctx.relation != null) {
+            relation = new StatementImpl(getVariable(ctx.relation));
+        } else {
+            relation = new StatementImpl(new Variable());
+        }
+
+        Statement resource;
+        if (ctx.resource != null) {
+            resource = new StatementImpl(getVariable(ctx.resource));
+        } else {
+            resource = new StatementImpl(new Variable());
+        }
 
         if (ctx.predicate() != null) {
             resource = resource.val(visitPredicate(ctx.predicate()));
@@ -321,7 +333,7 @@ public class Parser extends GraqlBaseVisitor {
         if (ctx.VARIABLE() == null) {
             return var -> var.rel(visitVariable(ctx.variable()));
         } else {
-            return var -> var.rel(visitVariable(ctx.variable()), getVariable(ctx.VARIABLE()));
+            return var -> var.rel(visitVariable(ctx.variable()), new StatementImpl(getVariable(ctx.VARIABLE())));
         }
     }
 
@@ -399,7 +411,7 @@ public class Parser extends GraqlBaseVisitor {
         } else if (ctx.label() != null) {
             return label(visitLabel(ctx.label()));
         } else {
-            return getVariable(ctx.VARIABLE());
+            return new StatementImpl(getVariable(ctx.VARIABLE()));
         }
     }
 
@@ -410,7 +422,7 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public ValuePredicate visitPredicateVariable(GraqlParser.PredicateVariableContext ctx) {
-        return eq(getVariable(ctx.VARIABLE()));
+        return eq(new StatementImpl(getVariable(ctx.VARIABLE())));
     }
 
     @Override
@@ -440,9 +452,9 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public ValuePredicate visitPredicateContains(GraqlParser.PredicateContainsContext ctx) {
-        Object stringOrVar = ctx.STRING() != null ? getString(ctx.STRING()) : getVariable(ctx.VARIABLE());
+        Object stringOrStatement = ctx.STRING() != null ? getString(ctx.STRING()) : new StatementImpl(getVariable(ctx.VARIABLE()));
 
-        return applyPredicate((Function<String, ValuePredicate>) Graql::contains, Graql::contains, stringOrVar);
+        return applyPredicate((Function<String, ValuePredicate>) Graql::contains, Graql::contains, stringOrStatement);
     }
 
     @Override
@@ -452,7 +464,7 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public Statement visitValueVariable(GraqlParser.ValueVariableContext ctx) {
-        return getVariable(ctx.VARIABLE());
+        return new StatementImpl(getVariable(ctx.VARIABLE()));
     }
 
     @Override
@@ -533,7 +545,7 @@ public class Parser extends GraqlBaseVisitor {
 
     private Variable getVariable(Token variable) {
         // Remove '$' prefix
-        return Pattern.var(variable.getText().substring(1));
+        return new Variable(variable.getText().substring(1));
     }
 
     private String getRegex(TerminalNode string) {

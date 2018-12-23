@@ -31,6 +31,7 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
@@ -40,8 +41,6 @@ import grakn.core.graql.query.pattern.property.VarProperty;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import static grakn.core.graql.query.pattern.Pattern.var;
 
 public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
                                                  PropertyExecutor.Matchable,
@@ -92,11 +91,11 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
         Variable varName = var.asUserDefined();
         Label label = property.attributeType().getTypeLabel().orElse(null);
 
-        Variable predicateVar = var();
+        Variable predicateVar = new Variable();
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         ConceptId predicateId = schemaConcept != null ? schemaConcept.id() : null;
         //isa part
-        Statement resVar = varName.has(Pattern.label(label));
+        Statement resVar = new StatementImpl(varName).has(Pattern.label(label));
         return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 

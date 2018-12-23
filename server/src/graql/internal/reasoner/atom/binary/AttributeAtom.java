@@ -45,6 +45,7 @@ import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -109,8 +110,8 @@ public abstract class AttributeAtom extends Binary{
         Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
         return RelationshipAtom.create(
                 Pattern.var()
-                        .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), getVarName())
-                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), getAttributeVariable())
+                        .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), new StatementImpl(getVarName()))
+                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), new StatementImpl(getAttributeVariable()))
                         .isa(typeLabel.getValue()),
                 getPredicateVariable(),
                 tx.getSchemaConcept(typeLabel).id(),
@@ -128,7 +129,7 @@ public abstract class AttributeAtom extends Binary{
      */
     @Override
     public IsaAtom toIsaAtom(){
-        return IsaAtom.create(getAttributeVariable(), Pattern.var(), getTypeId(), false, getParentQuery());
+        return IsaAtom.create(getAttributeVariable(), new Variable(), getTypeId(), false, getParentQuery());
     }
 
     @Override
@@ -362,7 +363,8 @@ public abstract class AttributeAtom extends Binary{
     public AttributeAtom rewriteWithRelationVariable(){
         Variable attributeVariable = getAttributeVariable();
         Variable relationVariable = getRelationVariable().asUserDefined();
-        Statement newVar = getVarName().has(getSchemaConcept().label().getValue(), attributeVariable, relationVariable);
+        Statement newVar = new StatementImpl(getVarName())
+                .has(getSchemaConcept().label().getValue(), new StatementImpl(attributeVariable), new StatementImpl(relationVariable));
         return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 

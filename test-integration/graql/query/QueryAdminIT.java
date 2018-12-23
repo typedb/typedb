@@ -19,10 +19,10 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -74,7 +74,7 @@ public class QueryAdminIT {
     public void testDefaultGetSelectedNamesInQuery() {
         MatchClause match = Graql.match(var("x").isa(var("y")));
 
-        assertEquals(Sets.newHashSet(var("x"), var("y")), match.getSelectedNames());
+        assertEquals(Sets.newHashSet(new Variable("x"), new Variable("y")), match.getSelectedNames());
     }
 
     @Test
