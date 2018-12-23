@@ -366,8 +366,8 @@ class ValidateGlobalRules {
         Set<String> errors = new HashSet<>();
 
         pattern.statements().stream()
-                .flatMap(v -> v.innerStatements().stream())
-                .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
+                .flatMap(statement -> statement.innerStatements().stream())
+                .flatMap(statement -> statement.getTypeLabels().stream()).forEach(typeLabel -> {
                     SchemaConcept schemaConcept = graph.getSchemaConcept(typeLabel);
                     if(schemaConcept == null){
                         errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.label(), typeLabel));

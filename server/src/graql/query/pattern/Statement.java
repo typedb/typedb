@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
@@ -152,18 +151,18 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Collection<Statement> innerStatements() {
-        Stack<Statement> newVars = new Stack<>();
-        List<Statement> vars = new ArrayList<>();
+        Stack<Statement> statementStack = new Stack<>();
+        List<Statement> statements = new ArrayList<>();
 
-        newVars.add(this);
+        statementStack.add(this);
 
-        while (!newVars.isEmpty()) {
-            Statement var = newVars.pop();
-            vars.add(var);
-            var.properties().stream().flatMap(varProperty -> varProperty.innerStatements()).forEach(newVars::add);
+        while (!statementStack.isEmpty()) {
+            Statement statement = statementStack.pop();
+            statements.add(statement);
+            statement.properties().stream().flatMap(varProperty -> varProperty.innerStatements()).forEach(statementStack::add);
         }
 
-        return vars;
+        return statements;
     }
 
     /**

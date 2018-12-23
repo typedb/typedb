@@ -178,7 +178,7 @@ public class QueryExecutor {
     public ConceptMap define(DefineQuery query) {
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         List<Statement> statements = query.statements().stream()
-                .flatMap(s -> s.innerStatements().stream())
+                .flatMap(statement -> statement.innerStatements().stream())
                 .collect(toImmutableList());
 
         for (Statement statement : statements) {
@@ -192,7 +192,7 @@ public class QueryExecutor {
     public ConceptMap undefine(UndefineQuery query) {
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         ImmutableList<Statement> statements = query.statements().stream()
-                .flatMap(v -> v.innerStatements().stream())
+                .flatMap(statement -> statement.innerStatements().stream())
                 .collect(toImmutableList());
 
         for (Statement statement : statements) {
@@ -205,7 +205,7 @@ public class QueryExecutor {
 
     public Stream<ConceptMap> insert(InsertQuery query) {
         Collection<Statement> statements = query.statements().stream()
-                .flatMap(v -> v.innerStatements().stream())
+                .flatMap(statement -> statement.innerStatements().stream())
                 .collect(toImmutableList());
 
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
