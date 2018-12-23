@@ -92,9 +92,10 @@ public abstract class SemanticCache<
 
     private CacheEntry<ReasonerAtomicQuery, SE> addEntry(CacheEntry<ReasonerAtomicQuery, SE> entry){
         CacheEntry<ReasonerAtomicQuery, SE> cacheEntry = putEntry(entry);
-        updateFamily(entry.query());
-        computeParents(entry.query());
-        propagateAnswersTo(entry.query(), false);
+        ReasonerAtomicQuery query = entry.query();
+        updateFamily(query);
+        computeParents(query);
+        propagateAnswersTo(entry.query(), query.isGround());
         return cacheEntry;
     }
 
@@ -222,22 +223,19 @@ public abstract class SemanticCache<
     }
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(ReasonerAtomicQuery query) {
-        long start = System.currentTimeMillis();
         CacheEntry<ReasonerAtomicQuery, SE> match = getEntry(query);
 
         if (match != null) {
-            //TODO extra check is a quasi-completeness check if there's no parent present we have no guarantees about completeness with respect to the db.
+            //extra check is a quasi-completeness check if there's no parent present we have no guarantees about completeness with respect to the db.
             Pair<Stream<ConceptMap>, MultiUnifier> cachePair = entryToAnswerStreamWithUnifier(query, match);
-            Pair<Stream<ConceptMap>, MultiUnifier> returnPair =
-                    isDBComplete(query)?
-                            cachePair :
-                            new Pair<>(
-                                    Stream.concat(
-                                            getDBAnswerStreamWithUnifier(query).getKey(),
-                                            cachePair.getKey().filter(ans -> ans.explanation().isRuleExplanation())
-                                    ),
-                                    cachePair.getValue());
-            return returnPair;
+            return isDBComplete(query)?
+                    cachePair :
+                    new Pair<>(
+                            Stream.concat(
+                                    getDBAnswerStreamWithUnifier(query).getKey(),
+                                    cachePair.getKey().filter(ans -> ans.explanation().isRuleExplanation())
+                            ),
+                            cachePair.getValue());
         }
 
         //if no match but db-complete parent exists, use parent to create entry
