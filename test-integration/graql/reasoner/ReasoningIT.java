@@ -682,9 +682,6 @@ public class ReasoningIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet30.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                tx.stream(Graql.<GetQuery>parse("match $x isa word has name $n;get;"), false)
-                    .forEach (ans -> System.out.println(ans.get("x").id() + " name: " + ans.get("n")));
-
                 String queryString = "match $p isa pair, has name 'ff'; get;";
                 List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
                 assertEquals(16, answers.size());
