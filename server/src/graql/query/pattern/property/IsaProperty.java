@@ -87,8 +87,8 @@ public class IsaProperty extends VarProperty {
     @Override
     public int hashCode() {
         int h = 1;
-//        h *= 1000003; TODO: Uncomment this once we fix issue #4761
-//        h ^= this.name().hashCode();
+        h *= 1000003;
+        h ^= this.name().hashCode();
         h *= 1000003;
         h ^= this.type().hashCode();
         return h;

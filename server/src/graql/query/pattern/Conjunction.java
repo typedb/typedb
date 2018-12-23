@@ -19,7 +19,6 @@
 package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
@@ -27,6 +26,7 @@ import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 
 import javax.annotation.CheckReturnValue;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * A class representing a conjunction (and) of patterns. All inner patterns must match in a query
@@ -43,13 +42,15 @@ import static java.util.stream.Collectors.toSet;
  */
 public class Conjunction<T extends Pattern> implements Pattern {
 
-    private final Set<T> patterns;
+    private final LinkedHashSet<T> patterns;
 
-    public Conjunction(Set<T> patterns) {
+    Conjunction(Set<T> patterns) {
         if (patterns == null) {
             throw new NullPointerException("Null patterns");
         }
-        this.patterns = patterns.stream().map(Objects::requireNonNull).collect(Collectors.toSet());
+        this.patterns = patterns.stream()
+                .map(Objects::requireNonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     /**
@@ -72,7 +73,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
         // e.g. (A or B) and (C or D)  <=>  (A and C) or (A and D) or (B and C) or (B and D)
         Set<Conjunction<Statement>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
                 .map(Conjunction::fromConjunctions)
-                .collect(toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         return Pattern.or(dnf);
 
@@ -100,13 +101,15 @@ public class Conjunction<T extends Pattern> implements Pattern {
      */
     @CheckReturnValue
     public ReasonerQuery toReasonerQuery(Transaction tx) {
-        Conjunction<Statement> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
+        Conjunction<Statement> pattern = getDisjunctiveNormalForm().getPatterns().iterator().next();
         // TODO: This cast is unsafe - this method should accept an `TransactionImpl`
         return ReasonerQueries.create(pattern, (TransactionOLTP) tx);
     }
 
     private static <U extends Pattern> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {
-        Set<U> patterns = conjunctions.stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
+        Set<U> patterns = conjunctions.stream()
+                .flatMap(p -> p.getPatterns().stream())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         return Pattern.and(patterns);
     }
 

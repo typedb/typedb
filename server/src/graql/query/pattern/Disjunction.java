@@ -22,11 +22,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import javax.annotation.CheckReturnValue;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toSet;
 
 /**
  * A class representing a disjunction (or) of patterns. Any inner pattern must match in a query
@@ -35,13 +34,15 @@ import static java.util.stream.Collectors.toSet;
  */
 public class Disjunction<T extends Pattern> implements Pattern {
 
-    private final Set<T> patterns;
+    private final LinkedHashSet<T> patterns;
 
-    public Disjunction(Set<T> patterns) {
+    Disjunction(Set<T> patterns) {
         if (patterns == null) {
             throw new NullPointerException("Null patterns");
         }
-        this.patterns = patterns.stream().map(Objects::requireNonNull).collect(Collectors.toSet());
+        this.patterns = patterns.stream()
+                .map(Objects::requireNonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     /**
@@ -57,7 +58,7 @@ public class Disjunction<T extends Pattern> implements Pattern {
         // Concatenate all disjunctions into one big disjunction
         Set<Conjunction<Statement>> dnf = getPatterns().stream()
                 .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
-                .collect(toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         return Pattern.or(dnf);
     }
@@ -79,7 +80,9 @@ public class Disjunction<T extends Pattern> implements Pattern {
 
     @Override
     public String toString() {
-        return getPatterns().stream().map(Object::toString).collect(Collectors.joining(" or "));
+        return getPatterns().stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(" or "));
     }
 
     @Override

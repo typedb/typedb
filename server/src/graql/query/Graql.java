@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -72,7 +72,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static MatchClause match(Collection<? extends Pattern> patterns) {
-        return new MatchClause(Pattern.and(Collections.unmodifiableSet(new HashSet<>(patterns))));
+        return new MatchClause(Pattern.and(Collections.unmodifiableSet(new LinkedHashSet<>(patterns))));
     }
 
     /**
