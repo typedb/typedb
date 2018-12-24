@@ -590,7 +590,9 @@ public class Statement implements Pattern {
         while (!statementStack.isEmpty()) {
             Statement statement = statementStack.pop();
             statements.add(statement);
-            statement.properties().stream().flatMap(varProperty -> varProperty.innerStatements()).forEach(statementStack::add);
+            statement.properties().stream()
+                    .flatMap(property -> property.innerStatements())
+                    .forEach(s -> statementStack.add(s));
         }
 
         return statements;
@@ -601,18 +603,20 @@ public class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Collection<Statement> implicitInnerStatements() {
-        Stack<Statement> newVars = new Stack<>();
-        List<Statement> vars = new ArrayList<>();
+        Stack<Statement> statementStack = new Stack<>();
+        List<Statement> statements = new ArrayList<>();
 
-        newVars.add(this);
+        statementStack.add(this);
 
-        while (!newVars.isEmpty()) {
-            Statement var = newVars.pop();
-            vars.add(var);
-            var.properties().stream().flatMap(varProperty -> varProperty.implicitInnerStatements()).forEach(newVars::add);
+        while (!statementStack.isEmpty()) {
+            Statement var = statementStack.pop();
+            statements.add(var);
+            var.properties().stream()
+                    .flatMap(property -> property.implicitInnerStatements())
+                    .forEach(s -> statementStack.add(s));
         }
 
-        return vars;
+        return statements;
     }
 
     @Override
@@ -672,15 +676,15 @@ public class Statement implements Pattern {
 
     @Override
     public final String toString() {
-        Collection<Statement> innerVars = innerStatements();
-        innerVars.remove(this);
+        Collection<Statement> innerStatements = innerStatements();
+        innerStatements.remove(this);
         getProperties(HasAttributeProperty.class)
                 .map(HasAttributeProperty::attribute)
                 .flatMap(statement -> statement.innerStatements().stream())
-                .forEach(innerVars::remove);
+                .forEach(innerStatements::remove);
 
-        if (innerVars.stream()
-                .anyMatch(var1 -> var1.properties().stream()
+        if (innerStatements.stream()
+                .anyMatch(statement -> statement.properties().stream()
                         .anyMatch(p -> !(p instanceof LabelProperty)))) {
             LOG.warn("printing a query with inner variables, which is not supported in native Graql");
         }
