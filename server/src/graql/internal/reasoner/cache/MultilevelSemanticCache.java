@@ -116,7 +116,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                 .filter(childAnswers::add)
                 .forEach(newAnswers::add);
 
-        LOG.trace(newAnswers.size() + " new out of " + parentAnswersToPropagate.size() + " parent aanswers propagated: " + newAnswers);
+        LOG.trace(newAnswers.size() + " new out of " + parentAnswersToPropagate.size() + " parent answers propagated: " + newAnswers);
     }
 
     @Override

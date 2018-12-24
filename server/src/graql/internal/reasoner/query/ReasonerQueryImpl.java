@@ -466,7 +466,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return true if this query is a ground query
      */
-    boolean isGround(){
+    public boolean isGround(){
         return getSubstitution().vars().containsAll(getVarNames());
     }
 
@@ -564,29 +564,26 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public boolean requiresReiteration() {
         Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
-        return RuleUtils.subGraphIsCyclical(dependentRules)
-               || RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
+        return RuleUtils.subGraphIsCyclical(dependentRules)||
+            RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
     }
 
     /**
-     *
-     * @return
+     * @return set o variables containing a matching substitution
      */
     private Set<Variable> subbedVars(){
         return getAtoms(IdPredicate.class).map(Atomic::getVarName).collect(Collectors.toSet());
     }
 
     /**
-     *
-     * @return
+     * @return answer index corresponding to corresponding partial substitution
      */
     public ConceptMap getAnswerIndex(){
         return getSubstitution().project(subbedVars());
     }
 
     /**
-     *
-     * @return
+     * @return var index consisting of variables with a substitution
      */
     public Index index(){
         return Index.of(subbedVars());
