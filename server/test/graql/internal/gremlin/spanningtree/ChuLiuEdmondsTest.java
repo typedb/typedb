@@ -87,16 +87,16 @@ public class ChuLiuEdmondsTest {
     public void testGetMaxSpanningTree() {
         /*
         root    10
-    	(0) -------> (1) \
-    	 |  \       /  ^  \
-    	 |   \30   |   |20 \
-    	 |10  \    |10 |    \10
-    	 |     \   |  /      \
-    	 V  15  V  V /   20   V
-    	(3)<----- (2) -----> (4)
-    	  \-------^
-    	     40
-    	 */
+        (0) -------> (1) \
+         |  \       /  ^  \
+         |   \30   |   |20 \
+         |10  \    |10 |    \10
+         |     \   |  /      \
+         V  15  V  V /   20   V
+        (3)<----- (2) -----> (4)
+          \-------^
+             40
+         */
         double[][] weights = {
                 {NINF, 10, 30, 10, NINF},
                 {NINF, NINF, 10, NINF, 10},
@@ -108,15 +108,15 @@ public class ChuLiuEdmondsTest {
         final Weighted<Arborescence<Integer>> weightedSpanningTree = ChuLiuEdmonds.getMaxArborescence(graph, 0);
         /*
         root
-    	(0)           (1)
-    	 |             ^
-    	 |             |
-    	 |             |
-    	 |            /
-    	 V           /
-    	(3)       (2) ------> (4)
-    	  \-------^
-    	 */
+        (0)           (1)
+         |             ^
+         |             |
+         |             |
+         |            /
+         V           /
+        (3)       (2) ------> (4)
+          \-------^
+         */
         final Map<Integer, Integer> maxBranching = weightedSpanningTree.val.getParents();
         assertEquals(2, maxBranching.get(1).intValue());
         assertEquals(3, maxBranching.get(2).intValue());

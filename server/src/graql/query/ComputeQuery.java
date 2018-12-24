@@ -275,8 +275,9 @@ public class ComputeQuery<T extends Answer> implements Query {
 
     @CheckReturnValue
     public final Optional<Algorithm> using() {
-        if (ALGORITHMS_DEFAULT.containsKey(method) && algorithm == null)
+        if (ALGORITHMS_DEFAULT.containsKey(method) && algorithm == null) {
             return Optional.of(ALGORITHMS_DEFAULT.get(method));
+        }
         return Optional.ofNullable(algorithm);
     }
 

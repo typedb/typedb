@@ -98,8 +98,9 @@ public class Parser extends GraqlBaseVisitor {
         GraqlParser parser = parse(queryString, errorListener);
 
         GraqlParser.QueryEOFContext queryEOFContext = parser.queryEOF();
-        if (errorListener.hasErrors())
+        if (errorListener.hasErrors()) {
             throw GraqlSyntaxException.create(errorListener.toString());
+        }
 
         return (T) visitQueryEOF(queryEOFContext);
     }
@@ -110,8 +111,9 @@ public class Parser extends GraqlBaseVisitor {
         GraqlParser parser = parse(queryString, errorListener);
 
         GraqlParser.QueryListContext queryListContext = parser.queryList();
-        if (errorListener.hasErrors())
+        if (errorListener.hasErrors()) {
             throw GraqlSyntaxException.create(errorListener.toString());
+        }
 
         return (Stream<T>) visitQueryList(queryListContext);
     }
@@ -121,8 +123,9 @@ public class Parser extends GraqlBaseVisitor {
         GraqlParser parser = parse(patternsString, errorListener);
 
         GraqlParser.PatternsContext patternsContext = parser.patterns();
-        if (errorListener.hasErrors())
+        if (errorListener.hasErrors()) {
             throw GraqlSyntaxException.create(errorListener.toString());
+        }
 
         return visitPatterns(patternsContext);
     }
@@ -132,8 +135,9 @@ public class Parser extends GraqlBaseVisitor {
         GraqlParser parser = parse(patternString, errorListener);
 
         GraqlParser.PatternContext patternContext = parser.pattern();
-        if (errorListener.hasErrors())
+        if (errorListener.hasErrors()) {
             throw GraqlSyntaxException.create(errorListener.toString());
+        }
 
         return visitPattern(patternContext);
     }

@@ -124,7 +124,8 @@ public class GraknClientIT {
 
     @After
     public void tearDown() {
-        localSession.close(); remoteSession.close();
+        localSession.close();
+        remoteSession.close();
     }
 
     @Test
