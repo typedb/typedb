@@ -36,7 +36,6 @@ import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.rule.GraknTestServer;
@@ -82,10 +81,10 @@ import static org.junit.Assert.assertThat;
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "Duplicates"})
 public class InsertQueryIT {
 
-    private static final StatementImpl w = var("w");
-    private static final StatementImpl x = var("x");
-    private static final StatementImpl y = var("y");
-    private static final StatementImpl z = var("z");
+    private static final Statement w = var("w");
+    private static final Statement x = var("x");
+    private static final Statement y = var("y");
+    private static final Statement z = var("z");
 
     private static final String title = "title";
 
@@ -347,8 +346,8 @@ public class InsertQueryIT {
 
     @Test
     public void whenExecutingAnInsertQuery_ResultContainsAllInsertedVars() {
-        StatementImpl x = var("x");
-        StatementImpl type = var("type");
+        Statement x = var("x");
+        Statement type = var("type");
 
         // Note that two variables refer to the same type. They should both be in the result
         InsertQuery query = Graql.insert(x.isa(type), type.label("movie"));
@@ -579,7 +578,7 @@ public class InsertQueryIT {
 
         // We have to construct it this way because you can't have two `isa`s normally
         // TODO: less bad way?
-        Statement varPattern = new StatementImpl(
+        Statement varPattern = new Statement(
                 new Variable("x"),
                 ImmutableSet.of(new IsaProperty(label("movie")), new IsaProperty(label("person")))
         );

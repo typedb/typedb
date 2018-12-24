@@ -36,7 +36,6 @@ import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
@@ -70,16 +69,16 @@ public abstract class IsaAtom extends IsaAtomBase {
 
     public static IsaAtom create(Variable var, Variable predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent) {
         Statement pattern = isDirect ?
-                new StatementImpl(var).isaExplicit(new StatementImpl(predicateVar)) :
-                new StatementImpl(var).isa(new StatementImpl(predicateVar));
+                new Statement(var).isaExplicit(new Statement(predicateVar)) :
+                new Statement(var).isa(new Statement(predicateVar));
 
         return new AutoValue_IsaAtom(var, predicateId, predicateVar, pattern, parent);
     }
 
     public static IsaAtom create(Variable var, Variable predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent) {
         Statement pattern = isDirect ?
-                new StatementImpl(var).isaExplicit(new StatementImpl(predicateVar)) :
-                new StatementImpl(var).isa(new StatementImpl(predicateVar));
+                new Statement(var).isaExplicit(new Statement(predicateVar)) :
+                new Statement(var).isa(new Statement(predicateVar));
 
         return new AutoValue_IsaAtom(var, type.id(), predicateVar, pattern, parent);
     }
@@ -133,10 +132,10 @@ public abstract class IsaAtom extends IsaAtomBase {
     protected Pattern createCombinedPattern(){
         if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
         return getSchemaConcept() == null?
-                new StatementImpl(getVarName()).isa(new StatementImpl(getPredicateVariable())) :
+                new Statement(getVarName()).isa(new Statement(getPredicateVariable())) :
                 isDirect()?
-                        new StatementImpl(getVarName()).isaExplicit(getSchemaConcept().label().getValue()) :
-                        new StatementImpl(getVarName()).isa(getSchemaConcept().label().getValue()) ;
+                        new Statement(getVarName()).isaExplicit(getSchemaConcept().label().getValue()) :
+                        new Statement(getVarName()).isa(getSchemaConcept().label().getValue()) ;
     }
 
     @Override

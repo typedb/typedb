@@ -31,7 +31,6 @@ import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
@@ -72,7 +71,7 @@ public class UndefineQueryIT {
     private static final Statement ATTRIBUTE = Pattern.label(Schema.MetaSchema.ATTRIBUTE.getLabel());
     private static final Statement ROLE = Pattern.label(Schema.MetaSchema.ROLE.getLabel());
     private static final Label NEW_TYPE = Label.of("new-type");
-    private static final StatementImpl x = var("x");
+    private static final Statement x = var("x");
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

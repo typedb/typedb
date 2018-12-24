@@ -24,7 +24,6 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -51,8 +50,8 @@ import static org.junit.Assert.assertNull;
 public class DeleteQueryIT {
 
     public static final Statement ENTITY = label(Schema.MetaSchema.ENTITY.getLabel());
-    public static final StatementImpl x = var("x");
-    public static final StatementImpl y = var("y");
+    public static final Statement x = var("x");
+    public static final Statement y = var("y");
 
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();

@@ -24,7 +24,6 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -63,7 +62,7 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.pr
     }
 
     public static Statement createValueVar(Variable name, grakn.core.graql.query.predicate.ValuePredicate pred) {
-        return new StatementImpl(name).val(pred);
+        return new Statement(name).val(pred);
     }
 
     private static grakn.core.graql.query.predicate.ValuePredicate extractPredicate(Statement pattern) {

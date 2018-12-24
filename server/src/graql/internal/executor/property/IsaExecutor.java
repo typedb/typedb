@@ -29,7 +29,6 @@ import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
@@ -81,9 +80,9 @@ public class IsaExecutor implements PropertyExecutor.Insertable,
         Statement isaVar;
 
         if (property instanceof IsaExplicitProperty) {
-            isaVar = new StatementImpl(varName).isaExplicit(new StatementImpl(typeVar));
+            isaVar = new Statement(varName).isaExplicit(new Statement(typeVar));
         } else {
-            isaVar = new StatementImpl(varName).isa(new StatementImpl(typeVar));
+            isaVar = new Statement(varName).isa(new Statement(typeVar));
         }
 
         return IsaAtom.create(varName, typeVar, isaVar, predicateId, parent);

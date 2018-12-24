@@ -23,7 +23,6 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 
@@ -38,7 +37,7 @@ public abstract class RegexAtom extends AtomicBase {
     public abstract String getRegex();
 
     public static RegexAtom create(Variable varName, RegexProperty prop, ReasonerQuery parent) {
-        return new AutoValue_RegexAtom(varName, new StatementImpl(varName).regex(prop.regex()), parent, prop.regex());
+        return new AutoValue_RegexAtom(varName, new Statement(varName).regex(prop.regex()), parent, prop.regex());
     }
 
     private static RegexAtom create(RegexAtom a, ReasonerQuery parent) {

@@ -45,7 +45,6 @@ import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.LabelProperty;
@@ -213,7 +212,7 @@ public class GreedyTraversalPlan {
                 type -> addAllPossibleRelationships(relationshipMap, type));
 
         // inferred labels should be kept separately, even if they are already in allFragments set
-        Map<Label, StatementImpl> inferredLabels = new HashMap<>();
+        Map<Label, Statement> inferredLabels = new HashMap<>();
         relationshipRolePlayerMap.asMap().forEach((relationshipVar, rolePlayerVars) -> {
 
             Set<Type> possibleRelationshipTypes = rolePlayerVars.stream()
@@ -230,14 +229,14 @@ public class GreedyTraversalPlan {
 
                 // add label fragment if this label has not been inferred
                 if (!inferredLabels.containsKey(label)) {
-                    StatementImpl labelVar = var();
+                    Statement labelVar = var();
                     inferredLabels.put(label, labelVar);
                     Fragment labelFragment = Fragments.label(new LabelProperty(label), labelVar.var(), ImmutableSet.of(label));
                     allFragments.add(labelFragment);
                 }
 
                 // finally, add inferred isa fragments
-                StatementImpl labelVar = inferredLabels.get(label);
+                Statement labelVar = inferredLabels.get(label);
                 IsaProperty isaProperty = new IsaProperty(labelVar);
                 EquivalentFragmentSet isaEquivalentFragmentSet = EquivalentFragmentSets.isa(isaProperty,
                         relationshipVar, labelVar.var(), relationshipType.isImplicit());

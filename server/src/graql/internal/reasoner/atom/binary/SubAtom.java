@@ -24,7 +24,6 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -47,7 +46,7 @@ public abstract class SubAtom extends OntologicalAtom {
     @Override public abstract ReasonerQuery getParentQuery();
 
     public static SubAtom create(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return new AutoValue_SubAtom(var, predicateId, predicateVar, new StatementImpl(var).sub(new StatementImpl(predicateVar)), parent);
+        return new AutoValue_SubAtom(var, predicateId, predicateVar, new Statement(var).sub(new Statement(predicateVar)), parent);
     }
 
     private static SubAtom create(SubAtom a, ReasonerQuery parent) {

@@ -27,7 +27,6 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 
 import java.util.ArrayList;
@@ -88,13 +87,13 @@ public abstract class RelationPattern extends QueryPattern {
     private static List<Pattern> generateRelationPatterns(
             Multimap<Label, Pair<Label, List<ConceptId>>> spec,
             List<ConceptId> relationIds){
-        StatementImpl relationVar = !relationIds.isEmpty()? new StatementImpl(new Variable().asUserDefined()) : Pattern.var();
+        Statement relationVar = !relationIds.isEmpty()? new Statement(new Variable().asUserDefined()) : Pattern.var();
         Statement[] basePattern = {relationVar};
         List<List<Pattern>> rpTypePatterns = new ArrayList<>();
         List<List<Pattern>> rpIdPatterns = new ArrayList<>();
         Multimap<Label, Statement> rps = HashMultimap.create();
         spec.entries().forEach(entry -> {
-            Statement rolePlayer = new StatementImpl(new Variable().asUserDefined());
+            Statement rolePlayer = new Statement(new Variable().asUserDefined());
             Label role = entry.getKey();
             Label type = entry.getValue().getKey();
             List<ConceptId> ids = entry.getValue().getValue();

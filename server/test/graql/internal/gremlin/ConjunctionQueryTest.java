@@ -25,7 +25,6 @@ import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.server.Transaction;
 import org.hamcrest.Matcher;
@@ -54,8 +53,8 @@ public class ConjunctionQueryTest {
     private Statement resourceTypeWithSubTypes = Pattern.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
     private Transaction tx;
-    private StatementImpl x = Pattern.var("x");
-    private StatementImpl y = Pattern.var("y");
+    private Statement x = Pattern.var("x");
+    private Statement y = Pattern.var("y");
 
     @SuppressWarnings("ResultOfMethodCallIgnored") // Mockito confuses IntelliJ
     @Before

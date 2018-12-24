@@ -52,7 +52,7 @@ import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.StatementImpl;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
@@ -1017,8 +1017,8 @@ public class GraknClientIT {
             person.create();
             person.create();
 
-            StatementImpl x = var("x");
-            StatementImpl y = var("y");
+            Statement x = var("x");
+            Statement y = var("y");
 
             Collection<ConceptMap> result = tx.execute(Graql.match(x.isa("company-123"), y.isa("person-123")).get(x.var(), y.var()));
             assertEquals(6, result.size());

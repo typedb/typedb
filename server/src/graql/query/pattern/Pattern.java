@@ -55,16 +55,16 @@ public interface Pattern {
      * @return a new query variable
      */
     @CheckReturnValue
-    static StatementImpl var(String name) {
-        return new StatementImpl(new Variable(name), Collections.emptySet());
+    static Statement var(String name) {
+        return new Statement(new Variable(name), Collections.emptySet());
     }
 
     /**
      * @return a new, anonymous query variable
      */
     @CheckReturnValue
-    static StatementImpl var() {
-        return new StatementImpl(new Variable(), Collections.emptySet());
+    static Statement var() {
+        return new Statement(new Variable(), Collections.emptySet());
     }
 
     /**

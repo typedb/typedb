@@ -28,7 +28,6 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.reasoner.graph.DiagonalGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
@@ -92,8 +91,8 @@ public class BenchmarkSmallIT {
                     .assign(toRole, toEntity);
 
             for (int i = 1; i <= N; i++) {
-                StatementImpl fromVar = new StatementImpl(new Variable().asUserDefined());
-                StatementImpl toVar = new StatementImpl(new Variable().asUserDefined());
+                Statement fromVar = new Statement(new Variable().asUserDefined());
+                Statement toVar = new Statement(new Variable().asUserDefined());
                 Statement rulePattern = Pattern
                         .label("rule" + i)
                         .when(

@@ -35,7 +35,7 @@ import grakn.core.graql.internal.gremlin.fragment.OutSubFragment;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.StatementImpl;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
@@ -99,8 +99,8 @@ public class IsaExplicitIT {
 
     @Test
     public void testMatchIsaAndIsaExplicitReturnDifferentPlans() {
-        StatementImpl x = var("x");
-        StatementImpl y = var("y");
+        Statement x = var("x");
+        Statement y = var("y");
 
         String superType1 = "superType1";
         String entityType1 = "entityType1";

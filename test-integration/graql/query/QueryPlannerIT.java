@@ -31,7 +31,7 @@ import grakn.core.graql.internal.gremlin.fragment.LabelFragment;
 import grakn.core.graql.internal.gremlin.fragment.NeqFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutIsaFragment;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.StatementImpl;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -51,12 +51,12 @@ import static org.junit.Assert.assertTrue;
 
 public class QueryPlannerIT {
 
-    private static final StatementImpl x = var("x");
-    private static final StatementImpl y = var("y");
-    private static final StatementImpl z = var("z");
+    private static final Statement x = var("x");
+    private static final Statement y = var("y");
+    private static final Statement z = var("z");
 
-    private static final StatementImpl superType = var("superType");
-    private static final StatementImpl subType = var("subType");
+    private static final Statement superType = var("superType");
+    private static final Statement subType = var("subType");
 
     private static final String thingy = "thingy";
     private static final String thingy0 = "thingy0";

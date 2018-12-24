@@ -34,7 +34,6 @@ import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -388,8 +387,8 @@ public class ParserTest {
 
     @Test
     public void whenParsingDeleteQuery_ResultIsSameAsJavaGraql() {
-        StatementImpl x = var("x");
-        StatementImpl y = var("y");
+        Statement x = var("x");
+        Statement y = var("y");
 
         DeleteQuery expected = match(x.isa("movie").has("title", "The Title"), y.isa("movie")).delete(x.var(), y.var());
         DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; $y isa movie; delete $x, $y;");

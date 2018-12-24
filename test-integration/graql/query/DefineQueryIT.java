@@ -32,7 +32,6 @@ import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.StatementImpl;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
@@ -285,8 +284,8 @@ public class DefineQueryIT {
 
     @Test
     public void whenExecutingADefineQuery_ResultContainsAllInsertedVars() {
-        StatementImpl type = var("type");
-        StatementImpl type2 = var("type2");
+        Statement type = var("type");
+        Statement type2 = var("type2");
 
         // Note that two variables refer to the same type. They should both be in the result
         DefineQuery query = Graql.define(type.label("my-type").sub("entity"), type2.label("my-type"));
