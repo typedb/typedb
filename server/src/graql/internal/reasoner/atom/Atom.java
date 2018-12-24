@@ -66,8 +66,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class Atom extends AtomicBase {
 
-    //NB: protected to be able to assign it when copying
-    protected Set<InferenceRule> applicableRules = null;
+    private Set<InferenceRule> applicableRules = null;
 
     public RelationshipAtom toRelationshipAtom() {
         throw GraqlQueryException.illegalAtomConversion(this, RelationshipAtom.class);
@@ -207,7 +206,9 @@ public abstract class Atom extends AtomicBase {
     public Set<Variable> getRoleExpansionVariables() { return new HashSet<>();}
 
     private boolean isRuleApplicable(InferenceRule child) {
-        return (getIdPredicate(getVarName()) == null || child.isAppendRule())
+        return (getIdPredicate(getVarName()) == null
+                || child.redefinesType()
+                || child.appendsRolePlayers())
                 && isRuleApplicableViaAtom(child.getRuleConclusionAtom());
     }
 
@@ -254,7 +255,7 @@ public abstract class Atom extends AtomicBase {
     public boolean requiresDecomposition() {
         return this.getPotentialRules()
                 .map(r -> tx().ruleCache().getRule(r, () -> new InferenceRule(r, tx())))
-                .anyMatch(InferenceRule::isAppendRule);
+                .anyMatch(InferenceRule::appendsRolePlayers);
     }
 
     /**

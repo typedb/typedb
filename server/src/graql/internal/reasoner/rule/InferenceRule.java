@@ -273,7 +273,18 @@ public class InferenceRule {
         return this;
     }
 
-    public boolean isAppendRule(){
+    /**
+     * @return true if the application of the rule results in type redefinition
+     */
+    public boolean redefinesType(){
+        Variable instanceVariable = getHead().getAtom().getVarName();
+        return getBody().getVarNames().contains(instanceVariable);
+    }
+
+    /**
+     * @return true if the application of the rule results in addition of roleplayers to existing relations
+     */
+    public boolean appendsRolePlayers(){
         Atom headAtom = getHead().getAtom();
         SchemaConcept headType = headAtom.getSchemaConcept();
         if (headType.isRelationshipType()

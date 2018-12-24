@@ -135,7 +135,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     private static RelationshipAtom create(RelationshipAtom a, ReasonerQuery parent) {
         RelationshipAtom atom = new AutoValue_RelationshipAtom( a.getVarName(), a.getPattern(), parent, a.getPredicateVariable(), a.getTypeId(), a.getRelationPlayers(), a.getRoleLabels());
-        atom.applicableRules = a.applicableRules;
         atom.possibleTypes = a.possibleTypes;
         return atom;
     }
