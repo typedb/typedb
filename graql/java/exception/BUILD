@@ -30,6 +30,6 @@ checkstyle_test(
  target = ":exception",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )

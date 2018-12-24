@@ -18,7 +18,7 @@ checkstyle_test(
  target = ":analytics-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -40,7 +40,7 @@ checkstyle_test(
  target = ":connected-component-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -61,7 +61,7 @@ checkstyle_test(
  target = ":coreness-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -82,7 +82,7 @@ checkstyle_test(
  target = ":count-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -104,7 +104,7 @@ checkstyle_test(
  target = ":degree-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -125,7 +125,7 @@ checkstyle_test(
  target = ":kcore-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -147,7 +147,7 @@ checkstyle_test(
  target = ":path-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -169,6 +169,6 @@ checkstyle_test(
  target = ":statistics-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )

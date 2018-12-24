@@ -21,7 +21,7 @@ checkstyle_test(
  target = ":atomic-type-inference-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -47,7 +47,7 @@ checkstyle_test(
  target = ":atomic-unification-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -74,7 +74,7 @@ checkstyle_test(
  target = ":atomic-rule-applicability-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -100,7 +100,7 @@ checkstyle_test(
  target = ":atomic-role-inference-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -124,6 +124,6 @@ checkstyle_test(
  target = ":atomic-equivalence-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )

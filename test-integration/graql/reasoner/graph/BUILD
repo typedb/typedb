@@ -34,7 +34,7 @@ checkstyle_test(
  target = ":diagonal-graph",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -54,7 +54,7 @@ checkstyle_test(
  target = ":dual-linear-transitivity-graph",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -79,7 +79,7 @@ checkstyle_test(
  target = ":generic-schema-graph",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -95,7 +95,7 @@ checkstyle_test(
  target = ":geo-graph",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -115,7 +115,7 @@ checkstyle_test(
  target = ":linear-transitivity-matrix-graph",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -136,7 +136,7 @@ checkstyle_test(
  target = ":nguyen-graph",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -157,7 +157,7 @@ checkstyle_test(
  target = ":path-matrix-graph",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 )
 
 java_library(
@@ -177,7 +177,7 @@ checkstyle_test(
  target = ":path-tree-graph",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 )
 
 java_library(
@@ -200,7 +200,7 @@ checkstyle_test(
  target = ":path-tree-symmetric-graph",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -221,7 +221,7 @@ checkstyle_test(
  target = ":tail-recursion-graph",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -241,7 +241,7 @@ checkstyle_test(
  target = ":transitivity-chain-graph",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -261,6 +261,6 @@ checkstyle_test(
  target = ":transitivity-matrix-graph",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )

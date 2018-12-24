@@ -17,7 +17,7 @@ checkstyle_test(
  target = ":in-plays-fragment-test",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -34,7 +34,7 @@ checkstyle_test(
  target = ":isa-explicit-test",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )
 
@@ -55,6 +55,6 @@ checkstyle_test(
  target = ":out-plays-fragment-test",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
+ licenses = ["//config/checkstyle:licenses"],
 
 )

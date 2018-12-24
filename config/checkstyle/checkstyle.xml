@@ -35,7 +35,14 @@
 
     <!-- Make sure every source file has the license at the top -->
     <module name="RegexpHeader">
-        <property name="headerFile" value="config/checkstyle/checkstyle-file-header.txt"/>
+        <property name="id" value="agplHeader"/>
+        <property name="headerFile" value="config/checkstyle/checkstyle-file-header-agpl.txt"/>
+        <property name="fileExtensions" value="java"/>
+    </module>
+
+    <module name="RegexpHeader">
+        <property name="id" value="apacheHeader"/>
+        <property name="headerFile" value="config/checkstyle/checkstyle-file-header-apache.txt"/>
         <property name="fileExtensions" value="java"/>
     </module>
 
