@@ -43,5 +43,5 @@ checkstyle_test(
     target = ":remote-concept-it",
     config = "//config/checkstyle:checkstyle.xml",
     suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    license = "//config/checkstyle:checkstyle-file-header.txt",
+    licenses = ["//config/checkstyle:licenses"],
 )
