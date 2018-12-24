@@ -17,12 +17,12 @@ java_test(
 )
 
 checkstyle_test(
- name = "query-equivalence-it-checkstyle",
- target = ":query-equivalence-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+    name = "query-equivalence-it-checkstyle",
+    allow_failure = True,
+    config = "//config/checkstyle:checkstyle.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":query-equivalence-it",
 )
 
 java_test(
@@ -43,12 +43,12 @@ java_test(
 )
 
 checkstyle_test(
- name = "atomic-query-it-checkstyle",
- target = ":atomic-query-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+    name = "atomic-query-it-checkstyle",
+    allow_failure = True,
+    config = "//config/checkstyle:checkstyle.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":atomic-query-it",
 )
 
 java_test(
@@ -80,12 +80,12 @@ java_test(
 )
 
 checkstyle_test(
- name = "query-unification-it-checkstyle",
- target = ":query-unification-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+    name = "query-unification-it-checkstyle",
+    allow_failure = True,
+    config = "//config/checkstyle:checkstyle.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":query-unification-it",
 )
 
 java_test(
@@ -103,12 +103,12 @@ java_test(
 )
 
 checkstyle_test(
- name = "query-validity-it-checkstyle",
- target = ":query-validity-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+    name = "query-validity-it-checkstyle",
+    allow_failure = True,
+    config = "//config/checkstyle:checkstyle.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":query-validity-it",
 )
 
 java_test(
@@ -125,12 +125,12 @@ java_test(
 )
 
 checkstyle_test(
- name = "query-it-checkstyle",
- target = ":query-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+    name = "query-it-checkstyle",
+    allow_failure = True,
+    config = "//config/checkstyle:checkstyle.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":query-it",
 )
 
 java_test(
@@ -154,6 +154,15 @@ java_test(
     ],
 )
 
+checkstyle_test(
+    name = "negation-it-checkstyle",
+    allow_failure = True,
+    config = "//config/checkstyle:checkstyle.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":negation-it",
+)
+
 java_test(
     name = "ontological-query-it",
     size = "large",
@@ -170,12 +179,12 @@ java_test(
 )
 
 checkstyle_test(
- name = "ontological-query-it-checkstyle",
- target = ":ontological-query-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+    name = "ontological-query-it-checkstyle",
+    allow_failure = True,
+    config = "//config/checkstyle:checkstyle.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":ontological-query-it",
 )
 
 java_test(
@@ -194,12 +203,12 @@ java_test(
 )
 
 checkstyle_test(
- name = "resolution-plan-it-checkstyle",
- target = ":resolution-plan-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+    name = "resolution-plan-it-checkstyle",
+    allow_failure = True,
+    config = "//config/checkstyle:checkstyle.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":resolution-plan-it",
 )
 
 java_test(
@@ -220,12 +229,12 @@ java_test(
 )
 
 checkstyle_test(
- name = "semantic-difference-it-checkstyle",
- target = ":semantic-difference-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+    name = "semantic-difference-it-checkstyle",
+    allow_failure = True,
+    config = "//config/checkstyle:checkstyle.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":semantic-difference-it",
 )
 
 java_test(
@@ -253,10 +262,10 @@ java_test(
 )
 
 checkstyle_test(
- name = "subsumption-it-checkstyle",
- target = ":subsumption-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- license = "//config/checkstyle:checkstyle-file-header.txt",
- allow_failure = True
+    name = "subsumption-it-checkstyle",
+    allow_failure = True,
+    config = "//config/checkstyle:checkstyle.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":subsumption-it",
 )
