@@ -119,113 +119,6 @@ public class Statement implements Pattern {
     }
 
     /**
-     * @return the name this variable represents, if it represents something with a specific name
-     */
-    @CheckReturnValue
-    public final Optional<Label> getTypeLabel() {
-        return getProperty(LabelProperty.class).map(labelProperty -> labelProperty.label());
-    }
-
-    /**
-     * @return all type names that this variable refers to
-     */
-    @CheckReturnValue
-    public final Set<Label> getTypeLabels() {
-        return properties().stream()
-                .flatMap(varProperty -> varProperty.types())
-                .map(statement -> statement.getTypeLabel())
-                .flatMap(optional -> CommonUtil.optionalToStream(optional))
-                .collect(toSet());
-    }
-
-    /**
-     * Get a stream of all properties of a particular type on this variable
-     *
-     * @param type the class of VarProperty to return
-     * @param <T>  the type of VarProperty to return
-     */
-    @CheckReturnValue
-    public final <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
-        return properties().stream().filter(type::isInstance).map(type::cast);
-    }
-
-    /**
-     * Get a unique property of a particular type on this variable, if it exists
-     *
-     * @param type the class of VarProperty to return
-     * @param <T>  the type of VarProperty to return
-     */
-    @CheckReturnValue
-    public final <T extends VarProperty> Optional<T> getProperty(Class<T> type) {
-        return properties().stream().filter(type::isInstance).map(type::cast).findFirst();
-    }
-
-    /**
-     * Get whether this Statement} has a {@link VarProperty of the given type
-     *
-     * @param type the type of the VarProperty
-     * @param <T>  the type of the VarProperty
-     * @return whether this Statement} has a {@link VarProperty of the given type
-     */
-    @CheckReturnValue
-    public final <T extends VarProperty> boolean hasProperty(Class<T> type) {
-        return getProperties(type).findAny().isPresent();
-    }
-
-    /**
-     * @return all variables that this variable references
-     */
-    @CheckReturnValue
-    public final Collection<Statement> innerStatements() {
-        Stack<Statement> statementStack = new Stack<>();
-        List<Statement> statements = new ArrayList<>();
-
-        statementStack.add(this);
-
-        while (!statementStack.isEmpty()) {
-            Statement statement = statementStack.pop();
-            statements.add(statement);
-            statement.properties().stream().flatMap(varProperty -> varProperty.innerStatements()).forEach(statementStack::add);
-        }
-
-        return statements;
-    }
-
-    /**
-     * Get all inner variables, including implicit variables such as in a has property
-     */
-    @CheckReturnValue
-    public final Collection<Statement> implicitInnerStatements() {
-        Stack<Statement> newVars = new Stack<>();
-        List<Statement> vars = new ArrayList<>();
-
-        newVars.add(this);
-
-        while (!newVars.isEmpty()) {
-            Statement var = newVars.pop();
-            vars.add(var);
-            var.properties().stream().flatMap(varProperty -> varProperty.implicitInnerStatements()).forEach(newVars::add);
-        }
-
-        return vars;
-    }
-
-    @Override
-    public final Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
-        // a disjunction containing only one option
-        Conjunction<Statement> conjunction = Pattern.and(Collections.singleton(this));
-        return Pattern.or(Collections.singleton(conjunction));
-    }
-
-    @Override
-    public final Set<Variable> variables() {
-        return innerStatements().stream()
-                .filter(v -> v.var().isUserDefinedName())
-                .map(statement -> statement.var())
-                .collect(toSet());
-    }
-
-    /**
      * @param id a ConceptId that this variable's ID must match
      * @return this
      */
@@ -622,24 +515,111 @@ public class Statement implements Pattern {
         return addProperty(new NeqProperty(statement));
     }
 
+    @Override
+    public final Set<Variable> variables() {
+        return innerStatements().stream()
+                .filter(v -> v.var().isUserDefinedName())
+                .map(statement -> statement.var())
+                .collect(toSet());
+    }
+
     /**
-     * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')
+     * @return the name this variable represents, if it represents something with a specific name
      */
     @CheckReturnValue
-    public final String getPrintableName() {
-        if (properties().size() == 0) {
-            // If there are no properties, we display the variable name
-            return var().toString();
-        } else if (properties().size() == 1) {
-            // If there is only a label, we display that
-            Optional<Label> label = getTypeLabel();
-            if (label.isPresent()) {
-                return StringUtil.typeLabelToString(label.get());
-            }
+    public final Optional<Label> getTypeLabel() {
+        return getProperty(LabelProperty.class).map(labelProperty -> labelProperty.label());
+    }
+
+    /**
+     * @return all type names that this variable refers to
+     */
+    @CheckReturnValue
+    public final Set<Label> getTypeLabels() {
+        return properties().stream()
+                .flatMap(varProperty -> varProperty.types())
+                .map(statement -> statement.getTypeLabel())
+                .flatMap(optional -> CommonUtil.optionalToStream(optional))
+                .collect(toSet());
+    }
+
+    /**
+     * Get a stream of all properties of a particular type on this variable
+     *
+     * @param type the class of VarProperty to return
+     * @param <T>  the type of VarProperty to return
+     */
+    @CheckReturnValue
+    public final <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
+        return properties().stream().filter(type::isInstance).map(type::cast);
+    }
+
+    /**
+     * Get a unique property of a particular type on this variable, if it exists
+     *
+     * @param type the class of VarProperty to return
+     * @param <T>  the type of VarProperty to return
+     */
+    @CheckReturnValue
+    public final <T extends VarProperty> Optional<T> getProperty(Class<T> type) {
+        return properties().stream().filter(type::isInstance).map(type::cast).findFirst();
+    }
+
+    /**
+     * Get whether this Statement} has a {@link VarProperty of the given type
+     *
+     * @param type the type of the VarProperty
+     * @param <T>  the type of the VarProperty
+     * @return whether this Statement} has a {@link VarProperty of the given type
+     */
+    @CheckReturnValue
+    public final <T extends VarProperty> boolean hasProperty(Class<T> type) {
+        return getProperties(type).findAny().isPresent();
+    }
+
+    /**
+     * @return all variables that this variable references
+     */
+    @CheckReturnValue
+    public final Collection<Statement> innerStatements() {
+        Stack<Statement> statementStack = new Stack<>();
+        List<Statement> statements = new ArrayList<>();
+
+        statementStack.add(this);
+
+        while (!statementStack.isEmpty()) {
+            Statement statement = statementStack.pop();
+            statements.add(statement);
+            statement.properties().stream().flatMap(varProperty -> varProperty.innerStatements()).forEach(statementStack::add);
         }
 
-        // Otherwise, we print the entire pattern
-        return "`" + toString() + "`";
+        return statements;
+    }
+
+    /**
+     * Get all inner variables, including implicit variables such as in a has property
+     */
+    @CheckReturnValue
+    public final Collection<Statement> implicitInnerStatements() {
+        Stack<Statement> newVars = new Stack<>();
+        List<Statement> vars = new ArrayList<>();
+
+        newVars.add(this);
+
+        while (!newVars.isEmpty()) {
+            Statement var = newVars.pop();
+            vars.add(var);
+            var.properties().stream().flatMap(varProperty -> varProperty.implicitInnerStatements()).forEach(newVars::add);
+        }
+
+        return vars;
+    }
+
+    @Override
+    public final Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
+        // a disjunction containing only one option
+        Conjunction<Statement> conjunction = Pattern.and(Collections.singleton(this));
+        return Pattern.or(Collections.singleton(conjunction));
     }
 
     private Statement addRolePlayer(RelationProperty.RolePlayer relationPlayer) {
@@ -670,33 +650,24 @@ public class Statement implements Pattern {
         return new Statement(var(), Sets.difference(properties(), ImmutableSet.of(property)));
     }
 
-    @Override
-    public final boolean equals(Object o) {
-        // This equals implementation is special: it considers all non-user-defined vars as equivalent
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Statement other = (Statement) o;
-
-        if (var().isUserDefinedName() != other.var().isUserDefinedName()) return false;
-
-        // "simplifying" this makes it harder to read
-        //noinspection SimplifiableIfStatement
-        if (!properties().equals(other.properties())) return false;
-
-        return !var().isUserDefinedName() || var().equals(other.var());
-
-    }
-
-    @Override
-    public final int hashCode() {
-        if (hashCode == 0) {
-            // This hashCode implementation is special: it considers all non-user-defined vars as equivalent
-            hashCode = properties().hashCode();
-            if (var().isUserDefinedName()) hashCode = 31 * hashCode + var().hashCode();
-            hashCode = 31 * hashCode + (var().isUserDefinedName() ? 1 : 0);
+    /**
+     * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')
+     */
+    @CheckReturnValue
+    public final String getPrintableName() {
+        if (properties().size() == 0) {
+            // If there are no properties, we display the variable name
+            return var().toString();
+        } else if (properties().size() == 1) {
+            // If there is only a label, we display that
+            Optional<Label> label = getTypeLabel();
+            if (label.isPresent()) {
+                return StringUtil.typeLabelToString(label.get());
+            }
         }
-        return hashCode;
+
+        // Otherwise, we print the entire pattern
+        return "`" + toString() + "`";
     }
 
     @Override
@@ -705,7 +676,7 @@ public class Statement implements Pattern {
         innerVars.remove(this);
         getProperties(HasAttributeProperty.class)
                 .map(HasAttributeProperty::attribute)
-                .flatMap(r -> r.innerStatements().stream())
+                .flatMap(statement -> statement.innerStatements().stream())
                 .forEach(innerVars::remove);
 
         if (innerVars.stream()
@@ -736,5 +707,34 @@ public class Statement implements Pattern {
         }
 
         return builder.toString();
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        // This equals implementation is special: it considers all non-user-defined vars as equivalent
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Statement other = (Statement) o;
+
+        if (var().isUserDefinedName() != other.var().isUserDefinedName()) return false;
+
+        // "simplifying" this makes it harder to read
+        //noinspection SimplifiableIfStatement
+        if (!properties().equals(other.properties())) return false;
+
+        return !var().isUserDefinedName() || var().equals(other.var());
+
+    }
+
+    @Override
+    public final int hashCode() {
+        if (hashCode == 0) {
+            // This hashCode implementation is special: it considers all non-user-defined vars as equivalent
+            hashCode = properties().hashCode();
+            if (var().isUserDefinedName()) hashCode = 31 * hashCode + var().hashCode();
+            hashCode = 31 * hashCode + (var().isUserDefinedName() ? 1 : 0);
+        }
+        return hashCode;
     }
 }
