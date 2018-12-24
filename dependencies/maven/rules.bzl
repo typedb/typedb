@@ -182,7 +182,7 @@ def _transitive_maven_dependencies(_target, ctx):
     tags = []
 
     if MavenInfo in _target:
-        for x in _target[MavenInfo].maven_dependencies:
+        for x in _target[MavenInfo].maven_dependencies.to_list():
             tags.append(x)
 
     for dep in getattr(ctx.rule.attr, "jars", []):

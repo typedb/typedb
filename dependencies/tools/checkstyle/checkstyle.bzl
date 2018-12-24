@@ -70,7 +70,7 @@ def collect_sources_impl(target, ctx):
     files = []
     if hasattr(ctx.rule.attr, 'srcs'):
         for src in ctx.rule.attr.srcs:
-            for f in src.files:
+            for f in src.files.to_list():
                 if f.extension == 'java':
                     files.append(f)
     return [JavaSourceFiles(files = files)]
@@ -166,8 +166,7 @@ checkstyle_test = rule(
             doc = "Successfully finish the test even if checkstyle failed"
         ),
         "_checkstyle_py_template": attr.label(
-             allow_files = True,
-             single_file = True,
+             allow_single_file=True,
              default = "//dependencies/tools/checkstyle/templates:checkstyle.py"
         ),
         "_classpath": attr.label_list(default=[

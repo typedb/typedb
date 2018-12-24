@@ -23,18 +23,18 @@ def antlr_dependencies():
     git_repository(
         name = "rules_antlr",
         remote = "https://github.com/graknlabs/rules_antlr",
-        commit = "e40680fccd90b6bcf3c746f63d48a201152bb67f"
+        commit = "a802065dc12736d1360946c4bc689c8c8fe0c25f"
     )
 
 def grpc_dependencies():
     git_repository(
         name = "com_github_grpc_grpc",
         remote = "https://github.com/graknlabs/grpc",
-        commit = "ad6b3949bdbe6d0d25522558ebe73f4044a02146"
+        commit = "6accbdaccb906f59be846fe11450f662562beef9"
     )
 
     git_repository(
         name = "stackb_rules_proto",
-        remote = "https://github.com/stackb/rules_proto",
-        commit = "4c2226458203a9653ae722245cc27e8b07c383f7",
+        remote = "https://github.com/graknlabs/rules_proto",
+        commit = "a8c7677d94c6eae84e123008ab656139f2530161",
     )
