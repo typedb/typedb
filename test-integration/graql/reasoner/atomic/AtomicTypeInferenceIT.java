@@ -27,7 +27,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
@@ -433,7 +433,7 @@ public class AtomicTypeInferenceIT {
     }
 
     private List<SchemaConcept> allRelations(TransactionOLTP tx){
-        RelationshipType metaType = tx.getRelationshipType(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
+        RelationType metaType = tx.getRelationshipType(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
         return metaType.subs().filter(t -> !t.equals(metaType)).collect(Collectors.toList());
     }
 

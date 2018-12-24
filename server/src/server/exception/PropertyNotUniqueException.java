@@ -21,7 +21,7 @@ package grakn.core.server.exception;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -37,7 +37,7 @@ import static grakn.core.common.exception.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
  *
  * <p>
  *     This occurs when attempting to add a globally unique property to a concept.
- *     For example when creating a {@link EntityType} and {@link RelationshipType} using
+ *     For example when creating a {@link EntityType} and {@link RelationType} using
  *     the same {@link Label}
  * </p>
  *

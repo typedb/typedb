@@ -23,7 +23,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
@@ -593,7 +593,7 @@ public class NegationIT {
     }
 
     private boolean thingsRelated(Map<Thing, Role> thingMap, Label relation, Transaction tx){
-        RelationshipType relationshipType = tx.getRelationshipType(relation.getValue());
+        RelationType relationshipType = tx.getRelationshipType(relation.getValue());
         boolean inferrable = relationshipType.subs().flatMap(SchemaConcept::thenRules).findFirst().isPresent();
 
         if (!inferrable){

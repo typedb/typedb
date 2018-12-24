@@ -81,16 +81,16 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalen
  *
  */
 @AutoValue
-public abstract class ResourceAtom extends Binary{
+public abstract class AttributeAtom extends Binary{
 
     public abstract Variable getRelationVariable();
     public abstract Variable getAttributeVariable();
     public abstract ImmutableSet<ValuePredicate> getMultiPredicate();
 
-    public static ResourceAtom create(Statement pattern, Variable attributeVariable, Variable relationVariable, Variable predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
-        return new AutoValue_ResourceAtom(pattern.var(), pattern, parent, predicateVariable, predicateId, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
+    public static AttributeAtom create(Statement pattern, Variable attributeVariable, Variable relationVariable, Variable predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
+        return new AutoValue_AttributeAtom(pattern.var(), pattern, parent, predicateVariable, predicateId, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
     }
-    private static ResourceAtom create(ResourceAtom a, ReasonerQuery parent) {
+    private static AttributeAtom create(AttributeAtom a, ReasonerQuery parent) {
         return create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
     }
 
@@ -145,13 +145,13 @@ public abstract class ResourceAtom extends Binary{
     public final boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        ResourceAtom a2 = (ResourceAtom) obj;
+        AttributeAtom a2 = (AttributeAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName())
                 && this.multiPredicateEquivalent(a2, AtomicEquivalence.Equality);
     }
 
-    private boolean multiPredicateEquivalent(ResourceAtom that, AtomicEquivalence equiv){
+    private boolean multiPredicateEquivalent(AttributeAtom that, AtomicEquivalence equiv){
         return isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), equiv);
     }
 
@@ -172,8 +172,8 @@ public abstract class ResourceAtom extends Binary{
 
     @Override
     boolean predicateBindingsEquivalent(Binary at, AtomicEquivalence equiv) {
-        if (!(at instanceof ResourceAtom && super.predicateBindingsEquivalent(at, equiv))) return false;
-        ResourceAtom that = (ResourceAtom) at;
+        if (!(at instanceof AttributeAtom && super.predicateBindingsEquivalent(at, equiv))) return false;
+        AttributeAtom that = (AttributeAtom) at;
         return predicateBindingsEquivalent(this.getAttributeVariable(), that.getAttributeVariable(), that, equiv);
     }
 
@@ -189,9 +189,9 @@ public abstract class ResourceAtom extends Binary{
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         //findbugs complains about cast without it
-        if (!(ruleAtom instanceof ResourceAtom)) return false;
+        if (!(ruleAtom instanceof AttributeAtom)) return false;
 
-        ResourceAtom childAtom = (ResourceAtom) ruleAtom;
+        AttributeAtom childAtom = (AttributeAtom) ruleAtom;
         return childAtom.isUnifiableWith(this);
     }
 
@@ -259,14 +259,14 @@ public abstract class ResourceAtom extends Binary{
 
     @Override
     public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
-        if (!(parentAtom instanceof ResourceAtom)) {
+        if (!(parentAtom instanceof AttributeAtom)) {
             if (parentAtom instanceof IsaAtom){ return this.toIsaAtom().getUnifier(parentAtom, unifierType); }
             else {
                 throw GraqlQueryException.unificationAtomIncompatibility();
             }
         }
 
-        ResourceAtom parent = (ResourceAtom) parentAtom;
+        AttributeAtom parent = (AttributeAtom) parentAtom;
         Unifier unifier = super.getUnifier(parentAtom, unifierType);
         if (unifier == null) return UnifierImpl.nonExistent();
 
@@ -299,7 +299,7 @@ public abstract class ResourceAtom extends Binary{
             if (owner.isEntity()) {
                 EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
             } else if (owner.isRelationship()) {
-                RelationshipImpl.from(owner.asRelationship()).attributeInferred(attribute);
+                RelationshipImpl.from(owner.asRelation()).attributeInferred(attribute);
             } else if (owner.isAttribute()) {
                 AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
             }
@@ -310,7 +310,7 @@ public abstract class ResourceAtom extends Binary{
     public SemanticDifference semanticDifference(Atom p, Unifier unifier) {
         SemanticDifference baseDiff = super.semanticDifference(p, unifier);
         if (!p.isResource()) return baseDiff;
-        ResourceAtom parentAtom = (ResourceAtom) p;
+        AttributeAtom parentAtom = (AttributeAtom) p;
         Set<VariableDefinition> diff = new HashSet<>();
         Unifier unifierInverse = unifier.inverse();
         Variable childVar = getAttributeVariable();
@@ -352,13 +352,13 @@ public abstract class ResourceAtom extends Binary{
      * @param parentAtom parent atom that triggers rewrite
      * @return rewritten atom
      */
-    private ResourceAtom rewriteWithRelationVariable(Atom parentAtom){
-        if (parentAtom.isResource() && ((ResourceAtom) parentAtom).getRelationVariable().isUserDefinedName()) return rewriteWithRelationVariable();
+    private AttributeAtom rewriteWithRelationVariable(Atom parentAtom){
+        if (parentAtom.isResource() && ((AttributeAtom) parentAtom).getRelationVariable().isUserDefinedName()) return rewriteWithRelationVariable();
         return this;
     }
 
     @Override
-    public ResourceAtom rewriteWithRelationVariable(){
+    public AttributeAtom rewriteWithRelationVariable(){
         Variable attributeVariable = getAttributeVariable();
         Variable relationVariable = getRelationVariable().asUserDefined();
         Statement newVar = getVarName().has(getSchemaConcept().label(), attributeVariable, relationVariable);

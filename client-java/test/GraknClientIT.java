@@ -40,8 +40,8 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
@@ -387,7 +387,7 @@ public class GraknClientIT {
             AttributeType email = tx.putAttributeType("email", DataType.STRING);
             Role actor = tx.putRole("actor");
             Role characterBeingPlayed = tx.putRole("character-being-played");
-            RelationshipType hasCast = tx.putRelationshipType("has-cast").relates(actor).relates(characterBeingPlayed);
+            RelationType hasCast = tx.putRelationshipType("has-cast").relates(actor).relates(characterBeingPlayed);
             person.key(email).has(name);
             person.plays(actor).plays(characterBeingPlayed);
 
@@ -417,7 +417,7 @@ public class GraknClientIT {
             AttributeType email = tx.putAttributeType("email", DataType.STRING);
             Role actor = tx.putRole("actor");
             Role characterBeingPlayed = tx.putRole("character-being-played");
-            RelationshipType hasCast = tx.putRelationshipType("has-cast").relates(actor).relates(characterBeingPlayed);
+            RelationType hasCast = tx.putRelationshipType("has-cast").relates(actor).relates(characterBeingPlayed);
             person.key(email).has(name);
             person.plays(actor).plays(characterBeingPlayed);
 
@@ -430,10 +430,10 @@ public class GraknClientIT {
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
             GetQuery query = Graql.match(var("x").isa("has-cast")).get();
-            Relationship remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelationship();
-            Relationship localConcept = localTx.getConcept(remoteConcept.id()).asRelationship();
+            Relation remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelation();
+            Relation localConcept = localTx.getConcept(remoteConcept.id()).asRelation();
 
-            assertEqualConcepts(localConcept, remoteConcept, Relationship::rolePlayers);
+            assertEqualConcepts(localConcept, remoteConcept, Relation::rolePlayers);
 
             ImmutableMultimap.Builder<ConceptId, ConceptId> localRolePlayers = ImmutableMultimap.builder();
             localConcept.rolePlayersMap().forEach((role, players) -> {
@@ -485,7 +485,7 @@ public class GraknClientIT {
             AttributeType email = tx.putAttributeType("email", DataType.STRING);
             Role actor = tx.putRole("actor");
             Role characterBeingPlayed = tx.putRole("character-being-played");
-            RelationshipType hasCast = tx.putRelationshipType("has-cast").relates(actor).relates(characterBeingPlayed);
+            RelationType hasCast = tx.putRelationshipType("has-cast").relates(actor).relates(characterBeingPlayed);
             person.key(email).has(name);
             person.plays(actor).plays(characterBeingPlayed);
 
@@ -622,10 +622,10 @@ public class GraknClientIT {
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
             GetQuery query = Graql.match(var("x").label("has-cast")).get();
-            RelationshipType remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelationshipType();
-            RelationshipType localConcept = localTx.getConcept(remoteConcept.id()).asRelationshipType();
+            RelationType remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelationshipType();
+            RelationType localConcept = localTx.getConcept(remoteConcept.id()).asRelationshipType();
 
-            assertEqualConcepts(localConcept, remoteConcept, RelationshipType::roles);
+            assertEqualConcepts(localConcept, remoteConcept, RelationType::roles);
         }
     }
 
@@ -706,13 +706,13 @@ public class GraknClientIT {
             Role owner = tx.putRole("owner");
             EntityType animal = tx.putEntityType("animal").plays(pet);
             EntityType human = tx.putEntityType("human").plays(owner);
-            RelationshipType petOwnership = tx.putRelationshipType("pet-ownership").relates(pet).relates(owner);
+            RelationType petOwnership = tx.putRelationshipType("pet-ownership").relates(pet).relates(owner);
             AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
             human.has(age);
 
             Entity coco = animal.create();
             Entity mike = human.create();
-            Relationship cocoAndMike = petOwnership.create().assign(pet, coco).assign(owner, mike);
+            Relation cocoAndMike = petOwnership.create().assign(pet, coco).assign(owner, mike);
             mike.has(age.create(10L));
 
             idCoco = coco.id();
@@ -875,7 +875,7 @@ public class GraknClientIT {
             dog.isAbstract(true).isAbstract(false);
             cat.isAbstract(true);
 
-            RelationshipType chases = tx.putRelationshipType("chases");
+            RelationType chases = tx.putRelationshipType("chases");
             Role chased = tx.putRole("chased");
             Role chaser = tx.putRole("chaser");
             chases.relates(chased).relates(chaser);
@@ -918,13 +918,13 @@ public class GraknClientIT {
             EntityType animal = tx.getEntityType("animal");
             EntityType dog = tx.getEntityType("dog");
             EntityType cat = tx.getEntityType("feline");
-            RelationshipType chases = tx.getRelationshipType("chases");
+            RelationType chases = tx.getRelationshipType("chases");
             Role chased = tx.getRole("chased");
             Role chaser = tx.getRole("chaser");
             AttributeType<String> name = tx.getAttributeType("name");
             AttributeType<String> id = tx.getAttributeType("id");
             Entity dunstan = Iterators.getOnlyElement(dog.instances().iterator());
-            Relationship aChase = Iterators.getOnlyElement(chases.instances().iterator());
+            Relation aChase = Iterators.getOnlyElement(chases.instances().iterator());
 
             assertEquals(animal, dog.sup());
             assertEquals(animal, cat.sup());

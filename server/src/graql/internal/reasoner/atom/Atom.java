@@ -35,7 +35,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
@@ -135,7 +135,7 @@ public abstract class Atom extends AtomicBase {
      * @return true if this atom is bounded - via substitution/specific resource or schema
      */
     public boolean isBounded() {
-        return isResource() && ((ResourceAtom) this).isSpecific()
+        return isResource() && ((AttributeAtom) this).isSpecific()
                 || this instanceof OntologicalAtom
                 || isGround();
     }
@@ -192,7 +192,7 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public boolean isDirect() {
-        return getPattern().getProperties().anyMatch(VarProperty::isExplicit);
+        return getPattern().properties().stream().anyMatch(VarProperty::isExplicit);
     }
 
     /**

@@ -23,8 +23,8 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.rule.GraknTestServer;
@@ -51,8 +51,8 @@ import static org.junit.Assert.assertThat;
 public class SchemaMutationIT {
     private Role husband;
     private Role wife;
-    private RelationshipType marriage;
-    private RelationshipType drives;
+    private RelationType marriage;
+    private RelationType drives;
     private EntityType person;
     private EntityType woman;
     private EntityType man;
@@ -160,7 +160,7 @@ public class SchemaMutationIT {
     @Test
     public void whenDeletingRelationTypeAndLeavingRoleByItself_Thow(){
         Role role = tx.putRole("my wonderful role");
-        RelationshipType relation = tx.putRelationshipType("my wonderful relation").relates(role);
+        RelationType relation = tx.putRelationshipType("my wonderful relation").relates(role);
         relation.relates(role);
         tx.commit();
 
@@ -183,14 +183,14 @@ public class SchemaMutationIT {
 
         //Create a dog which is a animal and is therefore allowed to have a name
         EntityType dog = tx.putEntityType("dog").sup(animal);
-        RelationshipType has_name = tx.getRelationshipType("@has-name");
+        RelationType has_name = tx.getRelationshipType("@has-name");
 
         //Create a dog and name it puppy
         Attribute<String> puppy = name.create("puppy");
         dog.create().has(puppy);
 
         //Get The Relationship which says that our dog is name puppy
-        Relationship expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
+        Relation expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
         Role hasNameOwner = tx.getRole("@has-name-owner");
 
         assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));

@@ -24,7 +24,7 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
@@ -131,7 +131,7 @@ public class TransactionIT {
         assertNull(tx.getRule(ruleTypeLabel));
 
         EntityType entityType = tx.putEntityType(entityTypeLabel);
-        RelationshipType relationshipType = tx.putRelationshipType(relationTypeLabel);
+        RelationType relationshipType = tx.putRelationshipType(relationTypeLabel);
         Role role = tx.putRole(roleTypeLabel);
         AttributeType attributeType = tx.putAttributeType(resourceTypeLabel, AttributeType.DataType.STRING);
 
@@ -144,7 +144,7 @@ public class TransactionIT {
     @Test
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes(){
         EntityType sampleEntityType = tx.putEntityType("Sample Entity Type");
-        RelationshipType sampleRelationshipType = tx.putRelationshipType("Sample Relationship Type");
+        RelationType sampleRelationshipType = tx.putRelationshipType("Sample Relationship Type");
 
         assertThat(tx.getMetaConcept().subs().collect(toSet()), containsInAnyOrder(
                 tx.getMetaConcept(),
@@ -232,7 +232,7 @@ public class TransactionIT {
         Role r1 = tx.putRole("r1");
         Role r2 = tx.putRole("r2");
         EntityType e1 = tx.putEntityType("e1").plays(r1).plays(r2);
-        RelationshipType rel1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
+        RelationType rel1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
 
         //Purge the above concepts into the main cache
         tx.commit();
@@ -300,8 +300,8 @@ public class TransactionIT {
         entityT.create();
         Role roleT1 = tx.putRole(roleType1);
         Role roleT2 = tx.putRole(roleType2);
-        RelationshipType relationT1 = tx.putRelationshipType(relationType1).relates(roleT1);
-        RelationshipType relationT2 = tx.putRelationshipType(relationType2).relates(roleT2);
+        RelationType relationT1 = tx.putRelationshipType(relationType1).relates(roleT1);
+        RelationType relationT2 = tx.putRelationshipType(relationType2).relates(roleT2);
         AttributeType<String> resourceT = tx.putAttributeType(resourceType, AttributeType.DataType.STRING);
         tx.commit();
 

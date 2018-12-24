@@ -18,60 +18,28 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
-
-import java.util.Collection;
 
 /**
- * Represents the {@code isa-explicit} property on a {@link Thing}.
+ * Represents the {@code isa-explicit} property on a Thing.
  * This property can be queried and inserted.
- * THe property is defined as a relationship between an {@link Thing} and a {@link Type}.
+ * THe property is defined as a relationship between an Thing and a Type.
  * When matching, any subtyping is ignored. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it only follows {@code $bob isa man}, not {@code bob isa entity}.
  */
-public class IsaExplicitProperty extends AbstractIsaProperty {
+public class IsaExplicitProperty extends IsaProperty {
 
-    public static final String NAME = "isa!";
-    private final Statement type;
-
-    public IsaExplicitProperty(
-            Statement type) {
-        if (type == null) {
-            throw new NullPointerException("Null type");
-        }
-        this.type = type;
+    public IsaExplicitProperty(Statement type) {
+        super(type);
     }
 
     @Override
-    public Statement type() {
-        return type;
-    }
-
-    @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.ISA_EXP.toString();
     }
 
     @Override
     public boolean isExplicit() { return true;}
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(
-                EquivalentFragmentSets.isa(this, start, type().var(), true)
-        );
-    }
-
-    @Override
-    protected final Statement statementForAtom(Variable varName, Variable typeVariable) {
-        return varName.isaExplicit(typeVariable);
-    }
 
     @Override
     public boolean equals(Object o) {
@@ -80,7 +48,7 @@ public class IsaExplicitProperty extends AbstractIsaProperty {
         }
         if (o instanceof IsaExplicitProperty) {
             IsaExplicitProperty that = (IsaExplicitProperty) o;
-            return (this.type.equals(that.type()));
+            return (this.type().equals(that.type()));
         }
         return false;
     }
@@ -88,8 +56,10 @@ public class IsaExplicitProperty extends AbstractIsaProperty {
     @Override
     public int hashCode() {
         int h = 1;
+//        h *= 1000003; TODO: Uncomment this once we fix issue #4761
+//        h ^= this.name().hashCode();
         h *= 1000003;
-        h ^= this.type.hashCode();
+        h ^= this.type().hashCode();
         return h;
     }
 }

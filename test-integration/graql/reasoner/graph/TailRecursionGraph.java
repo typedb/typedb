@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner.graph;
 
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -54,7 +54,7 @@ public class TailRecursionGraph{
 
         EntityType aEntity = tx.getEntityType("a-entity");
         EntityType bEntity = tx.getEntityType("b-entity");
-        RelationshipType q = tx.getRelationshipType("Q");
+        RelationType q = tx.getRelationshipType("Q");
 
         putEntityWithResource(tx, "a0", aEntity, key);
         for(int i = 1 ; i <= m + 1 ;i++) {

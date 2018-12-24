@@ -24,7 +24,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
@@ -111,7 +111,7 @@ public class ReasoningIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 
 
-                Set<RelationshipType> relTypes = tx.getMetaRelationType().subs().collect(toSet());
+                Set<RelationType> relTypes = tx.getMetaRelationType().subs().collect(toSet());
                 List<ConceptMap> attributeSubs = tx.execute(Graql.<GetQuery>parse("match $x sub attribute; get;"));
                 List<ConceptMap> attributeRelationSubs = tx.execute(Graql.<GetQuery>parse("match $x sub @has-attribute; get;"));
 

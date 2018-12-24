@@ -22,7 +22,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
@@ -71,7 +71,7 @@ public class BenchmarkSmallIT {
             Role fromRole = tx.putRole("fromRole");
             Role toRole = tx.putRole("toRole");
 
-            RelationshipType relation0 = tx.putRelationshipType("relation0")
+            RelationType relation0 = tx.putRelationshipType("relation0")
                     .relates(fromRole)
                     .relates(toRole);
 

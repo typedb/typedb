@@ -18,31 +18,16 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.util.StringUtil;
 
-import java.util.Collection;
-import java.util.Set;
-
 /**
- * Represents the {@code label} property on a {@link Type}.
+ * Represents the {@code label} property on a Type.
  * This property can be queried and inserted. If used in an insert query and there is an existing type with the give
  * label, then that type will be retrieved.
  */
 public class LabelProperty extends VarProperty {
 
-    public static final String NAME = "label";
     private final Label label;
 
     public LabelProperty(Label label) {
@@ -57,12 +42,12 @@ public class LabelProperty extends VarProperty {
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.LABEL.toString();
     }
 
     @Override
-    public String getProperty() {
+    public String property() {
         return StringUtil.typeLabelToString(label());
     }
 
@@ -74,39 +59,6 @@ public class LabelProperty extends VarProperty {
     @Override
     public boolean uniquelyIdentifiesConcept() {
         return true;
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label());
-        if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label());
-        return IdPredicate.create(var.var().asUserDefined(), label(), parent);
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(EquivalentFragmentSets.label(this, start, ImmutableSet.of(label())));
-    }
-
-    @Override
-    public Collection<PropertyExecutor> insert(Variable var) throws GraqlQueryException {
-        // This is supported in insert queries in order to allow looking up schema concepts by label
-        return define(var);
-    }
-
-    @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            executor.builder(var).label(label());
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
-    }
-
-    @Override
-    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
-        // This is supported in undefine queries in order to allow looking up schema concepts by label
-        return define(var);
     }
 
     @Override

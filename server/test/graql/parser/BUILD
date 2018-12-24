@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "parser-test",
     test_class = "grakn.core.graql.parser.ParserTest",
@@ -29,6 +31,15 @@ java_test(
     size = "medium"
 )
 
+checkstyle_test(
+ name = "parser-test-checkstyle",
+ target = ":parser-test",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
     name = "query-to-string-test",
     test_class = "grakn.core.graql.parser.QueryToStringTest",
@@ -39,4 +50,13 @@ java_test(
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
         "//server"],
     size = "small"
+)
+
+checkstyle_test(
+ name = "query-to-string-test-checkstyle",
+ target = ":query-to-string-test",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )

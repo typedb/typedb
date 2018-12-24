@@ -22,7 +22,7 @@ import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.Schema;
 import grakn.core.rule.GraknTestServer;
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-public class RelationshipTypeIT {
+public class RelationTypeIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -68,7 +68,7 @@ public class RelationshipTypeIT {
 
     @Test
     public void whenGettingTheRolesOfRelationTypes_AllTheRolesAreReturned() throws Exception {
-        RelationshipType relationshipType = tx.putRelationshipType("relationTypes");
+        RelationType relationshipType = tx.putRelationshipType("relationTypes");
         Role role1 = tx.putRole("role1");
         Role role2 = tx.putRole("role2");
         Role role3 = tx.putRole("role3");
@@ -78,7 +78,7 @@ public class RelationshipTypeIT {
 
     @Test
     public void whenMutatingRolesOfRelationType_EnsureRelationTypeRolesAreAlwaysUpdated(){
-        RelationshipType relationshipType = tx.putRelationshipType("c1");
+        RelationType relationshipType = tx.putRelationshipType("c1");
         Role role1 = tx.putRole("c2");
         Role role2 = tx.putRole("c3");
         assertThat(relationshipType.roles().collect(toSet()), empty());
@@ -98,7 +98,7 @@ public class RelationshipTypeIT {
         EntityType entityType = tx.putEntityType("My Special Entity Type").has(attributeType);
         Entity entity = entityType.create();
 
-        RelationshipType implicitRelationshipType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
+        RelationType implicitRelationshipType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
 
         assertNotNull(implicitRelationshipType);
         assertThat(implicitRelationshipType.instances().collect(toSet()), empty());
@@ -116,7 +116,7 @@ public class RelationshipTypeIT {
         EntityType entityType = tx.putEntityType("My Special Entity Type").has(attributeType);
         entityType.create().has(attribute);
 
-        RelationshipType implicitRelationshipType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
+        RelationType implicitRelationshipType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
 
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(TransactionException.addingInstancesToAbstractType(implicitRelationshipType).getMessage());

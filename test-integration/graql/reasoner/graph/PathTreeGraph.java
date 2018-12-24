@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.graph;
 import com.google.common.math.IntMath;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -69,7 +69,7 @@ public class PathTreeGraph{
         EntityType vertex = tx.getEntityType("vertex");
         EntityType startVertex = tx.getEntityType("start-vertex");
 
-        RelationshipType arc = tx.getRelationshipType("arc");
+        RelationType arc = tx.getRelationshipType("arc");
         putEntityWithResource(tx, "a0", startVertex, key);
 
         int outputThreshold = 500;

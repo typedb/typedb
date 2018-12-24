@@ -34,15 +34,9 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.DataTypeProperty;
-import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.LabelProperty;
-import grakn.core.graql.query.pattern.property.SubProperty;
-import grakn.core.graql.query.pattern.property.ThenProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.property.WhenProperty;
 import grakn.core.server.exception.InvalidKBException;
 
 import javax.annotation.Nullable;
@@ -57,17 +51,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Class for building a {@link Concept}, by providing properties.
- * <p>
- * <p>
  * A {@link VarProperty} is responsible for inserting itself into the graph. However,
- * some properties can only operate in <i>combination</i>. For example, to create a {@link Attribute} you need both
+ * some properties can only operate in combination. For example, to create a {@link Attribute} you need both
  * an {@link IsaProperty} and a {@link ValueProperty}.
- * </p>
- * <p>
  * Therefore, these properties do not create the {@link Concept} themselves.
  * instead they provide the necessary information to the {@link ConceptBuilder}, which will create the
  * {@link Concept} at a later time:
- * </p>
  * <pre>
  *     // Executor:
  *     ConceptBuilder builder = ConceptBuilder.of(executor, var);
@@ -92,16 +81,10 @@ public class ConceptBuilder {
 
     /**
      * A set of parameters that were used for building the concept. Modified while executing {@link #build()}.
-     * <p>
      * This set starts empty. Every time {@link #use(BuilderParam)} or {@link #useOrDefault(BuilderParam, Object)}
      * is called, the parameter is added to this set. After the concept is built, any parameter not in this set is
      * considered "unexpected". If it is present in the field {@link #preProvidedParams}, then an error is thrown.
-     * </p>
-     * <p>
-     * <p>
      * Simplified example of how this operates:
-     * </p>
-     * <p>
      * <pre>
      * // preProvidedParams = {LABEL: actor, SUPER_CONCEPT: role, VALUE: "Bob"}
      * // usedParams = {}
@@ -261,11 +244,9 @@ public class ConceptBuilder {
 
     /**
      * Describes a parameter that can be set on a {@link ConceptBuilder}.
-     * <p>
      * We could instead just represent these parameters as fields of {@link ConceptBuilder}. Instead, we use a
      * {@code Map<BuilderParam<?>, Object>}. This allows us to do clever stuff like iterate over the parameters,
      * or check for unexpected parameters without lots of boilerplate.
-     * </p>
      */
     // The generic is technically unused, but is useful to constrain the values of the parameter
     @SuppressWarnings("unused")
@@ -285,28 +266,30 @@ public class ConceptBuilder {
             return name;
         }
 
+        static <T> BuilderParam<T> of(Object obj) {
+            return of(obj.toString());
+        }
+
         static <T> BuilderParam<T> of(String name) {
             return new BuilderParam<>(name);
         }
     }
 
-    private static final BuilderParam<Type> TYPE = BuilderParam.of(IsaProperty.NAME);
-    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(SubProperty.NAME);
-    private static final BuilderParam<Label> LABEL = BuilderParam.of(LabelProperty.NAME);
-    private static final BuilderParam<ConceptId> ID = BuilderParam.of(IdProperty.NAME);
-    private static final BuilderParam<Object> VALUE = BuilderParam.of(ValueProperty.NAME);
-    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(DataTypeProperty.NAME);
-    private static final BuilderParam<Pattern> WHEN = BuilderParam.of(WhenProperty.NAME);
-    private static final BuilderParam<Pattern> THEN = BuilderParam.of(ThenProperty.NAME);
-    private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role");
-    private static final BuilderParam<Unit> IS_RULE = BuilderParam.of("rule");
+    private static final BuilderParam<Type> TYPE = BuilderParam.of(VarProperty.Name.ISA);
+    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(VarProperty.Name.SUB);
+    private static final BuilderParam<Label> LABEL = BuilderParam.of(VarProperty.Name.LABEL);
+    private static final BuilderParam<ConceptId> ID = BuilderParam.of(VarProperty.Name.ID);
+    private static final BuilderParam<Object> VALUE = BuilderParam.of(VarProperty.Name.VALUE);
+    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(VarProperty.Name.DATA_TYPE);
+    private static final BuilderParam<Pattern> WHEN = BuilderParam.of(VarProperty.Name.WHEN);
+    private static final BuilderParam<Pattern> THEN = BuilderParam.of(VarProperty.Name.THEN);
+    private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role"); // TODO: replace this with a value registered in an enum
+    private static final BuilderParam<Unit> IS_RULE = BuilderParam.of("rule"); // TODO: replace this with a value registered in an enum
 
     /**
      * Class with no fields and exactly one instance.
-     * <p>
      * Similar in use to {@link Void}, but the single instance is {@link Unit#INSTANCE} instead of {@code null}. Useful
      * when {@code null} is not allowed.
-     *
      * @see <a href=https://en.wikipedia.org/wiki/Unit_type>Wikipedia</a>
      */
     private static final class Unit {
@@ -344,10 +327,8 @@ public class ConceptBuilder {
 
     /**
      * Called during {@link #build()} whenever a particular parameter is expected in order to build the {@link Concept}.
-     * <p>
      * This method will return the parameter, if present and also record that it was expected, so that we can later
      * check for any unexpected properties.
-     * </p>
      *
      * @throws GraqlQueryException if the parameter is not present
      */

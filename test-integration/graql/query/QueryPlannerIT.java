@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -99,7 +99,7 @@ public class QueryPlannerIT {
         superType1.plays(role1).plays(role2).plays(role3);
         entityType2.plays(role1).plays(role2).plays(role3);
         entityType3.plays(role1).plays(role2).plays(role3);
-        RelationshipType relationshipType1 = graph.putRelationshipType(related)
+        RelationType relationshipType1 = graph.putRelationshipType(related)
                 .relates(role1).relates(role2).relates(role3);
         graph.putRelationshipType(sameAsRelated)
                 .relates(role1).relates(role2).relates(role3);

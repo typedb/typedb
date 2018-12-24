@@ -21,7 +21,7 @@ package grakn.core.server.kb.concept;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.Relation;
 import grakn.core.server.kb.structure.VertexElement;
 
 /**
@@ -32,7 +32,7 @@ import grakn.core.server.kb.structure.VertexElement;
  * <p>
  *     This represents an entity in the graph.
  *     Entities are objects which are defined by their {@link Attribute} and their links to
- *     other entities via {@link Relationship}
+ *     other entities via {@link Relation}
  * </p>
  *
  */

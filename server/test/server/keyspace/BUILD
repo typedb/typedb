@@ -5,3 +5,13 @@ java_test(
     deps = ["//server"],
     size = "small"
 )
+
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+checkstyle_test(
+ name = "keyspace-test-checkstyle",
+ target = ":keyspace-test",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)

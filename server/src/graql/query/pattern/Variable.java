@@ -59,7 +59,7 @@ public class Variable extends Statement {
     }
 
     /**
-     * The {@link Type} of the {@link Variable}, such as whether it is user-defined.
+     * The Type of the Variable, such as whether it is user-defined.
      */
     public Type type() {
         return type;
@@ -108,7 +108,7 @@ public class Variable extends Statement {
     }
 
     @Override
-    protected Set<VarProperty> properties() {
+    public Set<VarProperty> properties() {
         return ImmutableSet.of();
     }
 
@@ -135,7 +135,7 @@ public class Variable extends Statement {
     }
 
     /**
-     * The {@link Type} of a {@link Variable}, such as whether it is user-defined.
+     * The Type of a Variable, such as whether it is user-defined.
      */
     public enum Type {
 

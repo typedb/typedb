@@ -22,7 +22,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
@@ -55,7 +55,7 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  *
  *
  * @param <T> The leaf interface of the object concept.
- *           For example an {@link EntityType} or {@link RelationshipType} or {@link Role}
+ *           For example an {@link EntityType} or {@link RelationType} or {@link Role}
  */
 public abstract class SchemaConceptImpl<T extends SchemaConcept> extends ConceptImpl implements SchemaConcept {
     private final Cache<Label> cachedLabel = Cache.createPersistentCache(this, Cacheable.label(), () ->  Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));

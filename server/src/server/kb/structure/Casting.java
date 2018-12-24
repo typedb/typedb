@@ -19,8 +19,8 @@
 package grakn.core.server.kb.structure;
 
 import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.internal.Schema;
@@ -41,7 +41,7 @@ import java.util.Set;
  *
  * <p>
  *    Wraps the {@link Schema.EdgeLabel#ROLE_PLAYER} {@link Edge} which contains the information unifying an {@link Thing},
- *    {@link Relationship} and {@link Role}.
+ *    {@link Relation} and {@link Role}.
  * </p>
  *
  */
@@ -53,25 +53,25 @@ public class Casting implements CacheOwner{
             (Role) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
     private final Cache<Thing> cachedInstance = Cache.createTxCache(this, Cacheable.concept(), () ->
             edge().tx().factory().<Thing>buildConcept(edge().target()));
-    private final Cache<Relationship> cachedRelationship = Cache.createTxCache(this, Cacheable.concept(), () ->
+    private final Cache<Relation> cachedRelationship = Cache.createTxCache(this, Cacheable.concept(), () ->
             edge().tx().factory().<Thing>buildConcept(edge().source()));
 
-    private final Cache<RelationshipType> cachedRelationshipType = Cache.createTxCache(this, Cacheable.concept(), () -> {
+    private final Cache<RelationType> cachedRelationshipType = Cache.createTxCache(this, Cacheable.concept(), () -> {
         if(cachedRelationship.isPresent()){
             return cachedRelationship.get().type();
         } else {
-            return (RelationshipType) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID)));
+            return (RelationType) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID)));
         }
     });
 
-    private Casting(EdgeElement edgeElement, @Nullable Relationship relationship, @Nullable Role role, @Nullable Thing thing){
+    private Casting(EdgeElement edgeElement, @Nullable Relation relationship, @Nullable Role role, @Nullable Thing thing){
         this.edgeElement = edgeElement;
         if(relationship != null) this.cachedRelationship.set(relationship);
         if(role != null) this.cachedRole.set(role);
         if(thing != null) this.cachedInstance.set(thing);
     }
 
-    public static Casting create(EdgeElement edgeElement, Relationship relationship, Role role, Thing thing) {
+    public static Casting create(EdgeElement edgeElement, Relation relationship, Role role, Thing thing) {
         return new Casting(edgeElement, relationship, role, thing);
     }
 
@@ -79,7 +79,7 @@ public class Casting implements CacheOwner{
         return new Casting(edgeElement, null, null, thing);
     }
 
-    public static Casting withRelationship(EdgeElement edgeElement, Relationship relationship) {
+    public static Casting withRelationship(EdgeElement edgeElement, Relation relationship) {
         return new Casting(edgeElement, relationship, null, null);
     }
 
@@ -102,17 +102,17 @@ public class Casting implements CacheOwner{
 
     /**
      *
-     * @return The {@link RelationshipType} the {@link Thing} is taking part in
+     * @return The {@link RelationType} the {@link Thing} is taking part in
      */
-    public RelationshipType getRelationshipType(){
+    public RelationType getRelationshipType(){
         return cachedRelationshipType.get();
     }
 
     /**
      *
-     * @return The {@link Relationship} which is linking the {@link Role} and the instance
+     * @return The {@link Relation} which is linking the {@link Role} and the instance
      */
-    public Relationship getRelationship(){
+    public Relation getRelationship(){
         return cachedRelationship.get();
     }
 
@@ -133,7 +133,7 @@ public class Casting implements CacheOwner{
     }
 
     /**
-     * Deletes this {@link Casting} effectively removing a {@link Thing} from playing a {@link Role} in a {@link Relationship}
+     * Deletes this {@link Casting} effectively removing a {@link Thing} from playing a {@link Role} in a {@link Relation}
      */
     public void delete(){
         edge().delete();

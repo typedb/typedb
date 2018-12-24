@@ -288,7 +288,7 @@ public class AttributeDeduplicatorIT {
             Set<String> owner = new HashSet<>();
             Set<String> arp = new HashSet<>();
             for (ConceptMap conceptMap : conceptMaps) {
-                owner.add(conceptMap.get("owner").asRelationship().id().getValue());
+                owner.add(conceptMap.get("owner").asRelation().id().getValue());
                 arp.add(conceptMap.get("arp").asAttribute().id().getValue());
             }
 

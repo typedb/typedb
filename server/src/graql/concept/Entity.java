@@ -24,7 +24,7 @@ import javax.annotation.CheckReturnValue;
  * An instance of Entity Type {@link EntityType}
  * This represents an entity in the graph.
  * Entities are objects which are defined by their {@link Attribute} and their links to
- * other entities via {@link Relationship}
+ * other entities via {@link Relation}
  */
 public interface Entity extends Thing {
     //------------------------------------- Accessors ----------------------------------

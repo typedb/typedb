@@ -23,7 +23,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -70,7 +70,7 @@ public class SemanticDifference {
         return definition.hashCode();
     }
 
-    private Set<Relationship> rolesToRels(Variable var, Set<Role> roles, ConceptMap answer) {
+    private Set<Relation> rolesToRels(Variable var, Set<Role> roles, ConceptMap answer) {
         if (!answer.containsVar(var)) return new HashSet<>();
         Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
         return answer.get(var).asThing()
@@ -87,7 +87,7 @@ public class SemanticDifference {
 
         //check for role compatibility
         Iterator<Map.Entry<Variable, Set<Role>>> reqIterator = roleRequirements.entrySet().iterator();
-        Set<Relationship> relationships;
+        Set<Relation> relationships;
         if (reqIterator.hasNext()) {
             Map.Entry<Variable, Set<Role>> req = reqIterator.next();
             relationships = rolesToRels(req.getKey(), req.getValue(), answer);

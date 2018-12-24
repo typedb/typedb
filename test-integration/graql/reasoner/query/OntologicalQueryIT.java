@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.rule.GraknTestServer;
@@ -220,7 +220,7 @@ public class OntologicalQueryIT {
                 String queryString = "match $x isa $type; $type sub relationship; get;";
         List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
 
-        assertEquals(tx.getRelationshipType("relationship").subs().flatMap(RelationshipType::instances).count(), answers.size());
+        assertEquals(tx.getRelationshipType("relationship").subs().flatMap(RelationType::instances).count(), answers.size());
         assertCollectionsEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
     }
 
@@ -266,7 +266,7 @@ public class OntologicalQueryIT {
         assertCollectionsEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
         List<ConceptMap> relations = tx.execute(Graql.<GetQuery>parse("match $x isa relationship;get;"),false);
         //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
-        assertEquals(relations.stream().filter(ans -> !ans.get("x").asRelationship().type().isImplicit()).count() + 3, answers.size());
+        assertEquals(relations.stream().filter(ans -> !ans.get("x").asRelation().type().isImplicit()).count() + 3, answers.size());
     }
 
     @Test

@@ -18,24 +18,11 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.internal.reasoner.atom.property.RegexAtom;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.util.StringUtil;
 
-import java.util.Collection;
-import java.util.Set;
-
 /**
- * Represents the {@code regex} property on a {@link AttributeType}. This property can be queried and inserted.
- * This property introduces a validation constraint on instances of this {@link AttributeType}, stating that their
+ * Represents the {@code regex} property on a AttributeType. This property can be queried and inserted.
+ * This property introduces a validation constraint on instances of this AttributeType, stating that their
  * values must conform to the given regular expression.
  */
 public class RegexProperty extends VarProperty {
@@ -54,49 +41,18 @@ public class RegexProperty extends VarProperty {
     }
 
     @Override
-    public String getName() {
-        return "regex";
+    public String name() {
+        return Name.REGEX.toString();
     }
 
     @Override
-    public String getProperty() {
+    public String property() {
         return "/" + StringUtil.escapeString(regex()) + "/";
     }
 
     @Override
     public boolean isUnique() {
         return true;
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        return RegexAtom.create(var.var(), this, parent);
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(EquivalentFragmentSets.regex(this, start, regex()));
-    }
-
-    @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            executor.get(var).asAttributeType().regex(regex());
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
-    }
-
-    @Override
-    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            AttributeType<Object> attributeType = executor.get(var).asAttributeType();
-            if (!attributeType.isDeleted() && regex().equals(attributeType.regex())) {
-                attributeType.regex(null);
-            }
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
     }
 
     @Override

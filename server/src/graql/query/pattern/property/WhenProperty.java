@@ -18,12 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
-
-import java.util.Collection;
 
 /**
  * Represents the {@code when} property on a rule.
@@ -31,9 +26,8 @@ import java.util.Collection;
  * The when side describes the left-hand of an implication, stating that when the when side of a rule is true
  * the then side must hold.
  */
-public class WhenProperty extends RuleProperty {
+public class WhenProperty extends VarProperty {
 
-    public static final String NAME = "when";
     private final Pattern pattern;
 
     public WhenProperty(Pattern pattern) {
@@ -43,24 +37,23 @@ public class WhenProperty extends RuleProperty {
         this.pattern = pattern;
     }
 
-    @Override
     public Pattern pattern() {
         return pattern;
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.WHEN.toString();
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar when { ... }`
-            executor.builder(var).isRule().when(pattern());
-        };
+    public String property() {
+        return pattern().toString();
+    }
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
+    @Override
+    public boolean isUnique() {
+        return true;
     }
 
     @Override

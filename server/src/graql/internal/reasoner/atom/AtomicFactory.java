@@ -20,6 +20,7 @@ package grakn.core.graql.internal.reasoner.atom;
 
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
 
@@ -41,7 +42,7 @@ public class AtomicFactory {
      */
     public static Stream<Atomic> createAtoms(Conjunction<Statement> pattern, ReasonerQuery parent) {
         Set<Atomic> atoms = pattern.statements().stream()
-                .flatMap(var -> var.getProperties()
+                .flatMap(var -> var.properties().stream()
                         .map(vp -> createAtom(vp, var, pattern.statements(), parent))
                         .filter(Objects::nonNull))
                 .collect(Collectors.toSet());
@@ -55,19 +56,21 @@ public class AtomicFactory {
                 );
     }
 
+
     /**
      * maps a provided var property to a reasoner atom
      *
-     * @param vp {@link VarProperty} to map
-     * @param var    {@link Statement} this property belongs to
-     * @param vars   Vars constituting the pattern this property belongs to
+     * @param property {@link VarProperty} to map
+     * @param statement    {@link Statement} this property belongs to
+     * @param statements   Vars constituting the pattern this property belongs to
      * @param parent reasoner query this atom should belong to
      * @return created atom
      */
-    private static Atomic createAtom(VarProperty vp, Statement var, Set<Statement> vars, ReasonerQuery parent){
-        Atomic atomic = vp.mapToAtom(var, vars, parent);
+    private static Atomic createAtom(VarProperty property, Statement statement, Set<Statement> statements, ReasonerQuery parent){
+        Atomic atomic = PropertyExecutor.atomable(statement.var(), property)
+                .atomic(parent, statement, statements);
         if (atomic == null) return null;
-        return var.isPositive()? atomic : NegatedAtomic.create(atomic);
+        return statement.isPositive()? atomic : NegatedAtomic.create(atomic);
     }
 
 }

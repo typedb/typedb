@@ -28,12 +28,8 @@ import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 
 /**
- *
- * <p>
- * Atomic corresponding to {@link DataTypeProperty}.
- * </p>
- *
- *
+
+ * Atomic corresponding to DataTypeProperty.
  */
 @AutoValue
 public abstract class DataTypeAtom extends AtomicBase {

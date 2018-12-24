@@ -23,8 +23,8 @@ import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.internal.Schema;
@@ -89,7 +89,7 @@ public class AttributeIT {
     public void whenAttachingResourcesToInstances_EnsureInstancesAreReturnedAsOwners() throws Exception {
         EntityType randomThing = tx.putEntityType("A Thing");
         AttributeType<String> attributeType = tx.putAttributeType("A Attribute Thing", AttributeType.DataType.STRING);
-        RelationshipType hasResource = tx.putRelationshipType("Has Attribute");
+        RelationType hasResource = tx.putRelationshipType("Has Attribute");
         Role resourceRole = tx.putRole("Attribute Role");
         Role actorRole = tx.putRole("Actor");
         Thing pacino = randomThing.create();
@@ -286,8 +286,8 @@ public class AttributeIT {
         e1.has(attribute);
         e2.has(attribute);
 
-        Relationship rel1 = Iterables.getOnlyElement(e1.relationships().collect(toSet()));
-        Relationship rel2 = Iterables.getOnlyElement(e2.relationships().collect(toSet()));
+        Relation rel1 = Iterables.getOnlyElement(e1.relationships().collect(toSet()));
+        Relation rel2 = Iterables.getOnlyElement(e2.relationships().collect(toSet()));
 
         assertThat(attribute.relationships().collect(toSet()), containsInAnyOrder(rel1, rel2));
     }

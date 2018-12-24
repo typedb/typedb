@@ -23,8 +23,8 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * An {@link SchemaConcept} which defines a role which can be played in a {@link RelationshipType}
- * This ontological element defines the {@link Role} which make up a {@link RelationshipType}.
+ * An {@link SchemaConcept} which defines a role which can be played in a {@link RelationType}
+ * This ontological element defines the {@link Role} which make up a {@link RelationType}.
  * It behaves similarly to {@link SchemaConcept} when relating to other types.
  */
 public interface Role extends SchemaConcept {
@@ -72,13 +72,13 @@ public interface Role extends SchemaConcept {
     Stream<Role> subs();
 
     /**
-     * Returns the {@link RelationshipType}s that this {@link Role} takes part in.
+     * Returns the {@link RelationType}s that this {@link Role} takes part in.
      *
-     * @return The {@link RelationshipType} which this {@link Role} takes part in.
-     * @see RelationshipType
+     * @return The {@link RelationType} which this {@link Role} takes part in.
+     * @see RelationType
      */
     @CheckReturnValue
-    Stream<RelationshipType> relationships();
+    Stream<RelationType> relationships();
 
     /**
      * Returns a collection of the {@link Type}s that can play this {@link Role}.

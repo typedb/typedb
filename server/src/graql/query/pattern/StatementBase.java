@@ -29,7 +29,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Implementation of {@link Statement} interface
+ * Implementation of Statement interface
  */
 abstract class StatementBase extends Statement {
 
@@ -55,7 +55,7 @@ abstract class StatementBase extends Statement {
     }
 
     @Override
-    protected Set<VarProperty> properties() {
+    public Set<VarProperty> properties() {
         return properties;
     }
 
@@ -137,6 +137,6 @@ abstract class StatementBase extends Statement {
     }
 
     private static boolean invalidInnerVariable(Statement var) {
-        return var.getProperties().anyMatch(p -> !(p instanceof LabelProperty));
+        return var.properties().stream().anyMatch(p -> !(p instanceof LabelProperty));
     }
 }

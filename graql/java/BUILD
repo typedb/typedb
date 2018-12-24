@@ -18,11 +18,17 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("@com_github_google_bazel_common//tools/jarjar:jarjar.bzl", "jarjar_library")
 
-java_library(
-    name = "graql",
-    srcs = glob(["**/*.java"]),
-    runtime_deps = [ # TODO: Needs to be compile-time deps
+jarjar_library(
+    name = 'graql',
+    jars = [
         "//graql/java/parser:parser",
+        "//graql/java/exception:exception",
+    ],
+    deps = [
+        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/antlr:antlr4-runtime", # sync version with @antlr4_runtime//jar
     ]
 )

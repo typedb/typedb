@@ -18,19 +18,12 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
-
-import java.util.Collection;
 
 /**
- * Represents the {@code sub!} property on a {@link Type}.
+ * Represents the {@code sub!} property on a Type.
  * This property can be queried or inserted.
- * This property relates a {@link Type} and another {@link Type}. It indicates
+ * This property relates a Type and another Type. It indicates
  * that every instance of the left type is also an instance of the right type.
  * When matching, subtyping is ignored:
  * if
@@ -39,36 +32,19 @@ import java.util.Collection;
  * then
  * `$x sub! entity` only returns `person` but not `man`
  */
-public class SubExplicitProperty extends AbstractSubProperty {
+public class SubExplicitProperty extends SubProperty {
 
-    public static final String NAME = "sub!";
-
-    private final Statement superType;
-
-    public SubExplicitProperty(Statement superType) {
-        if (superType == null) {
-            throw new NullPointerException("Null superType");
-        }
-        this.superType = superType;
+    public SubExplicitProperty(Statement type) {
+        super(type);
     }
 
     @Override
-    public Statement superType() {
-        return superType;
-    }
-
-    @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.SUB_EXP.toString();
     }
 
     @Override
     public boolean isExplicit() { return true;}
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType().var(), true));
-    }
 
     @Override
     public boolean equals(Object o) {
@@ -77,7 +53,7 @@ public class SubExplicitProperty extends AbstractSubProperty {
         }
         if (o instanceof SubExplicitProperty) {
             SubExplicitProperty that = (SubExplicitProperty) o;
-            return (this.superType.equals(that.superType()));
+            return (this.type().equals(that.type()));
         }
         return false;
     }
@@ -85,8 +61,10 @@ public class SubExplicitProperty extends AbstractSubProperty {
     @Override
     public int hashCode() {
         int h = 1;
+//        h *= 1000003; TODO: Uncomment this once we fix issue #4761
+//        h ^= this.name().hashCode();
         h *= 1000003;
-        h ^= this.superType.hashCode();
+        h ^= this.type().hashCode();
         return h;
     }
 }

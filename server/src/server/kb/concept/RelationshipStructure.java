@@ -19,8 +19,8 @@
 package grakn.core.server.kb.concept;
 
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Relation;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Thing;
@@ -34,13 +34,13 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Encapsulates The structure of a  {@link Relationship}.
+ *     Encapsulates The structure of a  {@link Relation}.
  * </p>
  *
  * <p>
- *     This wraps up the structure of a {@link Relationship} as either a {@link RelationshipReified} or a
+ *     This wraps up the structure of a {@link Relation} as either a {@link RelationshipReified} or a
  *     {@link RelationshipEdge}.
- *     It contains methods which can be accessed regardless of the {@link Relationship} being a represented by a
+ *     It contains methods which can be accessed regardless of the {@link Relation} being a represented by a
  *     {@link VertexElement} or an {@link EdgeElement}
  * </p>
  *
@@ -50,7 +50,7 @@ interface RelationshipStructure extends CacheOwner {
 
     /**
      *
-     * @return The {@link ConceptId} of the {@link Relationship}
+     * @return The {@link ConceptId} of the {@link Relation}
      */
     ConceptId id();
 
@@ -62,15 +62,15 @@ interface RelationshipStructure extends CacheOwner {
 
     /**
      *
-     * @return true if the {@link Relationship} has been reified meaning it can support n-ary relationships
+     * @return true if the {@link Relation} has been reified meaning it can support n-ary relationships
      */
     boolean isReified();
 
     /**
      *
-     * @return The {@link RelationshipType} of the {@link Relationship}
+     * @return The {@link RelationType} of the {@link Relation}
      */
-    RelationshipType type();
+    RelationType type();
 
     /**
      *
@@ -86,7 +86,7 @@ interface RelationshipStructure extends CacheOwner {
     Stream<Thing> rolePlayers(Role... roles);
 
     /**
-     * Deletes the {@link VertexElement} or {@link EdgeElement} used to represent this {@link Relationship}
+     * Deletes the {@link VertexElement} or {@link EdgeElement} used to represent this {@link Relation}
      */
     void delete();
 
@@ -96,10 +96,10 @@ interface RelationshipStructure extends CacheOwner {
     boolean isDeleted();
 
     /**
-     * Used to indicate if this {@link Relationship} has been created as the result of a {@link Rule} inference.
+     * Used to indicate if this {@link Relation} has been created as the result of a {@link Rule} inference.
      * @see Rule
      *
-     * @return true if this {@link Relationship} exists due to a rule
+     * @return true if this {@link Relation} exists due to a rule
      */
     boolean isInferred();
 

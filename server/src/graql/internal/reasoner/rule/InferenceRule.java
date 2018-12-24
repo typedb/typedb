@@ -27,7 +27,7 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
@@ -208,27 +208,25 @@ public class InferenceRule {
         Set<Atomic> bodyAtoms = new HashSet<>(body.getAtoms());
 
         //transfer value predicates
+        Set<Variable> bodyVars = body.getVarNames();
         Set<ValuePredicate> vpsToPropagate = parentAtom.getPredicates(ValuePredicate.class)
                 .flatMap(vp -> vp.unify(unifier).stream())
-                .filter(vp -> body.getVarNames().contains(vp.getVarName()))
+                .filter(vp -> bodyVars.contains(vp.getVarName()))
                 .collect(toSet());
-
-        //System.out.println("Propagating vps\n" + vpsToPropagate);
         bodyAtoms.addAll(vpsToPropagate);
 
         //if head is a resource merge vps into head
         if (headAtom.isResource()) {
-            ResourceAtom resourceHead = (ResourceAtom) headAtom;
+            AttributeAtom resourceHead = (AttributeAtom) headAtom;
 
             if (resourceHead.getMultiPredicate().isEmpty()) {
                 Set<ValuePredicate> innerVps = parentAtom.getInnerPredicates(ValuePredicate.class)
                         .flatMap(vp -> vp.unify(unifier).stream())
                         .collect(toSet());
 
-                //System.out.println("Propagating inner vps\n" + innerVps);
                 bodyAtoms.addAll(innerVps);
 
-                headAtom = ResourceAtom.create(
+                headAtom = AttributeAtom.create(
                         resourceHead.getPattern(),
                         resourceHead.getAttributeVariable(),
                         resourceHead.getRelationVariable(),

@@ -169,10 +169,7 @@ public class Server {
     }
 
     private String getServerClassPath() {
-        // TODO:
-        // move server-binary_deploy.jar to the folder 'services/lib'
-        // then, this code should be graknHome.resolve("services/lib/*.jar")
-        Path jar = Paths.get("services", "lib", "server-binary_deploy.jar");
+        Path jar = Paths.get("services", "lib", "*");
         return graknHome.resolve(jar) + File.pathSeparator + graknHome.resolve("conf");
     }
 

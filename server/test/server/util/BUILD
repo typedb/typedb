@@ -25,3 +25,13 @@ java_test(
     ],
     size = "small"
 )
+
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+checkstyle_test(
+ name = "server-lock-manager-test-checkstyle",
+ target = ":server-lock-manager-test",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)

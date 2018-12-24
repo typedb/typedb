@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.graph;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.server.Session;
@@ -54,7 +54,7 @@ public class LinearTransitivityMatrixGraph{
         Role Qto = tx.getRole("Q-to");
 
         EntityType aEntity = tx.getEntityType("a-entity");
-        RelationshipType Q = tx.getRelationshipType("Q");
+        RelationType Q = tx.getRelationshipType("Q");
         ConceptId[][] aInstancesIds = new ConceptId[n+1][m+1];
         Thing aInst = putEntityWithResource(tx, "a", tx.getEntityType("entity2"), key);
         for(int i = 1 ; i <= n ;i++) {

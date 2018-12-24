@@ -15,6 +15,6 @@
 
 <style scoped>
     .settings-tab-content {
-        width: 214.14px;
+        width: 201px;
     }
 </style>

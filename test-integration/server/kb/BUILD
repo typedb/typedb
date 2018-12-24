@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
      name = "validator-it",
      srcs = ["ValidatorIT.java"],
@@ -12,6 +14,15 @@ java_test(
      size = "medium"
 )
 
+checkstyle_test(
+ name = "validator-it-checkstyle",
+ target = ":validator-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)
+
 java_test(
   name = "validate-global-rules-it",
   srcs = ["ValidateGlobalRulesIT.java"],
@@ -22,6 +33,15 @@ java_test(
   ],
   size = "medium",
   classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
+checkstyle_test(
+ name = "validate-global-rules-it-checkstyle",
+ target = ":validate-global-rules-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )
 
 java_test(
@@ -37,4 +57,13 @@ java_test(
   ],
   size = "medium",
   classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
+checkstyle_test(
+ name = "grakn-tx-it-checkstyle",
+ target = ":grakn-tx-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
 )

@@ -20,7 +20,8 @@ package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.pattern.property.RelationshipProperty;
+import grakn.core.graql.internal.executor.property.PropertyExecutor;
+import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import java.util.Collections;
 import java.util.Set;
@@ -46,9 +47,10 @@ public class NegativeStatement extends StatementBase {
         HashMultimap<VarProperty, VarProperty> propertyMap = HashMultimap.create();
         properties()
                 .forEach(p -> {
-                    if (p.mapsToAtom(this)) propertyMap.put(p, p);
+                    if (PropertyExecutor.atomable(this.var(), p).mappable(this))
+                        propertyMap.put(p, p);
                     else
-                        getProperties(RelationshipProperty.class).forEach(rp -> propertyMap.put(rp, p));
+                        getProperties(RelationProperty.class).forEach(rp -> propertyMap.put(rp, p));
                 });
 
         Set<Conjunction<Statement>> patterns = propertyMap.asMap().entrySet().stream()

@@ -18,32 +18,14 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.reasoner.atom.property.IsAbstractAtom;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
-
-import java.util.Collection;
-import java.util.Set;
-
-import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbstract;
-
 /**
- * Represents the {@code is-abstract} property on a {@link Type}.
+ * Represents the {@code is-abstract} property on a Type.
  * This property can be matched or inserted.
  * This property states that a type cannot have direct instances.
  */
 public class IsAbstractProperty extends VarProperty {
 
     private static final IsAbstractProperty INSTANCE = new IsAbstractProperty();
-
-    public static final String NAME = "is-abstract";
 
     private IsAbstractProperty() {}
 
@@ -52,12 +34,12 @@ public class IsAbstractProperty extends VarProperty {
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String name() {
+        return Name.IS_ABSTRACT.toString();
     }
 
     @Override
-    public String getProperty() {
+    public String property() {
         return null;
     }
 
@@ -68,42 +50,6 @@ public class IsAbstractProperty extends VarProperty {
 
     @Override
     public String toString() {
-        return NAME;
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        return IsAbstractAtom.create(var.var(), parent);
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        return ImmutableSet.of(isAbstract(this, start));
-    }
-
-    @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Concept concept = executor.get(var);
-            if (concept.isType()) {
-                concept.asType().isAbstract(true);
-            } else {
-                throw GraqlQueryException.insertAbstractOnNonType(concept.asSchemaConcept());
-            }
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
-    }
-
-    @Override
-    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Type type = executor.get(var).asType();
-            if (!type.isDeleted()) {
-                type.isAbstract(false);
-            }
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
+        return name();
     }
 }

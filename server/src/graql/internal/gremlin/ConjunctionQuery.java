@@ -21,12 +21,47 @@ package grakn.core.graql.internal.gremlin;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.executor.property.DataTypeExecutor;
+import grakn.core.graql.internal.executor.property.HasAttributeExecutor;
+import grakn.core.graql.internal.executor.property.HasAttributeTypeExecutor;
+import grakn.core.graql.internal.executor.property.IdExecutor;
+import grakn.core.graql.internal.executor.property.IsAbstractExecutor;
+import grakn.core.graql.internal.executor.property.IsaExecutor;
+import grakn.core.graql.internal.executor.property.IsaExecutor.IsaExplicitExecutor;
+import grakn.core.graql.internal.executor.property.LabelExecutor;
+import grakn.core.graql.internal.executor.property.NeqExecutor;
+import grakn.core.graql.internal.executor.property.PlaysExecutor;
+import grakn.core.graql.internal.executor.property.PropertyExecutor;
+import grakn.core.graql.internal.executor.property.RegexExecutor;
+import grakn.core.graql.internal.executor.property.RelatesExecutor;
+import grakn.core.graql.internal.executor.property.RelationExecutor;
+import grakn.core.graql.internal.executor.property.SubExecutor;
+import grakn.core.graql.internal.executor.property.SubExecutor.SubExplicitExecutor;
+import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.DataTypeProperty;
+import grakn.core.graql.query.pattern.property.HasAttributeProperty;
+import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
+import grakn.core.graql.query.pattern.property.IdProperty;
+import grakn.core.graql.query.pattern.property.IsAbstractProperty;
+import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
+import grakn.core.graql.query.pattern.property.LabelProperty;
+import grakn.core.graql.query.pattern.property.NeqProperty;
+import grakn.core.graql.query.pattern.property.PlaysProperty;
+import grakn.core.graql.query.pattern.property.RegexProperty;
+import grakn.core.graql.query.pattern.property.RelatesProperty;
+import grakn.core.graql.query.pattern.property.RelationProperty;
+import grakn.core.graql.query.pattern.property.SubExplicitProperty;
+import grakn.core.graql.query.pattern.property.SubProperty;
+import grakn.core.graql.query.pattern.property.ValueProperty;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.server.Transaction;
 
 import java.util.Collection;
@@ -54,7 +89,7 @@ import static java.util.stream.Collectors.toSet;
  */
 class ConjunctionQuery {
 
-    private final Set<Statement> vars;
+    private final Set<Statement> statements;
 
     private final ImmutableSet<EquivalentFragmentSet> equivalentFragmentSets;
 
@@ -62,14 +97,14 @@ class ConjunctionQuery {
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
     ConjunctionQuery(Conjunction<Statement> patternConjunction, Transaction tx) {
-        vars = patternConjunction.getPatterns();
+        statements = patternConjunction.getPatterns();
 
-        if (vars.size() == 0) {
+        if (statements.size() == 0) {
             throw GraqlQueryException.noPatterns();
         }
 
         ImmutableSet<EquivalentFragmentSet> fragmentSets =
-                vars.stream().flatMap(ConjunctionQuery::equivalentFragmentSetsRecursive).collect(toImmutableSet());
+                statements.stream().flatMap(statements -> equivalentFragmentSetsRecursive(statements)).collect(toImmutableSet());
 
         // Get all variable names mentioned in non-starting fragments
         Set<Variable> names = fragmentSets.stream()
@@ -120,16 +155,16 @@ class ConjunctionQuery {
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(Statement var) {
-        return var.implicitInnerStatements().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
+        return var.implicitInnerStatements().stream().flatMap(ConjunctionQuery::equivalentFragmentSets);
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(Statement var) {
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSets(Statement statement) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        Variable start = var.var();
+        Variable start = statement.var();
 
-        var.getProperties().forEach(property -> {
-            Collection<EquivalentFragmentSet> newTraversals = property.match(start);
+        statement.properties().stream().forEach(property -> {
+            Collection<EquivalentFragmentSet> newTraversals = PropertyExecutor.matchable(start, property).matchFragments();
             traversals.addAll(newTraversals);
         });
 
@@ -140,5 +175,4 @@ class ConjunctionQuery {
             return Stream.of(EquivalentFragmentSets.notInternalFragmentSet(null, start));
         }
     }
-
 }

@@ -42,3 +42,13 @@ java_test(
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
+
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+checkstyle_test(
+ name = "grakn-console-it-checkstyle",
+ target = ":grakn-console-it",
+ config = "//config/checkstyle:checkstyle.xml",
+ suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+ license = "//config/checkstyle:checkstyle-file-header.txt",
+ allow_failure = True
+)

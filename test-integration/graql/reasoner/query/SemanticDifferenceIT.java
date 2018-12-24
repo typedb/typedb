@@ -25,7 +25,7 @@ import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
@@ -216,7 +216,7 @@ public class SemanticDifferenceIT {
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = child.getMultiUnifierWithSemanticDiff(parent);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
-            ResourceAtom resource = (ResourceAtom) child.getAtom();
+            AttributeAtom resource = (AttributeAtom) child.getAtom();
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
@@ -242,7 +242,7 @@ public class SemanticDifferenceIT {
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = child.getMultiUnifierWithSemanticDiff(parent);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
-            ResourceAtom resource = (ResourceAtom) child.getAtom();
+            AttributeAtom resource = (AttributeAtom) child.getAtom();
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(

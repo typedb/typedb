@@ -24,7 +24,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
@@ -207,7 +207,7 @@ public class GreedyTraversalPlan {
         if (relationshipRolePlayerMap.isEmpty()) return;
 
         // for each type, get all possible relationship type it could be in
-        Multimap<Type, RelationshipType> relationshipMap = HashMultimap.create();
+        Multimap<Type, RelationType> relationshipMap = HashMultimap.create();
         labelVarTypeMap.values().stream().distinct().forEach(
                 type -> addAllPossibleRelationships(relationshipMap, type));
 
@@ -308,14 +308,14 @@ public class GreedyTraversalPlan {
     }
 
     private static Set<Type> getAllPossibleRelationshipTypes(
-            Collection<Type> instanceVarTypes, Multimap<Type, RelationshipType> relationshipMap) {
+            Collection<Type> instanceVarTypes, Multimap<Type, RelationType> relationshipMap) {
 
         return instanceVarTypes.stream()
                 .map(rolePlayerType -> (Set<Type>) new HashSet<Type>(relationshipMap.get(rolePlayerType)))
                 .reduce(Sets::intersection).orElse(Collections.emptySet());
     }
 
-    private static void addAllPossibleRelationships(Multimap<Type, RelationshipType> relationshipMap, Type metaType) {
+    private static void addAllPossibleRelationships(Multimap<Type, RelationType> relationshipMap, Type metaType) {
         metaType.subs().forEach(type -> type.playing().flatMap(Role::relationships)
                 .forEach(relationshipType -> relationshipMap.put(type, relationshipType)));
     }

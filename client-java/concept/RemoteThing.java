@@ -23,7 +23,7 @@ import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
@@ -78,13 +78,13 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     }
 
     @Override
-    public final Stream<Relationship> relationships(Role... roles) {
+    public final Stream<Relation> relationships(Role... roles) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingRelationsReq(ConceptProto.Thing.Relations.Req.newBuilder()
                         .addAllRoles(RequestBuilder.Concept.concepts(Arrays.asList(roles)))).build();
 
         int iteratorId = runMethod(method).getThingRelationsIter().getId();
-        return conceptStream(iteratorId, res -> res.getThingRelationsIterRes().getRelation()).map(Concept::asRelationship);
+        return conceptStream(iteratorId, res -> res.getThingRelationsIterRes().getRelation()).map(Concept::asRelation);
     }
 
     @Override
@@ -103,7 +103,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     }
 
     @Override @Deprecated
-    public final Relationship relhas(Attribute attribute) {
+    public final Relation relhas(Attribute attribute) {
         // TODO: replace usage of this method as a getter, with relationships(Attribute attribute)
         // TODO: then remove this method altogether and just use has(Attribute attribute)
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
@@ -111,7 +111,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
                         .setAttribute(RequestBuilder.Concept.concept(attribute))).build();
 
         Concept concept = RemoteConcept.of(runMethod(method).getThingRelhasRes().getRelation(), tx());
-        return concept.asRelationship();
+        return concept.asRelation();
     }
 
     @Override

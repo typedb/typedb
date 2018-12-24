@@ -31,11 +31,11 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.executor.property.PropertyExecutor.Writer;
 import grakn.core.graql.internal.util.Partition;
 import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.PropertyExecutor;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.server.Transaction;
 import org.slf4j.Logger;
@@ -50,19 +50,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
 /**
- * A class for executing {@link PropertyExecutor}s on {@link VarProperty}s within Graql queries.
+ * A class for executing PropertyExecutors on VarPropertys within Graql queries.
  * Multiple query types share this class, such as InsertQuery and DefineQuery.
  */
 public class WriteExecutor {
 
     protected final Logger LOG = LoggerFactory.getLogger(WriteExecutor.class);
 
-    private final Transaction tx;
+    private final Transaction transaction;
 
     // A mutable map associating each `Var` to the `Concept` in the graph it refers to.
     private final Map<Variable, Concept> concepts = new HashMap<>();
@@ -71,92 +70,58 @@ public class WriteExecutor {
     private final Map<Variable, ConceptBuilder> conceptBuilders = new HashMap<>();
 
     // An immutable set of all properties
-    private final ImmutableSet<VarAndProperty> properties;
+    private final ImmutableSet<Writer> writers;
 
     // A partition (disjoint set) indicating which `Var`s should refer to the same concept
     private final Partition<Variable> equivalentVars;
 
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
-    private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
+    private final ImmutableMultimap<Writer, Writer> dependencies;
 
-    private WriteExecutor(Transaction tx, ImmutableSet<VarAndProperty> properties,
+    private WriteExecutor(Transaction transaction,
+                          Set<Writer> writers,
                           Partition<Variable> equivalentVars,
-                          ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies) {
-        this.tx = tx;
-        this.properties = properties;
+                          Multimap<Writer, Writer> executorDependency
+    ) {
+        this.transaction = transaction;
+        this.writers = ImmutableSet.copyOf(writers);
         this.equivalentVars = equivalentVars;
-        this.dependencies = dependencies;
+        this.dependencies = ImmutableMultimap.copyOf(executorDependency);
     }
 
-    static ConceptMap insertAll(Collection<Statement> statements, Transaction transaction) {
-        return insertAll(statements, transaction, new ConceptMap());
+    Transaction tx() {
+        return transaction;
     }
 
-    static ConceptMap insertAll(Collection<Statement> patterns, Transaction transaction, ConceptMap results) {
-        ImmutableSet.Builder<VarAndProperty> properties = ImmutableSet.builder();
-        for (Statement statement : patterns) {
-            for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
-                for (PropertyExecutor executor : property.insert(statement.var())) {
-                    properties.add(new VarAndProperty(statement.var(), property, executor));
-                }
-            }
-        }
-        return create(properties.build(), transaction).insertAll(results);
-    }
-
-    static ConceptMap defineAll(Collection<Statement> patterns, Transaction transaction) {
-        ImmutableSet.Builder<VarAndProperty> properties = ImmutableSet.builder();
-        for (Statement statement : patterns) {
-            for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
-                for (PropertyExecutor executor : property.define(statement.var())) {
-                    properties.add(new VarAndProperty(statement.var(), property, executor));
-                }
-            }
-        }
-        return create(properties.build(), transaction).insertAll(new ConceptMap());
-    }
-
-    static ConceptMap undefineAll(ImmutableList<Statement> patterns, Transaction transaction) {
-        ImmutableSet.Builder<VarAndProperty> properties = ImmutableSet.builder();
-        for (Statement statement : patterns) {
-            for (VarProperty property : statement.getProperties().collect(Collectors.toList())){
-                for (PropertyExecutor executor : property.undefine(statement.var())) {
-                    properties.add(new VarAndProperty(statement.var(), property, executor));
-                }
-            }
-        }
-        return create(properties.build(), transaction).insertAll(new ConceptMap());
-    }
-
-    private static WriteExecutor create(ImmutableSet<VarAndProperty> properties, Transaction transaction) {
+    static WriteExecutor create(Transaction transaction, ImmutableSet<Writer> writers) {
         /*
             We build several many-to-many relations, indicated by a `Multimap<X, Y>`. These are used to represent
             the dependencies between properties and variables.
 
-            `propDependencies.containsEntry(prop, var)` indicates that the property `prop` cannot be inserted until
+            `propertyToItsRequiredVars.containsEntry(prop, var)` indicates that the property `prop` cannot be inserted until
             the concept represented by the variable `var` is created.
 
             For example, the property `$x isa $y` depends on the existence of the concept represented by `$y`.
          */
-        Multimap<VarAndProperty, Variable> propToVarDeps = HashMultimap.create();
+        Multimap<Writer, Variable> executorToRequiredVars = HashMultimap.create();
 
-        for (VarAndProperty property : properties) {
-            for (Variable requiredVar : property.executor.requiredVars()) {
-                propToVarDeps.put(property, requiredVar);
+        for (Writer writer : writers) {
+            for (Variable requiredVar : writer.requiredVars()) {
+                executorToRequiredVars.put(writer, requiredVar);
             }
         }
 
         /*
-            `varDependencies.containsEntry(var, prop)` indicates that the concept represented by the variable `var`
+            `varToItsProducerProperties.containsEntry(var, prop)` indicates that the concept represented by the variable `var`
             cannot be created until the property `prop` is inserted.
 
             For example, the concept represented by `$x` will not exist before the property `$x isa $y` is inserted.
          */
-        Multimap<Variable, VarAndProperty> varToPropDeps = HashMultimap.create();
+        Multimap<Variable, Writer> varToProducingWriter = HashMultimap.create();
 
-        for (VarAndProperty property : properties) {
-            for (Variable producedVar : property.executor.producedVars()) {
-                varToPropDeps.put(producedVar, property);
+        for (Writer executor : writers) {
+            for (Variable producedVar : executor.producedVars()) {
+                varToProducingWriter.put(producedVar, executor);
             }
         }
 
@@ -173,11 +138,11 @@ public class WriteExecutor {
             We know `$Y` must represent the same concept as `$X`, because they both share the same label property.
             Therefore, we can share their dependencies, such that:
 
-                varDependencies.containsEntry($X, prop) <=> varDependencies.containsEntry($Y, prop)
+                varToItsProducerProperties.containsEntry($X, prop) <=> varToItsProducerProperties.containsEntry($Y, prop)
 
             Therefore:
 
-                varDependencies.containsEntry($X, `$X sub entity`) => varDependencies.containsEntry($Y, `$X sub entity`)
+                varToItsProducerProperties.containsEntry($X, `$X sub entity`) => varToItsProducerProperties.containsEntry($Y, `$X sub entity`)
 
             Now we know that `$Y` depends on `$X sub entity` as well as `$X label movie`, which is enough information to
             insert the type!
@@ -185,46 +150,47 @@ public class WriteExecutor {
 
         Partition<Variable> equivalentVars = Partition.singletons(Collections.emptyList());
 
-        equivalentProperties(properties).asMap().values().forEach(vars -> {
+        propertyToEquivalentVars(writers).asMap().values().forEach(vars -> {
             // These vars must refer to the same concept, so share their dependencies
-            Collection<VarAndProperty> producers =
-                    vars.stream().flatMap(var -> varToPropDeps.get(var).stream()).collect(toList());
+            Collection<Writer> producingWriters =
+                    vars.stream().flatMap(var -> varToProducingWriter.get(var).stream()).collect(toList());
 
             Variable first = vars.iterator().next();
 
             vars.forEach(var -> {
-                varToPropDeps.replaceValues(var, producers);
+                varToProducingWriter.replaceValues(var, producingWriters);
                 equivalentVars.merge(first, var);
             });
         });
 
         /*
-            Together, `propDependencies` and `varDependencies` can be composed into a single many-to-many relation:
+            Together, `propertyToItsRequiredVars` and `varToItsProducerProperties` can be composed into a single many-to-many relation:
 
-                dependencies = propDependencies ∘ varDependencies
+                propertyDependencies = propertyToItsRequiredVars ∘ varToItsProducerProperties
 
-            By doing so, we map _directly_ between properties, skipping the vars. For example, if we previously had:
+            By doing so, we map directly between properties, skipping the vars. For example, if we previously had:
 
-                propDependencies.containsEntry(`$x isa $y`, `$y`);         // `$x isa $y` depends on `$y`
-                varDependencies.containsEntry(`$y`, `$y label movie`);     // `$y` depends on `$y label movie`
+                propertyToItsRequiredVars.containsEntry(`$x isa $y`, `$y`);             // `$x isa $y` depends on `$y`
+                varToItsProducerProperties.containsEntry(`$y`, `$y label movie`);       // `$y` depends on `$y label movie`
 
             Then it follows that:
 
-                dependencies.containsEntry(`$x isa $y`, `$y label movie`); // `$x isa $y` depends on `$y label movie`
+                propertyDependencies.containsEntry(`$x isa $y`, `$y label movie`);      // `$x isa $y` depends on `$y label movie`
 
-            The `dependencies` relation contains all the information to decide what order to execute the properties.
+            The `propertyDependencies` relation contains all the information to decide what order to execute the properties.
          */
-        Multimap<VarAndProperty, VarAndProperty> propertyDependencies = propertyDependencies(propToVarDeps, varToPropDeps);
+        Multimap<Writer, Writer> writerDependencies =
+                writerDependencies(executorToRequiredVars, varToProducingWriter);
 
-        return new WriteExecutor(transaction, properties, equivalentVars, ImmutableMultimap.copyOf(propertyDependencies));
+        return new WriteExecutor(transaction, writers, equivalentVars, writerDependencies);
     }
 
-    private static Multimap<VarProperty, Variable> equivalentProperties(Set<VarAndProperty> properties) {
+    private static Multimap<VarProperty, Variable> propertyToEquivalentVars(Set<Writer> executors) {
         Multimap<VarProperty, Variable> equivalentProperties = HashMultimap.create();
 
-        for (VarAndProperty varAndProperty : properties) {
-            if (varAndProperty.property.uniquelyIdentifiesConcept()) {
-                equivalentProperties.put(varAndProperty.property, varAndProperty.var);
+        for (Writer executor : executors) {
+            if (executor.property().uniquelyIdentifiesConcept()) {
+                equivalentProperties.put(executor.property(), executor.var());
             }
         }
 
@@ -232,32 +198,35 @@ public class WriteExecutor {
     }
 
     /**
-     * <a href=https://en.wikipedia.org/wiki/Composition_of_relations>Compose</a> two {@link Multimap}s together,
+     * <a href=https://en.wikipedia.org/wiki/Composition_of_relations>Compose</a> two Multimaps together,
      * treating them like many-to-many relations.
      */
-    private static Multimap<VarAndProperty, VarAndProperty> propertyDependencies(Multimap<VarAndProperty, Variable> propToVar, Multimap<Variable, VarAndProperty> varToProp) {
-        Multimap<VarAndProperty, VarAndProperty> propertyDependencies = HashMultimap.create();
+    private static Multimap<Writer, Writer> writerDependencies(
+            Multimap<Writer, Variable> writerToVar,
+            Multimap<Variable, Writer> varToWriter
+    ) {
+        Multimap<Writer, Writer> dependency = HashMultimap.create();
 
-        for (Map.Entry<VarAndProperty, Variable> entry1 : propToVar.entries()) {
-            VarAndProperty dependant = entry1.getKey();
-            Variable intermediateVar = entry1.getValue();
+        for (Map.Entry<Writer, Variable> entry : writerToVar.entries()) {
+            Writer dependant = entry.getKey();
+            Variable intermediateVar = entry.getValue();
 
-            for (VarAndProperty depended : varToProp.get(intermediateVar)) {
-                propertyDependencies.put(dependant, depended);
+            for (Writer depended : varToWriter.get(intermediateVar)) {
+                dependency.put(dependant, depended);
             }
         }
 
-        return propertyDependencies;
+        return dependency;
     }
 
-    private ConceptMap insertAll(ConceptMap map) {
-        concepts.putAll(map.map());
+    ConceptMap write(ConceptMap preExisting) {
+        concepts.putAll(preExisting.map());
 
-        for (VarAndProperty property : sortProperties()) {
-            property.executor.execute(this);
+        for (Writer writer : sortedWriters()) {
+            writer.execute(this);
         }
 
-        conceptBuilders.forEach((var1, builder) -> buildConcept(var1, builder));
+        conceptBuilders.forEach((var, builder) -> buildConcept(var, builder));
 
         ImmutableMap.Builder<Variable, Concept> allConcepts = ImmutableMap.<Variable, Concept>builder().putAll(concepts);
 
@@ -281,28 +250,28 @@ public class WriteExecutor {
      * Produce a valid ordering of the properties by using the given dependency information.
      * This method uses a topological sort (Kahn's algorithm) in order to find a valid ordering.
      */
-    private ImmutableList<VarAndProperty> sortProperties() {
-        ImmutableList.Builder<VarAndProperty> sorted = ImmutableList.builder();
+    private ImmutableList<Writer> sortedWriters() {
+        ImmutableList.Builder<Writer> sorted = ImmutableList.builder();
 
         // invertedDependencies is intended to just be a 'view' on dependencies, so when dependencies is modified
         // we should always also modify invertedDependencies (and vice-versa).
-        Multimap<VarAndProperty, VarAndProperty> dependencies = HashMultimap.create(this.dependencies);
-        Multimap<VarAndProperty, VarAndProperty> invertedDependencies = HashMultimap.create();
+        Multimap<Writer, Writer> dependencies = HashMultimap.create(this.dependencies);
+        Multimap<Writer, Writer> invertedDependencies = HashMultimap.create();
         Multimaps.invertFrom(dependencies, invertedDependencies);
 
-        Queue<VarAndProperty> propertiesWithoutDependencies =
-                new ArrayDeque<>(Sets.filter(properties, property -> dependencies.get(property).isEmpty()));
+        Queue<Writer> writerWithoutDependencies =
+                new ArrayDeque<>(Sets.filter(writers, property -> dependencies.get(property).isEmpty()));
 
-        VarAndProperty property;
+        Writer property;
 
         // Retrieve the next property without any dependencies
-        while ((property = propertiesWithoutDependencies.poll()) != null) {
+        while ((property = writerWithoutDependencies.poll()) != null) {
             sorted.add(property);
 
             // We copy this into a new list because the underlying collection gets modified during iteration
-            Collection<VarAndProperty> dependents = Lists.newArrayList(invertedDependencies.get(property));
+            Collection<Writer> dependents = Lists.newArrayList(invertedDependencies.get(property));
 
-            for (VarAndProperty dependent : dependents) {
+            for (Writer dependent : dependents) {
                 // Because the property has been removed, the dependent no longer needs to depend on it
                 dependencies.remove(dependent, property);
                 invertedDependencies.remove(property, dependent);
@@ -310,14 +279,14 @@ public class WriteExecutor {
                 boolean hasNoDependencies = dependencies.get(dependent).isEmpty();
 
                 if (hasNoDependencies) {
-                    propertiesWithoutDependencies.add(dependent);
+                    writerWithoutDependencies.add(dependent);
                 }
             }
         }
 
         if (!dependencies.isEmpty()) {
             // This means there must have been a loop. Pick an arbitrary remaining var to display
-            Variable var = dependencies.keys().iterator().next().var;
+            Variable var = dependencies.keys().iterator().next().var();
             throw GraqlQueryException.insertRecursive(printableRepresentation(var));
         }
 
@@ -325,15 +294,16 @@ public class WriteExecutor {
     }
 
     /**
-     * Return a {@link ConceptBuilder} for given {@link Variable}. This can be used to provide information for how to create
+     * Return a ConceptBuilder for given Variable. This can be used to provide information for how to create
      * the concept that the variable represents.
      * This method is expected to be called from implementations of
-     * {@link VarProperty#insert(Variable)}, provided they return the given {@link Variable} in the
-     * response to {@link PropertyExecutor#producedVars()}.
+     * VarProperty#insert(Variable), provided they return the given Variable in the
+     * response to PropertyExecutor#producedVars().
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
+     *
      * @throws GraqlQueryException if the concept in question has already been created
      */
-    public ConceptBuilder builder(Variable var) {
+    public ConceptBuilder getBuilder(Variable var) {
         return tryBuilder(var).orElseThrow(() -> {
             Concept concept = concepts.get(equivalentVars.componentOf(var));
             return GraqlQueryException.insertExistingConcept(printableRepresentation(var), concept);
@@ -341,11 +311,11 @@ public class WriteExecutor {
     }
 
     /**
-     * Return a {@link ConceptBuilder} for given {@link Variable}. This can be used to provide information for how to create
+     * Return a ConceptBuilder for given Variable. This can be used to provide information for how to create
      * the concept that the variable represents.
      * This method is expected to be called from implementations of
-     * {@link VarProperty#insert(Variable)}, provided they include the given {@link Variable} in
-     * their {@link PropertyExecutor#producedVars()}.
+     * VarProperty#insert(Variable), provided they include the given Variable in
+     * their PropertyExecutor#producedVars().
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
      * If the concept has already been created, this will return empty.
      */
@@ -368,12 +338,12 @@ public class WriteExecutor {
     }
 
     /**
-     * Return a {@link Concept} for a given {@link Variable}.
+     * Return a Concept for a given Variable.
      * This method is expected to be called from implementations of
-     * {@link VarProperty#insert(Variable)}, provided they include the given {@link Variable} in
-     * their {@link PropertyExecutor#requiredVars()}.
+     * VarProperty#insert(Variable), provided they include the given Variable in
+     * their PropertyExecutor#requiredVars().
      */
-    public Concept get(Variable var) {
+    public Concept getConcept(Variable var) {
         var = equivalentVars.componentOf(var);
         assert var != null;
 
@@ -401,68 +371,12 @@ public class WriteExecutor {
 
         // This could be faster if we built a dedicated map Var -> VarPattern
         // However, this method is only used for displaying errors, so it's not worth the cost
-        for (VarAndProperty vp : properties) {
-            if (vp.var.equals(var)) {
-                propertiesOfVar.add(vp.property);
+        for (Writer executor : writers) {
+            if (executor.var().equals(var)) {
+                propertiesOfVar.add(executor.property());
             }
         }
 
         return new PositiveStatement(var, propertiesOfVar.build());
-    }
-
-    Transaction tx() {
-        return tx;
-    }
-
-    /**
-     * Represents a pairing of a {@link VarProperty} and its subject {@link Variable}.
-     * e.g. {@code $x} and {@code isa $y}, together are {@code $x isa $y}.
-     */
-    private static class VarAndProperty {
-
-        private final Variable var;
-        private final VarProperty property;
-        private final PropertyExecutor executor;
-
-        VarAndProperty(Variable var, VarProperty property, PropertyExecutor executor) {
-            if (var == null) {
-                throw new NullPointerException("Null var");
-            }
-            this.var = var;
-            if (property == null) {
-                throw new NullPointerException("Null property");
-            }
-            this.property = property;
-            if (executor == null) {
-                throw new NullPointerException("Null executor");
-            }
-            this.executor = executor;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (o == this) {
-                return true;
-            }
-            if (o instanceof WriteExecutor.VarAndProperty) {
-                WriteExecutor.VarAndProperty that = (WriteExecutor.VarAndProperty) o;
-                return (this.var.equals(that.var))
-                        && (this.property.equals(that.property))
-                        && (this.executor.equals(that.executor));
-            }
-            return false;
-        }
-
-        @Override
-        public int hashCode() {
-            int h = 1;
-            h *= 1000003;
-            h ^= this.var.hashCode();
-            h *= 1000003;
-            h ^= this.property.hashCode();
-            h *= 1000003;
-            h ^= this.executor.hashCode();
-            return h;
-        }
     }
 }

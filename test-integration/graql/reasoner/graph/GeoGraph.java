@@ -22,7 +22,7 @@ import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.query.pattern.Pattern;
@@ -36,7 +36,7 @@ public class GeoGraph {
     private AttributeType<String> key;
 
     private EntityType university, city, region, country, continent, geographicalObject;
-    private RelationshipType isLocatedIn;
+    private RelationType isLocatedIn;
 
     private Role geoEntity, entityLocation;
 

@@ -18,36 +18,16 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.reasoner.atom.binary.RelatesAtom;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.relates;
-import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.sub;
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
-
 /**
- * Represents the {@code relates} property on a {@link RelationshipType}.
- * <p>
+ * Represents the {@code relates} property on a RelationshipType.
  * This property can be queried, inserted or deleted.
- * <p>
- * This property relates a {@link RelationshipType} and a {@link Role}. It indicates that a {@link Relationship} whose
- * type is this {@link RelationshipType} may have a role-player playing the given {@link Role}.
+ * This property relates a RelationshipType and a Role. It indicates that a Relationship whose
+ * type is this RelationshipType may have a role-player playing the given Role.
  */
 public class RelatesProperty extends VarProperty {
 
@@ -62,13 +42,21 @@ public class RelatesProperty extends VarProperty {
         this.superRole = superRole;
     }
 
-    @Override
-    public String getName() {
-        return "relates";
+    public Statement role() {
+        return role;
+    }
+
+    public Statement superRole() {
+        return superRole;
     }
 
     @Override
-    public String getProperty() {
+    public String name() {
+        return Name.RELATES.toString();
+    }
+
+    @Override
+    public String property() {
         StringBuilder builder = new StringBuilder(role.getPrintableName());
         if (superRole != null) {
             builder.append(" as ").append(superRole.getPrintableName());
@@ -82,81 +70,13 @@ public class RelatesProperty extends VarProperty {
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(Variable start) {
-        Statement superRole = this.superRole;
-        EquivalentFragmentSet relates = relates(this, start, role.var());
-        if (superRole == null) {
-            return ImmutableSet.of(relates);
-        } else {
-            return ImmutableSet.of(relates, sub(this, role.var(), superRole.var()));
-        }
-    }
-
-    @Override
-    public Stream<Statement> getTypes() {
+    public Stream<Statement> types() {
         return Stream.of(role);
     }
 
     @Override
     public Stream<Statement> innerStatements() {
         return superRole == null ? Stream.of(role) : Stream.of(superRole, role);
-    }
-
-    @Override
-    public Atomic mapToAtom(Statement var, Set<Statement> vars, ReasonerQuery parent) {
-        Variable varName = var.var().asUserDefined();
-        Statement roleVar = role;
-        Variable roleVariable = roleVar.var();
-        IdPredicate predicate = getIdPredicate(roleVariable, roleVar, vars, parent);
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        return RelatesAtom.create(varName, roleVariable, predicateId, parent);
-    }
-
-    @Override
-    public Collection<PropertyExecutor> define(Variable var) throws GraqlQueryException {
-        Variable roleVar = role.var();
-
-        PropertyExecutor.Method relatesMethod = executor -> {
-            Role role = executor.get(roleVar).asRole();
-            executor.get(var).asRelationshipType().relates(role);
-        };
-
-        PropertyExecutor relatesExecutor = PropertyExecutor.builder(relatesMethod).requires(var, roleVar).build();
-
-        // This allows users to skip stating `$roleVar sub role` when they say `$var relates $roleVar`
-        PropertyExecutor.Method isRoleMethod = executor -> executor.builder(roleVar).isRole();
-
-        PropertyExecutor isRoleExecutor = PropertyExecutor.builder(isRoleMethod).produces(roleVar).build();
-
-        Statement superRoleStatement = superRole;
-        if (superRoleStatement != null) {
-            Variable superRoleVar = superRoleStatement.var();
-            PropertyExecutor.Method subMethod = executor -> {
-                Role superRole = executor.get(superRoleVar).asRole();
-                executor.builder(roleVar).sub(superRole);
-            };
-
-            PropertyExecutor subExecutor = PropertyExecutor.builder(subMethod)
-                    .requires(superRoleVar).produces(roleVar).build();
-
-            return ImmutableSet.of(relatesExecutor, isRoleExecutor, subExecutor);
-        } else {
-            return ImmutableSet.of(relatesExecutor, isRoleExecutor);
-        }
-    }
-
-    @Override
-    public Collection<PropertyExecutor> undefine(Variable var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            RelationshipType relationshipType = executor.get(var).asRelationshipType();
-            Role role = executor.get(this.role.var()).asRole();
-
-            if (!relationshipType.isDeleted() && !role.isDeleted()) {
-                relationshipType.unrelate(role);
-            }
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role.var()).build());
     }
 
     @Override

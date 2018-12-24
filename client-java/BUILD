@@ -53,6 +53,16 @@ java_library(
     tags = ["maven_coordinates=grakn.core:client:{pom_version}"],
 )
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+checkstyle_test(
+    name = "client-java-checkstyle",
+    target = ":client-java",
+    config = "//config/checkstyle:checkstyle.xml",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    license = "//config/checkstyle:checkstyle-file-header.txt",
+    allow_failure = True
+)
+
 deploy_maven_jar(
     name = "deploy-maven-jar",
     target = ":client-java",
