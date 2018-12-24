@@ -1,6 +1,4 @@
 exports_files([
-    "checkstyle-file-header-agpl.txt",
-    "checkstyle-file-header-apache.txt",
     "checkstyle-suppressions.xml",
     "checkstyle.xml",
 ])
