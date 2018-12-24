@@ -145,6 +145,7 @@ java_test(
         "//server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
 )
 

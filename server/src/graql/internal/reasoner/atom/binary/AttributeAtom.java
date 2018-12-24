@@ -109,8 +109,8 @@ public abstract class AttributeAtom extends Binary{
         Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
         return RelationshipAtom.create(
                 Pattern.var()
-                        .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), getVarName())
-                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), getAttributeVariable())
+                        .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), new Statement(getVarName()))
+                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), new Statement(getAttributeVariable()))
                         .isa(typeLabel.getValue()),
                 getPredicateVariable(),
                 tx.getSchemaConcept(typeLabel).id(),
@@ -128,7 +128,7 @@ public abstract class AttributeAtom extends Binary{
      */
     @Override
     public IsaAtom toIsaAtom(){
-        return IsaAtom.create(getAttributeVariable(), Pattern.var(), getTypeId(), false, getParentQuery());
+        return IsaAtom.create(getAttributeVariable(), new Variable(), getTypeId(), false, getParentQuery());
     }
 
     @Override
@@ -362,7 +362,8 @@ public abstract class AttributeAtom extends Binary{
     public AttributeAtom rewriteWithRelationVariable(){
         Variable attributeVariable = getAttributeVariable();
         Variable relationVariable = getRelationVariable().asUserDefined();
-        Statement newVar = getVarName().has(getSchemaConcept().label(), attributeVariable, relationVariable);
+        Statement newVar = new Statement(getVarName())
+                .has(getSchemaConcept().label().getValue(), new Statement(attributeVariable), new Statement(relationVariable));
         return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 

@@ -8,9 +8,9 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
@@ -107,9 +107,9 @@ public class AtomicRuleApplicabilityIT {
         String relationString = "{($x, $y, $z);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity; $z isa twoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
-                tx.getRole("role"), var("x"),
-                tx.getRole("role"), var("y"),
-                tx.getRole("role"), var("z"));
+                tx.getRole("role"), new Variable("x"),
+                tx.getRole("role"), new Variable("y"),
+                tx.getRole("role"), new Variable("z"));
         assertEquals(roleMap, roleSetMap((relation.getRoleVarMap())));
         assertEquals(5, relation.getApplicableRules().count());
         tx.close();
@@ -122,9 +122,9 @@ public class AtomicRuleApplicabilityIT {
         String relationString = "{($x, $y, $z);$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
-                tx.getRole("role"), var("x"),
-                tx.getRole("role"), var("y"),
-                tx.getRole("role"), var("z"));
+                tx.getRole("role"), new Variable("x"),
+                tx.getRole("role"), new Variable("y"),
+                tx.getRole("role"), new Variable("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
         assertEquals(2, relation.getApplicableRules().count());
         tx.close();
@@ -249,9 +249,9 @@ public class AtomicRuleApplicabilityIT {
         String relationString = "{($x, $y, $z);$y isa singleRoleEntity; $z isa twoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
-                tx.getRole("role"), var("x"),
-                tx.getRole("role"), var("y"),
-                tx.getRole("role"), var("z"));
+                tx.getRole("role"), new Variable("x"),
+                tx.getRole("role"), new Variable("y"),
+                tx.getRole("role"), new Variable("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
         assertEquals(5, relation.getApplicableRules().count());
         tx.close();
@@ -357,9 +357,9 @@ public class AtomicRuleApplicabilityIT {
         String relationString = "{($x, $y, $z);$y isa singleRoleEntity; $z isa singleRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
-                tx.getRole("role"), var("x"),
-                tx.getRole("role"), var("y"),
-                tx.getRole("role"), var("z"));
+                tx.getRole("role"), new Variable("x"),
+                tx.getRole("role"), new Variable("y"),
+                tx.getRole("role"), new Variable("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
         assertThat(relation.getApplicableRules().collect(toSet()), empty());
         tx.close();

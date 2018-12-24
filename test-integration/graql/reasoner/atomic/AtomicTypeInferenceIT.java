@@ -61,7 +61,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 
@@ -349,9 +348,9 @@ public class AtomicTypeInferenceIT {
 
         //determination of possible rel types for ($y, $z) relation depends on its neighbours which should be preserved
         //when resolving (and separating atoms) the query
-        RelationshipAtom XYatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(var("x"), var("y")));
-        RelationshipAtom YZatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(var("y"), var("z")));
-        RelationshipAtom ZWatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(var("z"), var("w")));
+        RelationshipAtom XYatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(new Variable("x"), new Variable("y")));
+        RelationshipAtom YZatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(new Variable("y"), new Variable("z")));
+        RelationshipAtom ZWatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(new Variable("z"), new Variable("w")));
         RelationshipAtom midAtom = (RelationshipAtom) ReasonerQueries.atomic(YZatom).getAtom();
 
         assertEquals(midAtom.getPossibleTypes(), YZatom.getPossibleTypes());

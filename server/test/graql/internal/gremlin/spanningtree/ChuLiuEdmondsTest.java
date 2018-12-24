@@ -28,13 +28,13 @@ import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.query.pattern.Variable;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static grakn.core.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
-import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.junit.Assert.assertEquals;
 
 
@@ -66,9 +66,9 @@ public class ChuLiuEdmondsTest {
     @Test
     public void testNegativeWeightWithNodeObject() {
         Map<NodeId, Node> nodes = new HashMap<>();
-        Node node0 = Node.addIfAbsent(NodeId.NodeType.VAR, var("0"), nodes);
-        Node node1 = Node.addIfAbsent(NodeId.NodeType.VAR, var("1"), nodes);
-        Node node2 = Node.addIfAbsent(NodeId.NodeType.VAR, var("2"), nodes);
+        Node node0 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("0"), nodes);
+        Node node1 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("1"), nodes);
+        Node node2 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("2"), nodes);
         final WeightedGraph<Node> Isa = SparseWeightedGraph.from(ImmutableList.of(
                 weighted(DirectedEdge.from(node0).to(node1), -0.69),
                 weighted(DirectedEdge.from(node1).to(node2), 0),

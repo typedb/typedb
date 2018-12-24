@@ -18,8 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableBiMap;
-import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.query.Query;
 
 /**
  * Represents the {@code datatype} property on a AttributeType.
@@ -27,35 +26,28 @@ import grakn.core.graql.concept.AttributeType;
  */
 public class DataTypeProperty extends VarProperty {
 
-    private final AttributeType.DataType<?> dataType;
-    private static final ImmutableBiMap<String, AttributeType.DataType<?>> DATA_TYPES = ImmutableBiMap.of(
-            "long", AttributeType.DataType.LONG,
-            "double", AttributeType.DataType.DOUBLE,
-            "string", AttributeType.DataType.STRING,
-            "boolean", AttributeType.DataType.BOOLEAN,
-            "date", AttributeType.DataType.DATE
-    );
+    private final Query.DataType dataType;
 
-    public DataTypeProperty(
-            AttributeType.DataType<?> dataType) {
+
+    public DataTypeProperty(Query.DataType dataType) {
         if (dataType == null) {
             throw new NullPointerException("Null dataType");
         }
         this.dataType = dataType;
     }
 
-    public AttributeType.DataType<?> dataType() {
+    public Query.DataType dataType() {
         return dataType;
     }
 
     @Override
     public String name() {
-        return Name.DATA_TYPE.toString();
+        return Query.Property.DATA_TYPE.toString();
     }
 
     @Override
     public String property() {
-        return DATA_TYPES.inverse().get(dataType());
+        return dataType.toString();
     }
 
     @Override

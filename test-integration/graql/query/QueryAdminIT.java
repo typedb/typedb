@@ -19,10 +19,10 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -74,7 +74,7 @@ public class QueryAdminIT {
     public void testDefaultGetSelectedNamesInQuery() {
         MatchClause match = Graql.match(var("x").isa(var("y")));
 
-        assertEquals(Sets.newHashSet(var("x"), var("y")), match.getSelectedNames());
+        assertEquals(Sets.newHashSet(new Variable("x"), new Variable("y")), match.getSelectedNames());
     }
 
     @Test
@@ -100,22 +100,22 @@ public class QueryAdminIT {
 
     @Test
     public void testInsertQueryMatchPatternEmpty() {
-        InsertQuery query = Graql.insert(var().id(ConceptId.of("123")).isa("movie"));
+        InsertQuery query = Graql.insert(var().id("123").isa("movie"));
         assertNull(query.match());
     }
 
     @Test
     public void testInsertQueryWithMatch() {
-        InsertQuery query = Graql.match(var("x").isa("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
+        InsertQuery query = Graql.match(var("x").isa("movie")).insert(var().id("123").isa("movie"));
         assertEquals("match $x isa movie;", query.match().toString());
 
-        query = Graql.match(var("x").isaExplicit("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
+        query = Graql.match(var("x").isaExplicit("movie")).insert(var().id("123").isa("movie"));
         assertEquals("match $x isa! movie;", query.match().toString());
     }
 
     @Test
     public void testInsertQueryGetVars() {
-        InsertQuery query = Graql.insert(var().id(ConceptId.of("123")).isa("movie"), var().id(ConceptId.of("123")).val("Hi"));
+        InsertQuery query = Graql.insert(var().id("123").isa("movie"), var().id("123").val("Hi"));
         // Should not merge variables
         assertEquals(2, query.statements().size());
     }

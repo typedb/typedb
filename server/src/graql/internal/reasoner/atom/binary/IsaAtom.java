@@ -54,12 +54,7 @@ import java.util.stream.Stream;
 import static grakn.core.common.util.CommonUtil.toImmutableList;
 
 /**
- *
- * <p>
  * TypeAtom corresponding to graql a {@link IsaProperty} property.
- * </p>
- *
- *
  */
 @AutoValue
 public abstract class IsaAtom extends IsaAtomBase {
@@ -73,12 +68,18 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     public static IsaAtom create(Variable var, Variable predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent) {
-        Statement pattern = isDirect ? var.isaExplicit(predicateVar) : var.isa(predicateVar);
+        Statement pattern = isDirect ?
+                new Statement(var).isaExplicit(new Statement(predicateVar)) :
+                new Statement(var).isa(new Statement(predicateVar));
+
         return new AutoValue_IsaAtom(var, predicateId, predicateVar, pattern, parent);
     }
 
     public static IsaAtom create(Variable var, Variable predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent) {
-        Statement pattern = isDirect ? var.isaExplicit(predicateVar) : var.isa(predicateVar);
+        Statement pattern = isDirect ?
+                new Statement(var).isaExplicit(new Statement(predicateVar)) :
+                new Statement(var).isa(new Statement(predicateVar));
+
         return new AutoValue_IsaAtom(var, type.id(), predicateVar, pattern, parent);
     }
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
@@ -131,10 +132,10 @@ public abstract class IsaAtom extends IsaAtomBase {
     protected Pattern createCombinedPattern(){
         if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
         return getSchemaConcept() == null?
-                getVarName().isa(getPredicateVariable()) :
+                new Statement(getVarName()).isa(new Statement(getPredicateVariable())) :
                 isDirect()?
-                        getVarName().isaExplicit(getSchemaConcept().label().getValue()) :
-                        getVarName().isa(getSchemaConcept().label().getValue()) ;
+                        new Statement(getVarName()).isaExplicit(getSchemaConcept().label().getValue()) :
+                        new Statement(getVarName()).isa(getSchemaConcept().label().getValue()) ;
     }
 
     @Override

@@ -53,7 +53,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
@@ -98,19 +97,19 @@ public class AtomicQueryUnificationIT {
             ReasonerAtomicQuery xbaseQuery = ReasonerQueries.atomic(conjunction("{($x1, $x2) isa binary;}"), tx);
             ReasonerAtomicQuery ybaseQuery = ReasonerQueries.atomic(conjunction("{($y1, $y2) isa binary;}"), tx);
 
-            ConceptMap xAnswer = new ConceptMap(ImmutableMap.of(var("x1"), x1, var("x2"), x2));
-            ConceptMap flippedXAnswer = new ConceptMap(ImmutableMap.of(var("x1"), x2, var("x2"), x1));
+            ConceptMap xAnswer = new ConceptMap(ImmutableMap.of(new Variable("x1"), x1, new Variable("x2"), x2));
+            ConceptMap flippedXAnswer = new ConceptMap(ImmutableMap.of(new Variable("x1"), x2, new Variable("x2"), x1));
 
-            ConceptMap yAnswer = new ConceptMap(ImmutableMap.of(var("y1"), x1, var("y2"), x2));
-            ConceptMap flippedYAnswer = new ConceptMap(ImmutableMap.of(var("y1"), x2, var("y2"), x1));
+            ConceptMap yAnswer = new ConceptMap(ImmutableMap.of(new Variable("y1"), x1, new Variable("y2"), x2));
+            ConceptMap flippedYAnswer = new ConceptMap(ImmutableMap.of(new Variable("y1"), x2, new Variable("y2"), x1));
 
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(xbaseQuery, xAnswer);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(xbaseQuery, flippedXAnswer);
 
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier = new MultiUnifierImpl(ImmutableMultimap.of(
-                    var("x1"), var("x2"),
-                    var("x2"), var("x1")
+                    new Variable("x1"), new Variable("x2"),
+                    new Variable("x2"), new Variable("x1")
             ));
             assertEquals(correctUnifier, unifier);
 
@@ -119,15 +118,15 @@ public class AtomicQueryUnificationIT {
 
             MultiUnifier unifier2 = yChildQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier2 = new MultiUnifierImpl(ImmutableMultimap.of(
-                    var("y1"), var("x1"),
-                    var("y2"), var("x2")
+                    new Variable("y1"), new Variable("x1"),
+                    new Variable("y2"), new Variable("x2")
             ));
             assertEquals(correctUnifier2, unifier2);
 
             MultiUnifier unifier3 = yChildQuery2.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier3 = new MultiUnifierImpl(ImmutableMultimap.of(
-                    var("y1"), var("x2"),
-                    var("y2"), var("x1")
+                    new Variable("y1"), new Variable("x2"),
+                    new Variable("y2"), new Variable("x1")
             ));
             assertEquals(correctUnifier3, unifier3);
         }
@@ -141,8 +140,8 @@ public class AtomicQueryUnificationIT {
 
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery);
             MultiUnifier correctUnifier = new MultiUnifierImpl(ImmutableMultimap.of(
-                    var("y1"), var("x1"),
-                    var("y2"), var("x2")
+                    new Variable("y1"), new Variable("x1"),
+                    new Variable("y2"), new Variable("x2")
             ));
             assertTrue(unifier.equals(correctUnifier));
         }
@@ -156,8 +155,8 @@ public class AtomicQueryUnificationIT {
 
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery);
             MultiUnifier correctUnifier = new MultiUnifierImpl(ImmutableMultimap.of(
-                    var("y1"), var("x1"),
-                    var("y2"), var("x2")
+                    new Variable("y1"), new Variable("x1"),
+                    new Variable("y2"), new Variable("x2")
             ));
             assertEquals(correctUnifier, unifier);
         }
@@ -183,13 +182,13 @@ public class AtomicQueryUnificationIT {
             MultiUnifier unifier = childQuery3.getMultiUnifier(parentQuery);
             MultiUnifier correctUnifier = new MultiUnifierImpl(
                     ImmutableMultimap.of(
-                            var("u"), var("x"),
-                            var("v"), var("y"),
-                            var("q"), var("z")),
+                            new Variable("u"), new Variable("x"),
+                            new Variable("v"), new Variable("y"),
+                            new Variable("q"), new Variable("z")),
                     ImmutableMultimap.of(
-                            var("u"), var("y"),
-                            var("v"), var("x"),
-                            var("q"), var("z"))
+                            new Variable("u"), new Variable("y"),
+                            new Variable("v"), new Variable("x"),
+                            new Variable("q"), new Variable("z"))
             );
             assertEquals(correctUnifier, unifier);
             assertEquals(2, unifier.size());
@@ -208,22 +207,22 @@ public class AtomicQueryUnificationIT {
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier = new MultiUnifierImpl(
                     ImmutableMultimap.of(
-                            var("q"), var("x"),
-                            var("u"), var("x"),
-                            var("v"), var("y"))
+                            new Variable("q"), new Variable("x"),
+                            new Variable("u"), new Variable("x"),
+                            new Variable("v"), new Variable("y"))
             );
             assertEquals(correctUnifier, unifier);
 
             MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier2 = new MultiUnifierImpl(
                     ImmutableMultimap.of(
-                            var("u"), var("x"),
-                            var("q"), var("x"),
-                            var("v"), var("y")),
+                            new Variable("u"), new Variable("x"),
+                            new Variable("q"), new Variable("x"),
+                            new Variable("v"), new Variable("y")),
                     ImmutableMultimap.of(
-                            var("u"), var("x"),
-                            var("v"), var("x"),
-                            var("q"), var("y"))
+                            new Variable("u"), new Variable("x"),
+                            new Variable("v"), new Variable("x"),
+                            new Variable("q"), new Variable("y"))
             );
             assertEquals(correctUnifier2, unifier2);
             assertEquals(unifier2.size(), 2);
@@ -231,16 +230,16 @@ public class AtomicQueryUnificationIT {
             MultiUnifier unifier3 = childQuery3.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier3 = new MultiUnifierImpl(
                     ImmutableMultimap.of(
-                            var("u"), var("x"),
-                            var("v"), var("x"),
-                            var("q"), var("y"))
+                            new Variable("u"), new Variable("x"),
+                            new Variable("v"), new Variable("x"),
+                            new Variable("q"), new Variable("y"))
             );
             assertEquals(correctUnifier3, unifier3);
 
             MultiUnifier unifier4 = childQuery4.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier4 = new MultiUnifierImpl(ImmutableMultimap.of(
-                    var("u"), var("x"),
-                    var("q"), var("y")
+                    new Variable("u"), new Variable("x"),
+                    new Variable("q"), new Variable("y")
             ));
             assertEquals(correctUnifier4, unifier4);
         }
@@ -256,9 +255,9 @@ public class AtomicQueryUnificationIT {
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery, UnifierType.EXACT);
             MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.EXACT);
             MultiUnifier correctUnifier = new MultiUnifierImpl(ImmutableMultimap.of(
-                    var("y1"), var("x1"),
-                    var("y2"), var("x2"),
-                    var("y3"), var("x3")
+                    new Variable("y1"), new Variable("x1"),
+                    new Variable("y2"), new Variable("x2"),
+                    new Variable("y3"), new Variable("x3")
             ));
             assertEquals(correctUnifier, unifier);
             assertEquals(MultiUnifierImpl.nonExistent(), unifier2);
@@ -277,13 +276,13 @@ public class AtomicQueryUnificationIT {
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier = new MultiUnifierImpl(
                     ImmutableMultimap.of(
-                            var("u"), var("x"),
-                            var("v"), var("z"),
-                            var("q"), var("y")),
+                            new Variable("u"), new Variable("x"),
+                            new Variable("v"), new Variable("z"),
+                            new Variable("q"), new Variable("y")),
                     ImmutableMultimap.of(
-                            var("u"), var("y"),
-                            var("v"), var("z"),
-                            var("q"), var("x"))
+                            new Variable("u"), new Variable("y"),
+                            new Variable("v"), new Variable("z"),
+                            new Variable("q"), new Variable("x"))
             );
             assertEquals(correctUnifier, unifier);
             assertEquals(2, unifier.size());
@@ -291,21 +290,21 @@ public class AtomicQueryUnificationIT {
             MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier2 = new MultiUnifierImpl(
                     ImmutableMultimap.of(
-                            var("u"), var("x"),
-                            var("v"), var("y"),
-                            var("q"), var("z")),
+                            new Variable("u"), new Variable("x"),
+                            new Variable("v"), new Variable("y"),
+                            new Variable("q"), new Variable("z")),
                     ImmutableMultimap.of(
-                            var("u"), var("x"),
-                            var("v"), var("z"),
-                            var("q"), var("y")),
+                            new Variable("u"), new Variable("x"),
+                            new Variable("v"), new Variable("z"),
+                            new Variable("q"), new Variable("y")),
                     ImmutableMultimap.of(
-                            var("u"), var("y"),
-                            var("v"), var("z"),
-                            var("q"), var("x")),
+                            new Variable("u"), new Variable("y"),
+                            new Variable("v"), new Variable("z"),
+                            new Variable("q"), new Variable("x")),
                     ImmutableMultimap.of(
-                            var("u"), var("y"),
-                            var("v"), var("x"),
-                            var("q"), var("z"))
+                            new Variable("u"), new Variable("y"),
+                            new Variable("v"), new Variable("x"),
+                            new Variable("q"), new Variable("z"))
             );
             assertEquals(correctUnifier2, unifier2);
             assertEquals(4, unifier2.size());
@@ -313,22 +312,22 @@ public class AtomicQueryUnificationIT {
             MultiUnifier unifier3 = childQuery3.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier3 = new MultiUnifierImpl(
                     ImmutableMultimap.of(
-                            var("u"), var("x"),
-                            var("v"), var("y"),
-                            var("q"), var("z")),
+                            new Variable("u"), new Variable("x"),
+                            new Variable("v"), new Variable("y"),
+                            new Variable("q"), new Variable("z")),
                     ImmutableMultimap.of(
-                            var("u"), var("y"),
-                            var("v"), var("x"),
-                            var("q"), var("z"))
+                            new Variable("u"), new Variable("y"),
+                            new Variable("v"), new Variable("x"),
+                            new Variable("q"), new Variable("z"))
             );
             assertEquals(correctUnifier3, unifier3);
             assertEquals(2, unifier3.size());
 
             MultiUnifier unifier4 = childQuery4.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier4 = new MultiUnifierImpl(ImmutableMultimap.of(
-                    var("u"), var("x"),
-                    var("u"), var("y"),
-                    var("q"), var("z")
+                    new Variable("u"), new Variable("x"),
+                    new Variable("u"), new Variable("y"),
+                    new Variable("q"), new Variable("z")
             ));
             assertEquals(correctUnifier4, unifier4);
         }
@@ -351,16 +350,16 @@ public class AtomicQueryUnificationIT {
 
             MultiUnifier unifier = childQuery3.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier = new MultiUnifierImpl(ImmutableMultimap.of(
-                    var("u"), var("x"),
-                    var("v"), var("x"),
-                    var("q"), var("y")
+                    new Variable("u"), new Variable("x"),
+                    new Variable("v"), new Variable("x"),
+                    new Variable("q"), new Variable("y")
             ));
             assertEquals(correctUnifier, unifier);
 
             MultiUnifier unifier2 = childQuery4.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier2 = new MultiUnifierImpl(ImmutableMultimap.of(
-                    var("u"), var("x"),
-                    var("q"), var("y")
+                    new Variable("u"), new Variable("x"),
+                    new Variable("q"), new Variable("y")
             ));
             assertEquals(correctUnifier2, unifier2);
         }
@@ -376,9 +375,9 @@ public class AtomicQueryUnificationIT {
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier = new MultiUnifierImpl(ImmutableMultimap.of(
-                    var("y1"), var("x1"),
-                    var("y2"), var("x2"),
-                    var("y3"), var("x3")
+                    new Variable("y1"), new Variable("x1"),
+                    new Variable("y2"), new Variable("x2"),
+                    new Variable("y3"), new Variable("x3")
             ));
             assertEquals(correctUnifier, unifier);
             assertEquals(correctUnifier, unifier2);
@@ -396,29 +395,29 @@ public class AtomicQueryUnificationIT {
             MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier = new MultiUnifierImpl(
                     ImmutableMultimap.of(
-                            var("y1"), var("x1"),
-                            var("y2"), var("x2"),
-                            var("y3"), var("x3")),
+                            new Variable("y1"), new Variable("x1"),
+                            new Variable("y2"), new Variable("x2"),
+                            new Variable("y3"), new Variable("x3")),
                     ImmutableMultimap.of(
-                            var("y1"), var("x1"),
-                            var("y2"), var("x3"),
-                            var("y3"), var("x2")),
+                            new Variable("y1"), new Variable("x1"),
+                            new Variable("y2"), new Variable("x3"),
+                            new Variable("y3"), new Variable("x2")),
                     ImmutableMultimap.of(
-                            var("y1"), var("x2"),
-                            var("y2"), var("x1"),
-                            var("y3"), var("x3")),
+                            new Variable("y1"), new Variable("x2"),
+                            new Variable("y2"), new Variable("x1"),
+                            new Variable("y3"), new Variable("x3")),
                     ImmutableMultimap.of(
-                            var("y1"), var("x2"),
-                            var("y2"), var("x3"),
-                            var("y3"), var("x1")),
+                            new Variable("y1"), new Variable("x2"),
+                            new Variable("y2"), new Variable("x3"),
+                            new Variable("y3"), new Variable("x1")),
                     ImmutableMultimap.of(
-                            var("y1"), var("x3"),
-                            var("y2"), var("x1"),
-                            var("y3"), var("x2")),
+                            new Variable("y1"), new Variable("x3"),
+                            new Variable("y2"), new Variable("x1"),
+                            new Variable("y3"), new Variable("x2")),
                     ImmutableMultimap.of(
-                            var("y1"), var("x3"),
-                            var("y2"), var("x2"),
-                            var("y3"), var("x1"))
+                            new Variable("y1"), new Variable("x3"),
+                            new Variable("y2"), new Variable("x2"),
+                            new Variable("y3"), new Variable("x1"))
             );
             assertEquals(correctUnifier, unifier);
             assertEquals(correctUnifier, unifier2);

@@ -46,7 +46,7 @@ public abstract class SubAtom extends OntologicalAtom {
     @Override public abstract ReasonerQuery getParentQuery();
 
     public static SubAtom create(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return new AutoValue_SubAtom(var, predicateId, predicateVar, var.sub(predicateVar), parent);
+        return new AutoValue_SubAtom(var, predicateId, predicateVar, new Statement(var).sub(new Statement(predicateVar)), parent);
     }
 
     private static SubAtom create(SubAtom a, ReasonerQuery parent) {

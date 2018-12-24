@@ -34,7 +34,6 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
@@ -77,7 +76,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
 
         ImmutableSet<EquivalentFragmentSet> traversals =
                 property.relationPlayers().stream().flatMap(relationPlayer -> {
-            Variable castingName = Pattern.var();
+            Variable castingName = new Variable();
             castingNames.add(castingName);
             return fragmentSetsFromRolePlayer(castingName, relationPlayer);
         }).collect(toImmutableSet());
@@ -115,7 +114,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
         boolean isReified = statement.properties().stream()
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
-        Statement relVar = isReified ? var.asUserDefined() : var;
+        Statement relVar = isReified ? new Statement(var.asUserDefined()) : new Statement(var);
 
         for (RelationProperty.RolePlayer rp : property.relationPlayers()) {
             Statement rolePattern = rp.getRole().orElse(null);
@@ -129,7 +128,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
                     if (concept != null) {
                         if (concept.isRole()) {
                             Label roleLabel = concept.asSchemaConcept().label();
-                            rolePattern = roleVar.label(roleLabel);
+                            rolePattern = new Statement(roleVar).label(roleLabel);
                         } else {
                             throw GraqlQueryException.nonRoleIdAssignedToRoleVariable(statement);
                         }
@@ -144,7 +143,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
         IdPredicate predicate = null;
 
         //if no isa property present generate type variable
-        Variable typeVariable = isaProp != null ? isaProp.type().var() : Pattern.var();
+        Variable typeVariable = isaProp != null ? isaProp.type().var() : new Variable();
 
         //Isa present
         if (isaProp != null) {
@@ -159,8 +158,8 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
         }
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         relVar = isaProp instanceof IsaExplicitProperty ?
-                relVar.isaExplicit(typeVariable.asUserDefined()) :
-                relVar.isa(typeVariable.asUserDefined());
+                relVar.isaExplicit(new Statement(typeVariable.asUserDefined())) :
+                relVar.isa(new Statement(typeVariable.asUserDefined()));
         return RelationshipAtom.create(relVar, typeVariable, predicateId, parent);
     }
 

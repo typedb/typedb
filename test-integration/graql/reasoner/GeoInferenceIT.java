@@ -140,13 +140,13 @@ public class GeoInferenceIT {
 
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             answers.forEach(ans -> assertEquals(2, ans.size()));
-            answers.forEach(ans -> assertEquals(poland.id().getValue(), ans.get(var("y")).id().getValue()));
+            answers.forEach(ans -> assertEquals(poland.id().getValue(), ans.get("y").id().getValue()));
             assertEquals(6, answers.size());
 
 
             List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
             answers2.forEach(ans -> assertEquals(2, ans.size()));
-            answers2.forEach(ans -> assertEquals(europe.id().getValue(), ans.get(var("y")).id().getValue()));
+            answers2.forEach(ans -> assertEquals(europe.id().getValue(), ans.get("y").id().getValue()));
             assertEquals(21, answers2.size());
         }
     }
@@ -167,7 +167,7 @@ public class GeoInferenceIT {
 
             List<ConceptMap> explicitAnswers = tx.execute(Graql.<GetQuery>parse(explicitString));
             answers.forEach(ans -> assertEquals(2, ans.size()));
-            answers.forEach(ans -> assertEquals(masovia.id().getValue(), ans.get(var("y")).id().getValue()));
+            answers.forEach(ans -> assertEquals(masovia.id().getValue(), ans.get("y").id().getValue()));
             assertEquals(5, answers.size());
             assertCollectionsEqual(answers, explicitAnswers);
         }
@@ -189,12 +189,12 @@ public class GeoInferenceIT {
 
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             answers.forEach(ans -> assertEquals(2, ans.size()));
-            answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), poland.id().getValue()));
+            answers.forEach(ans -> assertEquals(ans.get("y").id().getValue(), poland.id().getValue()));
             assertEquals(6, answers.size());
 
             List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
             answers2.forEach(ans -> assertEquals(2, ans.size()));
-            answers2.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), europe.id().getValue()));
+            answers2.forEach(ans -> assertEquals(ans.get("y").id().getValue(), europe.id().getValue()));
             assertEquals(tx.execute(Graql.<GetQuery>parse("match $x isa entity; get;")).size() - 1, answers2.size());
         }
     }
@@ -216,7 +216,7 @@ public class GeoInferenceIT {
 
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             answers.forEach(ans -> assertEquals(2, ans.size()));
-            answers.forEach(ans -> assertEquals(masovia.id().getValue(), ans.get(var("y")).id().getValue()));
+            answers.forEach(ans -> assertEquals(masovia.id().getValue(), ans.get("y").id().getValue()));
             assertEquals(5, answers.size());
             List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
             assertCollectionsEqual(answers, answers2);
@@ -235,7 +235,7 @@ public class GeoInferenceIT {
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
 
             answers.forEach(ans -> assertEquals(ans.size(), 4));
-            answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), masovia.id().getValue()));
+            answers.forEach(ans -> assertEquals(ans.get("y").id().getValue(), masovia.id().getValue()));
             assertEquals(20, answers.size());
         }
     }
@@ -330,7 +330,7 @@ public class GeoInferenceIT {
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
 
             answers.forEach(ans -> assertEquals(3, ans.size()));
-            answers.forEach(ans -> assertEquals(masovia.id().getValue(), ans.get(var("y")).id().getValue()));
+            answers.forEach(ans -> assertEquals(masovia.id().getValue(), ans.get("y").id().getValue()));
             assertEquals(10, answers.size());
         }
     }

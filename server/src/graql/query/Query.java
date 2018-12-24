@@ -83,4 +83,75 @@ public interface Query {
             return this.character;
         }
     }
+
+    enum Property {
+        DATA_TYPE("datatype"),
+        HAS("has"),
+        KEY("key"),
+        ID("id"),
+        IS_ABSTRACT("is-abstract"),
+        ISA("isa"),
+        ISA_EXP("isa!"),
+        LABEL("label"),
+        NEQ("!="),
+        PLAYS("plays"),
+        REGEX("regex"),
+        RELATES("relates"),
+        RELATION("relationship"), // TODO: Relationship syntax need to be updated
+        SUB("sub"),
+        SUB_EXP("sub!"),
+        THEN("then"),
+        WHEN("when"),
+        VALUE("");
+
+        private final String name;
+
+        Property(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return this.name;
+        }
+
+        public static Property of(String value) {
+            for (Property c : values()) {
+                if (c.name.equals(value)) {
+                    return c;
+                }
+            }
+            return null;
+        }
+    }
+
+    enum DataType {
+        BOOLEAN("boolean"),
+        DATE("date"),
+        DOUBLE("double"),
+        FLOAT("float"),
+        INTEGER("integer"),
+        LONG("long"),
+        STRING("string");
+
+        private final String type;
+
+        DataType(String type) {
+            this.type = type;
+        }
+
+        @Override
+        public String toString() {
+            return this.type;
+        }
+
+        public static DataType of(String value) {
+            for (DataType c : values()) {
+                if (c.type.equals(value)) {
+                    return c;
+                }
+            }
+            return null;
+        }
+    }
 }

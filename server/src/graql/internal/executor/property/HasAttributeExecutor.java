@@ -31,7 +31,6 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
@@ -53,10 +52,12 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
 
     private final Variable var;
     private final HasAttributeProperty property;
+    private final Label type;
 
     HasAttributeExecutor(Variable var, HasAttributeProperty property) {
         this.var = var;
         this.property = property;
+        this.type = Label.of(property.type());
     }
 
     @Override
@@ -66,7 +67,6 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
-        Label type = property.type();
         Label has = Schema.ImplicitType.HAS.getLabel(type);
         Label key = Schema.ImplicitType.KEY.getLabel(type);
 
@@ -75,8 +75,8 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
         Label hasValueRole = Schema.ImplicitType.HAS_VALUE.getLabel(type);
         Label keyValueRole = Schema.ImplicitType.KEY_VALUE.getLabel(type);
 
-        Variable edge1 = Pattern.var();
-        Variable edge2 = Pattern.var();
+        Variable edge1 = new Variable();
+        Variable edge2 = new Variable();
 
         return ImmutableSet.of(
                 //owner rolePlayer edge
@@ -96,7 +96,7 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
 
         Variable relationVariable = property.relationship().var();
         Variable attributeVariable = property.attribute().var().asUserDefined();
-        Variable predicateVariable = Pattern.var();
+        Variable predicateVariable = new Variable();
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements, parent);
 
         IsaProperty isaProp = property.attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
@@ -106,8 +106,8 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
 
         //add resource atom
         Statement resVar = relationVariable.isUserDefinedName() ?
-                varName.has(property.type(), attributeVariable, relationVariable) :
-                varName.has(property.type(), attributeVariable);
+                new Statement(varName).has(property.type(), new Statement(attributeVariable), new Statement(relationVariable)) :
+                new Statement(varName).has(property.type(), new Statement(attributeVariable));
         return AttributeAtom.create(resVar, attributeVariable, relationVariable,
                                     predicateVariable, predicateId, predicates, parent);
     }

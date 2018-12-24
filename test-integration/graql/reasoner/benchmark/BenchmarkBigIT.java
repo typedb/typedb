@@ -81,7 +81,7 @@ public class BenchmarkBigIT {
     private void loadEntities(String entityLabel, int N, GraknClient.Session session){
         try(GraknClient.Transaction transaction = session.transaction(Transaction.Type.WRITE)){
             for(int i = 0 ; i < N ;i++){
-                InsertQuery entityInsert = Graql.insert(var().asUserDefined().isa(entityLabel));
+                InsertQuery entityInsert = Graql.insert(new Statement(new Variable().asUserDefined()).isa(entityLabel));
                 transaction.execute(entityInsert);
             }
             transaction.commit();
@@ -91,9 +91,9 @@ public class BenchmarkBigIT {
     private void loadRandomisedRelationInstances(String entityLabel, String fromRoleLabel, String toRoleLabel,
                                                  String relationLabel, int N, GraknClient.Session session){
         try(GraknClient.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
-            Variable entityVar = var().asUserDefined();
-            ConceptId[] instances = transaction.stream(Graql.match(entityVar.isa(entityLabel)).get())
-                    .map(ans -> ans.get(entityVar).id())
+            Statement entity = new Statement(new Variable().asUserDefined());
+            ConceptId[] instances = transaction.stream(Graql.match(entity.isa(entityLabel)).get())
+                    .map(ans -> ans.get(entity.var()).id())
                     .toArray(ConceptId[]::new);
 
             assertEquals(instances.length, N);
@@ -108,14 +108,14 @@ public class BenchmarkBigIT {
                 int to = rand.nextInt(N - 1);
                 while (to == from && assignmentMap.get(from).contains(to)) to = rand.nextInt(N - 1);
 
-                Variable fromRolePlayer = Pattern.var();
-                Variable toRolePlayer = Pattern.var();
+                Statement fromRolePlayer = new Statement(new Variable().asUserDefined());
+                Statement toRolePlayer = new Statement(new Variable().asUserDefined());
                 Pattern relationInsert = Pattern.and(
                         var().rel(Pattern.label(fromRole.label()), fromRolePlayer)
                                 .rel(Pattern.label(toRole.label()), toRolePlayer)
                                 .isa(Pattern.label(relationType.label())),
-                        fromRolePlayer.asUserDefined().id(instances[from]),
-                        toRolePlayer.asUserDefined().id(instances[to])
+                        fromRolePlayer.id(instances[from].getValue()),
+                        toRolePlayer.id(instances[to].getValue())
                 );
                 transaction.execute(Graql.insert(relationInsert.statements()));
             }
@@ -173,9 +173,9 @@ public class BenchmarkBigIT {
 
                 //define N rules
                 for (int i = 2; i <= N; i++) {
-                    Variable fromVar = Pattern.var().asUserDefined();
-                    Variable intermedVar = Pattern.var().asUserDefined();
-                    Variable toVar = Pattern.var().asUserDefined();
+                    Statement fromVar = new Statement(new Variable().asUserDefined());
+                    Statement intermedVar = new Statement(new Variable().asUserDefined());
+                    Statement toVar = new Statement(new Variable().asUserDefined());
                     Statement rulePattern = Pattern
                             .label("rule" + i)
                             .when(
@@ -207,9 +207,9 @@ public class BenchmarkBigIT {
             loadEntities(entityLabel, N+1, session);
 
             try (GraknClient.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
-                Variable entityVar = var().asUserDefined();
+                Statement entityVar = new Statement(new Variable().asUserDefined());
                 ConceptId[] instances = transaction.stream(Graql.match(entityVar.isa(entityLabel)).get())
-                        .map(ans -> ans.get(entityVar).id())
+                        .map(ans -> ans.get(entityVar.var()).id())
                         .toArray(ConceptId[]::new);
 
                 RelationType baseRelation = transaction.getRelationshipType(baseRelationLabel);
@@ -217,29 +217,29 @@ public class BenchmarkBigIT {
                 Role toRole = transaction.getRole(toRoleLabel);
                 transaction.execute(
                         Graql.insert(
-                                Pattern.var().asUserDefined()
+                                new Statement(new Variable().asUserDefined())
                                         .has(attributeLabel, "first")
-                                        .id(instances[0])
+                                        .id(instances[0].getValue())
                                         .statements()
                         )
                 );
 
                 for(int i = 1; i < instances.length; i++){
-                    Variable fromRolePlayer = Pattern.var();
-                    Variable toRolePlayer = Pattern.var();
+                    Statement fromRolePlayer = new Statement(new Variable().asUserDefined());
+                    Statement toRolePlayer = new Statement(new Variable().asUserDefined());
 
                     Pattern relationInsert = Pattern.and(
                             var().rel(Pattern.label(fromRole.label()), fromRolePlayer)
                                     .rel(Pattern.label(toRole.label()), toRolePlayer)
                                     .isa(Pattern.label(baseRelation.label())),
-                            fromRolePlayer.asUserDefined().id(instances[i - 1]),
-                            toRolePlayer.asUserDefined().id(instances[i])
+                            fromRolePlayer.id(instances[i - 1].getValue()),
+                            toRolePlayer.id(instances[i].getValue())
                     );
                     transaction.execute(Graql.insert(relationInsert.statements()));
 
-                    Pattern resourceInsert = Pattern.var().asUserDefined()
+                    Pattern resourceInsert = new Statement(new Variable().asUserDefined())
                             .has(attributeLabel, String.valueOf(i))
-                            .id(instances[i]);
+                            .id(instances[i].getValue());
                     transaction.execute(Graql.insert(resourceInsert.statements()));
                 }
 

@@ -50,7 +50,7 @@ public abstract class NeqPredicate extends Predicate<Variable> {
         return new AutoValue_NeqPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
     public static NeqPredicate create(Variable varName, NeqProperty prop, ReasonerQuery parent) {
-        Statement pattern = varName.neq(prop.statement().var());
+        Statement pattern = new Statement(varName).neq(prop.statement());
         return create(pattern, parent);
     }
     public static NeqPredicate create(NeqPredicate a, ReasonerQuery parent) {

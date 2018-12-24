@@ -18,7 +18,6 @@
 
 package grakn.core.graql.parser;
 
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
@@ -91,7 +90,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithDatatypeToString() {
-        assertSameStringRepresentation(Graql.match(var("x").datatype(AttributeType.DataType.LONG)).get());
+        assertSameStringRepresentation(Graql.match(var("x").datatype(Query.DataType.LONG)).get());
     }
 
     @Test

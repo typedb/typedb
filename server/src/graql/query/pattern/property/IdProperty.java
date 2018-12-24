@@ -18,8 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.util.StringUtil;
+import grakn.core.graql.query.Query;
 
 /**
  * Represents the {@code id} property on a Concept.
@@ -28,27 +27,27 @@ import grakn.core.graql.util.StringUtil;
  */
 public class IdProperty extends VarProperty {
 
-    private final ConceptId id;
+    private final String id;
 
-    public IdProperty(ConceptId id) {
+    public IdProperty(String id) {
         if (id == null) {
             throw new NullPointerException("Null id");
         }
         this.id = id;
     }
 
-    public ConceptId id() {
+    public String id() {
         return id;
     }
 
     @Override
     public String name() {
-        return Name.ID.toString();
+        return Query.Property.ID.toString();
     }
 
     @Override
     public String property() {
-        return StringUtil.idToString(id());
+        return id;
     }
 
     @Override

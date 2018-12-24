@@ -41,8 +41,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
-
 public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
                                                  PropertyExecutor.Matchable,
                                                  PropertyExecutor.Atomable {
@@ -69,7 +67,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
     public Set<EquivalentFragmentSet> matchFragments() {
         Set<EquivalentFragmentSet> fragments = new HashSet<>();
 
-        PlaysProperty playsOwnerProperty = new PlaysProperty(property.ownerRole(), property.isRequired());
+        PlaysProperty playsOwnerProperty = new PlaysProperty(property.ownerRole(), property.isKey());
         PlaysExecutor playsOwnerExecutor = new PlaysExecutor(var, playsOwnerProperty);
 
         //TODO: Get this to use real constraints no just the required flag
@@ -92,11 +90,11 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
         Variable varName = var.asUserDefined();
         Label label = property.attributeType().getTypeLabel().orElse(null);
 
-        Variable predicateVar = var();
+        Variable predicateVar = new Variable();
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         ConceptId predicateId = schemaConcept != null ? schemaConcept.id() : null;
         //isa part
-        Statement resVar = varName.has(Pattern.label(label));
+        Statement resVar = new Statement(varName).has(Pattern.label(label));
         return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 
@@ -132,7 +130,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
                     .getConcept(property.attributeType().var())
                     .asAttributeType();
 
-            if (property.isRequired()) {
+            if (property.isKey()) {
                 entityTypeConcept.key(attributeTypeConcept);
             } else {
                 entityTypeConcept.has(attributeTypeConcept);
@@ -150,7 +148,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
                     .asAttributeType();
 
             if (!type.isDeleted() && !attributeType.isDeleted()) {
-                if (property.isRequired()) {
+                if (property.isKey()) {
                     type.unkey(attributeType);
                 } else {
                     type.unhas(attributeType);

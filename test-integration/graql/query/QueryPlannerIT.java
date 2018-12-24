@@ -31,7 +31,7 @@ import grakn.core.graql.internal.gremlin.fragment.LabelFragment;
 import grakn.core.graql.internal.gremlin.fragment.NeqFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutIsaFragment;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -51,12 +51,12 @@ import static org.junit.Assert.assertTrue;
 
 public class QueryPlannerIT {
 
-    private static final Variable x = var("x");
-    private static final Variable y = var("y");
-    private static final Variable z = var("z");
+    private static final Statement x = var("x");
+    private static final Statement y = var("y");
+    private static final Statement z = var("z");
 
-    private static final Variable superType = var("superType");
-    private static final Variable subType = var("subType");
+    private static final Statement superType = var("superType");
+    private static final Statement subType = var("subType");
 
     private static final String thingy = "thingy";
     private static final String thingy0 = "thingy0";
@@ -168,8 +168,8 @@ public class QueryPlannerIT {
 
         // Should start from the inferred relationship type, instead of role players
         String relationship = plan.get(3).start().name();
-        assertNotEquals(relationship, x.name());
-        assertNotEquals(relationship, y.name());
+        assertNotEquals(relationship, x.var().name());
+        assertNotEquals(relationship, y.var().name());
     }
 
     @Test
@@ -263,8 +263,8 @@ public class QueryPlannerIT {
 
         // Should start from the inferred relationship type, instead of role players
         String relationship = plan.get(4).start().name();
-        assertNotEquals(relationship, x.name());
-        assertNotEquals(relationship, y.name());
+        assertNotEquals(relationship, x.var().name());
+        assertNotEquals(relationship, y.var().name());
     }
 
     @Test
@@ -306,8 +306,8 @@ public class QueryPlannerIT {
         String relationship = plan.get(4).start().name();
 
         // should start from relationship
-        assertNotEquals(relationship, x.name());
-        assertNotEquals(relationship, y.name());
+        assertNotEquals(relationship, x.var().name());
+        assertNotEquals(relationship, y.var().name());
 
         pattern = and(
                 x.isa(resourceType),
@@ -318,7 +318,7 @@ public class QueryPlannerIT {
         relationship = plan.get(4).start().name();
 
         // should start from a role player
-        assertTrue(relationship.equals(x.name()) || relationship.equals(y.name()));
+        assertTrue(relationship.equals(x.var().name()) || relationship.equals(y.var().name()));
         assertTrue(plan.get(5) instanceof OutIsaFragment);
     }
 
@@ -343,7 +343,7 @@ public class QueryPlannerIT {
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
     }
 
-    @Test
+    @Test @SuppressWarnings("Duplicates")
     public void shardCountIsUsed() {
         // force the concept to get a new shard
         // shards of thing = 2 (thing = 1 and thing itself)
@@ -368,7 +368,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(x, plan.get(3).end());
+        assertEquals(x.var(), plan.get(3).end());
         assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof NeqFragment).count());
 
         //TODO: should uncomment the following after updating cost of out-isa fragment
@@ -383,7 +383,7 @@ public class QueryPlannerIT {
                 y.isa(thingy2),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
-        assertEquals(x, plan.get(3).end());
+        assertEquals(x.var(), plan.get(3).end());
 
         pattern = and(
                 x.isa(thingy),
@@ -391,7 +391,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(x, plan.get(4).end());
+        assertEquals(x.var(), plan.get(4).end());
 
         pattern = and(
                 x.isa(superType),
@@ -401,7 +401,7 @@ public class QueryPlannerIT {
                 z.isa(subType),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
-        assertEquals(z, plan.get(4).end());
+        assertEquals(z.var(), plan.get(4).end());
 
         ((TransactionOLTP) tx).shard(tx.getEntityType(thingy1).id());
         ((TransactionOLTP) tx).shard(tx.getEntityType(thingy1).id());
@@ -414,7 +414,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(y, plan.get(3).end());
+        assertEquals(y.var(), plan.get(3).end());
 
         pattern = and(
                 x.isa(thingy1),
@@ -422,7 +422,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(x, plan.get(3).end());
+        assertEquals(x.var(), plan.get(3).end());
 
         ((TransactionOLTP) tx).shard(tx.getEntityType(thingy1).id());
         ((TransactionOLTP) tx).shard(tx.getEntityType(thingy1).id());
@@ -434,7 +434,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(y, plan.get(3).end());
+        assertEquals(y.var(), plan.get(3).end());
 
         pattern = and(
                 x.isa(thingy1),
@@ -442,7 +442,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(y, plan.get(3).end());
+        assertEquals(y.var(), plan.get(3).end());
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {

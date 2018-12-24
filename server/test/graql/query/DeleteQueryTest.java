@@ -34,8 +34,8 @@ public class DeleteQueryTest {
     private final MatchClause match1 = Graql.match(var("x").isa("movie"));
     private final MatchClause match2 = Graql.match(var("y").isa("movie"));
 
-    private final Collection<Variable> vars1 = Sets.newHashSet(var("x"));
-    private final Collection<Variable> vars2 = Sets.newHashSet(var("y"));
+    private final Collection<Variable> vars1 = Sets.newHashSet(new Variable("x"));
+    private final Collection<Variable> vars2 = Sets.newHashSet(new Variable("y"));
 
     @Test
     public void deleteQueriesWithTheSameMatchAndVarsAreEqual() {

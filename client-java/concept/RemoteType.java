@@ -25,8 +25,8 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.server.exception.TransactionException;
 import grakn.core.protocol.ConceptProto;
+import grakn.core.server.exception.TransactionException;
 
 import java.util.stream.Stream;
 

@@ -100,8 +100,8 @@ public class AggregateQueryIT {
 
         groups.forEach(group -> {
             group.answers().forEach(conceptMap -> {
-                assertEquals(group.owner(), conceptMap.get(var("x")));
-                Assert.assertEquals(tx.getEntityType("person"), conceptMap.get(var("y")).asThing().type());
+                assertEquals(group.owner(), conceptMap.get("x"));
+                Assert.assertEquals(tx.getEntityType("person"), conceptMap.get("y").asThing().type());
             });
         });
     }

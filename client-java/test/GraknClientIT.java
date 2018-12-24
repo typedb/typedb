@@ -52,6 +52,7 @@ import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
@@ -217,7 +218,7 @@ public class GraknClientIT {
 
         try (Transaction tx = localSession.transaction(Transaction.Type.READ)) {
             for (ConceptMap answer : answers) {
-                assertThat(answer.vars(), contains(var("x")));
+                assertThat(answer.vars(), contains(new Variable("x")));
                 assertNotNull(tx.getConcept(answer.get("x").id()));
             }
         }
@@ -268,8 +269,8 @@ public class GraknClientIT {
             testExplanation(answer);
 
             String specificQuery = "match " +
-                    "$x id '" + answer.get(var("x")).id().getValue() + "';" +
-                    "$y id '" + answer.get(var("y")).id().getValue() + "';" +
+                    "$x id '" + answer.get("x").id().getValue() + "';" +
+                    "$y id '" + answer.get("y").id().getValue() + "';" +
                     "(cousin: $x, cousin: $y) isa cousins;" +
                     "limit 1; get;";
 
@@ -1016,13 +1017,13 @@ public class GraknClientIT {
             person.create();
             person.create();
 
-            Variable x = var("x");
-            Variable y = var("y");
+            Statement x = var("x");
+            Statement y = var("y");
 
-            Collection<ConceptMap> result = tx.execute(Graql.match(x.isa("company-123"), y.isa("person-123")).get(x, y));
+            Collection<ConceptMap> result = tx.execute(Graql.match(x.isa("company-123"), y.isa("person-123")).get(x.var(), y.var()));
             assertEquals(6, result.size());
 
-            result = tx.execute(Graql.match(x.isa("company-123")).get(x));
+            result = tx.execute(Graql.match(x.isa("company-123")).get(x.var()));
             assertEquals(2, result.size());
         }
     }

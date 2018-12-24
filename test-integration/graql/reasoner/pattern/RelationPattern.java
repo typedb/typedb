@@ -87,13 +87,13 @@ public abstract class RelationPattern extends QueryPattern {
     private static List<Pattern> generateRelationPatterns(
             Multimap<Label, Pair<Label, List<ConceptId>>> spec,
             List<ConceptId> relationIds){
-        Variable relationVar = !relationIds.isEmpty()? Pattern.var().asUserDefined() : Pattern.var();
+        Statement relationVar = !relationIds.isEmpty()? new Statement(new Variable().asUserDefined()) : Pattern.var();
         Statement[] basePattern = {relationVar};
         List<List<Pattern>> rpTypePatterns = new ArrayList<>();
         List<List<Pattern>> rpIdPatterns = new ArrayList<>();
         Multimap<Label, Statement> rps = HashMultimap.create();
         spec.entries().forEach(entry -> {
-            Statement rolePlayer = Pattern.var().asUserDefined();
+            Statement rolePlayer = new Statement(new Variable().asUserDefined());
             Label role = entry.getKey();
             Label type = entry.getValue().getKey();
             List<ConceptId> ids = entry.getValue().getValue();
@@ -104,7 +104,7 @@ public abstract class RelationPattern extends QueryPattern {
             if(type != null) typePattern.add(rolePlayer.isa(type.getValue()));
 
             ids.forEach(id -> {
-                Statement idPattern = rolePlayer.id(id);
+                Statement idPattern = rolePlayer.id(id.getValue());
                 rpPattern.add(idPattern);
             });
 
@@ -112,7 +112,7 @@ public abstract class RelationPattern extends QueryPattern {
             rpTypePatterns.add(typePattern);
         });
         List<Pattern> relIdPatterns = new ArrayList<>();
-        relationIds.forEach(relId -> relIdPatterns.add(Pattern.and(basePattern[0], relationVar.id(relId))));
+        relationIds.forEach(relId -> relIdPatterns.add(Pattern.and(basePattern[0], relationVar.id(relId.getValue()))));
 
         List<Pattern> patterns = new ArrayList<>();
 

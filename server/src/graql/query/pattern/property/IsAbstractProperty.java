@@ -18,6 +18,8 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.Query;
+
 /**
  * Represents the {@code is-abstract} property on a Type.
  * This property can be matched or inserted.
@@ -35,7 +37,7 @@ public class IsAbstractProperty extends VarProperty {
 
     @Override
     public String name() {
-        return Name.IS_ABSTRACT.toString();
+        return Query.Property.IS_ABSTRACT.toString();
     }
 
     @Override

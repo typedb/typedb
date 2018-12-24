@@ -16,6 +16,7 @@ import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -36,7 +37,6 @@ import java.io.InputStreamReader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -97,8 +97,8 @@ public class RuleCacheIT {
         Entity entity = tx.getEntityType("anotherNoRoleEntity").instances().findFirst().orElse(null);
         singleAnswer = new ConceptMap(
                 ImmutableMap.of(
-                        var("x"), entity,
-                        var("y"), entity
+                        new Variable("x"), entity,
+                        new Variable("y"), entity
                 ));
     }
 

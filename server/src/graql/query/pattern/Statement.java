@@ -22,11 +22,10 @@ import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
@@ -48,6 +47,8 @@ import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -73,15 +74,39 @@ import static java.util.stream.Collectors.toSet;
  * should be set on the inserted concept. In a DeleteQuery, it describes the
  * properties that should be deleted.
  */
-public abstract class Statement implements Pattern {
+public class Statement implements Pattern {
+
+    private final Variable var;
+    private final Set<VarProperty> properties;
+    protected final Logger LOG = LoggerFactory.getLogger(Statement.class);
+    private int hashCode = 0;
+
+    public Statement(Variable var) {
+        this(var, Collections.emptySet());
+    }
+
+    public Statement(Variable var, Set<VarProperty> properties) {
+        if (var == null) {
+            throw new NullPointerException("Null var");
+        }
+        this.var = var;
+        if (properties == null) {
+            throw new NullPointerException("Null properties");
+        }
+        this.properties = properties;
+    }
 
     /**
      * @return the variable name of this variable
      */
     @CheckReturnValue
-    public abstract Variable var();
+    public Variable var() {
+        return var;
+    }
 
-    public abstract Set<VarProperty> properties();
+    public Set<VarProperty> properties() {
+        return properties;
+    }
 
     @Override
     public Statement asStatement() {
@@ -152,18 +177,18 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Collection<Statement> innerStatements() {
-        Stack<Statement> newVars = new Stack<>();
-        List<Statement> vars = new ArrayList<>();
+        Stack<Statement> statementStack = new Stack<>();
+        List<Statement> statements = new ArrayList<>();
 
-        newVars.add(this);
+        statementStack.add(this);
 
-        while (!newVars.isEmpty()) {
-            Statement var = newVars.pop();
-            vars.add(var);
-            var.properties().stream().flatMap(varProperty -> varProperty.innerStatements()).forEach(newVars::add);
+        while (!statementStack.isEmpty()) {
+            Statement statement = statementStack.pop();
+            statements.add(statement);
+            statement.properties().stream().flatMap(varProperty -> varProperty.innerStatements()).forEach(statementStack::add);
         }
 
-        return vars;
+        return statements;
     }
 
     /**
@@ -205,7 +230,7 @@ public abstract class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final Statement id(ConceptId id) {
+    public final Statement id(String id) {
         return addProperty(new IdProperty(id));
     }
 
@@ -278,18 +303,6 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type, Statement attribute) {
-        return has(Label.of(type), attribute);
-    }
-
-    /**
-     * the variable must have an Attribute of the given type that matches the given atom
-     *
-     * @param type      a resource type in the schema
-     * @param attribute a variable pattern representing an Attribute
-     * @return this
-     */
-    @CheckReturnValue
-    public final Statement has(Label type, Statement attribute) {
         return has(type, attribute, Pattern.var());
     }
 
@@ -303,7 +316,7 @@ public abstract class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final Statement has(Label type, Statement attribute, Statement relationship) {
+    public final Statement has(String type, Statement attribute, Statement relationship) {
         return addProperty(new HasAttributeProperty(type, attribute, relationship));
     }
 
@@ -554,7 +567,7 @@ public abstract class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final Statement datatype(AttributeType.DataType<?> datatype) {
+    public final Statement datatype(Query.DataType datatype) {
         return addProperty(new DataTypeProperty(datatype));
     }
 
@@ -650,11 +663,78 @@ public abstract class Statement implements Pattern {
                 throw GraqlQueryException.conflictingProperties(this, property, other);
             });
         }
-        return new StatementImpl(var(), Sets.union(properties(), ImmutableSet.of(property)));
+        return new Statement(var(), Sets.union(properties(), ImmutableSet.of(property)));
     }
 
     private Statement removeProperty(VarProperty property) {
-        return new StatementImpl(var(), Sets.difference(properties(), ImmutableSet.of(property)));
+        return new Statement(var(), Sets.difference(properties(), ImmutableSet.of(property)));
     }
 
+    @Override
+    public final boolean equals(Object o) {
+        // This equals implementation is special: it considers all non-user-defined vars as equivalent
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Statement other = (Statement) o;
+
+        if (var().isUserDefinedName() != other.var().isUserDefinedName()) return false;
+
+        // "simplifying" this makes it harder to read
+        //noinspection SimplifiableIfStatement
+        if (!properties().equals(other.properties())) return false;
+
+        return !var().isUserDefinedName() || var().equals(other.var());
+
+    }
+
+    @Override
+    public final int hashCode() {
+        if (hashCode == 0) {
+            // This hashCode implementation is special: it considers all non-user-defined vars as equivalent
+            hashCode = properties().hashCode();
+            if (var().isUserDefinedName()) hashCode = 31 * hashCode + var().hashCode();
+            hashCode = 31 * hashCode + (var().isUserDefinedName() ? 1 : 0);
+        }
+        return hashCode;
+    }
+
+    @Override
+    public final String toString() {
+        Collection<Statement> innerVars = innerStatements();
+        innerVars.remove(this);
+        getProperties(HasAttributeProperty.class)
+                .map(HasAttributeProperty::attribute)
+                .flatMap(r -> r.innerStatements().stream())
+                .forEach(innerVars::remove);
+
+        if (innerVars.stream()
+                .anyMatch(var1 -> var1.properties().stream()
+                        .anyMatch(p -> !(p instanceof LabelProperty)))) {
+            LOG.warn("printing a query with inner variables, which is not supported in native Graql");
+        }
+
+        StringBuilder builder = new StringBuilder();
+
+        String name = var().isUserDefinedName() ? var().toString() : "";
+
+        builder.append(name);
+
+        if (var().isUserDefinedName() && !properties().isEmpty()) {
+            // Add a space after the var name
+            builder.append(" ");
+        }
+
+        boolean first = true;
+
+        for (VarProperty property : properties()) {
+            if (!first) {
+                builder.append(" ");
+            }
+            first = false;
+            builder.append(property.toString());
+        }
+
+        return builder.toString();
+    }
 }

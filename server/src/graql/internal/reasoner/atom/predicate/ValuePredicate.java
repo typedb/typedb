@@ -61,7 +61,9 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.pr
         return create(pred.getPattern(), parent);
     }
 
-    public static Statement createValueVar(Variable name, grakn.core.graql.query.predicate.ValuePredicate pred) { return name.val(pred);}
+    public static Statement createValueVar(Variable name, grakn.core.graql.query.predicate.ValuePredicate pred) {
+        return new Statement(name).val(pred);
+    }
 
     private static grakn.core.graql.query.predicate.ValuePredicate extractPredicate(Statement pattern) {
         Iterator<ValueProperty> properties = pattern.getProperties(ValueProperty.class).iterator();

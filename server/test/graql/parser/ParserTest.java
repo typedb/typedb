@@ -19,8 +19,6 @@
 package grakn.core.graql.parser;
 
 import com.google.common.base.Strings;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.AggregateQuery;
@@ -36,7 +34,6 @@ import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -326,6 +323,13 @@ public class ParserTest {
     }
 
     @Test
+    public void testParseRelatesTypeVariable() {
+        GetQuery expected = match(var("x").isa(var("type")), var("type").relates("someRole")).get();
+        GetQuery parsed = parse("match $x isa $type; $type relates someRole; get;");
+        assertEquals(expected, parsed);
+    }
+
+    @Test
     public void testOrQuery() {
         GetQuery expected = match(
                 var("x").isa("movie"),
@@ -383,10 +387,10 @@ public class ParserTest {
 
     @Test
     public void whenParsingDeleteQuery_ResultIsSameAsJavaGraql() {
-        Variable x = var("x");
-        Variable y = var("y");
+        Statement x = var("x");
+        Statement y = var("y");
 
-        DeleteQuery expected = match(x.isa("movie").has("title", "The Title"), y.isa("movie")).delete(x, y);
+        DeleteQuery expected = match(x.isa("movie").has("title", "The Title"), y.isa("movie")).delete(x.var(), y.var());
         DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; $y isa movie; delete $x, $y;");
         assertEquals(expected, parsed);
     }
@@ -528,7 +532,7 @@ public class ParserTest {
 
     @Test
     public void testMatchDataTypeQuery() {
-        GetQuery expected = match(var("x").datatype(AttributeType.DataType.DOUBLE)).get();
+        GetQuery expected = match(var("x").datatype(Query.DataType.DOUBLE)).get();
         GetQuery parsed = parse("match $x datatype double; get;");
 
         assertEquals(expected, parsed);
@@ -536,7 +540,7 @@ public class ParserTest {
 
     @Test
     public void whenParsingDateKeyword_ParseAsTheCorrectDataType() {
-        GetQuery expected = match(var("x").datatype(AttributeType.DataType.DATE)).get();
+        GetQuery expected = match(var("x").datatype(Query.DataType.DATE)).get();
         GetQuery parsed = parse("match $x datatype date; get;");
 
         assertEquals(expected, parsed);
@@ -544,7 +548,7 @@ public class ParserTest {
 
     @Test
     public void testInsertDataTypeQuery() {
-        InsertQuery expected = insert(label("my-type").sub("resource").datatype(AttributeType.DataType.LONG));
+        InsertQuery expected = insert(label("my-type").sub("resource").datatype(Query.DataType.LONG));
         InsertQuery parsed = parse("insert my-type sub resource, datatype long;");
         assertEquals(expected, parsed);
     }
@@ -584,7 +588,7 @@ public class ParserTest {
         String when = "$x isa movie;";
         String then = "id '123' isa movie;";
         Pattern whenPattern = and(var("x").isa("movie"));
-        Pattern thenPattern = and(var().id(ConceptId.of("123")).isa("movie"));
+        Pattern thenPattern = and(var().id("123").isa("movie"));
 
         InsertQuery expected = insert(
                 label("my-rule-thing").sub("rule"), var().isa("my-rule-thing").when(whenPattern).then(thenPattern)
@@ -813,7 +817,7 @@ public class ParserTest {
         //noinspection OptionalGetWithoutIsPresent
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
 
-        Assert.assertEquals(AttributeType.DataType.BOOLEAN, property.dataType());
+        Assert.assertEquals(Query.DataType.BOOLEAN, property.dataType());
     }
 
     @Test

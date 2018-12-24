@@ -20,6 +20,7 @@ package grakn.core.graql.query.pattern.property;
 
 import com.google.common.collect.ImmutableMultiset;
 import grakn.core.common.util.CommonUtil;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 
 import javax.annotation.CheckReturnValue;
@@ -53,7 +54,7 @@ public class RelationProperty extends VarProperty {
 
     @Override
     public String name() {
-        return Name.RELATION.toString();
+        return Query.Property.RELATION.toString();
     }
 
     public String property() {
@@ -78,10 +79,10 @@ public class RelationProperty extends VarProperty {
     @Override
     public Stream<Statement> innerStatements() {
         return relationPlayers().stream().flatMap(relationPlayer -> {
-            Stream.Builder<Statement> builder = Stream.builder();
-            builder.add(relationPlayer.getPlayer());
-            relationPlayer.getRole().ifPresent(builder::add);
-            return builder.build();
+            Stream.Builder<Statement> stream = Stream.builder();
+            stream.add(relationPlayer.getPlayer());
+            relationPlayer.getRole().ifPresent(stream::add);
+            return stream.build();
         });
     }
 

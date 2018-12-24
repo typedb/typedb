@@ -18,7 +18,6 @@
 
 package grakn.core.graql.internal.gremlin;
 
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -54,8 +53,8 @@ public class ConjunctionQueryTest {
     private Statement resourceTypeWithSubTypes = Pattern.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
     private Transaction tx;
-    private Variable x = Pattern.var("x");
-    private Variable y = Pattern.var("y");
+    private Statement x = Pattern.var("x");
+    private Statement y = Pattern.var("y");
 
     @SuppressWarnings("ResultOfMethodCallIgnored") // Mockito confuses IntelliJ
     @Before
@@ -87,7 +86,7 @@ public class ConjunctionQueryTest {
                 y.isa(resourceTypeWithoutSubTypes).val("Bar")
         );
 
-        assertThat(pattern, allOf(usesResourceIndex(x, "Foo"), usesResourceIndex(y, "Bar")));
+        assertThat(pattern, allOf(usesResourceIndex(x.var(), "Foo"), usesResourceIndex(y.var(), "Bar")));
     }
 
     @Test
@@ -98,15 +97,15 @@ public class ConjunctionQueryTest {
     @Test
     public void whenQueryUsesHasSyntax_UseResourceIndex() {
         assertThat(
-                x.has(resourceTypeWithoutSubTypesLabel, y.val(literalValue)),
-                usesResourceIndex(y, literalValue)
+                x.has(resourceTypeWithoutSubTypesLabel.getValue(), y.val(literalValue)),
+                usesResourceIndex(y.var(), literalValue)
         );
     }
 
     @Test
     public void whenVarCanUseResourceIndexAndHasOtherProperties_UseResourceIndex() {
         assertThat(
-                x.isa(resourceTypeWithoutSubTypes).val(literalValue).id(ConceptId.of("123")),
+                x.isa(resourceTypeWithoutSubTypes).val(literalValue).id("123"),
                 usesResourceIndex()
         );
     }
@@ -120,7 +119,7 @@ public class ConjunctionQueryTest {
 
         assertThat(
                 and(y.isa(resourceTypeWithoutSubTypes).val(literalValue), x.val(literalValue)),
-                usesResourceIndex(y, literalValue)
+                usesResourceIndex(y.var(), literalValue)
         );
     }
 
@@ -146,11 +145,11 @@ public class ConjunctionQueryTest {
 
     @Test
     public void whenVarHasAValuePredicateThatRefersToAVar_DoNotUseResourceIndex() {
-        assertThat(x.isa(resourceTypeWithoutSubTypes).val(eq(y)), not(usesResourceIndex(x, y)));
+        assertThat(x.isa(resourceTypeWithoutSubTypes).val(eq(y)), not(usesResourceIndex(x.var(), y)));
     }
 
     private Matcher<Pattern> usesResourceIndex() {
-        return usesResourceIndex(x, literalValue);
+        return usesResourceIndex(x.var(), literalValue);
     }
 
     private Matcher<Pattern> usesResourceIndex(Variable varName, Object value) {

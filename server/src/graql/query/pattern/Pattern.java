@@ -18,19 +18,17 @@
 
 package grakn.core.graql.query.pattern;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.parser.Parser;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static java.util.stream.Collectors.toSet;
+import java.util.stream.Collectors;
 
 /**
  * A pattern describing a subgraph.
@@ -42,7 +40,6 @@ import static java.util.stream.Collectors.toSet;
  */
 public interface Pattern {
 
-    AtomicLong counter = new AtomicLong(System.currentTimeMillis() * 1000);
     Parser parser = new Parser();
 
     static Pattern parse(String pattern) {
@@ -58,16 +55,16 @@ public interface Pattern {
      * @return a new query variable
      */
     @CheckReturnValue
-    static Variable var(String name) {
-        return new Variable(name, Variable.Type.UserDefined);
+    static Statement var(String name) {
+        return new Statement(new Variable(name), Collections.emptySet());
     }
 
     /**
      * @return a new, anonymous query variable
      */
     @CheckReturnValue
-    static Variable var() {
-        return new Variable(Long.toString(counter.getAndIncrement()), Variable.Type.Generated);
+    static Statement var() {
+        return new Statement(new Variable(), Collections.emptySet());
     }
 
     /**
@@ -103,7 +100,7 @@ public interface Pattern {
      */
     @CheckReturnValue
     static Pattern and(Collection<? extends Pattern> patterns) {
-        return and(Sets.newHashSet(patterns));
+        return and(new LinkedHashSet<>(patterns));
     }
 
     static <T extends Pattern> Conjunction<T> and(Set<T> patterns) {
@@ -127,10 +124,10 @@ public interface Pattern {
     static Pattern or(Collection<? extends Pattern> patterns) {
         // Simplify representation when there is only one alternative
         if (patterns.size() == 1) {
-            return Iterables.getOnlyElement(patterns);
+            return patterns.iterator().next();
         }
 
-        return or(Sets.newHashSet(patterns));
+        return or(new LinkedHashSet<>(patterns));
     }
 
     static <T extends Pattern> Disjunction<T> or(Set<T> patterns) {
@@ -150,7 +147,7 @@ public interface Pattern {
     default Set<Statement> statements() {
         return getDisjunctiveNormalForm().getPatterns().stream()
                 .flatMap(conj -> conj.getPatterns().stream())
-                .collect(toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     /**

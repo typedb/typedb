@@ -18,7 +18,6 @@
 
 package grakn.core.client.test;
 
-import com.google.common.collect.ImmutableSet;
 import grakn.core.client.GraknClient;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.rpc.RequestBuilder;
@@ -32,6 +31,7 @@ import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
@@ -53,6 +53,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -168,8 +169,8 @@ public class GraknClientTest {
         assertEquals(10, answers.size());
 
         for (ConceptMap answer : answers) {
-            assertEquals(answer.vars(), ImmutableSet.of(var("x")));
-            assertEquals(ConceptId.of("V123"), answer.get(var("x")).id());
+            assertEquals(answer.vars(), Collections.singleton(new Variable("x")));
+            assertEquals(ConceptId.of("V123"), answer.get("x").id());
         }
     }
 

@@ -19,11 +19,11 @@
 
 package grakn.core.client.rpc;
 
-import grakn.core.server.exception.TransactionException;
-import grakn.core.protocol.SessionProto.Transaction;
-import grakn.core.protocol.SessionServiceGrpc;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
+import grakn.core.protocol.SessionProto.Transaction;
+import grakn.core.protocol.SessionServiceGrpc;
+import grakn.core.server.exception.TransactionException;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 

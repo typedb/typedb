@@ -37,7 +37,7 @@ public abstract class RegexAtom extends AtomicBase {
     public abstract String getRegex();
 
     public static RegexAtom create(Variable varName, RegexProperty prop, ReasonerQuery parent) {
-        return new AutoValue_RegexAtom(varName, varName.regex(prop.regex()), parent, prop.regex());
+        return new AutoValue_RegexAtom(varName, new Statement(varName).regex(prop.regex()), parent, prop.regex());
     }
 
     private static RegexAtom create(RegexAtom a, ReasonerQuery parent) {

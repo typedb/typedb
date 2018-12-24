@@ -24,7 +24,6 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.predicate.ValuePredicate;
@@ -247,7 +246,7 @@ public class Fragments {
             GraphTraversal<S, Edge> traversal, Schema.EdgeProperty edgeProperty) {
 
         // Access label ID from edge
-        Variable labelId = Pattern.var();
+        Variable labelId = new Variable();
         traversal.values(edgeProperty.name()).as(labelId.symbol());
 
         // Look up schema concept using ID

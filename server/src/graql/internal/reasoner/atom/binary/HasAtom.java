@@ -30,12 +30,7 @@ import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 /**
- *
- * <p>
  * TypeAtom corresponding to graql a {@link HasAttributeTypeProperty} property.
- * </p>
- *
- *
  */
 @AutoValue
 public abstract class HasAtom extends OntologicalAtom {
@@ -50,7 +45,7 @@ public abstract class HasAtom extends OntologicalAtom {
 
     public static HasAtom create(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
         Label label = parent.tx().getConcept(predicateId).asType().label();
-        return create(var.has(Pattern.label(label)), predicateVar, predicateId, parent);
+        return create(new Statement(var).has(Pattern.label(label)), predicateVar, predicateId, parent);
     }
 
     private static HasAtom create(TypeAtom a, ReasonerQuery parent) {

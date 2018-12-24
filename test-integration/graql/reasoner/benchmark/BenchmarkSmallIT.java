@@ -91,8 +91,8 @@ public class BenchmarkSmallIT {
                     .assign(toRole, toEntity);
 
             for (int i = 1; i <= N; i++) {
-                Variable fromVar = Pattern.var().asUserDefined();
-                Variable toVar = Pattern.var().asUserDefined();
+                Statement fromVar = new Statement(new Variable().asUserDefined());
+                Statement toVar = new Statement(new Variable().asUserDefined());
                 Statement rulePattern = Pattern
                         .label("rule" + i)
                         .when(

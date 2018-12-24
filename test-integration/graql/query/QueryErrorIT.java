@@ -19,7 +19,6 @@
 package grakn.core.graql.query;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
@@ -186,7 +185,7 @@ public class QueryErrorIT {
         try (Transaction newTx = newSession.transaction(Transaction.Type.WRITE)) {
             newTx.execute(Graql.define(
                     label("person").sub("entity"),
-                    label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
+                    label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
             ));
 
             exception.expect(TransactionException.class);
@@ -249,6 +248,6 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("person"));
 
-        tx.execute(Graql.match(var("x").id(movie.id())).insert(var("x").isa(label(person.label()))));
+        tx.execute(Graql.match(var("x").id(movie.id().getValue())).insert(var("x").isa(label(person.label()))));
     }
 }

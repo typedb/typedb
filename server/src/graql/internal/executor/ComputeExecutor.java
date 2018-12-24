@@ -686,7 +686,7 @@ class ComputeExecutor<T extends Answer> {
         for (Label attributeType : targetTypeLabels()) {
             for (Label type : scopeTypeLabels()) {
                 Boolean patternExist = tx.stream(Graql.match(
-                        Pattern.var("x").has(attributeType, Pattern.var()),
+                        Pattern.var("x").has(attributeType.getValue(), Pattern.var()),
                         Pattern.var("x").isa(Pattern.label(type))
                 ), false).iterator().hasNext();
                 if (patternExist) return true;

@@ -170,8 +170,8 @@ public class PatternIT {
 
         var1 = var();
         var2 = var();
-        assertTrue(var1.equals(var1));
-        assertFalse(var1.equals(var2));
+        assertTrue(var1.var().equals(var1.var()));
+        assertFalse(var1.var().equals(var2.var()));
 
         var1 = var("x");
         var2 = var("y");

@@ -19,6 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.common.util.CommonUtil;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
@@ -46,7 +47,7 @@ public class ValueProperty extends VarProperty {
 
     @Override
     public String name() {
-        return Name.VALUE.toString();
+        return Query.Property.VALUE.toString();
     }
 
     @Override

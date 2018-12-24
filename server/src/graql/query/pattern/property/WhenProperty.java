@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
 
 /**
@@ -43,7 +44,7 @@ public class WhenProperty extends VarProperty {
 
     @Override
     public String name() {
-        return Name.WHEN.toString();
+        return Query.Property.WHEN.toString();
     }
 
     @Override

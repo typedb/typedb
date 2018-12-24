@@ -3,7 +3,6 @@ package grakn.core.client;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.Value;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -11,6 +10,7 @@ import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.Query;
 import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -114,7 +114,7 @@ public class ClientJavaE2E {
                     label("mating").sub("relationship").relates("male-partner").relates("female-partner").plays("child-bearer"),
                     label("parentship").sub("relationship").relates("parent").relates("child"),
 
-                    label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
+                    label("name").sub("attribute").datatype(Query.DataType.STRING),
                     label("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring"),
 
                     label("infer-parentship-from-mating-and-child-bearing").sub("rule")
@@ -138,7 +138,7 @@ public class ClientJavaE2E {
             LOG.info("clientJavaE2E() - assert if schema defined...");
             LOG.info("clientJavaE2E() - '" + getThingQuery + "'");
             List<String> definedSchema = tx.execute(getThingQuery).stream()
-                    .map(answer -> answer.get(var("t")).asType().label().getValue()).collect(Collectors.toList());
+                    .map(answer -> answer.get("t").asType().label().getValue()).collect(Collectors.toList());
             String[] correctSchema = new String[] { "thing", "entity", "relationship", "attribute",
                     "lion", "mating", "parentship", "child-bearing", "@has-name", "name" };
             assertThat(definedSchema, hasItems(correctSchema));
@@ -242,7 +242,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - match delete...");
-            DeleteQuery deleteQuery = Graql.match(var("m").isa("mating")).delete(var("m"));
+            DeleteQuery deleteQuery = Graql.match(var("m").isa("mating")).delete("m");
             LOG.info("clientJavaE2E() - '" + deleteQuery + "'");
             List<ConceptSet> answer = tx.execute(deleteQuery);
             List<ConceptMap> matings = tx.execute(Graql.match(var("m").isa("mating")).get());

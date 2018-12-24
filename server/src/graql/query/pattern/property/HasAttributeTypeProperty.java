@@ -21,6 +21,7 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 
@@ -34,7 +35,7 @@ import static grakn.core.graql.query.pattern.Pattern.var;
 /**
  * Represents the {@code has} and {@code key} properties on a Type.
  * This property can be queried or inserted. Whether this is a key is indicated by the
- * HasAttributeTypeProperty#required field.
+ * HasAttributeTypeProperty#isKey field.
  * This property is defined as an implicit ontological structure between a Type and a AttributeType,
  * including one implicit RelationshipType and two implicit Roles. The labels of these types are derived
  * from the label of the AttributeType.
@@ -48,9 +49,9 @@ public class HasAttributeTypeProperty extends VarProperty {
     private final Statement valueRole;
     private final Statement relationOwner;
     private final Statement relationValue;
-    private final boolean required;
+    private final boolean isKey;
 
-    public HasAttributeTypeProperty(Statement attributeType, boolean required) {
+    public HasAttributeTypeProperty(Statement attributeType, boolean isKey) {
         Label resourceLabel = attributeType.getTypeLabel().orElseThrow(
                 () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType)
         );
@@ -62,14 +63,14 @@ public class HasAttributeTypeProperty extends VarProperty {
         Statement relationType = var().sub(Pattern.label(Schema.MetaSchema.RELATIONSHIP.getLabel()));
 
         // If a key, limit only to the implicit key type
-        if (required) {
+        if (isKey) {
             ownerRole = ownerRole.label(KEY_OWNER.getLabel(resourceLabel));
             valueRole = valueRole.label(KEY_VALUE.getLabel(resourceLabel));
             relationType = relationType.label(KEY.getLabel(resourceLabel));
         }
 
         Statement relationOwner = relationType.relates(ownerRole);
-        Statement relationValue = relationType.var().relates(valueRole);
+        Statement relationValue = relationType.relates(valueRole);
 
         this.attributeType = attributeType;
         this.ownerRole = ownerRole;
@@ -82,7 +83,7 @@ public class HasAttributeTypeProperty extends VarProperty {
             throw new NullPointerException("Null relationValue");
         }
         this.relationValue = relationValue;
-        this.required = required;
+        this.isKey = isKey;
     }
 
     public Statement attributeType() {
@@ -97,13 +98,13 @@ public class HasAttributeTypeProperty extends VarProperty {
         return valueRole;
     }
 
-    public boolean isRequired() {
-        return required;
+    public boolean isKey() {
+        return isKey;
     }
 
     @Override
     public String name() {
-        return required ? Name.KEY.toString() : Name.HAS.toString();
+        return isKey ? Query.Property.KEY.toString() : Query.Property.HAS.toString();
     }
 
     @Override
@@ -143,7 +144,7 @@ public class HasAttributeTypeProperty extends VarProperty {
                     && (this.valueRole.equals(that.valueRole))
                     && (this.relationOwner.equals(that.relationOwner))
                     && (this.relationValue.equals(that.relationValue))
-                    && (this.required == that.required);
+                    && (this.isKey == that.isKey);
         }
         return false;
     }
@@ -162,7 +163,7 @@ public class HasAttributeTypeProperty extends VarProperty {
         h *= 1000003;
         h ^= this.relationValue.hashCode();
         h *= 1000003;
-        h ^= this.required ? 1231 : 1237;
+        h ^= this.isKey ? 1231 : 1237;
         return h;
     }
 }

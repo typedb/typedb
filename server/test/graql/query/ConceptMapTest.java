@@ -27,14 +27,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 
 public class ConceptMapTest {
 
-    private final Variable varInAnswer = var("x");
+    private final Variable varInAnswer = new Variable("x");
     private final Concept conceptInAnswer = mock(Concept.class);
 
     private final ConceptMap answer = new ConceptMap(ImmutableMap.of(varInAnswer, conceptInAnswer));
@@ -49,7 +48,7 @@ public class ConceptMapTest {
 
     @Test
     public void whenGettingAConceptThatIsNotInTheAnswer_Throw() {
-        Variable varNotInAnswer = var("y");
+        Variable varNotInAnswer = new Variable("y");
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.varNotInQuery(varNotInAnswer).getMessage());

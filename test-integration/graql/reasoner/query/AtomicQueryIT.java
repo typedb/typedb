@@ -34,6 +34,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
@@ -53,7 +54,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -125,8 +125,8 @@ public class AtomicQueryIT {
 
         answers.add(new ConceptMap(
                 ImmutableMap.of(
-                        var("x"), getConceptByResourceValue(tx, "Warsaw"),
-                        var("y"), getConceptByResourceValue(tx, "Poland")))
+                        new Variable("x"), getConceptByResourceValue(tx, "Warsaw"),
+                        new Variable("y"), getConceptByResourceValue(tx, "Poland")))
         );
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, tx);
 

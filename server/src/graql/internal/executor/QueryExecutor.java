@@ -178,7 +178,7 @@ public class QueryExecutor {
     public ConceptMap define(DefineQuery query) {
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         List<Statement> statements = query.statements().stream()
-                .flatMap(s -> s.innerStatements().stream())
+                .flatMap(statement -> statement.innerStatements().stream())
                 .collect(toImmutableList());
 
         for (Statement statement : statements) {
@@ -192,7 +192,7 @@ public class QueryExecutor {
     public ConceptMap undefine(UndefineQuery query) {
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         ImmutableList<Statement> statements = query.statements().stream()
-                .flatMap(v -> v.innerStatements().stream())
+                .flatMap(statement -> statement.innerStatements().stream())
                 .collect(toImmutableList());
 
         for (Statement statement : statements) {
@@ -205,7 +205,7 @@ public class QueryExecutor {
 
     public Stream<ConceptMap> insert(InsertQuery query) {
         Collection<Statement> statements = query.statements().stream()
-                .flatMap(v -> v.innerStatements().stream())
+                .flatMap(statement -> statement.innerStatements().stream())
                 .collect(toImmutableList());
 
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
@@ -339,12 +339,13 @@ public class QueryExecutor {
     }
 
     private void validateHasAttributeProperty(HasAttributeProperty varProperty) {
-        SchemaConcept schemaConcept = transaction.getSchemaConcept(varProperty.type());
+        Label type = Label.of(varProperty.type());
+        SchemaConcept schemaConcept = transaction.getSchemaConcept(type);
         if (schemaConcept == null) {
-            throw GraqlQueryException.labelNotFound(varProperty.type());
+            throw GraqlQueryException.labelNotFound(type);
         }
         if (!schemaConcept.isAttributeType()) {
-            throw GraqlQueryException.mustBeAttributeType(varProperty.type());
+            throw GraqlQueryException.mustBeAttributeType(type);
         }
     }
 

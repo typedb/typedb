@@ -20,7 +20,7 @@ package grakn.core.graql.query;
 
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -41,7 +41,7 @@ import static grakn.core.util.GraqlTestUtil.assertNotExists;
 
 public class QueryBuilderIT {
 
-    private static final Variable x = var("x");
+    private static final Statement x = var("x");
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -87,7 +87,7 @@ public class QueryBuilderIT {
 
         assertExists(tx, var().has("title", "123"));
 
-        DeleteQuery query = Graql.match(x.has("title", "123")).delete(x);
+        DeleteQuery query = Graql.match(x.has("title", "123")).delete(x.var());
         tx.execute(query);
 
         assertNotExists(tx, var().has("title", "123"));

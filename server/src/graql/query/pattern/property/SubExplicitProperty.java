@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 
 /**
@@ -40,7 +41,7 @@ public class SubExplicitProperty extends SubProperty {
 
     @Override
     public String name() {
-        return Name.SUB_EXP.toString();
+        return Query.Property.SUB_EXP.toString();
     }
 
     @Override
@@ -61,8 +62,8 @@ public class SubExplicitProperty extends SubProperty {
     @Override
     public int hashCode() {
         int h = 1;
-//        h *= 1000003; TODO: Uncomment this once we fix issue #4761
-//        h ^= this.name().hashCode();
+        h *= 1000003;
+        h ^= this.name().hashCode();
         h *= 1000003;
         h ^= this.type().hashCode();
         return h;
