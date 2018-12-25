@@ -179,7 +179,6 @@ checkstyle_test(
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  licenses = ["//config/checkstyle:licenses"],
- allow_failure = True
 )
 
 java_test(

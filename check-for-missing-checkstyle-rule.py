@@ -27,7 +27,8 @@ import sys
 
 java_targets = set(subprocess.check_output([
     'bazel', 'query',
-    '(kind(java_library, //...) union kind(java_test, //...)) except //dependencies/...'
+    '(kind(java_library, //...) union kind(java_test, //...)) '
+    'except //dependencies/... except attr("tags", "checkstyle_ignore", //...)'
 ]).split())
 
 checkstyle_targets_xml = subprocess.check_output([
