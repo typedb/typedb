@@ -129,7 +129,7 @@ node_grpc_compile()
 git_repository(
     name="graknlabs_rules_deployment",
     remote="https://github.com/graknlabs/deployment",
-    commit="a883f333d830d8eeffaabcabc486caa263e97b8b",
+    commit="4b66b2594933feea6511ffce60cf78e1325245c1",
 )
 
 load("@graknlabs_rules_deployment//github:dependencies.bzl", "dependencies_for_github_deployment")
@@ -139,7 +139,7 @@ dependencies_for_github_deployment()
 git_repository(
     name="com_github_google_bazel_common",
     remote="https://github.com/graknlabs/bazel-common",
-    commit="2e1a2025f2bd381116855c1bcfc14c99fd81aed3",
+    commit="f8bd0545c40cd19958eb284d097501242631bacd",
 )
 
 load("@com_github_google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
