@@ -1,22 +1,25 @@
-version: 2
+version: 2.1
+commands:
+  rbe_install_credential:
+    description: Remote Build Execution - Install Google Cloud Credential
+    steps:
+      - run: |
+          if [[ -n "$GOOGLE_CLOUD_REMOTE_BUILD_EXECUTION_CREDENTIAL" ]]; then
+            mkdir -p ~/.config/gcloud/
+            echo $GOOGLE_CLOUD_REMOTE_BUILD_EXECUTION_CREDENTIAL > ~/.config/gcloud/application_default_credentials.json
+          fi
 references:
-    install_bazel: &install_bazel
-      run:
-        name: Install bazel
-        command: |
-          curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-linux-x86_64.sh
-          chmod +x bazel-0.20.0-installer-linux-x86_64.sh
-          sudo ./bazel-0.20.0-installer-linux-x86_64.sh
+  install_bazel: &install_bazel
+    run:
+      name: Install bazel
+      command: |
+        curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-linux-x86_64.sh
+        chmod +x bazel-0.20.0-installer-linux-x86_64.sh
+        sudo ./bazel-0.20.0-installer-linux-x86_64.sh
 
-    install_gc_rbe_credential: &install_google_cloud_remote_build_execution_credential
-      run:
-        name: Install Google Cloud Remote Build Execution Credential
-        command: |
-          mkdir -p ~/.config/gcloud/
-          echo $GOOGLE_CLOUD_REMOTE_BUILD_EXECUTION_CREDENTIAL > ~/.config/gcloud/application_default_credentials.json
-    attach_grakn_workspace: &attach_grakn_workspace
-      attach_workspace:
-        at: ~/grakn
+  attach_grakn_workspace: &attach_grakn_workspace
+    attach_workspace:
+      at: ~/grakn
 
 jobs:
   build:
@@ -25,7 +28,7 @@ jobs:
     steps:
       - checkout
       - *install_bazel
-      - *install_google_cloud_remote_build_execution_credential
+      - rbe_install_credential
       - run: python ./check-for-missing-checkstyle-rule.py
       - run: bazel build //... --sandbox_debug --config=rbe
       - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all.zip dist/
@@ -40,7 +43,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - *install_google_cloud_remote_build_execution_credential
+    - rbe_install_credential
     - run: bazel test //client-java/... --test_size_filters=small --test_output=errors --config=rbe
     - run: bazel test //client-java/... --test_size_filters=medium,large,enormous --test_output=errors --config=rbe
 
@@ -50,7 +53,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - *install_google_cloud_remote_build_execution_credential
+    - rbe_install_credential
     - run: bazel build //:distribution --sandbox_debug
     - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
     - run: nohup bazel-genfiles/dist/grakn server start
@@ -63,7 +66,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - *install_google_cloud_remote_build_execution_credential
+    - rbe_install_credential
     - run: bazel build //:distribution --sandbox_debug
     - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
     - run: nohup bazel-genfiles/dist/grakn server start
@@ -75,7 +78,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - *install_google_cloud_remote_build_execution_credential
+    - rbe_install_credential
     - run: bazel test //common/... --test_output=errors --config=rbe
 
   console:
@@ -84,7 +87,7 @@ jobs:
     steps:
       - checkout
       - *install_bazel
-      - *install_google_cloud_remote_build_execution_credential
+      - rbe_install_credential
       - run: bazel test //console/... --test_output=errors --config=rbe
 
   graql:
@@ -93,7 +96,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - *install_google_cloud_remote_build_execution_credential
+    - rbe_install_credential
     - run: bazel test //graql/... --test_output=errors --config=rbe
 
   server:
@@ -102,7 +105,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - *install_google_cloud_remote_build_execution_credential
+    - rbe_install_credential
     - run: bazel test //server/... --test_output=errors --config=rbe
 
   workbase:
@@ -111,7 +114,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - *install_google_cloud_remote_build_execution_credential
+    - rbe_install_credential
     - run: bazel test //workbase:tests-unit --test_output=errors --config=rbe
     - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
     - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
@@ -129,7 +132,7 @@ jobs:
     steps:
       - checkout
       - *install_bazel
-      - *install_google_cloud_remote_build_execution_credential
+      - rbe_install_credential
       - run: bazel test //test-integration/server/... --test_output=errors --config=rbe
       - run: bazel test //test-integration/graql/internal/... --test_output=errors --config=rbe
       - run: bazel test //test-integration/graql/query/... --test_output=errors --config=rbe
@@ -140,7 +143,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - *install_google_cloud_remote_build_execution_credential
+    - rbe_install_credential
     - run: bazel test //test-integration/graql/reasoner:reasoning-it --test_output=errors --config=rbe
     - run: bazel test //test-integration/graql/reasoner:geo-inference-it --test_output=errors --config=rbe
 
@@ -150,7 +153,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - *install_google_cloud_remote_build_execution_credential
+    - rbe_install_credential
     - run: bazel test //test-integration/graql/reasoner/reasoning/... --test_output=errors --config=rbe
 
   test-integration-reasoner-components:
@@ -159,7 +162,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - *install_google_cloud_remote_build_execution_credential
+    - rbe_install_credential
     - run: bazel test //test-integration/graql/reasoner/atomic/... --test_output=errors --config=rbe
     - run: bazel test //test-integration/graql/reasoner/benchmark/... --test_output=errors --config=rbe
     - run: bazel test //test-integration/graql/reasoner/cache/... --test_output=errors --config=rbe
@@ -171,7 +174,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - *install_google_cloud_remote_build_execution_credential
+    - rbe_install_credential
     - run: bazel test //test-integration/graql/analytics/... --test_output=errors --config=rbe
 
   test-end-to-end:
@@ -180,7 +183,7 @@ jobs:
     steps:
       - checkout
       - *install_bazel
-      - *install_google_cloud_remote_build_execution_credential
+      - rbe_install_credential
       - run: bazel build //:distribution --sandbox_debug --config=rbe
       - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone --config=rbe
 
