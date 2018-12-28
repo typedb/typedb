@@ -14,11 +14,11 @@ commands:
       - run:
           name: Bazel - Add RBE Credential
           command: |
-            if [[ -n "$RBE_CREDENTIAL" ]]; then
-              RBE_CREDENTIAL_LOCATION=~/.config/gcloud/application_default_credentials.json
-              echo "An RBE credential is found. Saving it to $RBE_CREDENTIAL_LOCATION in order to be read by Bazel."
+            if [[ -n "$BAZEL_RBE_CREDENTIAL" ]]; then
+              BAZEL_RBE_CREDENTIAL_LOCATION=~/.config/gcloud/application_default_credentials.json
+              echo "An RBE credential is found. Saving it to $BAZEL_RBE_CREDENTIAL_LOCATION in order to be read by Bazel."
               mkdir -p ~/.config/gcloud/
-              echo $RBE_CREDENTIAL > "$RBE_CREDENTIAL_LOCATION"
+              echo $BAZEL_RBE_CREDENTIAL > "$BAZEL_RBE_CREDENTIAL_LOCATION"
             else
               echo "No RBE credential found. Bazel will be used without RBE support."
             fi
