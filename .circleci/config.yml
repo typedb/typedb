@@ -16,11 +16,11 @@ commands:
           command: |
             if [[ -n "$BAZEL_RBE_CREDENTIAL" ]]; then
               BAZEL_RBE_CREDENTIAL_LOCATION=~/.config/gcloud/application_default_credentials.json
-              echo "An RBE credential is found. Saving it to $BAZEL_RBE_CREDENTIAL_LOCATION in order to be read by Bazel."
+              echo "An RBE credential is found and will be saved to $BAZEL_RBE_CREDENTIAL_LOCATION. Bazel will be executed with RBE support."
               mkdir -p ~/.config/gcloud/
               echo $BAZEL_RBE_CREDENTIAL > "$BAZEL_RBE_CREDENTIAL_LOCATION"
             else
-              echo "No RBE credential found. Bazel will be used without RBE support."
+              echo "No RBE credential found. Bazel will be executed locally without RBE support."
             fi
 
   bazel_rbe:
@@ -29,11 +29,11 @@ commands:
           type: string
     steps:
       - run:
-          name: Bazel - Execute Command
+          name: Bazel - Execute
           command: |
             if [[ -f ~/.config/gcloud/application_default_credentials.json ]]; then
-              CMD="bazel << parameters.parameters >> \
-                --project_id=grakn-dev \
+              echo "Bazel will be executed with RBE support. This means the build is remotely executed and the cache will be re-used by subsequent CI jobs."
+              RBE_FLAGS="--project_id=grakn-dev \
                 --remote_instance_name=projects/grakn-dev/instances/default_instance \
                 --remote_cache=remotebuildexecution.googleapis.com \
                 --remote_executor=remotebuildexecution.googleapis.com \
@@ -62,8 +62,10 @@ commands:
                 --experimental_strict_action_env=true
                 "
             else
-              CMD="bazel << parameters.parameters >>"
+              echo "Bazel will be executed locally (without RBE support)."
+              RBE_FLAGS=""
             fi
+            CMD="bazel << parameters.parameters >> $RBE_FLAGS"
             echo "Executing $CMD"
             $CMD
 
