@@ -32,7 +32,35 @@ commands:
           name: Bazel - Execute Command
           command: |
             if [[ -f ~/.config/gcloud/application_default_credentials.json ]]; then
-              CMD="bazel << parameters.parameters >> --config=rbe"
+              CMD="bazel << parameters.parameters >> \
+                --project_id=grakn-dev \
+                --remote_instance_name=projects/grakn-dev/instances/default_instance \
+                --remote_cache=remotebuildexecution.googleapis.com \
+                --remote_executor=remotebuildexecution.googleapis.com \
+                --bes_backend="buildeventservice.googleapis.com" \
+                --bes_results_url="https://source.cloud.google.com/results/invocations/" \
+                --host_platform=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:rbe_ubuntu1604 \
+                --platforms=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:rbe_ubuntu1604 \
+                --extra_execution_platforms=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:rbe_ubuntu1604 \
+                --host_javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:jdk8 \
+                --javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:jdk8 \
+                --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8 \
+                --java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8 \
+                --extra_toolchains=@bazel_toolchains//configs/ubuntu16_04_clang/1.1/bazel_0.20.0/cpp:cc-toolchain-clang-x86_64-default \
+                --crosstool_top=@bazel_toolchains//configs/ubuntu16_04_clang/1.1/bazel_0.20.0/default:toolchain \
+                --jobs=50 \
+                --remote_timeout=3600 \
+                --bes_timeout=60s \
+                --tls_enabled=true \
+                --auth_enabled=true \
+                --spawn_strategy=remote \
+                --strategy=Javac=remote \
+                --strategy=Closure=remote \
+                --genrule_strategy=remote \
+                --define=EXECUTOR=remote \
+                --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1 \
+                --experimental_strict_action_env=true
+                "
             else
               CMD="bazel << parameters.parameters >>"
             fi
@@ -259,9 +287,9 @@ jobs:
         - bazel_rbe:
             parameters: run @nodejs//:npm install
         - bazel_rbe:
-            parameters: test //workbase:tests-e2e --test_output=errors --config=rbe
+            parameters: test //workbase:tests-e2e --test_output=errors
         - bazel_rbe:
-            parameters: build //workbase:distribution --config=rbe
+            parameters: build //workbase:distribution
         - run: mv ./bazel-genfiles/workbase/grakn-workbase.zip ~/grakn/artifacts/grakn-workbase-${GRAKN_VERSION}-mac.zip
         - persist_to_workspace:
             root: ~/grakn
