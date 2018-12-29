@@ -169,7 +169,7 @@ public class Server {
     }
 
     private String getServerClassPath() {
-        Path jar = Paths.get("services", "lib", "*");
+        Path jar = Paths.get("server","services", "lib", "*");
         return graknHome.resolve(jar) + File.pathSeparator + graknHome.resolve("conf");
     }
 

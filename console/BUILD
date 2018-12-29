@@ -18,7 +18,8 @@
 
 package(default_visibility = ["//visibility:__subpackages__"])
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", distribution = "distribution")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deploy_deb")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar", "pkg_deb")
 
 java_library(
     name = "console",
@@ -88,6 +89,25 @@ distribution(
     output_filename = "grakn-core-console",
     visibility = ["//visibility:public"]
 )
+
+
+deploy_deb(
+    name = "grakn-core-console",
+    target = ":console-binary",
+    package_dir = "/opt/grakn/core/console/",
+    maintainer = "Max Vorobev",
+    version_file = "//:VERSION",
+    empty_dirs = [
+         "/opt/grakn/core/console/services/lib/"
+    ],
+     depends = [
+       "openjdk-8-jre"
+     ],
+     postinst = ":debian-postinst.sh",
+     prerm = ":debian-prerm.sh",
+     description = "Grakn Server"
+)
+
 
 test_suite(
     name = "console-test-integration",

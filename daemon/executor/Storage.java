@@ -65,7 +65,7 @@ public class Storage {
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
     private static final Path STORAGE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-storage.pid");
-    private static final Path STORAGE_DATA = Paths.get("db", "cassandra");
+    private static final Path STORAGE_DATA = Paths.get("server", "db", "cassandra");
     private static final String JAVA_OPTS = SystemProperty.STORAGE_JAVAOPTS.value();
 
     private static final String EMPTY_VALUE = "";
@@ -76,7 +76,7 @@ public class Storage {
     private static final String DATA_FILE_DIR_CONFIG_KEY = "data_file_directories";
     private static final String SAVED_CACHES_DIR_CONFIG_KEY = "saved_caches_directory";
     private static final String COMMITLOG_DIR_CONFIG_KEY = "commitlog_directory";
-    private static final String STORAGE_CONFIG_PATH = "services/cassandra/";
+    private static final String STORAGE_CONFIG_PATH = "server/services/cassandra/";
     private static final String STORAGE_CONFIG_NAME = "cassandra.yaml";
 
 
@@ -252,14 +252,14 @@ public class Storage {
     }
 
     private String getStorageClassPath() {
-        Path jar = Paths.get("services", "lib", "*");
-        return graknHome.resolve(jar) + File.pathSeparator + graknHome.resolve("services").resolve("cassandra");
+        Path jar = Paths.get("server", "services", "lib", "*");
+        return graknHome.resolve(jar) + File.pathSeparator + graknHome.resolve("server").resolve("services").resolve("cassandra");
     }
 
 
     private List<String> nodetoolCommand() {
-        Path logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml");
-        String classpath = graknHome.resolve("services").resolve("lib").toString() + File.separator + "*";
+        Path logback = graknHome.resolve("server").resolve("services").resolve("cassandra").resolve("logback.xml");
+        String classpath = graknHome.resolve("server").resolve("services").resolve("lib").toString() + File.separator + "*";
         return Arrays.asList(
                 "java", "-cp", classpath,
                 "-Dlogback.configurationFile=" + logback,

@@ -16,9 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
+exports_files(["grakn", "grakn-debian", "VERSION", "deployment.properties", "debian-postinst.sh"], visibility = ["//visibility:public"])
 load("@graknlabs_rules_deployment//brew:rules.bzl", deploy_brew = "deploy_brew")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", distribution = "distribution")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deploy_deb")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar", "pkg_deb")
 
 
 py_binary(
@@ -50,4 +51,24 @@ distribution(
 deploy_brew(
     name = "deploy-brew",
     version_file = "//:VERSION"
+)
+
+deploy_deb(
+    name = "grakn-core-bin",
+    package_dir = "/opt/grakn/core/",
+    maintainer = "Max Vorobev",
+    version_file = "//:VERSION",
+    empty_dirs = [
+         "logs"
+     ],
+     files = {
+          "//:grakn-debian": "grakn",
+          "//server:conf/logback.xml": "conf/logback.xml",
+          "//server:conf/grakn.properties": "conf/grakn.properties",
+     },
+     depends = [
+       "openjdk-8-jre"
+     ],
+     postinst = ":debian-postinst.sh",
+     description = "Grakn Server"
 )

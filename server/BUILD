@@ -19,7 +19,8 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", distribution = "distribution")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deploy_deb")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar", "pkg_deb")
 
 
 exports_files(
@@ -130,4 +131,28 @@ distribution(
     ],
     output_filename = "grakn-core-server",
     visibility = ["//visibility:public"]
+)
+
+deploy_deb(
+    name = "grakn-core-server",
+    target = ":server-binary",
+    package_dir = "/opt/grakn/core/server/",
+    maintainer = "Max Vorobev",
+    version_file = "//:VERSION",
+    empty_dirs = [
+         "/opt/grakn/core/server/db/cassandra",
+         "/opt/grakn/core/server/db/queue",
+         "/opt/grakn/core/server/services/lib/"
+     ],
+     files = {
+          "//server:services/cassandra/cassandra.yaml": "services/cassandra/cassandra.yaml",
+          "//server:services/cassandra/logback.xml": "services/cassandra/logback.xml",
+          "//server:services/grakn/grakn-core-ascii.txt": "services/grakn/grakn-core-ascii.txt"
+     },
+     depends = [
+       "openjdk-8-jre"
+     ],
+     postinst = ":debian-postinst.sh",
+     prerm = ":debian-prerm.sh",
+     description = "Grakn Server"
 )
