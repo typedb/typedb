@@ -28,6 +28,7 @@ import ai.grakn.engine.Server;
 import ai.grakn.engine.ServerFactory;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.ServerStatus;
+import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemonImpl;
 import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
@@ -52,7 +53,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -180,7 +180,7 @@ public class EngineContext extends CompositeTestRule {
                 // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
                 clearGraphs();
                 server.close();
-
+                engineGraknTxFactory.closeSessions();
                 LOG.info("engine stopped.");
 
                 // There is no way to stop the embedded Casssandra, no such API offered.
@@ -255,11 +255,11 @@ public class EngineContext extends CompositeTestRule {
         // tx-factory
         engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
 
-        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, engineGraknTxFactory);
+        AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon = new AttributeDeduplicatorDaemonImpl(config, engineGraknTxFactory);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         io.grpc.Server server = ServerBuilder.forPort(0)
-                .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))
+                .addService(new SessionService(requestOpener, AttributeDeduplicatorDaemon))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
@@ -268,7 +268,7 @@ public class EngineContext extends CompositeTestRule {
         Server graknEngineServer = ServerFactory.createServer(id, config, status,
                 sparkHttp, Collections.emptyList(), rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
-                lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
+                lockProvider, AttributeDeduplicatorDaemon, keyspaceStore);
 
         graknEngineServer.start();
 

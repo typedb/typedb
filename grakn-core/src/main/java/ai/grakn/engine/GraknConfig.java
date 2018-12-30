@@ -82,8 +82,15 @@ public class GraknConfig {
         return GraknConfig.of(prop);
     }
 
+    /**
+     * Clone a GraknConfig properties into a new GraknConfig object
+     * @param properties
+     * @return new GraknConfig object with a copy of internal properties
+     */
     public static GraknConfig of(Properties properties) {
-        return new GraknConfig(properties);
+        Properties localProps = new Properties();
+        properties.forEach((key, value)-> localProps.setProperty((String)key, (String)value));
+        return new GraknConfig(localProps);
     }
 
     private GraknConfig(Properties prop) {

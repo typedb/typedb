@@ -20,7 +20,6 @@ package ai.grakn.engine.bootup;
 
 import ai.grakn.graql.shell.GraqlConsole;
 import ai.grakn.graql.shell.GraqlShellOptions;
-import ai.grakn.graql.shell.GraqlShellOptionsFactory;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.migration.export.Main;
 import ai.grakn.migration.json.JsonMigrator;
@@ -28,8 +27,10 @@ import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.migration.xml.XmlMigrator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
+import ai.grakn.util.SimpleURI;
 import com.google.common.base.StandardSystemProperty;
 import org.apache.commons.cli.ParseException;
+import ai.grakn.client.Grakn;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -37,48 +38,36 @@ import java.util.Arrays;
 /**
  * The main class of the 'graql' command. This class is not a class responsible
  * for booting up the real command, but rather the command itself.
- *
+ * <p>
  * Please keep the class name "Graql" as it is what will be displayed to the user.
- *
- * @author Michele Orsi
  */
 public class Graql {
 
-    private final GraqlShellOptionsFactory graqlShellOptionsFactory;
     private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
-
-
-    public Graql(GraqlShellOptionsFactory graqlShellOptionsFactory) {
-        this.graqlShellOptionsFactory = graqlShellOptionsFactory;
-    }
+    public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:48555");
 
     /**
-     *
      * Invocation from bash script 'graql'
      *
      * @param args
      */
-    public static void main(String[] args) throws IOException, InterruptedException {
-        GraqlShellOptionsFactory graqlShellOptionsFactory = GraqlShellOptions::create;
+    public static void main(String[] args) throws IOException, InterruptedException, ParseException {
+        String[] argsWithoutContext = Arrays.copyOfRange(args, 1, args.length);
+        GraqlShellOptions shellOptions = GraqlShellOptions.create(argsWithoutContext);
+        SimpleURI location = shellOptions.getUri();
 
-        new Graql(graqlShellOptionsFactory).run(args);
+        SimpleURI uri = location != null ? location : DEFAULT_URI;
+        Grakn client = new Grakn(uri);
+        // Start Graql Console injecting args, shellOptions and a Grakn client that will be used to communicate with the Server
+        new Graql().run(args, shellOptions, client);
     }
 
-    public void run(String[] args) throws IOException, InterruptedException {
+    public void run(String[] args, GraqlShellOptions shellOptions, Grakn client) throws IOException, InterruptedException {
         String context = args.length > 0 ? args[0] : "";
 
         switch (context) {
             case "console":
-                GraqlShellOptions options;
-
-                try {
-                    options = graqlShellOptionsFactory.createGraqlShellOptions(valuesFrom(args, 1));
-                } catch (ParseException e) {
-                    System.err.println(e.getMessage());
-                    return;
-                }
-
-                GraqlConsole.start(options, HISTORY_FILENAME, System.out, System.err);
+                GraqlConsole.start(shellOptions, HISTORY_FILENAME, client, System.out, System.err);
                 break;
             case "migrate":
                 migrate(valuesFrom(args, 1));
@@ -86,7 +75,8 @@ public class Graql {
             case "version":
                 version();
                 break;
-            default: help();
+            default:
+                help();
         }
 
     }

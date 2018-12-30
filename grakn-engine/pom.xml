@@ -24,7 +24,7 @@
         <artifactId>grakn-test-profiles</artifactId>
         <relativePath>../grakn-test-profiles</relativePath>
         <groupId>ai.grakn</groupId>
-        <version>1.4.2</version>
+        <version>1.4.3</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -54,7 +54,6 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>client-java</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>

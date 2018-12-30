@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.shell;
 
+import ai.grakn.client.Grakn;
 import ai.grakn.graql.shell.GraqlConsole;
 import ai.grakn.graql.shell.GraqlShellOptions;
 import ai.grakn.test.rule.EngineContext;
@@ -52,6 +53,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 
+import static ai.grakn.engine.bootup.Graql.DEFAULT_URI;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -710,8 +712,11 @@ public class GraqlShellIT {
             System.setIn(in);
 
             GraqlShellOptions options = GraqlShellOptions.create(args);
+            SimpleURI location = options.getUri();
 
-            success = GraqlConsole.start(options, historyFile, out, err);
+            SimpleURI uri = location != null ? location : DEFAULT_URI;
+            Grakn client = new Grakn(uri);
+            success = GraqlConsole.start(options, historyFile, client, out, err);
         } catch (Exception e) {
             e.printStackTrace();
             err.flush();

@@ -114,12 +114,14 @@ public class GraknCqlBridgeRecordReader extends RecordReader<StaticBuffer, Itera
             if (cluster != null) {
                 return;
             }
-            // create a Cluster instance
-            String[] locations = split.getLocations();
-            // disregard the conf as it brings some unforeseen issues.
-            cluster = Cluster.builder()
-                    .addContactPoints(locations)
-                    .build();
+            // Previous implementation of this class was instantiating a new Clutser with the following comment:
+            // "disregard the conf as it brings some unforeseen issues."
+            // Cluster.builder().addContactPoints(locations).build();
+
+            // The above ignores the config so it's not possible to use it when we need to change default ports
+            // as they won't be correctly propagated. So now we create Cluster using conf.
+            // If this keeps breaking we might need to investigate further.
+            cluster = CqlConfigHelper.getInputCluster(ConfigHelper.getInputInitialAddress(conf).split(","), conf);
         } catch (Exception e) {
             throw new RuntimeException("Unable to create cluster for table: " + cfName + ", in keyspace: " + keyspace, e);
         }

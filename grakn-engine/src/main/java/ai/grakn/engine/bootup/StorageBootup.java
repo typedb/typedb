@@ -125,7 +125,7 @@ public class StorageBootup {
      *
      * @throws BootupException
      */
-    private void start() {
+    public void start() {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
@@ -173,6 +173,7 @@ public class StorageBootup {
         storageCommand.add("-Dlogback.configurationFile=" + logback);
         storageCommand.add("-Dcassandra.logdir=" + getStorageLogPathFromGraknProperties());
         storageCommand.add("-Dcassandra-pidfile=" + STORAGE_PIDFILE.toString());
+        storageCommand.add("-Dcassandra.superuser_setup_delay_ms=0");
         //default port over for JMX connections, needed for nodetool status
         storageCommand.add("-Dcassandra.jmx.local.port=7199");
         // stop the jvm on OutOfMemoryError as it can result in some data corruption

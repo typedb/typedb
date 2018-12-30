@@ -24,8 +24,6 @@ import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -47,7 +45,6 @@ import java.util.Map;
  * @author fppt
  */
 public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<HadoopGraph>, HadoopGraph> {
-    private final Logger LOG = LoggerFactory.getLogger(TxFactoryJanusHadoop.class);
 
     /**
      * This map is used to override hidden config files.
@@ -89,8 +86,6 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<Hado
 
     @Override
     protected HadoopGraph buildTinkerPopGraph(boolean batchLoading) {
-        LOG.warn("Hadoop graph ignores parameter address.");
-
         //Load Defaults
         TxFactoryJanus.getDefaultProperties().forEach((key, value) -> {
             if(!session().config().properties().containsKey(key)){

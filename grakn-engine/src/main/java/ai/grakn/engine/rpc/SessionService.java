@@ -18,8 +18,6 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -62,15 +60,15 @@ import java.util.stream.Stream;
  */
 public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private final OpenRequest requestOpener;
-    private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
+    private AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon;
 
-    public SessionService(OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
+    public SessionService(OpenRequest requestOpener, AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon) {
         this.requestOpener = requestOpener;
-        this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
+        this.AttributeDeduplicatorDaemon = AttributeDeduplicatorDaemon;
     }
 
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
-        return TransactionListener.create(responseSender, requestOpener, attributeDeduplicatorDaemon);
+        return TransactionListener.create(responseSender, requestOpener, AttributeDeduplicatorDaemon);
     }
 
 
@@ -84,23 +82,23 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final AtomicBoolean terminated = new AtomicBoolean(false);
         private final ExecutorService threadExecutor;
         private final OpenRequest requestOpener;
-        private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
+        private AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon;
         private final Iterators iterators = Iterators.create();
 
         @Nullable
         private EmbeddedGraknTx<?> tx = null;
 
-        private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
+        private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon) {
             this.responseSender = responseSender;
             this.threadExecutor = threadExecutor;
             this.requestOpener = requestOpener;
-            this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
+            this.AttributeDeduplicatorDaemon = AttributeDeduplicatorDaemon;
         }
 
-        public static TransactionListener create(StreamObserver<Transaction.Res> responseSender, OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
+        public static TransactionListener create(StreamObserver<Transaction.Res> responseSender, OpenRequest requestOpener, AttributeDeduplicatorDaemon AttributeDeduplicatorDaemon) {
             ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
             ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
-            return new TransactionListener(responseSender, threadExecutor, requestOpener, attributeDeduplicatorDaemon);
+            return new TransactionListener(responseSender, threadExecutor, requestOpener, AttributeDeduplicatorDaemon);
         }
 
         private static <T> T nonNull(@Nullable T item) {
@@ -201,8 +199,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 threadExecutor.submit(runnable).get();
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
-                assert cause instanceof RuntimeException : "No checked exceptions are thrown, because it's a `Runnable`";
-                throw (RuntimeException) cause;
+                throw new RuntimeException(cause);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -213,19 +210,14 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
 
-            ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(
-                    Keyspace.of(request.getKeyspace()),
-                    GraknTxType.of(request.getType().getNumber())
-            );
-
-            tx = requestOpener.open(args);
+            tx = requestOpener.open(request);
             responseSender.onNext(ResponseBuilder.Transaction.open());
         }
 
         private void commit() {
             tx().commitAndGetLogs().ifPresent(commitLog ->
                     commitLog.attributes().forEach((attributeIndex, conceptIds) ->
-                            conceptIds.forEach(id -> attributeDeduplicatorDaemon.markForDeduplication(commitLog.keyspace(), attributeIndex, id))
+                            conceptIds.forEach(id -> AttributeDeduplicatorDaemon.markForDeduplication(commitLog.keyspace(), attributeIndex, id))
                     ));
             responseSender.onNext(ResponseBuilder.Transaction.commit());
         }

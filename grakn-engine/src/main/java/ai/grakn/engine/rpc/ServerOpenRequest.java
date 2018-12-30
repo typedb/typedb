@@ -22,6 +22,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.rpc.proto.SessionProto;
 
 /**
  * A request transaction opener for RPC Services. It requires the keyspace and transaction type from the argument object
@@ -36,31 +37,10 @@ public class ServerOpenRequest implements OpenRequest {
     }
 
     @Override
-    public EmbeddedGraknTx<?> open(OpenRequest.Arguments args) {
-        Keyspace keyspace = args.getKeyspace();
-        GraknTxType txType = args.getTxType();
+    public EmbeddedGraknTx<?> open(SessionProto.Transaction.Open.Req request) {
+        Keyspace keyspace = Keyspace.of(request.getKeyspace());
+        GraknTxType txType = GraknTxType.of(request.getType().getNumber());
         return txFactory.tx(keyspace, txType);
     }
 
-    /**
-     * An argument object for request transaction opener for RPC Services
-     */
-    static class Arguments implements OpenRequest.Arguments {
-
-        Keyspace keyspace;
-        GraknTxType txType;
-
-        Arguments(Keyspace keyspace, GraknTxType txType) {
-            this.keyspace = keyspace;
-            this.txType = txType;
-        }
-
-        public Keyspace getKeyspace() {
-            return keyspace;
-        }
-
-        public GraknTxType getTxType() {
-            return txType;
-        }
-    }
 }

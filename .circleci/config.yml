@@ -112,7 +112,7 @@ jobs:
       - store_test_results:
           path: ~/grakn-surefire-reports/
 
-  unit-it-test-2:
+  unit-it-test:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -311,16 +311,10 @@ workflows:
 #          filters:
 #            tags:
 #              ignore: /.*/
-      - unit-it-test-1:
-          requires:
-            - build
-      - unit-it-test-2:
+      - unit-it-test:
           requires:
             - build
       - distribution-e2e:
-          requires:
-            - build
-      - snb-e2e:
           requires:
             - build
       - biomed-e2e:
