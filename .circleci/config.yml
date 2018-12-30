@@ -112,7 +112,7 @@ jobs:
       - store_test_results:
           path: ~/grakn-surefire-reports/
 
-  unit-it-test-2:
+  unit-it-test:
     machine: true
     working_directory: ~/grakn
     steps:
