@@ -59,16 +59,20 @@ deploy_deb(
     maintainer = "Max Vorobev",
     version_file = "//:VERSION",
     empty_dirs = [
-         "logs"
-     ],
-     files = {
-          "//:grakn-debian": "grakn",
-          "//server:conf/logback.xml": "conf/logback.xml",
-          "//server:conf/grakn.properties": "conf/grakn.properties",
-     },
-     depends = [
-       "openjdk-8-jre"
-     ],
-     postinst = ":debian-postinst.sh",
-     description = "Grakn Server"
+        "logs",
+        "/var/log/grakn/server/",
+    ],
+    files = {
+        "//:grakn-debian": "grakn",
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+    },
+    depends = [
+      "openjdk-8-jre"
+    ],
+    symlinks = {
+        "/usr/local/bin/grakn": "/opt/grakn/core/grakn",
+        "/opt/grakn/core/logs": "/var/log/grakn/server/",
+    },
+    description = "Grakn Core (binaries)"
 )

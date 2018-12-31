@@ -98,14 +98,20 @@ deploy_deb(
     maintainer = "Max Vorobev",
     version_file = "//:VERSION",
     empty_dirs = [
-         "/opt/grakn/core/console/services/lib/"
+         "/opt/grakn/core/console/services/lib/",
+         "/var/log/grakn/console/"
     ],
-     depends = [
-       "openjdk-8-jre"
-     ],
-     postinst = ":debian-postinst.sh",
-     prerm = ":debian-prerm.sh",
-     description = "Grakn Server"
+    depends = [
+      "openjdk-8-jre",
+      "grakn-core-bin"
+    ],
+    symlinks = {
+        "/opt/grakn/core/console/logs": "/var/log/grakn/console/"
+    },
+    modes = {
+        "/var/log/grakn/console/": "0777"
+    },
+    description = "Grakn Core (console)"
 )
 
 
