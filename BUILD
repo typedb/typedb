@@ -30,22 +30,29 @@ py_binary(
 )
 
 distribution(
-    name = "distribution",
-    targets = ["//server:server-binary", "//console:console-binary"],
+    targets = {
+        "//server:server-binary": "server/services/lib/",
+        "//console:console-binary": "console/services/lib/"
+    },
     additional_files = {
-         "//:grakn": 'grakn',
-         "//server:conf/logback.xml": "conf/logback.xml",
-         "//server:conf/grakn.properties": "conf/grakn.properties",
-         "//server:services/cassandra/cassandra.yaml": "services/cassandra/cassandra.yaml",
-         "//server:services/cassandra/logback.xml": "services/cassandra/logback.xml",
-         "//server:services/grakn/grakn-core-ascii.txt": "services/grakn/grakn-core-ascii.txt"
+        "//:grakn": 'grakn',
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+        "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
+        "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
+        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt"
     },
     empty_directories = [
-        "db/cassandra",
-        "db/queue"
+        "server/db/cassandra",
+        "server/db/queue"
     ],
+    modes = {
+        "server/services/cassandra/cassandra.yaml": "777",
+        "server/logs": "777",
+        "server/db/cassandra": "777",
+        "server/db/queue": "777",
+    },
     output_filename = "grakn-core-all",
-    visibility = ["//visibility:public"]
 )
 
 deploy_brew(
@@ -54,10 +61,11 @@ deploy_brew(
 )
 
 deploy_deb(
-    name = "grakn-core-bin",
-    package_dir = "/opt/grakn/core/",
-    maintainer = "Max Vorobev",
+    package_name = "grakn-core-bin",
+    maintainer = "Max Vorobev <vmax0770@gmail.com>",
+    description = "Grakn Core (binaries)",
     version_file = "//:VERSION",
+    installation_dir = "/opt/grakn/core/",
     empty_dirs = [
         "logs",
         "/var/log/grakn/server/",
@@ -74,5 +82,4 @@ deploy_deb(
         "/usr/local/bin/grakn": "/opt/grakn/core/grakn",
         "/opt/grakn/core/logs": "/var/log/grakn/server/",
     },
-    description = "Grakn Core (binaries)"
 )

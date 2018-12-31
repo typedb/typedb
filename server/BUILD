@@ -115,30 +115,41 @@ deploy_maven_jar(
 )
 
 distribution(
-    name = "distribution",
-    targets = ["//server:server-binary"],
+    targets = {
+        "//server:server-binary": "server/services/lib/"
+    },
     additional_files = {
-         "//:grakn": 'grakn',
-         "//server:conf/logback.xml": "conf/logback.xml",
-         "//server:conf/grakn.properties": "conf/grakn.properties",
-         "//server:services/cassandra/cassandra.yaml": "services/cassandra/cassandra.yaml",
-         "//server:services/cassandra/logback.xml": "services/cassandra/logback.xml",
-         "//server:services/grakn/grakn-core-ascii.txt": "services/grakn/grakn-core-ascii.txt"
+     "//:grakn": 'grakn',
+     "//server:conf/logback.xml": "conf/logback.xml",
+     "//server:conf/grakn.properties": "conf/grakn.properties",
+     "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
+     "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
+     "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt"
     },
     empty_directories = [
-        "db/cassandra",
-        "db/queue"
+        "server/db/cassandra",
+        "server/db/queue"
     ],
+    modes = {
+      "server/services/cassandra/cassandra.yaml": "777",
+      "server/logs": "777",
+      "server/db/cassandra": "777",
+      "server/db/queue": "777",
+    },
     output_filename = "grakn-core-server",
-    visibility = ["//visibility:public"]
 )
 
 deploy_deb(
-    name = "grakn-core-server",
-    target = ":server-binary",
-    package_dir = "/opt/grakn/core/server/",
-    maintainer = "Max Vorobev",
+    package_name = "grakn-core-server",
+    maintainer = "Max Vorobev <vmax0770@gmail.com>",
+    description = "Grakn Core (server)",
     version_file = "//:VERSION",
+    depends = [
+      "openjdk-8-jre",
+      "grakn-core-bin"
+    ],
+    target = ":server-binary",
+    installation_dir = "/opt/grakn/core/server/",
     empty_dirs = [
         "/opt/grakn/core/server/services/lib/",
         "/var/log/grakn/server/",
@@ -150,10 +161,6 @@ deploy_deb(
         "//server:services/cassandra/logback.xml": "services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "services/grakn/grakn-core-ascii.txt"
     },
-    depends = [
-      "openjdk-8-jre",
-      "grakn-core-bin"
-    ],
     modes = {
         "/opt/grakn/core/server/services/cassandra/cassandra.yaml": "777",
         "/var/log/grakn/server/": "777",
@@ -164,5 +171,4 @@ deploy_deb(
         "/opt/grakn/core/server/logs": "/var/log/grakn/server/",
         "/opt/grakn/core/server/db/": "/var/lib/grakn/db/",
     },
-    description = "Grakn Core (server)"
 )

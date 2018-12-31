@@ -72,46 +72,40 @@ deploy_maven_jar(
 )
 
 distribution(
-    name = "distribution",
-    targets = ["//console:console-binary"],
-    additional_files = {
-         "//:grakn": 'grakn',
-         "//server:conf/logback.xml": "conf/logback.xml",
-         "//server:conf/grakn.properties": "conf/grakn.properties",
-         "//server:services/cassandra/cassandra.yaml": "services/cassandra/cassandra.yaml",
-         "//server:services/cassandra/logback.xml": "services/cassandra/logback.xml",
-         "//server:services/grakn/grakn-core-ascii.txt": "services/grakn/grakn-core-ascii.txt"
+    targets = {
+        "//console:console-binary": "console/services/lib/"
     },
-    empty_directories = [
-        "db/cassandra",
-        "db/queue"
-    ],
+    additional_files = {
+        "//:grakn": 'grakn',
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+    },
+    empty_directories = [],
     output_filename = "grakn-core-console",
-    visibility = ["//visibility:public"]
 )
 
-
 deploy_deb(
-    name = "grakn-core-console",
-    target = ":console-binary",
-    package_dir = "/opt/grakn/core/console/",
-    maintainer = "Max Vorobev",
+    package_name = "grakn-core-console",
+    maintainer = "Max Vorobev <vmax0770@gmail.com>",
+    description = "Grakn Core (console)",
     version_file = "//:VERSION",
-    empty_dirs = [
-         "/opt/grakn/core/console/services/lib/",
-         "/var/log/grakn/console/"
-    ],
     depends = [
       "openjdk-8-jre",
       "grakn-core-bin"
     ],
+    target = ":console-binary",
+    installation_dir = "/opt/grakn/core/console/",
+    empty_dirs = [
+         "/opt/grakn/core/console/services/lib/",
+         "/var/log/grakn/console/"
+    ],
+
     symlinks = {
         "/opt/grakn/core/console/logs": "/var/log/grakn/console/"
     },
     modes = {
         "/var/log/grakn/console/": "0777"
     },
-    description = "Grakn Core (console)"
 )
 
 
