@@ -37,28 +37,28 @@ Grakn’s query language performs distributed [Pregel](https://kowshik.github.io
 
 With the expressivity of the schema, inference through OLTP and distributed algorithms through OLAP, Grakn provides strong abstraction over low-level data constructs and complicated relationships through its query language. The language provides a higher-level schema, OLTP, and OLAP query language, that makes working with complex data a lot easier. When developers can achieve more by writing less code, productivity rate increases by orders of magnitude.
 
-## System Requirements
-
-### Download and Running Grakn Core
+## Download and Running Grakn Core
 
 To run Grakn Core (which you can download from the [Download Centre](https://grakn.ai/download) or [GitHub Releases](https://github.com/graknlabs/grakn/releases)), you need:
-1. Java 8 (OpenJDK or Oracle Java) with the $JAVA_HOME set accordingly
+1. Java 8 (OpenJDK or Oracle Java)
 2. If running on Windows version prior to 10, please make sure to have [Visual Studio C++ Runtime for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145) installed
 
 You can visit the [Setup Guide](http://dev.grakn.ai/docs/get-started/setup-guide) to help your installation.
 
-### Compiling Grakn Core from Source
+## Compiling Grakn Core from Source
 
-> Note: You don't need to compile Grakn Core from source if you just want to use Grakn. See the _"Download and Run"_ section above. 
+> Note: You don't need to compile Grakn Core from source if you just want to use Grakn. See the _"Download and Running Grakn Core"_ section above.
 
-Grakn is built using [Bazel](https://bazel.build). To compile Grakn Core from source:
-1. Make sure you have Java 8 and Python 2 installed on your machine.
-2. [Install Bazel](https://docs.bazel.build/versions/master/install-os-x.html)
-3. Prerequisite for building Workbase:
+1. Make sure you have the following dependencies installed on your machine:
+    - Java 8
+    - Python >= 2.7 and Pip >= 18.1
+    - [Bazel >= 0.18.0](https://docs.bazel.build/versions/master/install-os-x.html)
+
+2. Install Workbase requirements:
 ```
 $ bazel run @nodejs//:npm install
 ```
-4. Run:
+3. Compile:
 ```
 $ bazel build //...
 ```
