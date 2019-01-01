@@ -61,7 +61,7 @@ import static org.hamcrest.Matchers.equalTo;
 public class AttributeDeduplicatorE2E {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicatorE2E.class);
     private GraknClient localhostGrakn = new GraknClient("localhost:48555");
-    private Path queuePath = GRAKN_UNZIPPED_DIRECTORY.resolve("db").resolve("queue");
+    private Path queuePath = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("db").resolve("queue");
 
     private static ProcessExecutor commandExecutor = new ProcessExecutor()
             .directory(GRAKN_UNZIPPED_DIRECTORY.toFile())
