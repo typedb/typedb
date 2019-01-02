@@ -77,24 +77,24 @@ public class ComparatorPredicateTest {
         exception.expectMessage(INVALID_VALUE.getMessage(value.getClass()));
         new MyComparatorPredicate(value).persistedValue();
     }
-}
 
-class MyComparatorPredicate extends ComparatorPredicate {
+    static class MyComparatorPredicate extends ComparatorPredicate {
 
-    MyComparatorPredicate(Object value) {
-        super(value);
+        MyComparatorPredicate(Object value) {
+            super(value);
+        }
+
+        @Override
+        protected String getSymbol() {
+            return "@";
+        }
+
+        @Override
+        <V> P<V> gremlinPredicate(V value) {
+            return P.eq(value);
+        }
+
+        @Override
+        public int signum() { return 0; }
     }
-
-    @Override
-    protected String getSymbol() {
-        return "@";
-    }
-
-    @Override
-    <V> P<V> gremlinPredicate(V value) {
-        return P.eq(value);
-    }
-
-    @Override
-    public int signum() { return 0; }
 }

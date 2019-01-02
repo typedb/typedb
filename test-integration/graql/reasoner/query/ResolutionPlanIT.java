@@ -724,43 +724,43 @@ public class ResolutionPlanIT {
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Pattern.and(vars);
     }
+
+    static class RepeatRule implements TestRule {
+
+        private static class RepeatStatement extends org.junit.runners.model.Statement {
+
+            private final int times;
+            private final org.junit.runners.model.Statement statement;
+
+            private RepeatStatement(int times, org.junit.runners.model.Statement statement) {
+                this.times = times;
+                this.statement = statement;
+            }
+
+            @Override
+            public void evaluate() throws Throwable {
+                for( int i = 0; i < times; i++ ) {
+                    statement.evaluate();
+                }
+            }
+        }
+
+        @Override
+        public org.junit.runners.model.Statement apply(org.junit.runners.model.Statement statement, Description description) {
+            org.junit.runners.model.Statement result = statement;
+            Repeat repeat = description.getAnnotation(Repeat.class);
+            if( repeat != null ) {
+                int times = repeat.times();
+                result = new RepeatStatement(times, statement);
+            }
+            return result;
+        }
+    }
 }
 
 @Retention( RetentionPolicy.RUNTIME )
 @Target(METHOD)
 @interface Repeat {
     int times();
-}
-
-class RepeatRule implements TestRule {
-
-    private static class RepeatStatement extends org.junit.runners.model.Statement {
-
-        private final int times;
-        private final org.junit.runners.model.Statement statement;
-
-        private RepeatStatement(int times, org.junit.runners.model.Statement statement) {
-            this.times = times;
-            this.statement = statement;
-        }
-
-        @Override
-        public void evaluate() throws Throwable {
-            for( int i = 0; i < times; i++ ) {
-                statement.evaluate();
-            }
-        }
-    }
-
-    @Override
-    public org.junit.runners.model.Statement apply(org.junit.runners.model.Statement statement, Description description) {
-        org.junit.runners.model.Statement result = statement;
-        Repeat repeat = description.getAnnotation(Repeat.class);
-        if( repeat != null ) {
-            int times = repeat.times();
-            result = new RepeatStatement(times, statement);
-        }
-        return result;
-    }
 }
 
