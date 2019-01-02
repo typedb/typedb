@@ -23,9 +23,7 @@ tar -xvf {_grakn-core-server-tar.tgz} -C %{buildroot}
 %files
 
 /opt/grakn/
-/var/log/grakn/
 /var/lib/grakn/
 %attr(777, root, root) /opt/grakn/core/server/services/cassandra/cassandra.yaml
-%attr(777, root, root) /var/log/grakn/server/
 %attr(777, root, root) /var/lib/grakn/db/cassandra/
 %attr(777, root, root) /var/lib/grakn/db/queue/

@@ -24,3 +24,4 @@ tar -xvf {_grakn-core-bin-tar.tgz} -C %{buildroot}
 
 /opt/grakn/
 /usr/local/bin/grakn
+%attr(777, -, -) /var/log/grakn
