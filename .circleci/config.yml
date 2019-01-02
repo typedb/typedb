@@ -69,6 +69,13 @@ commands:
             echo "Executing $CMD"
             $CMD
 
+  rpm_install:
+    steps:
+      - run:
+          name: Install rpm (for rpmbuild)
+          command: sudo apt install rpm -y
+
+
 jobs:
   build:
     machine: true
@@ -78,6 +85,7 @@ jobs:
       - bazel_install
       - bazel_add_rbe_credential
       - run: python ./check-for-missing-checkstyle-rule.py
+      - rpm_install
       - bazel_execute:
           parameters: build //... --sandbox_debug
       - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all.zip dist/
@@ -140,6 +148,7 @@ jobs:
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
+      - rpm_install
       - bazel_execute:
           parameters: test //console/... --test_output=errors
   graql:
@@ -159,6 +168,7 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
+    - rpm_install
     - bazel_execute:
         parameters: test //server/... --test_output=errors
 

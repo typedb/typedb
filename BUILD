@@ -18,7 +18,7 @@
 
 exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
 load("@graknlabs_rules_deployment//brew:rules.bzl", deploy_brew = "deploy_brew")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", distribution = "distribution")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "linux_packages")
 
 
 py_binary(
@@ -29,25 +29,59 @@ py_binary(
 )
 
 distribution(
-    name = "distribution",
-    targets = ["//server:server-binary", "//console:console-binary"],
+    targets = {
+        "//server:server-binary": "server/services/lib/",
+        "//console:console-binary": "console/services/lib/"
+    },
     additional_files = {
-         "//:grakn": 'grakn',
-         "//server:conf/logback.xml": "conf/logback.xml",
-         "//server:conf/grakn.properties": "conf/grakn.properties",
-         "//server:services/cassandra/cassandra.yaml": "services/cassandra/cassandra.yaml",
-         "//server:services/cassandra/logback.xml": "services/cassandra/logback.xml",
-         "//server:services/grakn/grakn-core-ascii.txt": "services/grakn/grakn-core-ascii.txt"
+        "//:grakn": 'grakn',
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+        "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
+        "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
+        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt"
     },
     empty_directories = [
-        "db/cassandra",
-        "db/queue"
+        "server/db/cassandra",
+        "server/db/queue"
     ],
+    modes = {
+        "server/services/cassandra/cassandra.yaml": "0777",
+        "server/logs": "0777",
+        "server/db/cassandra": "0777",
+        "server/db/queue": "0777",
+    },
     output_filename = "grakn-core-all",
-    visibility = ["//visibility:public"]
 )
 
 deploy_brew(
     name = "deploy-brew",
     version_file = "//:VERSION"
+)
+
+linux_packages(
+    package_name = "grakn-core-bin",
+    maintainer = "Max Vorobev <vmax0770@gmail.com>",
+    description = "Grakn Core (binaries)",
+    version_file = "//:VERSION",
+    installation_dir = "/opt/grakn/core/",
+    rpm_spec_file = "//dependencies/distribution/rpm:grakn-core-bin.spec",
+    empty_dirs = [
+        "./var/log/grakn/",
+    ],
+    files = {
+        "//:grakn": "grakn",
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+    },
+    depends = [
+        "openjdk-8-jre"
+    ],
+    modes = {
+        "./var/log/grakn/": "0777",
+    },
+    symlinks = {
+        "./usr/local/bin/grakn": "/opt/grakn/core/grakn",
+        "./opt/grakn/core/logs": "/var/log/grakn/",
+    },
 )

@@ -157,7 +157,7 @@ public class Server {
         serverCommand.add("-Dgrakn.conf=" + graknPropertiesPath);
         serverCommand.add("-Dgrakn.pidfile=" + SERVER_PIDFILE);
         // This is because https://wiki.apache.org/hadoop/WindowsProblems
-        serverCommand.add("-Dhadoop.home.dir=" + graknHome.resolve("services").resolve("hadoop"));
+        serverCommand.add("-Dhadoop.home.dir=" + graknHome.resolve("server").resolve("services").resolve("hadoop"));
         if (JAVA_OPTS != null && JAVA_OPTS.length() > 0) {//split JAVA OPTS by space and add them to the command
             serverCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
         }
@@ -169,7 +169,7 @@ public class Server {
     }
 
     private String getServerClassPath() {
-        Path jar = Paths.get("services", "lib", "*");
+        Path jar = Paths.get("server","services", "lib", "*");
         return graknHome.resolve(jar) + File.pathSeparator + graknHome.resolve("conf");
     }
 
