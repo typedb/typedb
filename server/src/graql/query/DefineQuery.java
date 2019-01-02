@@ -39,14 +39,17 @@ public class DefineQuery implements Query {
         return statements;
     }
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public String toString() {
         StringBuilder query = new StringBuilder();
 
-        query.append(Command.DEFINE).append(Char.SPACE);
+        query.append(Command.DEFINE);
+        if (statements.size()>1) query.append(Char.NEW_LINE);
+        else query.append(Char.SPACE);
+
         query.append(statements().stream()
-                             .map(s -> s + Char.SEMICOLON.toString())
-                             .collect(joining(Char.NEW_LINE.toString())).trim());
+                             .map(Statement::toString)
+                             .collect(joining(Char.NEW_LINE.toString())));
 
         return query.toString();
     }

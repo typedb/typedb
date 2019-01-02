@@ -20,6 +20,7 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.stream.Stream;
 
@@ -39,6 +40,10 @@ public class HasAttributeProperty extends VarProperty {
     private final String type;
     private final Statement attribute;
     private final Statement relationship;
+
+    public HasAttributeProperty(String type, Statement attribute) {
+        this(type, attribute, new Statement(new Variable()));
+    }
 
     public HasAttributeProperty(String type, Statement attribute, Statement relationship) {
         attribute = attribute.isa(label(type));

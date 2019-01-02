@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.query.Query.Char;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 
@@ -32,7 +33,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -115,7 +115,13 @@ public class Conjunction<T extends Pattern> implements Pattern {
 
     @Override
     public String toString() {
-        return "{" + getPatterns().stream().map(s -> s + ";").collect(joining(" ")) + "}";
+        StringBuilder pattern = new StringBuilder();
+
+        pattern.append(Char.CURLY_OPEN).append(Char.SPACE);
+        pattern.append(patterns.stream().map(Objects::toString).collect(Collectors.joining(Char.SPACE.toString())));
+        pattern.append(Char.SPACE).append(Char.CURLY_CLOSE).append(Char.SEMICOLON);
+
+        return pattern.toString();
     }
 
     @Override
@@ -125,7 +131,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
         }
         if (o instanceof Conjunction) {
             Conjunction<?> that = (Conjunction<?>) o;
-            return (this.patterns.equals(that.getPatterns()));
+            return (this.patterns.equals(that.patterns));
         }
         return false;
     }

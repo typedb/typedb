@@ -41,9 +41,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
-                                                 PropertyExecutor.Matchable,
-                                                 PropertyExecutor.Atomable {
+public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final HasAttributeTypeProperty property;
@@ -51,16 +49,6 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
     HasAttributeTypeExecutor(Variable var, HasAttributeTypeProperty property) {
         this.var = var;
         this.property = property;
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> defineExecutors() {
-        return ImmutableSet.of(new DefineHasAttributeType());
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return ImmutableSet.of(new UndefineHasAttributeType());
     }
 
     @Override
@@ -96,6 +84,16 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
         //isa part
         Statement resVar = new Statement(varName).has(Pattern.label(label));
         return HasAtom.create(resVar, predicateVar, predicateId, parent);
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> defineExecutors() {
+        return ImmutableSet.of(new DefineHasAttributeType());
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
+        return ImmutableSet.of(new UndefineHasAttributeType());
     }
 
     private abstract class HasAttributeTypeWriter {

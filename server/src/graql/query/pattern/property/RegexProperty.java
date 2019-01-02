@@ -48,7 +48,7 @@ public class RegexProperty extends VarProperty {
 
     @Override
     public String property() {
-        return "/" + StringUtil.escapeString(regex()) + "/";
+        return "\"" + StringUtil.escapeString(regex()) + "\"";
     }
 
     @Override

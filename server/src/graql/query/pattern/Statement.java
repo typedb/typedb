@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.pattern;
 
-import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
@@ -26,6 +25,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.Query.Char;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
@@ -55,12 +55,15 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -77,7 +80,7 @@ import static java.util.stream.Collectors.toSet;
 public class Statement implements Pattern {
 
     private final Variable var;
-    private final Set<VarProperty> properties;
+    private final LinkedHashSet<VarProperty> properties;
     protected final Logger LOG = LoggerFactory.getLogger(Statement.class);
     private int hashCode = 0;
 
@@ -86,6 +89,10 @@ public class Statement implements Pattern {
     }
 
     public Statement(Variable var, Set<VarProperty> properties) {
+        this(var, new LinkedHashSet<>(properties));
+    }
+
+    public Statement(Variable var, LinkedHashSet<VarProperty> properties) {
         if (var == null) {
             throw new NullPointerException("Null var");
         }
@@ -104,7 +111,7 @@ public class Statement implements Pattern {
         return var;
     }
 
-    public Set<VarProperty> properties() {
+    public LinkedHashSet<VarProperty> properties() {
         return properties;
     }
 
@@ -175,6 +182,11 @@ public class Statement implements Pattern {
         return has(type, Graql.eq(value));
     }
 
+    @CheckReturnValue
+    public final Statement has(String type, Object value, Statement relation) {
+        return has(type, Graql.eq(value), relation);
+    }
+
     /**
      * the variable must have a resource of the given type that matches the given atom
      *
@@ -187,6 +199,11 @@ public class Statement implements Pattern {
         return has(type, Pattern.var().val(predicate));
     }
 
+    @CheckReturnValue
+    public final Statement has(String type, ValuePredicate predicate, Statement relation) {
+        return has(type, Pattern.var().val(predicate), relation);
+    }
+
     /**
      * the variable must have an Attribute of the given type that matches the given atom
      *
@@ -196,7 +213,7 @@ public class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type, Statement attribute) {
-        return has(type, attribute, Pattern.var());
+        return addProperty(new HasAttributeProperty(type, attribute));
     }
 
     /**
@@ -378,12 +395,12 @@ public class Statement implements Pattern {
     /**
      * the variable must be a relation with the given roleplayer
      *
-     * @param roleplayer a variable representing a roleplayer
+     * @param player a variable representing a roleplayer
      * @return this
      */
     @CheckReturnValue
-    public final Statement rel(String roleplayer) {
-        return rel(Pattern.var(roleplayer));
+    public final Statement rel(String player) {
+        return rel(Pattern.var(player));
     }
 
     /**
@@ -471,7 +488,7 @@ public class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public final Statement regex(String regex) {
+    public final Statement like(String regex) {
         return addProperty(new RegexProperty(regex));
     }
 
@@ -626,30 +643,36 @@ public class Statement implements Pattern {
         return Pattern.or(Collections.singleton(conjunction));
     }
 
-    private Statement addRolePlayer(RelationProperty.RolePlayer relationPlayer) {
+    @CheckReturnValue
+    private Statement addRolePlayer(RelationProperty.RolePlayer rolePlayer) {
         Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-        ImmutableMultiset<RelationProperty.RolePlayer> oldCastings = relationProperty
+        LinkedHashSet<RelationProperty.RolePlayer> oldRolePlayers = relationProperty
                 .map(RelationProperty::relationPlayers)
-                .orElse(ImmutableMultiset.of());
+                .orElse(new LinkedHashSet<>());
 
-        ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers =
-                Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
+        LinkedHashSet<RelationProperty.RolePlayer> newRolePlayers = Stream
+                .concat(oldRolePlayers.stream(), Stream.of(rolePlayer))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        RelationProperty newProperty = new RelationProperty(relationPlayers);
+        RelationProperty newProperty = new RelationProperty(newRolePlayers);
 
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }
 
-    private Statement addProperty(VarProperty property) {
+    @CheckReturnValue
+    public Statement addProperty(VarProperty property) {
         if (property.isUnique()) {
             getProperty(property.getClass()).filter(other -> !other.equals(property)).ifPresent(other -> {
                 throw GraqlQueryException.conflictingProperties(this, property, other);
             });
         }
-        return new Statement(var(), Sets.union(properties(), ImmutableSet.of(property)));
+        LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(properties());
+        newProperties.add(property);
+        return new Statement(var(), newProperties);
     }
 
+    @CheckReturnValue
     private Statement removeProperty(VarProperty property) {
         return new Statement(var(), Sets.difference(properties(), ImmutableSet.of(property)));
     }
@@ -666,22 +689,27 @@ public class Statement implements Pattern {
             // If there is only a label, we display that
             Optional<Label> label = getTypeLabel();
             if (label.isPresent()) {
-                return StringUtil.typeLabelToString(label.get());
+                if (label.get().getValue().contains(" "))
+                    return StringUtil.typeLabelToString(label.get());
+                else
+                    return label.get().getValue();
             }
         }
 
         // Otherwise, we print the entire pattern
-        return "`" + toString() + "`";
+        return toString();
     }
 
     @Override
     public final String toString() {
         Collection<Statement> innerStatements = innerStatements();
         innerStatements.remove(this);
+
+        // TODO: We seem to be removing implicit attribute relation. Encapsulate this in HasAttributeProperty.toString()
         getProperties(HasAttributeProperty.class)
-                .map(HasAttributeProperty::attribute)
-                .flatMap(statement -> statement.innerStatements().stream())
-                .forEach(innerStatements::remove);
+                .map(property -> property.attribute())
+                .flatMap(attribute -> attribute.innerStatements().stream())
+                .forEach(statement -> innerStatements.remove(statement));
 
         if (innerStatements.stream()
                 .anyMatch(statement -> statement.properties().stream()
@@ -689,28 +717,21 @@ public class Statement implements Pattern {
             LOG.warn("printing a query with inner variables, which is not supported in native Graql");
         }
 
-        StringBuilder builder = new StringBuilder();
+        StringBuilder statement = new StringBuilder();
 
-        String name = var().isUserDefinedName() ? var().toString() : "";
+        if (var.isUserDefinedName()) {
+            statement.append(var);
 
-        builder.append(name);
-
-        if (var().isUserDefinedName() && !properties().isEmpty()) {
-            // Add a space after the var name
-            builder.append(" ");
-        }
-
-        boolean first = true;
-
-        for (VarProperty property : properties()) {
-            if (!first) {
-                builder.append(" ");
+            if (!properties.isEmpty()) {
+                statement.append(Char.SPACE);
             }
-            first = false;
-            builder.append(property.toString());
         }
 
-        return builder.toString();
+        statement.append(properties.stream()
+                                 .map(VarProperty::toString)
+                                 .collect(joining(Char.COMMA_SPACE.toString())));
+        statement.append(Char.SEMICOLON);
+        return statement.toString();
     }
 
     @Override

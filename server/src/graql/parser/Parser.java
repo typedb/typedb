@@ -32,38 +32,50 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.GroupAggregateQuery;
 import grakn.core.graql.query.GroupQuery;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.UndefineQuery;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.HasAttributeProperty;
+import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
+import grakn.core.graql.query.pattern.property.RelationProperty;
+import grakn.core.graql.query.pattern.property.SubExplicitProperty;
+import grakn.core.graql.query.pattern.property.SubProperty;
+import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.util.StringUtil;
 import graql.grammar.GraqlBaseVisitor;
 import graql.grammar.GraqlLexer;
 import graql.grammar.GraqlParser;
 import graql.parser.ErrorListener;
+import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.DefaultErrorStrategy;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.atn.PredictionMode;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.query.Graql.eq;
-import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.pattern.Pattern.label;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -72,7 +84,7 @@ import static java.util.stream.Collectors.toSet;
  * Graql query string parser to produce Graql Java objects
  */
 // This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "Duplicates"})
 public class Parser extends GraqlBaseVisitor {
 
     public Parser() {}
@@ -97,287 +109,625 @@ public class Parser extends GraqlBaseVisitor {
         ErrorListener errorListener = ErrorListener.of(queryString);
         GraqlParser parser = parse(queryString, errorListener);
 
-        GraqlParser.QueryEOFContext queryEOFContext = parser.queryEOF();
-        if (errorListener.hasErrors()) {
+        // BailErrorStrategy + SLL is a very fast parsing strategy for queries
+        // that are expected to be correct. However, it may not be able to
+        // provide detailed/useful error message, if at all.
+        parser.setErrorHandler(new BailErrorStrategy());
+        parser.getInterpreter().setPredictionMode(PredictionMode.SLL);
+
+        GraqlParser.Eof_queryContext eofQueryContext;
+        try {
+            eofQueryContext = parser.eof_query();
+        } catch (ParseCancellationException e) {
+            // We parse the query one more time, with "strict strategy" :
+            // DefaultErrorStrategy + LL_EXACT_AMBIG_DETECTION
+            // This was not set to default parsing strategy, but it is useful
+            // to produce detailed/useful error message
+            parser.setErrorHandler(new DefaultErrorStrategy());
+            parser.getInterpreter().setPredictionMode(PredictionMode.LL_EXACT_AMBIG_DETECTION);
+            parser.eof_query();
+
             throw GraqlSyntaxException.create(errorListener.toString());
         }
 
-        return (T) visitQueryEOF(queryEOFContext);
+        return (T) visitEof_query(eofQueryContext);
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Query> Stream<T> parseQueryList(String queryString) {
+    public <T extends Query> Stream<T> parseQueryListEOF(String queryString) {
         ErrorListener errorListener = ErrorListener.of(queryString);
         GraqlParser parser = parse(queryString, errorListener);
 
-        GraqlParser.QueryListContext queryListContext = parser.queryList();
-        if (errorListener.hasErrors()) {
+        // BailErrorStrategy is also optimal for parsing very large files
+        // as it will terminate upon the first error encountered
+        parser.setErrorHandler(new BailErrorStrategy());
+
+        GraqlParser.Eof_query_listContext eofQueryListContext;
+        try {
+            eofQueryListContext = parser.eof_query_list();
+        } catch (ParseCancellationException e) {
             throw GraqlSyntaxException.create(errorListener.toString());
         }
 
-        return (Stream<T>) visitQueryList(queryListContext);
+        return (Stream<T>) this.visitEof_query_list(eofQueryListContext);
     }
 
-    public List<Pattern> parsePatterns(String patternsString) {
-        ErrorListener errorListener = ErrorListener.of(patternsString);
-        GraqlParser parser = parse(patternsString, errorListener);
-
-        GraqlParser.PatternsContext patternsContext = parser.patterns();
-        if (errorListener.hasErrors()) {
-            throw GraqlSyntaxException.create(errorListener.toString());
-        }
-
-        return visitPatterns(patternsContext);
-    }
-
-    public Pattern parsePattern(String patternString) {
+    public Pattern parsePatternEOF(String patternString) {
         ErrorListener errorListener = ErrorListener.of(patternString);
         GraqlParser parser = parse(patternString, errorListener);
 
-        GraqlParser.PatternContext patternContext = parser.pattern();
+        GraqlParser.Eof_patternContext eofPatternContext = parser.eof_pattern();
         if (errorListener.hasErrors()) {
             throw GraqlSyntaxException.create(errorListener.toString());
         }
 
-        return visitPattern(patternContext);
+        return visitEof_pattern(eofPatternContext);
     }
 
-    @Override
-    public Stream<? extends Query> visitQueryList(GraqlParser.QueryListContext ctx) {
-        return ctx.query().stream().map(this::visitQuery);
+    public Stream<? extends Pattern> parsePatternListEOF(String patternsString) {
+        ErrorListener errorListener = ErrorListener.of(patternsString);
+        GraqlParser parser = parse(patternsString, errorListener);
+
+        // If we're using the BailErrorStrategy, we will throw here
+        // This strategy is designed for parsing very large files
+        // and terminate upon the first error encountered
+        parser.setErrorHandler(new BailErrorStrategy());
+
+        GraqlParser.Eof_pattern_listContext eofPatternListContext;
+        try {
+            eofPatternListContext = parser.eof_pattern_list();
+        } catch (ParseCancellationException e) {
+            throw GraqlSyntaxException.create(errorListener.toString());
+        }
+
+        return visitEof_pattern_list(eofPatternListContext);
     }
 
+    // GLOBAL HELPER METHODS ===================================================
+
+    private Variable getVar(TerminalNode variable) {
+        // Remove '$' prefix
+        String name = variable.getSymbol().getText().substring(1);
+
+        if (name.equals(Query.Char.UNDERSCORE.toString())) {
+            return new Variable();
+        } else {
+            return new Variable(name);
+        }
+    }
+
+    // PARSER VISITORS =========================================================
+
     @Override
-    public Query visitQueryEOF(GraqlParser.QueryEOFContext ctx) {
+    public Query visitEof_query(GraqlParser.Eof_queryContext ctx) {
         return visitQuery(ctx.query());
     }
 
     @Override
+    public Stream<? extends Query> visitEof_query_list(GraqlParser.Eof_query_listContext ctx) {
+        return ctx.query().stream().map(this::visitQuery);
+    }
+
+    @Override
+    public Pattern visitEof_pattern(GraqlParser.Eof_patternContext ctx) {
+        return visitPattern(ctx.pattern());
+    }
+
+    @Override
+    public Stream<? extends Pattern> visitEof_pattern_list(GraqlParser.Eof_pattern_listContext ctx) {
+        return ctx.pattern().stream().map(this::visitPattern);
+    }
+
+    // GRAQL QUERIES ===========================================================
+
+    @Override
     public Query visitQuery(GraqlParser.QueryContext ctx) {
-        return (Query) super.visitQuery(ctx);
-    }
+        if (ctx.query_define() != null) {
+            return visitQuery_define(ctx.query_define());
 
-    @Override
-    public MatchClause visitMatchBase(GraqlParser.MatchBaseContext ctx) {
-        Collection<Pattern> patterns = visitPatterns(ctx.patterns());
-        return Graql.match(patterns);
-    }
+        } else if (ctx.query_undefine() != null) {
+            return visitQuery_undefine(ctx.query_undefine());
 
-    @Override
-    public GetQuery visitGetQuery(GraqlParser.GetQueryContext ctx) {
-        MatchClause match = visitMatchClause(ctx.matchClause());
+        } else if (ctx.query_insert() != null) {
+            return visitQuery_insert(ctx.query_insert());
 
-        if (ctx.variables() != null) {
-            Set<Variable> vars = ctx.variables().VARIABLE().stream().map(this::getVariable).collect(toSet());
+        } else if (ctx.query_delete() != null) {
+            return visitQuery_delete(ctx.query_delete());
 
-            if (!vars.isEmpty()) return match.get(vars);
-        }
+        } else if (ctx.query_get() != null) {
+            return visitQuery_get(ctx.query_get());
 
-        return match.get();
-    }
+        } else if (ctx.query_aggregate() != null) {
+            return visitQuery_aggregate(ctx.query_aggregate());
 
-    @Override
-    public InsertQuery visitInsertQuery(GraqlParser.InsertQueryContext ctx) {
-        Collection<Statement> vars = this.visitStatements(ctx.statements());
+        } else if (ctx.query_group() != null) {
+            return visitQuery_group(ctx.query_group());
 
-        if (ctx.matchClause() != null) {
-            return visitMatchClause(ctx.matchClause()).insert(vars);
+        } else if (ctx.query_compute() != null) {
+            return visitQuery_compute(ctx.query_compute());
+
         } else {
-            return Graql.insert(vars);
+            throw new IllegalArgumentException("Unrecognised Graql Query: " + ctx.getText());
         }
     }
 
     @Override
-    public DefineQuery visitDefineQuery(GraqlParser.DefineQueryContext ctx) {
-        Collection<Statement> vars = this.visitStatements(ctx.statements());
+    public DefineQuery visitQuery_define(GraqlParser.Query_defineContext ctx) {
+        List<Statement> vars = ctx.statement_type().stream()
+                .map(this::visitStatement_type)
+                .collect(toList());
         return Graql.define(vars);
     }
 
     @Override
-    public Object visitUndefineQuery(GraqlParser.UndefineQueryContext ctx) {
-        Collection<Statement> vars = this.visitStatements(ctx.statements());
+    public UndefineQuery visitQuery_undefine(GraqlParser.Query_undefineContext ctx) {
+        List<Statement> vars = ctx.statement_type().stream()
+                .map(this::visitStatement_type)
+                .collect(toList());
         return Graql.undefine(vars);
     }
 
     @Override
-    public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
-        MatchClause match = visitMatchClause(ctx.matchClause());
-        if (ctx.variables() != null) return match.delete(visitVariables(ctx.variables()));
-        else return match.delete();
+    public InsertQuery visitQuery_insert(GraqlParser.Query_insertContext ctx) {
+        List<Statement> statements = ctx.statement_instance().stream()
+                .map(this::visitStatement_instance)
+                .collect(toList());
+
+        if (ctx.pattern() != null && !ctx.pattern().isEmpty()) {
+            LinkedHashSet<Pattern> patterns = ctx.pattern().stream().map(this::visitPattern)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+
+            return Graql.match(patterns).insert(statements);
+        } else {
+            return Graql.insert(statements);
+        }
     }
 
     @Override
-    public Set<Variable> visitVariables(GraqlParser.VariablesContext ctx) {
-        return ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
+    public DeleteQuery visitQuery_delete(GraqlParser.Query_deleteContext ctx) {
+        LinkedHashSet<Pattern> patterns = ctx.pattern().stream().map(this::visitPattern)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        return Graql.match(patterns).delete(visitVariables(ctx.variables()));
+
+        // TODO: implement parsing of OFFSET, LIMIT and ORDER
     }
 
     @Override
-    public List<Pattern> visitPatterns(GraqlParser.PatternsContext ctx) {
+    public GetQuery visitQuery_get(GraqlParser.Query_getContext ctx) {
+        LinkedHashSet<Pattern> patterns = ctx.pattern().stream().map(this::visitPattern)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        return Graql.match(patterns).get(visitVariables(ctx.variables()));
+
+        // TODO: implement parsing of OFFSET, LIMIT and ORDER
+    }
+
+    /**
+     * Visits the aggregate query node in the parsed syntax tree and builds the
+     * appropriate aggregate query object
+     *
+     * @param ctx reference to the parsed aggregate query string
+     * @return An AggregateQuery object
+     */
+    @Override
+    public AggregateQuery visitQuery_aggregate(GraqlParser.Query_aggregateContext ctx) {
+        GraqlParser.Function_aggregateContext function = ctx.function_aggregate();
+        AggregateQuery.Method method = AggregateQuery.Method.of(function.function_method().getText());
+        Variable variable = function.VAR_() != null ? getVar(function.VAR_()) : null;
+
+        return new AggregateQuery(visitQuery_get(ctx.query_get()), method, variable);
+    }
+
+    @Override
+    public GroupQuery visitQuery_group(GraqlParser.Query_groupContext ctx) {
+        Variable var = getVar(ctx.function_group().VAR_());
+        GraqlParser.Function_aggregateContext function = ctx.function_aggregate();
+
+        if (function == null) {
+            return visitQuery_get(ctx.query_get()).group(var);
+        } else {
+            AggregateQuery.Method aggregateMethod = AggregateQuery.Method.of(function.function_method().getText());
+            Variable aggregateVar = function.VAR_() != null ? getVar(function.VAR_()) : null;
+
+            return new GroupAggregateQuery(visitQuery_get(ctx.query_get()).group(var), aggregateMethod, aggregateVar);
+        }
+    }
+
+    // DELETE AND GET QUERY MODIFIERS ==========================================
+
+    @Override
+    public LinkedHashSet<Variable> visitVariables(GraqlParser.VariablesContext ctx) {
+        return ctx.VAR_().stream()
+                .map(this::getVar)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    // COMPUTE QUERY ===========================================================
+
+    public ComputeQuery visitQuery_compute(GraqlParser.Query_computeContext ctx) {
+        GraqlParser.Compute_methodContext method = ctx.compute_method();
+        GraqlParser.Compute_conditionsContext conditions = ctx.compute_conditions();
+
+        ComputeQuery query = Graql.compute(ComputeQuery.Method.of(method.getText()));
+        if (conditions == null) return query;
+
+        for (GraqlParser.Compute_conditionContext conditionCtx : conditions.compute_condition()) {
+            if (conditionCtx.FROM() != null) {
+                query.from(ConceptId.of(visitId((conditionCtx.id()))));
+
+            } else if (conditionCtx.TO() != null) {
+                query.to(ConceptId.of(visitId(conditionCtx.id())));
+
+            } else if (conditionCtx.OF() != null) {
+                query.of(visitLabels(conditionCtx.labels()));
+
+            } else if (conditionCtx.IN() != null) {
+                query.in(visitLabels(conditionCtx.labels()));
+
+            } else if (conditionCtx.USING() != null) {
+                query.using(ComputeQuery.Algorithm.of(conditionCtx.compute_algorithm().getText()));
+
+            } else if (conditionCtx.WHERE() != null) {
+                query.where(visitCompute_args(conditionCtx.compute_args()));
+
+            } else {
+                throw GraqlQueryException.invalidComputeQuery_invalidCondition(query.method());
+            }
+        }
+
+        Optional<GraqlQueryException> exception = query.getException();
+        if (exception.isPresent()) throw exception.get();
+
+        return query;
+    }
+
+    @Override
+    public List<ComputeQuery.Argument> visitCompute_args(GraqlParser.Compute_argsContext ctx) {
+
+        List<GraqlParser.Compute_argContext> argContextList = new ArrayList<>();
+        List<ComputeQuery.Argument> argList = new ArrayList<>();
+
+        if (ctx.compute_arg() != null) {
+            argContextList.add(ctx.compute_arg());
+        } else if (ctx.compute_args_array() != null) {
+            argContextList.addAll(ctx.compute_args_array().compute_arg());
+        }
+
+        for (GraqlParser.Compute_argContext argContext : argContextList) {
+            if (argContext.MIN_K() != null) {
+                argList.add(ComputeQuery.Argument.min_k(getInteger(argContext.INTEGER_())));
+
+            } else if (argContext.K() != null) {
+                argList.add(ComputeQuery.Argument.k(getInteger(argContext.INTEGER_())));
+
+            } else if (argContext.SIZE() != null) {
+                argList.add(ComputeQuery.Argument.size(getInteger(argContext.INTEGER_())));
+
+            } else if (argContext.CONTAINS() != null) {
+                argList.add(ComputeQuery.Argument.contains(ConceptId.of(visitId(argContext.id()))));
+            }
+        }
+
+        return argList;
+    }
+
+    // QUERY PATTERNS ==========================================================
+
+    @Override
+    public Set<Pattern> visitPatterns(GraqlParser.PatternsContext ctx) {
         return ctx.pattern().stream()
                 .map(this::visitPattern)
-                .collect(toList());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     @Override
-    public Pattern visitPatternDisjunction(GraqlParser.PatternDisjunctionContext ctx) {
-        return Pattern.or(ctx.pattern().stream().map(this::visitPattern).collect(toList()));
+    public Pattern visitPattern(GraqlParser.PatternContext ctx) {
+
+        if (ctx.statement() != null) {
+            return visitStatement(ctx.statement());
+
+        } else if (ctx.disjunction() != null) {
+            return visitDisjunction(ctx.disjunction());
+
+        } else {
+            return visitConjunction(ctx.conjunction());
+        }
     }
 
     @Override
-    public List<Statement> visitStatements(GraqlParser.StatementsContext ctx) {
-        return ctx.statement().stream().map(this::visitStatement).collect(toList());
+    public Conjunction<?> visitConjunction(GraqlParser.ConjunctionContext ctx) {
+        return Pattern.and(visitPatterns(ctx.patterns()));
     }
 
     @Override
-    public Pattern visitPatternConjunction(GraqlParser.PatternConjunctionContext ctx) {
-        return and(visitPatterns(ctx.patterns()));
+    public Disjunction<?> visitDisjunction(GraqlParser.DisjunctionContext ctx) {
+        Set<Pattern> patterns = ctx.patterns().stream()
+                .map(patternsCtx -> {
+                    Set<Pattern> patternSet = visitPatterns(patternsCtx);
+                    if (patternSet.size() > 1) return Pattern.and(patternSet);
+                    else return patternSet.iterator().next();
+                })
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        return Pattern.or(patterns);
     }
 
     @Override
     public Statement visitStatement(GraqlParser.StatementContext ctx) {
-        Statement var;
-        if (ctx.VARIABLE() != null) {
-            var = new Statement(getVariable(ctx.VARIABLE()));
+        // TODO: restrict for Match VS Define VS Insert
+
+        if (ctx.statement_instance() != null) {
+            return visitStatement_instance(ctx.statement_instance());
+        } else if (ctx.statement_type() != null){
+            return visitStatement_type(ctx.statement_type());
         } else {
-            var = visitVariable(ctx.variable());
+            throw new IllegalArgumentException("Uncrecognised Statement class: " + ctx.getText());
         }
-        return getVarProperties(ctx.property()).apply(var);
     }
 
+    // TYPE STATEMENTS =========================================================
+
     @Override
-    public UnaryOperator<Statement> visitPropId(GraqlParser.PropIdContext ctx) {
-        return var -> var.id(visitId(ctx.id()));
+    public Statement visitStatement_type(GraqlParser.Statement_typeContext ctx) {
+        // TODO: restrict for Define VS Match for all usage of visitType(...)
+
+        Statement type = visitType(ctx.type());
+
+        for (GraqlParser.Type_propertyContext property : ctx.type_property()) {
+
+            if (property.ABSTRACT() != null) {
+                type = type.isAbstract();
+
+            } else if (property.SUB_() != null) {
+                type = type.addProperty(getSubProperty(property.SUB_(), property.type(0)));
+
+            } else if (property.KEY() != null) {
+                type = type.key(visitType(property.type(0)));
+
+            } else if (property.HAS() != null) {
+                type = type.has(visitType(property.type(0)));
+
+            } else if (property.PLAYS() != null) {
+                type = type.plays(visitType(property.type(0)));
+
+            } else if (property.RELATES() != null) {
+                if (property.AS() != null) {
+                    type = type.relates(visitType(property.type(0)),
+                                        visitType(property.type(1)));
+                } else {
+                    type = type.relates(visitType(property.type(0)));
+                }
+            } else if (property.DATATYPE() != null) {
+                type = type.datatype(Query.DataType.of(property.datatype().getText()));
+
+            } else if (property.REGEX() != null) {
+                type = type.like(visitRegex(property.regex()));
+
+            } else if (property.WHEN() != null) {
+                type = type.when(Pattern.and(
+                        property.pattern().stream()
+                                .map(this::visitPattern)
+                                .collect(Collectors.toList())
+                ));
+            } else if (property.THEN() != null) {
+                type = type.then(Pattern.and(
+                        property.statement_instance().stream()
+                                .map(this::visitStatement_instance)
+                                .collect(Collectors.toList())
+                ));
+            } else if (property.LABEL() != null) {
+                type = type.label(property.label().getText());
+
+            } else {
+                throw new IllegalArgumentException("Unrecognised INSERT statement: " + property.getText());
+            }
+        }
+
+        return type;
     }
 
-    @Override
-    public UnaryOperator<Statement> visitPropLabel(GraqlParser.PropLabelContext ctx) {
-        return var -> var.label(visitLabel(ctx.label()));
-    }
+    private SubProperty getSubProperty(TerminalNode subToken, GraqlParser.TypeContext ctx) {
+        Query.Property sub = Query.Property.of(subToken.getText());
 
-    @Override
-    public UnaryOperator<Statement> visitPropValue(GraqlParser.PropValueContext ctx) {
-        return var -> var.val(visitPredicate(ctx.predicate()));
-    }
+        if (sub != null && sub.equals(Query.Property.SUB)){
+            return new SubProperty(visitType(ctx));
 
-    @Override
-    public UnaryOperator<Statement> visitPropWhen(GraqlParser.PropWhenContext ctx) {
-        return var -> var.when(and(visitPatterns(ctx.patterns())));
-    }
+        } else if (sub != null && sub.equals(Query.Property.SUBX)) {
+            return new SubExplicitProperty(visitType(ctx));
 
-    @Override
-    public UnaryOperator<Statement> visitPropThen(GraqlParser.PropThenContext ctx) {
-        return var -> var.then(and(this.visitStatements(ctx.statements())));
-    }
-
-    @Override
-    public UnaryOperator<Statement> visitPropHas(GraqlParser.PropHasContext ctx) {
-        Label type = visitLabel(ctx.label());
-
-        Statement relation;
-        if (ctx.relation != null) {
-            relation = new Statement(getVariable(ctx.relation));
         } else {
-            relation = new Statement(new Variable());
+            throw new IllegalArgumentException("Unrecognised SUB property: " + ctx.getText());
         }
+    }
 
-        Statement resource;
-        if (ctx.resource != null) {
-            resource = new Statement(getVariable(ctx.resource));
+    // INSTANCE STATEMENTS =====================================================
+
+    @Override
+    public Statement visitStatement_instance(GraqlParser.Statement_instanceContext ctx) {
+        // TODO: restrict for Insert VS Match
+
+        if (ctx.instance_thing() != null) {
+            return visitInstance_thing(ctx.instance_thing());
+
+        } else if (ctx.instance_relation() != null) {
+            return visitInstance_relation(ctx.instance_relation());
+
+        } else if (ctx.instance_attribute() != null) {
+            return visitInstance_attribute(ctx.instance_attribute());
+
         } else {
-            resource = new Statement(new Variable());
+            throw new IllegalArgumentException("Unrecognised INSERT statement: " + ctx.getText());
+        }
+    }
+
+    @Override
+    public Statement visitInstance_thing(GraqlParser.Instance_thingContext ctx) {
+        // TODO: restrict for Insert VS Match
+
+        Statement instance = Pattern.var(getVar(ctx.VAR_()));
+
+        if (ctx.ISA_() != null) {
+            instance = instance.addProperty(getIsaProperty(ctx.ISA_(), ctx.type()));
+
+        } else if (ctx.ID() != null) {
+            instance = instance.id(ctx.id().getText());
+
         }
 
-        if (ctx.predicate() != null) {
-            resource = resource.val(visitPredicate(ctx.predicate()));
+        if (ctx.attributes() != null) {
+            for (HasAttributeProperty attribute : visitAttributes(ctx.attributes())) {
+                instance = instance.addProperty(attribute);
+            }
         }
 
-        Statement finalResource = resource;
-
-        return var -> var.has(type.getValue(), finalResource, relation);
+        return instance;
     }
 
     @Override
-    public UnaryOperator<Statement> visitPropResource(GraqlParser.PropResourceContext ctx) {
-        return var -> var.has(visitVariable(ctx.variable()));
-    }
+    public Statement visitInstance_relation(GraqlParser.Instance_relationContext ctx) {
+        // TODO: restrict for Insert VS Match
 
-    @Override
-    public UnaryOperator<Statement> visitPropKey(GraqlParser.PropKeyContext ctx) {
-        return var -> var.key(visitVariable(ctx.variable()));
-    }
-
-    @Override
-    public UnaryOperator<Statement> visitIsAbstract(GraqlParser.IsAbstractContext ctx) {
-        return Statement::isAbstract;
-    }
-
-    @Override
-    public UnaryOperator<Statement> visitPropDatatype(GraqlParser.PropDatatypeContext ctx) {
-        return var -> var.datatype(visitDatatype(ctx.datatype()));
-    }
-
-    @Override
-    public UnaryOperator<Statement> visitPropRegex(GraqlParser.PropRegexContext ctx) {
-        return var -> var.regex(getRegex(ctx.REGEX()));
-    }
-
-    @Override
-    public UnaryOperator<Statement> visitPropRel(GraqlParser.PropRelContext ctx) {
-        return getVarProperties(ctx.casting());
-    }
-
-    @Override
-    public UnaryOperator<Statement> visitPropNeq(GraqlParser.PropNeqContext ctx) {
-        return var -> var.neq(visitVariable(ctx.variable()));
-    }
-
-    @Override
-    public UnaryOperator<Statement> visitCasting(GraqlParser.CastingContext ctx) {
-        if (ctx.VARIABLE() == null) {
-            return var -> var.rel(visitVariable(ctx.variable()));
+        Statement instance;
+        if (ctx.VAR_() != null) {
+            instance = Pattern.var(getVar(ctx.VAR_()));
         } else {
-            return var -> var.rel(visitVariable(ctx.variable()), new Statement(getVariable(ctx.VARIABLE())));
+            instance = Pattern.var();
+        }
+
+        instance = instance.addProperty(visitRelation(ctx.relation()));
+        if (ctx.ISA_() != null) {
+            instance = instance.addProperty(getIsaProperty(ctx.ISA_(), ctx.type()));
+        }
+
+        if (ctx.attributes() != null) {
+            for (HasAttributeProperty attribute : visitAttributes(ctx.attributes())) {
+                instance = instance.addProperty(attribute);
+            }
+        }
+
+        return instance;
+    }
+
+    @Override
+    public Statement visitInstance_attribute(GraqlParser.Instance_attributeContext ctx) {
+        // TODO: restrict for Insert VS Match
+
+        Statement instance;
+        if (ctx.VAR_() != null) {
+            instance = Pattern.var(getVar(ctx.VAR_()));
+        } else {
+            instance = Pattern.var();
+        }
+
+        instance = instance.addProperty(new ValueProperty(visitPredicate(ctx.predicate())));
+        if (ctx.ISA_() != null) {
+            instance = instance.addProperty(getIsaProperty(ctx.ISA_(), ctx.type()));
+        }
+
+        if (ctx.attributes() != null) {
+            for (HasAttributeProperty attribute : visitAttributes(ctx.attributes())) {
+                instance = instance.addProperty(attribute);
+            }
+        }
+
+        return instance;
+    }
+
+    private IsaProperty getIsaProperty(TerminalNode isaToken, GraqlParser.TypeContext ctx) {
+        Query.Property isa = Query.Property.of(isaToken.getText());
+
+        if (isa != null && isa.equals(Query.Property.ISA)){
+            return new IsaProperty(visitType(ctx));
+
+        } else if (isa != null && isa.equals(Query.Property.ISAX)) {
+            return new IsaExplicitProperty(visitType(ctx));
+
+        } else {
+            throw new IllegalArgumentException("Unrecognised ISA property: " + ctx.getText());
         }
     }
 
+    // ATTRIBUTE STATEMENT CONSTRUCT ===============================================
+
     @Override
-    public UnaryOperator<Statement> visitIsa(GraqlParser.IsaContext ctx) {
-        return var -> var.isa(visitVariable(ctx.variable()));
+    public List<HasAttributeProperty> visitAttributes(GraqlParser.AttributesContext ctx) {
+        return ctx.attribute().stream().map(this::visitAttribute).collect(toList());
     }
 
     @Override
-    public UnaryOperator<Statement> visitIsaExplicit(GraqlParser.IsaExplicitContext ctx) {
-        return var -> var.isaExplicit(visitVariable(ctx.variable()));
+    public HasAttributeProperty visitAttribute(GraqlParser.AttributeContext ctx) {
+        String type = ctx.label().getText();
+
+        if (ctx.VAR_() != null) {
+            Statement variable = Pattern.var(getVar(ctx.VAR_()));
+            if (ctx.via() != null) {
+                return new HasAttributeProperty(type, variable, Pattern.var(getVar(ctx.via().VAR_())));
+            } else {
+                return new HasAttributeProperty(type, variable);
+            }
+        } else if (ctx.predicate() != null) {
+            Statement value = Pattern.var().val(visitPredicate(ctx.predicate()));
+            if (ctx.via() != null) {
+                return new HasAttributeProperty(type, value, Pattern.var(getVar(ctx.via().VAR_())));
+            } else {
+                return new HasAttributeProperty(type, value);
+            }
+        } else {
+            throw new IllegalArgumentException("Unrecognised MATCH HAS statement: " + ctx.getText());
+        }
     }
 
-    @Override
-    public UnaryOperator<Statement> visitSub(GraqlParser.SubContext ctx) {
-        return var -> var.sub(visitVariable(ctx.variable()));
+    // RELATION STATEMENT CONSTRUCT ============================================
+
+    public RelationProperty visitRelation(GraqlParser.RelationContext ctx) {
+        LinkedHashSet<RelationProperty.RolePlayer> rolePlayers = new LinkedHashSet<>();
+
+        for (GraqlParser.Role_playerContext rolePlayerCtx : ctx.role_player()) {
+            Statement player = new Statement(getVar(rolePlayerCtx.player().VAR_()));
+            if (rolePlayerCtx.type() != null) {
+                Statement role = visitType(rolePlayerCtx.type());
+                rolePlayers.add(new RelationProperty.RolePlayer(role, player));
+            } else {
+                rolePlayers.add(new RelationProperty.RolePlayer(null, player));
+            }
+        }
+        return new RelationProperty(rolePlayers);
     }
 
-    @Override
-    public UnaryOperator<Statement> visitSubExplicit(GraqlParser.SubExplicitContext ctx) {
-        return var -> var.subExplicit(visitVariable(ctx.variable()));
-    }
+    // TYPE STATEMENT CONSTRUCT ================================================
 
     @Override
-    public UnaryOperator<Statement> visitRelates(GraqlParser.RelatesContext ctx) {
-        Statement superRole = ctx.superRole != null ? visitVariable(ctx.superRole) : null;
-        return var -> var.relates(visitVariable(ctx.role), superRole);
+    public Statement visitType(GraqlParser.TypeContext ctx) {
+        if (ctx.label() != null) {
+            return label(visitLabel(ctx.label()));
+        } else {
+            return new Statement(getVar(ctx.VAR_()));
+        }
     }
 
+    // DATA TYPE AND VALUE STATEMENT CONSTRUCTS ====================================
+
     @Override
-    public UnaryOperator<Statement> visitPlays(GraqlParser.PlaysContext ctx) {
-        return var -> var.plays(visitVariable(ctx.variable()));
+    public String visitRegex(GraqlParser.RegexContext ctx) {
+        // Remove surrounding /.../
+        String unquoted = unquoteString(ctx.STRING_());
+        return unquoted.replaceAll("\\\\/", "/");
+        // TODO: Why replace \\/ with / in the regex?
     }
+
+
+    // ============================================================================================================== //
+    // ============================================================================================================== //
+    // ============================================================================================================== //
+
 
     @Override
     public Label visitLabel(GraqlParser.LabelContext ctx) {
-        GraqlParser.IdentifierContext label = ctx.identifier();
-        if (label == null) {
-            return Label.of(ctx.IMPLICIT_IDENTIFIER().getText());
+        if (ctx.identifier() != null) {
+            return Label.of(visitIdentifier(ctx.identifier()));
+        } else {
+            return Label.of(ctx.ID_IMPLICIT_().getText());
         }
-        return Label.of(visitIdentifier(label));
     }
 
     @Override
@@ -400,21 +750,10 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public String visitIdentifier(GraqlParser.IdentifierContext ctx) {
-        if (ctx.STRING() != null) {
-            return getString(ctx.STRING());
+        if (ctx.STRING_() != null) {
+            return getString(ctx.STRING_());
         } else {
             return ctx.getText();
-        }
-    }
-
-    @Override
-    public Statement visitVariable(GraqlParser.VariableContext ctx) {
-        if (ctx == null) {
-            return Pattern.var();
-        } else if (ctx.label() != null) {
-            return label(visitLabel(ctx.label()));
-        } else {
-            return new Statement(getVariable(ctx.VARIABLE()));
         }
     }
 
@@ -425,7 +764,7 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public ValuePredicate visitPredicateVariable(GraqlParser.PredicateVariableContext ctx) {
-        return eq(new Statement(getVariable(ctx.VARIABLE())));
+        return eq(new Statement(getVar(ctx.VAR_())));
     }
 
     @Override
@@ -455,34 +794,34 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public ValuePredicate visitPredicateContains(GraqlParser.PredicateContainsContext ctx) {
-        Object stringOrStatement = ctx.STRING() != null ? getString(ctx.STRING()) : new Statement(getVariable(ctx.VARIABLE()));
+        Object stringOrStatement = ctx.STRING_() != null ? getString(ctx.STRING_()) : new Statement(getVar(ctx.VAR_()));
 
         return applyPredicate((Function<String, ValuePredicate>) Graql::contains, Graql::contains, stringOrStatement);
     }
 
     @Override
     public ValuePredicate visitPredicateRegex(GraqlParser.PredicateRegexContext ctx) {
-        return Graql.regex(getRegex(ctx.REGEX()));
+        return Graql.like(visitRegex(ctx.regex()));
     }
 
     @Override
     public Statement visitValueVariable(GraqlParser.ValueVariableContext ctx) {
-        return new Statement(getVariable(ctx.VARIABLE()));
+        return new Statement(getVar(ctx.VAR_()));
     }
 
     @Override
     public String visitValueString(GraqlParser.ValueStringContext ctx) {
-        return getString(ctx.STRING());
+        return getString(ctx.STRING_());
     }
 
     @Override
     public Long visitValueInteger(GraqlParser.ValueIntegerContext ctx) {
-        return getInteger(ctx.INTEGER());
+        return getInteger(ctx.INTEGER_());
     }
 
     @Override
     public Double visitValueReal(GraqlParser.ValueRealContext ctx) {
-        return Double.valueOf(ctx.REAL().getText());
+        return Double.valueOf(ctx.REAL_().getText());
     }
 
     @Override
@@ -492,12 +831,12 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public LocalDateTime visitValueDate(GraqlParser.ValueDateContext ctx) {
-        return LocalDate.parse(ctx.DATE().getText(), DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
+        return LocalDate.parse(ctx.DATE_().getText(), DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
     }
 
     @Override
     public LocalDateTime visitValueDateTime(GraqlParser.ValueDateTimeContext ctx) {
-        return LocalDateTime.parse(ctx.DATETIME().getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        return LocalDateTime.parse(ctx.DATETIME_().getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
     @Override
@@ -507,27 +846,19 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public Query.DataType visitDatatype(GraqlParser.DatatypeContext datatype) {
-        if (datatype.BOOLEAN_TYPE() != null) {
+        if (datatype.BOOLEAN() != null) {
             return Query.DataType.BOOLEAN;
-        } else if (datatype.DATE_TYPE() != null) {
+        } else if (datatype.DATE() != null) {
             return Query.DataType.DATE;
-        } else if (datatype.DOUBLE_TYPE() != null) {
+        } else if (datatype.DOUBLE() != null) {
             return Query.DataType.DOUBLE;
-        } else if (datatype.LONG_TYPE() != null) {
+        } else if (datatype.LONG() != null) {
             return Query.DataType.LONG;
-        } else if (datatype.STRING_TYPE() != null) {
+        } else if (datatype.STRING() != null) {
             return Query.DataType.STRING;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised " + datatype);
         }
-    }
-
-    private MatchClause visitMatchClause(GraqlParser.MatchClauseContext ctx) {
-        return (MatchClause) visit(ctx);
-    }
-
-    public Pattern visitPattern(GraqlParser.PatternContext ctx) {
-        return (Pattern) visit(ctx);
     }
 
     private ValuePredicate visitPredicate(GraqlParser.PredicateContext ctx) {
@@ -540,21 +871,6 @@ public class Parser extends GraqlBaseVisitor {
 
     private Object visitValue(GraqlParser.ValueContext ctx) {
         return visit(ctx);
-    }
-
-    private Variable getVariable(TerminalNode variable) {
-        return getVariable(variable.getSymbol());
-    }
-
-    private Variable getVariable(Token variable) {
-        // Remove '$' prefix
-        return new Variable(variable.getText().substring(1));
-    }
-
-    private String getRegex(TerminalNode string) {
-        // Remove surrounding /.../
-        String unquoted = unquoteString(string);
-        return unquoted.replaceAll("\\\\/", "/");
     }
 
     private String getString(TerminalNode string) {
@@ -597,117 +913,5 @@ public class Parser extends GraqlBaseVisitor {
         } else {
             return valPred.apply((T) obj);
         }
-    }
-
-    /**
-     * Visits the aggregate query node in the parsed syntax tree and builds the
-     * appropriate aggregate query object
-     *
-     * @param ctx reference to the parsed aggregate query string
-     * @return An AggregateQuery object
-     */
-    @Override
-    public AggregateQuery visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
-        GraqlParser.AggregateFunctionContext function = ctx.aggregateFunction();
-        AggregateQuery.Method method = AggregateQuery.Method.of(function.aggregateMethod().getText());
-        Variable variable = function.VARIABLE() != null ? getVariable(function.VARIABLE()) : null;
-
-        return new AggregateQuery(visitGetQuery(ctx.getQuery()), method, variable);
-    }
-
-    @Override
-    public GroupQuery visitGroupQuery(GraqlParser.GroupQueryContext ctx) {
-        Variable var = getVariable(ctx.VARIABLE());
-        GraqlParser.AggregateFunctionContext function = ctx.aggregateFunction();
-
-        if (function == null) {
-            return visitGetQuery(ctx.getQuery()).group(var);
-        } else {
-            AggregateQuery.Method aggregateMethod = AggregateQuery.Method.of(function.aggregateMethod().getText());
-            Variable aggregateVar = function.VARIABLE() != null ? getVariable(function.VARIABLE()) : null;
-
-            return new GroupAggregateQuery(visitGetQuery(ctx.getQuery()).group(var), aggregateMethod, aggregateVar);
-        }
-    }
-
-    /**
-     * Visits the compute query node in the parsed syntax tree and builds the
-     * appropriate compute query object
-     *
-     * @param ctx reference to the parsed compute query string
-     * @return A ComputeQuery object
-     */
-    public ComputeQuery visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
-        GraqlParser.ComputeMethodContext method = ctx.computeMethod();
-        GraqlParser.ComputeConditionsContext conditions = ctx.computeConditions();
-
-        ComputeQuery query = Graql.compute(ComputeQuery.Method.of(method.getText()));
-        if (conditions == null) return query;
-
-        for (GraqlParser.ComputeConditionContext conditionContext : conditions.computeCondition()) {
-            if (conditionContext instanceof GraqlParser.ComputeConditionFromContext) {
-                query.from(ConceptId.of(visitId((((GraqlParser.ComputeConditionFromContext) conditionContext).id()))));
-
-            } else if (conditionContext instanceof GraqlParser.ComputeConditionToContext) {
-                query.to(ConceptId.of(visitId(((GraqlParser.ComputeConditionToContext) conditionContext).id())));
-
-            } else if (conditionContext instanceof GraqlParser.ComputeConditionOfContext) {
-                query.of(visitLabels(((GraqlParser.ComputeConditionOfContext) conditionContext).labels()));
-
-            } else if (conditionContext instanceof GraqlParser.ComputeConditionInContext) {
-                query.in(visitLabels(((GraqlParser.ComputeConditionInContext) conditionContext).labels()));
-
-            } else if (conditionContext instanceof GraqlParser.ComputeConditionUsingContext) {
-                query.using(ComputeQuery.Algorithm.of(((GraqlParser.ComputeConditionUsingContext) conditionContext).computeAlgorithm().getText()));
-
-            } else if (conditionContext instanceof GraqlParser.ComputeConditionWhereContext) {
-                query.where(visitComputeArgs(((GraqlParser.ComputeConditionWhereContext) conditionContext).computeArgs()));
-
-            } else {
-                throw GraqlQueryException.invalidComputeQuery_invalidCondition(query.method());
-            }
-        }
-
-        Optional<GraqlQueryException> exception = query.getException();
-        if (exception.isPresent()) throw exception.get();
-
-        return query;
-    }
-
-    /**
-     * Visits the computeArgs tree in the compute query 'where <computeArgs>'
-     * condition and get the list of arguments
-     *
-     * @param ctx reference to the parsed computeArgs string
-     * @return a list of compute query arguments
-     */
-    @Override
-    public List<ComputeQuery.Argument> visitComputeArgs(GraqlParser.ComputeArgsContext ctx) {
-
-        List<GraqlParser.ComputeArgContext> argContextList = new ArrayList<>();
-        List<ComputeQuery.Argument> argList = new ArrayList<>();
-
-        if (ctx.computeArg() != null) {
-            argContextList.add(ctx.computeArg());
-        } else if (ctx.computeArgsArray() != null) {
-            argContextList.addAll(ctx.computeArgsArray().computeArg());
-        }
-
-        for (GraqlParser.ComputeArgContext argContext : argContextList) {
-            if (argContext instanceof GraqlParser.ComputeArgMinKContext) {
-                argList.add(ComputeQuery.Argument.min_k(getInteger(((GraqlParser.ComputeArgMinKContext) argContext).INTEGER())));
-
-            } else if (argContext instanceof GraqlParser.ComputeArgKContext) {
-                argList.add(ComputeQuery.Argument.k(getInteger(((GraqlParser.ComputeArgKContext) argContext).INTEGER())));
-
-            } else if (argContext instanceof GraqlParser.ComputeArgSizeContext) {
-                argList.add(ComputeQuery.Argument.size(getInteger(((GraqlParser.ComputeArgSizeContext) argContext).INTEGER())));
-
-            } else if (argContext instanceof GraqlParser.ComputeArgContainsContext) {
-                argList.add(ComputeQuery.Argument.contains(ConceptId.of(visitId(((GraqlParser.ComputeArgContainsContext) argContext).id()))));
-            }
-        }
-
-        return argList;
     }
 }

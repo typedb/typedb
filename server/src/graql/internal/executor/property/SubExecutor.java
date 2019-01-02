@@ -41,9 +41,7 @@ import java.util.Set;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
-public class SubExecutor implements PropertyExecutor.Definable,
-                                    PropertyExecutor.Matchable,
-                                    PropertyExecutor.Atomable {
+public class SubExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final SubProperty property;
@@ -51,16 +49,6 @@ public class SubExecutor implements PropertyExecutor.Definable,
     SubExecutor(Variable var, SubProperty property) {
         this.var = var;
         this.property = property;
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> defineExecutors() {
-        return ImmutableSet.of(new DefineSub());
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return ImmutableSet.of(new UndefineSub());
     }
 
     @Override
@@ -75,9 +63,19 @@ public class SubExecutor implements PropertyExecutor.Definable,
         return SubAtom.create(var.asUserDefined(), property.type().var(), predicateId, parent);
     }
 
+    @Override
+    public Set<PropertyExecutor.Writer> defineExecutors() {
+        return ImmutableSet.of(new DefineSub());
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
+        return ImmutableSet.of(new UndefineSub());
+    }
+
     public static class SubExplicitExecutor extends SubExecutor {
 
-        public SubExplicitExecutor(Variable var, SubProperty property) {
+        SubExplicitExecutor(Variable var, SubProperty property) {
             super(var, property);
         }
 

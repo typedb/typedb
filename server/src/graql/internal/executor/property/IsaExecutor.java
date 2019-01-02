@@ -39,9 +39,7 @@ import java.util.Set;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
-public class IsaExecutor implements PropertyExecutor.Insertable,
-                                    PropertyExecutor.Matchable,
-                                    PropertyExecutor.Atomable {
+public class IsaExecutor implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final IsaProperty property;
@@ -49,11 +47,6 @@ public class IsaExecutor implements PropertyExecutor.Insertable,
     IsaExecutor(Variable var, IsaProperty property) {
         this.var = var;
         this.property = property;
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> insertExecutors() {
-        return ImmutableSet.of(new InsertIsa());
     }
 
     @Override
@@ -88,9 +81,14 @@ public class IsaExecutor implements PropertyExecutor.Insertable,
         return IsaAtom.create(varName, typeVar, isaVar, predicateId, parent);
     }
 
+    @Override
+    public Set<PropertyExecutor.Writer> insertExecutors() {
+        return ImmutableSet.of(new InsertIsa());
+    }
+
     public static class IsaExplicitExecutor extends IsaExecutor {
 
-        public IsaExplicitExecutor(Variable var, IsaProperty property) {
+        IsaExplicitExecutor(Variable var, IsaProperty property) {
             super(var, property);
         }
 

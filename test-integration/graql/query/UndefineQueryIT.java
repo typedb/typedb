@@ -211,22 +211,22 @@ public class UndefineQueryIT {
 
     @Test
     public void whenUndefiningRegexProperty_TheAttributeTypeHasNoRegex() {
-        tx.execute(Graql.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(Query.DataType.STRING).regex("abc")));
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(Query.DataType.STRING).like("abc")));
 
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
 
-        tx.execute(Graql.undefine(label(NEW_TYPE).regex("abc")));
+        tx.execute(Graql.undefine(label(NEW_TYPE).like("abc")));
 
         assertNull(tx.<AttributeType>getType(NEW_TYPE).regex());
     }
 
     @Test
     public void whenUndefiningRegexPropertyWithWrongRegex_DoNothing() {
-        tx.execute(Graql.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(Query.DataType.STRING).regex("abc")));
+        tx.execute(Graql.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(Query.DataType.STRING).like("abc")));
 
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
 
-        tx.execute(Graql.undefine(label(NEW_TYPE).regex("xyz")));
+        tx.execute(Graql.undefine(label(NEW_TYPE).like("xyz")));
 
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
     }
@@ -268,7 +268,7 @@ public class UndefineQueryIT {
     public void whenUndefiningComplexSchema_TheEntireSchemaIsRemoved() {
         Collection<Statement> schema = ImmutableList.of(
                 label("pokemon").sub(ENTITY).has("pokedex-no").plays("ancestor").plays("descendant"),
-                label("pokedex-no").sub(ATTRIBUTE).datatype(Query.DataType.INTEGER),
+                label("pokedex-no").sub(ATTRIBUTE).datatype(Query.DataType.DOUBLE),
                 label("evolution").sub(RELATIONSHIP).relates("ancestor").relates("descendant"),
                 label("ancestor").sub(ROLE),
                 label("descendant").sub(ROLE)

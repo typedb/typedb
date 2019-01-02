@@ -33,9 +33,7 @@ import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Set;
 
-public class ValueExecutor implements PropertyExecutor.Insertable,
-                                      PropertyExecutor.Matchable,
-                                      PropertyExecutor.Atomable {
+public class ValueExecutor implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final ValueProperty property;
@@ -46,11 +44,6 @@ public class ValueExecutor implements PropertyExecutor.Insertable,
     }
 
     @Override
-    public Set<PropertyExecutor.Writer> insertExecutors() {
-        return ImmutableSet.of(new InsertValue());
-    }
-
-    @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(EquivalentFragmentSets.value(property, var, property.predicate()));
     }
@@ -58,6 +51,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable,
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         return ValuePredicate.create(var, property.predicate(), parent);
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> insertExecutors() {
+        return ImmutableSet.of(new InsertValue());
     }
 
     class InsertValue implements PropertyExecutor.Writer {

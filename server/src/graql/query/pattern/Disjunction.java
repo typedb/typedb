@@ -20,8 +20,11 @@ package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import grakn.core.graql.query.Query.Char;
+import grakn.core.graql.query.Query.Operator;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -34,6 +37,7 @@ import java.util.stream.Collectors;
  */
 public class Disjunction<T extends Pattern> implements Pattern {
 
+    // TODO: Make Disjunction always store a set of Conjunction<?>, and thus removing <T>
     private final LinkedHashSet<T> patterns;
 
     Disjunction(Set<T> patterns) {
@@ -80,9 +84,31 @@ public class Disjunction<T extends Pattern> implements Pattern {
 
     @Override
     public String toString() {
-        return getPatterns().stream()
-                .map(Object::toString)
-                .collect(Collectors.joining(" or "));
+        StringBuilder disjunction = new StringBuilder();
+
+        Iterator<T> patternIter = patterns.iterator();
+        while (patternIter.hasNext()) {
+            Pattern pattern = patternIter.next();
+            disjunction.append(Char.CURLY_OPEN).append(Char.SPACE);
+
+            if (pattern instanceof Conjunction<?>) {
+                disjunction.append(((Conjunction<? extends Pattern>) pattern).getPatterns().stream()
+                                           .map(Object::toString)
+                                           .collect(Collectors.joining(Char.SPACE.toString())));
+            } else {
+                disjunction.append(pattern.toString());
+            }
+
+            disjunction.append(Char.SPACE).append(Char.CURLY_CLOSE);
+
+            if (patternIter.hasNext()) {
+                disjunction.append(Char.SPACE).append(Operator.OR).append(Char.SPACE);
+            }
+        }
+
+        disjunction.append(Char.SEMICOLON);
+
+        return disjunction.toString();
     }
 
     @Override
@@ -92,7 +118,7 @@ public class Disjunction<T extends Pattern> implements Pattern {
         }
         if (o instanceof Disjunction) {
             Disjunction<?> that = (Disjunction<?>) o;
-            return (this.patterns.equals(that.getPatterns()));
+            return (this.patterns.equals(that.patterns));
         }
         return false;
     }

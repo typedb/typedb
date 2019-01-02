@@ -49,6 +49,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static grakn.core.graql.query.ComputeQuery.Algorithm.CONNECTED_COMPONENT;
@@ -67,7 +68,7 @@ import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
 import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.Graql.parse;
-import static grakn.core.graql.query.Graql.regex;
+import static grakn.core.graql.query.Graql.like;
 import static grakn.core.graql.query.Graql.undefine;
 import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.pattern.Pattern.label;
@@ -90,121 +91,149 @@ public class ParserTest {
     @ClassRule
     public static final Timeout timeout = Timeout.seconds(60 * 5);
 
+    private void assertQueryEquals(Query expected, Query parsed, String query) {
+        assertEquals(expected, parsed);
+        assertEquals(expected, Graql.parse(parsed.toString()));
+        assertEquals(query, expected.toString());
+    }
+
+    private void assertQueryEquals(Pattern expected, Pattern parsed, String query) {
+        assertEquals(expected, parsed);
+        assertEquals(expected, Pattern.parse(parsed.toString()));
+        assertEquals(query, expected.toString());
+    }
+
     @Test
     public void testSimpleQuery() {
-        assertEquals(
-                match(var("x").isa("movie")).get(),
-                parse("match $x isa movie; get;")
-        );
+        String query = "match $x isa movie; get;";
+        GetQuery parsed = parse(query);
+        GetQuery expected = match(var("x").isa("movie")).get();
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testRelationQuery() {
+        String query = "match\n" +
+                "$brando == 'Marl B' isa name;\n" +
+                "(actor: $brando, $char, production-with-cast: $prod);\n" +
+                "get $char, $prod;";
+        GetQuery parsed = parse(query);
+
         GetQuery expected = match(
-                var("brando").val("Marl B").isa("person"),
+                var("brando").val("Marl B").isa("name"),
                 var().rel("actor", "brando").rel("char").rel("production-with-cast", "prod")
         ).get("char", "prod");
 
-        GetQuery parsed = parse(
-                "match\n" +
-                        "$brando == \"Marl B\" isa person;\n" +
-                        "(actor: $brando, $char, production-with-cast: $prod);\n" +
-                        "get $char, $prod;"
-        );
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query.replace("'", "\""));
     }
 
     @Test
     public void testPredicateQuery1() {
+        String query = "match\n" +
+                "$x isa movie, has title $t;\n" +
+                "{ $t 'Apocalypse Now'; } or { $t < 'Juno'; $t > 'Godfather'; } or { $t 'Spy'; };\n" +
+                "$t !== 'Apocalypse Now';\n" +
+                "get;";
+        GetQuery parsed = parse(query);
+        
         GetQuery expected = match(
                 var("x").isa("movie").has("title", var("t")),
                 or(
-                        or(
-                                var("t").val(eq("Apocalypse Now")),
-                                and(var("t").val(lt("Juno")), var("t").val(gt("Godfather")))
-                        ),
+                        var("t").val(eq("Apocalypse Now")),
+                        and(var("t").val(lt("Juno")), var("t").val(gt("Godfather"))),
                         var("t").val(eq("Spy"))
                 ),
                 var("t").val(neq("Apocalypse Now"))
         ).get();
 
-        GetQuery parsed = parse(
-                "match\n" +
-                        "$x isa movie, has title $t;\n" +
-                        "$t == \"Apocalypse Now\" or {$t < 'Juno'; $t > 'Godfather';} or $t 'Spy';" +
-                        "$t !=='Apocalypse Now'; get;\n"
-        );
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query.replace("'", "\""));
     }
 
     @Test
     public void testPredicateQuery2() {
+        String query = "match\n" +
+                "$x isa movie, has title $t;\n" +
+                "{ $t <= 'Juno'; $t >= 'Godfather'; $t !== 'Heat'; } or { $t 'The Muppets'; };\n" +
+                "get;";
+        GetQuery parsed = parse(query);
+        
         GetQuery expected = match(
                 var("x").isa("movie").has("title", var("t")),
                 or(
-                        and(var("t").val(lte("Juno")), var("t").val(gte("Godfather")), var("t").val(neq("Heat"))),
+                        and(
+                                var("t").val(lte("Juno")),
+                                var("t").val(gte("Godfather")),
+                                var("t").val(neq("Heat"))
+                        ),
                         var("t").val("The Muppets")
                 )
         ).get();
 
-        GetQuery parsed = parse(
-                "match $x isa movie, has title $t;" +
-                        "{$t <= 'Juno'; $t >= 'Godfather'; $t !== 'Heat';} or $t == 'The Muppets'; get;"
-        );
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query.replace("'", "\""));
     }
 
     @Test
     public void testPredicateQuery3() {
+        String query = "match\n" +
+                "($x, $y);\n" +
+                "$y isa person, has name $n;\n" +
+                "{ $n contains 'ar'; } or { $n like '^M.*$'; };\n" +
+                "get;";
+        GetQuery parsed = parse(query);
+        
         GetQuery expected = match(
                 var().rel("x").rel("y"),
                 var("y").isa("person").has("name", var("n")),
-                or(var("n").val(contains("ar")), var("n").val(regex("^M.*$")))
+                or(var("n").val(contains("ar")), var("n").val(like("^M.*$")))
         ).get();
 
-        GetQuery parsed = parse(
-                "match ($x, $y); $y isa person, has name $n;" +
-                        "$n contains 'ar' or $n /^M.*$/; get;"
-        );
 
-        assertEquals(expected, parsed);
+        Set<Pattern> expectedPatterns = expected.match().getPatterns().getPatterns();
+        Set<Pattern> parsedPatterns = Graql.<GetQuery>parse(parsed.toString()).match().getPatterns().getPatterns();
+
+        assertQueryEquals(expected, parsed, query.replace("'", "\""));
     }
 
     @Test
     public void whenParsingContainsPredicateWithAVariable_ResultMatchesJavaGraql() {
+        String query = "match $x contains $y; get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var("x").val(contains(var("y")))).get();
 
-        GetQuery parsed = parse("match $x contains $y; get;");
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testValueEqualsVariableQuery() {
+        String query = "match $s1 == $s2; get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var("s1").val(var("s2"))).get();
 
-        GetQuery parsed = parse("match $s1 == $s2; get;");
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testMoviesReleasedAfterOrAtTheSameTimeAsSpy() {
+        String query = "match\n" +
+                "$x has release-date >= $r;\n" +
+                "$_ has title 'Spy', has release-date $r;\n" +
+                "get;";
+        GetQuery parsed = parse(query);
+        
         GetQuery expected = match(
                 var("x").has("release-date", gte(var("r"))),
                 var().has("title", "Spy").has("release-date", var("r"))
         ).get();
 
-        GetQuery parsed = parse("match $x has release-date >= $r; has title 'Spy', has release-date $r; get;");
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query.replace("'", "\""));
     }
 
     @Test
     public void testTypesQuery() throws ParseException {
+        String query = "match $x has release-date < 1986-03-03T00:00, has tmdb-vote-count 100, has tmdb-vote-average <= 9.0; get;";
+        GetQuery parsed = parse(query);
+        
         GetQuery expected = match(
                 var("x")
                         .has("release-date", lt(LocalDate.of(1986, 3, 3).atStartOfDay()))
@@ -212,96 +241,110 @@ public class ParserTest {
                         .has("tmdb-vote-average", lte(9.0))
         ).get();
 
-        GetQuery parsed = parse(
-                "match $x has release-date < 1986-03-03, has tmdb-vote-count 100 has tmdb-vote-average<=9.0; get;"
-        );
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void whenParsingDate_HandleTime() {
+        String query = "match $x has release-date 1000-11-12T13:14:15; get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var("x").has("release-date", LocalDateTime.of(1000, 11, 12, 13, 14, 15))).get();
-        GetQuery parsed = parse("match $x has release-date 1000-11-12T13:14:15; get;");
-        assertEquals(expected, parsed);
+        
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void whenParsingDate_HandleBigYears() {
         GetQuery expected = match(var("x").has("release-date", LocalDate.of(12345, 12, 25).atStartOfDay())).get();
-        GetQuery parsed = parse("match $x has release-date +12345-12-25; get;");
-        assertEquals(expected, parsed);
+        String query = "match $x has release-date +12345-12-25T00:00; get;";
+        GetQuery parsed = parse(query);
+        
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void whenParsingDate_HandleSmallYears() {
+        String query = "match $x has release-date 0867-01-01T00:00; get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var("x").has("release-date", LocalDate.of(867, 1, 1).atStartOfDay())).get();
-        GetQuery parsed = parse("match $x has release-date 0867-01-01; get;");
-        assertEquals(expected, parsed);
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void whenParsingDate_HandleNegativeYears() {
+        String query = "match $x has release-date -3200-01-01T00:00; get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var("x").has("release-date", LocalDate.of(-3200, 1, 1).atStartOfDay())).get();
-        GetQuery parsed = parse("match $x has release-date -3200-01-01; get;");
-        assertEquals(expected, parsed);
+        
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void whenParsingDate_HandleTimeWithDecimalSeconds() {
+        String query = "match $x has release-date 1000-11-12T13:14:15.000123456; get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var("x").has("release-date", LocalDateTime.of(1000, 11, 12, 13, 14, 15, 123_456))).get();
-        GetQuery parsed = parse("match $x has release-date 1000-11-12T13:14:15.000123456; get;");
-        assertEquals(expected, parsed);
+        
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testLongComparatorQuery() throws ParseException {
-        GetQuery expected = match(
-                var("x").isa("movie").has("tmdb-vote-count", lte(400))
-        ).get();
+        String query = "match $x isa movie, has tmdb-vote-count <= 400; get;";
+        GetQuery parsed = parse(query);
+        GetQuery expected = match(var("x").isa("movie").has("tmdb-vote-count", lte(400))).get();
 
-        GetQuery parsed = parse("match $x isa movie, has tmdb-vote-count <= 400; get;");
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void whenSearchingForImplicitType_EnsureQueryCanBeParsed() {
+        String query = "match $x plays @has-release-date-owner; get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var("x").plays("@has-release-date-owner")).get();
-        GetQuery parsed = parse("match $x plays @has-release-date-owner; get;");
 
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test @Ignore
     public void testModifierQuery() {
-        GetQuery expected = match(
-                var("y").isa("movie").has("title", var("n"))
-        ).get(); // TODO: put back .orderBy("n").limit(4).offset(2)
-
-        GetQuery parsed =
-                parse("match $y isa movie, has title $n; order by $n; limit 4; offset 2; get;");
-
-        assertEquals(expected, parsed);
+        String query = "match $y isa movie, has title $n; order by $n; limit 4; offset 2; get;" ;
+        GetQuery parsed = parse(query);
+        GetQuery expected = match(var("y").isa("movie").has("title", var("n"))).get();
+        // TODO: put back .orderBy("n").limit(4).offset(2)
+        
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testSchemaQuery() {
+        String query = "match $x plays actor; get;"; // TODO: put back order by $x asc;
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var("x").plays("actor")).get(); // TODO: put back .orderBy("x")
-        GetQuery parsed = parse("match $x plays actor; get;"); // TODO: put back order by $x asc;
-        assertEquals(expected, parsed);
+        
+        assertQueryEquals(expected, parsed, query);
     }
 
-    @Test @Ignore
+    @Test @Ignore // TODO: put back .orderBy("r", desc)
     public void testOrderQuery() {
-        // TODO: put back .orderBy("r", desc)
+        String query = "match $x isa movie, has release-date $r; order by $r desc; get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var("x").isa("movie").has("release-date", var("r"))).get();
-        GetQuery parsed = parse("match $x isa movie, has release-date $r; order by $r desc; get;");
-        assertEquals(expected, parsed);
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testVariablesEverywhereQuery() {
+        String query = "match\n" +
+                "($p: $x, $y);\n" +
+                "$x isa $z;\n" +
+                "$y 'crime';\n" +
+                "$z sub production;\n" +
+                "has-genre relates $p;\n" +
+                "get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(
                 var().rel(var("p"), "x").rel("y"),
                 var("x").isa(var("z")),
@@ -310,100 +353,132 @@ public class ParserTest {
                 label("has-genre").relates(var("p"))
         ).get();
 
-        GetQuery parsed = parse(
-                "match" +
-                        "($p: $x, $y);" +
-                        "$x isa $z;" +
-                        "$y == 'crime';" +
-                        "$z sub production;" +
-                        "has-genre relates $p; get;"
-        );
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query.replace("'", "\""));
     }
 
     @Test
     public void testParseRelatesTypeVariable() {
+        String query = "match\n" +
+                "$x isa $type;\n" +
+                "$type relates someRole;\n" +
+                "get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var("x").isa(var("type")), var("type").relates("someRole")).get();
-        GetQuery parsed = parse("match $x isa $type; $type relates someRole; get;");
-        assertEquals(expected, parsed);
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testOrQuery() {
+        String query = "match\n" +
+                "$x isa movie;\n" +
+                "{ $y 'drama' isa genre; ($x, $y); } or { $x 'The Muppets'; };\n" +
+                "get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(
                 var("x").isa("movie"),
                 or(
-                        and(var("y").isa("genre").val("drama"), var().rel("x").rel("y")),
+                        and(
+                                var("y").isa("genre").val("drama"),
+                                var().rel("x").rel("y")
+                        ),
                         var("x").val("The Muppets")
                 )
         ).get();
 
-        GetQuery parsed = parse(
-                "match $x isa movie; { $y isa genre == 'drama'; ($x, $y); } or $x == 'The Muppets'; get;"
-        );
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query.replace("'", "\""));
     }
 
     @Test
     public void testAggregateCountQuery() {
+        String query = "match ($x, $y) isa friendship; get $x, $y; count;";
+        AggregateQuery parsed = parse(query);
         AggregateQuery expected = match(var().rel("x").rel("y").isa("friendship")).get("x", "y").count();
-        AggregateQuery parsed = parse("match ($x, $y) isa friendship; get $x, $y; count;");
-        assertEquals(expected, parsed);
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testAggregateGroupCountQuery() {
+        String query = "match ($x, $y) isa friendship; get $x, $y; group $x; count;";
+        GroupAggregateQuery parsed = parse(query);
         GroupAggregateQuery expected = match(var().rel("x").rel("y").isa("friendship")).get("x", "y").group("x").count();
-        GroupAggregateQuery parsed = parse("match ($x, $y) isa friendship; get $x, $y; group $x; count;");
-        assertEquals(expected, parsed);
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testAggregateGroupMaxQuery() {
-        GroupAggregateQuery expected =
-                match(
+        String query = "match\n" +
+                "($x, $y) isa friendship;\n" +
+                "$y has age $z;\n" +
+                "get; group $x; max $z;";
+        GroupAggregateQuery parsed = parse(query);
+        GroupAggregateQuery expected = match(
                         var().rel("x").rel("y").isa("friendship"),
                         var("y").has("age", var("z"))
                 ).get().group("x").max("z");
-        GroupAggregateQuery parsed = parse("match ($x, $y) isa friendship; $y has age $z; get; group $x; max $z;");
-        assertEquals(expected, parsed);
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void whenComparingCountQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
+        String query = "match $x isa movie, has title \"Godfather\"; get; count;";
+        AggregateQuery parsed = parse(query);
         AggregateQuery expected = match(var("x").isa("movie").has("title", "Godfather")).get().count();
-        AggregateQuery parsed = parse("match $x isa movie has title 'Godfather'; get; count;");
-        assertEquals(expected, parsed);
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testInsertQuery() {
+        String query = "insert $_ isa movie, has title \"The Title\";";
+        InsertQuery parsed = parse(query);
         InsertQuery expected = insert(var().isa("movie").has("title", "The Title"));
-        InsertQuery parsed = parse("insert isa movie has title 'The Title';");
-        assertEquals(expected, parsed);
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void whenParsingDeleteQuery_ResultIsSameAsJavaGraql() {
-        Statement x = var("x");
-        Statement y = var("y");
+        String query = "match\n" +
+                "$x isa movie, has title 'The Title';\n" +
+                "$y isa movie;\n" +
+                "delete $x, $y;";
+        DeleteQuery parsed = parse(query);
+        DeleteQuery expected = match(
+                var("x").isa("movie").has("title", "The Title"),
+                var("y").isa("movie")
+        ).delete("x", "y");
 
-        DeleteQuery expected = match(x.isa("movie").has("title", "The Title"), y.isa("movie")).delete(x.var(), y.var());
-        DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; $y isa movie; delete $x, $y;");
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query.replace("'", "\""));
     }
 
     @Test
     public void whenParsingDeleteQueryWithNoArguments_ResultIsSameAsJavaGraql() {
-        DeleteQuery expected = match(var("x").isa("movie").has("title", "The Title"), var("y").isa("movie")).delete();
-        DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; $y isa movie; delete;");
-        assertEquals(expected, parsed);
+        String query = "match\n" +
+                "$x isa movie, has title 'The Title';\n" +
+                "$y isa movie;\n" +
+                "delete;";
+        DeleteQuery parsed = parse(query);
+        DeleteQuery expected = match(
+                var("x").isa("movie").has("title", "The Title"),
+                var("y").isa("movie")
+        ).delete();
+
+        assertQueryEquals(expected, parsed, query.replace("'", "\""));
     }
 
     @Test
     public void whenParsingInsertQuery_ResultIsSameAsJavaGraql() {
+        String query = "insert\n" +
+                "$x isa pokemon, has name 'Pichu';\n" +
+                "$y isa pokemon, has name 'Pikachu';\n" +
+                "$z isa pokemon, has name 'Raichu';\n" +
+                "(evolves-from: $x, evolves-to: $y) isa evolution;\n" +
+                "(evolves-from: $y, evolves-to: $z) isa evolution;";
+        InsertQuery parsed = parse(query);
         InsertQuery expected = insert(
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
@@ -412,19 +487,18 @@ public class ParserTest {
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
         );
 
-        InsertQuery parsed = parse("insert " +
-                                           "$x has name 'Pichu' isa pokemon;" +
-                                           "$y has name 'Pikachu' isa pokemon;" +
-                                           "$z has name 'Raichu' isa pokemon;" +
-                                           "(evolves-from: $x ,evolves-to: $y) isa evolution;" +
-                                           "(evolves-from: $y, evolves-to: $z) isa evolution;"
-        );
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query.replace("'", "\""));
     }
 
     @Test
     public void whenParsingAsInDefine_ResultIsSameAsSub() {
+        String query = "define " +
+                "parent sub role;\n" +
+                "child sub role;\n" +
+                "parenthood sub relationship, relates parent, relates child;\n" +
+                "fatherhood sub parenthood, relates father as parent, relates son as child;";
+        DefineQuery parsed = parse(query);
+
         DefineQuery expected = define(
                 label("parent").sub("role"),
                 label("child").sub("role"),
@@ -436,35 +510,33 @@ public class ParserTest {
                         .relates(label("son"), label("child"))
         );
 
-        DefineQuery parsed = parse("define " +
-                                           "parent sub role;\n" +
-                                           "child sub role;\n" +
-                                           "parenthood sub relationship, relates parent, relates child;\n" +
-                                           "fatherhood sub parenthood, relates father as parent, relates son as child;"
-        );
-
-        assertEquals(expected, parsed);
-        assertEquals(expected, parse(expected.toString()));
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void whenParsingAsInMatch_ResultIsSameAsSub() {
+        String query = "match fatherhood sub parenthood, relates father as parent, relates son as child; get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(
                 label("fatherhood").sub("parenthood")
-                        .relates(var("x"), label("parent"))
-                        .relates(label("son"), var("y"))
+                        .relates(label("father"), label("parent"))
+                        .relates(label("son"), label("child"))
         ).get();
 
-        GetQuery parsed = parse("match " +
-                                        "fatherhood sub parenthood, relates $x as parent, relates son as $y; get;"
-        );
-
-        assertEquals(expected, parsed);
-        assertEquals(expected, parse(expected.toString()));
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void whenParsingDefineQuery_ResultIsSameAsJavaGraql() {
+        String query = "define " +
+                "'pokemon' sub entity; " +
+                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + "; " +
+                "evolves-from sub role; " +
+                "evolves-to sub role; " +
+                "evolution relates evolves-from, relates evolves-to; " +
+                "pokemon plays evolves-from, plays evolves-to, has name;";
+        DefineQuery parsed = parse(query);
+
         DefineQuery expected = define(
                 label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
                 label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
@@ -474,20 +546,20 @@ public class ParserTest {
                 label("pokemon").plays("evolves-from").plays("evolves-to").has("name")
         );
 
-        DefineQuery parsed = parse("define " +
-                                           "'pokemon' sub entity;" +
-                                           "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
-                                           "evolves-from sub role;" +
-                                           "label \"evolves-to\" sub role;" +
-                                           "evolution relates evolves-from, relates evolves-to;" +
-                                           "pokemon plays evolves-from plays evolves-to has name;"
-        );
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void whenParsingUndefineQuery_ResultIsSameAsJavaGraql() {
+        String query = "undefine " +
+                "'pokemon' sub entity; " +
+                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + "; " +
+                "evolves-from sub role; " +
+                "evolves-to sub role; " +
+                "evolution relates evolves-from, relates evolves-to; " +
+                "pokemon plays evolves-from, plays evolves-to, has name;";
+        UndefineQuery parsed = parse(query);
+
         UndefineQuery expected = undefine(
                 label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
                 label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
@@ -497,60 +569,66 @@ public class ParserTest {
                 label("pokemon").plays("evolves-from").plays("evolves-to").has("name")
         );
 
-        UndefineQuery parsed = parse("undefine " +
-                                             "'pokemon' sub entity;" +
-                                             "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
-                                             "evolves-from sub role;" +
-                                             "label \"evolves-to\" sub role;" +
-                                             "evolution relates evolves-from, relates evolves-to;" +
-                                             "pokemon plays evolves-from plays evolves-to has name;"
-        );
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testMatchInsertQuery() {
-        InsertQuery expected = match(var("x").isa("language")).insert(var("x").has("name", "HELLO"));
-        InsertQuery parsed = parse("match $x isa language; insert $x has name \"HELLO\";");
-        assertEquals(expected, parsed);
+        String query = "match $x isa language;\n" +
+                "insert $x has name \"HELLO\";";
+        InsertQuery parsed = parse(query);
+        InsertQuery expected = match(var("x").isa("language"))
+                .insert(var("x").has("name", "HELLO"));
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
-    public void testInsertIsAbstractQuery() {
-        InsertQuery expected = insert(
+    public void testDefineAbstractEntityQuery() {
+        String query = "define concrete-type sub entity; abstract-type sub entity, abstract;";
+        DefineQuery parsed = parse(query);
+        DefineQuery expected = define(
                 label("concrete-type").sub("entity"),
-                label("abstract-type").isAbstract().sub("entity")
+                label("abstract-type").sub("entity").isAbstract()
         );
 
-        InsertQuery parsed = parse(
-                "insert concrete-type sub entity; abstract-type is-abstract sub entity;"
-        );
-
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testMatchDataTypeQuery() {
+        String query = "match $x datatype double; get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var("x").datatype(Query.DataType.DOUBLE)).get();
-        GetQuery parsed = parse("match $x datatype double; get;");
 
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
+    }
+
+    @Test
+    public void testParseWithoutVar() {
+        String query = "match $_ isa person; get;";
+        GetQuery parsed = parse(query);
+        GetQuery expected = match(var().isa("person")).get();
+        
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void whenParsingDateKeyword_ParseAsTheCorrectDataType() {
+        String query = "match $x datatype date; get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var("x").datatype(Query.DataType.DATE)).get();
-        GetQuery parsed = parse("match $x datatype date; get;");
 
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
-    public void testInsertDataTypeQuery() {
-        InsertQuery expected = insert(label("my-type").sub("resource").datatype(Query.DataType.LONG));
-        InsertQuery parsed = parse("insert my-type sub resource, datatype long;");
-        assertEquals(expected, parsed);
+    public void testDefineDataTypeQuery() {
+        String query = "define my-type sub attribute, datatype long;";
+        DefineQuery parsed = parse(query);
+        DefineQuery expected = define(label("my-type").sub("attribute").datatype(Query.DataType.LONG));
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
@@ -558,48 +636,49 @@ public class ParserTest {
         String unescaped = "This has \"double quotes\" and a single-quoted backslash: '\\'";
         String escaped = "This has \\\"double quotes\\\" and a single-quoted backslash: \\'\\\\\\'";
 
+        String query = "insert $_ isa movie, has title \"" + escaped + "\";";
+        InsertQuery parsed = parse(query);
         InsertQuery expected = insert(var().isa("movie").has("title", unescaped));
-        InsertQuery parsed = parse("insert isa movie has title '" + escaped + "';");
-        assertEquals(expected, parsed);
+
+        assertQueryEquals(expected, parsed, query);
     }
 
-    @Test
-    public void whenQueryToStringWithKeyword_EscapeKeywordWithQuotes() {
-        assertEquals("match $x isa \"date\"; get $x;", match(var("x").isa("date")).get().toString());
-    }
 
     @Test
     public void whenParsingQueryWithComments_TheyAreIgnored() {
         AggregateQuery expected = match(var("x").isa("movie")).get().count();
-        AggregateQuery parsed = parse(
-                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; get; count;"
-        );
+        String query = "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; get; count;";
+        AggregateQuery parsed = parse(query);
+
         assertEquals(expected, parsed);
+        assertEquals(expected, parse(parsed.toString()));
     }
 
     @Test
     public void testParsingPattern() {
-        String when = "{(parent: $p, child: $c) isa parentship; $c has gender \"male\"; $p has gender \"female\";}";
-        assertEquals(when, Pattern.parse(when).toString());
+        String pattern = "{ (wife: $a, husband: $b) isa marriage; $a has gender 'male'; $b has gender 'female'; };";
+        Pattern parsed = Pattern.parse(pattern);
+        Pattern expected = Pattern.and(
+                var().rel("wife", "a").rel("husband", "b").isa("marriage"),
+                var("a").has("gender", "male"),
+                var("b").has("gender", "female")
+        );
+
+        assertQueryEquals(expected, parsed, pattern.replace("'", "\""));
     }
 
     @Test
-    public void testInsertRules() {
+    public void testDefineRules() {
         String when = "$x isa movie;";
-        String then = "id '123' isa movie;";
+        String then = "$x has genre 'drama';";
         Pattern whenPattern = and(var("x").isa("movie"));
-        Pattern thenPattern = and(var().id("123").isa("movie"));
+        Pattern thenPattern = and(var("x").has("genre", "drama"));
 
-        InsertQuery expected = insert(
-                label("my-rule-thing").sub("rule"), var().isa("my-rule-thing").when(whenPattern).then(thenPattern)
-        );
-
-        InsertQuery parsed = parse(
-                "insert 'my-rule-thing' sub rule; \n" +
-                        "isa my-rule-thing, when {" + when + "}, then {" + then + "};"
-        );
-
-        assertEquals(expected, parsed);
+        DefineQuery expected = define(label("all-movies-are-drama").sub("rule").when(whenPattern).then(thenPattern));
+        String query = "define all-movies-are-drama sub rule, when { " + when + " }, then { " + then + " };";
+        DefineQuery parsed = parse(query);
+        
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
@@ -611,31 +690,38 @@ public class ParserTest {
 
     @Test
     public void testParseBoolean() {
-        assertEquals("insert has flag true;", parse("insert has flag true;").toString());
+        String query = "insert $_ has flag true;";
+        InsertQuery parsed = parse(query);
+        InsertQuery expected = insert(var().has("flag", true));
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testParseAggregateGroup() {
+        String query = "match $x isa movie; get; group $x;";
+        GroupQuery parsed = parse(query);
         GroupQuery expected = match(var("x").isa("movie")).get().group("x");
-        GroupQuery parsed = parse("match $x isa movie; get; group $x;");
 
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testParseAggregateGroupCount() {
+        String query = "match $x isa movie; get; group $x; count;";
+        GroupAggregateQuery parsed = parse(query);
         GroupAggregateQuery expected = match(var("x").isa("movie")).get().group("x").count();
-        GroupAggregateQuery parsed = parse("match $x isa movie; get; group $x; count;");
 
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
     public void testParseAggregateStd() {
+        String query = "match $x isa movie; get; std $x;";
+        AggregateQuery parsed = parse(query);
         AggregateQuery expected = match(var("x").isa("movie")).get().std( "x");
-        AggregateQuery parsed = parse("match $x isa movie; get; std $x;");
 
-        assertEquals(expected, parsed);
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
@@ -791,16 +877,20 @@ public class ParserTest {
 
     @Test
     public void testHasVariable() {
+        String query = "match $_ has title 'Godfather', has tmdb-vote-count $x; get;";
+        GetQuery parsed = parse(query);
         GetQuery expected = match(var().has("title", "Godfather").has("tmdb-vote-count", var("x"))).get();
-        GetQuery parsed = parse("match has title 'Godfather' has tmdb-vote-count $x; get;");
-        assertEquals(expected, parsed);
+
+        assertQueryEquals(expected, parsed, query.replace("'", "\""));
     }
 
     @Test
     public void testRegexResourceType() {
-        GetQuery expected = match(var("x").regex("(fe)?male")).get();
-        GetQuery parsed = parse("match $x regex /(fe)?male/; get;");
-        assertEquals(expected, parsed);
+        String query = "match $x like '(fe)?male/'; get;";
+        GetQuery parsed = parse(query);
+        GetQuery expected = match(var("x").like("(fe)?male")).get();
+
+        assertQueryEquals(expected, parsed, query);
     }
 
     @Test
@@ -834,7 +924,6 @@ public class ParserTest {
     @Test
     public void testParseListOneMatch() {
         String getString = "match $y isa movie; get;";
-
         List<Query> queries = Graql.parseList(getString).collect(toList());
 
         assertEquals(Arrays.asList(match(var("y").isa("movie")).get()), queries);
@@ -843,7 +932,6 @@ public class ParserTest {
     @Test
     public void testParseListOneInsert() {
         String insertString = "insert $x isa movie;";
-
         List<Query> queries = Graql.parseList(insertString).collect(toList());
 
         assertEquals(Arrays.asList(insert(var("x").isa("movie"))), queries);
@@ -852,7 +940,6 @@ public class ParserTest {
     @Test
     public void testParseListOneInsertWithWhitespacePrefix() {
         String insertString = " insert $x isa movie;";
-
         List<Query> queries = Graql.parseList(insertString).collect(toList());
 
         assertEquals(Arrays.asList(insert(var("x").isa("movie"))), queries);
@@ -861,7 +948,6 @@ public class ParserTest {
     @Test
     public void testParseListOneInsertWithPrefixComment() {
         String insertString = "#hola\ninsert $x isa movie;";
-
         List<Query> queries = Graql.parseList(insertString).collect(toList());
 
         assertEquals(Arrays.asList(insert(var("x").isa("movie"))), queries);
@@ -871,7 +957,6 @@ public class ParserTest {
     public void testParseList() {
         String insertString = "insert $x isa movie;";
         String getString = "match $y isa movie; get;";
-
         List<Query> queries = Graql.parseList(insertString + getString).collect(toList());
 
         assertEquals(Arrays.asList(insert(var("x").isa("movie")), match(var("y").isa("movie")).get()), queries);
@@ -881,7 +966,6 @@ public class ParserTest {
     public void testParseListMatchInsert() {
         String matchString = "match $y isa movie;";
         String insertString = "insert $x isa movie;";
-
         List<Query> queries = Graql.parseList(matchString + insertString).collect(toList());
 
         assertEquals(Arrays.asList(match(var("y").isa("movie")).insert(var("x").isa("movie"))), queries);
@@ -889,7 +973,7 @@ public class ParserTest {
 
     @Test
     public void testParseMatchInsertBeforeAndAfter() {
-        String matchString = "match $y isa movie; limit 1;";
+        String matchString = "match $y isa movie;";
         String insertString = "insert $x isa movie;";
         String getString = matchString + " get;";
         String matchInsert = matchString + insertString;
@@ -910,9 +994,9 @@ public class ParserTest {
     @Test
     public void testParseManyMatchInsertWithoutStackOverflow() {
         int numQueries = 10_000;
-        String matchInsertString = "match $x; insert $y;";
+        String matchInsertString = "match $x isa person; insert $y isa person;\n";
         String longQueryString = Strings.repeat(matchInsertString, numQueries);
-        InsertQuery matchInsert = match(var("x")).insert(var("y"));
+        InsertQuery matchInsert = match(var("x").isa("person")).insert(var("y").isa("person"));
 
         List<InsertQuery> queries = Graql.<InsertQuery>parseList(longQueryString).collect(toList());
 
@@ -921,13 +1005,13 @@ public class ParserTest {
 
     @Test
     public void whenParsingAListOfQueriesWithASyntaxError_ReportError() {
-        String queryText = "define person has name"; // note no semicolon
+        String queryText = "define person sub entity has name;"; // note no semicolon
 
         exception.expect(GraqlSyntaxException.class);
-        exception.expectMessage("define person has name"); // Message should refer to line
+        exception.expectMessage("define person sub entity has name;"); // Message should refer to line
 
         //noinspection ResultOfMethodCallIgnored
-        Graql.parseList(queryText).collect(toList());
+        Graql.parse(queryText);
     }
 
     @Test
@@ -945,7 +1029,6 @@ public class ParserTest {
     @Test
     public void testMissingColon() {
         exception.expect(GraqlSyntaxException.class);
-        exception.expectMessage("':'");
         //noinspection ResultOfMethodCallIgnored
         parse("match (actor $x, $y) isa has-cast; get;");
     }
@@ -953,7 +1036,6 @@ public class ParserTest {
     @Test
     public void testMissingComma() {
         exception.expect(GraqlSyntaxException.class);
-        exception.expectMessage("','");
         //noinspection ResultOfMethodCallIgnored
         parse("match ($x $y) isa has-cast; get;");
     }
@@ -982,27 +1064,27 @@ public class ParserTest {
 
     @Test
     public void regexPredicateParsesCharacterClassesCorrectly() {
-        assertEquals(match(var("x").val(regex("\\d"))).get(), parse("match $x /\\d/; get;"));
+        assertEquals(match(var("x").val(like("\\d"))).get(), parse("match $x like '\\d'; get;"));
     }
 
     @Test
     public void regexPredicateParsesQuotesCorrectly() {
-        assertEquals(match(var("x").val(regex("\""))).get(), parse("match $x /\"/; get;"));
+        assertEquals(match(var("x").val(like("\""))).get(), parse("match $x like '\"'; get;"));
     }
 
     @Test
     public void regexPredicateParsesBackslashesCorrectly() {
-        assertEquals(match(var("x").val(regex("\\\\"))).get(), parse("match $x /\\\\/; get;"));
+        assertEquals(match(var("x").val(like("\\\\"))).get(), parse("match $x like '\\\\'; get;"));
     }
 
     @Test
     public void regexPredicateParsesNewlineCorrectly() {
-        assertEquals(match(var("x").val(regex("\\n"))).get(), parse("match $x /\\n/; get;"));
+        assertEquals(match(var("x").val(like("\\n"))).get(), parse("match $x like '\\n'; get;"));
     }
 
     @Test
     public void regexPredicateParsesForwardSlashesCorrectly() {
-        assertEquals(match(var("x").val(regex("/"))).get(), parse("match $x /\\//; get;"));
+        assertEquals(match(var("x").val(like("/"))).get(), parse("match $x like '\\/'; get;"));
     }
 
     @Test

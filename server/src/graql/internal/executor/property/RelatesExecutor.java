@@ -41,9 +41,7 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rela
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.sub;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
-public class RelatesExecutor implements PropertyExecutor.Definable,
-                                        PropertyExecutor.Matchable,
-                                        PropertyExecutor.Atomable {
+public class RelatesExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final RelatesProperty property;
@@ -51,24 +49,6 @@ public class RelatesExecutor implements PropertyExecutor.Definable,
     RelatesExecutor(Variable var, RelatesProperty property) {
         this.var = var;
         this.property = property;
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> defineExecutors() {
-        Set<PropertyExecutor.Writer> defineExecutors = new HashSet<>();
-        defineExecutors.add(new DefineRelates());
-        defineExecutors.add(new DefineRole());
-
-        if (property.superRole() != null) {
-            defineExecutors.add(new DefineSuperRole());
-        }
-
-        return Collections.unmodifiableSet(defineExecutors);
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return ImmutableSet.of(new UndefineRelates());
     }
 
     @Override
@@ -87,6 +67,24 @@ public class RelatesExecutor implements PropertyExecutor.Definable,
         IdPredicate predicate = getIdPredicate(property.role().var(), property.role(), otherStatements, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         return RelatesAtom.create(var.asUserDefined(), property.role().var(), predicateId, parent);
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> defineExecutors() {
+        Set<PropertyExecutor.Writer> defineExecutors = new HashSet<>();
+        defineExecutors.add(new DefineRelates());
+        defineExecutors.add(new DefineRole());
+
+        if (property.superRole() != null) {
+            defineExecutors.add(new DefineSuperRole());
+        }
+
+        return Collections.unmodifiableSet(defineExecutors);
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
+        return ImmutableSet.of(new UndefineRelates());
     }
 
     private abstract class RelatesWriter {

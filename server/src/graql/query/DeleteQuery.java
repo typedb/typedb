@@ -62,16 +62,26 @@ public class DeleteQuery implements Query {
 
     @CheckReturnValue
     public Set<Variable> vars() {
+        if (vars.isEmpty()) return match.getPatterns().variables();
         return vars;
     }
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public String toString() {
         StringBuilder query = new StringBuilder();
-        query.append(match()).append(Char.SPACE).append(Command.DELETE);
-        if (!vars().isEmpty()) {
+
+        query.append(match());
+        if (match().getPatterns().getPatterns().size()>1) query.append(Char.NEW_LINE);
+        else query.append(Char.SPACE);
+
+        // It is important that we use vars (the property) and not vars() (the method)
+        // vars (the property) stores the variables as the user defined
+        // vars() (the method) returns match.vars() if vars (the property) is empty
+        // we want to print vars (the property) as the user defined
+        query.append(Command.DELETE);
+        if (!vars.isEmpty()) {
             query.append(Char.SPACE).append(
-                    vars().stream().map(Variable::toString)
+                    vars.stream().map(Variable::toString)
                             .collect(joining(Char.COMMA_SPACE.toString())).trim()
             );
         }
@@ -85,8 +95,13 @@ public class DeleteQuery implements Query {
         if (o == null || getClass() != o.getClass()) return false;
 
         DeleteQuery that = (DeleteQuery) o;
-        return this.match.equals(that.match()) &&
-                this.vars.equals(that.vars());
+
+        // It is important that we use vars() (the method) and not vars (the property)
+        // vars (the property) stores the variables as the user defined
+        // vars() (the method) returns match.vars() if vars (the property) is empty
+        // we want to compare vars() (the method) which determines the final value
+        return this.match().equals(that.match()) &&
+                this.vars().equals(that.vars());
     }
 
     @Override

@@ -20,6 +20,8 @@ package grakn.core.graql.query.pattern;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.Query.Char;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Set;
@@ -122,7 +124,7 @@ public class Variable {
 
     @Override
     public String toString() {
-        return "$" + name();
+        return Char.$ + name();
     }
 
     @Override

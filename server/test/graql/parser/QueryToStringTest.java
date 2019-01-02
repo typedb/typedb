@@ -19,6 +19,7 @@
 package grakn.core.graql.parser;
 
 import grakn.core.graql.query.ComputeQuery;
+import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
@@ -100,15 +101,15 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithThenToString() {
-        assertValidToString(Graql.insert(var("x").isa("a-rule-type").then(and(Pattern.parseList("$x isa movie;")))));
+        DefineQuery query = Graql.define(label("my-rule").sub("rule").then(and(Pattern.parseList("$x isa movie;"))));
+        //No need to execute the insert query
+        InsertQuery parsedQuery = Graql.parse(query.toString());
+        assertEquals(query.toString(), parsedQuery.toString());
     }
 
     @Test
     public void testQueryWithWhenToString() {
-        assertValidToString(Graql.insert(var("x").isa("a-rule-type").when(and(Pattern.parseList("$x isa movie;")))));
-    }
-
-    private void assertValidToString(InsertQuery query) {
+        DefineQuery query = Graql.define(label("my-rule").sub("rule").when(and(Pattern.parseList("$x isa movie;"))));
         //No need to execute the insert query
         InsertQuery parsedQuery = Graql.parse(query.toString());
         assertEquals(query.toString(), parsedQuery.toString());

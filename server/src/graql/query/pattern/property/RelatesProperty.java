@@ -21,7 +21,6 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 
-import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -36,7 +35,11 @@ public class RelatesProperty extends VarProperty {
     private final Statement role;
     private final Statement superRole;
 
-    public RelatesProperty(Statement role, @Nullable Statement superRole) {
+    public RelatesProperty(Statement role) {
+        this(role, null);
+    }
+
+    public RelatesProperty(Statement role, Statement superRole) {
         if (role == null) {
             throw new NullPointerException("Null role");
         }

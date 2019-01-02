@@ -276,7 +276,7 @@ public class DefineQueryIT {
 
     @Test
     public void testResourceTypeRegex() {
-        tx.execute(Graql.define(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING).regex("hello|good day")));
+        tx.execute(Graql.define(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING).like("hello|good day")));
 
         MatchClause match = Graql.match(var("x").label("greeting"));
         assertEquals("hello|good day", tx.stream(match.get("x")).map(ans -> ans.get("x")).findFirst().get().asAttributeType().regex());

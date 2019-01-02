@@ -36,9 +36,7 @@ import java.util.Set;
 
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbstract;
 
-public class IsAbstractExecutor implements PropertyExecutor.Definable,
-                                           PropertyExecutor.Matchable,
-                                           PropertyExecutor.Atomable {
+public class IsAbstractExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final IsAbstractProperty property;
@@ -49,16 +47,6 @@ public class IsAbstractExecutor implements PropertyExecutor.Definable,
     }
 
     @Override
-    public Set<PropertyExecutor.Writer> defineExecutors() {
-        return ImmutableSet.of(new DefineIsAbstract());
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return ImmutableSet.of(new UndefineIsAbstract());
-    }
-
-    @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(isAbstract(property, var));
     }
@@ -66,6 +54,16 @@ public class IsAbstractExecutor implements PropertyExecutor.Definable,
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         return IsAbstractAtom.create(var, parent);
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> defineExecutors() {
+        return ImmutableSet.of(new DefineIsAbstract());
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
+        return ImmutableSet.of(new UndefineIsAbstract());
     }
 
     private abstract class IsAbstractWriter {

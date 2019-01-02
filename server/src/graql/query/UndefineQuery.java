@@ -43,13 +43,16 @@ public class UndefineQuery implements Query {
         return statements;
     }
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public String toString() {
         StringBuilder query = new StringBuilder();
 
-        query.append(Command.UNDEFINE).append(Char.SPACE);
+        query.append(Command.UNDEFINE);
+        if (statements.size()>1) query.append(Char.NEW_LINE);
+        else query.append(Char.SPACE);
+
         query.append(statements().stream()
-                             .map(s -> s + Char.SEMICOLON.toString())
+                             .map(Statement::toString)
                              .collect(joining(Char.NEW_LINE.toString())).trim());
 
         return query.toString();

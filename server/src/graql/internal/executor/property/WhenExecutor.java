@@ -19,8 +19,12 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
@@ -35,6 +39,16 @@ public class WhenExecutor implements PropertyExecutor.Definable {
     WhenExecutor(Variable var, WhenProperty property) {
         this.var = var;
         this.property = property;
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        return null;
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        return null;
     }
 
     @Override

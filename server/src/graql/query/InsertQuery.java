@@ -62,10 +62,14 @@ public class InsertQuery implements Query {
         StringBuilder query = new StringBuilder();
 
         if (match() != null) query.append(match()).append(Char.NEW_LINE);
-        query.append(Command.INSERT).append(Char.SPACE);
+
+        query.append(Command.INSERT);
+        if (statements.size()>1) query.append(Char.NEW_LINE);
+        else query.append(Char.SPACE);
+
         query.append(statements().stream()
-                             .map(v -> v + Char.SEMICOLON.toString())
-                             .collect(Collectors.joining(Char.NEW_LINE.toString())).trim());
+                             .map(Statement::toString)
+                             .collect(Collectors.joining(Char.NEW_LINE.toString())));
 
         return query.toString();
     }

@@ -30,8 +30,7 @@ import grakn.core.graql.query.pattern.property.NeqProperty;
 
 import java.util.Set;
 
-public class NeqExecutor implements PropertyExecutor.Matchable,
-                                    PropertyExecutor.Atomable {
+public class NeqExecutor implements PropertyExecutor {
 
     private final Variable var;
     private final NeqProperty property;

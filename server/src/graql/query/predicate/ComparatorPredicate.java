@@ -103,7 +103,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
     public String toString() {
         // If there is no value, then there must be a var
         //noinspection OptionalGetWithoutIsPresent
-        String argument = persistedValue().map(StringUtil::valueToString).orElseGet(() -> var.get().getPrintableName());
+        String argument = value().map(StringUtil::valueToString).orElseGet(() -> var.get().getPrintableName());
 
         return getSymbol() + " " + argument;
     }

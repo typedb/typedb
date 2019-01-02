@@ -19,6 +19,8 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.Query.Char;
+import grakn.core.graql.query.Query.Command;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
@@ -30,11 +32,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.joining;
 
 /**
  * A part of a query used for finding data in a knowledge base that matches the given patterns.
@@ -68,7 +69,7 @@ public class MatchClause {
      */
     @CheckReturnValue
     public GetQuery get() {
-        return get(getPatterns().variables());
+        return get(Collections.emptySet());
     }
 
     /**
@@ -77,7 +78,9 @@ public class MatchClause {
      */
     @CheckReturnValue
     public GetQuery get(String var, String... vars) {
-        Set<Variable> varSet = Stream.concat(Stream.of(var), Stream.of(vars)).map(Variable::new).collect(Collectors.toSet());
+        LinkedHashSet<Variable> varSet = Stream.concat(Stream.of(var), Stream.of(vars))
+                .map(Variable::new)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         return get(varSet);
     }
 
@@ -87,8 +90,9 @@ public class MatchClause {
      */
     @CheckReturnValue
     public GetQuery get(Variable var, Variable... vars) {
-        Set<Variable> varSet = new HashSet<>(Arrays.asList(vars));
+        LinkedHashSet<Variable> varSet = new LinkedHashSet<>();
         varSet.add(var);
+        varSet.addAll(Arrays.asList(vars));
         return get(varSet);
     }
 
@@ -96,10 +100,9 @@ public class MatchClause {
      * @param vars a set of variables to select
      * @return a Get Query that selects the given variables
      */
-    @CheckReturnValue
-    public GetQuery get(Set<Variable> vars) {
-        if (vars.isEmpty()) vars = getPatterns().variables();
-        return new GetQuery(Collections.unmodifiableSet(vars), this);
+    @CheckReturnValue // TODO replace with Link<Variable> and LinkedHashSet<Variable>
+    public GetQuery get(Collection<Variable> vars) {
+        return new GetQuery(this, new LinkedHashSet<>(vars));
     }
 
     /**
@@ -126,7 +129,7 @@ public class MatchClause {
      */
     @CheckReturnValue
     public DeleteQuery delete() {
-        return delete(getPatterns().variables());
+        return delete(Collections.emptySet());
     }
 
     /**
@@ -154,15 +157,24 @@ public class MatchClause {
      * @param vars a collection of variables to delete for each result of this match clause
      * @return a delete query that will delete the given variables for each result of this match clause
      */
-    @CheckReturnValue
+    @CheckReturnValue // TODO: replace to accept List<Variable> and LinkedHashSet<Variable>
     public final DeleteQuery delete(Set<Variable> vars) {
-        if (vars.isEmpty()) vars = getPatterns().variables();
-        return new DeleteQuery(this, Collections.unmodifiableSet(vars));
+        return new DeleteQuery(this, new LinkedHashSet<>(vars));
     }
 
     @Override
     public final String toString() {
-        return "match " + pattern.getPatterns().stream().map(p -> p + ";").collect(joining(" "));
+        StringBuilder query = new StringBuilder();
+
+        query.append(Command.MATCH);
+        if (pattern.getPatterns().size()>1) query.append(Char.NEW_LINE);
+        else query.append(Char.SPACE);
+
+        query.append(pattern.getPatterns().stream()
+                             .map(Object::toString)
+                             .collect(Collectors.joining(Char.NEW_LINE.toString())));
+
+        return query.toString();
     }
 
     @Override

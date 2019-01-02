@@ -54,7 +54,7 @@ public class Graql {
     }
 
     public static <T extends Query> Stream<T> parseList(String queryString) {
-        return parser.parseQueryList(queryString);
+        return parser.parseQueryListEOF(queryString);
     }
 
     /**
@@ -258,13 +258,13 @@ public class Graql {
     }
 
     /**
-     * @param pattern a regex pattern
+     * @param regex a regex pattern
      * @return a predicate that returns true when a value matches the given regular expression
      */
     @CheckReturnValue
-    public static ValuePredicate regex(String pattern) {
-        Objects.requireNonNull(pattern);
-        return Predicates.regex(pattern);
+    public static ValuePredicate like(String regex) {
+        Objects.requireNonNull(regex);
+        return Predicates.regex(regex);
     }
 
     /**

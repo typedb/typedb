@@ -18,13 +18,13 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableMultiset;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -34,21 +34,22 @@ import static java.util.stream.Collectors.joining;
 /**
  * Represents the relation property (e.g. {@code ($x, $y)} or {@code (wife: $x, husband: $y)}) on a relationship.
  * This property can be queried and inserted.
- * This propert is comprised of instances of RolePlayer, which represents associations between a
+ * This property is comprised of instances of RolePlayer, which represents associations between a
  * role-player Thing and an optional Role.
  */
 public class RelationProperty extends VarProperty {
 
-    private final ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers;
+    // TODO: Replace this datastructure with an LinkedHashSet
+    private final LinkedHashSet<RolePlayer> relationPlayers;
 
-    public RelationProperty(ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers) {
+    public RelationProperty(LinkedHashSet<RolePlayer> relationPlayers) {
         if (relationPlayers == null) {
             throw new NullPointerException("Null relationPlayers");
         }
         this.relationPlayers = relationPlayers;
     }
 
-    public ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers() {
+    public LinkedHashSet<RolePlayer> relationPlayers() {
         return relationPlayers;
     }
 

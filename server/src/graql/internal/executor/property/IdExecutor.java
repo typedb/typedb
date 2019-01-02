@@ -33,10 +33,7 @@ import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Set;
 
-public class IdExecutor implements PropertyExecutor.Definable,
-                                   PropertyExecutor.Insertable,
-                                   PropertyExecutor.Matchable,
-                                   PropertyExecutor.Atomable {
+public class IdExecutor implements PropertyExecutor.Referrable {
 
     private final Variable var;
     private final IdProperty property;
@@ -49,21 +46,6 @@ public class IdExecutor implements PropertyExecutor.Definable,
     }
 
     @Override
-    public Set<PropertyExecutor.Writer> defineExecutors() {
-        return ImmutableSet.of(new LookupId());
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return ImmutableSet.of(new LookupId());
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> insertExecutors() {
-        return ImmutableSet.of(new LookupId());
-    }
-
-    @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(EquivalentFragmentSets.id(property, var, id));
     }
@@ -73,9 +55,14 @@ public class IdExecutor implements PropertyExecutor.Definable,
         return IdPredicate.create(var, id, parent);
     }
 
+    @Override
+    public PropertyExecutor.Referencer referencer() {
+        return new IdReferencer();
+    }
+
     // The WriteExecutor for IdExecutor works for Define, Undefine and Insert queries,
     // because it is used for look-ups of a concept
-    private class LookupId implements PropertyExecutor.Writer {
+    private class IdReferencer implements PropertyExecutor.Referencer {
 
         @Override
         public Variable var() {
@@ -85,16 +72,6 @@ public class IdExecutor implements PropertyExecutor.Definable,
         @Override
         public VarProperty property() {
             return property;
-        }
-
-        @Override
-        public Set<Variable> requiredVars() {
-            return ImmutableSet.of();
-        }
-
-        @Override
-        public Set<Variable> producedVars() {
-            return ImmutableSet.of(var);
         }
 
         @Override

@@ -67,10 +67,14 @@ public interface Query {
         SPACE(" "),
         COMMA(","),
         COMMA_SPACE(", "),
+        CURLY_OPEN("{"),
+        CURLY_CLOSE("}"),
         SQUARE_OPEN("["),
         SQUARE_CLOSE("]"),
         QUOTE("\""),
-        NEW_LINE("\n");
+        NEW_LINE("\n"),
+        UNDERSCORE("_"),
+        $("$");
 
         private final String character;
 
@@ -84,14 +88,30 @@ public interface Query {
         }
     }
 
+    enum Operator {
+        EQUAL("="),
+        OR("or");
+
+        private final String operator;
+
+        Operator(String operator) {
+            this.operator = operator;
+        }
+
+        @Override
+        public String toString() {
+            return this.operator;
+        }
+    }
+
     enum Property {
         DATA_TYPE("datatype"),
         HAS("has"),
         KEY("key"),
         ID("id"),
-        IS_ABSTRACT("is-abstract"),
+        ABSTRACT("abstract"),
         ISA("isa"),
-        ISA_EXP("isa!"),
+        ISAX("isa!"),
         LABEL("label"),
         NEQ("!="),
         PLAYS("plays"),
@@ -99,7 +119,7 @@ public interface Query {
         RELATES("relates"),
         RELATION("relationship"), // TODO: Relationship syntax need to be updated
         SUB("sub"),
-        SUB_EXP("sub!"),
+        SUBX("sub!"),
         THEN("then"),
         WHEN("when"),
         VALUE("");
@@ -129,8 +149,8 @@ public interface Query {
         BOOLEAN("boolean"),
         DATE("date"),
         DOUBLE("double"),
-        FLOAT("float"),
-        INTEGER("integer"),
+//        FLOAT("float"),
+//        INTEGER("integer"),
         LONG("long"),
         STRING("string");
 
