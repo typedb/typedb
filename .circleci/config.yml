@@ -73,7 +73,7 @@ commands:
     steps:
       - run:
           name: Install rpm (for rpmbuild)
-          command: sudo apt install rpm -y
+          command: sudo apt update && sudo apt install rpm -y
 
 
 jobs:
