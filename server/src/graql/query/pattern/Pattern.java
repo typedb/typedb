@@ -152,7 +152,7 @@ public interface Pattern {
      */
     @CheckReturnValue
     public static Pattern not(Collection<? extends Pattern> patterns) {
-        return and(Sets.newHashSet(patterns));
+        return not(new LinkedHashSet<>(patterns));
     }
 
     /**

@@ -47,10 +47,12 @@ public class NegativeStatement extends Statement {
         HashMultimap<VarProperty, VarProperty> propertyMap = HashMultimap.create();
         properties()
                 .forEach(p -> {
-                    if (PropertyExecutor.atomable(this.var(), p).mappable(this))
+                    if (PropertyExecutor.atomable(this.var(), p).mappable(this)) {
                         propertyMap.put(p, p);
-                    else
+                    }
+                    else{
                         getProperties(RelationProperty.class).forEach(rp -> propertyMap.put(rp, p));
+                    }
                 });
 
         Set<Conjunction<Statement>> patterns = propertyMap.asMap().entrySet().stream()
