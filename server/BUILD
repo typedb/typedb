@@ -19,7 +19,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "linux_packages")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deb_package", "rpm_package")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar", "pkg_deb")
 
 
@@ -130,7 +130,7 @@ distribution(
         "server/db/cassandra",
         "server/db/queue"
     ],
-    modes = {
+    permissions = {
       "server/services/cassandra/cassandra.yaml": "0777",
       "server/db/cassandra": "0777",
       "server/db/queue": "0777",
@@ -138,16 +138,16 @@ distribution(
     output_filename = "grakn-core-server",
 )
 
-linux_packages(
+deb_package(
+    name = "deploy-deb",
     package_name = "grakn-core-server",
-    maintainer = "Max Vorobev <vmax0770@gmail.com>",
+    maintainer = "Grakn Labs <support@grakn.ai>",
     description = "Grakn Core (server)",
     version_file = "//:VERSION",
     depends = [
       "openjdk-8-jre",
       "grakn-core-bin"
     ],
-    rpm_spec_file = "//dependencies/distribution/rpm:grakn-core-server.spec",
     target = ":server-binary",
     installation_dir = "/opt/grakn/core/server/",
     empty_dirs = [
@@ -160,7 +160,35 @@ linux_packages(
         "//server:services/cassandra/logback.xml": "services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "services/grakn/grakn-core-ascii.txt"
     },
-    modes = {
+    permissions = {
+        "services/cassandra/cassandra.yaml": "0777",
+        "./var/lib/grakn/db/queue": "0777",
+        "./var/lib/grakn/db/cassandra": "0777",
+    },
+    symlinks = {
+        "./opt/grakn/core/server/db/": "/var/lib/grakn/db/",
+    },
+)
+
+
+rpm_package(
+    name = "deploy-rpm",
+    package_name = "grakn-core-server",
+    installation_dir = "/opt/grakn/core/server/",
+    version_file = "//:VERSION",
+    spec_file = "//dependencies/distribution/rpm:grakn-core-server.spec",
+    target = ":server-binary",
+    empty_dirs = [
+        "./opt/grakn/core/server/services/lib/",
+        "./var/lib/grakn/db/queue",
+        "./var/lib/grakn/db/cassandra"
+     ],
+    files = {
+        "//server:services/cassandra/cassandra.yaml": "services/cassandra/cassandra.yaml",
+        "//server:services/cassandra/logback.xml": "services/cassandra/logback.xml",
+        "//server:services/grakn/grakn-core-ascii.txt": "services/grakn/grakn-core-ascii.txt"
+    },
+    permissions = {
         "services/cassandra/cassandra.yaml": "0777",
         "./var/lib/grakn/db/queue": "0777",
         "./var/lib/grakn/db/cassandra": "0777",

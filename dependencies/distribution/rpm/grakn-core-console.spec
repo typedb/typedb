@@ -5,7 +5,7 @@ Summary: Grakn Core (console)
 URL: https://grakn.ai
 License: Apache License, v2.0
 
-Source0: {_grakn-core-bin-tar.tgz}
+Source0: {_grakn-core-console-rpm-tar.tgz}
 
 Requires: java-1.8.0-openjdk-headless
 
@@ -18,7 +18,7 @@ Grakn Core (server) - description
 
 %install
 mkdir -p %{buildroot}
-tar -xvf {_grakn-core-console-tar.tgz} -C %{buildroot}
+tar -xvf {_grakn-core-console-rpm-tar.tgz} -C %{buildroot}
 
 %files
 

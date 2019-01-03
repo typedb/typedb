@@ -18,7 +18,7 @@
 
 exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
 load("@graknlabs_rules_deployment//brew:rules.bzl", deploy_brew = "deploy_brew")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "linux_packages")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deb_package", "rpm_package")
 
 
 py_binary(
@@ -45,7 +45,7 @@ distribution(
         "server/db/cassandra",
         "server/db/queue"
     ],
-    modes = {
+    permissions = {
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/logs": "0777",
         "server/db/cassandra": "0777",
@@ -59,13 +59,13 @@ deploy_brew(
     version_file = "//:VERSION"
 )
 
-linux_packages(
+deb_package(
+    name = "deploy-deb",
     package_name = "grakn-core-bin",
-    maintainer = "Max Vorobev <vmax0770@gmail.com>",
+    maintainer = "Grakn Labs <support@grakn.ai>",
     description = "Grakn Core (binaries)",
     version_file = "//:VERSION",
     installation_dir = "/opt/grakn/core/",
-    rpm_spec_file = "//dependencies/distribution/rpm:grakn-core-bin.spec",
     empty_dirs = [
         "./var/log/grakn/",
     ],
@@ -77,7 +77,31 @@ linux_packages(
     depends = [
         "openjdk-8-jre"
     ],
-    modes = {
+    permissions = {
+        "./var/log/grakn/": "0777",
+    },
+    symlinks = {
+        "./usr/local/bin/grakn": "/opt/grakn/core/grakn",
+        "./opt/grakn/core/logs": "/var/log/grakn/",
+    },
+)
+
+
+rpm_package(
+    name = "deploy-rpm",
+    package_name = "grakn-core-bin",
+    installation_dir = "/opt/grakn/core/",
+    version_file = "//:VERSION",
+    spec_file = "//dependencies/distribution/rpm:grakn-core-bin.spec",
+    empty_dirs = [
+        "./var/log/grakn/",
+    ],
+    files = {
+        "//:grakn": "grakn",
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+    },
+    permissions = {
         "./var/log/grakn/": "0777",
     },
     symlinks = {
