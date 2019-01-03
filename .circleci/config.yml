@@ -23,9 +23,9 @@ commands:
               echo "No RBE credential found. Bazel will be executed locally without RBE support."
             fi
 
-  bazel_execute:
+  bazel:
     parameters:
-      parameters:
+      command:
           type: string
     steps:
       - run:
@@ -33,42 +33,14 @@ commands:
           command: |
             if [[ -f ~/.config/gcloud/application_default_credentials.json ]]; then
               echo "Bazel will be executed with RBE support. This means the build is remotely executed and the cache will be re-used by subsequent CI jobs."
-              RBE_FLAGS="--project_id=grakn-dev \
-                --remote_instance_name=projects/grakn-dev/instances/default_instance \
-                --remote_cache=remotebuildexecution.googleapis.com \
-                --remote_executor=remotebuildexecution.googleapis.com \
-                --bes_backend="buildeventservice.googleapis.com" \
-                --bes_results_url="https://source.cloud.google.com/results/invocations/" \
-                --host_platform=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:rbe_ubuntu1604 \
-                --platforms=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:rbe_ubuntu1604 \
-                --extra_execution_platforms=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:rbe_ubuntu1604 \
-                --host_javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:jdk8 \
-                --javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:jdk8 \
-                --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8 \
-                --java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8 \
-                --extra_toolchains=@bazel_toolchains//configs/ubuntu16_04_clang/1.1/bazel_0.20.0/cpp:cc-toolchain-clang-x86_64-default \
-                --crosstool_top=@bazel_toolchains//configs/ubuntu16_04_clang/1.1/bazel_0.20.0/default:toolchain \
-                --jobs=50 \
-                --remote_timeout=3600 \
-                --bes_timeout=60s \
-                --tls_enabled=true \
-                --auth_enabled=true \
-                --spawn_strategy=remote \
-                --strategy=Javac=remote \
-                --strategy=Closure=remote \
-                --genrule_strategy=remote \
-                --define=EXECUTOR=remote \
-                --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1 \
-                --experimental_strict_action_env=true
-                "
+              CMD="<< parameters.command >> --config=rbe"
             else
               echo "Bazel will be executed locally (without RBE support)."
-              RBE_FLAGS=""
+              CMD="<< parameters.command >>"
             fi
-            CMD="bazel << parameters.parameters >> $RBE_FLAGS"
             echo "Executing $CMD"
             $CMD
-
+            
 jobs:
   build:
     machine: true
@@ -78,8 +50,8 @@ jobs:
       - bazel_install
       - bazel_add_rbe_credential
       - run: python ./check-for-missing-checkstyle-rule.py
-      - bazel_execute:
-          parameters: build //... --sandbox_debug
+      - bazel:
+          command: bazel build //... --sandbox_debug
       - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all.zip dist/
       - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace
           root: ~/grakn
@@ -93,10 +65,10 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
-    - bazel_execute:
-        parameters: test //client-java/... --test_size_filters=small --test_output=errors
-    - bazel_execute:
-        parameters: test //client-java/... --test_size_filters=medium,large,enormous --test_output=errors
+    - bazel:
+        command: bazel test //client-java/... --test_size_filters=small --test_output=errors
+    - bazel:
+        command: bazel test //client-java/... --test_size_filters=medium,large,enormous --test_output=errors
 
   client-nodejs:
     machine: true
@@ -130,8 +102,8 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
-    - bazel_execute:
-        parameters: test //common/... --test_output=errors
+    - bazel:
+        command: bazel test //common/... --test_output=errors
 
   console:
     machine: true
@@ -140,8 +112,8 @@ jobs:
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
-      - bazel_execute:
-          parameters: test //console/... --test_output=errors
+      - bazel:
+          command: bazel test //console/... --test_output=errors
   graql:
     machine: true
     working_directory: ~/grakn
@@ -149,8 +121,8 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
-    - bazel_execute:
-        parameters: test //graql/... --test_output=errors
+    - bazel:
+        command: bazel test //graql/... --test_output=errors
 
   server:
     machine: true
@@ -159,8 +131,8 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
-    - bazel_execute:
-        parameters: test //server/... --test_output=errors
+    - bazel:
+        command: bazel test //server/... --test_output=errors
 
   workbase:
     machine: true
@@ -169,19 +141,19 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
-    - bazel_execute:
-        parameters: test //workbase:tests-unit --test_output=errors
+    - bazel:
+        command: bazel test //workbase:tests-unit --test_output=errors
     - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
     - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
-    - bazel_execute:
-        parameters: build //:distribution --sandbox_debug
+    - bazel:
+        command: bazel build //:distribution --sandbox_debug
     - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
     - run: nohup bazel-genfiles/dist/grakn server start
     - run: bazel-genfiles/dist/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
     - run: Xvfb :99 &
     - run: export DISPLAY=:99
-    - bazel_execute:
-        parameters: test //workbase:tests-e2e --test_output=streamed
+    - bazel:
+        command: bazel test //workbase:tests-e2e --test_output=streamed
 
   test-integration:
     machine: true
@@ -190,12 +162,12 @@ jobs:
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
-      - bazel_execute:
-          parameters: test //test-integration/server/... --test_output=errors
-      - bazel_execute:
-          parameters: test //test-integration/graql/internal/... --test_output=errors
-      - bazel_execute:
-          parameters: test //test-integration/graql/query/... --test_output=errors
+      - bazel:
+          command: bazel test //test-integration/server/... --test_output=errors    
+      - bazel:
+          command: bazel test //test-integration/graql/internal/... --test_output=errors
+      - bazel:
+          command: bazel test //test-integration/graql/query/... --test_output=errors
 
   test-integration-reasoner:
     machine: true
@@ -204,10 +176,10 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
-    - bazel_execute:
-        parameters: test //test-integration/graql/reasoner:reasoning-it --test_output=errors
-    - bazel_execute:
-        parameters: test //test-integration/graql/reasoner:geo-inference-it --test_output=errors
+    - bazel:
+        command: bazel test //test-integration/graql/reasoner:reasoning-it --test_output=errors
+    - bazel:
+        command: bazel test //test-integration/graql/reasoner:geo-inference-it --test_output=errors
 
   test-integration-reasoner-general:
     machine: true
@@ -216,8 +188,8 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
-    - bazel_execute:
-        parameters: test //test-integration/graql/reasoner/reasoning/... --test_output=errors
+    - bazel:
+        command: bazel test //test-integration/graql/reasoner/reasoning/... --test_output=errors
 
   test-integration-reasoner-components:
     machine: true
@@ -226,14 +198,14 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
-    - bazel_execute:
-        parameters: test //test-integration/graql/reasoner/atomic/... --test_output=errors
-    - bazel_execute:
-        parameters: test //test-integration/graql/reasoner/benchmark/... --test_output=errors
-    - bazel_execute:
-        parameters: test //test-integration/graql/reasoner/cache/... --test_output=errors
-    - bazel_execute:
-        parameters: test //test-integration/graql/reasoner/query/... --test_output=errors
+    - bazel:
+        command: bazel test //test-integration/graql/reasoner/atomic/... --test_output=errors
+    - bazel:
+        command: bazel test //test-integration/graql/reasoner/benchmark/... --test_output=errors
+    - bazel:
+        command: bazel test //test-integration/graql/reasoner/cache/... --test_output=errors
+    - bazel:
+        command: bazel test //test-integration/graql/reasoner/query/... --test_output=errors
 
   test-integration-analytics:
     machine: true
@@ -242,8 +214,8 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
-    - bazel_execute:
-        parameters: test //test-integration/graql/analytics/... --test_output=errors
+    - bazel:
+        command: bazel test //test-integration/graql/analytics/... --test_output=errors
 
   test-end-to-end:
     machine: true
@@ -252,10 +224,10 @@ jobs:
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
-      - bazel_execute:
-          parameters: build //:distribution --sandbox_debug
-      - bazel_execute:
-          parameters: test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
+      - bazel:
+          command: bazel build //:distribution --sandbox_debug
+      - bazel:
+          command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
   build-workbase-linux:
       machine: true
@@ -263,10 +235,10 @@ jobs:
       steps:
         - attach_workspace:
             at: ~/grakn
-        - bazel_execute:
-            parameters: run @nodejs//:npm install
-        - bazel_execute:
-            parameters: build //workbase:distribution
+        - bazel:
+            command: bazel run @nodejs//:npm install
+        - bazel:
+            command: bazel build //workbase:distribution
         - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV #remove 'v' from tag name and use it as Grakn Version to be released
         # FIXME: make a separate rule for building on Linux / use another naming scheme
         - run: mv ./bazel-genfiles/workbase/grakn-workbase.zip ~/grakn/artifacts/grakn-workbase-${GRAKN_VERSION}-linux.tar.gz
@@ -286,12 +258,12 @@ jobs:
         - run: unzip artifacts/grakn-core-${GRAKN_VERSION}.zip
         - run: cd grakn-core-${GRAKN_VERSION} && nohup ./grakn server start
         - run: cd grakn-core-${GRAKN_VERSION} && ./graql console -f ./examples/basic-genealogy.gql -k gene
-        - bazel_execute:
-            parameters: run @nodejs//:npm install
-        - bazel_execute:
-            parameters: test //workbase:tests-e2e --test_output=errors
-        - bazel_execute:
-            parameters: build //workbase:distribution
+        - bazel:
+            command: bazel run @nodejs//:npm install
+        - bazel:
+            command: bazel test //workbase:tests-e2e --test_output=errors
+        - bazel:
+            command: bazel build //workbase:distribution
         - run: mv ./bazel-genfiles/workbase/grakn-workbase.zip ~/grakn/artifacts/grakn-workbase-${GRAKN_VERSION}-mac.zip
         - persist_to_workspace:
             root: ~/grakn
