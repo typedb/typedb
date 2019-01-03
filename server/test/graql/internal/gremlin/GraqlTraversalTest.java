@@ -216,7 +216,7 @@ public class GraqlTraversalTest {
         assertNearlyOptimal(and(
                 x.id("xid"),
                 var().rel(x).rel(y),
-                y.isa(b.label("person")),
+                y.isa(b.type("person")),
                 var().rel(y).rel(z)
         ));
     }

@@ -64,7 +64,7 @@ import java.util.Set;
 import static grakn.core.common.exception.ErrorMessage.NO_PATTERNS;
 import static grakn.core.graql.internal.Schema.MetaSchema.ENTITY;
 import static grakn.core.graql.query.Graql.gt;
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
@@ -291,8 +291,8 @@ public class InsertQueryIT {
     @Test
     public void testKeyCorrectUsage() throws InvalidKBException {
         tx.execute(Graql.define(
-                label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
+                type("a-new-type").sub("entity").key("a-new-resource-type"),
+                type("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
         ));
 
         tx.execute(Graql.insert(var().isa("a-new-type").has("a-new-resource-type", "hello")));
@@ -301,8 +301,8 @@ public class InsertQueryIT {
     @Test
     public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidKBException {
         tx.execute(Graql.define(
-                label("a-new-type").sub("entity").key("a-new-attribute-type"),
-                label("a-new-attribute-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
+                type("a-new-type").sub("entity").key("a-new-attribute-type"),
+                type("a-new-attribute-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
         ));
 
         tx.execute(Graql.insert(
@@ -317,9 +317,9 @@ public class InsertQueryIT {
     @Test
     public void testKeyUniqueValue() throws InvalidKBException {
         tx.execute(Graql.define(
-                label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type")
-                        .sub(label(Schema.MetaSchema.ATTRIBUTE.getLabel()))
+                type("a-new-type").sub("entity").key("a-new-resource-type"),
+                type("a-new-resource-type")
+                        .sub(type(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()))
                         .datatype(Query.DataType.STRING)
         ));
 
@@ -335,8 +335,8 @@ public class InsertQueryIT {
     @Test
     public void testKeyRequiredOwner() throws InvalidKBException {
         tx.execute(Graql.define(
-                label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
+                type("a-new-type").sub("entity").key("a-new-resource-type"),
+                type("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
         ));
 
         tx.execute(Graql.insert(var().isa("a-new-type")));
@@ -351,7 +351,7 @@ public class InsertQueryIT {
         Statement type = var("type");
 
         // Note that two variables refer to the same type. They should both be in the result
-        InsertQuery query = Graql.insert(x.isa(type), type.label("movie"));
+        InsertQuery query = Graql.insert(x.isa(type), type.type("movie"));
 
         ConceptMap result = tx.stream(query).iterator().next();
         assertThat(result.vars(), containsInAnyOrder(x.var(), type.var()));
@@ -425,14 +425,14 @@ public class InsertQueryIT {
     public void whenInsertingAnInstanceWithALabel_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("label"), containsString("abc")));
-        tx.execute(Graql.insert(label("abc").isa("movie")));
+        tx.execute(Graql.insert(type("abc").isa("movie")));
     }
 
     @Test
     public void whenInsertingAResourceWithALabel_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("label"), containsString("bobby")));
-        tx.execute(Graql.insert(label("bobby").val("bob").isa("name")));
+        tx.execute(Graql.insert(type("bobby").val("bob").isa("name")));
     }
 
     @Test
@@ -514,8 +514,8 @@ public class InsertQueryIT {
     @Test
     public void whenInsertingWithAMatch_ProjectMatchResultsOnVariablesInTheInsert() {
         tx.execute(Graql.define(
-                label("maybe-friends").relates("friend").sub("relationship"),
-                label("person").plays("friend")
+                type("maybe-friends").relates("friend").sub("relationship"),
+                type("person").plays("friend")
         ));
 
         InsertQuery query = Graql.match(
@@ -581,7 +581,7 @@ public class InsertQueryIT {
         // TODO: less bad way?
         Statement varPattern = new PositiveStatement(
                 new Variable("x"),
-                ImmutableSet.of(new IsaProperty(label("movie")), new IsaProperty(label("person")))
+                ImmutableSet.of(new IsaProperty(type("movie")), new IsaProperty(type("person")))
         );
 
         // We don't know in what order the message will be
@@ -612,7 +612,7 @@ public class InsertQueryIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(Query.Property.SUB.toString()).getMessage());
 
-        tx.execute(Graql.insert(label("new-type").sub(label(ENTITY.getLabel()))));
+        tx.execute(Graql.insert(type("new-type").sub(type(ENTITY.getLabel().getValue()))));
     }
 
     @Test
@@ -620,7 +620,7 @@ public class InsertQueryIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(Query.Property.PLAYS.toString()).getMessage());
 
-        tx.execute(Graql.insert(label("movie").plays("actor")));
+        tx.execute(Graql.insert(type("movie").plays("actor")));
     }
 
     private void assertInsert(Statement... vars) {

@@ -43,7 +43,7 @@ public class WhenProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.WHEN.toString();
     }
 

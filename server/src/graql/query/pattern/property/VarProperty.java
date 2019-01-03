@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  */
 public abstract class VarProperty {
 
-    public abstract String name();
+    public abstract String keyword();
 
     public abstract String property();
 
@@ -84,6 +84,6 @@ public abstract class VarProperty {
      */
     @Override
     public String toString() {
-        return name() + " " + property();
+        return keyword() + " " + property();
     }
 }

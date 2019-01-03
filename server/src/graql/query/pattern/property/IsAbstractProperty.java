@@ -36,7 +36,7 @@ public class IsAbstractProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.IS_ABSTRACT.toString();
     }
 
@@ -52,6 +52,6 @@ public class IsAbstractProperty extends VarProperty {
 
     @Override
     public String toString() {
-        return name();
+        return keyword();
     }
 }

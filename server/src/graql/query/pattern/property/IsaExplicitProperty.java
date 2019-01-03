@@ -35,7 +35,7 @@ public class IsaExplicitProperty extends IsaProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.ISA_EXP.toString();
     }
 
@@ -58,7 +58,7 @@ public class IsaExplicitProperty extends IsaProperty {
     public int hashCode() {
         int h = 1;
         h *= 1000003;
-        h ^= this.name().hashCode();
+        h ^= this.keyword().hashCode();
         h *= 1000003;
         h ^= this.type().hashCode();
         return h;

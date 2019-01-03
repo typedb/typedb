@@ -45,7 +45,7 @@ public class SubProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.SUB.toString();
     }
 
@@ -85,7 +85,7 @@ public class SubProperty extends VarProperty {
     public int hashCode() {
         int h = 1;
         h *= 1000003;
-        h ^= this.name().hashCode();
+        h ^= this.keyword().hashCode();
         h *= 1000003;
         h ^= this.type().hashCode();
         return h;

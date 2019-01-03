@@ -39,7 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -68,7 +68,7 @@ public class AttributeDeduplicatorIT {
 
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.define(label(testAttributeLabel).sub("attribute").datatype(Query.DataType.STRING)));
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Query.DataType.STRING)));
             tx.commit();
         }
 
@@ -98,8 +98,8 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    label(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
-                    label("owner").sub("entity").has(ownedAttributeLabel)
+                    type(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
+                    type("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
         }
@@ -143,8 +143,8 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    label(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
-                    label(ownerLabel).sub("attribute").datatype(Query.DataType.STRING).has(ownedAttributeLabel)
+                    type(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
+                    type(ownerLabel).sub("attribute").datatype(Query.DataType.STRING).has(ownedAttributeLabel)
             ));
             tx.commit();
         }
@@ -187,8 +187,8 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    label(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
-                    label("owner").sub("entity").has(ownedAttributeLabel)
+                    type(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
+                    type("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
         }
@@ -229,8 +229,8 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    label(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
-                    label("owner").sub("entity").has(ownedAttributeLabel)
+                    type(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
+                    type("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
         }
@@ -273,9 +273,9 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    label("owner").sub("relationship").relates("entity-role-player").relates("attribute-role-player"),
-                    label("owned-entity").sub("entity").plays("entity-role-player"),
-                    label(ownedAttributeLabel).sub("attribute").plays("attribute-role-player").datatype(Query.DataType.STRING)
+                    type("owner").sub("relationship").relates("entity-role-player").relates("attribute-role-player"),
+                    type("owned-entity").sub("entity").plays("entity-role-player"),
+                    type(ownedAttributeLabel).sub("attribute").plays("attribute-role-player").datatype(Query.DataType.STRING)
             ));
             tx.commit();
         }

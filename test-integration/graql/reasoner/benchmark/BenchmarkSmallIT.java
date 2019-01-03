@@ -94,20 +94,20 @@ public class BenchmarkSmallIT {
                 Statement fromVar = new PositiveStatement(new Variable().asUserDefined());
                 Statement toVar = new PositiveStatement(new Variable().asUserDefined());
                 Statement rulePattern = Graql
-                        .label("rule" + i)
+                        .type("rule" + i)
                         .when(
                                 Graql.and(
                                         Graql.var()
-                                                .rel(Graql.label(fromRole.label()), fromVar)
-                                                .rel(Graql.label(toRole.label()), toVar)
+                                                .rel(Graql.type(fromRole.label().getValue()), fromVar)
+                                                .rel(Graql.type(toRole.label().getValue()), toVar)
                                                 .isa("relation" + (i - 1))
                                 )
                         )
                         .then(
                                 Graql.and(
                                         Graql.var()
-                                                .rel(Graql.label(fromRole.label()), fromVar)
-                                                .rel(Graql.label(toRole.label()), toVar)
+                                                .rel(Graql.type(fromRole.label().getValue()), fromVar)
+                                                .rel(Graql.type(toRole.label().getValue()), toVar)
                                                 .isa("relation" + i)
                                 )
                         );

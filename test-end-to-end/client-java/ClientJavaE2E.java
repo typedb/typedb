@@ -32,7 +32,7 @@ import static grakn.core.client.ClientJavaE2EConstants.assertGraknStopped;
 import static grakn.core.client.ClientJavaE2EConstants.assertZipExists;
 import static grakn.core.client.ClientJavaE2EConstants.unzipGrakn;
 import static grakn.core.graql.query.Graql.and;
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -110,14 +110,14 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             DefineQuery defineQuery = Graql.define(
-                    label("child-bearing").sub("relationship").relates("offspring").relates("child-bearer"),
-                    label("mating").sub("relationship").relates("male-partner").relates("female-partner").plays("child-bearer"),
-                    label("parentship").sub("relationship").relates("parent").relates("child"),
+                    type("child-bearing").sub("relationship").relates("offspring").relates("child-bearer"),
+                    type("mating").sub("relationship").relates("male-partner").relates("female-partner").plays("child-bearer"),
+                    type("parentship").sub("relationship").relates("parent").relates("child"),
 
-                    label("name").sub("attribute").datatype(Query.DataType.STRING),
-                    label("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring"),
+                    type("name").sub("attribute").datatype(Query.DataType.STRING),
+                    type("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring"),
 
-                    label("infer-parentship-from-mating-and-child-bearing").sub("rule")
+                    type("infer-parentship-from-mating-and-child-bearing").sub("rule")
                             .when(and(
                                     var().rel("male-partner", var("male")).rel("female-partner", var("female")).isa("mating"),
                                     var("childbearing").rel("child-bearer").rel("offspring", var("offspring")).isa("child-bearing")

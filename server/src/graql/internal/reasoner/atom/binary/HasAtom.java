@@ -46,7 +46,7 @@ public abstract class HasAtom extends OntologicalAtom {
 
     public static HasAtom create(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
         Label label = parent.tx().getConcept(predicateId).asType().label();
-        return create(new PositiveStatement(var).has(Graql.label(label)), predicateVar, predicateId, parent);
+        return create(new PositiveStatement(var).has(Graql.type(label.getValue())), predicateVar, predicateId, parent);
     }
 
     private static HasAtom create(TypeAtom a, ReasonerQuery parent) {

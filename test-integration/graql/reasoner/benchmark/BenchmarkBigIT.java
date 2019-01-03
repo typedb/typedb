@@ -112,9 +112,9 @@ public class BenchmarkBigIT {
                 Statement fromRolePlayer = new PositiveStatement(new Variable().asUserDefined());
                 Statement toRolePlayer = new PositiveStatement(new Variable().asUserDefined());
                 Pattern relationInsert = Graql.and(
-                        var().rel(Graql.label(fromRole.label()), fromRolePlayer)
-                                .rel(Graql.label(toRole.label()), toRolePlayer)
-                                .isa(Graql.label(relationType.label())),
+                        var().rel(Graql.type(fromRole.label().getValue()), fromRolePlayer)
+                                .rel(Graql.type(toRole.label().getValue()), toRolePlayer)
+                                .isa(Graql.type(relationType.label().getValue())),
                         fromRolePlayer.id(instances[from].getValue()),
                         toRolePlayer.id(instances[to].getValue())
                 );
@@ -178,24 +178,24 @@ public class BenchmarkBigIT {
                     Statement intermedVar = new PositiveStatement(new Variable().asUserDefined());
                     Statement toVar = new PositiveStatement(new Variable().asUserDefined());
                     Statement rulePattern = Graql
-                            .label("rule" + i)
+                            .type("rule" + i)
                             .when(
                                     Graql.and(
                                             Graql.var()
-                                                    .rel(Graql.label(fromRole.label()), fromVar)
-                                                    .rel(Graql.label(toRole.label()), intermedVar)
+                                                    .rel(Graql.type(fromRole.label().getValue()), fromVar)
+                                                    .rel(Graql.type(toRole.label().getValue()), intermedVar)
                                                     .isa(baseRelationLabel),
                                             Graql.var()
-                                                    .rel(Graql.label(fromRole.label()), intermedVar)
-                                                    .rel(Graql.label(toRole.label()), toVar)
+                                                    .rel(Graql.type(fromRole.label().getValue()), intermedVar)
+                                                    .rel(Graql.type(toRole.label().getValue()), toVar)
                                                     .isa(genericRelationLabel + (i - 1))
                                     )
                             )
                             .then(
                                     Graql.and(
                                             Graql.var()
-                                                    .rel(Graql.label(fromRole.label()), fromVar)
-                                                    .rel(Graql.label(toRole.label()), toVar)
+                                                    .rel(Graql.type(fromRole.label().getValue()), fromVar)
+                                                    .rel(Graql.type(toRole.label().getValue()), toVar)
                                                     .isa(genericRelationLabel + i)
                                     )
                             );
@@ -230,9 +230,9 @@ public class BenchmarkBigIT {
                     Statement toRolePlayer = new PositiveStatement(new Variable().asUserDefined());
 
                     Pattern relationInsert = Graql.and(
-                            var().rel(Graql.label(fromRole.label()), fromRolePlayer)
-                                    .rel(Graql.label(toRole.label()), toRolePlayer)
-                                    .isa(Graql.label(baseRelation.label())),
+                            var().rel(Graql.type(fromRole.label().getValue()), fromRolePlayer)
+                                    .rel(Graql.type(toRole.label().getValue()), toRolePlayer)
+                                    .isa(Graql.type(baseRelation.label().getValue())),
                             fromRolePlayer.id(instances[i - 1].getValue()),
                             toRolePlayer.id(instances[i].getValue())
                     );

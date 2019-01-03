@@ -56,17 +56,17 @@ public class HasAttributeTypeProperty extends VarProperty {
                 () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType)
         );
 
-        Statement role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
+        Statement role = Graql.type(Schema.MetaSchema.ROLE.getLabel().getValue());
 
         Statement ownerRole = var().sub(role);
         Statement valueRole = var().sub(role);
-        Statement relationType = var().sub(Graql.label(Schema.MetaSchema.RELATIONSHIP.getLabel()));
+        Statement relationType = var().sub(Graql.type(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()));
 
         // If a key, limit only to the implicit key type
         if (isKey) {
-            ownerRole = ownerRole.label(KEY_OWNER.getLabel(resourceLabel));
-            valueRole = valueRole.label(KEY_VALUE.getLabel(resourceLabel));
-            relationType = relationType.label(KEY.getLabel(resourceLabel));
+            ownerRole = ownerRole.type(KEY_OWNER.getLabel(resourceLabel).getValue());
+            valueRole = valueRole.type(KEY_VALUE.getLabel(resourceLabel).getValue());
+            relationType = relationType.type(KEY.getLabel(resourceLabel).getValue());
         }
 
         Statement relationOwner = relationType.relates(ownerRole);
@@ -103,7 +103,7 @@ public class HasAttributeTypeProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return isKey ? Query.Property.KEY.toString() : Query.Property.HAS.toString();
     }
 

@@ -40,7 +40,7 @@ public class SubExplicitProperty extends SubProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.SUB_EXP.toString();
     }
 
@@ -63,7 +63,7 @@ public class SubExplicitProperty extends SubProperty {
     public int hashCode() {
         int h = 1;
         h *= 1000003;
-        h ^= this.name().hashCode();
+        h ^= this.keyword().hashCode();
         h *= 1000003;
         h ^= this.type().hashCode();
         return h;

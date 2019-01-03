@@ -53,7 +53,7 @@ public class RelationProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.RELATION.toString();
     }
 

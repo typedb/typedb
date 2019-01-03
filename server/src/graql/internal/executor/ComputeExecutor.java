@@ -687,7 +687,7 @@ class ComputeExecutor<T extends Answer> {
             for (Label type : scopeTypeLabels()) {
                 Boolean patternExist = tx.stream(Graql.match(
                         Graql.var("x").has(attributeType.getValue(), Graql.var()),
-                        Graql.var("x").isa(Graql.label(type))
+                        Graql.var("x").isa(Graql.type(type.getValue()))
                 ), false).iterator().hasNext();
                 if (patternExist) return true;
             }
@@ -769,7 +769,7 @@ class ComputeExecutor<T extends Answer> {
     private boolean scopeContainsInstance() {
         if (scopeTypeLabels().isEmpty()) return false;
         List<Pattern> checkSubtypes = scopeTypeLabels().stream()
-                .map(type -> Graql.var("x").isa(Graql.label(type))).collect(Collectors.toList());
+                .map(type -> Graql.var("x").isa(Graql.type(type.getValue()))).collect(Collectors.toList());
 
         return tx.stream(Graql.match(Graql.or(checkSubtypes)), false).iterator().hasNext();
     }

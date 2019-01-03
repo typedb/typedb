@@ -41,7 +41,7 @@ public class IdProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.ID.toString();
     }
 

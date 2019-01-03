@@ -40,7 +40,7 @@ import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
 import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.Graql.and;
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
@@ -127,7 +127,7 @@ public class QueryToStringTest {
     public void testQuoteIds() {
         assertEquals(
                 "match $a (\"hello\\tworld\");",
-                match(var("a").rel(label("hello\tworld"))).toString()
+                match(var("a").rel(type("hello\tworld"))).toString()
         );
     }
 
@@ -135,7 +135,7 @@ public class QueryToStringTest {
     public void testQuoteIdsNumbers() {
         assertEquals(
                 "match $a (\"1hi\");",
-                match(var("a").rel(label("1hi"))).toString()
+                match(var("a").rel(type("1hi"))).toString()
         );
     }
 

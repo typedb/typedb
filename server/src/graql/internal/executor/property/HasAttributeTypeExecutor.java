@@ -95,7 +95,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         ConceptId predicateId = schemaConcept != null ? schemaConcept.id() : null;
         //isa part
-        Statement resVar = new PositiveStatement(varName).has(Graql.label(label));
+        Statement resVar = new PositiveStatement(varName).has(Graql.type(label.getValue()));
         return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 

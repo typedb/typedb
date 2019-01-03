@@ -783,7 +783,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     RelationProperty.RolePlayer rp = entry.getKey();
                     Variable varName = rp.getPlayer().var();
                     Role role = Iterables.getOnlyElement(entry.getValue());
-                    Statement rolePattern = var().label(role.label());
+                    Statement rolePattern = var().type(role.label().getValue());
                     inferredRelationPlayers.add(new RelationProperty.RolePlayer(rolePattern, new PositiveStatement(varName)));
                     allocatedRelationPlayers.add(rp);
                 });
@@ -796,8 +796,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     Statement rolePattern = rp.getRole().orElse(null);
 
                     rolePattern = rolePattern != null ?
-                            rolePattern.label(metaRole.label()) :
-                            var().label(metaRole.label());
+                            rolePattern.type(metaRole.label().getValue()) :
+                            var().type(metaRole.label().getValue());
                     inferredRelationPlayers.add(new RelationProperty.RolePlayer(rolePattern, new PositiveStatement(varName)));
                 });
 
@@ -1080,7 +1080,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
             if (rolePattern != null) {
                 Variable roleVar = rolePattern.var();
                 Label roleLabel = rolePattern.getTypeLabel().orElse(null);
-                relVar = relVar.rel(new PositiveStatement(roleVar.asUserDefined()).label(roleLabel), rp.getPlayer());
+                relVar = relVar.rel(new PositiveStatement(roleVar.asUserDefined()).type(roleLabel.getValue()), rp.getPlayer());
             } else {
                 relVar = relVar.rel(rp.getPlayer());
             }

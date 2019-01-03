@@ -45,7 +45,7 @@ public class ThenExecutor implements PropertyExecutor.Definable {
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
         // TODO: Fix this so that Undefining ThenProperty behaves symmetrically to Defining ThenProperty
-        throw GraqlQueryException.defineUnsupportedProperty(property.name());
+        throw GraqlQueryException.defineUnsupportedProperty(property.keyword());
     }
 
     private class DefineThen implements PropertyExecutor.Writer {

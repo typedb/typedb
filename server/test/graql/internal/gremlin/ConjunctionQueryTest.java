@@ -50,8 +50,8 @@ import static org.mockito.Mockito.when;
 public class ConjunctionQueryTest {
     private Label resourceTypeWithoutSubTypesLabel = Label.of("name");
     private Label resourceTypeWithSubTypesLabel = Label.of("resource");
-    private Statement resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
-    private Statement resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
+    private Statement resourceTypeWithoutSubTypes = Graql.type(resourceTypeWithoutSubTypesLabel.getValue());
+    private Statement resourceTypeWithSubTypes = Graql.type(resourceTypeWithSubTypesLabel.getValue());
     private String literalValue = "Bob";
     private Transaction tx;
     private Statement x = Graql.var("x");
@@ -92,7 +92,7 @@ public class ConjunctionQueryTest {
 
     @Test
     public void whenVarRefersToATypeWithAnExplicitVarName_UseResourceIndex() {
-        assertThat(x.isa(y.label(resourceTypeWithoutSubTypesLabel)).val(literalValue), usesResourceIndex());
+        assertThat(x.isa(y.type(resourceTypeWithoutSubTypesLabel.getValue())).val(literalValue), usesResourceIndex());
     }
 
     @Test

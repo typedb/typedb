@@ -65,7 +65,7 @@ import java.util.stream.Stream;
 
 import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.eq;
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.not;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -269,7 +269,7 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Statement> visitPropLabel(GraqlParser.PropLabelContext ctx) {
-        return var -> var.label(visitLabel(ctx.label()));
+        return var -> var.type(visitLabel(ctx.label()).getValue());
     }
 
     @Override
@@ -430,7 +430,7 @@ public class Parser extends GraqlBaseVisitor {
         if (ctx == null) {
             return Graql.var();
         } else if (ctx.label() != null) {
-            return label(visitLabel(ctx.label()));
+            return type(visitLabel(ctx.label()).getValue());
         } else {
             return new PositiveStatement(getVariable(ctx.VARIABLE()));
         }

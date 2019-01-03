@@ -33,7 +33,7 @@ import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.IsAbstractProperty;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.LabelProperty;
+import grakn.core.graql.query.pattern.property.TypeProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.RegexProperty;
@@ -133,7 +133,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Optional<Label> getTypeLabel() {
-        return getProperty(LabelProperty.class).map(labelProperty -> labelProperty.label());
+        return getProperty(TypeProperty.class).map(labelProperty -> Label.of(labelProperty.name()));
     }
 
     /**
@@ -238,21 +238,12 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param label a string that this variable's label must match
+     * @param name a string that this variable's label must match
      * @return this
      */
     @CheckReturnValue
-    public final Statement label(String label) {
-        return label(Label.of(label));
-    }
-
-    /**
-     * @param label a type label that this variable's label must match
-     * @return this
-     */
-    @CheckReturnValue
-    public final Statement label(Label label) {
-        return addProperty(new LabelProperty(label));
+    public final Statement type(String name) {
+        return addProperty(new TypeProperty(name));
     }
 
     /**
@@ -329,7 +320,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isaExplicit(String type) {
-        return isaExplicit(Graql.label(type));
+        return isaExplicit(Graql.type(type));
     }
 
     /**
@@ -347,7 +338,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isa(String type) {
-        return isa(Graql.label(type));
+        return isa(Graql.type(type));
     }
 
     /**
@@ -365,7 +356,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement sub(String type) {
-        return sub(Graql.label(type));
+        return sub(Graql.type(type));
     }
 
     /**
@@ -383,7 +374,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement subExplicit(String type) {
-        return subExplicit(Graql.label(type));
+        return subExplicit(Graql.type(type));
     }
 
     /**
@@ -419,7 +410,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public Statement relates(String roleType, @Nullable String superRoleType) {
-        return relates(Graql.label(roleType), superRoleType == null ? null : Graql.label(superRoleType));
+        return relates(Graql.type(roleType), superRoleType == null ? null : Graql.type(superRoleType));
     }
 
     /**
@@ -437,7 +428,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement plays(String type) {
-        return plays(Graql.label(type));
+        return plays(Graql.type(type));
     }
 
     /**
@@ -455,7 +446,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type) {
-        return has(Graql.label(type));
+        return has(Graql.type(type));
     }
 
     /**
@@ -473,7 +464,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement key(String type) {
-        return key(Graql.var().label(type));
+        return key(Graql.var().type(type));
     }
 
     /**
@@ -516,7 +507,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(String role, String roleplayer) {
-        return rel(Graql.label(role), Graql.var(roleplayer));
+        return rel(Graql.type(role), Graql.var(roleplayer));
     }
 
     /**
@@ -540,7 +531,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(String role, Statement roleplayer) {
-        return rel(Graql.label(role), roleplayer);
+        return rel(Graql.type(role), roleplayer);
     }
 
     /**
@@ -714,7 +705,7 @@ public abstract class Statement implements Pattern {
 
         if (innerVars.stream()
                 .anyMatch(var1 -> var1.properties().stream()
-                        .anyMatch(p -> !(p instanceof LabelProperty)))) {
+                        .anyMatch(p -> !(p instanceof TypeProperty)))) {
             LOG.warn("printing a query with inner variables, which is not supported in native Graql");
         }
 

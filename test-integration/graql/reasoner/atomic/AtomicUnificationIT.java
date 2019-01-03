@@ -400,8 +400,8 @@ public class AtomicUnificationIT {
     @Test
     public void testUnification_IndirectRoles(){
         Statement basePattern = var()
-                .rel(var("baseRole1").label("subRole1"), var("y1"))
-                .rel(var("baseRole2").label("subSubRole2"), var("y2"))
+                .rel(var("baseRole1").type("subRole1"), var("y1"))
+                .rel(var("baseRole2").type("subSubRole2"), var("y2"))
                 .isa("binary");
 
         ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Graql.and(Sets.newHashSet(basePattern)), tx);
@@ -425,8 +425,8 @@ public class AtomicUnificationIT {
     @Test
     public void testUnification_IndirectRoles_NoRelationType(){
         Statement basePattern = var()
-                .rel(var("baseRole1").label("subRole1"), var("y1"))
-                .rel(var("baseRole2").label("subSubRole2"), var("y2"));
+                .rel(var("baseRole1").type("subRole1"), var("y1"))
+                .rel(var("baseRole2").type("subSubRole2"), var("y2"));
 
         ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Graql.and(Sets.newHashSet(basePattern)), tx);
         ReasonerAtomicQuery childQuery = ReasonerQueries

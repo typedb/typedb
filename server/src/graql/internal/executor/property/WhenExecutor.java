@@ -45,7 +45,7 @@ public class WhenExecutor implements PropertyExecutor.Definable {
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
         // TODO: Fix this so that Undefining WhenProperty behaves symmetrically to Defining WhenProperty
-        throw GraqlQueryException.defineUnsupportedProperty(property.name());
+        throw GraqlQueryException.defineUnsupportedProperty(property.keyword());
     }
 
     private class DefineWhen implements PropertyExecutor.Writer {

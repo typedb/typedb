@@ -129,7 +129,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
                     if (concept != null) {
                         if (concept.isRole()) {
                             Label roleLabel = concept.asSchemaConcept().label();
-                            rolePattern = new PositiveStatement(roleVar).label(roleLabel);
+                            rolePattern = new PositiveStatement(roleVar).type(roleLabel.getValue());
                         } else {
                             throw GraqlQueryException.nonRoleIdAssignedToRoleVariable(statement);
                         }
