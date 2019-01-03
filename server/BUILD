@@ -141,7 +141,7 @@ distribution(
 deb_package(
     name = "deploy-deb",
     package_name = "grakn-core-server",
-    maintainer = "Grakn Labs <support@grakn.ai>",
+    maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (server)",
     version_file = "//:VERSION",
     depends = [

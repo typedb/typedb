@@ -62,7 +62,7 @@ deploy_brew(
 deb_package(
     name = "deploy-deb",
     package_name = "grakn-core-bin",
-    maintainer = "Grakn Labs <support@grakn.ai>",
+    maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (binaries)",
     version_file = "//:VERSION",
     installation_dir = "/opt/grakn/core/",

@@ -86,7 +86,7 @@ distribution(
 deb_package(
     name = "deploy-deb",
     package_name = "grakn-core-console",
-    maintainer = "Grakn Labs <support@grakn.ai>",
+    maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (console)",
     version_file = "//:VERSION",
     depends = [
