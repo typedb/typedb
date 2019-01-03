@@ -33,15 +33,14 @@ commands:
           command: |
             if [[ -f ~/.config/gcloud/application_default_credentials.json ]]; then
               echo "Bazel will be executed with RBE support. This means the build is remotely executed and the cache will be re-used by subsequent CI jobs."
-              RBE_FLAGS="--config=rbe"
+              CMD="<< parameters.command >> --config=rbe"
             else
               echo "Bazel will be executed locally (without RBE support)."
-              RBE_FLAGS=""
+              CMD="<< parameters.command >>"
             fi
-            CMD="<< parameters.command >> $RBE_FLAGS"
             echo "Executing $CMD"
             $CMD
-
+            
 jobs:
   build:
     machine: true
