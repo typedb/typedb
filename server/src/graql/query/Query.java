@@ -129,8 +129,6 @@ public interface Query {
         BOOLEAN("boolean"),
         DATE("date"),
         DOUBLE("double"),
-        FLOAT("float"),
-        INTEGER("integer"),
         LONG("long"),
         STRING("string");
 

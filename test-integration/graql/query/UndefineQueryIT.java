@@ -267,7 +267,7 @@ public class UndefineQueryIT {
     public void whenUndefiningComplexSchema_TheEntireSchemaIsRemoved() {
         Collection<Statement> schema = ImmutableList.of(
                 type("pokemon").sub(ENTITY).has("pokedex-no").plays("ancestor").plays("descendant"),
-                type("pokedex-no").sub(ATTRIBUTE).datatype(Query.DataType.INTEGER),
+                type("pokedex-no").sub(ATTRIBUTE).datatype(Query.DataType.LONG),
                 type("evolution").sub(RELATIONSHIP).relates("ancestor").relates("descendant"),
                 type("ancestor").sub(ROLE),
                 type("descendant").sub(ROLE)
