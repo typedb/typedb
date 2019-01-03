@@ -130,7 +130,7 @@ class ConjunctionQuery {
         Variable start = statement.var();
 
         statement.properties().stream().forEach(property -> {
-            Collection<EquivalentFragmentSet> newTraversals = PropertyExecutor.matchable(start, property).matchFragments();
+            Collection<EquivalentFragmentSet> newTraversals = PropertyExecutor.create(start, property).matchFragments();
             traversals.addAll(newTraversals);
         });
 

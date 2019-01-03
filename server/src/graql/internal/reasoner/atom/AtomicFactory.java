@@ -24,6 +24,7 @@ import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.property.VarProperty;
+
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -65,7 +66,7 @@ public class AtomicFactory {
      * @return created atom
      */
     private static Atomic createAtom(VarProperty property, Statement statement, Set<Statement> statements, ReasonerQuery parent){
-        Atomic atomic = PropertyExecutor.atomable(statement.var(), property)
+        Atomic atomic = PropertyExecutor.create(statement.var(), property)
                 .atomic(parent, statement, statements);
         if (atomic == null) return null;
         return statement.isPositive()? atomic : NegatedAtomic.create(atomic);

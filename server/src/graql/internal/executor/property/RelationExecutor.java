@@ -54,9 +54,7 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
 
-public class RelationExecutor implements PropertyExecutor.Insertable,
-                                         PropertyExecutor.Matchable,
-                                         PropertyExecutor.Atomable {
+public class RelationExecutor implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final RelationProperty property;
@@ -64,11 +62,6 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
     RelationExecutor(Variable var, RelationProperty property) {
         this.var = var;
         this.property = property;
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> insertExecutors() {
-        return ImmutableSet.of(new InsertRelation());
     }
 
     @Override
@@ -162,6 +155,11 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
                 relVar.isaExplicit(new PositiveStatement(typeVariable.asUserDefined())) :
                 relVar.isa(new PositiveStatement(typeVariable.asUserDefined()));
         return RelationshipAtom.create(relVar, typeVariable, predicateId, parent);
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> insertExecutors() {
+        return ImmutableSet.of(new InsertRelation());
     }
 
     class InsertRelation implements PropertyExecutor.Writer {

@@ -24,6 +24,7 @@ import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,7 +49,7 @@ public class NegativeStatement extends Statement {
         HashMultimap<VarProperty, VarProperty> propertyMap = HashMultimap.create();
         properties()
                 .forEach(p -> {
-                    if (PropertyExecutor.atomable(this.var(), p).mappable(this)) {
+                    if (PropertyExecutor.create(this.var(), p).mappable(this)) {
                         propertyMap.put(p, p);
                     }
                     else{
