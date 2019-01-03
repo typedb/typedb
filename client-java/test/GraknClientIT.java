@@ -90,7 +90,7 @@ import static grakn.core.graql.query.ComputeQuery.Method.MIN;
 import static grakn.core.graql.query.ComputeQuery.Method.PATH;
 import static grakn.core.graql.query.ComputeQuery.Method.STD;
 import static grakn.core.graql.query.ComputeQuery.Method.SUM;
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
@@ -183,7 +183,7 @@ public class GraknClientIT {
     @Test
     public void testExecutingAndCommittingAQuery_TheQueryIsCommitted() {
         try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.define(label("person").sub("entity")));
+            tx.execute(Graql.define(Graql.type("person").sub("entity")));
             tx.commit();
         }
 
@@ -195,7 +195,7 @@ public class GraknClientIT {
     @Test
     public void testExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() {
         try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.define(label("flibflab").sub("entity")));
+            tx.execute(Graql.define(Graql.type("flibflab").sub("entity")));
         }
 
         try (Transaction tx = localSession.transaction(Transaction.Type.READ)) {
@@ -468,7 +468,7 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = Graql.match(var("x").label("man")).get();
+            GetQuery query = Graql.match(type("man")).get();
             SchemaConcept remoteConcept = remoteTx.stream(query).findAny().get().get("x").asSchemaConcept();
             SchemaConcept localConcept = localTx.getConcept(remoteConcept.id()).asSchemaConcept();
 
@@ -532,7 +532,7 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = Graql.match(var("x").label("person")).get();
+            GetQuery query = Graql.match(type("person")).get();
             Type remoteConcept = remoteTx.stream(query).findAny().get().get("x").asType();
             Type localConcept = localTx.getConcept(remoteConcept.id()).asType();
 
@@ -557,7 +557,7 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = Graql.match(var("x").label("actor")).get();
+            GetQuery query = Graql.match(type("actor")).get();
             Role remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRole();
             Role localConcept = localTx.getConcept(remoteConcept.id()).asRole();
 
@@ -584,7 +584,7 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = Graql.match(var("x").label("expectation-rule")).get();
+            GetQuery query = Graql.match(type("expectation-rule")).get();
             grakn.core.graql.concept.Rule remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRule();
             grakn.core.graql.concept.Rule localConcept = localTx.getConcept(remoteConcept.id()).asRule();
 
@@ -602,7 +602,7 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = Graql.match(var("x").label("person")).get();
+            GetQuery query = Graql.match(type("person")).get();
             EntityType remoteConcept = remoteTx.stream(query).findAny().get().get("x").asEntityType();
             EntityType localConcept = localTx.getConcept(remoteConcept.id()).asEntityType();
 
@@ -624,7 +624,7 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = Graql.match(var("x").label("has-cast")).get();
+            GetQuery query = Graql.match(type("has-cast")).get();
             RelationType remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelationshipType();
             RelationType localConcept = localTx.getConcept(remoteConcept.id()).asRelationshipType();
 
@@ -643,7 +643,7 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = Graql.match(var("x").label("title")).get();
+            GetQuery query = Graql.match(type("title")).get();
             AttributeType<String> remoteConcept = remoteTx.stream(query).findAny().get().get("x").asAttributeType();
             AttributeType<String> localConcept = localTx.getConcept(remoteConcept.id()).asAttributeType();
 

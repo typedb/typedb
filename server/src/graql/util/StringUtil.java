@@ -105,6 +105,12 @@ public class StringUtil {
         return escapeLabelOrId(label.getValue());
     }
 
+
+    public static String typeLabelToString(String label) {
+        return escapeLabelOrId(label);
+    }
+
+
     private static String escapeLabelOrId(String value) {
         if (value.matches("^[a-zA-Z_][a-zA-Z0-9_-]*$") && !GRAQL_KEYWORDS.contains(value)) {
             return value;

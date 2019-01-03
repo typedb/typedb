@@ -71,7 +71,6 @@ import static grakn.core.graql.query.Graql.parse;
 import static grakn.core.graql.query.Graql.like;
 import static grakn.core.graql.query.Graql.undefine;
 import static grakn.core.graql.query.Graql.and;
-import static grakn.core.graql.query.Graql.label;
 import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toList;
@@ -350,7 +349,7 @@ public class ParserTest {
                 var("x").isa(var("z")),
                 var("y").val("crime"),
                 var("z").sub("production"),
-                label("has-genre").relates(var("p"))
+                Graql.type("has-genre").relates(var("p"))
         ).get();
 
         assertQueryEquals(expected, parsed, query.replace("'", "\""));
@@ -500,14 +499,14 @@ public class ParserTest {
         DefineQuery parsed = parse(query);
 
         DefineQuery expected = define(
-                label("parent").sub("role"),
-                label("child").sub("role"),
-                label("parenthood").sub("relationship")
-                        .relates(var().label("parent"))
-                        .relates(var().label("child")),
-                label("fatherhood").sub("parenthood")
-                        .relates(label("father"), label("parent"))
-                        .relates(label("son"), label("child"))
+                Graql.type("parent").sub("role"),
+                Graql.type("child").sub("role"),
+                Graql.type("parenthood").sub("relationship")
+                        .relates(var().type("parent"))
+                        .relates(var().type("child")),
+                Graql.type("fatherhood").sub("parenthood")
+                        .relates(Graql.type("father"), Graql.type("parent"))
+                        .relates(Graql.type("son"), Graql.type("child"))
         );
 
         assertQueryEquals(expected, parsed, query);
@@ -518,9 +517,9 @@ public class ParserTest {
         String query = "match fatherhood sub parenthood, relates father as parent, relates son as child; get;";
         GetQuery parsed = parse(query);
         GetQuery expected = match(
-                label("fatherhood").sub("parenthood")
-                        .relates(label("father"), label("parent"))
-                        .relates(label("son"), label("child"))
+                Graql.type("fatherhood").sub("parenthood")
+                        .relates(Graql.type("father"), Graql.type("parent"))
+                        .relates(Graql.type("son"), Graql.type("child"))
         ).get();
 
         assertQueryEquals(expected, parsed, query);
@@ -538,12 +537,12 @@ public class ParserTest {
         DefineQuery parsed = parse(query);
 
         DefineQuery expected = define(
-                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
-                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolution").relates("evolves-from").relates("evolves-to"),
-                label("pokemon").plays("evolves-from").plays("evolves-to").has("name")
+                Graql.type("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
+                Graql.type("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
+                Graql.type("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                Graql.type("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                Graql.type("evolution").relates("evolves-from").relates("evolves-to"),
+                Graql.type("pokemon").plays("evolves-from").plays("evolves-to").has("name")
         );
 
         assertQueryEquals(expected, parsed, query);
@@ -561,12 +560,12 @@ public class ParserTest {
         UndefineQuery parsed = parse(query);
 
         UndefineQuery expected = undefine(
-                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
-                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolution").relates("evolves-from").relates("evolves-to"),
-                label("pokemon").plays("evolves-from").plays("evolves-to").has("name")
+                Graql.type("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
+                Graql.type("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
+                Graql.type("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                Graql.type("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                Graql.type("evolution").relates("evolves-from").relates("evolves-to"),
+                Graql.type("pokemon").plays("evolves-from").plays("evolves-to").has("name")
         );
 
         assertQueryEquals(expected, parsed, query);
@@ -588,8 +587,8 @@ public class ParserTest {
         String query = "define concrete-type sub entity; abstract-type sub entity, abstract;";
         DefineQuery parsed = parse(query);
         DefineQuery expected = define(
-                label("concrete-type").sub("entity"),
-                label("abstract-type").sub("entity").isAbstract()
+                Graql.type("concrete-type").sub("entity"),
+                Graql.type("abstract-type").sub("entity").isAbstract()
         );
 
         assertQueryEquals(expected, parsed, query);
@@ -626,7 +625,7 @@ public class ParserTest {
     public void testDefineDataTypeQuery() {
         String query = "define my-type sub attribute, datatype long;";
         DefineQuery parsed = parse(query);
-        DefineQuery expected = define(label("my-type").sub("attribute").datatype(Query.DataType.LONG));
+        DefineQuery expected = define(Graql.type("my-type").sub("attribute").datatype(Query.DataType.LONG));
 
         assertQueryEquals(expected, parsed, query);
     }
@@ -674,7 +673,7 @@ public class ParserTest {
         Pattern whenPattern = and(var("x").isa("movie"));
         Pattern thenPattern = and(var("x").has("genre", "drama"));
 
-        DefineQuery expected = define(label("all-movies-are-drama").sub("rule").when(whenPattern).then(thenPattern));
+        DefineQuery expected = define(Graql.type("all-movies-are-drama").sub("rule").when(whenPattern).then(thenPattern));
         String query = "define all-movies-are-drama sub rule, when { " + when + " }, then { " + then + " };";
         DefineQuery parsed = parse(query);
         

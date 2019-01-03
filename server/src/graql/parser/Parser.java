@@ -76,7 +76,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.query.Graql.eq;
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.type;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -516,7 +516,7 @@ public class Parser extends GraqlBaseVisitor {
                                 .collect(Collectors.toList())
                 ));
             } else if (property.LABEL() != null) {
-                type = type.label(property.label().getText());
+                type = type.type(property.label().getText());
 
             } else {
                 throw new IllegalArgumentException("Unrecognised INSERT statement: " + property.getText());
@@ -699,7 +699,7 @@ public class Parser extends GraqlBaseVisitor {
     @Override
     public Statement visitType(GraqlParser.TypeContext ctx) {
         if (ctx.label() != null) {
-            return label(visitLabel(ctx.label()));
+            return type(visitLabel(ctx.label()).getValue());
         } else {
             return new Statement(getVar(ctx.VAR_()));
         }

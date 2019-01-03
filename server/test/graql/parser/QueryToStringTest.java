@@ -41,7 +41,6 @@ import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
 import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.Graql.and;
-import static grakn.core.graql.query.Graql.label;
 import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
@@ -100,7 +99,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithThenToString() {
-        DefineQuery query = Graql.define(label("my-rule").sub("rule").then(and(Graql.parsePatternList("$x isa movie;"))));
+        DefineQuery query = Graql.define(Graql.type("my-rule").sub("rule").then(and(Graql.parsePatternList("$x isa movie;"))));
         //No need to execute the insert query
         InsertQuery parsedQuery = Graql.parse(query.toString());
         assertEquals(query.toString(), parsedQuery.toString());
@@ -108,7 +107,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithWhenToString() {
-        DefineQuery query = Graql.define(label("my-rule").sub("rule").when(and(Graql.parsePatternList("$x isa movie;"))));
+        DefineQuery query = Graql.define(Graql.type("my-rule").sub("rule").when(and(Graql.parsePatternList("$x isa movie;"))));
         //No need to execute the insert query
         InsertQuery parsedQuery = Graql.parse(query.toString());
         assertEquals(query.toString(), parsedQuery.toString());
@@ -128,7 +127,7 @@ public class QueryToStringTest {
     public void testQuoteIds() {
         assertEquals(
                 "match $a (\"hello\\tworld\");",
-                match(var("a").rel(label("hello\tworld"))).toString()
+                match(var("a").rel(Graql.type("hello\tworld"))).toString()
         );
     }
 
@@ -136,7 +135,7 @@ public class QueryToStringTest {
     public void testQuoteIdsNumbers() {
         assertEquals(
                 "match $a (\"1hi\");",
-                match(var("a").rel(label("1hi"))).toString()
+                match(var("a").rel(Graql.type("1hi"))).toString()
         );
     }
 

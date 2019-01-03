@@ -19,7 +19,6 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.Answer;
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.parser.Parser;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
@@ -182,17 +181,8 @@ public class Graql {
      * @return a variable pattern that identifies a concept by label
      */
     @CheckReturnValue
-    public static Statement label(String label) {
-        return var().label(label);
-    }
-
-    /**
-     * @param label the label of a concept
-     * @return a variable pattern that identifies a concept by label
-     */
-    @CheckReturnValue
-    public static Statement label(Label label) {
-        return var().label(label);
+    public static Statement type(String label) {
+        return new Statement.TypeStatement(new Variable()).type(label);
     }
 
     /**

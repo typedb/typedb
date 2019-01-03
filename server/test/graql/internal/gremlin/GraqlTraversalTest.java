@@ -60,6 +60,7 @@ import static grakn.core.graql.internal.gremlin.fragment.Fragments.outSub;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.value;
 import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -215,7 +216,7 @@ public class GraqlTraversalTest {
         assertNearlyOptimal(and(
                 x.id("xid"),
                 var().rel(x).rel(y),
-                y.isa(b.label("person")),
+                y.isa(type("person")),
                 var().rel(y).rel(z)
         ));
     }

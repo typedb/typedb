@@ -58,7 +58,7 @@ import static grakn.core.graql.internal.Schema.MetaSchema.RELATIONSHIP;
 import static grakn.core.graql.internal.Schema.MetaSchema.ROLE;
 import static grakn.core.graql.internal.Schema.MetaSchema.RULE;
 import static grakn.core.graql.query.Graql.parse;
-import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
@@ -108,46 +108,46 @@ public class DefineQueryIT {
 
     @Test
     public void testDefineSub() {
-        assertDefine(var("x").label("cool-movie").sub("movie"));
+        assertDefine(var("x").type("cool-movie").sub("movie"));
     }
 
     @Test
     public void testDefineSchema() {
         tx.execute(Graql.define(
-                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
-                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolution").relates("evolves-from").relates("evolves-to"),
-                label("pokemon").plays("evolves-from").plays("evolves-to").has("name")
+                Graql.type("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
+                Graql.type("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
+                Graql.type("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                Graql.type("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                Graql.type("evolution").relates("evolves-from").relates("evolves-to"),
+                Graql.type("pokemon").plays("evolves-from").plays("evolves-to").has("name")
         ));
 
-        assertExists(tx, label("pokemon").sub(ENTITY.getLabel().getValue()));
-        assertExists(tx, label("evolution").sub(RELATIONSHIP.getLabel().getValue()));
-        assertExists(tx, label("evolves-from").sub(ROLE.getLabel().getValue()));
-        assertExists(tx, label("evolves-to").sub(ROLE.getLabel().getValue()));
-        assertExists(tx, label("evolution").relates("evolves-from").relates("evolves-to"));
-        assertExists(tx, label("pokemon").plays("evolves-from").plays("evolves-to"));
+        assertExists(tx, Graql.type("pokemon").sub(ENTITY.getLabel().getValue()));
+        assertExists(tx, Graql.type("evolution").sub(RELATIONSHIP.getLabel().getValue()));
+        assertExists(tx, Graql.type("evolves-from").sub(ROLE.getLabel().getValue()));
+        assertExists(tx, Graql.type("evolves-to").sub(ROLE.getLabel().getValue()));
+        assertExists(tx, Graql.type("evolution").relates("evolves-from").relates("evolves-to"));
+        assertExists(tx, Graql.type("pokemon").plays("evolves-from").plays("evolves-to"));
     }
 
     @Test
     public void testDefineIsAbstract() {
         tx.execute(Graql.define(
-                label("concrete-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getLabel().getValue())
+                Graql.type("concrete-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
+                Graql.type("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getLabel().getValue())
         ));
 
-        assertNotExists(tx, label("concrete-type").isAbstract());
-        assertExists(tx, label("abstract-type").isAbstract());
+        assertNotExists(tx, Graql.type("concrete-type").isAbstract());
+        assertExists(tx, Graql.type("abstract-type").isAbstract());
     }
 
     @Test
     public void testDefineDataType() {
         tx.execute(Graql.define(
-                label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.LONG)
+                Graql.type("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.LONG)
         ));
 
-        MatchClause match = Graql.match(var("x").label("my-type"));
+        MatchClause match = Graql.match(var("x").type("my-type"));
         AttributeType.DataType datatype = tx.stream(match).iterator().next().get("x").asAttributeType().dataType();
 
         Assert.assertEquals(AttributeType.DataType.LONG, datatype);
@@ -156,11 +156,11 @@ public class DefineQueryIT {
     @Test
     public void testDefineSubResourceType() {
         tx.execute(Graql.define(
-                label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING),
-                label("sub-type").sub("my-type")
+                Graql.type("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING),
+                Graql.type("sub-type").sub("my-type")
         ));
 
-        MatchClause match = Graql.match(var("x").label("sub-type"));
+        MatchClause match = Graql.match(var("x").type("sub-type"));
         AttributeType.DataType datatype = tx.stream(match).iterator().next().get("x").asAttributeType().dataType();
 
         Assert.assertEquals(AttributeType.DataType.STRING, datatype);
@@ -169,40 +169,40 @@ public class DefineQueryIT {
     @Test
     public void testDefineSubRole() {
         tx.execute(Graql.define(
-                label("marriage").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()).relates("spouse1").relates("spouse2"),
-                label("spouse").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("spouse1").sub("spouse"),
-                label("spouse2").sub("spouse")
+                Graql.type("marriage").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()).relates("spouse1").relates("spouse2"),
+                Graql.type("spouse").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                Graql.type("spouse1").sub("spouse"),
+                Graql.type("spouse2").sub("spouse")
         ));
 
-        assertExists(tx, label("spouse1"));
+        assertExists(tx, Graql.type("spouse1"));
     }
 
     @Test
     public void testReferenceByVariableNameAndTypeLabel() {
         tx.execute(Graql.define(
                 var("abc").sub("entity"),
-                var("abc").label("123"),
-                label("123").plays("actor"),
+                var("abc").type("123"),
+                Graql.type("123").plays("actor"),
                 var("abc").plays("director")
         ));
 
-        assertExists(tx, label("123").sub("entity"));
-        assertExists(tx, label("123").plays("actor"));
-        assertExists(tx, label("123").plays("director"));
+        assertExists(tx, Graql.type("123").sub("entity"));
+        assertExists(tx, Graql.type("123").plays("actor"));
+        assertExists(tx, Graql.type("123").plays("director"));
     }
 
     @Test
     public void testDefineReferenceByName() {
         String roleTypeLabel = HAS_OWNER.getLabel("title").getValue();
         tx.execute(Graql.define(
-                label("new-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("new-type").plays(roleTypeLabel)
+                Graql.type("new-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
+                Graql.type("new-type").plays(roleTypeLabel)
         ));
 
         tx.execute(Graql.insert(var("x").isa("new-type")));
 
-        MatchClause typeQuery = Graql.match(var("n").label("new-type"));
+        MatchClause typeQuery = Graql.match(var("n").type("new-type"));
 
         assertEquals(1, tx.stream(typeQuery).count());
 
@@ -220,20 +220,20 @@ public class DefineQueryIT {
         String resourceType = "a-new-resource-type";
 
         tx.execute(Graql.define(
-                label("a-new-type").sub("entity").has(resourceType),
-                label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING),
-                label("an-unconnected-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.LONG)
+                Graql.type("a-new-type").sub("entity").has(resourceType),
+                Graql.type(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING),
+                Graql.type("an-unconnected-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.LONG)
         ));
 
         // Make sure a-new-type can have the given resource type, but not other resource types
-        assertExists(tx, label("a-new-type").sub("entity").has(resourceType));
-        assertNotExists(tx, label("a-new-type").has("title"));
-        assertNotExists(tx, label("movie").has(resourceType));
-        assertNotExists(tx, label("a-new-type").has("an-unconnected-resource-type"));
+        assertExists(tx, Graql.type("a-new-type").sub("entity").has(resourceType));
+        assertNotExists(tx, Graql.type("a-new-type").has("title"));
+        assertNotExists(tx, Graql.type("movie").has(resourceType));
+        assertNotExists(tx, Graql.type("a-new-type").has("an-unconnected-resource-type"));
 
-        Statement hasResource = label(HAS.getLabel(resourceType));
-        Statement hasResourceOwner = label(HAS_OWNER.getLabel(resourceType));
-        Statement hasResourceValue = label(HAS_VALUE.getLabel(resourceType));
+        Statement hasResource = type(HAS.getLabel(resourceType).getValue());
+        Statement hasResourceOwner = type(HAS_OWNER.getLabel(resourceType).getValue());
+        Statement hasResourceValue = type(HAS_VALUE.getLabel(resourceType).getValue());
 
         // Make sure the expected ontology elements are created
         assertExists(tx, hasResource.sub(RELATIONSHIP.getLabel().getValue()));
@@ -241,8 +241,8 @@ public class DefineQueryIT {
         assertExists(tx, hasResourceValue.sub(ROLE.getLabel().getValue()));
         assertExists(tx, hasResource.relates(hasResourceOwner));
         assertExists(tx, hasResource.relates(hasResourceValue));
-        assertExists(tx, label("a-new-type").plays(hasResourceOwner));
-        assertExists(tx, label(resourceType).plays(hasResourceValue));
+        assertExists(tx, Graql.type("a-new-type").plays(hasResourceOwner));
+        assertExists(tx, Graql.type(resourceType).plays(hasResourceValue));
     }
 
     @Test
@@ -250,19 +250,19 @@ public class DefineQueryIT {
         String resourceType = "a-new-resource-type";
 
         tx.execute(Graql.define(
-                label("a-new-type").sub("entity").key(resourceType),
-                label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
+                Graql.type("a-new-type").sub("entity").key(resourceType),
+                Graql.type(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
         ));
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
-        assertExists(tx, label("a-new-type").sub("entity").key(resourceType));
-        assertExists(tx, label("a-new-type").sub("entity").has(resourceType));
-        assertNotExists(tx, label("a-new-type").sub("entity").key("title"));
-        assertNotExists(tx, label("movie").sub("entity").key(resourceType));
+        assertExists(tx, Graql.type("a-new-type").sub("entity").key(resourceType));
+        assertExists(tx, Graql.type("a-new-type").sub("entity").has(resourceType));
+        assertNotExists(tx, Graql.type("a-new-type").sub("entity").key("title"));
+        assertNotExists(tx, Graql.type("movie").sub("entity").key(resourceType));
 
-        Statement key = label(KEY.getLabel(resourceType));
-        Statement keyOwner = label(KEY_OWNER.getLabel(resourceType));
-        Statement keyValue = label(KEY_VALUE.getLabel(resourceType));
+        Statement key = type(KEY.getLabel(resourceType).getValue());
+        Statement keyOwner = type(KEY_OWNER.getLabel(resourceType).getValue());
+        Statement keyValue = type(KEY_VALUE.getLabel(resourceType).getValue());
 
         // Make sure the expected ontology elements are created
         assertExists(tx, key.sub(RELATIONSHIP.getLabel().getValue()));
@@ -270,29 +270,29 @@ public class DefineQueryIT {
         assertExists(tx, keyValue.sub(ROLE.getLabel().getValue()));
         assertExists(tx, key.relates(keyOwner));
         assertExists(tx, key.relates(keyValue));
-        assertExists(tx, label("a-new-type").plays(keyOwner));
-        assertExists(tx, label(resourceType).plays(keyValue));
+        assertExists(tx, Graql.type("a-new-type").plays(keyOwner));
+        assertExists(tx, Graql.type(resourceType).plays(keyValue));
     }
 
     @Test
     public void testResourceTypeRegex() {
-        tx.execute(Graql.define(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING).like("hello|good day")));
+        tx.execute(Graql.define(Graql.type("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING).like("hello|good day")));
 
-        MatchClause match = Graql.match(var("x").label("greeting"));
+        MatchClause match = Graql.match(var("x").type("greeting"));
         assertEquals("hello|good day", tx.stream(match.get("x")).map(ans -> ans.get("x")).findFirst().get().asAttributeType().regex());
     }
 
     @Test
     public void whenExecutingADefineQuery_ResultContainsAllInsertedVars() {
-        Statement type = var("type");
-        Statement type2 = var("type2");
+        Statement typeVar = var("type");
+        Statement type2Var = var("type2");
 
         // Note that two variables refer to the same type. They should both be in the result
-        DefineQuery query = Graql.define(type.label("my-type").sub("entity"), type2.label("my-type"));
+        DefineQuery query = Graql.define(typeVar.type("my-type").sub("entity"), type2Var.type("my-type"));
 
         ConceptMap result = tx.execute(query).get(0);
-        assertThat(result.vars(), containsInAnyOrder(type.var(), type2.var()));
-        assertEquals(result.get(type.var()), result.get(type2.var()));
+        assertThat(result.vars(), containsInAnyOrder(typeVar.var(), type2Var.var()));
+        assertEquals(result.get(typeVar.var()), result.get(type2Var.var()));
     }
 
     @Test
@@ -300,7 +300,7 @@ public class DefineQueryIT {
         EntityType newType = tx.putEntityType("a-new-type");
         EntityType movie = tx.getEntityType("movie");
 
-        tx.execute(Graql.define(label("a-new-type").sub("movie")));
+        tx.execute(Graql.define(Graql.type("a-new-type").sub("movie")));
 
         assertEquals(movie, newType.sup());
     }
@@ -309,7 +309,7 @@ public class DefineQueryIT {
     public void whenDefiningARule_TheRuleIsInTheKB() {
         Pattern when = Graql.parsePattern("$x isa entity");
         Pattern then = Graql.parsePattern("$x isa entity");
-        Statement vars = label("my-rule").sub(label(RULE.getLabel())).when(when).then(then);
+        Statement vars = Graql.type("my-rule").sub(type(RULE.getLabel().getValue())).when(when).then(then);
         tx.execute(Graql.define(vars));
 
         assertNotNull(tx.getRule("my-rule"));
@@ -321,14 +321,14 @@ public class DefineQueryIT {
         exception.expectMessage(
                 allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
         );
-        tx.execute(Graql.define(label("my-resource").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue())));
+        tx.execute(Graql.define(Graql.type("my-resource").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue())));
     }
 
     @Test
     public void testErrorRecursiveType() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("thingy"), containsString("itself")));
-        tx.execute(Graql.define(label("thingy").sub("thingy")));
+        tx.execute(Graql.define(Graql.type("thingy").sub("thingy")));
     }
 
     @Test
@@ -342,14 +342,14 @@ public class DefineQueryIT {
     public void testErrorWhenNonExistentResource() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("nothing");
-        tx.execute(Graql.define(label("blah this").sub("entity").has("nothing")));
+        tx.execute(Graql.define(Graql.type("blah this").sub("entity").has("nothing")));
     }
 
     @Test
     public void whenDefiningMetaType_Throw() {
         exception.expect(InvalidKBException.class);
         exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", Schema.MetaSchema.THING.getLabel().getValue()));
-        tx.execute(Graql.define(label("my-metatype").sub(Schema.MetaSchema.THING.getLabel().getValue())));
+        tx.execute(Graql.define(Graql.type("my-metatype").sub(Schema.MetaSchema.THING.getLabel().getValue())));
     }
 
     @Test
@@ -361,7 +361,7 @@ public class DefineQueryIT {
                 GraqlQueryException.insertPropertyOnExistingConcept("datatype", AttributeType.DataType.BOOLEAN, name).getMessage()
         );
 
-        tx.execute(Graql.define(label("name").datatype(Query.DataType.BOOLEAN)));
+        tx.execute(Graql.define(Graql.type("name").datatype(Query.DataType.BOOLEAN)));
     }
 
     @Test
@@ -371,26 +371,26 @@ public class DefineQueryIT {
                 allOf(containsString("unexpected property"), containsString("datatype"), containsString("my-type"))
         );
 
-        tx.execute(Graql.define(label("my-type").sub("entity").datatype(Query.DataType.BOOLEAN)));
+        tx.execute(Graql.define(Graql.type("my-type").sub("entity").datatype(Query.DataType.BOOLEAN)));
     }
 
     @Test
     public void whenDefiningRuleWithoutWhen_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
-        tx.execute(Graql.define(label("a-rule").sub(label(RULE.getLabel())).then(var("x").isa("movie"))));
+        tx.execute(Graql.define(Graql.type("a-rule").sub(type(RULE.getLabel().getValue())).then(var("x").isa("movie"))));
     }
 
     @Test
     public void whenDefiningRuleWithoutThen_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
-        tx.execute(Graql.define(label("a-rule").sub(label(RULE.getLabel())).when(var("x").isa("movie"))));
+        tx.execute(Graql.define(Graql.type("a-rule").sub(type(RULE.getLabel().getValue())).when(var("x").isa("movie"))));
     }
 
     @Test
     public void whenDefiningANonRuleWithAWhenPattern_Throw() {
-        Statement rule = label("yes").sub(label(ENTITY.getLabel())).when(var("x"));
+        Statement rule = Graql.type("yes").sub(type(ENTITY.getLabel().getValue())).when(var("x"));
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(anyOf(
@@ -405,7 +405,7 @@ public class DefineQueryIT {
 
     @Test
     public void whenDefiningANonRuleWithAThenPattern_Throw() {
-        Statement rule = label("covfefe").sub(label(ENTITY.getLabel())).then(var("x"));
+        Statement rule = Graql.type("covfefe").sub(type(ENTITY.getLabel().getValue())).then(var("x"));
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(anyOf(
@@ -446,7 +446,7 @@ public class DefineQueryIT {
         EntityType type = tx.getEntityType("a-new-type");
         Label newLabel = Label.of("a-new-new-type");
 
-        tx.execute(Graql.define(label(newLabel).id(type.id().getValue())));
+        tx.execute(Graql.define(type(newLabel.getValue()).id(type.id().getValue())));
 
         assertEquals(newLabel, type.label());
     }
@@ -460,7 +460,7 @@ public class DefineQueryIT {
 
     @Test
     public void whenDefiningARelationship_SubRoleDeclarationsCanBeSkipped() {
-        tx.execute(Graql.define(label("marriage").sub(label(RELATIONSHIP.getLabel())).relates("husband").relates("wife")));
+        tx.execute(Graql.define(Graql.type("marriage").sub(type(RELATIONSHIP.getLabel().getValue())).relates("husband").relates("wife")));
 
         RelationType marriage = tx.getRelationshipType("marriage");
         Role husband = tx.getRole("husband");
@@ -470,10 +470,10 @@ public class DefineQueryIT {
 
     @Test
     public void whenDefiningARelationship_SubRoleCasUseAs() {
-        tx.execute(Graql.define(label("parentship").sub(label(RELATIONSHIP.getLabel()))
+        tx.execute(Graql.define(Graql.type("parentship").sub(type(RELATIONSHIP.getLabel().getValue()))
                           .relates("parent")
                           .relates("child")));
-        tx.execute(Graql.define(label("fatherhood").sub(label(RELATIONSHIP.getLabel()))
+        tx.execute(Graql.define(Graql.type("fatherhood").sub(type(RELATIONSHIP.getLabel().getValue()))
                           .relates("father", "parent")
                           .relates("son", "child")));
 
@@ -489,7 +489,7 @@ public class DefineQueryIT {
     public void whenDefiningARule_SubRuleDeclarationsCanBeSkipped() {
         Pattern when = Graql.parsePattern("$x isa entity");
         Pattern then = Graql.parsePattern("$x isa entity");
-        Statement vars = label("my-rule").when(when).then(then);
+        Statement vars = Graql.type("my-rule").when(when).then(then);
         tx.execute(Graql.define(vars));
 
         assertNotNull(tx.getRule("my-rule"));
@@ -498,8 +498,8 @@ public class DefineQueryIT {
     @Test
     public void whenDefiningARelationship_SubRoleDeclarationsCanBeSkipped_EvenWhenRoleInReferredToInOtherContexts() {
         tx.execute(Graql.define(
-                label("marriage").sub(label(RELATIONSHIP.getLabel())).relates("husband").relates("wife"),
-                label("person").plays("husband").plays("wife")
+                Graql.type("marriage").sub(type(RELATIONSHIP.getLabel().getValue())).relates("husband").relates("wife"),
+                Graql.type("person").plays("husband").plays("wife")
         ));
 
         RelationType marriage = tx.getRelationshipType("marriage");
@@ -516,8 +516,8 @@ public class DefineQueryIT {
         exception.expect(GraknException.class);
 
         tx.execute(Graql.define(
-                label("marriage").sub(label(RELATIONSHIP.getLabel())).relates("husband").relates("wife"),
-                label("wife").sub(label(ENTITY.getLabel()))
+                Graql.type("marriage").sub(type(RELATIONSHIP.getLabel().getValue())).relates("husband").relates("wife"),
+                Graql.type("wife").sub(type(ENTITY.getLabel().getValue()))
         ));
     }
 

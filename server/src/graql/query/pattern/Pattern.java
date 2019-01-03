@@ -40,7 +40,7 @@ public interface Pattern {
     Set<Variable> variables();
 
     /**
-     * @return all variables referenced in the pattern
+     * @return all statements contained in the pattern
      */
     @CheckReturnValue
     default Set<Statement> statements() {

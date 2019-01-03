@@ -395,7 +395,7 @@ public class QueryPlannerIT {
 
         pattern = and(
                 x.isa(superType),
-                superType.label(thingy),
+                superType.type(thingy),
                 y.isa(thingy2),
                 subType.sub(superType),
                 z.isa(subType),

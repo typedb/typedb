@@ -18,28 +18,27 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.util.StringUtil;
 
 /**
- * Represents the {@code label} property on a Type.
+ * Represents the {@code name} property on a Type.
  * This property can be queried and inserted. If used in an insert query and there is an existing type with the give
- * label, then that type will be retrieved.
+ * name, then that type will be retrieved.
  */
-public class LabelProperty extends VarProperty {
+public class TypeProperty extends VarProperty {
 
-    private final Label label;
+    private final String name;
 
-    public LabelProperty(Label label) {
-        if (label == null) {
-            throw new NullPointerException("Null label");
+    public TypeProperty(String name) {
+        if (name == null) {
+            throw new NullPointerException("Null name");
         }
-        this.label = label;
+        this.name = name;
     }
 
-    public Label label() {
-        return label;
+    public String value() { // TODO: find a better name but don't clash with name()
+        return name;
     }
 
     @Override
@@ -49,7 +48,7 @@ public class LabelProperty extends VarProperty {
 
     @Override
     public String property() {
-        return StringUtil.typeLabelToString(label());
+        return StringUtil.typeLabelToString(value());
     }
 
     @Override
@@ -67,9 +66,9 @@ public class LabelProperty extends VarProperty {
         if (o == this) {
             return true;
         }
-        if (o instanceof LabelProperty) {
-            LabelProperty that = (LabelProperty) o;
-            return (this.label.equals(that.label()));
+        if (o instanceof TypeProperty) {
+            TypeProperty that = (TypeProperty) o;
+            return (this.name.equals(that.value()));
         }
         return false;
     }
@@ -78,7 +77,7 @@ public class LabelProperty extends VarProperty {
     public int hashCode() {
         int h = 1;
         h *= 1000003;
-        h ^= this.label.hashCode();
+        h ^= this.name.hashCode();
         return h;
     }
 }
