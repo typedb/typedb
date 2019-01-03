@@ -19,7 +19,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deb_package", "rpm_package")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deploy_deb", "deploy_rpm")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar", "pkg_deb")
 
 
@@ -138,7 +138,7 @@ distribution(
     output_filename = "grakn-core-server",
 )
 
-deb_package(
+deploy_deb(
     name = "deploy-deb",
     package_name = "grakn-core-server",
     maintainer = "Grakn Labs <community@grakn.ai>",
@@ -151,9 +151,9 @@ deb_package(
     target = ":server-binary",
     installation_dir = "/opt/grakn/core/server/",
     empty_dirs = [
-        "./opt/grakn/core/server/services/lib/",
-        "./var/lib/grakn/db/queue",
-        "./var/lib/grakn/db/cassandra"
+        "opt/grakn/core/server/services/lib/",
+        "var/lib/grakn/db/queue",
+        "var/lib/grakn/db/cassandra"
      ],
     files = {
         "//server:services/cassandra/cassandra.yaml": "services/cassandra/cassandra.yaml",
@@ -162,16 +162,16 @@ deb_package(
     },
     permissions = {
         "services/cassandra/cassandra.yaml": "0777",
-        "./var/lib/grakn/db/queue": "0777",
-        "./var/lib/grakn/db/cassandra": "0777",
+        "var/lib/grakn/db/queue": "0777",
+        "var/lib/grakn/db/cassandra": "0777",
     },
     symlinks = {
-        "./opt/grakn/core/server/db/": "/var/lib/grakn/db/",
+        "opt/grakn/core/server/db/": "/var/lib/grakn/db/",
     },
 )
 
 
-rpm_package(
+deploy_rpm(
     name = "deploy-rpm",
     package_name = "grakn-core-server",
     installation_dir = "/opt/grakn/core/server/",
@@ -179,9 +179,9 @@ rpm_package(
     spec_file = "//dependencies/distribution/rpm:grakn-core-server.spec",
     target = ":server-binary",
     empty_dirs = [
-        "./opt/grakn/core/server/services/lib/",
-        "./var/lib/grakn/db/queue",
-        "./var/lib/grakn/db/cassandra"
+        "opt/grakn/core/server/services/lib/",
+        "var/lib/grakn/db/queue",
+        "var/lib/grakn/db/cassandra"
      ],
     files = {
         "//server:services/cassandra/cassandra.yaml": "services/cassandra/cassandra.yaml",
@@ -190,10 +190,10 @@ rpm_package(
     },
     permissions = {
         "services/cassandra/cassandra.yaml": "0777",
-        "./var/lib/grakn/db/queue": "0777",
-        "./var/lib/grakn/db/cassandra": "0777",
+        "var/lib/grakn/db/queue": "0777",
+        "var/lib/grakn/db/cassandra": "0777",
     },
     symlinks = {
-        "./opt/grakn/core/server/db/": "/var/lib/grakn/db/",
+        "opt/grakn/core/server/db/": "/var/lib/grakn/db/",
     },
 )

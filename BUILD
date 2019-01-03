@@ -18,7 +18,7 @@
 
 exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
 load("@graknlabs_rules_deployment//brew:rules.bzl", deploy_brew = "deploy_brew")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deb_package", "rpm_package")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deploy_deb", "deploy_rpm")
 
 
 py_binary(
@@ -59,7 +59,7 @@ deploy_brew(
     version_file = "//:VERSION"
 )
 
-deb_package(
+deploy_deb(
     name = "deploy-deb",
     package_name = "grakn-core-bin",
     maintainer = "Grakn Labs <community@grakn.ai>",
@@ -67,7 +67,7 @@ deb_package(
     version_file = "//:VERSION",
     installation_dir = "/opt/grakn/core/",
     empty_dirs = [
-        "./var/log/grakn/",
+        "var/log/grakn/",
     ],
     files = {
         "//:grakn": "grakn",
@@ -78,23 +78,23 @@ deb_package(
         "openjdk-8-jre"
     ],
     permissions = {
-        "./var/log/grakn/": "0777",
+        "var/log/grakn/": "0777",
     },
     symlinks = {
-        "./usr/local/bin/grakn": "/opt/grakn/core/grakn",
-        "./opt/grakn/core/logs": "/var/log/grakn/",
+        "usr/local/bin/grakn": "/opt/grakn/core/grakn",
+        "opt/grakn/core/logs": "/var/log/grakn/",
     },
 )
 
 
-rpm_package(
+deploy_rpm(
     name = "deploy-rpm",
     package_name = "grakn-core-bin",
     installation_dir = "/opt/grakn/core/",
     version_file = "//:VERSION",
     spec_file = "//dependencies/distribution/rpm:grakn-core-bin.spec",
     empty_dirs = [
-        "./var/log/grakn/",
+        "var/log/grakn/",
     ],
     files = {
         "//:grakn": "grakn",
@@ -102,10 +102,10 @@ rpm_package(
         "//server:conf/grakn.properties": "conf/grakn.properties",
     },
     permissions = {
-        "./var/log/grakn/": "0777",
+        "var/log/grakn/": "0777",
     },
     symlinks = {
-        "./usr/local/bin/grakn": "/opt/grakn/core/grakn",
-        "./opt/grakn/core/logs": "/var/log/grakn/",
+        "usr/local/bin/grakn": "/opt/grakn/core/grakn",
+        "opt/grakn/core/logs": "/var/log/grakn/",
     },
 )
