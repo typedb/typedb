@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 
 import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.pattern.Pattern.and;
+import static grakn.core.graql.query.pattern.Pattern.not;
 import static grakn.core.graql.query.pattern.Pattern.or;
 import static grakn.core.graql.query.pattern.Pattern.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
@@ -88,7 +89,8 @@ public class PatternIT {
 
         assertTrue(x.isStatement());
         assertFalse(x.isDisjunction());
-        assertFalse(x.isConjunction());
+        assertFalse(x.isNegation());
+        assertTrue(x.isConjunction());
 
         assertEquals(x, x.asStatement());
     }
@@ -99,6 +101,7 @@ public class PatternIT {
 
         assertFalse(disjunction.isStatement());
         assertTrue(disjunction.isDisjunction());
+        assertFalse(disjunction.isNegation());
         assertFalse(disjunction.isConjunction());
 
         //noinspection AssertEqualsBetweenInconvertibleTypes
@@ -111,10 +114,24 @@ public class PatternIT {
 
         assertFalse(conjunction.isStatement());
         assertFalse(conjunction.isDisjunction());
+        assertFalse(conjunction.isNegation());
         assertTrue(conjunction.isConjunction());
 
         //noinspection AssertEqualsBetweenInconvertibleTypes
         assertEquals(conjunction, conjunction.asConjunction());
+    }
+
+    @Test
+    public void testSimpleNegation() {
+        Pattern negation = not();
+
+        assertFalse(negation.isStatement());
+        assertFalse(negation.isDisjunction());
+        assertFalse(negation.isConjunction());
+        assertTrue(negation.isNegation());
+
+        //noinspection AssertEqualsBetweenInconvertibleTypes
+        assertEquals(negation, negation.asNegation());
     }
 
     @Test
@@ -306,7 +323,23 @@ public class PatternIT {
     }
 
     @Test
-    public void testNegation() {
+    public void whenNegationPassedNull_Throw() {
+        exception.expect(Exception.class);
+        Set<Statement> varSet = null;
+        //noinspection ResultOfMethodCallIgnored,ConstantConditions
+        not(varSet);
+    }
+
+    @Test
+    public void whenNegationPassedVarAndNull_Throw() {
+        exception.expect(Exception.class);
+        Statement var = null;
+        //noinspection ResultOfMethodCallIgnored,ConstantConditions
+        not(var(), var);
+    }
+
+    @Test
+    public void testNeq() {
         assertExists(tx, var().isa("movie").has("title", "Godfather"));
         Set<Concept> result1 = tx.stream(Graql.match(
                 var("x").isa("movie").has("title", var("y")),
@@ -325,7 +358,7 @@ public class PatternIT {
     }
 
     @Test
-    public void whenNegationPassedNull_Throw() {
+    public void whenNeqPassedNull_Throw() {
         exception.expect(Exception.class);
         Statement var = null;
         //noinspection ConstantConditions,ResultOfMethodCallIgnored
