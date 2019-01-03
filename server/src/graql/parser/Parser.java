@@ -76,7 +76,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.query.Graql.eq;
-import static grakn.core.graql.query.pattern.Pattern.label;
+import static grakn.core.graql.query.Graql.label;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -437,7 +437,7 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public Conjunction<?> visitConjunction(GraqlParser.ConjunctionContext ctx) {
-        return Pattern.and(visitPatterns(ctx.patterns()));
+        return Graql.and(visitPatterns(ctx.patterns()));
     }
 
     @Override
@@ -445,11 +445,11 @@ public class Parser extends GraqlBaseVisitor {
         Set<Pattern> patterns = ctx.patterns().stream()
                 .map(patternsCtx -> {
                     Set<Pattern> patternSet = visitPatterns(patternsCtx);
-                    if (patternSet.size() > 1) return Pattern.and(patternSet);
+                    if (patternSet.size() > 1) return Graql.and(patternSet);
                     else return patternSet.iterator().next();
                 })
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        return Pattern.or(patterns);
+        return Graql.or(patterns);
     }
 
     @Override
@@ -504,13 +504,13 @@ public class Parser extends GraqlBaseVisitor {
                 type = type.like(visitRegex(property.regex()));
 
             } else if (property.WHEN() != null) {
-                type = type.when(Pattern.and(
+                type = type.when(Graql.and(
                         property.pattern().stream()
                                 .map(this::visitPattern)
                                 .collect(Collectors.toList())
                 ));
             } else if (property.THEN() != null) {
-                type = type.then(Pattern.and(
+                type = type.then(Graql.and(
                         property.statement_instance().stream()
                                 .map(this::visitStatement_instance)
                                 .collect(Collectors.toList())
@@ -546,14 +546,14 @@ public class Parser extends GraqlBaseVisitor {
     public Statement visitStatement_instance(GraqlParser.Statement_instanceContext ctx) {
         // TODO: restrict for Insert VS Match
 
-        if (ctx.instance_thing() != null) {
-            return visitInstance_thing(ctx.instance_thing());
+        if (ctx.statement_thing() != null) {
+            return visitStatement_thing(ctx.statement_thing());
 
-        } else if (ctx.instance_relation() != null) {
-            return visitInstance_relation(ctx.instance_relation());
+        } else if (ctx.statement_relation() != null) {
+            return visitStatement_relation(ctx.statement_relation());
 
-        } else if (ctx.instance_attribute() != null) {
-            return visitInstance_attribute(ctx.instance_attribute());
+        } else if (ctx.statement_attribute() != null) {
+            return visitStatement_attribute(ctx.statement_attribute());
 
         } else {
             throw new IllegalArgumentException("Unrecognised INSERT statement: " + ctx.getText());
@@ -561,10 +561,10 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public Statement visitInstance_thing(GraqlParser.Instance_thingContext ctx) {
+    public Statement visitStatement_thing(GraqlParser.Statement_thingContext ctx) {
         // TODO: restrict for Insert VS Match
 
-        Statement instance = Pattern.var(getVar(ctx.VAR_()));
+        Statement instance = Graql.var(getVar(ctx.VAR_()));
 
         if (ctx.ISA_() != null) {
             instance = instance.addProperty(getIsaProperty(ctx.ISA_(), ctx.type()));
@@ -584,14 +584,14 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public Statement visitInstance_relation(GraqlParser.Instance_relationContext ctx) {
+    public Statement visitStatement_relation(GraqlParser.Statement_relationContext ctx) {
         // TODO: restrict for Insert VS Match
 
         Statement instance;
         if (ctx.VAR_() != null) {
-            instance = Pattern.var(getVar(ctx.VAR_()));
+            instance = Graql.var(getVar(ctx.VAR_()));
         } else {
-            instance = Pattern.var();
+            instance = Graql.var();
         }
 
         instance = instance.addProperty(visitRelation(ctx.relation()));
@@ -609,14 +609,14 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public Statement visitInstance_attribute(GraqlParser.Instance_attributeContext ctx) {
+    public Statement visitStatement_attribute(GraqlParser.Statement_attributeContext ctx) {
         // TODO: restrict for Insert VS Match
 
         Statement instance;
         if (ctx.VAR_() != null) {
-            instance = Pattern.var(getVar(ctx.VAR_()));
+            instance = Graql.var(getVar(ctx.VAR_()));
         } else {
-            instance = Pattern.var();
+            instance = Graql.var();
         }
 
         instance = instance.addProperty(new ValueProperty(visitPredicate(ctx.predicate())));
@@ -659,16 +659,16 @@ public class Parser extends GraqlBaseVisitor {
         String type = ctx.label().getText();
 
         if (ctx.VAR_() != null) {
-            Statement variable = Pattern.var(getVar(ctx.VAR_()));
+            Statement variable = Graql.var(getVar(ctx.VAR_()));
             if (ctx.via() != null) {
-                return new HasAttributeProperty(type, variable, Pattern.var(getVar(ctx.via().VAR_())));
+                return new HasAttributeProperty(type, variable, Graql.var(getVar(ctx.via().VAR_())));
             } else {
                 return new HasAttributeProperty(type, variable);
             }
         } else if (ctx.predicate() != null) {
-            Statement value = Pattern.var().val(visitPredicate(ctx.predicate()));
+            Statement value = Graql.var().val(visitPredicate(ctx.predicate()));
             if (ctx.via() != null) {
-                return new HasAttributeProperty(type, value, Pattern.var(getVar(ctx.via().VAR_())));
+                return new HasAttributeProperty(type, value, Graql.var(getVar(ctx.via().VAR_())));
             } else {
                 return new HasAttributeProperty(type, value);
             }

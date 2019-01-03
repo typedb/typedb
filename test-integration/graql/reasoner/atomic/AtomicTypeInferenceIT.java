@@ -38,7 +38,6 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
@@ -415,7 +414,7 @@ public class AtomicTypeInferenceIT {
 
     private void typeInferenceQueries(List<SchemaConcept> possibleTypes, String pattern, TransactionOLTP tx) {
         List<ConceptMap> typedAnswers = typedAnswers(possibleTypes, pattern, tx);
-        List<ConceptMap> unTypedAnswers = tx.execute(Graql.match(Pattern.parse(pattern)).get());
+        List<ConceptMap> unTypedAnswers = tx.execute(Graql.match(Graql.parsePattern(pattern)).get());
         assertEquals(typedAnswers.size(), unTypedAnswers.size());
         GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
     }
@@ -440,9 +439,9 @@ public class AtomicTypeInferenceIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx){
-        Set<Statement> vars = Pattern.parse(patternString)
+        Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Pattern.and(vars);
+        return Graql.and(vars);
     }
 }

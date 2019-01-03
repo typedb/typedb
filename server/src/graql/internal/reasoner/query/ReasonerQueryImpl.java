@@ -206,7 +206,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public void checkValid() { getAtoms().forEach(Atomic::checkValid);}
 
     public Conjunction<Pattern> getPattern() {
-        return Pattern.and(
+        return Graql.and(
                 getAtoms().stream()
                         .map(Atomic::getCombinedPattern)
                         .flatMap(p -> p.statements().stream())

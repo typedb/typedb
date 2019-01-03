@@ -58,8 +58,8 @@ import static grakn.core.graql.internal.Schema.MetaSchema.RELATIONSHIP;
 import static grakn.core.graql.internal.Schema.MetaSchema.ROLE;
 import static grakn.core.graql.internal.Schema.MetaSchema.RULE;
 import static grakn.core.graql.query.Graql.parse;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -307,8 +307,8 @@ public class DefineQueryIT {
 
     @Test
     public void whenDefiningARule_TheRuleIsInTheKB() {
-        Pattern when = Pattern.parse("$x isa entity");
-        Pattern then = Pattern.parse("$x isa entity");
+        Pattern when = Graql.parsePattern("$x isa entity");
+        Pattern then = Graql.parsePattern("$x isa entity");
         Statement vars = label("my-rule").sub(label(RULE.getLabel())).when(when).then(then);
         tx.execute(Graql.define(vars));
 
@@ -487,8 +487,8 @@ public class DefineQueryIT {
 
     @Test
     public void whenDefiningARule_SubRuleDeclarationsCanBeSkipped() {
-        Pattern when = Pattern.parse("$x isa entity");
-        Pattern then = Pattern.parse("$x isa entity");
+        Pattern when = Graql.parsePattern("$x isa entity");
+        Pattern then = Graql.parsePattern("$x isa entity");
         Statement vars = label("my-rule").when(when).then(then);
         tx.execute(Graql.define(vars));
 

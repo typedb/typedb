@@ -19,9 +19,13 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.Answer;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.parser.Parser;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
@@ -31,7 +35,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.query.ComputeQuery.Method;
@@ -57,6 +64,14 @@ public class Graql {
         return parser.parseQueryListEOF(queryString);
     }
 
+    public static Pattern parsePattern(String pattern) {
+        return parser.parsePatternEOF(pattern);
+    }
+
+    public static List<Pattern> parsePatternList(String pattern) {
+        return parser.parsePatternListEOF(pattern).collect(Collectors.toList());
+    }
+
     /**
      * @param patterns an array of patterns to match in the graph
      * @return a match clause that will find matches of the given patterns
@@ -72,7 +87,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static MatchClause match(Collection<? extends Pattern> patterns) {
-        return new MatchClause(Pattern.and(Collections.unmodifiableSet(new LinkedHashSet<>(patterns))));
+        return new MatchClause(and(Collections.unmodifiableSet(new LinkedHashSet<>(patterns))));
     }
 
     /**
@@ -134,6 +149,102 @@ public class Graql {
         return new ComputeQuery<>(method);
     }
 
+    // PATTERNS
+
+    /**
+     * @return a new statement with an anonymous Variable
+     */
+    @CheckReturnValue
+    public static Statement var() {
+        return var(new Variable());
+    }
+
+    /**
+     * @param name the name of the variable
+     * @return a new statement with a variable of a given name
+     */
+    @CheckReturnValue
+    public static Statement var(String name) {
+        return var(new Variable(name));
+    }
+
+    /**
+     * @param var a variable to create a statement
+     * @return a new statement with a provided variable
+     */
+    @CheckReturnValue
+    public static Statement var(Variable var) {
+        return new Statement(var);
+    }
+
+    /**
+     * @param label the label of a concept
+     * @return a variable pattern that identifies a concept by label
+     */
+    @CheckReturnValue
+    public static Statement label(String label) {
+        return var().label(label);
+    }
+
+    /**
+     * @param label the label of a concept
+     * @return a variable pattern that identifies a concept by label
+     */
+    @CheckReturnValue
+    public static Statement label(Label label) {
+        return var().label(label);
+    }
+
+    /**
+     * @param patterns an array of patterns to match
+     * @return a pattern that will match only when all contained patterns match
+     */
+    @CheckReturnValue
+    public static Pattern and(Pattern... patterns) {
+        return and(Arrays.asList(patterns));
+    }
+
+    /**
+     * @param patterns a collection of patterns to match
+     * @return a pattern that will match only when all contained patterns match
+     */
+    @CheckReturnValue // TODO: replace this to accept List<Pattern>
+    public static Pattern and(Collection<? extends Pattern> patterns) {
+        return and(new LinkedHashSet<>(patterns));
+    }
+
+    // TODO: replace this to accept LinkedHashSet<Pattern>
+    public static <T extends Pattern> Conjunction<T> and(Set<T> patterns) {
+        return new Conjunction<>(patterns);
+    }
+
+    /**
+     * @param patterns an array of patterns to match
+     * @return a pattern that will match when any contained pattern matches
+     */
+    @CheckReturnValue
+    public static Pattern or(Pattern... patterns) {
+        return or(Arrays.asList(patterns));
+    }
+
+    /**
+     * @param patterns a collection of patterns to match
+     * @return a pattern that will match when any contained pattern matches
+     */
+    @CheckReturnValue // TODO: replace this to accept List<Pattern>
+    public static Pattern or(Collection<? extends Pattern> patterns) {
+        // Simplify representation when there is only one alternative
+        if (patterns.size() == 1) {
+            return patterns.iterator().next();
+        }
+
+        return or(new LinkedHashSet<>(patterns));
+    }
+
+    // TODO: replace this to accept LinkedHashSet<Pattern>
+    public static <T extends Pattern> Disjunction<T> or(Set<T> patterns) {
+        return new Disjunction<>(patterns);
+    }
 
     // PREDICATES
 
@@ -286,5 +397,4 @@ public class Graql {
         Objects.requireNonNull(varPattern);
         return Predicates.contains(varPattern);
     }
-
 }

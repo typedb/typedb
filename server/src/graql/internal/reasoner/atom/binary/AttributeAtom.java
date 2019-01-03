@@ -43,6 +43,7 @@ import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
@@ -107,7 +108,7 @@ public abstract class AttributeAtom extends Binary{
         Transaction tx = getParentQuery().tx();
         Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
         return RelationshipAtom.create(
-                Pattern.var()
+                Graql.var()
                         .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), new Statement(getVarName()))
                         .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), new Statement(getAttributeVariable()))
                         .isa(typeLabel.getValue()),
@@ -183,7 +184,7 @@ public abstract class AttributeAtom extends Binary{
                 .map(Atomic::getPattern)
                 .collect(Collectors.toSet());
         vars.add(getPattern());
-        return Pattern.and(vars);
+        return Graql.and(vars);
     }
 
     @Override

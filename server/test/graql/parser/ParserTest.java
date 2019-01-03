@@ -70,10 +70,10 @@ import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.Graql.parse;
 import static grakn.core.graql.query.Graql.like;
 import static grakn.core.graql.query.Graql.undefine;
-import static grakn.core.graql.query.pattern.Pattern.and;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.or;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.or;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -99,7 +99,7 @@ public class ParserTest {
 
     private void assertQueryEquals(Pattern expected, Pattern parsed, String query) {
         assertEquals(expected, parsed);
-        assertEquals(expected, Pattern.parse(parsed.toString()));
+        assertEquals(expected, Graql.parsePattern(parsed.toString()));
         assertEquals(query, expected.toString());
     }
 
@@ -657,8 +657,8 @@ public class ParserTest {
     @Test
     public void testParsingPattern() {
         String pattern = "{ (wife: $a, husband: $b) isa marriage; $a has gender 'male'; $b has gender 'female'; };";
-        Pattern parsed = Pattern.parse(pattern);
-        Pattern expected = Pattern.and(
+        Pattern parsed = Graql.parsePattern(pattern);
+        Pattern expected = Graql.and(
                 var().rel("wife", "a").rel("husband", "b").isa("marriage"),
                 var("a").has("gender", "male"),
                 var("b").has("gender", "female")

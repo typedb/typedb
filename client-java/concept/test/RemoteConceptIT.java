@@ -48,7 +48,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;

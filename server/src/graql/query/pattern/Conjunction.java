@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query.Char;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
@@ -44,7 +45,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
 
     private final LinkedHashSet<T> patterns;
 
-    Conjunction(Set<T> patterns) {
+    public Conjunction(Set<T> patterns) {
         if (patterns == null) {
             throw new NullPointerException("Null patterns");
         }
@@ -75,7 +76,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
                 .map(Conjunction::fromConjunctions)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        return Pattern.or(dnf);
+        return Graql.or(dnf);
 
         // Wasn't that a horrible function? Here it is in Haskell:
         //     dnf = map fromConjunctions . sequence . map getDisjunctiveNormalForm . patterns
@@ -84,16 +85,6 @@ public class Conjunction<T extends Pattern> implements Pattern {
     @Override
     public Set<Variable> variables() {
         return getPatterns().stream().map(Pattern::variables).reduce(ImmutableSet.of(), Sets::union);
-    }
-
-    @Override
-    public boolean isConjunction() {
-        return true;
-    }
-
-    @Override
-    public Conjunction<?> asConjunction() {
-        return this;
     }
 
     /**
@@ -110,7 +101,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
         Set<U> patterns = conjunctions.stream()
                 .flatMap(p -> p.getPatterns().stream())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        return Pattern.and(patterns);
+        return Graql.and(patterns);
     }
 
     @Override

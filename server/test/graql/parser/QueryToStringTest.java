@@ -25,7 +25,6 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Pattern;
 import org.junit.Test;
 
 import static grakn.core.graql.query.ComputeQuery.Algorithm.CONNECTED_COMPONENT;
@@ -41,10 +40,10 @@ import static grakn.core.graql.query.Graql.contains;
 import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
 import static grakn.core.graql.query.Graql.neq;
-import static grakn.core.graql.query.pattern.Pattern.and;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.or;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.or;
+import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 public class QueryToStringTest {
@@ -101,7 +100,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithThenToString() {
-        DefineQuery query = Graql.define(label("my-rule").sub("rule").then(and(Pattern.parseList("$x isa movie;"))));
+        DefineQuery query = Graql.define(label("my-rule").sub("rule").then(and(Graql.parsePatternList("$x isa movie;"))));
         //No need to execute the insert query
         InsertQuery parsedQuery = Graql.parse(query.toString());
         assertEquals(query.toString(), parsedQuery.toString());
@@ -109,7 +108,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithWhenToString() {
-        DefineQuery query = Graql.define(label("my-rule").sub("rule").when(and(Pattern.parseList("$x isa movie;"))));
+        DefineQuery query = Graql.define(label("my-rule").sub("rule").when(and(Graql.parsePatternList("$x isa movie;"))));
         //No need to execute the insert query
         InsertQuery parsedQuery = Graql.parse(query.toString());
         assertEquals(query.toString(), parsedQuery.toString());

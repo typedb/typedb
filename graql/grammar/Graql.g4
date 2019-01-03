@@ -140,19 +140,19 @@ type_property       :   ABSTRACT
 
 // INSTANCE STATEMENTS =========================================================
 
-statement_instance  :   instance_thing
-                    |   instance_relation
-                    |   instance_attribute
+statement_instance  :   statement_thing
+                    |   statement_relation
+                    |   statement_attribute
                     ;
-instance_thing      :   VAR_                ISA_ type   ( ',' attributes )? ';'
+statement_thing     :   VAR_                ISA_ type   ( ',' attributes )? ';'
                     |   VAR_                ID   id     ( ',' attributes )? ';'
                     |   VAR_                attributes                      ';'
                     ;
-instance_relation   :   VAR_? relation      ISA_ type   ( ',' attributes )? ';'
+statement_relation  :   VAR_? relation      ISA_ type   ( ',' attributes )? ';'
                     |   VAR_? relation      attributes                      ';'
                     |   VAR_? relation                                      ';'
                     ;
-instance_attribute  :   VAR_? predicate     ISA_ type   ( ',' attributes )? ';'
+statement_attribute :   VAR_? predicate     ISA_ type   ( ',' attributes )? ';'
                     |   VAR_? predicate     attributes                      ';'
                     |   VAR_? predicate                                     ';'
                     ;

@@ -26,7 +26,6 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.reasoner.graph.DiagonalGraph;
@@ -93,21 +92,21 @@ public class BenchmarkSmallIT {
             for (int i = 1; i <= N; i++) {
                 Statement fromVar = new Statement(new Variable().asUserDefined());
                 Statement toVar = new Statement(new Variable().asUserDefined());
-                Statement rulePattern = Pattern
+                Statement rulePattern = Graql
                         .label("rule" + i)
                         .when(
-                                Pattern.and(
-                                        Pattern.var()
-                                                .rel(Pattern.label(fromRole.label()), fromVar)
-                                                .rel(Pattern.label(toRole.label()), toVar)
+                                Graql.and(
+                                        Graql.var()
+                                                .rel(Graql.label(fromRole.label()), fromVar)
+                                                .rel(Graql.label(toRole.label()), toVar)
                                                 .isa("relation" + (i - 1))
                                 )
                         )
                         .then(
-                                Pattern.and(
-                                        Pattern.var()
-                                                .rel(Pattern.label(fromRole.label()), fromVar)
-                                                .rel(Pattern.label(toRole.label()), toVar)
+                                Graql.and(
+                                        Graql.var()
+                                                .rel(Graql.label(fromRole.label()), fromVar)
+                                                .rel(Graql.label(toRole.label()), toVar)
                                                 .isa("relation" + i)
                                 )
                         );

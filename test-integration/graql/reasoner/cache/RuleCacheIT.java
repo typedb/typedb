@@ -148,8 +148,8 @@ public class RuleCacheIT {
 
     @Test
     public void whenAddingARule_cacheContainsUpdatedEntry(){
-        Pattern when = Pattern.parse("{$x isa entity;$y isa entity;}");
-        Pattern then = Pattern.parse("{(someRole: $x, subRole: $y) isa binary;}");
+        Pattern when = Graql.parsePattern("{$x isa entity;$y isa entity;}");
+        Pattern then = Graql.parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
@@ -162,8 +162,8 @@ public class RuleCacheIT {
         tx.close();
         tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
 
-        Pattern when = Pattern.parse("{$x isa entity;$y isa entity;}");
-        Pattern then = Pattern.parse("{(someRole: $x, subRole: $y) isa binary;}");
+        Pattern when = Graql.parsePattern("{$x isa entity;$y isa entity;}");
+        Pattern then = Graql.parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
@@ -186,9 +186,9 @@ public class RuleCacheIT {
 
 
     private Conjunction<Statement> conjunction(String patternString){
-        Set<Statement> vars = Pattern.parse(patternString)
+        Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Pattern.and(vars);
+        return Graql.and(vars);
     }
 }

@@ -34,6 +34,7 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.Transaction;
@@ -277,7 +278,7 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleIsValidHornClause(Transaction graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        if (rule.when().isDisjunction()){
+        if (rule.when() instanceof Disjunction<?>){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
         }
         if (errors.isEmpty()){
