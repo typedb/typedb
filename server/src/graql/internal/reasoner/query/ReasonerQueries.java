@@ -47,7 +47,7 @@ public class ReasonerQueries {
      */
     public static ReasonerQueryImpl create(Conjunction<Statement> pattern, TransactionOLTP tx) {
         ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, tx).inferTypes();
-        return query.isAtomic()?
+        return (query.isAtomic() && query.isPositive())?
                 new ReasonerAtomicQuery(query.getAtoms(), tx) :
                 query;
     }
@@ -60,7 +60,8 @@ public class ReasonerQueries {
      */
     public static ReasonerQueryImpl create(Set<Atomic> as, TransactionOLTP tx){
         boolean isAtomic = as.stream().filter(Atomic::isSelectable).count() == 1;
-        return isAtomic?
+        boolean isPositive = as.stream().allMatch(Atomic::isPositive);
+        return (isAtomic && isPositive)?
                 new ReasonerAtomicQuery(as, tx).inferTypes() :
                 new ReasonerQueryImpl(as, tx).inferTypes();
     }
@@ -74,7 +75,8 @@ public class ReasonerQueries {
      */
     public static ReasonerQueryImpl create(List<Atom> as, TransactionOLTP tx){
         boolean isAtomic = as.size() == 1;
-        return isAtomic?
+        boolean isPositive = as.stream().allMatch(Atomic::isPositive);
+        return (isAtomic && isPositive)?
                 new ReasonerAtomicQuery(Iterables.getOnlyElement(as)).inferTypes() :
                 new ReasonerQueryImpl(as, tx).inferTypes();
     }

@@ -44,6 +44,7 @@ import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
@@ -108,8 +109,8 @@ public abstract class AttributeAtom extends Binary{
         Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
         return RelationshipAtom.create(
                 Pattern.var()
-                        .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), new Statement(getVarName()))
-                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), new Statement(getAttributeVariable()))
+                        .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), new PositiveStatement(getVarName()))
+                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), new PositiveStatement(getAttributeVariable()))
                         .isa(typeLabel.getValue()),
                 getPredicateVariable(),
                 tx.getSchemaConcept(typeLabel).id(),
@@ -361,8 +362,8 @@ public abstract class AttributeAtom extends Binary{
     public AttributeAtom rewriteWithRelationVariable(){
         Variable attributeVariable = getAttributeVariable();
         Variable relationVariable = getRelationVariable().asUserDefined();
-        Statement newVar = new Statement(getVarName())
-                .has(getSchemaConcept().label().getValue(), new Statement(attributeVariable), new Statement(relationVariable));
+        Statement newVar = new PositiveStatement(getVarName())
+                .has(getSchemaConcept().label().getValue(), new PositiveStatement(attributeVariable), new PositiveStatement(relationVariable));
         return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 

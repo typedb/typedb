@@ -35,6 +35,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
@@ -578,7 +579,7 @@ public class InsertQueryIT {
 
         // We have to construct it this way because you can't have two `isa`s normally
         // TODO: less bad way?
-        Statement varPattern = new Statement(
+        Statement varPattern = new PositiveStatement(
                 new Variable("x"),
                 ImmutableSet.of(new IsaProperty(label("movie")), new IsaProperty(label("person")))
         );

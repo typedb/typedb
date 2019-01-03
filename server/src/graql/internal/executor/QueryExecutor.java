@@ -36,7 +36,6 @@ import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -95,36 +94,36 @@ public class QueryExecutor {
         this.transaction = transaction;
     }
 
+    private Stream<ConceptMap> resolveConjunction(Conjunction<Statement> conj, TransactionOLTP tx){
+        ReasonerQuery conjQuery = ReasonerQueries.create(conj, tx).rewrite();
+        conjQuery.checkValid();
+
+        //TODO
+        // - handling of empty query is a hack, need to solve in another PR
+        // - atom parsing doesn't recognise nested statements so we do not resolve if possible
+        boolean doNotResolve = conjQuery.getAtoms().isEmpty()
+                || (conjQuery.isPositive() && !conjQuery.isRuleResolvable());
+        return doNotResolve?
+                tx.stream(Graql.match(conj), false) :
+                conjQuery.resolve();
+    }
+
     public Stream<ConceptMap> match(MatchClause matchClause) {
+        //validatePattern
         for (Statement statement : matchClause.getPatterns().statements()) {
             statement.properties().stream().forEach(property -> validateProperty(property, statement));
         }
 
-        if (!infer || !RuleUtils.hasRules(transaction)) {
+        if (!infer) {
             GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
             return traversal(matchClause.getPatterns().variables(), graqlTraversal);
         }
 
         try {
-            Iterator<Conjunction<Statement>> conjunctionIterator = matchClause.getPatterns()
-                    .getDisjunctiveNormalForm().getPatterns().iterator();
-            Conjunction<Statement> conjunction = conjunctionIterator.next();
-
-            ReasonerQuery reasonerQuery = ReasonerQueries.create(conjunction, transaction).rewrite();
-            reasonerQuery.checkValid();
-
-            Stream<ConceptMap> answerStream = reasonerQuery.isRuleResolvable() ?
-                    reasonerQuery.resolve() :
-                    transaction.stream(Graql.match(conjunction), false);
-
-            while (conjunctionIterator.hasNext()) {
-                conjunction = conjunctionIterator.next();
-                reasonerQuery = ReasonerQueries.create(conjunction, transaction).rewrite();
-                Stream<ConceptMap> localStream = reasonerQuery.isRuleResolvable() ?
-                        reasonerQuery.resolve() :
-                        transaction.stream(Graql.match(conjunction), false);
-
-                answerStream = Stream.concat(answerStream, localStream);
+            Iterator<Conjunction<Statement>> conjIt = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().iterator();
+            Stream<ConceptMap> answerStream = Stream.empty();
+            while (conjIt.hasNext()) {
+                answerStream = Stream.concat(answerStream, resolveConjunction(conjIt.next(), transaction));
             }
             return answerStream.map(result -> result.project(matchClause.getSelectedNames()));
         } catch (GraqlQueryException e) {

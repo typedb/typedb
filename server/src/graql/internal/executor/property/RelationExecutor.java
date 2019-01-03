@@ -34,6 +34,7 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
@@ -114,7 +115,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
         boolean isReified = statement.properties().stream()
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
-        Statement relVar = isReified ? new Statement(var.asUserDefined()) : new Statement(var);
+        Statement relVar = isReified ? new PositiveStatement(var.asUserDefined()) : new PositiveStatement(var);
 
         for (RelationProperty.RolePlayer rp : property.relationPlayers()) {
             Statement rolePattern = rp.getRole().orElse(null);
@@ -128,7 +129,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
                     if (concept != null) {
                         if (concept.isRole()) {
                             Label roleLabel = concept.asSchemaConcept().label();
-                            rolePattern = new Statement(roleVar).label(roleLabel);
+                            rolePattern = new PositiveStatement(roleVar).label(roleLabel);
                         } else {
                             throw GraqlQueryException.nonRoleIdAssignedToRoleVariable(statement);
                         }
@@ -158,8 +159,8 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
         }
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         relVar = isaProp instanceof IsaExplicitProperty ?
-                relVar.isaExplicit(new Statement(typeVariable.asUserDefined())) :
-                relVar.isa(new Statement(typeVariable.asUserDefined()));
+                relVar.isaExplicit(new PositiveStatement(typeVariable.asUserDefined())) :
+                relVar.isa(new PositiveStatement(typeVariable.asUserDefined()));
         return RelationshipAtom.create(relVar, typeVariable, predicateId, parent);
     }
 
