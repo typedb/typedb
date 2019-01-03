@@ -74,7 +74,7 @@ import static java.util.stream.Collectors.toSet;
  * should be set on the inserted concept. In a DeleteQuery, it describes the
  * properties that should be deleted.
  */
-public class Statement implements Pattern {
+public abstract class Statement implements Pattern {
 
     private final Variable var;
     private final Set<VarProperty> properties;
@@ -115,6 +115,16 @@ public class Statement implements Pattern {
 
     @Override
     public boolean isStatement() {
+        return true;
+    }
+
+    @Override
+    public Conjunction<?> asConjunction() {
+        return Pattern.and(Collections.singleton(this));
+    }
+
+    @Override
+    public boolean isConjunction() {
         return true;
     }
 
@@ -208,13 +218,6 @@ public class Statement implements Pattern {
         }
 
         return vars;
-    }
-
-    @Override
-    public final Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
-        // a disjunction containing only one option
-        Conjunction<Statement> conjunction = Pattern.and(Collections.singleton(this));
-        return Pattern.or(Collections.singleton(conjunction));
     }
 
     @Override
@@ -663,11 +666,11 @@ public class Statement implements Pattern {
                 throw GraqlQueryException.conflictingProperties(this, property, other);
             });
         }
-        return new Statement(var(), Sets.union(properties(), ImmutableSet.of(property)));
+        return Pattern.statement(var(), Sets.union(properties(), ImmutableSet.of(property)), isPositive());
     }
 
     private Statement removeProperty(VarProperty property) {
-        return new Statement(var(), Sets.difference(properties(), ImmutableSet.of(property)));
+        return Pattern.statement(var(), Sets.difference(properties(), ImmutableSet.of(property)), isPositive());
     }
 
     @Override
@@ -695,12 +698,13 @@ public class Statement implements Pattern {
             hashCode = properties().hashCode();
             if (var().isUserDefinedName()) hashCode = 31 * hashCode + var().hashCode();
             hashCode = 31 * hashCode + (var().isUserDefinedName() ? 1 : 0);
+            hashCode = 31 * hashCode + (isPositive() ? 1 : 0);
         }
         return hashCode;
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         Collection<Statement> innerVars = innerStatements();
         innerVars.remove(this);
         getProperties(HasAttributeProperty.class)

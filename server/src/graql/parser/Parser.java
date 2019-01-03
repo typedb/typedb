@@ -35,6 +35,7 @@ import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.predicate.ValuePredicate;
@@ -65,6 +66,7 @@ import java.util.stream.Stream;
 import static grakn.core.graql.query.Graql.eq;
 import static grakn.core.graql.query.pattern.Pattern.and;
 import static grakn.core.graql.query.pattern.Pattern.label;
+import static grakn.core.graql.query.pattern.Pattern.not;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -234,14 +236,30 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public Statement visitStatement(GraqlParser.StatementContext ctx) {
+    public Pattern visitPatternNegation(GraqlParser.PatternNegationContext ctx) {
+        return not(visitPattern(ctx.pattern()));
+    }
+
+    @Override
+    public Statement visitPositiveStatement(GraqlParser.PositiveStatementContext ctx) {
         Statement var;
+
         if (ctx.VARIABLE() != null) {
-            var = new Statement(getVariable(ctx.VARIABLE()));
+            var = new PositiveStatement(getVariable(ctx.VARIABLE()));
         } else {
             var = visitVariable(ctx.variable());
         }
         return getVarProperties(ctx.property()).apply(var);
+    }
+
+    @Override
+    public Statement visitNegativeStatement (GraqlParser.NegativeStatementContext ctx) {
+        return visitPositiveStatement(ctx.positiveStatement()).negate().asStatement();
+    }
+
+    @Override
+    public Statement visitStatement(GraqlParser.StatementContext ctx) {
+        return ctx.positiveStatement() != null? visitPositiveStatement(ctx.positiveStatement()) : visitNegativeStatement(ctx.negativeStatement());
     }
 
     @Override
@@ -275,16 +293,16 @@ public class Parser extends GraqlBaseVisitor {
 
         Statement relation;
         if (ctx.relation != null) {
-            relation = new Statement(getVariable(ctx.relation));
+            relation = new PositiveStatement(getVariable(ctx.relation));
         } else {
-            relation = new Statement(new Variable());
+            relation = new PositiveStatement(new Variable());
         }
 
         Statement resource;
         if (ctx.resource != null) {
-            resource = new Statement(getVariable(ctx.resource));
+            resource = new PositiveStatement(getVariable(ctx.resource));
         } else {
-            resource = new Statement(new Variable());
+            resource = new PositiveStatement(new Variable());
         }
 
         if (ctx.predicate() != null) {
@@ -336,7 +354,7 @@ public class Parser extends GraqlBaseVisitor {
         if (ctx.VARIABLE() == null) {
             return var -> var.rel(visitVariable(ctx.variable()));
         } else {
-            return var -> var.rel(visitVariable(ctx.variable()), new Statement(getVariable(ctx.VARIABLE())));
+            return var -> var.rel(visitVariable(ctx.variable()), new PositiveStatement(getVariable(ctx.VARIABLE())));
         }
     }
 
@@ -414,7 +432,7 @@ public class Parser extends GraqlBaseVisitor {
         } else if (ctx.label() != null) {
             return label(visitLabel(ctx.label()));
         } else {
-            return new Statement(getVariable(ctx.VARIABLE()));
+            return new PositiveStatement(getVariable(ctx.VARIABLE()));
         }
     }
 
@@ -425,7 +443,7 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public ValuePredicate visitPredicateVariable(GraqlParser.PredicateVariableContext ctx) {
-        return eq(new Statement(getVariable(ctx.VARIABLE())));
+        return eq(new PositiveStatement(getVariable(ctx.VARIABLE())));
     }
 
     @Override
@@ -455,7 +473,7 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public ValuePredicate visitPredicateContains(GraqlParser.PredicateContainsContext ctx) {
-        Object stringOrStatement = ctx.STRING() != null ? getString(ctx.STRING()) : new Statement(getVariable(ctx.VARIABLE()));
+        Object stringOrStatement = ctx.STRING() != null ? getString(ctx.STRING()) : new PositiveStatement(getVariable(ctx.VARIABLE()));
 
         return applyPredicate((Function<String, ValuePredicate>) Graql::contains, Graql::contains, stringOrStatement);
     }
@@ -467,7 +485,7 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public Statement visitValueVariable(GraqlParser.ValueVariableContext ctx) {
-        return new Statement(getVariable(ctx.VARIABLE()));
+        return new PositiveStatement(getVariable(ctx.VARIABLE()));
     }
 
     @Override

@@ -36,6 +36,7 @@ import grakn.core.graql.internal.reasoner.ResolutionIterator;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
+import grakn.core.graql.internal.reasoner.atom.NegatedAtomic;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -50,6 +51,7 @@ import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.internal.reasoner.state.AnswerState;
 import grakn.core.graql.internal.reasoner.state.ConjunctiveState;
 import grakn.core.graql.internal.reasoner.state.CumulativeState;
+import grakn.core.graql.internal.reasoner.state.NegatedConjunctiveState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
@@ -90,6 +92,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
                 .build();
+
+        if (!isNegationSafe()){
+            throw new IllegalStateException("Negated pattern unsafe! Negated pattern variables not bound!");
+        }
     }
 
     ReasonerQueryImpl(Set<Atomic> atoms, TransactionOLTP tx){
@@ -167,7 +173,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public String toString(){
         return "{\n\t" +
-                getAtoms(Atom.class).map(Atomic::toString).collect(Collectors.joining(";\n\t")) +
+                getAtoms(Atomic.class).map(Atomic::toString).collect(Collectors.joining(";\n\t")) +
                 "\n}";
     }
 
@@ -221,10 +227,23 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .collect(Collectors.toSet());
     }
 
+    private boolean isNegationSafe(){
+        Set<NegatedAtomic> negated = getAtoms(NegatedAtomic.class).collect(Collectors.toSet());
+        Set<Variable> negatedVars = negated.stream().flatMap(at -> at.getVarNames().stream()).collect(Collectors.toSet());
+        Set<Variable> boundVars = getAtoms().stream().filter(at -> !negated.contains(at)).flatMap(at -> at.getVarNames().stream()).collect(Collectors.toSet());
+
+        negated.stream().map(NegatedAtomic::inner).filter(Atomic::isAtom).map(Atom.class::cast).flatMap(Atom::getInnerPredicates).flatMap(at -> at.getVarNames().stream()).forEach(boundVars::add);
+        getAtoms(Atom.class).flatMap(Atom::getInnerPredicates).flatMap(at -> at.getVarNames().stream()).forEach(boundVars::add);
+        return boundVars.containsAll(negatedVars);
+    }
+
     @Override
     public boolean isRuleResolvable() {
         return selectAtoms().anyMatch(Atom::isRuleResolvable);
     }
+
+    @Override
+    public boolean isPositive() { return getAtoms().stream().allMatch(Atomic::isPositive); }
 
     /**
      * @return true if this query contains disconnected atoms that are unbounded
@@ -469,7 +488,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Stream<ConceptMap> resolve() {
-        return new ResolutionIterator(this).hasStream();
+        return resolve(new MultilevelSemanticCache());
+    }
+
+    public Stream<ConceptMap> resolve(MultilevelSemanticCache cache){
+        return new ResolutionIterator(this, cache).hasStream();
     }
 
     /**
@@ -481,7 +504,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return resolution subGoal formed from this query
      */
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
-        return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
+        ConjunctiveState conjunctiveState = new ConjunctiveState(this, sub, u, parent, subGoals, cache);
+        return isPositive()? conjunctiveState : new NegatedConjunctiveState(conjunctiveState);
     }
 
     /**
