@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.pattern;
 
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import java.util.Collections;
 import java.util.Set;
@@ -38,8 +39,8 @@ public class PositiveStatement extends Statement {
     @Override
     public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
         // a disjunction containing only one option
-        Conjunction<Statement> conjunction = Pattern.and(Collections.singleton(this));
-        return Pattern.or(Collections.singleton(conjunction));
+        Conjunction<Statement> conjunction = Graql.and(Collections.singleton(this));
+        return Graql.or(Collections.singleton(conjunction));
     }
 
     @Override

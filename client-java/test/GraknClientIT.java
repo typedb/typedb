@@ -90,8 +90,8 @@ import static grakn.core.graql.query.ComputeQuery.Method.MIN;
 import static grakn.core.graql.query.ComputeQuery.Method.PATH;
 import static grakn.core.graql.query.ComputeQuery.Method.STD;
 import static grakn.core.graql.query.ComputeQuery.Method.SUM;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -570,13 +570,13 @@ public class GraknClientIT {
     public void testGettingARule_TheInformationOnTheRuleIsCorrect() {
         try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putAttributeType("name", DataType.STRING);
-            Pattern when = Pattern.parse("$x has name 'expectation-when'");
-            Pattern then = Pattern.parse("$x has name 'expectation-then'");
+            Pattern when = Graql.parsePattern("$x has name 'expectation-when'");
+            Pattern then = Graql.parsePattern("$x has name 'expectation-then'");
 
             tx.putRule("expectation-rule", when, then);
 
-            when = Pattern.parse("$x has name 'materialize-when'");
-            then = Pattern.parse("$x has name 'materialize-then'");
+            when = Graql.parsePattern("$x has name 'materialize-when'");
+            then = Graql.parsePattern("$x has name 'materialize-then'");
             tx.putRule("materialize-rule", when, then);
             tx.commit();
         }

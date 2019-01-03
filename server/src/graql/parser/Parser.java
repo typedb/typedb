@@ -63,10 +63,10 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.eq;
-import static grakn.core.graql.query.pattern.Pattern.and;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.not;
+import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.not;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -222,7 +222,7 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public Pattern visitPatternDisjunction(GraqlParser.PatternDisjunctionContext ctx) {
-        return Pattern.or(ctx.pattern().stream().map(this::visitPattern).collect(toList()));
+        return Graql.or(ctx.pattern().stream().map(this::visitPattern).collect(toList()));
     }
 
     @Override
@@ -428,7 +428,7 @@ public class Parser extends GraqlBaseVisitor {
     @Override
     public Statement visitVariable(GraqlParser.VariableContext ctx) {
         if (ctx == null) {
-            return Pattern.var();
+            return Graql.var();
         } else if (ctx.label() != null) {
             return label(visitLabel(ctx.label()));
         } else {

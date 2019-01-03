@@ -23,7 +23,7 @@ import grakn.core.graql.query.pattern.Statement;
 
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.pattern.Pattern.label;
+import static grakn.core.graql.query.Graql.label;
 import static java.util.stream.Collectors.joining;
 
 /**

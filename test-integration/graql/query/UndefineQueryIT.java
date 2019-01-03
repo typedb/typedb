@@ -29,7 +29,6 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -47,8 +46,8 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
 
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.arrayContaining;
@@ -65,11 +64,11 @@ import static org.junit.Assert.assertTrue;
 
 public class UndefineQueryIT {
 
-    private static final Statement THING = Pattern.label(Schema.MetaSchema.THING.getLabel());
-    private static final Statement ENTITY = Pattern.label(Schema.MetaSchema.ENTITY.getLabel());
-    private static final Statement RELATIONSHIP = Pattern.label(Schema.MetaSchema.RELATIONSHIP.getLabel());
-    private static final Statement ATTRIBUTE = Pattern.label(Schema.MetaSchema.ATTRIBUTE.getLabel());
-    private static final Statement ROLE = Pattern.label(Schema.MetaSchema.ROLE.getLabel());
+    private static final Statement THING = Graql.label(Schema.MetaSchema.THING.getLabel());
+    private static final Statement ENTITY = Graql.label(Schema.MetaSchema.ENTITY.getLabel());
+    private static final Statement RELATIONSHIP = Graql.label(Schema.MetaSchema.RELATIONSHIP.getLabel());
+    private static final Statement ATTRIBUTE = Graql.label(Schema.MetaSchema.ATTRIBUTE.getLabel());
+    private static final Statement ROLE = Graql.label(Schema.MetaSchema.ROLE.getLabel());
     private static final Label NEW_TYPE = Label.of("new-type");
     private static final Statement x = var("x");
 

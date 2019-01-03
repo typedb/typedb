@@ -40,10 +40,10 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static grakn.core.graql.query.Graql.neq;
-import static grakn.core.graql.query.pattern.Pattern.and;
-import static grakn.core.graql.query.pattern.Pattern.not;
-import static grakn.core.graql.query.pattern.Pattern.or;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.not;
+import static grakn.core.graql.query.Graql.or;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -169,15 +169,15 @@ public class PatternIT {
 
     @Test
     public void whenCreatingAVarWithAnInvalidName_Throw() {
-        assertExceptionThrown(Pattern::var, "");
-        assertExceptionThrown(Pattern::var, " ");
-        assertExceptionThrown(Pattern::var, "!!!");
-        assertExceptionThrown(Pattern::var, "a b");
-        assertExceptionThrown(Pattern::var, "");
-        assertExceptionThrown(Pattern::var, "\"");
-        assertExceptionThrown(Pattern::var, "\"\"");
-        assertExceptionThrown(Pattern::var, "'");
-        assertExceptionThrown(Pattern::var, "''");
+        assertExceptionThrown(Graql::var, "");
+        assertExceptionThrown(Graql::var, " ");
+        assertExceptionThrown(Graql::var, "!!!");
+        assertExceptionThrown(Graql::var, "a b");
+        assertExceptionThrown(Graql::var, "");
+        assertExceptionThrown(Graql::var, "\"");
+        assertExceptionThrown(Graql::var, "\"\"");
+        assertExceptionThrown(Graql::var, "'");
+        assertExceptionThrown(Graql::var, "''");
     }
 
     @Test

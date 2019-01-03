@@ -21,6 +21,7 @@ package grakn.core.graql.query.pattern;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.internal.executor.property.PropertyExecutor;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import java.util.Collections;
@@ -58,10 +59,10 @@ public class NegativeStatement extends Statement {
         Set<Conjunction<Statement>> patterns = propertyMap.asMap().entrySet().stream()
                 .map(e -> new NegativeStatement(var(), Sets.newHashSet(e.getValue())))
                 .map(Statement::asStatement)
-                .map(p -> Pattern.and(Collections.singleton(p)))
+                .map(p -> Graql.and(Collections.singleton(p)))
                 .collect(Collectors.toSet());
 
-        return Pattern.or(patterns);
+        return Graql.or(patterns);
     }
 
     @Override

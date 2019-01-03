@@ -97,7 +97,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.compatibleR
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.supers;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.top;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toSet;
 
 /**

@@ -50,7 +50,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
@@ -111,10 +111,10 @@ public class BenchmarkBigIT {
 
                 Statement fromRolePlayer = new PositiveStatement(new Variable().asUserDefined());
                 Statement toRolePlayer = new PositiveStatement(new Variable().asUserDefined());
-                Pattern relationInsert = Pattern.and(
-                        var().rel(Pattern.label(fromRole.label()), fromRolePlayer)
-                                .rel(Pattern.label(toRole.label()), toRolePlayer)
-                                .isa(Pattern.label(relationType.label())),
+                Pattern relationInsert = Graql.and(
+                        var().rel(Graql.label(fromRole.label()), fromRolePlayer)
+                                .rel(Graql.label(toRole.label()), toRolePlayer)
+                                .isa(Graql.label(relationType.label())),
                         fromRolePlayer.id(instances[from].getValue()),
                         toRolePlayer.id(instances[to].getValue())
                 );
@@ -177,25 +177,25 @@ public class BenchmarkBigIT {
                     Statement fromVar = new PositiveStatement(new Variable().asUserDefined());
                     Statement intermedVar = new PositiveStatement(new Variable().asUserDefined());
                     Statement toVar = new PositiveStatement(new Variable().asUserDefined());
-                    Statement rulePattern = Pattern
+                    Statement rulePattern = Graql
                             .label("rule" + i)
                             .when(
-                                    Pattern.and(
-                                            Pattern.var()
-                                                    .rel(Pattern.label(fromRole.label()), fromVar)
-                                                    .rel(Pattern.label(toRole.label()), intermedVar)
+                                    Graql.and(
+                                            Graql.var()
+                                                    .rel(Graql.label(fromRole.label()), fromVar)
+                                                    .rel(Graql.label(toRole.label()), intermedVar)
                                                     .isa(baseRelationLabel),
-                                            Pattern.var()
-                                                    .rel(Pattern.label(fromRole.label()), intermedVar)
-                                                    .rel(Pattern.label(toRole.label()), toVar)
+                                            Graql.var()
+                                                    .rel(Graql.label(fromRole.label()), intermedVar)
+                                                    .rel(Graql.label(toRole.label()), toVar)
                                                     .isa(genericRelationLabel + (i - 1))
                                     )
                             )
                             .then(
-                                    Pattern.and(
-                                            Pattern.var()
-                                                    .rel(Pattern.label(fromRole.label()), fromVar)
-                                                    .rel(Pattern.label(toRole.label()), toVar)
+                                    Graql.and(
+                                            Graql.var()
+                                                    .rel(Graql.label(fromRole.label()), fromVar)
+                                                    .rel(Graql.label(toRole.label()), toVar)
                                                     .isa(genericRelationLabel + i)
                                     )
                             );
@@ -229,10 +229,10 @@ public class BenchmarkBigIT {
                     Statement fromRolePlayer = new PositiveStatement(new Variable().asUserDefined());
                     Statement toRolePlayer = new PositiveStatement(new Variable().asUserDefined());
 
-                    Pattern relationInsert = Pattern.and(
-                            var().rel(Pattern.label(fromRole.label()), fromRolePlayer)
-                                    .rel(Pattern.label(toRole.label()), toRolePlayer)
-                                    .isa(Pattern.label(baseRelation.label())),
+                    Pattern relationInsert = Graql.and(
+                            var().rel(Graql.label(fromRole.label()), fromRolePlayer)
+                                    .rel(Graql.label(toRole.label()), toRolePlayer)
+                                    .isa(Graql.label(baseRelation.label())),
                             fromRolePlayer.id(instances[i - 1].getValue()),
                             toRolePlayer.id(instances[i].getValue())
                     );

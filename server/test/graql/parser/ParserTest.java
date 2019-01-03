@@ -69,10 +69,10 @@ import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.Graql.parse;
 import static grakn.core.graql.query.Graql.regex;
 import static grakn.core.graql.query.Graql.undefine;
-import static grakn.core.graql.query.pattern.Pattern.and;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.or;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.or;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -580,7 +580,7 @@ public class ParserTest {
     @Test
     public void testParsingPattern() {
         String when = "{(parent: $p, child: $c) isa parentship; $c has gender \"male\"; $p has gender \"female\";}";
-        assertEquals(when, Pattern.parse(when).toString());
+        assertEquals(when, Graql.parsePattern(when).toString());
     }
 
     @Test

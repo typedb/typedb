@@ -120,7 +120,7 @@ public abstract class Statement implements Pattern {
 
     @Override
     public Conjunction<?> asConjunction() {
-        return Pattern.and(Collections.singleton(this));
+        return Graql.and(Collections.singleton(this));
     }
 
     @Override
@@ -294,7 +294,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type, ValuePredicate predicate) {
-        return has(type, Pattern.var().val(predicate));
+        return has(type, Graql.var().val(predicate));
     }
 
     /**
@@ -306,7 +306,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type, Statement attribute) {
-        return has(type, attribute, Pattern.var());
+        return has(type, attribute, Graql.var());
     }
 
     /**
@@ -329,7 +329,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isaExplicit(String type) {
-        return isaExplicit(Pattern.label(type));
+        return isaExplicit(Graql.label(type));
     }
 
     /**
@@ -347,7 +347,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isa(String type) {
-        return isa(Pattern.label(type));
+        return isa(Graql.label(type));
     }
 
     /**
@@ -365,7 +365,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement sub(String type) {
-        return sub(Pattern.label(type));
+        return sub(Graql.label(type));
     }
 
     /**
@@ -383,7 +383,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement subExplicit(String type) {
-        return subExplicit(Pattern.label(type));
+        return subExplicit(Graql.label(type));
     }
 
     /**
@@ -419,7 +419,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public Statement relates(String roleType, @Nullable String superRoleType) {
-        return relates(Pattern.label(roleType), superRoleType == null ? null : Pattern.label(superRoleType));
+        return relates(Graql.label(roleType), superRoleType == null ? null : Graql.label(superRoleType));
     }
 
     /**
@@ -437,7 +437,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement plays(String type) {
-        return plays(Pattern.label(type));
+        return plays(Graql.label(type));
     }
 
     /**
@@ -455,7 +455,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type) {
-        return has(Pattern.label(type));
+        return has(Graql.label(type));
     }
 
     /**
@@ -473,7 +473,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement key(String type) {
-        return key(Pattern.var().label(type));
+        return key(Graql.var().label(type));
     }
 
     /**
@@ -493,7 +493,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(String roleplayer) {
-        return rel(Pattern.var(roleplayer));
+        return rel(Graql.var(roleplayer));
     }
 
     /**
@@ -516,7 +516,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(String role, String roleplayer) {
-        return rel(Pattern.label(role), Pattern.var(roleplayer));
+        return rel(Graql.label(role), Graql.var(roleplayer));
     }
 
     /**
@@ -528,7 +528,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement role, String roleplayer) {
-        return rel(role, Pattern.var(roleplayer));
+        return rel(role, Graql.var(roleplayer));
     }
 
     /**
@@ -540,7 +540,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(String role, Statement roleplayer) {
-        return rel(Pattern.label(role), roleplayer);
+        return rel(Graql.label(role), roleplayer);
     }
 
     /**
@@ -611,7 +611,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement neq(String var) {
-        return neq(Pattern.var(var));
+        return neq(Graql.var(var));
     }
 
     /**
@@ -666,11 +666,11 @@ public abstract class Statement implements Pattern {
                 throw GraqlQueryException.conflictingProperties(this, property, other);
             });
         }
-        return Pattern.statement(var(), Sets.union(properties(), ImmutableSet.of(property)), isPositive());
+        return Graql.statement(var(), Sets.union(properties(), ImmutableSet.of(property)), isPositive());
     }
 
     private Statement removeProperty(VarProperty property) {
-        return Pattern.statement(var(), Sets.difference(properties(), ImmutableSet.of(property)), isPositive());
+        return Graql.statement(var(), Sets.difference(properties(), ImmutableSet.of(property)), isPositive());
     }
 
     @Override
