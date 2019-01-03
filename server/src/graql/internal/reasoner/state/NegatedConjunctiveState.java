@@ -69,13 +69,9 @@ public class NegatedConjunctiveState extends ConjunctiveState {
     public NegatedConjunctiveState(ConjunctiveState conjState) {
         super(conjState.getQuery(), conjState.getSubstitution(), conjState.getUnifier(), conjState.getParentState(), conjState.getVisitedSubGoals(), conjState.getCache());
 
-        System.out.println("query: " + getQuery());
-
         ReasonerQueryImpl baseConjQuery = ReasonerQueries.create(
                 getQuery().getAtoms().stream().filter(Atomic::isPositive).collect(Collectors.toSet()),
                 getQuery().tx());
-
-        System.out.println("baseConj: " + baseConjQuery);
 
         this.baseConjunctionState = baseConjQuery
                 .subGoal(getSubstitution(), getUnifier(), this, getVisitedSubGoals(), getCache());
@@ -84,7 +80,6 @@ public class NegatedConjunctiveState extends ConjunctiveState {
                 .filter(at -> !at.isPositive())
                 .map(NegatedAtomic::negate)
                 .map(at -> complement(at, baseConjQuery))
-                .peek(q -> System.out.println("complement: " + q))
                 .collect(Collectors.toSet());
     }
 
@@ -98,23 +93,10 @@ public class NegatedConjunctiveState extends ConjunctiveState {
     public ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap answer = state.getAnswer();
 
-        System.out.println(">>>>>>>>>>>>Propagating complement answer: " + answer);
-        answer.map().entrySet().stream().filter(e -> e.getValue().isAttribute()).forEach(e -> System.out.println(e.getKey() + ": " + e.getValue().asAttribute().value()));
-        answer.map().entrySet().stream().filter(e -> e.getValue().isThing()).forEach(e -> System.out.println(e.getKey() + " type: " + e.getValue().asThing().type()));
         boolean isNegationSatistfied = complements.stream()
                 .map(q -> ReasonerQueries.create(q, answer))
                 .noneMatch(q -> q.resolve(getCache()).findFirst().isPresent());
 
-        if (isNegationSatistfied) {
-            System.out.println(">>>>>>>>>>>>Negation answer: " + answer);
-            answer.map().entrySet().stream().filter(e -> e.getValue().isAttribute()).forEach(e -> System.out.println(e.getKey() + ": " + e.getValue().asAttribute().value()));
-            answer.map().entrySet().stream().filter(e -> e.getValue().isThing()).forEach(e -> System.out.println(e.getKey() + " type: " + e.getValue().asThing().type()));
-        } else {
-            System.out.println(">>>>>>>>>>>>Filtered answer: " + answer);
-            answer.map().entrySet().forEach(System.out::println);
-            answer.map().entrySet().stream().filter(e -> e.getValue().isAttribute()).forEach(e -> System.out.println(e.getKey() + ": " + e.getValue().asAttribute().value()));
-            answer.map().entrySet().stream().filter(e -> e.getValue().isThing()).forEach(e -> System.out.println(e.getKey() + " type: " + e.getValue().asThing().type()));
-        }
         return isNegationSatistfied?
                 new AnswerState(answer, getUnifier(), getParentState()) :
                 null;
