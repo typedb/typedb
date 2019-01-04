@@ -41,7 +41,7 @@ public class SubExplicitProperty extends SubProperty {
 
     @Override
     public String keyword() {
-        return Query.Property.SUB_EXP.toString();
+        return Query.Property.SUBX.toString();
     }
 
     @Override

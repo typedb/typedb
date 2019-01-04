@@ -91,7 +91,7 @@ public interface Query {
         ID("id"),
         ABSTRACT("abstract"),
         ISA("isa"),
-        ISA_EXP("isa!"),
+        ISAX("isa!"),
         LABEL("label"),
         NEQ("!="),
         PLAYS("plays"),
@@ -99,7 +99,7 @@ public interface Query {
         RELATES("relates"),
         RELATION("relationship"), // TODO: Relationship syntax need to be updated
         SUB("sub"),
-        SUB_EXP("sub!"),
+        SUBX("sub!"),
         THEN("then"),
         WHEN("when"),
         VALUE("");

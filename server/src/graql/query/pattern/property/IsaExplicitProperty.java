@@ -36,7 +36,7 @@ public class IsaExplicitProperty extends IsaProperty {
 
     @Override
     public String keyword() {
-        return Query.Property.ISA_EXP.toString();
+        return Query.Property.ISAX.toString();
     }
 
     @Override
