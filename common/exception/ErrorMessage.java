@@ -101,6 +101,8 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] refers to type [%s] which does not exist in the graph \n"),
 
+    VALIDATION_RULE_NEGATIVE_STATEMENTS_UNSUPPORTED_IN_RULES("The rule [%s] contains negative statements which are currently unsupported\n"),
+
     VALIDATION_RULE_DISJUNCTION_IN_BODY("The rule [%s] does not form a valid Horn clause, as it contains a disjunction in the body\n"),
 
     VALIDATION_RULE_DISJUNCTION_IN_HEAD("The rule [%s] does not form a valid Horn clause, as it contains a disjunction in the head\n"),

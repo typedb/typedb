@@ -71,6 +71,8 @@ public interface PropertyExecutor {
     interface Atomable extends PropertyExecutor {
 
         Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements);
+
+        default boolean mappable(Statement statement){ return true;}
     }
 
     interface Writer {

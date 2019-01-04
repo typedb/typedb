@@ -27,6 +27,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.reasoner.graph.DiagonalGraph;
@@ -91,8 +92,8 @@ public class BenchmarkSmallIT {
                     .assign(toRole, toEntity);
 
             for (int i = 1; i <= N; i++) {
-                Statement fromVar = new Statement(new Variable().asUserDefined());
-                Statement toVar = new Statement(new Variable().asUserDefined());
+                Statement fromVar = new PositiveStatement(new Variable().asUserDefined());
+                Statement toVar = new PositiveStatement(new Variable().asUserDefined());
                 Statement rulePattern = Pattern
                         .label("rule" + i)
                         .when(

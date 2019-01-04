@@ -54,6 +54,12 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public String toString(){ return getPattern().toString(); }
 
+    @Override
+    public boolean isPositive() { return true; }
+
+    @Override
+    public Atomic negate() { return NegatedAtomic.create(this); }
+
     boolean containsVar(Variable name){ return getVarNames().contains(name);}
 
     public boolean isUserDefined(){ return getVarName().isUserDefinedName();}

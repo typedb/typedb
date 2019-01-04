@@ -18,9 +18,11 @@
 
 package grakn.core.graql.query.pattern;
 
+import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.parser.Parser;
 
+import grakn.core.graql.query.pattern.property.VarProperty;
 import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,7 +58,7 @@ public interface Pattern {
      */
     @CheckReturnValue
     static Statement var(String name) {
-        return new Statement(new Variable(name), Collections.emptySet());
+        return new PositiveStatement(new Variable(name), Collections.emptySet());
     }
 
     /**
@@ -64,7 +66,7 @@ public interface Pattern {
      */
     @CheckReturnValue
     static Statement var() {
-        return new Statement(new Variable(), Collections.emptySet());
+        return new PositiveStatement(new Variable(), Collections.emptySet());
     }
 
     /**
@@ -135,6 +137,48 @@ public interface Pattern {
     }
 
     /**
+     *
+     * @param patterns an array of patterns to form a negation
+     * @return a pattern that will match when no contained pattern matches
+     */
+    @CheckReturnValue
+    public static Pattern not(Pattern... patterns) {
+        return not(Sets.newHashSet(patterns));
+    }
+
+    /**
+     * @param patterns a collection of patterns to form a negation
+     * @return a pattern that will match when no contained pattern matches
+     */
+    @CheckReturnValue
+    public static Pattern not(Collection<? extends Pattern> patterns) {
+        return not(new LinkedHashSet<>(patterns));
+    }
+
+    /**
+     *
+     * @param patterns a set of patterns to form a negation
+     * @param <T> negation inner pattern type
+     * @return a pattern that will match when no contained pattern matches
+     */
+    @CheckReturnValue
+    public static <T extends Pattern> Negation<T> not(Set<T> patterns) {
+        return new Negation<>(patterns);
+    }
+
+    /**
+     *
+     * @param name statement variable name
+     * @param properties statement consitutent properties
+     * @param positive true if it is a positive statement
+     * @return corresponding statement
+     */
+    @CheckReturnValue
+    public static Statement statement(Variable name, Set<VarProperty> properties, boolean positive) {
+        return positive? new PositiveStatement(name, properties) : new NegativeStatement(name, properties);
+    }
+
+    /**
      * Get all common, user-defined Variables in the Pattern.
      */
     @CheckReturnValue
@@ -175,6 +219,14 @@ public interface Pattern {
     }
 
     /**
+     * @return this Pattern as a Negation, if it is one.
+     */
+    @CheckReturnValue
+    default Negation<?> asNegation() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * @return true if this Pattern is a Statement
      */
     @CheckReturnValue
@@ -199,6 +251,14 @@ public interface Pattern {
     }
 
     /**
+     * @return true if this Pattern is a Negation
+     */
+    @CheckReturnValue
+    default boolean isNegation() {
+        return false;
+    }
+
+    /**
      * Get the disjunctive normal form of this pattern group.
      * This means the pattern group will be transformed into a number of conjunctive patterns, where each is disjunct.
      *
@@ -210,4 +270,20 @@ public interface Pattern {
      */
     @CheckReturnValue
     Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm();
+
+    /**
+     * @return this pattern negated
+     */
+    @CheckReturnValue
+    Pattern negate();
+
+    /**
+     * @return true if this pattern contains only positive patterns
+     */
+    @CheckReturnValue
+    default boolean isPositive(){
+        return getDisjunctiveNormalForm().getPatterns().stream()
+                .flatMap(p -> p.getPatterns().stream())
+                .allMatch(Pattern::isPositive);
+    }
 }

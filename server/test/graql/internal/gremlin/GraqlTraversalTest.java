@@ -30,6 +30,7 @@ import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
@@ -155,9 +156,9 @@ public class GraqlTraversalTest {
     public void testAllTraversalsSimpleQuery() {
         IdProperty titanicId = new IdProperty("Titanic");
         IdProperty movieId = new IdProperty("movie");
-        SubProperty subProperty = new SubProperty(new Statement(y.var(), ImmutableSet.of(movieId)));
+        SubProperty subProperty = new SubProperty(new PositiveStatement(y.var(), ImmutableSet.of(movieId)));
 
-        Statement pattern = new Statement(x.var(), ImmutableSet.of(titanicId, subProperty));
+        Statement pattern = new PositiveStatement(x.var(), ImmutableSet.of(titanicId, subProperty));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());

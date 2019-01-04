@@ -17,12 +17,11 @@ java_test(
 )
 
 checkstyle_test(
- name = "query-equivalence-it-checkstyle",
- target = ":query-equivalence-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "query-equivalence-it-checkstyle",
+    config = "//config/checkstyle:checkstyle.xml",
+    licenses = ["//config/checkstyle:licenses"],
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":query-equivalence-it",
 )
 
 java_test(
@@ -43,12 +42,40 @@ java_test(
 )
 
 checkstyle_test(
- name = "atomic-query-it-checkstyle",
- target = ":atomic-query-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
+    name = "atomic-query-it-checkstyle",
+    config = "//config/checkstyle:checkstyle.xml",
+    licenses = ["//config/checkstyle:licenses"],
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":atomic-query-it",
+)
 
+java_test(
+    name = "negation-it",
+    size = "medium",
+    srcs = [
+        "NegationIT.java",
+    ],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = [
+        "//test-integration/graql/reasoner/stubs:reasoning-stubs",
+    ],
+    test_class = "grakn.core.graql.reasoner.query.NegationIT",
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/commons-collections",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+    ],
+)
+
+checkstyle_test(
+    name = "negation-it-checkstyle",
+    config = "//config/checkstyle:checkstyle.xml",
+    licenses = ["//config/checkstyle:licenses"],
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":negation-it",
 )
 
 java_test(
@@ -80,12 +107,11 @@ java_test(
 )
 
 checkstyle_test(
- name = "query-unification-it-checkstyle",
- target = ":query-unification-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "query-unification-it-checkstyle",
+    config = "//config/checkstyle:checkstyle.xml",
+    licenses = ["//config/checkstyle:licenses"],
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":query-unification-it",
 )
 
 java_test(
@@ -103,12 +129,11 @@ java_test(
 )
 
 checkstyle_test(
- name = "query-validity-it-checkstyle",
- target = ":query-validity-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "query-validity-it-checkstyle",
+    config = "//config/checkstyle:checkstyle.xml",
+    licenses = ["//config/checkstyle:licenses"],
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":query-validity-it",
 )
 
 java_test(
@@ -125,12 +150,11 @@ java_test(
 )
 
 checkstyle_test(
- name = "query-it-checkstyle",
- target = ":query-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "query-it-checkstyle",
+    config = "//config/checkstyle:checkstyle.xml",
+    licenses = ["//config/checkstyle:licenses"],
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":query-it",
 )
 
 java_test(
@@ -142,20 +166,19 @@ java_test(
     test_class = "grakn.core.graql.reasoner.query.OntologicalQueryIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
 )
 
 checkstyle_test(
- name = "ontological-query-it-checkstyle",
- target = ":ontological-query-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "ontological-query-it-checkstyle",
+    config = "//config/checkstyle:checkstyle.xml",
+    licenses = ["//config/checkstyle:licenses"],
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":ontological-query-it",
 )
 
 java_test(
@@ -174,12 +197,11 @@ java_test(
 )
 
 checkstyle_test(
- name = "resolution-plan-it-checkstyle",
- target = ":resolution-plan-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
- allow_failure = True
+    name = "resolution-plan-it-checkstyle",
+    config = "//config/checkstyle:checkstyle.xml",
+    licenses = ["//config/checkstyle:licenses"],
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":resolution-plan-it",
 )
 
 java_test(
@@ -200,12 +222,11 @@ java_test(
 )
 
 checkstyle_test(
- name = "semantic-difference-it-checkstyle",
- target = ":semantic-difference-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "semantic-difference-it-checkstyle",
+    config = "//config/checkstyle:checkstyle.xml",
+    licenses = ["//config/checkstyle:licenses"],
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":semantic-difference-it",
 )
 
 java_test(
@@ -233,10 +254,9 @@ java_test(
 )
 
 checkstyle_test(
- name = "subsumption-it-checkstyle",
- target = ":subsumption-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "subsumption-it-checkstyle",
+    config = "//config/checkstyle:checkstyle.xml",
+    licenses = ["//config/checkstyle:licenses"],
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    target = ":subsumption-it",
 )

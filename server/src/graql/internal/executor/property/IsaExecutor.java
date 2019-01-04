@@ -28,6 +28,7 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
@@ -66,9 +67,15 @@ public class IsaExecutor implements PropertyExecutor.Insertable,
     }
 
     @Override
+    public boolean mappable(Statement statement) {
+        //IsaProperty is unique within a var, so skip if this is a relation
+        return !statement.hasProperty(RelationProperty.class);
+    }
+
+    @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         //IsaProperty is unique within a var, so skip if this is a relation
-        if (statement.hasProperty(RelationProperty.class)) return null;
+        if (!mappable(statement)) return null;
 
         Variable varName = var.asUserDefined();
         Variable typeVar = property.type().var();
@@ -80,9 +87,9 @@ public class IsaExecutor implements PropertyExecutor.Insertable,
         Statement isaVar;
 
         if (property instanceof IsaExplicitProperty) {
-            isaVar = new Statement(varName).isaExplicit(new Statement(typeVar));
+            isaVar = new PositiveStatement(varName).isaExplicit(new PositiveStatement(typeVar));
         } else {
-            isaVar = new Statement(varName).isa(new Statement(typeVar));
+            isaVar = new PositiveStatement(varName).isa(new PositiveStatement(typeVar));
         }
 
         return IsaAtom.create(varName, typeVar, isaVar, predicateId, parent);

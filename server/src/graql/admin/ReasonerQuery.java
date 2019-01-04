@@ -48,6 +48,12 @@ public interface ReasonerQuery{
     ReasonerQuery conjunction(ReasonerQuery q);
 
     /**
+     * @return true if this query contains strictly non-negated atomics
+     */
+    @CheckReturnValue
+    boolean isPositive();
+
+    /**
      * @return {@link Transaction} associated with this reasoner query
      */
     @CheckReturnValue

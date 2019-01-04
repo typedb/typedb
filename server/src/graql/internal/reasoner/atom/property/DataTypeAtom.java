@@ -23,6 +23,7 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
+import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
@@ -38,7 +39,7 @@ public abstract class DataTypeAtom extends AtomicBase {
     public abstract AttributeType.DataType<?> getDataType();
 
     public static DataTypeAtom create(Variable varName, DataTypeProperty prop, ReasonerQuery parent, AttributeType.DataType<?> dataType) {
-        return new AutoValue_DataTypeAtom(varName, new Statement(varName).datatype(prop.dataType()), parent, dataType);
+        return new AutoValue_DataTypeAtom(varName, new PositiveStatement(varName).datatype(prop.dataType()), parent, dataType);
     }
 
     private static DataTypeAtom create(DataTypeAtom a, ReasonerQuery parent) {

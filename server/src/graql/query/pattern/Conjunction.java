@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * A class representing a conjunction (and) of patterns. All inner patterns must match in a query
@@ -80,6 +81,9 @@ public class Conjunction<T extends Pattern> implements Pattern {
         // Wasn't that a horrible function? Here it is in Haskell:
         //     dnf = map fromConjunctions . sequence . map getDisjunctiveNormalForm . patterns
     }
+
+    @Override
+    public Pattern negate() { return Pattern.or(getPatterns().stream().map(Pattern::negate).collect(toSet())); }
 
     @Override
     public Set<Variable> variables() {
