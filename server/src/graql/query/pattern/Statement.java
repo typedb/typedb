@@ -19,8 +19,6 @@
 package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -56,6 +54,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -81,7 +80,7 @@ public class Statement implements Pattern {
     protected final Logger LOG = LoggerFactory.getLogger(Statement.class);
     private final Sign sign;
     private final Variable var;
-    private final Set<VarProperty> properties;
+    private final LinkedHashSet<VarProperty> properties;
     private int hashCode = 0;
 
     enum Sign {
@@ -95,24 +94,32 @@ public class Statement implements Pattern {
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return this.sign;
         }
     }
 
     public Statement(Variable var) {
-        this(var, Collections.emptySet());
+        this(var, new LinkedHashSet<>());
     }
 
     public Statement(Variable var, Statement.Sign sign) {
-        this(var, Collections.emptySet(), sign);
+        this(var, new LinkedHashSet<>(), sign);
     }
 
-    public Statement(Variable var, Set<VarProperty> properties) {
+    public Statement(Variable var, List<VarProperty> properties) {
+        this(var, new LinkedHashSet<>(properties), Sign.POSITIVE);
+    }
+
+    public Statement(Variable var, LinkedHashSet<VarProperty> properties) {
         this(var, properties, Sign.POSITIVE);
     }
 
-    public Statement(Variable var, Set<VarProperty> properties, Statement.Sign sign) {
+    public Statement(Variable var, List<VarProperty> properties, Statement.Sign sign) {
+        this(var, new LinkedHashSet<>(properties), sign);
+    }
+
+    public Statement(Variable var, LinkedHashSet<VarProperty> properties, Statement.Sign sign) {
         if (var == null) {
             throw new NullPointerException("Null var");
         }
@@ -135,7 +142,7 @@ public class Statement implements Pattern {
         return var;
     }
 
-    public Set<VarProperty> properties() {
+    public LinkedHashSet<VarProperty> properties() {
         return properties;
     }
 
@@ -149,7 +156,7 @@ public class Statement implements Pattern {
     }
 
     @Override
-    public Statement negate(){
+    public Statement negate() {
         Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
         return new Statement(var(), properties(), negated);
     }
@@ -174,7 +181,7 @@ public class Statement implements Pattern {
             });
 
             Set<Conjunction<Statement>> patterns = propertyMap.asMap().entrySet().stream()
-                    .map(e -> new Statement(var(), Sets.newHashSet(e.getValue()), Sign.NEGATIVE))
+                    .map(e -> new Statement(var(), new LinkedHashSet<>(e.getValue()), Sign.NEGATIVE))
                     .map(p -> Graql.and(Collections.singleton(p)))
                     .collect(Collectors.toSet());
 
@@ -713,13 +720,15 @@ public class Statement implements Pattern {
             });
         }
         Variable name = var();
-        Set<VarProperty> newProperties = Sets.union(properties(), ImmutableSet.of(property));
+        LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties);
+        newProperties.add(property);
         return new Statement(name, newProperties, sign());
     }
 
     private Statement removeProperty(VarProperty property) {
         Variable name = var();
-        Set<VarProperty> newProperties = Sets.difference(properties(), ImmutableSet.of(property));
+        LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties);
+        newProperties.remove(property);
         return new Statement(name, newProperties, sign());
     }
 

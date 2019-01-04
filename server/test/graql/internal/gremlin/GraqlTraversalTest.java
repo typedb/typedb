@@ -58,8 +58,8 @@ import static grakn.core.graql.internal.gremlin.fragment.Fragments.outIsa;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.outRelates;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.outSub;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.value;
-import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.query.Graql.var;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -156,9 +156,9 @@ public class GraqlTraversalTest {
     public void testAllTraversalsSimpleQuery() {
         IdProperty titanicId = new IdProperty("Titanic");
         IdProperty movieId = new IdProperty("movie");
-        SubProperty subProperty = new SubProperty(new Statement(y.var(), ImmutableSet.of(movieId)));
+        SubProperty subProperty = new SubProperty(new Statement(y.var(), ImmutableList.of(movieId)));
 
-        Statement pattern = new Statement(x.var(), ImmutableSet.of(titanicId, subProperty));
+        Statement pattern = new Statement(x.var(), ImmutableList.of(titanicId, subProperty));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
@@ -205,8 +205,8 @@ public class GraqlTraversalTest {
     @Test
     public void testOptimalAttachedResource() {
         assertNearlyOptimal(var()
-                .rel(x.isa(y.id("movie")))
-                .rel(z.val("Titanic").isa(var("a").id("title"))));
+                                    .rel(x.isa(y.id("movie")))
+                                    .rel(z.val("Titanic").isa(var("a").id("title"))));
     }
 
     @Ignore // TODO: This is now super-slow

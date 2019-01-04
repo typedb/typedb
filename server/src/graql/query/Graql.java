@@ -158,7 +158,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Statement var(String name) {
-        return new Statement(new Variable(name), Collections.emptySet());
+        return new Statement(new Variable(name));
     }
 
     /**
@@ -166,7 +166,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Statement var() {
-        return new Statement(new Variable(), Collections.emptySet());
+        return new Statement(new Variable());
     }
 
     /**

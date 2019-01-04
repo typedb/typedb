@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -580,7 +581,7 @@ public class InsertQueryIT {
         // TODO: less bad way?
         Statement varPattern = new Statement(
                 new Variable("x"),
-                ImmutableSet.of(new IsaProperty(type("movie")), new IsaProperty(type("person")))
+                ImmutableList.of(new IsaProperty(type("movie")), new IsaProperty(type("person")))
         );
 
         // We don't know in what order the message will be

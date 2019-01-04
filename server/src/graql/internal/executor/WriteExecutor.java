@@ -45,6 +45,7 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -366,7 +367,7 @@ public class WriteExecutor {
     }
 
     Statement printableRepresentation(Variable var) {
-        ImmutableSet.Builder<VarProperty> propertiesOfVar = ImmutableSet.builder();
+        LinkedHashSet<VarProperty> propertiesOfVar = new LinkedHashSet<>();
 
         // This could be faster if we built a dedicated map Var -> VarPattern
         // However, this method is only used for displaying errors, so it's not worth the cost
@@ -376,6 +377,6 @@ public class WriteExecutor {
             }
         }
 
-        return new Statement(var, propertiesOfVar.build());
+        return new Statement(var, propertiesOfVar);
     }
 }
