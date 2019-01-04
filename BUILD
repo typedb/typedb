@@ -59,6 +59,8 @@ deploy_brew(
     version_file = "//:VERSION"
 )
 
+# FIXME(vmax): uncomment when it doesn't break build on macOS
+"""
 deploy_deb(
     name = "deploy-deb",
     package_name = "grakn-core-bin",
@@ -109,3 +111,4 @@ deploy_rpm(
         "opt/grakn/core/logs": "/var/log/grakn/",
     },
 )
+"""

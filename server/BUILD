@@ -138,6 +138,8 @@ distribution(
     output_filename = "grakn-core-server",
 )
 
+# FIXME(vmax): uncomment when it doesn't break build on macOS
+"""
 deploy_deb(
     name = "deploy-deb",
     package_name = "grakn-core-server",
@@ -197,3 +199,4 @@ deploy_rpm(
         "opt/grakn/core/server/db/": "/var/lib/grakn/db/",
     },
 )
+"""
