@@ -51,7 +51,7 @@ jobs:
       - bazel_add_rbe_credential
       - run: python ./check-for-missing-checkstyle-rule.py
       - bazel:
-          command: bazel build //... --sandbox_debug
+          command: bazel build //...
       - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all.zip dist/
       - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace
           root: ~/grakn
@@ -77,7 +77,7 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
-    - run: bazel build //:distribution --sandbox_debug
+    - run: bazel build //:distribution
     - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
     - run: nohup bazel-genfiles/dist/grakn server start
     - run: bazel-genfiles/dist/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
@@ -90,7 +90,7 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
-    - run: bazel build //:distribution --sandbox_debug
+    - run: bazel build //:distribution
     - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
     - run: nohup bazel-genfiles/dist/grakn server start
     - run: bazel test //client_python:test_integration --test_output=streamed
@@ -146,7 +146,7 @@ jobs:
     - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
     - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
     - bazel:
-        command: bazel build //:distribution --sandbox_debug
+        command: bazel build //:distribution
     - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
     - run: nohup bazel-genfiles/dist/grakn server start
     - run: bazel-genfiles/dist/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
@@ -163,7 +163,7 @@ jobs:
       - bazel_install
       - bazel_add_rbe_credential
       - bazel:
-          command: bazel test //test-integration/server/... --test_output=errors    
+          command: bazel test //test-integration/server/... --test_output=errors
       - bazel:
           command: bazel test //test-integration/graql/internal/... --test_output=errors
       - bazel:
@@ -225,7 +225,7 @@ jobs:
       - bazel_install
       - bazel_add_rbe_credential
       - bazel:
-          command: bazel build //:distribution --sandbox_debug
+          command: bazel build //:distribution
       - bazel:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
