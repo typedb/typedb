@@ -18,7 +18,8 @@
 
 package(default_visibility = ["//visibility:__subpackages__"])
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", distribution = "distribution")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deploy_deb", "deploy_rpm")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar", "pkg_deb")
 
 java_library(
     name = "console",
@@ -71,23 +72,49 @@ deploy_maven_jar(
 )
 
 distribution(
-    name = "distribution",
-    targets = ["//console:console-binary"],
-    additional_files = {
-         "//:grakn": 'grakn',
-         "//server:conf/logback.xml": "conf/logback.xml",
-         "//server:conf/grakn.properties": "conf/grakn.properties",
-         "//server:services/cassandra/cassandra.yaml": "services/cassandra/cassandra.yaml",
-         "//server:services/cassandra/logback.xml": "services/cassandra/logback.xml",
-         "//server:services/grakn/grakn-core-ascii.txt": "services/grakn/grakn-core-ascii.txt"
+    targets = {
+        "//console:console-binary": "console/services/lib/"
     },
-    empty_directories = [
-        "db/cassandra",
-        "db/queue"
-    ],
+    additional_files = {
+        "//:grakn": 'grakn',
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+    },
     output_filename = "grakn-core-console",
-    visibility = ["//visibility:public"]
 )
+
+# FIXME(vmax): uncomment when it doesn't break build on macOS
+"""
+deploy_deb(
+    name = "deploy-deb",
+    package_name = "grakn-core-console",
+    maintainer = "Grakn Labs <community@grakn.ai>",
+    description = "Grakn Core (console)",
+    version_file = "//:VERSION",
+    depends = [
+      "openjdk-8-jre",
+      "grakn-core-bin"
+    ],
+    target = ":console-binary",
+    installation_dir = "/opt/grakn/core/console/",
+    empty_dirs = [
+         "opt/grakn/core/console/services/lib/",
+    ],
+)
+
+
+deploy_rpm(
+    name = "deploy-rpm",
+    package_name = "grakn-core-console",
+    installation_dir = "/opt/grakn/core/console/",
+    version_file = "//:VERSION",
+    spec_file = "//dependencies/distribution/rpm:grakn-core-console.spec",
+    target = ":console-binary",
+    empty_dirs = [
+         "opt/grakn/core/console/services/lib/",
+    ],
+)
+"""
 
 test_suite(
     name = "console-test-integration",
