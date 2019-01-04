@@ -37,9 +37,7 @@ Grakn’s query language performs distributed [Pregel](https://kowshik.github.io
 With the expressivity of the schema, inference through OLTP and distributed algorithms through OLAP, Grakn provides strong abstraction over low-level data constructs and complicated relationships through its query language. The language provides a higher-level schema, OLTP, and OLAP query language, that makes working with complex data a lot easier. When developers can achieve more by writing less code, productivity rate increases by orders of magnitude.
 
 ## Download and Running Grakn Core
-
-To run Grakn Core:
-1. Java 8 (OpenJDK or Oracle Java)
+1. Install Java 8 (OpenJDK or Oracle Java)
 2. If running on Windows version prior to 10, please make sure to have [Visual Studio C++ Runtime for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145) installed
 3. Download Grakn Core from the [Download Centre](https://grakn.ai/download) or [GitHub Releases](https://github.com/graknlabs/grakn/releases)), and follow the [Setup Guide](http://dev.grakn.ai/docs/general/quickstart).
 
