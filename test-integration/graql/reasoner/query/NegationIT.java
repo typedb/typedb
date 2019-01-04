@@ -180,7 +180,7 @@ public class NegationIT {
         assertTrue(
                 Iterables.getOnlyElement(dnf.getPatterns())
                         .getPatterns().stream()
-                        .allMatch(p -> p.asStatement().getProperties(IsaProperty.class).findFirst().isPresent())
+                        .allMatch(p -> p.getProperties(IsaProperty.class).findFirst().isPresent())
         );
     }
 

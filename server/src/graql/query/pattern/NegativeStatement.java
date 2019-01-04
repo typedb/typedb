@@ -59,7 +59,8 @@ public class NegativeStatement extends Statement {
 
         Set<Conjunction<Statement>> patterns = propertyMap.asMap().entrySet().stream()
                 .map(e -> new NegativeStatement(var(), Sets.newHashSet(e.getValue())))
-                .map(Statement::asStatement)
+                // TODO: remove this UPCAST once we merge Positive and Negative Statements
+                .map(negativeStatement -> (Statement) negativeStatement)
                 .map(p -> Graql.and(Collections.singleton(p)))
                 .collect(Collectors.toSet());
 
@@ -67,7 +68,7 @@ public class NegativeStatement extends Statement {
     }
 
     @Override
-    public Pattern negate(){
+    public PositiveStatement negate(){
         return new PositiveStatement(var(), properties());
     }
 

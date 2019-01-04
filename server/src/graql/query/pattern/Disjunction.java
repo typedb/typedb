@@ -67,21 +67,13 @@ public class Disjunction<T extends Pattern> implements Pattern {
     }
 
     @Override
-    public Pattern negate() { return Graql.and(getPatterns().stream().map(Pattern::negate).collect(toSet())); }
+    public Conjunction<? extends Pattern> negate() {
+        return Graql.and(getPatterns().stream().map(Pattern::negate).collect(toSet()));
+    }
 
     @Override
     public Set<Variable> variables() {
         return getPatterns().stream().map(Pattern::variables).reduce(Sets::intersection).orElse(ImmutableSet.of());
-    }
-
-    @Override
-    public boolean isDisjunction() {
-        return true;
-    }
-
-    @Override
-    public Disjunction<?> asDisjunction() {
-        return this;
     }
 
     @Override

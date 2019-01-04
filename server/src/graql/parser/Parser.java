@@ -254,7 +254,7 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public Statement visitNegativeStatement (GraqlParser.NegativeStatementContext ctx) {
-        return visitPositiveStatement(ctx.positiveStatement()).negate().asStatement();
+        return visitPositiveStatement(ctx.positiveStatement()).negate();
     }
 
     @Override

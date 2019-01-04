@@ -63,15 +63,6 @@ public class Negation<T extends Pattern> implements Pattern {
     }
 
     @Override
-    public boolean isNegation() { return true; }
-
-    @Override
-    public Negation<?> asNegation() {
-        return this;
-    }
-
-
-    @Override
     public String toString() {
         return "NOT {" + getPatterns().stream().map(s -> s + ";").collect(joining(" ")) + "}";
     }

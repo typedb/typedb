@@ -109,19 +109,7 @@ public abstract class Statement implements Pattern {
     }
 
     @Override
-    public Statement asStatement() {
-        return this;
-    }
-
-    @Override
-    public boolean isStatement() {
-        return true;
-    }
-
-    @Override
-    public Conjunction<?> asConjunction() {
-        return Graql.and(Collections.singleton(this));
-    }
+    public abstract Statement negate();
 
     /**
      * @return the name this variable represents, if it represents something with a specific name

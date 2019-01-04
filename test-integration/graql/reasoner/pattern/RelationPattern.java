@@ -26,6 +26,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
@@ -124,10 +125,8 @@ public abstract class RelationPattern extends QueryPattern {
         )
                 //filter trivial patterns
                 .map(l -> l.stream()
-                        .filter(
-                                p -> p.isConjunction()
-                                        || p.asStatement().properties().stream().findFirst().isPresent()
-                        )
+                        .filter(p -> (p instanceof Conjunction) ||
+                                        ((Statement) p).properties().stream().findFirst().isPresent())
                         .collect(Collectors.toList()))
                 .forEach(product -> {
                     Pattern[] pattern = {basePattern[0]};

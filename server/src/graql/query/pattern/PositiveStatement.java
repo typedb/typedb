@@ -44,7 +44,7 @@ public class PositiveStatement extends Statement {
     }
 
     @Override
-    public Pattern negate(){
+    public NegativeStatement negate(){
         return new NegativeStatement(var(), properties());
     }
 }
