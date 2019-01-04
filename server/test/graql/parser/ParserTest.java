@@ -565,7 +565,7 @@ public class ParserTest {
 
     @Test
     public void whenQueryToStringWithKeyword_EscapeKeywordWithQuotes() {
-        assertEquals("match $x isa \"date\"; get $x;", match(var("x").isa("date")).get().toString());
+        assertEquals("match $x isa \"date\"; get $x;", match(var("x").isa("date")).get("x").toString());
     }
 
     @Test

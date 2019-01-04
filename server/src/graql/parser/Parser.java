@@ -56,11 +56,13 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.query.Graql.and;
@@ -170,9 +172,11 @@ public class Parser extends GraqlBaseVisitor {
         MatchClause match = visitMatchClause(ctx.matchClause());
 
         if (ctx.variables() != null) {
-            Set<Variable> vars = ctx.variables().VARIABLE().stream().map(this::getVariable).collect(toSet());
+            LinkedHashSet<Variable> vars = ctx.variables().VARIABLE().stream()
+                    .map(this::getVariable)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
 
-            if (!vars.isEmpty()) return match.get(vars);
+            return match.get(vars);
         }
 
         return match.get();
@@ -204,8 +208,16 @@ public class Parser extends GraqlBaseVisitor {
     @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
         MatchClause match = visitMatchClause(ctx.matchClause());
-        if (ctx.variables() != null) return match.delete(visitVariables(ctx.variables()));
-        else return match.delete();
+
+        if (ctx.variables() != null) {
+            LinkedHashSet<Variable> vars = ctx.variables().VARIABLE().stream()
+                    .map(this::getVariable)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+
+            return match.delete(vars);
+        }
+
+        return match.delete();
     }
 
     @Override

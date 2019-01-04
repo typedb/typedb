@@ -23,6 +23,7 @@ import grakn.core.graql.query.pattern.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static java.util.stream.Collectors.joining;
@@ -34,14 +35,18 @@ import static java.util.stream.Collectors.joining;
  */
 public class GetQuery implements Query {
 
-    private final Set<Variable> var;
+    private final LinkedHashSet<Variable> vars;
     private final MatchClause match;
 
-    public GetQuery(Set<Variable> vars, MatchClause match) {
+    public GetQuery(MatchClause match) {
+        this(match, new LinkedHashSet<>());
+    }
+
+    public GetQuery(MatchClause match, LinkedHashSet<Variable> vars) {
         if (vars == null) {
             throw new NullPointerException("Null vars");
         }
-        this.var = Collections.unmodifiableSet(vars);
+        this.vars = vars;
         if (match == null) {
             throw new NullPointerException("Null match");
         }
@@ -113,9 +118,10 @@ public class GetQuery implements Query {
         return new GroupQuery(this, var);
     }
 
-    @CheckReturnValue
+    @CheckReturnValue // TODO: Return LinkedHashSet
     public Set<Variable> vars() {
-        return var;
+        if (vars.isEmpty()) return match.getPatterns().variables();
+        else return vars;
     }
 
     @CheckReturnValue
@@ -123,14 +129,22 @@ public class GetQuery implements Query {
         return match;
     }
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public String toString() {
         StringBuilder query = new StringBuilder();
 
-        query.append(match()).append(Char.SPACE).append(Command.GET);
-        if (!vars().isEmpty()) {
+        query.append(match());
+        if (match().getPatterns().getPatterns().size()>1) query.append(Char.NEW_LINE);
+        else query.append(Char.SPACE);
+
+        // It is important that we use vars (the property) and not vars() (the method)
+        // vars (the property) stores the variables as the user defined
+        // vars() (the method) returns match.vars() if vars (the property) is empty
+        // we want to print vars (the property) as the user defined
+        query.append(Command.GET);
+        if (!vars.isEmpty()) {
             query.append(Char.SPACE).append(
-                    vars().stream().map(Variable::toString)
+                    vars.stream().map(Variable::toString)
                             .collect(joining(Char.COMMA_SPACE.toString()))
             );
         }
@@ -146,17 +160,23 @@ public class GetQuery implements Query {
 
         GetQuery that = (GetQuery) o;
 
-        return (this.var.equals(that.vars()) &&
-                this.match.equals(that.match()));
+        // It is important that we use vars() (the method) and not vars (the property)
+        // vars (the property) stores the variables as the user defined
+        // vars() (the method) returns match.vars() if vars (the property) is empty
+        // we want to compare vars() (the method) which determines the final value
+        return (this.vars().equals(that.vars()) &&
+                this.match().equals(that.match()));
     }
 
     @Override
     public int hashCode() {
         int h = 1;
         h *= 1000003;
-        h ^= this.var.hashCode();
+        // It is important that we use vars() (the method) and not vars (the property)
+        // For reasons explained in the equals() method above
+        h ^= this.vars().hashCode();
         h *= 1000003;
-        h ^= this.match.hashCode();
+        h ^= this.match().hashCode();
         return h;
     }
 }

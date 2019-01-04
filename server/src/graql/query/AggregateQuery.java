@@ -94,8 +94,7 @@ public class AggregateQuery implements Query {
     public final String toString() {
         StringBuilder query = new StringBuilder();
 
-        query.append(getQuery()).append(Char.SPACE)
-                .append(method).append(Char.SPACE);
+        query.append(getQuery()).append(Char.SPACE).append(method);
 
         if (var != null) query.append(Char.SPACE).append(var);
         query.append(Char.SEMICOLON);

@@ -187,7 +187,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryToStringWithReservedKeywords() {
-        GetQuery query = Graql.match(var("x").isa("isa")).get();
+        GetQuery query = Graql.match(var("x").isa("isa")).get("x");
         assertEquals("match $x isa \"isa\"; get $x;", query.toString());
     }
 

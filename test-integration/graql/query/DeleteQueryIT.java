@@ -241,11 +241,6 @@ public class DeleteQueryIT {
     }
 
     @Test(expected = Exception.class)
-    public void deleteVarNameNullSet() {
-        tx.execute(Graql.match(var()).delete(null));
-    }
-
-    @Test(expected = Exception.class)
     public void whenDeleteIsPassedNull_Throw() {
         tx.execute(Graql.match(var()).delete((String) null));
     }

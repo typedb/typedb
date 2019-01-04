@@ -67,10 +67,14 @@ public interface Query {
         SPACE(" "),
         COMMA(","),
         COMMA_SPACE(", "),
+        CURLY_OPEN("{"),
+        CURLY_CLOSE("}"),
         SQUARE_OPEN("["),
         SQUARE_CLOSE("]"),
         QUOTE("\""),
-        NEW_LINE("\n");
+        NEW_LINE("\n"),
+        UNDERSCORE("_"),
+        $("$");
 
         private final String character;
 
@@ -81,6 +85,25 @@ public interface Query {
         @Override
         public String toString() {
             return this.character;
+        }
+    }
+
+    enum Operator {
+        AND("and"),
+        OR("or"),
+        NOT("not"),
+        EQUAL("=");
+        // TODO: other predicates
+
+        private final String operator;
+
+        Operator(String operator) {
+            this.operator = operator;
+        }
+
+        @Override
+        public String toString() {
+            return this.operator;
         }
     }
 
