@@ -33,7 +33,6 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.property.PropertyExecutor.Writer;
 import grakn.core.graql.internal.util.Partition;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -377,6 +376,6 @@ public class WriteExecutor {
             }
         }
 
-        return new PositiveStatement(var, propertiesOfVar.build());
+        return new Statement(var, propertiesOfVar.build());
     }
 }

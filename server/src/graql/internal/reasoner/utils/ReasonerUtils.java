@@ -119,9 +119,15 @@ public class ReasonerUtils {
      * @return stream of mapped ValuePredicates
      */
     public static Stream<ValuePredicate> getValuePredicates(Variable valueVariable, Statement valueVar, Set<Statement> vars, ReasonerQuery parent){
-        Stream<Statement> sourceVars = valueVar.var().isUserDefinedName()?
-                vars.stream().filter(v -> v.var().equals(valueVariable)).filter(v -> v.isPositive() == valueVar.isPositive()) :
-                Stream.of(valueVar);
+        Stream<Statement> sourceVars;
+        if (valueVar.var().isUserDefinedName()) {
+            sourceVars = vars.stream()
+                    .filter(v -> v.var().equals(valueVariable))
+                    .filter(v -> v.sign() == valueVar.sign());
+        }
+        else {
+            sourceVars = Stream.of(valueVar);
+        }
         return sourceVars.flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> ValuePredicate.create(valueVariable, vp.predicate(), parent)));
     }
 

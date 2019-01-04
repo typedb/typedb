@@ -18,11 +18,13 @@
 
 package grakn.core.graql.query.pattern;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.property.AbstractProperty;
@@ -74,18 +76,43 @@ import static java.util.stream.Collectors.toSet;
  * should be set on the inserted concept. In a DeleteQuery, it describes the
  * properties that should be deleted.
  */
-public abstract class Statement implements Pattern {
+public class Statement implements Pattern {
 
+    protected final Logger LOG = LoggerFactory.getLogger(Statement.class);
+    private final Sign sign;
     private final Variable var;
     private final Set<VarProperty> properties;
-    protected final Logger LOG = LoggerFactory.getLogger(Statement.class);
     private int hashCode = 0;
+
+    enum Sign {
+        POSITIVE("+"),
+        NEGATIVE("-");
+
+        private final String sign;
+
+        Sign(String sign) {
+            this.sign = sign;
+        }
+
+        @Override
+        public String toString(){
+            return this.sign;
+        }
+    }
 
     public Statement(Variable var) {
         this(var, Collections.emptySet());
     }
 
+    public Statement(Variable var, Statement.Sign sign) {
+        this(var, Collections.emptySet(), sign);
+    }
+
     public Statement(Variable var, Set<VarProperty> properties) {
+        this(var, properties, Sign.POSITIVE);
+    }
+
+    public Statement(Variable var, Set<VarProperty> properties, Statement.Sign sign) {
         if (var == null) {
             throw new NullPointerException("Null var");
         }
@@ -94,6 +121,10 @@ public abstract class Statement implements Pattern {
             throw new NullPointerException("Null properties");
         }
         this.properties = properties;
+        if (sign == null) {
+            throw new NullPointerException("Null sign");
+        }
+        this.sign = sign;
     }
 
     /**
@@ -108,8 +139,48 @@ public abstract class Statement implements Pattern {
         return properties;
     }
 
+    public Sign sign() {
+        return sign;
+    }
+
     @Override
-    public abstract Statement negate();
+    public boolean isPositive() {
+        return sign().equals(Sign.POSITIVE);
+    }
+
+    @Override
+    public Statement negate(){
+        Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
+        return new Statement(var(), properties(), negated);
+    }
+
+    @Override
+    public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
+        if (isPositive()) {
+            // A disjunction containing only one option
+            Conjunction<Statement> conjunction = Graql.and(Collections.singleton(this));
+            return Graql.or(Collections.singleton(conjunction));
+
+        } else {
+            // Flatten if multiple properties present
+            // TODO this is hacky. Redo when atoms are independent of transactions.
+            HashMultimap<VarProperty, VarProperty> propertyMap = HashMultimap.create();
+            properties().forEach(p -> {
+                if (PropertyExecutor.create(this.var(), p).mappable(this)) {
+                    propertyMap.put(p, p);
+                } else {
+                    getProperties(RelationProperty.class).forEach(rp -> propertyMap.put(rp, p));
+                }
+            });
+
+            Set<Conjunction<Statement>> patterns = propertyMap.asMap().entrySet().stream()
+                    .map(e -> new Statement(var(), Sets.newHashSet(e.getValue()), Sign.NEGATIVE))
+                    .map(p -> Graql.and(Collections.singleton(p)))
+                    .collect(Collectors.toSet());
+
+            return Graql.or(patterns);
+        }
+    }
 
     /**
      * @return the name this variable represents, if it represents something with a specific name
@@ -643,47 +714,13 @@ public abstract class Statement implements Pattern {
         }
         Variable name = var();
         Set<VarProperty> newProperties = Sets.union(properties(), ImmutableSet.of(property));
-        return isPositive() ?
-                new PositiveStatement(name, newProperties) :
-                new NegativeStatement(name, newProperties);
+        return new Statement(name, newProperties, sign());
     }
 
     private Statement removeProperty(VarProperty property) {
         Variable name = var();
         Set<VarProperty> newProperties = Sets.difference(properties(), ImmutableSet.of(property));
-        return isPositive() ?
-                new PositiveStatement(name, newProperties) :
-                new NegativeStatement(name, newProperties);
-    }
-
-    @Override
-    public final boolean equals(Object o) {
-        // This equals implementation is special: it considers all non-user-defined vars as equivalent
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Statement other = (Statement) o;
-
-        if (var().isUserDefinedName() != other.var().isUserDefinedName()) return false;
-
-        // "simplifying" this makes it harder to read
-        //noinspection SimplifiableIfStatement
-        if (!properties().equals(other.properties())) return false;
-
-        return !var().isUserDefinedName() || var().equals(other.var());
-
-    }
-
-    @Override
-    public final int hashCode() {
-        if (hashCode == 0) {
-            // This hashCode implementation is special: it considers all non-user-defined vars as equivalent
-            hashCode = properties().hashCode();
-            if (var().isUserDefinedName()) hashCode = 31 * hashCode + var().hashCode();
-            hashCode = 31 * hashCode + (var().isUserDefinedName() ? 1 : 0);
-            hashCode = 31 * hashCode + (isPositive() ? 1 : 0);
-        }
-        return hashCode;
+        return new Statement(name, newProperties, sign());
     }
 
     @Override
@@ -722,6 +759,40 @@ public abstract class Statement implements Pattern {
             builder.append(property.toString());
         }
 
-        return builder.toString();
+        if (isPositive()) {
+            return builder.toString();
+        } else {
+            return "NOT " + builder.toString();
+        }
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        // This equals implementation is special: it considers all non-user-defined vars as equivalent
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Statement other = (Statement) o;
+
+        if (var().isUserDefinedName() != other.var().isUserDefinedName()) return false;
+
+        // "simplifying" this makes it harder to read
+        //noinspection SimplifiableIfStatement
+        if (!properties().equals(other.properties())) return false;
+
+        return !var().isUserDefinedName() || var().equals(other.var());
+
+    }
+
+    @Override
+    public final int hashCode() {
+        if (hashCode == 0) {
+            // This hashCode implementation is special: it considers all non-user-defined vars as equivalent
+            hashCode = properties().hashCode();
+            if (var().isUserDefinedName()) hashCode = 31 * hashCode + var().hashCode();
+            hashCode = 31 * hashCode + (var().isUserDefinedName() ? 1 : 0);
+            hashCode = 31 * hashCode + (isPositive() ? 1 : 0);
+        }
+        return hashCode;
     }
 }

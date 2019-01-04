@@ -30,7 +30,6 @@ import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
@@ -83,7 +82,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         ConceptId predicateId = schemaConcept != null ? schemaConcept.id() : null;
         //isa part
-        Statement resVar = new PositiveStatement(varName).has(Graql.type(label.getValue()));
+        Statement resVar = new Statement(varName).has(Graql.type(label.getValue()));
         return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 

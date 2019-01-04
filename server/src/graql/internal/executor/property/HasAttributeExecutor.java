@@ -31,7 +31,6 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
@@ -101,8 +100,8 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
 
         //add resource atom
         Statement resVar = relationVariable.isUserDefinedName() ?
-                new PositiveStatement(varName).has(property.type(), new PositiveStatement(attributeVariable), new PositiveStatement(relationVariable)) :
-                new PositiveStatement(varName).has(property.type(), new PositiveStatement(attributeVariable));
+                new Statement(varName).has(property.type(), new Statement(attributeVariable), new Statement(relationVariable)) :
+                new Statement(varName).has(property.type(), new Statement(attributeVariable));
         return AttributeAtom.create(resVar, attributeVariable, relationVariable,
                                     predicateVariable, predicateId, predicates, parent);
     }

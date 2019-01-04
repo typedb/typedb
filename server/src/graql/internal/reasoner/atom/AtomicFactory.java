@@ -69,7 +69,7 @@ public class AtomicFactory {
         Atomic atomic = PropertyExecutor.create(statement.var(), property)
                 .atomic(parent, statement, statements);
         if (atomic == null) return null;
-        return statement.isPositive()? atomic : NegatedAtomic.create(atomic);
+        return statement.isPositive() ? atomic : NegatedAtomic.create(atomic);
     }
 
 }

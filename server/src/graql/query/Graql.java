@@ -24,12 +24,9 @@ import grakn.core.graql.parser.Parser;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Negation;
-import grakn.core.graql.query.pattern.NegativeStatement;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
@@ -161,7 +158,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Statement var(String name) {
-        return new PositiveStatement(new Variable(name), Collections.emptySet());
+        return new Statement(new Variable(name), Collections.emptySet());
     }
 
     /**
@@ -169,7 +166,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Statement var() {
-        return new PositiveStatement(new Variable(), Collections.emptySet());
+        return new Statement(new Variable(), Collections.emptySet());
     }
 
     /**

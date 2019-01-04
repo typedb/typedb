@@ -20,7 +20,6 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
@@ -43,7 +42,7 @@ public class HasAttributeProperty extends VarProperty {
     private final Statement relationship;
 
     public HasAttributeProperty(String type, Statement attribute) {
-        this(type, attribute, new PositiveStatement(new Variable()));
+        this(type, attribute, new Statement(new Variable()));
     }
 
     public HasAttributeProperty(String type, Statement attribute, Statement relationship) {
