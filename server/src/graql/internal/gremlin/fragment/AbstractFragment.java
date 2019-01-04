@@ -29,7 +29,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 
 @AutoValue
-abstract class IsAbstractFragment extends Fragment {
+abstract class AbstractFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -40,7 +40,7 @@ abstract class IsAbstractFragment extends Fragment {
 
     @Override
     public String name() {
-        return "[is-abstract]";
+        return "[abstract]";
     }
 
     @Override

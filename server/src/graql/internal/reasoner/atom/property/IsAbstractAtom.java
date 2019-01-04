@@ -25,10 +25,10 @@ import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.IsAbstractProperty;
+import grakn.core.graql.query.pattern.property.AbstractProperty;
 
 /**
- * Atomic corresponding to {@link IsAbstractProperty}.
+ * Atomic corresponding to {@link AbstractProperty}.
  */
 @AutoValue
 public abstract class IsAbstractAtom extends AtomicBase {

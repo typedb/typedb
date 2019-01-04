@@ -89,7 +89,7 @@ public interface Query {
         HAS("has"),
         KEY("key"),
         ID("id"),
-        IS_ABSTRACT("is-abstract"),
+        ABSTRACT("abstract"),
         ISA("isa"),
         ISA_EXP("isa!"),
         LABEL("label"),

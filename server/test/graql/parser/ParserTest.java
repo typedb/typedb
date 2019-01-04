@@ -524,7 +524,7 @@ public class ParserTest {
         );
 
         InsertQuery parsed = parse(
-                "insert concrete-type sub entity; abstract-type is-abstract sub entity;"
+                "insert concrete-type sub entity; abstract-type abstract sub entity;"
         );
 
         assertEquals(expected, parsed);

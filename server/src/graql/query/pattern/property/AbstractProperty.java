@@ -21,23 +21,23 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.graql.query.Query;
 
 /**
- * Represents the {@code is-abstract} property on a Type.
+ * Represents the {@code abstract} property on a Type.
  * This property can be matched or inserted.
  * This property states that a type cannot have direct instances.
  */
-public class IsAbstractProperty extends VarProperty {
+public class AbstractProperty extends VarProperty {
 
-    private static final IsAbstractProperty INSTANCE = new IsAbstractProperty();
+    private static final AbstractProperty INSTANCE = new AbstractProperty();
 
-    private IsAbstractProperty() {}
+    private AbstractProperty() {}
 
-    public static IsAbstractProperty get() {
+    public static AbstractProperty get() {
         return INSTANCE;
     }
 
     @Override
     public String keyword() {
-        return Query.Property.IS_ABSTRACT.toString();
+        return Query.Property.ABSTRACT.toString();
     }
 
     @Override

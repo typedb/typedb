@@ -325,7 +325,7 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<Statement> visitIsAbstract(GraqlParser.IsAbstractContext ctx) {
+    public UnaryOperator<Statement> visitAbstract(GraqlParser.AbstractContext ctx) {
         return Statement::isAbstract;
     }
 

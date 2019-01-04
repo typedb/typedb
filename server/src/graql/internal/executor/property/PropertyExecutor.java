@@ -30,7 +30,7 @@ import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.IdProperty;
-import grakn.core.graql.query.pattern.property.IsAbstractProperty;
+import grakn.core.graql.query.pattern.property.AbstractProperty;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
@@ -148,8 +148,8 @@ public interface PropertyExecutor {
         } else if (property instanceof IdProperty) {
             return new IdExecutor(var, (IdProperty) property);
 
-        } else if (property instanceof IsAbstractProperty) {
-            return new IsAbstractExecutor(var, (IsAbstractProperty) property);
+        } else if (property instanceof AbstractProperty) {
+            return new AbstractExecutor(var, (AbstractProperty) property);
 
         } else if (property instanceof IsaExplicitProperty) {
             return new IsaExecutor.IsaExplicitExecutor(var, (IsaExplicitProperty) property);

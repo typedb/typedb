@@ -30,7 +30,7 @@ import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.IdProperty;
-import grakn.core.graql.query.pattern.property.IsAbstractProperty;
+import grakn.core.graql.query.pattern.property.AbstractProperty;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.TypeProperty;
@@ -297,7 +297,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type, Statement attribute) {
-        return has(type, attribute, Graql.var());
+        return addProperty(new HasAttributeProperty(type, attribute));
     }
 
     /**
@@ -553,7 +553,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isAbstract() {
-        return addProperty(IsAbstractProperty.get());
+        return addProperty(AbstractProperty.get());
     }
 
     /**
