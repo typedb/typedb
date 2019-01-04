@@ -90,7 +90,7 @@ public class PatternIT {
         assertTrue(x.isStatement());
         assertFalse(x.isDisjunction());
         assertFalse(x.isNegation());
-        assertTrue(x.isConjunction());
+        assertFalse(x.isConjunction());
 
         assertEquals(x, x.asStatement());
     }

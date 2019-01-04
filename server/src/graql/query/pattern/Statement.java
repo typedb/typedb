@@ -123,11 +123,6 @@ public abstract class Statement implements Pattern {
         return Graql.and(Collections.singleton(this));
     }
 
-    @Override
-    public boolean isConjunction() {
-        return true;
-    }
-
     /**
      * @return the name this variable represents, if it represents something with a specific name
      */
