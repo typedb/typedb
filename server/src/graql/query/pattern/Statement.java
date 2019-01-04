@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.pattern;
 
-import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
@@ -26,14 +25,13 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.property.AbstractProperty;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.IdProperty;
-import grakn.core.graql.query.pattern.property.AbstractProperty;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.TypeProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.RegexProperty;
@@ -42,6 +40,7 @@ import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.SubExplicitProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.ThenProperty;
+import grakn.core.graql.query.pattern.property.TypeProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
@@ -59,6 +58,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
@@ -639,14 +639,15 @@ public abstract class Statement implements Pattern {
     private Statement addRolePlayer(RelationProperty.RolePlayer relationPlayer) {
         Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-        ImmutableMultiset<RelationProperty.RolePlayer> oldCastings = relationProperty
+        List<RelationProperty.RolePlayer> oldRolePlayers = relationProperty
                 .map(RelationProperty::relationPlayers)
-                .orElse(ImmutableMultiset.of());
+                .orElse(Collections.emptyList());
 
-        ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers =
-                Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
+        List<RelationProperty.RolePlayer> newRolePlayers = Stream
+                .concat(oldRolePlayers.stream(), Stream.of(relationPlayer))
+                .collect(Collectors.toList());
 
-        RelationProperty newProperty = new RelationProperty(relationPlayers);
+        RelationProperty newProperty = new RelationProperty(newRolePlayers);
 
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }
@@ -657,11 +658,19 @@ public abstract class Statement implements Pattern {
                 throw GraqlQueryException.conflictingProperties(this, property, other);
             });
         }
-        return Graql.statement(var(), Sets.union(properties(), ImmutableSet.of(property)), isPositive());
+        Variable name = var();
+        Set<VarProperty> newProperties = Sets.union(properties(), ImmutableSet.of(property));
+        return isPositive() ?
+                new PositiveStatement(name, newProperties) :
+                new NegativeStatement(name, newProperties);
     }
 
     private Statement removeProperty(VarProperty property) {
-        return Graql.statement(var(), Sets.difference(properties(), ImmutableSet.of(property)), isPositive());
+        Variable name = var();
+        Set<VarProperty> newProperties = Sets.difference(properties(), ImmutableSet.of(property));
+        return isPositive() ?
+                new PositiveStatement(name, newProperties) :
+                new NegativeStatement(name, newProperties);
     }
 
     @Override

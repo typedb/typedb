@@ -260,18 +260,6 @@ public class Graql {
         return new Negation<>(patterns);
     }
 
-    /**
-     *
-     * @param name statement variable name
-     * @param properties statement consitutent properties
-     * @param positive true if it is a positive statement
-     * @return corresponding statement
-     */
-    @CheckReturnValue
-    public static Statement statement(Variable name, Set<VarProperty> properties, boolean positive) {
-        return positive? new PositiveStatement(name, properties) : new NegativeStatement(name, properties);
-    }
-
     // PREDICATES
 
     /**
