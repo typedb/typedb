@@ -229,32 +229,12 @@ public class Graql {
 
     /**
      *
-     * @param patterns an array of patterns to form a negation
+     * @param pattern a patterns to a negate
      * @return a pattern that will match when no contained pattern matches
      */
     @CheckReturnValue
-    public static Pattern not(Pattern... patterns) {
-        return not(Sets.newHashSet(patterns));
-    }
-
-    /**
-     * @param patterns a collection of patterns to form a negation
-     * @return a pattern that will match when no contained pattern matches
-     */
-    @CheckReturnValue
-    public static Pattern not(Collection<? extends Pattern> patterns) {
-        return not(new LinkedHashSet<>(patterns));
-    }
-
-    /**
-     *
-     * @param patterns a set of patterns to form a negation
-     * @param <T> negation inner pattern type
-     * @return a pattern that will match when no contained pattern matches
-     */
-    @CheckReturnValue
-    public static <T extends Pattern> Negation<T> not(Set<T> patterns) {
-        return new Negation<>(patterns);
+    public static Pattern not(Pattern pattern) {
+        return new Negation<>(pattern);
     }
 
     // PREDICATES

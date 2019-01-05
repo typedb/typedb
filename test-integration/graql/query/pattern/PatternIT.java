@@ -39,8 +39,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.Graql.not;
 import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.var;
@@ -253,17 +253,9 @@ public class PatternIT {
     @Test
     public void whenNegationPassedNull_Throw() {
         exception.expect(Exception.class);
-        Set<Statement> varSet = null;
-        //noinspection ResultOfMethodCallIgnored,ConstantConditions
-        not(varSet);
-    }
-
-    @Test
-    public void whenNegationPassedVarAndNull_Throw() {
-        exception.expect(Exception.class);
         Statement var = null;
         //noinspection ResultOfMethodCallIgnored,ConstantConditions
-        not(var(), var);
+        not(var);
     }
 
     @Test
