@@ -27,29 +27,29 @@ import grakn.core.graql.util.StringUtil;
  * This property can be queried and inserted. If used in an insert query and there is an existing type with the give
  * label, then that type will be retrieved.
  */
-public class LabelProperty extends VarProperty {
+public class TypeProperty extends VarProperty {
 
-    private final Label label;
+    private final String name;
 
-    public LabelProperty(Label label) {
-        if (label == null) {
+    public TypeProperty(String name) {
+        if (name == null) {
             throw new NullPointerException("Null label");
         }
-        this.label = label;
+        this.name = name;
     }
 
-    public Label label() {
-        return label;
+    public String name() {
+        return name;
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.LABEL.toString();
     }
 
     @Override
     public String property() {
-        return StringUtil.typeLabelToString(label());
+        return StringUtil.typeLabelToString(Label.of(name()));
     }
 
     @Override
@@ -67,9 +67,9 @@ public class LabelProperty extends VarProperty {
         if (o == this) {
             return true;
         }
-        if (o instanceof LabelProperty) {
-            LabelProperty that = (LabelProperty) o;
-            return (this.label.equals(that.label()));
+        if (o instanceof TypeProperty) {
+            TypeProperty that = (TypeProperty) o;
+            return (this.name.equals(that.name));
         }
         return false;
     }
@@ -78,7 +78,7 @@ public class LabelProperty extends VarProperty {
     public int hashCode() {
         int h = 1;
         h *= 1000003;
-        h ^= this.label.hashCode();
+        h ^= this.name.hashCode();
         return h;
     }
 }

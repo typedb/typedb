@@ -19,8 +19,12 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
@@ -38,6 +42,16 @@ public class WhenExecutor implements PropertyExecutor.Definable {
     }
 
     @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        return null;
+    }
+
+    @Override
+    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        return null;
+    }
+
+    @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
         return ImmutableSet.of(new DefineWhen());
     }
@@ -45,7 +59,7 @@ public class WhenExecutor implements PropertyExecutor.Definable {
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
         // TODO: Fix this so that Undefining WhenProperty behaves symmetrically to Defining WhenProperty
-        throw GraqlQueryException.defineUnsupportedProperty(property.name());
+        throw GraqlQueryException.defineUnsupportedProperty(property.keyword());
     }
 
     private class DefineWhen implements PropertyExecutor.Writer {

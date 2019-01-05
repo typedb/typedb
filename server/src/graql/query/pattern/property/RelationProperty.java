@@ -18,13 +18,13 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import com.google.common.collect.ImmutableMultiset;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -39,21 +39,21 @@ import static java.util.stream.Collectors.joining;
  */
 public class RelationProperty extends VarProperty {
 
-    private final ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers;
+    private final List<RolePlayer> relationPlayers;
 
-    public RelationProperty(ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers) {
+    public RelationProperty(List<RolePlayer> relationPlayers) {
         if (relationPlayers == null) {
             throw new NullPointerException("Null relationPlayers");
         }
         this.relationPlayers = relationPlayers;
     }
 
-    public ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers() {
+    public List<RolePlayer> relationPlayers() {
         return relationPlayers;
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.RELATION.toString();
     }
 

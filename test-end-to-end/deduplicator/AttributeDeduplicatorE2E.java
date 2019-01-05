@@ -53,8 +53,8 @@ import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGr
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknStopped;
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertZipExists;
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.unzipGrakn;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.type;
+import static grakn.core.graql.query.Graql.var;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -117,11 +117,11 @@ public class AttributeDeduplicatorE2E {
     private void defineParentChildSchema(GraknClient.Session session) {
         try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             List<ConceptMap> answer = tx.execute(Graql.define(
-                    label("name").sub("attribute").datatype(Query.DataType.STRING),
-                    label("parent").sub("role"),
-                    label("child").sub("role"),
-                    label("person").sub("entity").has("name").plays("parent").plays("child"),
-                    label("parentchild").sub("relationship").relates("parent").relates("child")));
+                    type("name").sub("attribute").datatype(Query.DataType.STRING),
+                    type("parent").sub("role"),
+                    type("child").sub("role"),
+                    type("person").sub("entity").has("name").plays("parent").plays("child"),
+                    type("parentchild").sub("relationship").relates("parent").relates("child")));
             tx.commit();
         }
     }

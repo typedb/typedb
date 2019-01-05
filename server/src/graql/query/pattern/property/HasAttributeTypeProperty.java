@@ -21,8 +21,8 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 
 import java.util.stream.Stream;
@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY;
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY_OWNER;
 import static grakn.core.graql.internal.Schema.ImplicitType.KEY_VALUE;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.var;
 
 /**
  * Represents the {@code has} and {@code key} properties on a Type.
@@ -56,17 +56,17 @@ public class HasAttributeTypeProperty extends VarProperty {
                 () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType)
         );
 
-        Statement role = Pattern.label(Schema.MetaSchema.ROLE.getLabel());
+        Statement role = Graql.type(Schema.MetaSchema.ROLE.getLabel().getValue());
 
         Statement ownerRole = var().sub(role);
         Statement valueRole = var().sub(role);
-        Statement relationType = var().sub(Pattern.label(Schema.MetaSchema.RELATIONSHIP.getLabel()));
+        Statement relationType = var().sub(Graql.type(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()));
 
         // If a key, limit only to the implicit key type
         if (isKey) {
-            ownerRole = ownerRole.label(KEY_OWNER.getLabel(resourceLabel));
-            valueRole = valueRole.label(KEY_VALUE.getLabel(resourceLabel));
-            relationType = relationType.label(KEY.getLabel(resourceLabel));
+            ownerRole = ownerRole.type(KEY_OWNER.getLabel(resourceLabel).getValue());
+            valueRole = valueRole.type(KEY_VALUE.getLabel(resourceLabel).getValue());
+            relationType = relationType.type(KEY.getLabel(resourceLabel).getValue());
         }
 
         Statement relationOwner = relationType.relates(ownerRole);
@@ -103,7 +103,7 @@ public class HasAttributeTypeProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return isKey ? Query.Property.KEY.toString() : Query.Property.HAS.toString();
     }
 

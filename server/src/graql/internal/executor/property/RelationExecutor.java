@@ -34,7 +34,6 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
@@ -54,9 +53,7 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
 
-public class RelationExecutor implements PropertyExecutor.Insertable,
-                                         PropertyExecutor.Matchable,
-                                         PropertyExecutor.Atomable {
+public class RelationExecutor implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final RelationProperty property;
@@ -64,11 +61,6 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
     RelationExecutor(Variable var, RelationProperty property) {
         this.var = var;
         this.property = property;
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> insertExecutors() {
-        return ImmutableSet.of(new InsertRelation());
     }
 
     @Override
@@ -115,7 +107,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
         boolean isReified = statement.properties().stream()
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
-        Statement relVar = isReified ? new PositiveStatement(var.asUserDefined()) : new PositiveStatement(var);
+        Statement relVar = isReified ? new Statement(var.asUserDefined()) : new Statement(var);
 
         for (RelationProperty.RolePlayer rp : property.relationPlayers()) {
             Statement rolePattern = rp.getRole().orElse(null);
@@ -129,7 +121,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
                     if (concept != null) {
                         if (concept.isRole()) {
                             Label roleLabel = concept.asSchemaConcept().label();
-                            rolePattern = new PositiveStatement(roleVar).label(roleLabel);
+                            rolePattern = new Statement(roleVar).type(roleLabel.getValue());
                         } else {
                             throw GraqlQueryException.nonRoleIdAssignedToRoleVariable(statement);
                         }
@@ -159,9 +151,14 @@ public class RelationExecutor implements PropertyExecutor.Insertable,
         }
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         relVar = isaProp instanceof IsaExplicitProperty ?
-                relVar.isaExplicit(new PositiveStatement(typeVariable.asUserDefined())) :
-                relVar.isa(new PositiveStatement(typeVariable.asUserDefined()));
+                relVar.isaExplicit(new Statement(typeVariable.asUserDefined())) :
+                relVar.isa(new Statement(typeVariable.asUserDefined()));
         return RelationshipAtom.create(relVar, typeVariable, predicateId, parent);
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> insertExecutors() {
+        return ImmutableSet.of(new InsertRelation());
     }
 
     class InsertRelation implements PropertyExecutor.Writer {

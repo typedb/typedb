@@ -57,7 +57,7 @@ public class DefineQuery implements Query {
         if (o == null || getClass() != o.getClass()) return false;
 
         DefineQuery that = (DefineQuery) o;
-        return this.statements.equals(that.statements());
+        return this.statements.equals(that.statements);
     }
 
     @Override

@@ -47,7 +47,7 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.LabelProperty;
+import grakn.core.graql.query.pattern.property.TypeProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.server.session.TransactionOLTP;
 import org.slf4j.Logger;
@@ -68,7 +68,7 @@ import java.util.stream.Collectors;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.internal.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.var;
 
 /**
  * Class for generating greedy traversal plans
@@ -231,7 +231,7 @@ public class GreedyTraversalPlan {
                 if (!inferredLabels.containsKey(label)) {
                     Statement labelVar = var();
                     inferredLabels.put(label, labelVar);
-                    Fragment labelFragment = Fragments.label(new LabelProperty(label), labelVar.var(), ImmutableSet.of(label));
+                    Fragment labelFragment = Fragments.label(new TypeProperty(label.getValue()), labelVar.var(), ImmutableSet.of(label));
                     allFragments.add(labelFragment);
                 }
 

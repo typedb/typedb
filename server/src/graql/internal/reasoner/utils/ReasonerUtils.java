@@ -27,6 +27,7 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
@@ -41,7 +42,7 @@ import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
-import grakn.core.graql.query.pattern.property.LabelProperty;
+import grakn.core.graql.query.pattern.property.TypeProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 
 import javax.annotation.Nullable;
@@ -57,7 +58,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -81,8 +81,8 @@ public class ReasonerUtils {
     public static IdPredicate getUserDefinedIdPredicate(Variable typeVariable, Set<Statement> vars, ReasonerQuery parent){
         return  vars.stream()
                 .filter(v -> v.var().equals(typeVariable))
-                .flatMap(v -> v.hasProperty(LabelProperty.class)?
-                        v.getProperties(LabelProperty.class).map(np -> IdPredicate.create(typeVariable, np.label(), parent)) :
+                .flatMap(v -> v.hasProperty(TypeProperty.class)?
+                        v.getProperties(TypeProperty.class).map(np -> IdPredicate.create(typeVariable, Label.of(np.name()), parent)) :
                         v.getProperties(IdProperty.class).map(np -> IdPredicate.create(typeVariable, ConceptId.of(np.id()), parent)))
                 .findFirst().orElse(null);
     }
@@ -103,8 +103,8 @@ public class ReasonerUtils {
         if(typeVar.var().isUserDefinedName()) {
             predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
         } else {
-            LabelProperty nameProp = typeVar.getProperty(LabelProperty.class).orElse(null);
-            if (nameProp != null) predicate = IdPredicate.create(typeVariable, nameProp.label(), parent);
+            TypeProperty nameProp = typeVar.getProperty(TypeProperty.class).orElse(null);
+            if (nameProp != null) predicate = IdPredicate.create(typeVariable, Label.of(nameProp.name()), parent);
         }
         return predicate;
     }
@@ -119,9 +119,15 @@ public class ReasonerUtils {
      * @return stream of mapped ValuePredicates
      */
     public static Stream<ValuePredicate> getValuePredicates(Variable valueVariable, Statement valueVar, Set<Statement> vars, ReasonerQuery parent){
-        Stream<Statement> sourceVars = valueVar.var().isUserDefinedName()?
-                vars.stream().filter(v -> v.var().equals(valueVariable)).filter(v -> v.isPositive() == valueVar.isPositive()) :
-                Stream.of(valueVar);
+        Stream<Statement> sourceVars;
+        if (valueVar.var().isUserDefinedName()) {
+            sourceVars = vars.stream()
+                    .filter(v -> v.var().equals(valueVariable))
+                    .filter(v -> v.sign() == valueVar.sign());
+        }
+        else {
+            sourceVars = Stream.of(valueVar);
+        }
         return sourceVars.flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> ValuePredicate.create(valueVariable, vp.predicate(), parent)));
     }
 

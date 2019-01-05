@@ -65,7 +65,6 @@ import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
@@ -97,7 +96,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.compatibleR
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.supers;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.top;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -262,7 +261,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * @return corresponding {@link Statement}
      */
     private Statement relationPattern(Variable varName, Collection<RelationProperty.RolePlayer> relationPlayers) {
-        Statement var = new PositiveStatement(varName);
+        Statement var = new Statement(varName);
         for (RelationProperty.RolePlayer rp : relationPlayers) {
             Statement rolePattern = rp.getRole().orElse(null);
             var = rolePattern != null? var.rel(rolePattern, rp.getPlayer()) : var.rel(rp.getPlayer());
@@ -749,7 +748,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 Label roleLabel = rolePattern.getTypeLabel().orElse(null);
                 //allocate if variable role or if label non meta
                 if (roleLabel == null || !Schema.MetaSchema.isMetaLabel(roleLabel)) {
-                    inferredRelationPlayers.add(new RelationProperty.RolePlayer(rolePattern, new PositiveStatement(varName)));
+                    inferredRelationPlayers.add(new RelationProperty.RolePlayer(rolePattern, new Statement(varName)));
                     allocatedRelationPlayers.add(rp);
                 }
             }
@@ -783,8 +782,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     RelationProperty.RolePlayer rp = entry.getKey();
                     Variable varName = rp.getPlayer().var();
                     Role role = Iterables.getOnlyElement(entry.getValue());
-                    Statement rolePattern = var().label(role.label());
-                    inferredRelationPlayers.add(new RelationProperty.RolePlayer(rolePattern, new PositiveStatement(varName)));
+                    Statement rolePattern = var().type(role.label().getValue());
+                    inferredRelationPlayers.add(new RelationProperty.RolePlayer(rolePattern, new Statement(varName)));
                     allocatedRelationPlayers.add(rp);
                 });
 
@@ -796,16 +795,16 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     Statement rolePattern = rp.getRole().orElse(null);
 
                     rolePattern = rolePattern != null ?
-                            rolePattern.label(metaRole.label()) :
-                            var().label(metaRole.label());
-                    inferredRelationPlayers.add(new RelationProperty.RolePlayer(rolePattern, new PositiveStatement(varName)));
+                            rolePattern.type(metaRole.label().getValue()) :
+                            var().type(metaRole.label().getValue());
+                    inferredRelationPlayers.add(new RelationProperty.RolePlayer(rolePattern, new Statement(varName)));
                 });
 
         Statement relationPattern = relationPattern(getVarName(), inferredRelationPlayers);
         Statement newPattern =
                 (isDirect()?
-                        relationPattern.isaExplicit(new PositiveStatement(getPredicateVariable())) :
-                        relationPattern.isa(new PositiveStatement(getPredicateVariable()))
+                        relationPattern.isaExplicit(new Statement(getPredicateVariable())) :
+                        relationPattern.isa(new Statement(getPredicateVariable()))
                 );
         return create(newPattern, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
     }
@@ -1073,14 +1072,14 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         if (!parentAtom.requiresRoleExpansion()) return this;
 
         Statement relVar = getPattern().getProperty(IsaProperty.class)
-                .map(prop -> new PositiveStatement(getVarName()).isa(prop.type())).orElse(new PositiveStatement(getVarName()));
+                .map(prop -> new Statement(getVarName()).isa(prop.type())).orElse(new Statement(getVarName()));
 
         for (RelationProperty.RolePlayer rp: getRelationPlayers()) {
             Statement rolePattern = rp.getRole().orElse(null);
             if (rolePattern != null) {
                 Variable roleVar = rolePattern.var();
                 Label roleLabel = rolePattern.getTypeLabel().orElse(null);
-                relVar = relVar.rel(new PositiveStatement(roleVar.asUserDefined()).label(roleLabel), rp.getPlayer());
+                relVar = relVar.rel(new Statement(roleVar.asUserDefined()).type(roleLabel.getValue()), rp.getPlayer());
             } else {
                 relVar = relVar.rel(rp.getPlayer());
             }
@@ -1099,7 +1098,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Override
     public RelationshipAtom rewriteWithRelationVariable(){
-        Statement newVar = new PositiveStatement(new Variable().asUserDefined());
+        Statement newVar = new Statement(new Variable().asUserDefined());
         Statement relVar = getPattern().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.type()))
                 .orElse(newVar);

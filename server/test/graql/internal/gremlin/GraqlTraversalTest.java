@@ -28,9 +28,9 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
@@ -58,9 +58,9 @@ import static grakn.core.graql.internal.gremlin.fragment.Fragments.outIsa;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.outRelates;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.outSub;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.value;
+import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.gt;
-import static grakn.core.graql.query.pattern.Pattern.and;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -73,13 +73,13 @@ import static org.mockito.Mockito.when;
 
 public class GraqlTraversalTest {
 
-    private static final Statement a = Pattern.var("a");
-    private static final Statement b = Pattern.var("b");
-    private static final Statement c = Pattern.var("c");
-    private static final Statement x = Pattern.var("x");
-    private static final Statement y = Pattern.var("y");
-    private static final Statement z = Pattern.var("z");
-    private static final Statement xx = Pattern.var("xx");
+    private static final Statement a = Graql.var("a");
+    private static final Statement b = Graql.var("b");
+    private static final Statement c = Graql.var("c");
+    private static final Statement x = Graql.var("x");
+    private static final Statement y = Graql.var("y");
+    private static final Statement z = Graql.var("z");
+    private static final Statement xx = Graql.var("xx");
     private static final Fragment xId = id(null, x.var(), ConceptId.of("Titanic"));
     private static final Fragment yId = id(null, y.var(), ConceptId.of("movie"));
     private static final Fragment xIsaY = outIsa(null, x.var(), y.var());
@@ -156,9 +156,9 @@ public class GraqlTraversalTest {
     public void testAllTraversalsSimpleQuery() {
         IdProperty titanicId = new IdProperty("Titanic");
         IdProperty movieId = new IdProperty("movie");
-        SubProperty subProperty = new SubProperty(new PositiveStatement(y.var(), ImmutableSet.of(movieId)));
+        SubProperty subProperty = new SubProperty(new Statement(y.var(), ImmutableList.of(movieId)));
 
-        Statement pattern = new PositiveStatement(x.var(), ImmutableSet.of(titanicId, subProperty));
+        Statement pattern = new Statement(x.var(), ImmutableList.of(titanicId, subProperty));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
@@ -205,8 +205,8 @@ public class GraqlTraversalTest {
     @Test
     public void testOptimalAttachedResource() {
         assertNearlyOptimal(var()
-                .rel(x.isa(y.id("movie")))
-                .rel(z.val("Titanic").isa(var("a").id("title"))));
+                                    .rel(x.isa(y.id("movie")))
+                                    .rel(z.val("Titanic").isa(var("a").id("title"))));
     }
 
     @Ignore // TODO: This is now super-slow
@@ -215,7 +215,7 @@ public class GraqlTraversalTest {
         assertNearlyOptimal(and(
                 x.id("xid"),
                 var().rel(x).rel(y),
-                y.isa(b.label("person")),
+                y.isa(b.type("person")),
                 var().rel(y).rel(z)
         ));
     }

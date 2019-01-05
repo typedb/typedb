@@ -76,7 +76,7 @@ public class NegationIT {
 
     @Test
     public void whenNegatingStatementsWithMultipleProperties_MultiPropertyTreatedAsConjunction(){
-        Pattern pattern = Pattern.parse(
+        Pattern pattern = Graql.parsePattern(
                     "{" +
                             "$x has attribute $r;" +
                             "NOT $x isa type" +
@@ -85,18 +85,18 @@ public class NegationIT {
                             "}"
         );
 
-        Pattern equivalentPattern = Pattern.or(
-                Pattern.parse(
+        Pattern equivalentPattern = Graql.or(
+                Graql.parsePattern(
                             "{" +
                                     "$x has attribute $r;" +
                                     "NOT $x isa type;" +
                                     "}"),
-                Pattern.parse(
+                Graql.parsePattern(
                             "{" +
                                     "$x has attribute $r;" +
                                     "NOT $x has resource-string 'value';" +
                                     "}"),
-                Pattern.parse(
+                Graql.parsePattern(
                             "{" +
                                     "$x has attribute $r;" +
                                     "NOT $x has derived-resource-string 'otherValue';" +
@@ -108,13 +108,13 @@ public class NegationIT {
 
     @Test
     public void whenNegatingStatementTwice_gettingOriginalStatement(){
-        Pattern pattern = Pattern.parse("{" + 
+        Pattern pattern = Graql.parsePattern("{" +
                 "$x has resource-string 'value';" + 
                 "NOT {NOT ($x, $y)};" + 
                 "$y has derived-resource-string 'anotherValue';" + 
                 "}"
         );
-        Pattern equivalentPattern = Pattern.parse("{" + 
+        Pattern equivalentPattern = Graql.parsePattern("{" +
                 "$x has resource-string 'value';" + 
                 "($x, $y);" + 
                 "$y has derived-resource-string 'anotherValue';" + 
@@ -125,7 +125,7 @@ public class NegationIT {
 
     @Test
     public void whenNegatedPatternContainsNegatedStatements_flattenedPatternIsCorrect(){
-        Pattern pattern = Pattern.parse(
+        Pattern pattern = Graql.parsePattern(
                 "NOT {" + 
                         "{" + 
                             "$x has resource-string 'value';" + 
@@ -135,10 +135,10 @@ public class NegationIT {
                         "}"
         );
 
-        Pattern equivalentPattern = Pattern.or(
-                Pattern.not(Pattern.parse("$x has resource-string 'value';")),
-                Pattern.parse("($x, $y);"),
-                Pattern.not(Pattern.parse("$y has derived-resource-string 'anotherValue';"))
+        Pattern equivalentPattern = Graql.or(
+                Graql.not(Graql.parsePattern("$x has resource-string 'value';")),
+                Graql.parsePattern("($x, $y);"),
+                Graql.not(Graql.parsePattern("$y has derived-resource-string 'anotherValue';"))
         );
 
         assertEquals(pattern.getDisjunctiveNormalForm(), equivalentPattern.getDisjunctiveNormalForm());
@@ -151,7 +151,7 @@ public class NegationIT {
                 "($x, $y);" + 
                 "$y has derived-resource-string 'anotherValue';";
 
-        Pattern pattern = Pattern.parse(
+        Pattern pattern = Graql.parsePattern(
                 "NOT " + 
                             "{" + 
                                 "NOT {" +
@@ -161,13 +161,13 @@ public class NegationIT {
                                 "}" +
                             "};"
         );
-        Pattern equivalentPattern = Pattern.parse("{" + basePattern + "}");
+        Pattern equivalentPattern = Graql.parsePattern("{" + basePattern + "}");
         assertEquals(pattern.getDisjunctiveNormalForm(), equivalentPattern.getDisjunctiveNormalForm());
     }
 
     @Test
     public void whenNegatedPatternIsARelation_patternFlattenedCorrectly(){
-        Pattern pattern = Pattern.parse(
+        Pattern pattern = Graql.parsePattern(
                 "{" +
                             "(someRole: $x, otherRole: $y) isa binary;" +
                             "NOT (someRole: $y, otherRole: $q) isa binary;" +
@@ -180,13 +180,13 @@ public class NegationIT {
         assertTrue(
                 Iterables.getOnlyElement(dnf.getPatterns())
                         .getPatterns().stream()
-                        .allMatch(p -> p.asStatement().getProperties(IsaProperty.class).findFirst().isPresent())
+                        .allMatch(p -> p.getProperties(IsaProperty.class).findFirst().isPresent())
         );
     }
 
     @Test
     public void whenNegatedPatternIsAMultiPropertyStatement_statementTreatedAsConjunction(){
-        Pattern pattern = Pattern.parse(
+        Pattern pattern = Graql.parsePattern(
                     "{" +
                             "NOT $x isa type has attribute 'someValue' has resource-string 'value';" +
                             "(someRole: $x, otherRole: $y) isa binary;" +
@@ -194,7 +194,7 @@ public class NegationIT {
                             "}"
         );
 
-        Pattern equivalentPattern = Pattern.parse(
+        Pattern equivalentPattern = Graql.parsePattern(
                     "{" +
                             "NOT {" +
                                 "{" +
@@ -212,7 +212,7 @@ public class NegationIT {
 
     @Test
     public void whenNegatedPatternIsAConjunction_patternFlattenedCorrectly(){
-        Pattern pattern = Pattern.parse(
+        Pattern pattern = Graql.parsePattern(
                     "{" +
                             "$x isa type;" +
                             "NOT {" +
@@ -224,7 +224,7 @@ public class NegationIT {
                             "};" +
                             "}"
         );
-        Pattern equivalentPattern = Pattern.parse("{" +
+        Pattern equivalentPattern = Graql.parsePattern("{" +
                     "{$x isa type;" +
                     "NOT $x has resource-string 'value';}" +
                     " or " +
@@ -240,7 +240,7 @@ public class NegationIT {
 
     @Test
     public void whenNegatedPatternIsADisjunction_patternFlattenedCorrectly(){
-        Pattern pattern = Pattern.parse(
+        Pattern pattern = Graql.parsePattern(
                     "{" +
                             "$x isa type;" +
                             "NOT {" +
@@ -250,7 +250,7 @@ public class NegationIT {
                             "};" +
                             "}"
         );
-        Pattern equivalentPattern = Pattern.parse(
+        Pattern equivalentPattern = Graql.parsePattern(
                     "{" +
                     "$x isa type;" +
                     "NOT $x has resource-string 'value';" +
@@ -262,7 +262,7 @@ public class NegationIT {
 
     @Test
     public void whenNegatedPatternIsNested_patternFlattenedCorrectly(){
-        Pattern pattern = Pattern.parse(
+        Pattern pattern = Graql.parsePattern(
                     "{" +
                             "$x isa type;" +
                             "NOT {" +
@@ -274,7 +274,7 @@ public class NegationIT {
                             "};" +
                             "}"
         );
-        Pattern equivalentPattern = Pattern.parse("{" +
+        Pattern equivalentPattern = Graql.parsePattern("{" +
                     "{$x isa type;" +
                     "NOT $x has resource-string 'value';}" +
                     " or " +
@@ -465,11 +465,11 @@ public class NegationIT {
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
             String specificStringValue = "unattached";
 
-            Statement hasPattern = Pattern.var("x").has("attribute", Pattern.var("r").val(specificStringValue));
+            Statement hasPattern = Graql.var("x").has("attribute", Graql.var("r").val(specificStringValue));
             Pattern pattern =
-            Pattern.and(
-                    Pattern.var("x").isa("entity"),
-                    Pattern.not(hasPattern)
+            Graql.and(
+                    Graql.var("x").isa("entity"),
+                    Graql.not(hasPattern)
             );
             List<ConceptMap> answersWithoutSpecificStringValue = tx.execute(Graql.match(pattern).get());
             List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse("match $x has attribute $r;get;"));
@@ -617,16 +617,16 @@ public class NegationIT {
                     .anyMatch(r -> thingMap.entrySet().stream().allMatch(e -> r.rolePlayers(e.getValue()).anyMatch(rp -> rp.equals(e.getKey()))));
         }
 
-        Statement pattern = Pattern.var();
+        Statement pattern = Graql.var();
         Set<Statement> patterns = new HashSet<>();
         for(Map.Entry<Thing, Role> entry : thingMap.entrySet()){
             Role role = entry.getValue();
             Thing thing = entry.getKey();
-            Statement rpVar = Pattern.var();
+            Statement rpVar = Graql.var();
             patterns.add(rpVar.id(thing.id().getValue()));
             pattern = pattern.rel(role.label().getValue(), rpVar);
         }
         patterns.add(pattern.isa(relation.getValue()));
-        return tx.stream(Graql.match(Pattern.and(patterns)).get()).findFirst().isPresent();
+        return tx.stream(Graql.match(Graql.and(patterns)).get()).findFirst().isPresent();
     }
 }

@@ -39,7 +39,6 @@ import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.rule.GraknTestServer;
@@ -62,7 +61,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -351,8 +350,8 @@ public class AtomicUnificationIT {
         String childPatternString = "(subRole1: $x, subRole2: $y) isa binary";
         InferenceRule testRule = new InferenceRule(
                 tx.putRule("Checking Rewrite & Unification",
-                           Pattern.parse(childPatternString),
-                           Pattern.parse(childPatternString)),
+                           Graql.parsePattern(childPatternString),
+                           Graql.parsePattern(childPatternString)),
                 tx)
                 .rewrite(parentAtom);
 
@@ -401,11 +400,11 @@ public class AtomicUnificationIT {
     @Test
     public void testUnification_IndirectRoles(){
         Statement basePattern = var()
-                .rel(var("baseRole1").label("subRole1"), var("y1"))
-                .rel(var("baseRole2").label("subSubRole2"), var("y2"))
+                .rel(var("baseRole1").type("subRole1"), var("y1"))
+                .rel(var("baseRole2").type("subSubRole2"), var("y2"))
                 .isa("binary");
 
-        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Pattern.and(Sets.newHashSet(basePattern)), tx);
+        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Graql.and(Sets.newHashSet(basePattern)), tx);
         ReasonerAtomicQuery childQuery = ReasonerQueries
                 .atomic(conjunction(
                         "{($r1: $x1, $r2: $x2) isa binary;" +
@@ -426,10 +425,10 @@ public class AtomicUnificationIT {
     @Test
     public void testUnification_IndirectRoles_NoRelationType(){
         Statement basePattern = var()
-                .rel(var("baseRole1").label("subRole1"), var("y1"))
-                .rel(var("baseRole2").label("subSubRole2"), var("y2"));
+                .rel(var("baseRole1").type("subRole1"), var("y1"))
+                .rel(var("baseRole2").type("subSubRole2"), var("y2"));
 
-        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Pattern.and(Sets.newHashSet(basePattern)), tx);
+        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Graql.and(Sets.newHashSet(basePattern)), tx);
         ReasonerAtomicQuery childQuery = ReasonerQueries
                 .atomic(conjunction(
                         "{($r1: $x1, $r2: $x2);" +
@@ -527,9 +526,9 @@ public class AtomicUnificationIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx){
-        Set<Statement> vars = Pattern.parse(patternString)
+        Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Pattern.and(vars);
+        return Graql.and(vars);
     }
 }

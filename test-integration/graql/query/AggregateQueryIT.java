@@ -42,7 +42,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static grakn.core.common.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.var;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;

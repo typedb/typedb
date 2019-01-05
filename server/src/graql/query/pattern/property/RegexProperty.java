@@ -42,7 +42,7 @@ public class RegexProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.REGEX.toString();
     }
 

@@ -424,7 +424,7 @@ public class ComputeQuery<T extends Answer> implements Query {
         StringBuilder argumentsString = new StringBuilder();
 
         for (Param param : arguments.getParameters()) {
-            argumentsList.add(str(param, Char.EQUAL, arguments.getArgument(param).get()));
+            argumentsList.add(str(param, Operator.EQUAL, arguments.getArgument(param).get()));
         }
 
         if (!argumentsList.isEmpty()) {

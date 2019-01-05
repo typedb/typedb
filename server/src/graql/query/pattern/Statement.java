@@ -18,22 +18,20 @@
 
 package grakn.core.graql.query.pattern;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
+import com.google.common.collect.HashMultimap;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.property.AbstractProperty;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.IdProperty;
-import grakn.core.graql.query.pattern.property.IsAbstractProperty;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.LabelProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.RegexProperty;
@@ -42,6 +40,7 @@ import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.SubExplicitProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.ThenProperty;
+import grakn.core.graql.query.pattern.property.TypeProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
@@ -55,10 +54,12 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
@@ -74,18 +75,51 @@ import static java.util.stream.Collectors.toSet;
  * should be set on the inserted concept. In a DeleteQuery, it describes the
  * properties that should be deleted.
  */
-public abstract class Statement implements Pattern {
+public class Statement implements Pattern {
 
-    private final Variable var;
-    private final Set<VarProperty> properties;
     protected final Logger LOG = LoggerFactory.getLogger(Statement.class);
+    private final Sign sign;
+    private final Variable var;
+    private final LinkedHashSet<VarProperty> properties;
     private int hashCode = 0;
 
-    public Statement(Variable var) {
-        this(var, Collections.emptySet());
+    enum Sign {
+        POSITIVE("+"),
+        NEGATIVE("-");
+
+        private final String sign;
+
+        Sign(String sign) {
+            this.sign = sign;
+        }
+
+        @Override
+        public String toString() {
+            return this.sign;
+        }
     }
 
-    public Statement(Variable var, Set<VarProperty> properties) {
+    public Statement(Variable var) {
+        this(var, new LinkedHashSet<>());
+    }
+
+    public Statement(Variable var, Statement.Sign sign) {
+        this(var, new LinkedHashSet<>(), sign);
+    }
+
+    public Statement(Variable var, List<VarProperty> properties) {
+        this(var, new LinkedHashSet<>(properties), Sign.POSITIVE);
+    }
+
+    public Statement(Variable var, LinkedHashSet<VarProperty> properties) {
+        this(var, properties, Sign.POSITIVE);
+    }
+
+    public Statement(Variable var, List<VarProperty> properties, Statement.Sign sign) {
+        this(var, new LinkedHashSet<>(properties), sign);
+    }
+
+    public Statement(Variable var, LinkedHashSet<VarProperty> properties, Statement.Sign sign) {
         if (var == null) {
             throw new NullPointerException("Null var");
         }
@@ -94,6 +128,10 @@ public abstract class Statement implements Pattern {
             throw new NullPointerException("Null properties");
         }
         this.properties = properties;
+        if (sign == null) {
+            throw new NullPointerException("Null sign");
+        }
+        this.sign = sign;
     }
 
     /**
@@ -104,28 +142,51 @@ public abstract class Statement implements Pattern {
         return var;
     }
 
-    public Set<VarProperty> properties() {
+    public LinkedHashSet<VarProperty> properties() {
         return properties;
     }
 
-    @Override
-    public Statement asStatement() {
-        return this;
+    public Sign sign() {
+        return sign;
     }
 
     @Override
-    public boolean isStatement() {
-        return true;
+    public boolean isPositive() {
+        return sign().equals(Sign.POSITIVE);
     }
 
     @Override
-    public Conjunction<?> asConjunction() {
-        return Pattern.and(Collections.singleton(this));
+    public Statement negate() {
+        Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
+        return new Statement(var(), properties(), negated);
     }
 
     @Override
-    public boolean isConjunction() {
-        return true;
+    public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
+        if (isPositive()) {
+            // A disjunction containing only one option
+            Conjunction<Statement> conjunction = Graql.and(Collections.singleton(this));
+            return Graql.or(Collections.singleton(conjunction));
+
+        } else {
+            // Flatten if multiple properties present
+            // TODO this is hacky. Redo when atoms are independent of transactions.
+            HashMultimap<VarProperty, VarProperty> propertyMap = HashMultimap.create();
+            properties().forEach(p -> {
+                if (PropertyExecutor.create(this.var(), p).mappable(this)) {
+                    propertyMap.put(p, p);
+                } else {
+                    getProperties(RelationProperty.class).forEach(rp -> propertyMap.put(rp, p));
+                }
+            });
+
+            Set<Conjunction<Statement>> patterns = propertyMap.asMap().entrySet().stream()
+                    .map(e -> new Statement(var(), new LinkedHashSet<>(e.getValue()), Sign.NEGATIVE))
+                    .map(p -> Graql.and(Collections.singleton(p)))
+                    .collect(Collectors.toSet());
+
+            return Graql.or(patterns);
+        }
     }
 
     /**
@@ -133,7 +194,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Optional<Label> getTypeLabel() {
-        return getProperty(LabelProperty.class).map(labelProperty -> labelProperty.label());
+        return getProperty(TypeProperty.class).map(labelProperty -> Label.of(labelProperty.name()));
     }
 
     /**
@@ -238,21 +299,12 @@ public abstract class Statement implements Pattern {
     }
 
     /**
-     * @param label a string that this variable's label must match
+     * @param name a string that this variable's label must match
      * @return this
      */
     @CheckReturnValue
-    public final Statement label(String label) {
-        return label(Label.of(label));
-    }
-
-    /**
-     * @param label a type label that this variable's label must match
-     * @return this
-     */
-    @CheckReturnValue
-    public final Statement label(Label label) {
-        return addProperty(new LabelProperty(label));
+    public final Statement type(String name) {
+        return addProperty(new TypeProperty(name));
     }
 
     /**
@@ -294,7 +346,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type, ValuePredicate predicate) {
-        return has(type, Pattern.var().val(predicate));
+        return has(type, Graql.var().val(predicate));
     }
 
     /**
@@ -306,7 +358,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type, Statement attribute) {
-        return has(type, attribute, Pattern.var());
+        return addProperty(new HasAttributeProperty(type, attribute));
     }
 
     /**
@@ -329,7 +381,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isaExplicit(String type) {
-        return isaExplicit(Pattern.label(type));
+        return isaExplicit(Graql.type(type));
     }
 
     /**
@@ -347,7 +399,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isa(String type) {
-        return isa(Pattern.label(type));
+        return isa(Graql.type(type));
     }
 
     /**
@@ -365,7 +417,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement sub(String type) {
-        return sub(Pattern.label(type));
+        return sub(Graql.type(type));
     }
 
     /**
@@ -383,7 +435,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement subExplicit(String type) {
-        return subExplicit(Pattern.label(type));
+        return subExplicit(Graql.type(type));
     }
 
     /**
@@ -419,7 +471,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public Statement relates(String roleType, @Nullable String superRoleType) {
-        return relates(Pattern.label(roleType), superRoleType == null ? null : Pattern.label(superRoleType));
+        return relates(Graql.type(roleType), superRoleType == null ? null : Graql.type(superRoleType));
     }
 
     /**
@@ -437,7 +489,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement plays(String type) {
-        return plays(Pattern.label(type));
+        return plays(Graql.type(type));
     }
 
     /**
@@ -455,7 +507,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement has(String type) {
-        return has(Pattern.label(type));
+        return has(Graql.type(type));
     }
 
     /**
@@ -473,7 +525,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement key(String type) {
-        return key(Pattern.var().label(type));
+        return key(Graql.var().type(type));
     }
 
     /**
@@ -493,7 +545,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(String roleplayer) {
-        return rel(Pattern.var(roleplayer));
+        return rel(Graql.var(roleplayer));
     }
 
     /**
@@ -516,7 +568,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(String role, String roleplayer) {
-        return rel(Pattern.label(role), Pattern.var(roleplayer));
+        return rel(Graql.type(role), Graql.var(roleplayer));
     }
 
     /**
@@ -528,7 +580,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(Statement role, String roleplayer) {
-        return rel(role, Pattern.var(roleplayer));
+        return rel(role, Graql.var(roleplayer));
     }
 
     /**
@@ -540,7 +592,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement rel(String role, Statement roleplayer) {
-        return rel(Pattern.label(role), roleplayer);
+        return rel(Graql.type(role), roleplayer);
     }
 
     /**
@@ -562,7 +614,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement isAbstract() {
-        return addProperty(IsAbstractProperty.get());
+        return addProperty(AbstractProperty.get());
     }
 
     /**
@@ -611,7 +663,7 @@ public abstract class Statement implements Pattern {
      */
     @CheckReturnValue
     public final Statement neq(String var) {
-        return neq(Pattern.var(var));
+        return neq(Graql.var(var));
     }
 
     /**
@@ -648,14 +700,15 @@ public abstract class Statement implements Pattern {
     private Statement addRolePlayer(RelationProperty.RolePlayer relationPlayer) {
         Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-        ImmutableMultiset<RelationProperty.RolePlayer> oldCastings = relationProperty
+        List<RelationProperty.RolePlayer> oldRolePlayers = relationProperty
                 .map(RelationProperty::relationPlayers)
-                .orElse(ImmutableMultiset.of());
+                .orElse(Collections.emptyList());
 
-        ImmutableMultiset<RelationProperty.RolePlayer> relationPlayers =
-                Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
+        List<RelationProperty.RolePlayer> newRolePlayers = Stream
+                .concat(oldRolePlayers.stream(), Stream.of(relationPlayer))
+                .collect(Collectors.toList());
 
-        RelationProperty newProperty = new RelationProperty(relationPlayers);
+        RelationProperty newProperty = new RelationProperty(newRolePlayers);
 
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }
@@ -666,11 +719,60 @@ public abstract class Statement implements Pattern {
                 throw GraqlQueryException.conflictingProperties(this, property, other);
             });
         }
-        return Pattern.statement(var(), Sets.union(properties(), ImmutableSet.of(property)), isPositive());
+        Variable name = var();
+        LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties);
+        newProperties.add(property);
+        return new Statement(name, newProperties, sign());
     }
 
     private Statement removeProperty(VarProperty property) {
-        return Pattern.statement(var(), Sets.difference(properties(), ImmutableSet.of(property)), isPositive());
+        Variable name = var();
+        LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties);
+        newProperties.remove(property);
+        return new Statement(name, newProperties, sign());
+    }
+
+    @Override
+    public String toString() {
+        Collection<Statement> innerVars = innerStatements();
+        innerVars.remove(this);
+        getProperties(HasAttributeProperty.class)
+                .map(HasAttributeProperty::attribute)
+                .flatMap(r -> r.innerStatements().stream())
+                .forEach(innerVars::remove);
+
+        if (innerVars.stream()
+                .anyMatch(var1 -> var1.properties().stream()
+                        .anyMatch(p -> !(p instanceof TypeProperty)))) {
+            LOG.warn("printing a query with inner variables, which is not supported in native Graql");
+        }
+
+        StringBuilder builder = new StringBuilder();
+
+        String name = var().isUserDefinedName() ? var().toString() : "";
+
+        builder.append(name);
+
+        if (var().isUserDefinedName() && !properties().isEmpty()) {
+            // Add a space after the var name
+            builder.append(" ");
+        }
+
+        boolean first = true;
+
+        for (VarProperty property : properties()) {
+            if (!first) {
+                builder.append(" ");
+            }
+            first = false;
+            builder.append(property.toString());
+        }
+
+        if (isPositive()) {
+            return builder.toString();
+        } else {
+            return "NOT " + builder.toString();
+        }
     }
 
     @Override
@@ -701,44 +803,5 @@ public abstract class Statement implements Pattern {
             hashCode = 31 * hashCode + (isPositive() ? 1 : 0);
         }
         return hashCode;
-    }
-
-    @Override
-    public String toString() {
-        Collection<Statement> innerVars = innerStatements();
-        innerVars.remove(this);
-        getProperties(HasAttributeProperty.class)
-                .map(HasAttributeProperty::attribute)
-                .flatMap(r -> r.innerStatements().stream())
-                .forEach(innerVars::remove);
-
-        if (innerVars.stream()
-                .anyMatch(var1 -> var1.properties().stream()
-                        .anyMatch(p -> !(p instanceof LabelProperty)))) {
-            LOG.warn("printing a query with inner variables, which is not supported in native Graql");
-        }
-
-        StringBuilder builder = new StringBuilder();
-
-        String name = var().isUserDefinedName() ? var().toString() : "";
-
-        builder.append(name);
-
-        if (var().isUserDefinedName() && !properties().isEmpty()) {
-            // Add a space after the var name
-            builder.append(" ");
-        }
-
-        boolean first = true;
-
-        for (VarProperty property : properties()) {
-            if (!first) {
-                builder.append(" ");
-            }
-            first = false;
-            builder.append(property.toString());
-        }
-
-        return builder.toString();
     }
 }

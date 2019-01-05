@@ -53,7 +53,7 @@ public class RelatesProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.RELATES.toString();
     }
 

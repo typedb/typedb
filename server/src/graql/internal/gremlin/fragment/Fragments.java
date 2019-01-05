@@ -111,6 +111,7 @@ public class Fragments {
         return new AutoValue_IdFragment(varProperty, start, id);
     }
 
+    // TODO: rename this to align with TypeProperty and TypeExecutor
     public static Fragment label(VarProperty varProperty, Variable start, ImmutableSet<Label> labels) {
         return new AutoValue_LabelFragment(varProperty, start, labels);
     }
@@ -120,7 +121,7 @@ public class Fragments {
     }
 
     public static Fragment isAbstract(VarProperty varProperty, Variable start) {
-        return new AutoValue_IsAbstractFragment(varProperty, start);
+        return new AutoValue_AbstractFragment(varProperty, start);
     }
 
     public static Fragment regex(VarProperty varProperty, Variable start, String regex) {

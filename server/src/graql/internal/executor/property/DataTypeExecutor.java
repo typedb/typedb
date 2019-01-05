@@ -35,14 +35,12 @@ import grakn.core.graql.query.pattern.property.VarProperty;
 import java.util.Collections;
 import java.util.Set;
 
-public class DataTypeExecutor implements PropertyExecutor.Definable,
-                                         PropertyExecutor.Matchable,
-                                         PropertyExecutor.Atomable {
+public class DataTypeExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final DataTypeProperty property;
     private final AttributeType.DataType dataType;
-    public static final ImmutableMap<Query.DataType, AttributeType.DataType<?>> DATA_TYPES = dataTypes();
+    private static final ImmutableMap<Query.DataType, AttributeType.DataType<?>> DATA_TYPES = dataTypes();
 
     DataTypeExecutor(Variable var, DataTypeProperty property) {
         if (var == null) {
@@ -66,12 +64,22 @@ public class DataTypeExecutor implements PropertyExecutor.Definable,
         dataTypes.put(Query.DataType.BOOLEAN, AttributeType.DataType.BOOLEAN);
         dataTypes.put(Query.DataType.DATE, AttributeType.DataType.DATE);
         dataTypes.put(Query.DataType.DOUBLE, AttributeType.DataType.DOUBLE);
-        dataTypes.put(Query.DataType.FLOAT, AttributeType.DataType.FLOAT);
-        dataTypes.put(Query.DataType.INTEGER, AttributeType.DataType.INTEGER);
         dataTypes.put(Query.DataType.LONG, AttributeType.DataType.LONG);
         dataTypes.put(Query.DataType.STRING, AttributeType.DataType.STRING);
 
         return dataTypes.build();
+    }
+
+    @Override
+    public Set<EquivalentFragmentSet> matchFragments() {
+        return Collections.unmodifiableSet(Collections.singleton(
+                EquivalentFragmentSets.dataType(property, var, dataType)
+        ));
+    }
+
+    @Override
+    public DataTypeAtom atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        return DataTypeAtom.create(var, property, parent, dataType);
     }
 
     @Override
@@ -82,17 +90,6 @@ public class DataTypeExecutor implements PropertyExecutor.Definable,
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
         return ImmutableSet.of(new UndefineDataType());
-    }
-
-    @Override
-    public Set<EquivalentFragmentSet> matchFragments() {
-        return Collections.unmodifiableSet(Collections.singleton(
-                EquivalentFragmentSets.dataType(property, var, dataType)
-        ));
-    }
-
-    public DataTypeAtom atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        return DataTypeAtom.create(var, property, parent, dataType);
     }
 
     private abstract class DataTypeWriter {

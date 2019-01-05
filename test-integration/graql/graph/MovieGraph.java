@@ -26,6 +26,7 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -296,13 +297,13 @@ public class MovieGraph {
 
     private static void buildRules(Transaction tx) {
         // These rules are totally made up for testing purposes and don't work!
-        Pattern when = Pattern.parse("$x has name 'expectation-when'");
-        Pattern then = Pattern.parse("$x has name 'expectation-then'");
+        Pattern when = Graql.parsePattern("$x has name 'expectation-when'");
+        Pattern then = Graql.parsePattern("$x has name 'expectation-then'");
 
         tx.putRule("expectation-rule", when, then);
 
-        when = Pattern.parse("$x has name 'materialize-when'");
-        then = Pattern.parse("$x has name 'materialize-then'");
+        when = Graql.parsePattern("$x has name 'materialize-when'");
+        then = Graql.parsePattern("$x has name 'materialize-then'");
         tx.putRule("materialize-rule", when, then);
     }
 

@@ -55,7 +55,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -774,10 +774,10 @@ public class AtomicRuleApplicabilityIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx){
-        Set<Statement> vars = Pattern.parse(patternString)
+        Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Pattern.and(vars);
+        return Graql.and(vars);
     }
 
     private Multimap<Role, Variable> roleSetMap(Multimap<Role, Variable> roleVarMap) {

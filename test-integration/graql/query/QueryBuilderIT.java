@@ -34,8 +34,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.type;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 
@@ -95,18 +95,18 @@ public class QueryBuilderIT {
 
     @Test
     public void whenBuildingUndefineQueryWithGraphLast_ItExecutes() {
-        tx.execute(Graql.define(label("yes").sub("entity")));
+        tx.execute(Graql.define(type("yes").sub("entity")));
 
-        UndefineQuery query = Graql.undefine(label("yes").sub("entity"));
+        UndefineQuery query = Graql.undefine(type("yes").sub("entity"));
         tx.execute(query);
-        assertNotExists(tx, label("yes").sub("entity"));
+        assertNotExists(tx, type("yes").sub("entity"));
     }
 
     @Test
     public void whenBuildingMatchInsertQueryWithGraphLast_ItExecutes() {
         assertNotExists(tx, var().has("title", "a-movie"));
         InsertQuery query =
-                Graql.match(x.label("movie"))
+                Graql.match(x.type("movie"))
                         .insert(var().has("title", "a-movie").isa("movie"));
         tx.execute(query);
         assertExists(tx, var().has("title", "a-movie"));

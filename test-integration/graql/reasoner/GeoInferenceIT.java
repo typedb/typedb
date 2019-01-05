@@ -37,7 +37,7 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.List;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -295,8 +295,8 @@ public class GeoInferenceIT {
             
 
             Statement rolePattern = var()
-                    .rel(var("r1").label("geo-entity"), var("x"))
-                    .rel(var("r2").label("entity-location"), var("y"));
+                    .rel(var("r1").type("geo-entity"), var("x"))
+                    .rel(var("r2").type("entity-location"), var("y"));
 
             List<ConceptMap> answers = tx.execute(Graql.match(rolePattern).get());
 

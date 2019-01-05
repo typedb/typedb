@@ -41,7 +41,7 @@ public class DataTypeProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.DATA_TYPE.toString();
     }
 

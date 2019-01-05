@@ -31,7 +31,6 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
@@ -48,9 +47,7 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.role
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
 
-public class HasAttributeExecutor implements PropertyExecutor.Insertable,
-                                             PropertyExecutor.Matchable,
-                                             PropertyExecutor.Atomable {
+public class HasAttributeExecutor implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final HasAttributeProperty property;
@@ -60,11 +57,6 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
         this.var = var;
         this.property = property;
         this.type = Label.of(property.type());
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> insertExecutors() {
-        return ImmutableSet.of(new InsertHasAttribute());
     }
 
     @Override
@@ -108,10 +100,15 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
 
         //add resource atom
         Statement resVar = relationVariable.isUserDefinedName() ?
-                new PositiveStatement(varName).has(property.type(), new PositiveStatement(attributeVariable), new PositiveStatement(relationVariable)) :
-                new PositiveStatement(varName).has(property.type(), new PositiveStatement(attributeVariable));
+                new Statement(varName).has(property.type(), new Statement(attributeVariable), new Statement(relationVariable)) :
+                new Statement(varName).has(property.type(), new Statement(attributeVariable));
         return AttributeAtom.create(resVar, attributeVariable, relationVariable,
                                     predicateVariable, predicateId, predicates, parent);
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> insertExecutors() {
+        return ImmutableSet.of(new InsertHasAttribute());
     }
 
     private class InsertHasAttribute implements PropertyExecutor.Writer {
@@ -128,10 +125,10 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable,
 
         @Override
         public Set<Variable> requiredVars() {
-            Set<Variable> produced = new HashSet<>();
-            produced.add(var);
-            produced.add(property.attribute().var());
-            return Collections.unmodifiableSet(produced);
+            Set<Variable> required = new HashSet<>();
+            required.add(var);
+            required.add(property.attribute().var());
+            return Collections.unmodifiableSet(required);
         }
 
         @Override

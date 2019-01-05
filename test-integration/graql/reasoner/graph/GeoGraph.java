@@ -25,6 +25,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -202,9 +203,9 @@ public class GeoGraph {
     }
 
     private void buildRules() {
-        Pattern transitivity_LHS = Pattern.parse("{(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+        Pattern transitivity_LHS = Graql.parsePattern("{(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;}");
-        Pattern transitivity_RHS = Pattern.parse("{(geo-entity: $x, entity-location: $z) isa is-located-in;}");
+        Pattern transitivity_RHS = Graql.parsePattern("{(geo-entity: $x, entity-location: $z) isa is-located-in;}");
         tx.putRule("Geo Rule", transitivity_LHS, transitivity_RHS);
     }
 

@@ -46,7 +46,7 @@ public class ValueProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.VALUE.toString();
     }
 

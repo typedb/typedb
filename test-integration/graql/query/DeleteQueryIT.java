@@ -38,8 +38,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static grakn.core.common.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.type;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static org.junit.Assert.assertEquals;
@@ -49,7 +49,7 @@ import static org.junit.Assert.assertNull;
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class DeleteQueryIT {
 
-    public static final Statement ENTITY = label(Schema.MetaSchema.ENTITY.getLabel());
+    public static final Statement ENTITY = type(Schema.MetaSchema.ENTITY.getLabel().getValue());
     public static final Statement x = var("x");
     public static final Statement y = var("y");
 
@@ -94,7 +94,7 @@ public class DeleteQueryIT {
 
     @Test
     public void testDeleteMultiple() {
-        tx.execute(Graql.define(label("fake-type").sub(ENTITY)));
+        tx.execute(Graql.define(type("fake-type").sub(ENTITY)));
         tx.execute(Graql.insert(x.isa("fake-type"), y.isa("fake-type")));
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
@@ -195,14 +195,14 @@ public class DeleteQueryIT {
         assertNotNull(tx.getEntityType("movie"));
         assertNotExists(tx, movie);
 
-        tx.execute(Graql.undefine(label("movie").sub("production")));
+        tx.execute(Graql.undefine(type("movie").sub("production")));
 
         assertNull(tx.getEntityType("movie"));
     }
 
     @Test
     public void whenDeletingMultipleVariables_AllVariablesGetDeleted() {
-        tx.execute(Graql.define(label("fake-type").sub(ENTITY)));
+        tx.execute(Graql.define(type("fake-type").sub(ENTITY)));
         tx.execute(Graql.insert(x.isa("fake-type"), y.isa("fake-type")));
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
@@ -214,7 +214,7 @@ public class DeleteQueryIT {
 
     @Test
     public void whenDeletingWithNoArguments_AllVariablesGetDeleted() {
-        tx.execute(Graql.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())));
+        tx.execute(Graql.define(type("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())));
         tx.execute(Graql.insert(x.isa("fake-type"), y.isa("fake-type")));
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
@@ -233,16 +233,11 @@ public class DeleteQueryIT {
 
     @Test
     public void whenDeletingASchemaConcept_Throw() {
-        SchemaConcept newType = tx.execute(Graql.define(x.label("new-type").sub(ENTITY))).get(0).get(x.var()).asSchemaConcept();
+        SchemaConcept newType = tx.execute(Graql.define(x.type("new-type").sub(ENTITY))).get(0).get(x.var()).asSchemaConcept();
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.deleteSchemaConcept(newType).getMessage());
-        tx.execute(Graql.match(x.label("new-type")).delete(x.var()));
-    }
-
-    @Test(expected = Exception.class)
-    public void deleteVarNameNullSet() {
-        tx.execute(Graql.match(var()).delete(null));
+        tx.execute(Graql.match(x.type("new-type")).delete(x.var()));
     }
 
     @Test(expected = Exception.class)

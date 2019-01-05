@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.executor.property;
 
-import grakn.core.common.exception.ErrorMessage;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -30,10 +30,9 @@ import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.IdProperty;
-import grakn.core.graql.query.pattern.property.IsAbstractProperty;
+import grakn.core.graql.query.pattern.property.AbstractProperty;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.LabelProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.RegexProperty;
@@ -42,6 +41,7 @@ import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.SubExplicitProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.ThenProperty;
+import grakn.core.graql.query.pattern.property.TypeProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
@@ -50,6 +50,32 @@ import java.util.Set;
 
 // TODO: The exceptions in this class needs to be tidied up
 public interface PropertyExecutor {
+
+    Set<EquivalentFragmentSet> matchFragments();
+
+    Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements);
+
+    default boolean mappable(Statement statement){ return true;}
+
+    interface Referrable extends Definable, Insertable {
+
+        @Override
+        default Set<Writer> defineExecutors() {
+            return ImmutableSet.of(referencer());
+        }
+
+        @Override
+        default Set<Writer> undefineExecutors() {
+            return ImmutableSet.of(referencer());
+        }
+
+        @Override
+        default Set<Writer> insertExecutors() {
+            return ImmutableSet.of(referencer());
+        }
+
+        Referrer referencer();
+    }
 
     interface Definable extends PropertyExecutor {
 
@@ -61,18 +87,6 @@ public interface PropertyExecutor {
     interface Insertable extends PropertyExecutor {
 
         Set<Writer> insertExecutors();
-    }
-
-    interface Matchable extends PropertyExecutor {
-
-        Set<EquivalentFragmentSet> matchFragments();
-    }
-
-    interface Atomable extends PropertyExecutor {
-
-        Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements);
-
-        default boolean mappable(Statement statement){ return true;}
     }
 
     interface Writer {
@@ -88,47 +102,40 @@ public interface PropertyExecutor {
         void execute(WriteExecutor executor);
     }
 
+    interface Referrer extends Writer{
+
+        @Override
+        default Set<Variable> requiredVars() {
+            return ImmutableSet.of();
+        }
+
+        @Override
+        default Set<Variable> producedVars() {
+            return ImmutableSet.of(var());
+        }
+    }
+
     static Definable definable(Variable var, VarProperty property) {
-        PropertyExecutor executor = propertyExecutor(var, property);
+        PropertyExecutor executor = create(var, property);
 
         if (executor instanceof Definable) {
             return (Definable) executor;
         } else {
-            throw GraqlQueryException.defineUnsupportedProperty(property.name());
+            throw GraqlQueryException.defineUnsupportedProperty(property.keyword());
         }
     }
 
     static Insertable insertable(Variable var, VarProperty property) {
-        PropertyExecutor executor = propertyExecutor(var, property);
+        PropertyExecutor executor = create(var, property);
 
         if (executor instanceof Insertable) {
             return (Insertable) executor;
         } else {
-            throw GraqlQueryException.insertUnsupportedProperty(property.name());
+            throw GraqlQueryException.insertUnsupportedProperty(property.keyword());
         }
     }
 
-    static Matchable matchable(Variable var, VarProperty property) {
-        PropertyExecutor executor = propertyExecutor(var, property);
-
-        if (executor instanceof Matchable) {
-            return (Matchable) executor;
-        } else {
-            throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(property.name()));
-        }
-    }
-
-    static Atomable atomable(Variable var, VarProperty property) {
-        PropertyExecutor executor = propertyExecutor(var, property);
-
-        if (executor instanceof Atomable) {
-            return (Atomable) executor;
-        } else {
-            throw new IllegalArgumentException("Unrecognised subclass of " + VarProperty.class.getName());
-        }
-    }
-
-    static PropertyExecutor propertyExecutor(Variable var, VarProperty property) {
+    static PropertyExecutor create(Variable var, VarProperty property) {
         if (property instanceof DataTypeProperty) {
             return new DataTypeExecutor(var, (DataTypeProperty) property);
 
@@ -141,8 +148,8 @@ public interface PropertyExecutor {
         } else if (property instanceof IdProperty) {
             return new IdExecutor(var, (IdProperty) property);
 
-        } else if (property instanceof IsAbstractProperty) {
-            return new IsAbstractExecutor(var, (IsAbstractProperty) property);
+        } else if (property instanceof AbstractProperty) {
+            return new AbstractExecutor(var, (AbstractProperty) property);
 
         } else if (property instanceof IsaExplicitProperty) {
             return new IsaExecutor.IsaExplicitExecutor(var, (IsaExplicitProperty) property);
@@ -150,8 +157,8 @@ public interface PropertyExecutor {
         } else if (property instanceof IsaProperty) {
             return new IsaExecutor(var, (IsaProperty) property);
 
-        } else if (property instanceof LabelProperty) {
-            return new LabelExecutor(var, (LabelProperty) property);
+        } else if (property instanceof TypeProperty) {
+            return new TypeExecutor(var, (TypeProperty) property);
 
         } else if (property instanceof NeqProperty) {
             return new NeqExecutor(var, (NeqProperty) property);

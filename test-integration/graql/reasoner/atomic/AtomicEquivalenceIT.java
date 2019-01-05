@@ -24,7 +24,6 @@ import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
@@ -192,9 +191,9 @@ public class AtomicEquivalenceIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx){
-        Set<Statement> vars = Pattern.parse(patternString)
+        Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Pattern.and(vars);
+        return Graql.and(vars);
     }
 }
