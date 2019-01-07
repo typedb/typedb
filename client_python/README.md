@@ -76,7 +76,7 @@ with client.session(keyspace="keyspace") as session:
     ## to persist changes, write transaction must always be committed (closed)
     write_transaction.commit()
 
-  ## Read the person using a READ only transaction:
+  ## Read the person using a READ only transaction
   with session.transaction(grakn.TxType.READ) as read_transaction:
     answer_iterator = read_transaction.query("match $x isa person; limit 10; get;")
 
