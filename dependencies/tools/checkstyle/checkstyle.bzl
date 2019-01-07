@@ -82,7 +82,7 @@ collect_sources = aspect(
 
 
 def _checkstyle_test_impl(ctx):
-    if "{}-checkstyle".format(ctx.attr.target.label.name) != ctx.attr.name:
+    if ctx.attr.target and "{}-checkstyle".format(ctx.attr.target.label.name) != ctx.attr.name:
         fail("target should follow `{java_library target name}-checkstyle` pattern")
     properties = ctx.file.properties
     suppressions = ctx.file.suppressions
@@ -102,12 +102,17 @@ def _checkstyle_test_impl(ctx):
     if suppressions:
       inputs.append(suppressions)
 
+    all_java_files = []
+    for target in ctx.attr.targets + [ctx.attr.target]:
+        if target:
+            all_java_files.extend(target[JavaSourceFiles].files)
+
     cmd = " ".join(
         ["java -cp %s com.puppycrawl.tools.checkstyle.Main" % classpath] +
         [args] +
         ["--%s" % x for x in opts] +
         ["--%s %s" % (k, sopts[k]) for k in sopts] +
-        [file.path for file in ctx.attr.target[JavaSourceFiles].files]
+        [file.path for file in all_java_files]
     )
 
     ctx.actions.expand_template(
@@ -120,7 +125,7 @@ def _checkstyle_test_impl(ctx):
         is_executable = True,
     )
 
-    files = [ctx.outputs.checkstyle_script] + ctx.files.licenses + ctx.attr.target[JavaSourceFiles].files + ctx.files._classpath + inputs
+    files = [ctx.outputs.checkstyle_script] + ctx.files.licenses + all_java_files + ctx.files._classpath + inputs
     runfiles = ctx.runfiles(
         files = files,
         collect_data = True
@@ -159,7 +164,11 @@ checkstyle_test = rule(
         ),
         "target": attr.label(
             doc = "The java_library target to check sources on",
-            aspects = [collect_sources]
+            aspects = [collect_sources],
+        ),
+        "targets": attr.label_list(
+            doc = "A list of java_library targets to check sources on",
+            aspects = [collect_sources],
         ),
         "allow_failure": attr.bool(
             default = False,
