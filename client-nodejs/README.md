@@ -27,8 +27,6 @@ const client = new Grakn("localhost:48555");
 const session = client.session("keyspace");
 ```
 
-As specified above, Grakn's default gRPC port is `48555`. The port `4567` (previously used as the default REST endpoint) is deprecated for clients.
-
 We can also pass the credentials, as specified when [configuring authentication via Grakn Console](http://dev.grakn.ai/docs/management/users), into the initial constructor as a Javascript object.
 
 ```javascript
