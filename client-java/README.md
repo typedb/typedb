@@ -102,26 +102,30 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class GraknQuickstart {
-    public static void main(String[] args) {
-      SimpleURI localGrakn = new SimpleURI("localhost", 48555);
-      Keyspace keyspace = Keyspace.of("phone_calls");
-      Grakn grakn = new Grakn(localGrakn);
-      Grakn.Session session = grakn.session(keyspace);
+  public static void main(String[] args) {
+    SimpleURI localGrakn = new SimpleURI("localhost", 48555);
+    Keyspace keyspace = Keyspace.of("phone_calls");
+    Grakn grakn = new Grakn(localGrakn);
+    Grakn.Session session = grakn.session(keyspace);
 
-      Grakn.Transaction writeTransaction = session.transaction(GraknTxType.WRITE);
-      InsertQuery insertQuery = Graql.insert(var("p").isa("person").has("first-name", "Elizabeth"));
-      List<ConceptMap> insertedId = insertQuery.withTx(writeTransaction).execute();
-      System.out.println("Inserted a person with ID: " + insertedId.get(0).get("p").id());
-      writeTransaction.commit();
+    // Insert a person using a WRITE transaction
+    Grakn.Transaction writeTransaction = session.transaction(GraknTxType.WRITE);
+    InsertQuery insertQuery = Graql.insert(var("p").isa("person").has("first-name", "Elizabeth"));
+    List<ConceptMap> insertedId = insertQuery.withTx(writeTransaction).execute();
+    System.out.println("Inserted a person with ID: " + insertedId.get(0).get("p").id());
+    // to persist changes, a write transaction must always be committed (closed)
+    writeTransaction.commit();
 
-      Grakn.Transaction readTransaction = session.transaction(GraknTxType.READ);
-      GetQuery query = Graql.match(var("p").isa("person")).limit(10).get();
-      Stream<ConceptMap> answers = query.withTx(readTransaction).stream();
-      answers.forEach(answer -> System.out.println(answer.get("p").id()));
-      readTransaction.close();
+    // Read the person using a READ only transaction
+    Grakn.Transaction readTransaction = session.transaction(GraknTxType.READ);
+    GetQuery query = Graql.match(var("p").isa("person")).limit(10).get();
+    Stream<ConceptMap> answers = query.withTx(readTransaction).stream();
+    answers.forEach(answer -> System.out.println(answer.get("p").id()));
 
-      session.close();
-    }
+    // a read transaction and session must always be closed
+    readTransaction.close();
+    session.close();
+  }
 }
 ```
 

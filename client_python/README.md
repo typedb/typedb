@@ -63,38 +63,38 @@ with client.session(keyspace="mykeyspace") as session:
 Running basic retrieval and insertion queries.
 
 ```python
+import grakn
+
 client = grakn.Grakn(uri="localhost:48555")
 
-with client.session(keyspace="mykeyspace") as session:
-  ## creating a write transaction
+with client.session(keyspace="keyspace") as session:
+  ## Insert a Person using a WRITE transaction
   with session.transaction(grakn.TxType.WRITE) as write_transaction:
-    insert_iterator = write_transaction.query("insert $x isa person has birth-date 2018-08-06;")
+    insert_iterator = write_transaction.query("insert $x isa person;")
     concepts = insert_iterator.collect_concepts()
     print("Inserted a person with ID: {0}".format(concepts[0].id))
-    ## write transaction must be committed (closed)
+    ## to persist changes, write transaction must always be committed (closed)
     write_transaction.commit()
 
-  ## creating a read transaction
+  ## Read the person using a READ only transaction:
   with session.transaction(grakn.TxType.READ) as read_transaction:
     answer_iterator = read_transaction.query("match $x isa person; limit 10; get;")
 
-    ## retrieve the first answer
-    a_concept_map_answer = next(answer_iterator)
-    ## get the dictionary of variables : concepts, retrieve variable 'x'
-    person = a_concept_map_answer.map().get("x")
-
-    ## we can also iterate using a `for` loop
-    some_people = []
-
     for answer in answer_iterator:
-      some_people.append(answer.map().get("x"))
-      break ## skip the iteration, we are going to try something else
+      person = answer.map().get("x")
+      print("Retrieved person with id " + person.id)
 
-    ## extract the rest of the people in one go
-    remaining_people = answer_iterator.collect_concepts()
+  ## Or query and consume the iterator immediately collecting all the results
+  ## - consume it all immediately
+  with session.transaction(grakn.TxType.READ) as read_transaction:
+    answer_iterator = read_transaction.query("match $x isa person; limit 10; get;")
+    persons = answer_iterator.collect_concepts()
+    for person in persons:
+      print("Retrieved person with id "+ person.id)
 
-    ## if not using a `with` statement, then we must always close the read transaction
-    # read_transaction.close()
+  ## if not using a `with` statement, then we must always close the session and the read transaction
+  # read_transaction.close()
+  # session.close()
 ```
 **Remember that transactions always need to be closed. The safest way is to use the `with ...` syntax which auto-closes at the end of the `with` block. Otherwise, remember to call `transaction.close()` explicitly.**
 

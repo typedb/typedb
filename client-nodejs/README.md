@@ -30,7 +30,7 @@ const session = client.session("keyspace");
 We can also pass the credentials, as specified when [configuring authentication via Grakn Console](http://dev.grakn.ai/docs/management/users), into the initial constructor as a Javascript object.
 
 ```javascript
-const client = grakn.Grakn("localhost:48555", { "username": "<username>", "password": "<password>" });
+const client = new Grakn("localhost:48555", { "username": "<username>", "password": "<password>" });
 ```
 
 Create transactions to use for reading and writing data.
@@ -41,7 +41,7 @@ const session = client.session("keyspace");
 
 // creating a write transaction
 const writeTx = await session.transaction(Grakn.txType.WRITE); // write transaction is open
-// write transaction must always be committed/closed
+// to persist changes, write transaction must always be committed/closed
 writeTx.commit();
 
 // creating a read transaction
@@ -53,38 +53,47 @@ readTx.close();
 Running basic retrieval and insertion queries.
 
 ```javascript
+const Grakn = require("grakn");
 const client = new Grakn("localhost:48555");
 const session = client.session("keyspace");
 
 async function runBasicQueries() {
-  // creating a write transaction
-  const writeTransaction = await session.transaction(Grakn.txType.WRITE); // write transaction is open
-  const insertIterator = await writeTransaction.query("insert $x isa person has birth-date 2018-08-06");
-  concepts = await insertIterator.collectConcepts()
+  // Insert a person using a WRITE transaction
+  const writeTransaction = await session.transaction(Grakn.txType.WRITE);
+  const insertIterator = await writeTransaction.query("insert $x isa person;");
+  const concepts = await insertIterator.collectConcepts()
   console.log("Inserted a person with ID: " + concepts[0].id);
-  // write transaction must always be committed (closed)
+  // to persist changes, a write transaction must always be committed (closed)
   await writeTransaction.commit();
 
-  // creating a read transaction
-  const readTransaction = await session.transaction(Grakn.txType.READ); // read transaction is open
-  const answerIterator = await readTransaction.query("match $x isa person; limit 10; get;");
-  // retrieve the first answer
+  // Retrieve persons using a READ only transaction
+  const readTransaction = await session.transaction(Grakn.txType.READ);
+
+  // We can either query and consume the iterator lazily
+  let answerIterator = await readTransaction.query("match $x isa person; limit 10; get;");
   let aConceptMapAnswer = await answerIterator.next();
-  // get the object of variables : concepts, retrieve variable "x"
-  const person = aConceptMapAnswer.map().get("x");
-  // we can also iterate using a `for` loop
-  const somePeople = [];
 
   while ( aConceptMapAnswer != null) {
     // get the next `x`
-    somePeople.push(aConceptMapAnswer.map().get("x"));
-    break; // skip the iteration, we are going to try something else
+    const person = aConceptMapAnswer.map().get("x");
+    console.log("Retrieved person with id "+ person.id);
     aConceptMapAnswer = await answerIterator.next();
   }
-  const remainingPeople = answerIterator.collectConcepts()
-  // read transaction must always be closed
+
+  // Or query and consume the iterator immediately collecting all the results
+  // - consume it all immediately
+  answerIterator = await readTransaction.query("match $x isa person; limit 10; get;");
+  const persons = await answerIterator.collectConcepts();
+  persons.forEach( person => { console.log("Retrieved person with id "+ person.id) });
+
+  // a read transaction must always be closed
   await readTransaction.close();
+
+  // a session must always be closed
+  await session.close();
 }
+
+runBasicQueries();
 ```
 
 **Remember that transactions always need to be closed. Committing a write transaction closes it. A read transaction, however, must be explicitly closed by calling the `close()` method on it.**
