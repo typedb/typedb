@@ -71,6 +71,7 @@ deploy_maven_jar(
 )
 
 distribution(
+    name = "distribution",
     targets = {
         "//console:console-binary": "console/services/lib/"
     },

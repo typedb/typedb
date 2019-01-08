@@ -29,6 +29,7 @@ py_binary(
 )
 
 distribution(
+    name = "distribution",
     targets = {
         "//server:server-binary": "server/services/lib/",
         "//console:console-binary": "console/services/lib/"

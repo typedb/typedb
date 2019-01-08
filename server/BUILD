@@ -113,6 +113,7 @@ deploy_maven_jar(
 )
 
 distribution(
+    name = "distribution",
     targets = {
         "//server:server-binary": "server/services/lib/"
     },
