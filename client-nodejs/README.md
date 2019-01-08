@@ -81,7 +81,6 @@ async function runBasicQueries() {
   }
 
   // Or query and consume the iterator immediately collecting all the results
-  // - consume it all immediately
   answerIterator = await readTransaction.query("match $x isa person; limit 10; get;");
   const persons = await answerIterator.collectConcepts();
   persons.forEach( person => { console.log("Retrieved person with id "+ person.id) });

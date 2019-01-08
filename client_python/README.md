@@ -85,7 +85,6 @@ with client.session(keyspace="keyspace") as session:
       print("Retrieved person with id " + person.id)
 
   ## Or query and consume the iterator immediately collecting all the results
-  ## - consume it all immediately
   with session.transaction(grakn.TxType.READ) as read_transaction:
     answer_iterator = read_transaction.query("match $x isa person; limit 10; get;")
     persons = answer_iterator.collect_concepts()
