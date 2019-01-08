@@ -29,8 +29,7 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.PositiveStatement;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
@@ -42,9 +41,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
-                                                 PropertyExecutor.Matchable,
-                                                 PropertyExecutor.Atomable {
+public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final HasAttributeTypeProperty property;
@@ -52,16 +49,6 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
     HasAttributeTypeExecutor(Variable var, HasAttributeTypeProperty property) {
         this.var = var;
         this.property = property;
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> defineExecutors() {
-        return ImmutableSet.of(new DefineHasAttributeType());
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return ImmutableSet.of(new UndefineHasAttributeType());
     }
 
     @Override
@@ -95,8 +82,18 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable,
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         ConceptId predicateId = schemaConcept != null ? schemaConcept.id() : null;
         //isa part
-        Statement resVar = new PositiveStatement(varName).has(Pattern.label(label));
+        Statement resVar = new Statement(varName).has(Graql.type(label.getValue()));
         return HasAtom.create(resVar, predicateVar, predicateId, parent);
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> defineExecutors() {
+        return ImmutableSet.of(new DefineHasAttributeType());
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
+        return ImmutableSet.of(new UndefineHasAttributeType());
     }
 
     private abstract class HasAttributeTypeWriter {

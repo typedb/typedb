@@ -20,6 +20,7 @@ package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import grakn.core.graql.query.Graql;
 
 import javax.annotation.CheckReturnValue;
 import java.util.LinkedHashSet;
@@ -38,7 +39,7 @@ public class Disjunction<T extends Pattern> implements Pattern {
 
     private final LinkedHashSet<T> patterns;
 
-    Disjunction(Set<T> patterns) {
+    public Disjunction(Set<T> patterns) {
         if (patterns == null) {
             throw new NullPointerException("Null patterns");
         }
@@ -62,25 +63,17 @@ public class Disjunction<T extends Pattern> implements Pattern {
                 .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        return Pattern.or(dnf);
+        return Graql.or(dnf);
     }
 
     @Override
-    public Pattern negate() { return Pattern.and(getPatterns().stream().map(Pattern::negate).collect(toSet())); }
+    public Conjunction<? extends Pattern> negate() {
+        return Graql.and(getPatterns().stream().map(Pattern::negate).collect(toSet()));
+    }
 
     @Override
     public Set<Variable> variables() {
         return getPatterns().stream().map(Pattern::variables).reduce(Sets::intersection).orElse(ImmutableSet.of());
-    }
-
-    @Override
-    public boolean isDisjunction() {
-        return true;
-    }
-
-    @Override
-    public Disjunction<?> asDisjunction() {
-        return this;
     }
 
     @Override

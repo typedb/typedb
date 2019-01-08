@@ -18,12 +18,13 @@
 
 package grakn.core.graql.query.pattern.property;
 
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Variable;
 
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.pattern.Pattern.label;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -40,8 +41,12 @@ public class HasAttributeProperty extends VarProperty {
     private final Statement attribute;
     private final Statement relationship;
 
+    public HasAttributeProperty(String type, Statement attribute) {
+        this(type, attribute, new Statement(new Variable()));
+    }
+
     public HasAttributeProperty(String type, Statement attribute, Statement relationship) {
-        attribute = attribute.isa(label(type));
+        attribute = attribute.isa(Graql.type(type));
         if (type == null) {
             throw new NullPointerException("Null type");
         }
@@ -66,7 +71,7 @@ public class HasAttributeProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.HAS.toString();
     }
 
@@ -96,7 +101,7 @@ public class HasAttributeProperty extends VarProperty {
 
     @Override
     public Stream<Statement> types() {
-        return Stream.of(label(type()));
+        return Stream.of(Graql.type(type()));
     }
 
     @Override

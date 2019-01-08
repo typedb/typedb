@@ -26,7 +26,6 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
@@ -67,13 +66,13 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
     }
 
     private static Statement createIdVar(Variable varName, ConceptId typeId){
-        return new PositiveStatement(varName).id(typeId.getValue());
+        return new Statement(varName).id(typeId.getValue());
     }
 
     private static Statement createIdVar(Variable varName, Label label, Transaction graph){
         SchemaConcept schemaConcept = graph.getSchemaConcept(label);
         if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label);
-        return new PositiveStatement(varName).id(schemaConcept.id().getValue());
+        return new Statement(varName).id(schemaConcept.id().getValue());
     }
 
     @Override

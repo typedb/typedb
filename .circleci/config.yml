@@ -60,7 +60,7 @@ jobs:
       - bazel:
           command: bazel build //...
       - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all.zip dist/
-      - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace
+      - persist_to_workspace: # TODO: share Grakn with other jobs by putting it in the workspace
           root: ~/grakn
           paths:
             - .
@@ -86,8 +86,8 @@ jobs:
     - bazel_add_rbe_credential
     - run: bazel build //:distribution
     - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
-    - run: nohup bazel-genfiles/dist/grakn server start
-    - run: bazel-genfiles/dist/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
+    - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+    - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
     - run: bazel test //client-nodejs:test-integration --test_output=streamed
 
   client-python:
@@ -99,7 +99,7 @@ jobs:
     - bazel_add_rbe_credential
     - run: bazel build //:distribution
     - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
-    - run: nohup bazel-genfiles/dist/grakn server start
+    - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
     - run: bazel test //client_python:test_integration --test_output=streamed
 
   common:
@@ -158,8 +158,8 @@ jobs:
     - bazel:
         command: bazel build //:distribution
     - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
-    - run: nohup bazel-genfiles/dist/grakn server start
-    - run: bazel-genfiles/dist/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
+    - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+    - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
     - run: Xvfb :99 &
     - run: export DISPLAY=:99
     - bazel:
@@ -249,8 +249,8 @@ jobs:
             command: bazel run @nodejs//:npm install
         - bazel:
             command: bazel build //workbase:distribution
-        - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV #remove 'v' from tag name and use it as Grakn Version to be released
-        # FIXME: make a separate rule for building on Linux / use another naming scheme
+        - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV # TODO: remove 'v' from tag name and use it as Grakn Version to be released
+        # TODO: make a separate rule for building on Linux / use another naming scheme
         - run: mv ./bazel-genfiles/workbase/grakn-workbase.zip ~/grakn/artifacts/grakn-workbase-${GRAKN_VERSION}-linux.tar.gz
         - persist_to_workspace:
             root: ~/grakn
@@ -264,7 +264,7 @@ jobs:
       steps:
         - attach_workspace:
             at: ~/grakn
-        - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV #remove 'v' from tag name and use it as Grakn Version to be released
+        - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV # TODO: remove 'v' from tag name and use it as Grakn Version to be released
         - run: unzip artifacts/grakn-core-${GRAKN_VERSION}.zip
         - run: cd grakn-core-${GRAKN_VERSION} && nohup ./grakn server start
         - run: cd grakn-core-${GRAKN_VERSION} && ./graql console -f ./examples/basic-genealogy.gql -k gene
@@ -298,11 +298,11 @@ jobs:
     steps:
       - checkout
       - bazel_install
-      - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV #remove 'v' from tag name and use it as Grakn Version to be released
+      - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV # TODO: remove 'v' from tag name and use it as Grakn Version to be released
       - run: mvn --batch-mode install -T 2.5C -DskipTests=true
       - run: mkdir ~/grakn/artifacts
       - run: mv grakn-dist/target/grakn-core-${GRAKN_VERSION}.zip ~/grakn/artifacts
-      - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace
+      - persist_to_workspace: # TODO: share Grakn with other jobs by putting it in the workspace
           root: ~/grakn
           paths:
             - ./artifacts

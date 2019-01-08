@@ -284,14 +284,14 @@ public class QueryIT {
     }
 
     private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx){
-        Set<Statement> vars = Pattern.parse(patternString)
+        Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Pattern.and(vars);
+        return Graql.and(vars);
     }
 
     private static Concept getConcept(TransactionOLTP tx, String typeLabel, Object val){
-        return tx.stream(Graql.match((Pattern) Pattern.var("x").has(typeLabel, val)).get("x"))
+        return tx.stream(Graql.match((Pattern) Graql.var("x").has(typeLabel, val)).get("x"))
                 .map(ans -> ans.get("x")).findAny().get();
     }
 }

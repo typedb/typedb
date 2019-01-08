@@ -46,8 +46,8 @@ import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.INVALID_VALUE;
 import static grakn.core.common.exception.ErrorMessage.NO_PATTERNS;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.type;
+import static grakn.core.graql.query.Graql.var;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -108,7 +108,7 @@ public class QueryErrorIT {
     public void whenMatchingWildcardHas_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.noLabelSpecifiedForHas(var("x")).getMessage());
-        tx.execute(Graql.match(label("thing").has(var("x"))).get());
+        tx.execute(Graql.match(type("thing").has(var("x"))).get());
     }
 
     @Test
@@ -151,7 +151,7 @@ public class QueryErrorIT {
         exception.expectMessage(allOf(
                 containsString("abc"), containsString("sub"), containsString("person"), containsString("has-cast")
         ));
-        tx.execute(Graql.define(label("abc").sub("person"), label("abc").sub("has-cast")));
+        tx.execute(Graql.define(type("abc").sub("person"), type("abc").sub("has-cast")));
     }
 
     @Test
@@ -184,8 +184,8 @@ public class QueryErrorIT {
         Session newSession = graknServer.sessionWithNewKeyspace();
         try (Transaction newTx = newSession.transaction(Transaction.Type.WRITE)) {
             newTx.execute(Graql.define(
-                    label("person").sub("entity"),
-                    label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
+                    type("person").sub("entity"),
+                    type("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
             ));
 
             exception.expect(TransactionException.class);
@@ -248,6 +248,6 @@ public class QueryErrorIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("person"));
 
-        tx.execute(Graql.match(var("x").id(movie.id().getValue())).insert(var("x").isa(label(person.label()))));
+        tx.execute(Graql.match(var("x").id(movie.id().getValue())).insert(var("x").isa(type(person.label().getValue()))));
     }
 }

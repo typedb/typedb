@@ -26,6 +26,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.ConceptProto;
 
@@ -53,7 +54,7 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
             case NULL:
                 return null;
             case PATTERN:
-                return Pattern.parse(response.getPattern());
+                return Graql.parsePattern(response.getPattern());
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
         }
@@ -70,7 +71,7 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
             case NULL:
                 return null;
             case PATTERN:
-                return Pattern.parse(response.getPattern());
+                return Graql.parsePattern(response.getPattern());
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
         }

@@ -25,8 +25,9 @@ import com.google.common.collect.Multimap;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.reasoner.utils.Pair;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 
@@ -88,13 +89,13 @@ public abstract class RelationPattern extends QueryPattern {
     private static List<Pattern> generateRelationPatterns(
             Multimap<Label, Pair<Label, List<ConceptId>>> spec,
             List<ConceptId> relationIds){
-        Statement relationVar = !relationIds.isEmpty()? new PositiveStatement(new Variable().asUserDefined()) : Pattern.var();
+        Statement relationVar = !relationIds.isEmpty()? new Statement(new Variable().asUserDefined()) : Graql.var();
         Statement[] basePattern = {relationVar};
         List<List<Pattern>> rpTypePatterns = new ArrayList<>();
         List<List<Pattern>> rpIdPatterns = new ArrayList<>();
         Multimap<Label, Statement> rps = HashMultimap.create();
         spec.entries().forEach(entry -> {
-            Statement rolePlayer = new PositiveStatement(new Variable().asUserDefined());
+            Statement rolePlayer = new Statement(new Variable().asUserDefined());
             Label role = entry.getKey();
             Label type = entry.getValue().getKey();
             List<ConceptId> ids = entry.getValue().getValue();
@@ -113,7 +114,7 @@ public abstract class RelationPattern extends QueryPattern {
             rpTypePatterns.add(typePattern);
         });
         List<Pattern> relIdPatterns = new ArrayList<>();
-        relationIds.forEach(relId -> relIdPatterns.add(Pattern.and(basePattern[0], relationVar.id(relId.getValue()))));
+        relationIds.forEach(relId -> relIdPatterns.add(Graql.and(basePattern[0], relationVar.id(relId.getValue()))));
 
         List<Pattern> patterns = new ArrayList<>();
 
@@ -123,14 +124,12 @@ public abstract class RelationPattern extends QueryPattern {
         )
                 //filter trivial patterns
                 .map(l -> l.stream()
-                        .filter(
-                                p -> p.isConjunction()
-                                        || p.asStatement().properties().stream().findFirst().isPresent()
-                        )
+                        .filter(p -> (p instanceof Conjunction) ||
+                                        ((Statement) p).properties().stream().findFirst().isPresent())
                         .collect(Collectors.toList()))
                 .forEach(product -> {
                     Pattern[] pattern = {basePattern[0]};
-                    product.forEach(p -> pattern[0] = Pattern.and(pattern[0], p));
+                    product.forEach(p -> pattern[0] = Graql.and(pattern[0], p));
                     if (!patterns.contains(pattern[0])) patterns.add(pattern[0]);
                 });
         return Stream.concat(

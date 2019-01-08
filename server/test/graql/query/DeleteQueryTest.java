@@ -18,14 +18,14 @@
 
 package grakn.core.graql.query;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.pattern.Variable;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -39,8 +39,8 @@ public class DeleteQueryTest {
 
     @Test
     public void deleteQueriesWithTheSameMatchAndVarsAreEqual() {
-        DeleteQuery query1 = new DeleteQuery(match1, ImmutableSet.copyOf(vars1));
-        DeleteQuery query2 = new DeleteQuery(match1, ImmutableSet.copyOf(vars1));
+        DeleteQuery query1 = new DeleteQuery(match1, new LinkedHashSet<>(vars1));
+        DeleteQuery query2 = new DeleteQuery(match1, new LinkedHashSet<>(vars1));
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -48,8 +48,8 @@ public class DeleteQueryTest {
 
     @Test
     public void deleteQueriesWithDifferentMatchesOrVarsAreDifferent() {
-        DeleteQuery query1 = new DeleteQuery(match1, ImmutableSet.copyOf(vars1));
-        DeleteQuery query2 = new DeleteQuery(match2, ImmutableSet.copyOf(vars2));
+        DeleteQuery query1 = new DeleteQuery(match1, new LinkedHashSet<>(vars1));
+        DeleteQuery query2 = new DeleteQuery(match2, new LinkedHashSet<>(vars2));
 
         assertNotEquals(query1, query2);
     }

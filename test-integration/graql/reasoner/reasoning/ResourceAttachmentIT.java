@@ -39,8 +39,8 @@ import java.util.Set;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;
-import static grakn.core.graql.query.pattern.Pattern.label;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.type;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
@@ -160,9 +160,9 @@ public class ResourceAttachmentIT {
     public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
         try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
-            Statement owner = label(HAS_OWNER.getLabel("reattachable-resource-string"));
-            Statement value = label(HAS_VALUE.getLabel("reattachable-resource-string"));
-            Statement hasRes = label(HAS.getLabel("reattachable-resource-string"));
+            Statement owner = type(HAS_OWNER.getLabel("reattachable-resource-string").getValue());
+            Statement value = type(HAS_VALUE.getLabel("reattachable-resource-string").getValue());
+            Statement hasRes = type(HAS.getLabel("reattachable-resource-string").getValue());
 
             GetQuery query = Graql.match(
                     var().rel(owner, "x").rel(value, "y").isa(hasRes),

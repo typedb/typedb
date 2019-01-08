@@ -39,11 +39,11 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.neq;
-import static grakn.core.graql.query.pattern.Pattern.and;
-import static grakn.core.graql.query.pattern.Pattern.not;
-import static grakn.core.graql.query.pattern.Pattern.or;
-import static grakn.core.graql.query.pattern.Pattern.var;
+import static grakn.core.graql.query.Graql.not;
+import static grakn.core.graql.query.Graql.or;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -83,78 +83,6 @@ public class PatternIT {
         session.close();
     }
 
-    @Test
-    public void testStatement() {
-        Pattern x = var("x");
-
-        assertTrue(x.isStatement());
-        assertFalse(x.isDisjunction());
-        assertFalse(x.isNegation());
-        assertTrue(x.isConjunction());
-
-        assertEquals(x, x.asStatement());
-    }
-
-    @Test
-    public void testSimpleDisjunction() {
-        Pattern disjunction = or();
-
-        assertFalse(disjunction.isStatement());
-        assertTrue(disjunction.isDisjunction());
-        assertFalse(disjunction.isNegation());
-        assertFalse(disjunction.isConjunction());
-
-        //noinspection AssertEqualsBetweenInconvertibleTypes
-        assertEquals(disjunction, disjunction.asDisjunction());
-    }
-
-    @Test
-    public void testSimpleConjunction() {
-        Pattern conjunction = and();
-
-        assertFalse(conjunction.isStatement());
-        assertFalse(conjunction.isDisjunction());
-        assertFalse(conjunction.isNegation());
-        assertTrue(conjunction.isConjunction());
-
-        //noinspection AssertEqualsBetweenInconvertibleTypes
-        assertEquals(conjunction, conjunction.asConjunction());
-    }
-
-    @Test
-    public void testSimpleNegation() {
-        Pattern negation = not();
-
-        assertFalse(negation.isStatement());
-        assertFalse(negation.isDisjunction());
-        assertFalse(negation.isConjunction());
-        assertTrue(negation.isNegation());
-
-        //noinspection AssertEqualsBetweenInconvertibleTypes
-        assertEquals(negation, negation.asNegation());
-    }
-
-    @Test
-    public void testConjunctionAsVar() {
-        exception.expect(UnsupportedOperationException.class);
-        //noinspection ResultOfMethodCallIgnored
-        and(var("x").isa("movie"), var("x").isa("person")).asStatement();
-    }
-
-    @Test
-    public void testDisjunctionAsConjunction() {
-        exception.expect(UnsupportedOperationException.class);
-        //noinspection ResultOfMethodCallIgnored
-        or(var("x").isa("movie"), var("x").isa("person")).asConjunction();
-    }
-
-    @Test
-    public void testVarAsDisjunction() {
-        exception.expect(UnsupportedOperationException.class);
-        //noinspection ResultOfMethodCallIgnored
-        var("x").isa("movie").asDisjunction();
-    }
-
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     public void testValidVarNames() {
@@ -169,15 +97,15 @@ public class PatternIT {
 
     @Test
     public void whenCreatingAVarWithAnInvalidName_Throw() {
-        assertExceptionThrown(Pattern::var, "");
-        assertExceptionThrown(Pattern::var, " ");
-        assertExceptionThrown(Pattern::var, "!!!");
-        assertExceptionThrown(Pattern::var, "a b");
-        assertExceptionThrown(Pattern::var, "");
-        assertExceptionThrown(Pattern::var, "\"");
-        assertExceptionThrown(Pattern::var, "\"\"");
-        assertExceptionThrown(Pattern::var, "'");
-        assertExceptionThrown(Pattern::var, "''");
+        assertExceptionThrown(Graql::var, "");
+        assertExceptionThrown(Graql::var, " ");
+        assertExceptionThrown(Graql::var, "!!!");
+        assertExceptionThrown(Graql::var, "a b");
+        assertExceptionThrown(Graql::var, "");
+        assertExceptionThrown(Graql::var, "\"");
+        assertExceptionThrown(Graql::var, "\"\"");
+        assertExceptionThrown(Graql::var, "'");
+        assertExceptionThrown(Graql::var, "''");
     }
 
     @Test
@@ -325,17 +253,9 @@ public class PatternIT {
     @Test
     public void whenNegationPassedNull_Throw() {
         exception.expect(Exception.class);
-        Set<Statement> varSet = null;
-        //noinspection ResultOfMethodCallIgnored,ConstantConditions
-        not(varSet);
-    }
-
-    @Test
-    public void whenNegationPassedVarAndNull_Throw() {
-        exception.expect(Exception.class);
         Statement var = null;
         //noinspection ResultOfMethodCallIgnored,ConstantConditions
-        not(var(), var);
+        not(var);
     }
 
     @Test

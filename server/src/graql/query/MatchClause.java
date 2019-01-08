@@ -29,7 +29,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -68,7 +69,7 @@ public class MatchClause {
      */
     @CheckReturnValue
     public GetQuery get() {
-        return get(getPatterns().variables());
+        return new GetQuery(this);
     }
 
     /**
@@ -77,7 +78,10 @@ public class MatchClause {
      */
     @CheckReturnValue
     public GetQuery get(String var, String... vars) {
-        Set<Variable> varSet = Stream.concat(Stream.of(var), Stream.of(vars)).map(Variable::new).collect(Collectors.toSet());
+        LinkedHashSet<Variable> varSet = Stream
+                .concat(Stream.of(var), Stream.of(vars))
+                .map(Variable::new)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         return get(varSet);
     }
 
@@ -87,8 +91,9 @@ public class MatchClause {
      */
     @CheckReturnValue
     public GetQuery get(Variable var, Variable... vars) {
-        Set<Variable> varSet = new HashSet<>(Arrays.asList(vars));
+        LinkedHashSet<Variable> varSet = new LinkedHashSet<>();
         varSet.add(var);
+        varSet.addAll(Arrays.asList(vars));
         return get(varSet);
     }
 
@@ -97,9 +102,17 @@ public class MatchClause {
      * @return a Get Query that selects the given variables
      */
     @CheckReturnValue
-    public GetQuery get(Set<Variable> vars) {
-        if (vars.isEmpty()) vars = getPatterns().variables();
-        return new GetQuery(Collections.unmodifiableSet(vars), this);
+    public GetQuery get(List<Variable> vars) {
+        return get(new LinkedHashSet<>(vars));
+    }
+
+    /**
+     * @param vars a set of variables to select
+     * @return a Get Query that selects the given variables
+     */
+    @CheckReturnValue
+    public GetQuery get(LinkedHashSet<Variable> vars) {
+        return new GetQuery(this, vars);
     }
 
     /**
@@ -126,7 +139,7 @@ public class MatchClause {
      */
     @CheckReturnValue
     public DeleteQuery delete() {
-        return delete(getPatterns().variables());
+        return new DeleteQuery(this);
     }
 
     /**
@@ -135,7 +148,10 @@ public class MatchClause {
      */
     @CheckReturnValue
     public final DeleteQuery delete(String var, String... vars) {
-        Set<Variable> varSet = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Variable::new).collect(Collectors.toSet());
+        LinkedHashSet<Variable> varSet = Stream
+                .concat(Stream.of(var), Stream.of(vars))
+                .map(Variable::new)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         return delete(varSet);
     }
 
@@ -145,8 +161,9 @@ public class MatchClause {
      */
     @CheckReturnValue
     public final DeleteQuery delete(Variable var, Variable... vars) {
-        Set<Variable> varSet = new HashSet<>(Arrays.asList(vars));
+        LinkedHashSet<Variable> varSet = new LinkedHashSet<>();
         varSet.add(var);
+        varSet.addAll(Arrays.asList(vars));
         return delete(varSet);
     }
 
@@ -155,9 +172,17 @@ public class MatchClause {
      * @return a delete query that will delete the given variables for each result of this match clause
      */
     @CheckReturnValue
-    public final DeleteQuery delete(Set<Variable> vars) {
-        if (vars.isEmpty()) vars = getPatterns().variables();
-        return new DeleteQuery(this, Collections.unmodifiableSet(vars));
+    public final DeleteQuery delete(List<Variable> vars) {
+        return new DeleteQuery(this, new LinkedHashSet<>(vars));
+    }
+
+    /**
+     * @param vars a collection of variables to delete for each result of this match clause
+     * @return a delete query that will delete the given variables for each result of this match clause
+     */
+    @CheckReturnValue
+    public final DeleteQuery delete(LinkedHashSet<Variable> vars) {
+        return new DeleteQuery(this, vars);
     }
 
     @Override

@@ -29,33 +29,21 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.property.IsAbstractAtom;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.IsAbstractProperty;
+import grakn.core.graql.query.pattern.property.AbstractProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Set;
 
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbstract;
 
-public class IsAbstractExecutor implements PropertyExecutor.Definable,
-                                           PropertyExecutor.Matchable,
-                                           PropertyExecutor.Atomable {
+public class AbstractExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
-    private final IsAbstractProperty property;
+    private final AbstractProperty property;
 
-    IsAbstractExecutor(Variable var, IsAbstractProperty property) {
+    AbstractExecutor(Variable var, AbstractProperty property) {
         this.var = var;
         this.property = property;
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> defineExecutors() {
-        return ImmutableSet.of(new DefineIsAbstract());
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return ImmutableSet.of(new UndefineIsAbstract());
     }
 
     @Override
@@ -66,6 +54,16 @@ public class IsAbstractExecutor implements PropertyExecutor.Definable,
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         return IsAbstractAtom.create(var, parent);
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> defineExecutors() {
+        return ImmutableSet.of(new DefineIsAbstract());
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
+        return ImmutableSet.of(new UndefineIsAbstract());
     }
 
     private abstract class IsAbstractWriter {

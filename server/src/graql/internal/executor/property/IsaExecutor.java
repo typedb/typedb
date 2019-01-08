@@ -28,7 +28,6 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
@@ -41,8 +40,7 @@ import java.util.Set;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 public class IsaExecutor implements PropertyExecutor.Insertable,
-                                    PropertyExecutor.Matchable,
-                                    PropertyExecutor.Atomable {
+                                    PropertyExecutor {
 
     private final Variable var;
     private final IsaProperty property;
@@ -50,11 +48,6 @@ public class IsaExecutor implements PropertyExecutor.Insertable,
     IsaExecutor(Variable var, IsaProperty property) {
         this.var = var;
         this.property = property;
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> insertExecutors() {
-        return ImmutableSet.of(new InsertIsa());
     }
 
     @Override
@@ -87,17 +80,22 @@ public class IsaExecutor implements PropertyExecutor.Insertable,
         Statement isaVar;
 
         if (property instanceof IsaExplicitProperty) {
-            isaVar = new PositiveStatement(varName).isaExplicit(new PositiveStatement(typeVar));
+            isaVar = new Statement(varName).isaExplicit(new Statement(typeVar));
         } else {
-            isaVar = new PositiveStatement(varName).isa(new PositiveStatement(typeVar));
+            isaVar = new Statement(varName).isa(new Statement(typeVar));
         }
 
         return IsaAtom.create(varName, typeVar, isaVar, predicateId, parent);
     }
 
+    @Override
+    public Set<PropertyExecutor.Writer> insertExecutors() {
+        return ImmutableSet.of(new InsertIsa());
+    }
+
     public static class IsaExplicitExecutor extends IsaExecutor {
 
-        public IsaExplicitExecutor(Variable var, IsaProperty property) {
+        IsaExplicitExecutor(Variable var, IsaProperty property) {
             super(var, property);
         }
 

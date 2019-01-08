@@ -63,8 +63,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -219,7 +219,7 @@ public class QueryExecutor {
             Set<Variable> matchVars = match.getSelectedNames();
             Set<Variable> insertVars = statements.stream().map(statement -> statement.var()).collect(toImmutableSet());
 
-            Set<Variable> projectedVars = new HashSet<>(matchVars);
+            LinkedHashSet<Variable> projectedVars = new LinkedHashSet<>(matchVars);
             projectedVars.retainAll(insertVars);
 
             Stream<ConceptMap> answers = transaction.stream(match.get(projectedVars), infer);

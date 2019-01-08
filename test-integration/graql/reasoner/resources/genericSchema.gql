@@ -35,7 +35,7 @@ baseEntity sub entity
     plays baseRole1
     plays baseRole2
     plays baseRole3
-    is-abstract;
+    abstract;
 
 baseRoleEntity sub baseEntity;
 anotherBaseRoleEntity sub baseEntity;
@@ -53,7 +53,7 @@ subSubRoleEntity sub subRoleEntity
     plays subSubRole3;
 
 baseRelation sub relationship
-    is-abstract
+    abstract
     has resource;
 
 binary sub baseRelation

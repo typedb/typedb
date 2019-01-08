@@ -18,15 +18,8 @@
 
 package grakn.core.graql.query.pattern;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.CheckReturnValue;
-
-import static java.util.stream.Collectors.joining;
+import java.util.Set;
 
 /**
  * A class representing a negation of patterns. All inner patterns must not match in a query.
@@ -35,46 +28,36 @@ import static java.util.stream.Collectors.joining;
  */
 public class Negation<T extends Pattern> implements Pattern {
 
-    private final Set<T> patterns;
+    private final T pattern;
 
-    public Negation(Set<T> patterns) {
-        if (patterns == null) {
+    public Negation(T pattern) {
+        if (pattern == null) {
             throw new NullPointerException("Null patterns");
         }
-        this.patterns = patterns.stream().map(Objects::requireNonNull).collect(Collectors.toSet());
+        this.pattern = pattern;
     }
 
     @CheckReturnValue
-    public Set<T> getPatterns(){ return patterns;}
+    public T getPattern(){ return pattern;}
 
     @Override
     public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
-        return Iterables.getOnlyElement(getPatterns()).negate().getDisjunctiveNormalForm();
+        return pattern.negate().getDisjunctiveNormalForm();
     }
 
     @Override
     public Pattern negate() {
-        return Iterables.getOnlyElement(getPatterns());
+        return pattern;
     }
 
     @Override
     public Set<Variable> variables() {
-        return getPatterns().stream().map(Pattern::variables).reduce(ImmutableSet.of(), Sets::union);
+        return pattern.variables();
     }
-
-    @Override
-    public boolean isNegation() { return true; }
-
-    @Override
-    public Negation<?> asNegation() {
-        return this;
-    }
-
 
     @Override
     public String toString() {
-        return "NOT {" + getPatterns().stream().map(s -> s + ";").collect(joining(" ")) + "}";
+        return "NOT {" + pattern + "; }";
     }
-
 }
 

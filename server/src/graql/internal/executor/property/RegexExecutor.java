@@ -33,9 +33,7 @@ import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Set;
 
-public class RegexExecutor implements PropertyExecutor.Definable,
-                                      PropertyExecutor.Matchable,
-                                      PropertyExecutor.Atomable {
+public class RegexExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final RegexProperty property;
@@ -46,16 +44,6 @@ public class RegexExecutor implements PropertyExecutor.Definable,
     }
 
     @Override
-    public Set<PropertyExecutor.Writer> defineExecutors() {
-        return ImmutableSet.of(new DefineRegex());
-    }
-
-    @Override
-    public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return ImmutableSet.of(new UndefineRegex());
-    }
-
-    @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(EquivalentFragmentSets.regex(property, var, property.regex()));
     }
@@ -63,6 +51,16 @@ public class RegexExecutor implements PropertyExecutor.Definable,
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         return RegexAtom.create(var, property, parent);
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> defineExecutors() {
+        return ImmutableSet.of(new DefineRegex());
+    }
+
+    @Override
+    public Set<PropertyExecutor.Writer> undefineExecutors() {
+        return ImmutableSet.of(new UndefineRegex());
     }
 
     private abstract class RegexWriter {

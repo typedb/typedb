@@ -117,7 +117,7 @@ property       : 'isa' variable                     # isa
                | 'has' variable                     # propResource
                | 'key' variable                     # propKey
                | '(' casting (',' casting)* ')'     # propRel
-               | 'is-abstract'                      # isAbstract
+               | 'abstract'                         # abstract
                | 'datatype' datatype                # propDatatype
                | 'regex' REGEX                      # propRegex
                | '!=' variable                      # propNeq

@@ -51,7 +51,7 @@ public class PlaysProperty extends VarProperty {
     }
 
     @Override
-    public String name() {
+    public String keyword() {
         return Query.Property.PLAYS.toString();
     }
 

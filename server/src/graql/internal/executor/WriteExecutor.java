@@ -33,7 +33,6 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.property.PropertyExecutor.Writer;
 import grakn.core.graql.internal.util.Partition;
-import grakn.core.graql.query.pattern.PositiveStatement;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -46,6 +45,7 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -367,7 +367,7 @@ public class WriteExecutor {
     }
 
     Statement printableRepresentation(Variable var) {
-        ImmutableSet.Builder<VarProperty> propertiesOfVar = ImmutableSet.builder();
+        LinkedHashSet<VarProperty> propertiesOfVar = new LinkedHashSet<>();
 
         // This could be faster if we built a dedicated map Var -> VarPattern
         // However, this method is only used for displaying errors, so it's not worth the cost
@@ -377,6 +377,6 @@ public class WriteExecutor {
             }
         }
 
-        return new PositiveStatement(var, propertiesOfVar.build());
+        return new Statement(var, propertiesOfVar);
     }
 }
