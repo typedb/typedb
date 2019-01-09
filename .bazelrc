@@ -25,4 +25,4 @@ build:rbe --genrule_strategy=remote
 build:rbe --define=EXECUTOR=remote
 build:rbe --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 build:rbe --experimental_strict_action_env=true
-build:rbe --strategy_regexp=MakeRpm*=local
+build:rbe --strategy_regexp=//:deploy-rpm,//:server:deploy-rpm,//console:deploy-rpm=local
