@@ -141,10 +141,11 @@ node_grpc_compile()
 #     Load Deployment Dependencies     #
 ########################################
 
+# TODO(vmax): replace with upstream once graknlabs/deplyment#23 is merged
 git_repository(
     name="graknlabs_rules_deployment",
-    remote="https://github.com/graknlabs/deployment",
-    commit="1fd6f328d55b28ca70b047894917cb169d5f028e",
+    remote="https://github.com/vmax/graknlabs-deployment",
+    commit="86cd131aa4d775db3c84072dd1939acf306253d3",
 )
 
 load("@graknlabs_rules_deployment//github:dependencies.bzl", "dependencies_for_github_deployment")
