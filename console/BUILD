@@ -19,7 +19,6 @@
 package(default_visibility = ["//visibility:__subpackages__"])
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deploy_deb", "deploy_rpm")
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar", "pkg_deb")
 
 java_library(
     name = "console",
@@ -72,6 +71,7 @@ deploy_maven_jar(
 )
 
 distribution(
+    name = "distribution",
     targets = {
         "//console:console-binary": "console/services/lib/"
     },
@@ -83,8 +83,6 @@ distribution(
     output_filename = "grakn-core-console",
 )
 
-# FIXME(vmax): uncomment when it doesn't break build on macOS
-"""
 deploy_deb(
     name = "deploy-deb",
     package_name = "grakn-core-console",
@@ -114,7 +112,6 @@ deploy_rpm(
          "opt/grakn/core/console/services/lib/",
     ],
 )
-"""
 
 test_suite(
     name = "console-test-integration",

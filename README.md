@@ -53,6 +53,7 @@ You can visit the [Setup Guide](http://dev.grakn.ai/docs/get-started/setup-guide
     - Java 8
     - Python >= 2.7 and Pip >= 18.1
     - [Bazel >= 0.18.0](https://docs.bazel.build/versions/master/install-os-x.html)
+    - `rpmbuild`, available via `apt install rpm` (Debian derivatives) or `brew install rpm` (macOS)
 
 2. Install Workbase requirements:
 ```

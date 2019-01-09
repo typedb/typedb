@@ -20,8 +20,6 @@ package(default_visibility = ["//visibility:public"])
 
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deploy_deb", "deploy_rpm")
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar", "pkg_deb")
-
 
 exports_files(
     glob(["conf/**", "services/**"]),
@@ -115,6 +113,7 @@ deploy_maven_jar(
 )
 
 distribution(
+    name = "distribution",
     targets = {
         "//server:server-binary": "server/services/lib/"
     },
@@ -138,8 +137,6 @@ distribution(
     output_filename = "grakn-core-server",
 )
 
-# FIXME(vmax): uncomment when it doesn't break build on macOS
-"""
 deploy_deb(
     name = "deploy-deb",
     package_name = "grakn-core-server",
@@ -199,4 +196,3 @@ deploy_rpm(
         "opt/grakn/core/server/db/": "/var/lib/grakn/db/",
     },
 )
-"""
