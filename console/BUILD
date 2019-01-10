@@ -18,7 +18,7 @@
 
 package(default_visibility = ["//visibility:__subpackages__"])
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deploy_deb", "deploy_rpm")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "distribution_deb", "distribution_rpm")
 
 java_library(
     name = "console",
@@ -83,7 +83,7 @@ distribution(
     output_filename = "grakn-core-console",
 )
 
-deploy_deb(
+distribution_deb(
     name = "deploy-deb",
     package_name = "grakn-core-console",
     maintainer = "Grakn Labs <community@grakn.ai>",
@@ -101,7 +101,7 @@ deploy_deb(
 )
 
 
-deploy_rpm(
+distribution_rpm(
     name = "deploy-rpm",
     package_name = "grakn-core-console",
     installation_dir = "/opt/grakn/core/console/",

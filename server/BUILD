@@ -19,7 +19,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deploy_deb", "deploy_rpm")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "distribution_deb", "distribution_rpm")
 
 exports_files(
     glob(["conf/**", "services/**"]),
@@ -137,7 +137,7 @@ distribution(
     output_filename = "grakn-core-server",
 )
 
-deploy_deb(
+distribution_deb(
     name = "deploy-deb",
     package_name = "grakn-core-server",
     maintainer = "Grakn Labs <community@grakn.ai>",
@@ -170,7 +170,7 @@ deploy_deb(
 )
 
 
-deploy_rpm(
+distribution_rpm(
     name = "deploy-rpm",
     package_name = "grakn-core-server",
     installation_dir = "/opt/grakn/core/server/",
