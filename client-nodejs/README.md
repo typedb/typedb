@@ -1,377 +1,115 @@
----
-title: Grakn Node.js Client
-keywords: setup, getting started, download, driver
-tags: [getting-started]
-sidebar: documentation_sidebar
-permalink: /docs/language-drivers/client-nodejs
-folder: docs
-symlink: true
----
+# Grakn Client Node.js
 
-# Grakn Node.js Client
+## Dependencies
+Before installing the `grakn` node module, make sure the following dependencies are installed.
 
-A Node.js client for [Grakn](https://grakn.ai)
+- [Grakn >= 1.3.0](https://github.com/graknlabs/grakn/releases)
+- [Node >= 6.5.0](https://nodejs.org/en/download/)
 
-Requires Grakn 1.3.0 && Node >= 6.5.0
-
-# Installation
-
-To install the Grakn client, simply run:
-
+## Installation
 ```
 npm install grakn
 ```
 
-You will also need access to a Grakn database. Head [here](https://grakn.ai/pages/documentation/get-started/setup-guide.html) to get started with Grakn.
+## Quickstart
+First make sure, the [Grakn server](http://dev.grakn.ai/docs/running-grakn/install-and-run#start-the-grakn-server) is running..
 
-# Quickstart
+In your source, require `grakn`.
 
-Begin by importing Grakn:
-
-```
-const Grakn = require('grakn');
-```
-
-You can then instantiate a client, open a session, and create transactions. 
-
-> Note that new versions of Grakn client now use the default port **48555**. Port 4567 was the default port on older clients.
+```javascript
+const Grakn = require("grakn");
 ```
 
-const grakn = new Grakn('localhost:48555');
-const session = grakn.session('keyspace');
-const tx = await session.transaction(Grakn.txType.WRITE);
+Instantiate a client and open a session.
+
+```javascript
+const client = new Grakn("localhost:48555");
+const session = client.session("keyspace");
 ```
 
-Execute Graql queries:
+We can also pass the credentials, as specified when [configuring authentication via Grakn Console](http://dev.grakn.ai/docs/management/users), into the initial constructor as a Javascript object.
 
-
-```
-// Example of match query
-const resultIterator = await tx.query("match $x isa person; limit 10; get;"); // This will return an Iterator of ConceptMap Answer
-const answer = await resultIterator.next(); // Take first ConceptMap Answer
-const person = answer.map().get('x'); // Access map in Answer with answer.map() and take Concept associated to variable x from 'match $x isa person; get;'
-tx.close();
+```javascript
+const client = new Grakn("localhost:48555", { "username": "<username>", "password": "<password>" });
 ```
 
-NOTE: the `query()` method almost immediately returns an iterator - this is because the actual result retrieval is done lazily every time
-`.next()` is invoked on a specific iterator
+Create transactions to use for reading and writing data.
 
-```
-// Example of insert query
-const iterator = await tx.query("insert $x isa person, has birth-date 2018-08-06;"); // Insert query returns Iterator of ConceptMap Answer containing inserted concepts
-// On Iterators of ConceptMap Answers is possible to use the collectConcept method to consume the whole iterator and obtain an array of Concepts
-const concepts = (await iterator.collectConcepts()); 
-const person = concepts[0];
-tx.commit(); // Remember to commit your changes so that they get persisted in the graph! This will also close the transaction.
-```
+```javascript
+const client = new Grakn("localhost:48555");
+const session = client.session("keyspace");
 
-# API Reference
+// creating a write transaction
+const writeTx = await session.transaction(Grakn.txType.WRITE); // write transaction is open
+// to persist changes, write transaction must always be committed/closed
+writeTx.commit();
 
-First create a new Grakn object with
-
-```
-// URI must be a string containing host address and gRPC port of a running Grakn instance, e.g. "localhost:48555"
-const grakn = new Grakn(URI);
+// creating a read transaction
+const readTx = await session.transaction(Grakn.txType.READ); // read transaction is open
+// read transaction must always be closed
+readTx.close();
 ```
 
-on the Grakn object the following methods are available:
+Running basic retrieval and insertion queries.
 
-**Grakn**
+```javascript
+const Grakn = require("grakn");
+const client = new Grakn("localhost:48555");
+const session = client.session("keyspace");
 
-| Method                                   | Return type       | Description                                          |
-| ---------------------------------------- | ----------------- | ---------------------------------------------------- |
-| `session(String keyspace)`               | *Session*         | Return a new Session bound to the specified keyspace |
-| async `keyspaces().delete(String keyspace)` | *void*            | Deletes the specified keyspace                       |
-| async `keyspaces().retrieve()`              | Array of *String* | Retrieves all available keyspaces                    |
+async function runBasicQueries() {
+  // Insert a person using a WRITE transaction
+  const writeTransaction = await session.transaction(Grakn.txType.WRITE);
+  const insertIterator = await writeTransaction.query("insert $x isa person;");
+  const concepts = await insertIterator.collectConcepts()
+  console.log("Inserted a person with ID: " + concepts[0].id);
+  // to persist changes, a write transaction must always be committed (closed)
+  await writeTransaction.commit();
 
+  // Retrieve persons using a READ only transaction
+  const readTransaction = await session.transaction(Grakn.txType.READ);
 
+  // We can either query and consume the iterator lazily
+  let answerIterator = await readTransaction.query("match $x isa person; limit 10; get;");
+  let aConceptMapAnswer = await answerIterator.next();
 
-on the Session the following methods are available:
+  while ( aConceptMapAnswer != null) {
+    // get the next `x`
+    const person = aConceptMapAnswer.map().get("x");
+    console.log("Retrieved person with id "+ person.id);
+    aConceptMapAnswer = await answerIterator.next();
+  }
 
-**Session**
+  // Or query and consume the iterator immediately collecting all the results
+  answerIterator = await readTransaction.query("match $x isa person; limit 10; get;");
+  const persons = await answerIterator.collectConcepts();
+  persons.forEach( person => { console.log("Retrieved person with id "+ person.id) });
 
-| Method                            | Return type   | Description                                                                           |
-| --------------------------------- | ------------- | ------------------------------------------------------------------------------------- |
-| async `transaction(Grakn.txType)` | *Transaction* | Return a new Transaction bound to the keyspace of this session                        |
-| `close()`                         | *void*        | This must be used to correctly terminate session and close communication with server. |
+  // a read transaction must always be closed
+  await readTransaction.close();
 
+  // a session must always be closed
+  await session.close();
+}
 
-Once obtained a `Transaction` you will be able to:
-
- **Transaction**  
-
-| Method                                                       | Return type               | Description                                                                                                                                                                                    |
-| ------------------------------------------------------------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| async `query(String graqlQuery[, { infer }])`                | Iterator of *Answer*      | Executes a Graql query on the session keyspace. It's possible to specify whether to enable inference passing an object with *infer* property set to true or false. Inference is ON by default. |
-| async `commit()`                                             | *void*                    | Commit current Transaction, persisting changes in the graph. After committing, the transaction will be closed and you will need to get a new one from the session                              |
-| async `close()`                                              | *void*                    | Closes current Transaction without committing. This makes the transaction unusable.                                                                                                            |
-| async `getConcept(String conceptId)`                         | *Concept* or *null*       | Retrieves a Concept by ConceptId                                                                                                                                                               |
-| async `getSchemaConcept(String label)`                       | *SchemaConcept* or *null* | Retrieves a SchemaConcept by label                                                                                                                                                             |
-| async `getAttributesByValue(attributeValue, Grakn.dataType)` | Iterator of *Attribute*   | Get all Attributes holding the value provided, if any exists                                                                                                                                   |
-| async `putEntityType(String label)`                          | *EntityType*              | Create a new EntityType with super-type entity, or return a pre-existing EntityType with the specified label                                                                                   |
-| async `putRelationshipType(String label)`                    | *RelationshipType*        | Create a new RelationshipType with super-type relation, or return a pre-existing RelationshipType with the specified label                                                                     |
-| async `putAttributeType(String label, Grakn.dataType)`       | *AttributeType*           | Create a new AttributeType with super-type attribute, or return a pre-existing AttributeType with the specified label and DataType                                                             |
-| async `putRole(String label)`                                | *Role*                    | Create a Role, or return a pre-existing Role, with the specified label.                                                                                                                        |
-| async `putRule(String label, String when, String then)`      | *Rule*                    | Create a Rule, or return a pre-existing Rule, with the specified label                                                                                                                         |
-
-**Iterator**
-
-Some of the following Concept methods return an Iterator,
-on every iterator the following methods are available:
-
-| Method                    | Return type                 | Description                                                                                                                                                                                                                                                               |
-| ------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| async `next()`            | *IteratorElement* or *null* | Retrieves next element or returns null when no more elements are available                                                                                                                                                                                                |
-| async `collect()`         | Array of *IteratorElement*  | Consumes the iterator and collect all the elements into an array                                                                                                                                                                                                          |
-| async `collectConcepts()` | Array of *Concept*          | Consumes the iterator and return array of Concepts. **This helper is only available on Iterator containing ConceptMap Answer, returned by transaction.query().**. It is useful when one wants to work directly on Concepts without the need to traverse the result map or access the explanation. |
-
-NOTE: these iterators represent a lazy evaluation of a query or method on the Grakn server, and will be created very quickly. 
-The actual work is performed when the iterator is consumed, creating an RPC to the server to obtain the next concrete Answer or Concept.
-
-**IteratorElement**
-
-Element handled by iterators, depending on the type of iterator this can be a type of *Concept* or an *Answer*.
-
-**Answer**
-
-This object represents a query answer and it is contained in the Iterator returned by `transaction.query()` method.     
-There are **different types of Answer**, based on the type of query executed a different type of Answer will be returned:   
-
-| Query Type                           | Answer Type       |
-|--------------------------------------|-------------------|
-| `define`                               | ConceptMap        |
-| `undefine`                             | ConceptMap        |
-| `get`                                  | ConceptMap        |
-| `insert`                               | ConceptMap        |
-| `delete`                               | ConceptMap        |
-| `aggregate count/min/max/sum/mean/std` |  Value            |
-| `aggregate group`                      | AnswerGroup       |
-| `compute count/min/max/sum/mean/std`   | Value             |
-| `compute path`                         | ConceptList       |
-| `compute cluster`                      | ConceptSet        |
-| `compute centrality`                  | ConceptSetMeasure |
-
-**ConceptMap**
-
-| Method          | Return type              | Description                                                                                     |
-| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
-| `map()`         | Map<*String*, *Concept*> | Returns result map in which every variable name (key) is linked to a Concept.                   |
-| `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
-
-**Value**
-
-| Method          | Return type              | Description                                                                                     |
-| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
-| `number()`      | Number                   | Returns numeric value of the Answer.                                                            |
-| `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
-
-**ConceptList**
-
-| Method          | Return type              | Description                                                                                     |
-| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
-| `list()`        | Array of *String*        | Returns list of Concept IDs.                                                                    |
-| `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
-
-**ConceptSet**
-
-| Method          | Return type              | Description                                                                                     |
-| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
-| `set()`         | Set of *String*          | Returns a set containing Concept IDs.                                                           |
-| `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
-
-**ConceptSetMeasure**
-
-| Method          | Return type              | Description                                                                                     |
-| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
-| `measurement()` | Number                   | Returns numeric value that is associated to the set of Concepts contained in the current Answer.|
-| `set()`         | Set of *String*          | Returns a set containing Concept IDs.                                                           |
-| `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
-
-**AnswerGroup**
-
-| Method          | Return type              | Description                                                                                     |
-| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
-| `owner()`       | *Concept*                | Returns the Concepts which is the group owner.                                                  |
-| `answers()`     | Array of *Answer*        | Returns list of Answers that belongs to this group.                                             |
-| `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
-
-**Explanation**
-
-| Method           | Return type       | Description                                                                                 |
-| ---------------- | ----------------- | ------------------------------------------------------------------------------------------- |
-| `queryPattern()` | String            | Returns a query pattern that describes how the owning answer was retrieved.                 |
-| `answers()`      | Array of *Answer* | Set of deducted/factual answers that allowed us to determine that the owning answer is true |
-
-
-
-**Concepts hierarchy**
-
-Grakn is composed of different types of Concepts, that have a specific hierarchy
-
+runBasicQueries();
 ```
-                                                Concept
-                                                /       \
-                                              /           \
-                                            /               \
-                                          /                   \
-                                  SchemaConcept                    Thing
-                                  /     |    \                    /   |  \
-                                /       |     \                 /     |    \
-                              /         |      \              /       |      \
-                            Type      Rule    Role     Entity    Attribute   Relationship
-                        /     |   \
-                      /       |     \
-                    /         |       \
-            EntityType  AttributeType  RelationshipType
-```
----
 
-All Concepts are bound to the transaction that has been used to retrieve them.
-If for any reason a trasaction gets closed all the concepts bound to it won't be able to
-communicate with the database anymore, so all the methods won't work and the user will have to re-query
-for the needed concepts.
+**Remember that transactions always need to be closed. Committing a write transaction closes it. A read transaction, however, must be explicitly closed by calling the `close()` method on it.**
 
----
+To view examples of running various Graql queries using the Grakn Client Node.js, head over to their dedicated documentation pages as listed below.
 
-**Concept**
+- [Insert](http://dev.grakn.ai/docs/query/insert-query)
+- [Get](http://dev.grakn.ai/docs/query/get-query)
+- [Delete](http://dev.grakn.ai/docs/query/delete-query)
+- [Aggregate](http://dev.grakn.ai/docs/query/aggregate-query)
+- [Compute](http://dev.grakn.ai/docs/query/compute-query)
 
-These methods are available on every type of `Concept`
+## Client Architecture
+To learn about the mechanism that a Grakn Client uses to set up communication with keyspaces running on the Grakn Server, refer to [Grakn > Client API > Overview]((http://dev.grakn.ai/docs/client-api/overview).
 
-| Method                 | Return type | Description                                      |
-| ---------------------- | ----------- | ------------------------------------------------ |
-| async `delete()`       | *void*      | Delete concept                                   |
-| `isSchemaConcept()`    | *Boolean*   | Check whether this Concept is a SchemaConcept    |
-| `isType() `            | *Boolean*   | Check whether this Concept is a Type             |
-| `isThing() `           | *Boolean*   | Check whether this Concept is a Thing            |
-| `isAttributeType()`    | *Boolean*   | Check whether this Concept is an AttributeType   |
-| `isEntityType() `      | *Boolean*   | Check whether this Concept is an EntityType      |
-| `isRelationshipType()` | *Boolean*   | Check whether this Concept is a RelationshipType |
-| `isRole()`             | *Boolean*   | Check whether this Concept is a Role             |
-| `isRule()`             | *Boolean*   | Check whether this Concept is a Rule             |
-| `isAttribute()`        | *Boolean*   | Check whether this Concept is an Attribute       |
-| `isEntity()`           | *Boolean*   | Check whether this Concept is a Entity           |
-| `isRelationship()`     | *Boolean*   | Check whether this Concept is a Relationship     |
+## API Reference
+To learn about the methods available for executing queries and retrieving their answers using Client Node.js, refer to [Grakn > Client API > Node.js > API Reference](http://dev.grakn.ai/docs/client-api/nodejs#api-reference).
 
-  **Schema concept**  
-
-A `SchemaConcept` concept has all the `Concept` methods plus the following:
-
-| Method                      | Return type                 | Description                                                                                                                                                          |
-| --------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| async `label()`             | *String*                    | Get label of this SchemaConcept                                                                                                                                      |
-| async `label(String value)` | *void*                      | Set label of this SchemaConcept                                                                                                                                      |
-| async `isImplicit()`        | *Boolean*                   | Returns `true` when the SchemaConcept is implicit, i.e. when it's been created by Grakn and not explicitly by the user, `false` when explicitly created by the user. |
-| async `sup(Type)`           | *void*                      | Set direct super SchemaConcept of this SchemaConcept                                                                                                                 |
-| async `sup()`               | *SchemaConcept*  or *null*  | Get direct super SchemaConcept of this SchemaConcept                                                                                                                 |
-| async `subs()`              | Iterator of *SchemaConcept* | Get all indirect subs of this SchemaConcept.                                                                                                                         |
-| async `sups()`              | Iterator of *SchemaConcept* | Get all indirect sups of this SchemaConcept.                                                                                                                         |
-
-  **Thing**
-
- A `Thing` concept has all the `Concept` methods plus the following:
-
- | Method                               | Return type                | Description                                                                                                                                                                       |
- | ------------------------------------ | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
- | async `isInferred()`                 | *Boolean*                  | Returns `true` if this Thing is inferred by Reasoner, `false` otherwise                                                                                                           |
- | async `type()`                       | *Type*                     | Returns a Type which is the type of this Thing. This Thing is an instance of that type.                                                                                           |
- | async `relationships(...Role)`       | Iterator of *Relationship* | Returns Relationships which this Thing takes part in, which may **optionally** be narrowed to a particular set according to the Roles you are interested in                       |
- | async `attributes(...AttributeType)` | Iterator of *Attribute*    | Returns Attributes attached to this Thing, which may **optionally** be narrowed to a particular set according to the AttributeTypes you are interested in                         |
- | async `roles()`                      | Iterator of *Role*         | Returns the Roles that this Thing is currently playing                                                                                                                            |
- | async `keys(...Attributetype)`       | Iterator of *Attribute*    | Returns a collection of Attribute attached to this Thing as a key, which may **optionally** be narrowed to a particular set according to the AttributeTypes you are interested in |
- | async `has(Attribute)`               | *void*                     | Attaches the provided Attribute to this Thing                                                                                                                                     |
- | async `unhas(Attribute)`             | *void*                     | Removes the provided Attribute from this Thing                                                                                                                                    |
-
-  **Attribute**
-
-  An `Attribute` concept has all the `Thing` methods plus the following:
-
-
- | Method             | Return type         | Description                                               |
- | ------------------ | ------------------- | --------------------------------------------------------- |
- | async `value()`    | *String*            | Get value of this Attribute                               |
- | async `owners()`   | Iterator of *Thing* | Returns the set of all Things that possess this Attribute |
-
-  **Relationship**  
-
-A `Relationship` concept has all the `Thing` methods plus the following:
-
-
-| Method                        | Return type               | Description                                                                                              |
-| ----------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------- |
-| async `rolePlayersMap()`      | Map<*Role*, Set<*Thing*>> | Returns a Map that links all the Roles of this Relationship to all the Things that are playing each Role |
-| async `rolePlayers(...Role)`  | Iterator of *Thing*       | Returns a list of every Thing involved in this Relationship, optionally filtered by Roles played         |
-| async `assign(Role, Thing)`   | *void*                    | Expands this Relationship to include a new role player (Thing) which is playing a specific Role          |
-| async `unassign(Role, Thing)` | *void*                    | Removes the Thing which is playing a Role in this Relationship.                                          |  |
-
-    NB: There are no specific methods for `Entity` concept.
-
-  **Type**  
-
-A `Type` concept has all the `SchemaConcept` methods plus the following:
-
-
-| Method                       | Return type                 | Description                                                                                                                    |
-| ---------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| async `isAbstract(Boolean)`  | *void*                      | Sets the Type to be abstract - which prevents it from having any instances                                                     |
-| async `isAbstract()`         | *Boolean*                   | Returns `true` if the type is set to abstract, `false` otherwise                                                               |
-| async `playing()`            | Iterator of *Role*          | Returns all the Roles which instances of this Type can indirectly play                                                         |
-| async `plays(Role)`          | *void*                      | Add a new Role to the ones that the instances of this Type are allowed to play                                                 |
-| async `attributes()`         | Iterator of *AttributeType* | The AttributeTypes which this Type is linked with.                                                                             |
-| async `instances()`          | Iterator of *Thing*         | Get all indirect instances of this Type                                                                                        |
-| async `keys()`               | Iterator of *AttributeType* | The AttributeTypes which this Type is linked with as a key                                                                     |
-| async `key(AttributeType)`   | *void*                      | Creates an implicit RelationshipType which allows this Type and a AttributeType to be linked in a strictly one-to-one mapping. |
-| async `has(AttributeType)`   | *void*                      | Add a new AttributeType which the instances of this Type are allowed to have attached to themselves                            |
-| async `unplay(Role)`         | *void*                      | Delete a Role from the ones that the instances of this Type are allowed to play                                                |
-| async `unhas(AttributeType)` | *void*                      | Delete AttributeType from the ones that the instances of this Type are allowed to have attached to themselves                  |
-| async `unkey(AttributeType)` | *void*                      | Delete AttributeType from available keys                                                                                       |
-
-  **AttributeType**
-
-  An `AttributeType` concept has all the `Type` methods plus the following:
-
-
-  | Method                      | Return type           | Description                                                                                                                                 |
-  | --------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-  | async `create(value)`       | *Attribute*           | Create new Attribute of this type with the provided value. The value provided must conform to the DataType specified for this AttributeType |
-  | async `attribute(value)`    | *Attribute* or *null* | Retrieve the Attribute with the provided value if it exists                                                                                 |
-  | async `dataType()`          | *String*              | Get the data type to which instances of the AttributeType must have                                                                         |
-  | async `regex()`             | *String* or *null*    | Retrieve the regular expression to which instances of this AttributeType must conform to, or `null` if no regular expression is set         |
-  | async `regex(String regex)` | *void*                | Set the regular expression that instances of the AttributeType must conform to                                                              |
-
-  **RelationshipType**  
-
-  A `RelationshipType` concept has all the `Type` methods plus the following:
-
- | Method                 | Return type        | Description                                                                          |
- | ---------------------- | ------------------ | ------------------------------------------------------------------------------------ |
- | async `create()`       | *Relationship*     | Creates and returns a new Relationship instance, whose direct type will be this type |
- | async `roles()`        | Iterator of *Role* | Returns a list of the RoleTypes which make up this RelationshipType                  |
- | async `relates(Role)`  | *void*             | Sets a new Role for this RelationshipType                                            |
- | async `unrelate(Role)` | *void*             | Delete a Role from this RelationshipType                                             |
-
-  **EntityType**  
-
-  An `EntityType` concept has all the `Type` methods plus the following:
-
-  | Method           | Return type | Description                                                                    |
-  | ---------------- | ----------- | ------------------------------------------------------------------------------ |
-  | async `create()` | *Entity*    | Creates and returns a new Entity instance, whose direct type will be this type |
-
-
-  **Role**  
-
-  A `Role` concept has all the `SchemaConcept` methods plus the following:
-
-| Method                  | Return type                    | Description                                                 |
-| ----------------------- | ------------------------------ | ----------------------------------------------------------- |
-| async `relationships()` | Iterator of *RelationshipType* | Returns the RelationshipTypes that this Role takes part in. |
-| async `players()`       | Iterator of *Type*             | Returns a collection of the Types that can play this Role   |
-
-  **Rule**  
-
-A `Rule` concept has all the `SchemaConcept` methods plus the following:  
-
-| Method            | Return type | Description                                                                                                |
-| ----------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
-| async `getWhen()` | *String*    | Retrieves the when part of this Rule. When this query is satisfied the "then" part of the rule is executed |
-| async `getThen()` | *String*    | Retrieves the then part of this Rule. This query is executed when the "when" part of the rule is satisfied |
+## Concept API
+To learn about the methods available on the concepts retrieved as the answers to Graql queries, refer to [Grakn > Concept API > Overview](http://dev.grakn.ai/docs/concept-api/overview)
