@@ -37,6 +37,7 @@ public class AtomicFactory {
 
 
 
+
     
     /**
      * @param pattern conjunction of patterns to be converted to atoms
