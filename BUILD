@@ -18,7 +18,7 @@
 
 exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
 load("@graknlabs_rules_deployment//brew:rules.bzl", deploy_brew = "deploy_brew")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "deploy_deb", "deploy_rpm")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "distribution_deb", "distribution_rpm")
 
 
 py_binary(
@@ -60,7 +60,7 @@ deploy_brew(
     version_file = "//:VERSION"
 )
 
-deploy_deb(
+distribution_deb(
     name = "deploy-deb",
     package_name = "grakn-core-bin",
     maintainer = "Grakn Labs <community@grakn.ai>",
@@ -88,7 +88,7 @@ deploy_deb(
 )
 
 
-deploy_rpm(
+distribution_rpm(
     name = "deploy-rpm",
     package_name = "grakn-core-bin",
     installation_dir = "/opt/grakn/core/",
