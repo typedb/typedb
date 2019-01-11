@@ -5,9 +5,10 @@ Summary: Grakn Core (server)
 URL: https://grakn.ai
 License: Apache License, v2.0
 
-Source0: {_grakn-core-server-rpm-tar.tgz}
+Source0: {_grakn-core-server-rpm-tar.tar.gz}
 
 Requires: java-1.8.0-openjdk-headless
+Requires: grakn-core-bin
 
 %description
 Grakn Core (server) - description
@@ -18,7 +19,7 @@ Grakn Core (server) - description
 
 %install
 mkdir -p %{buildroot}
-tar -xvf {_grakn-core-server-rpm-tar.tgz} -C %{buildroot}
+tar -xvf {_grakn-core-server-rpm-tar.tar.gz} -C %{buildroot}
 
 %files
 
