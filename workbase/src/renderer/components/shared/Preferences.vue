@@ -16,7 +16,8 @@
                     <input class="input" v-model="serverHost">
                     <h1 class="connection-label port">Port:</h1>
                     <input class="input" type="number" v-model="serverPort">
-                    <button @click="testConnection" :class="connectionTest" class="btn test-btn" :disabled="(connectionTest !== 'Test')? true : false">{{connectionTest}}</button>
+                    <loading-button v-on:clicked="testConnection" :text="connectionTest" className="btn test-btn" :loading="connectionTest === 'testing'"></loading-button>
+                    <!-- <button @click="testConnection" :class="connectionTest" class="btn test-btn" :disabled="(connectionTest !== 'Test')? true : false">{{connectionTest}}</button> -->
                 </div>
             </div>
 
@@ -219,6 +220,7 @@ export default {
   },
   methods: {
     testConnection() {
+      this.connectionTest = 'testing';
       this.$store.dispatch('initGrakn');
     },
     addNewKeyspace() {
