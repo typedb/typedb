@@ -28,6 +28,7 @@ py_binary(
     main = "deployment.py"
 )
 
+
 distribution_structure(
     name = "grakn-core-bin",
     additional_files = {
@@ -38,27 +39,6 @@ distribution_structure(
     visibility = ["//server:__pkg__", "//console:__pkg__"]
 )
 
-distribution_zip(
-    name = "distribution",
-    distribution_structures = ["//:grakn-core-bin",
-                               "//server:grakn-core-server",
-                               "//console:grakn-core-console"],
-    empty_directories = [
-        "server/db/cassandra",
-        "server/db/queue"
-    ],
-    permissions = {
-        "server/services/cassandra/cassandra.yaml": "0777",
-        "server/db/cassandra": "0777",
-        "server/db/queue": "0777",
-    },
-    output_filename = "grakn-core-all",
-)
-
-deploy_brew(
-    name = "deploy-brew",
-    version_file = "//:VERSION"
-)
 
 distribution_deb(
     name = "distribution-deb",
@@ -101,4 +81,28 @@ distribution_rpm(
         "usr/local/bin/grakn": "/opt/grakn/core/grakn",
         "opt/grakn/core/logs": "/var/log/grakn/",
     },
+)
+
+
+distribution_zip(
+    name = "distribution",
+    distribution_structures = ["//:grakn-core-bin",
+                               "//server:grakn-core-server",
+                               "//console:grakn-core-console"],
+    empty_directories = [
+        "server/db/cassandra",
+        "server/db/queue"
+    ],
+    permissions = {
+        "server/services/cassandra/cassandra.yaml": "0777",
+        "server/db/cassandra": "0777",
+        "server/db/queue": "0777",
+    },
+    output_filename = "grakn-core-all",
+)
+
+
+deploy_brew(
+    name = "deploy-brew",
+    version_file = "//:VERSION"
 )
