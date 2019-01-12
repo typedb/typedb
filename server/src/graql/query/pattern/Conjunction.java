@@ -23,6 +23,9 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 
@@ -112,7 +115,13 @@ public class Conjunction<T extends Pattern> implements Pattern {
 
     @Override
     public String toString() {
-        return "{" + getPatterns().stream().map(s -> s + ";").collect(joining(" ")) + "}";
+        StringBuilder pattern = new StringBuilder();
+
+        pattern.append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE);
+        pattern.append(patterns.stream().map(Objects::toString).collect(Collectors.joining(Query.Char.SPACE.toString())));
+        pattern.append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE).append(Query.Char.SEMICOLON);
+
+        return pattern.toString();
     }
 
     @Override

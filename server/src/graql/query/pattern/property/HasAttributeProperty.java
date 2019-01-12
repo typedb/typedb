@@ -20,8 +20,8 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import java.util.stream.Stream;
 
@@ -105,7 +105,7 @@ public class HasAttributeProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> innerStatements() {
+    public Stream<Statement> statements() {
         return Stream.of(attribute(), relationship());
     }
 

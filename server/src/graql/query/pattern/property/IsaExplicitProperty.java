@@ -19,7 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 
 /**
  * Represents the {@code isa-explicit} property on a Thing.

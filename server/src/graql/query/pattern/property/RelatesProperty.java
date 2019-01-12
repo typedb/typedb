@@ -19,7 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -77,7 +77,7 @@ public class RelatesProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> innerStatements() {
+    public Stream<Statement> statements() {
         return superRole == null ? Stream.of(role) : Stream.of(role, superRole);
     }
 

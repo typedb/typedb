@@ -19,7 +19,12 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
+
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * Represents the {@code when} property on a rule.
@@ -47,9 +52,22 @@ public class WhenProperty extends VarProperty {
         return Query.Property.WHEN.toString();
     }
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public String property() {
-        return pattern().toString();
+        StringBuilder when = new StringBuilder();
+
+        when.append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE);
+
+        if (pattern instanceof Conjunction) {
+            when.append(((Conjunction<?>) pattern).getPatterns().stream()
+                                .map(Object::toString)
+                                .collect(joining(Query.Char.COMMA_SPACE.toString())));
+        } else {
+            when.append(pattern);
+        }
+
+        when.append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE);
+        return when.toString();
     }
 
     @Override

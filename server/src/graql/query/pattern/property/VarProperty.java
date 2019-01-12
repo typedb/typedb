@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 
 import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;
@@ -58,7 +58,7 @@ public abstract class VarProperty {
      * Get a stream of any inner Statement within this `VarProperty`.
      */
     @CheckReturnValue
-    public Stream<Statement> innerStatements() {
+    public Stream<Statement> statements() {
         return Stream.empty();
     }
 
@@ -67,8 +67,8 @@ public abstract class VarProperty {
      * implicitly created (such as with "has").
      */
     @CheckReturnValue
-    public Stream<Statement> implicitInnerStatements() {
-        return innerStatements();
+    public Stream<Statement> statementsImplicit() {
+        return statements();
     }
 
     /**

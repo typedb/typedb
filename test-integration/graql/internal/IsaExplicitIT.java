@@ -35,7 +35,7 @@ import grakn.core.graql.internal.gremlin.fragment.OutSubFragment;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
@@ -91,7 +91,7 @@ public class IsaExplicitIT {
 
     @Test
     public void whenInsertIsaExplicit_InsertsADirectInstanceOfAType() {
-        tx.execute(Graql.insert(var("x").isaExplicit("superType1")));
+        tx.execute(Graql.insert(var("x").isaX("superType1")));
         assertEquals(1, tx.execute(Graql.<AggregateQuery>parse("match $z isa! superType1; get; count;")).get(0).number().intValue());
         assertEquals(2, tx.execute(Graql.<AggregateQuery>parse("match $z isa superType1; get; count;")).get(0).number().intValue());
 
@@ -111,7 +111,7 @@ public class IsaExplicitIT {
 
         // test type without subtypes
 
-        pattern = x.isaExplicit(entityType1);
+        pattern = x.isaX(entityType1);
         plan = getPlan(pattern);
         Assert.assertEquals(2, plan.size());
         assertThat(plan, contains(
@@ -120,8 +120,8 @@ public class IsaExplicitIT {
         ));
 
         pattern = and(
-                x.isaExplicit(entityType1),
-                y.isaExplicit(entityType1),
+                x.isaX(entityType1),
+                y.isaX(entityType1),
                 var().rel(x).rel(y).isa(related));
         plan = getPlan(pattern);
 
@@ -141,7 +141,7 @@ public class IsaExplicitIT {
 
         // test type with subtypes
 
-        pattern = x.isaExplicit(superType1);
+        pattern = x.isaX(superType1);
         plan = getPlan(pattern);
         Assert.assertEquals(2, plan.size());
         assertThat(plan, contains(
@@ -160,8 +160,8 @@ public class IsaExplicitIT {
         ));
 
         pattern = and(
-                x.isaExplicit(superType1),
-                y.isaExplicit(superType1),
+                x.isaX(superType1),
+                y.isaX(superType1),
                 var().rel(x).rel(y).isa(related));
         plan = getPlan(pattern);
 
@@ -183,7 +183,7 @@ public class IsaExplicitIT {
 
         pattern = and(
                 x.isa(superType1),
-                y.isaExplicit(superType1),
+                y.isaX(superType1),
                 var().rel(x).rel(y).isa(related));
         plan = getPlan(pattern);
 

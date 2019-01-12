@@ -74,6 +74,7 @@ public interface Query {
         QUOTE("\""),
         NEW_LINE("\n"),
         UNDERSCORE("_"),
+        $_("$_"),
         $("$");
 
         private final String character;
@@ -92,7 +93,8 @@ public interface Query {
         AND("and"),
         OR("or"),
         NOT("not"),
-        EQUAL("=");
+        EQUAL("="),
+        LIKE("like");
         // TODO: other predicates
 
         private final String operator;

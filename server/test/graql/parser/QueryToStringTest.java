@@ -40,6 +40,7 @@ import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
 import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.rel;
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.var;
@@ -99,17 +100,17 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithThenToString() {
-        assertValidToString(Graql.insert(var("x").isa("a-rule-type").then(and(Graql.parsePatternList("$x isa movie;")))));
+        assertValidToString(Graql.define(type("a-rule").sub("rule").then(and(Graql.parsePatternList("$x isa movie;")))));
     }
 
     @Test
     public void testQueryWithWhenToString() {
-        assertValidToString(Graql.insert(var("x").isa("a-rule-type").when(and(Graql.parsePatternList("$x isa movie;")))));
+        assertValidToString(Graql.define(type("a-rule").sub("rule").when(and(Graql.parsePatternList("$x isa movie;")))));
     }
 
-    private void assertValidToString(InsertQuery query) {
+    private void assertValidToString(Query query) {
         //No need to execute the insert query
-        InsertQuery parsedQuery = Graql.parse(query.toString());
+        Query parsedQuery = Graql.parse(query.toString());
         assertEquals(query.toString(), parsedQuery.toString());
     }
 
@@ -193,7 +194,7 @@ public class QueryToStringTest {
 
     @Test
     public void testRepeatRoleplayerToString() {
-        assertEquals("match ($x, $x);", match(var().rel("x").rel("x")).toString());
+        assertEquals("match ($x, $x);", match(rel("x").rel("x")).toString());
     }
 
     @Test

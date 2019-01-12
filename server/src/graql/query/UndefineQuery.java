@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 
 import java.util.List;
 
@@ -35,6 +35,8 @@ public class UndefineQuery implements Query {
     UndefineQuery(List<? extends Statement> statements) {
         if (statements == null) {
             throw new NullPointerException("Null statements");
+        } else if (statements.isEmpty()) {
+            throw new IllegalArgumentException("Define Statements could not be empty");
         }
         this.statements = statements;
     }
@@ -43,14 +45,17 @@ public class UndefineQuery implements Query {
         return statements;
     }
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public String toString() {
         StringBuilder query = new StringBuilder();
 
-        query.append(Command.UNDEFINE).append(Char.SPACE);
+        query.append(Command.UNDEFINE);
+        if (statements.size()>1) query.append(Char.NEW_LINE);
+        else query.append(Char.SPACE);
+
         query.append(statements().stream()
-                             .map(s -> s + Char.SEMICOLON.toString())
-                             .collect(joining(Char.NEW_LINE.toString())).trim());
+                             .map(Statement::toString)
+                             .collect(joining(Char.NEW_LINE.toString())));
 
         return query.toString();
     }
@@ -62,7 +67,7 @@ public class UndefineQuery implements Query {
 
         UndefineQuery that = (UndefineQuery) o;
 
-        return this.statements.equals(that.statements());
+        return this.statements.equals(that.statements);
     }
 
     @Override

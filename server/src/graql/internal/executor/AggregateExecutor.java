@@ -21,7 +21,7 @@ package grakn.core.graql.internal.executor;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.query.AggregateQuery;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.util.PrimitiveNumberComparator;
 
 import java.util.Collections;

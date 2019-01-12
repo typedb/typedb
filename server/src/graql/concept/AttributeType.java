@@ -290,15 +290,15 @@ public interface AttributeType<D> extends Type {
 
         private final String dataType;
         private final Schema.VertexProperty vertexProperty;
-        private final Function<D, Object> persistenceValueSupplier;
-        private final Function<Object, D> valueSupplier;
+        private final Function<D, Object> persistedValue;
+        private final Function<Object, D> presentedValue;
 
 
-        private DataType(String dataType, Schema.VertexProperty vertexProperty, Function<D, Object> savedValueProvider, Function<Object, D> valueSupplier) {
+        private DataType(String dataType, Schema.VertexProperty vertexProperty, Function<D, Object> persistedValue, Function<Object, D> presentedValue) {
             this.dataType = dataType;
             this.vertexProperty = vertexProperty;
-            this.persistenceValueSupplier = savedValueProvider;
-            this.valueSupplier = valueSupplier;
+            this.persistedValue = persistedValue;
+            this.presentedValue = presentedValue;
         }
 
         private static <X> X defaultConverter(Object o, Class clazz, Function<Object, X> converter) {
@@ -334,8 +334,8 @@ public interface AttributeType<D> extends Type {
          * @return The String representation of the value
          */
         @CheckReturnValue
-        public Object getPersistenceValue(D value) {
-            return persistenceValueSupplier.apply(value);
+        public Object getPersistedValue(D value) {
+            return persistedValue.apply(value);
         }
 
         /**
@@ -346,7 +346,7 @@ public interface AttributeType<D> extends Type {
          */
         @CheckReturnValue
         public D getValue(Object object) {
-            return valueSupplier.apply(object);
+            return presentedValue.apply(object);
         }
     }
 }

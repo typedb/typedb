@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;

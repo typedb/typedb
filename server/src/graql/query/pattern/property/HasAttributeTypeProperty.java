@@ -23,7 +23,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 
 import java.util.stream.Stream;
 
@@ -123,12 +123,12 @@ public class HasAttributeTypeProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> innerStatements() {
+    public Stream<Statement> statements() {
         return Stream.of(attributeType);
     }
 
     @Override
-    public Stream<Statement> implicitInnerStatements() {
+    public Stream<Statement> statementsImplicit() {
         return Stream.of(attributeType, ownerRole, valueRole, relationOwner, relationValue);
     }
 

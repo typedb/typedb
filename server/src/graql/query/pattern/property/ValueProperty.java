@@ -20,7 +20,7 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
 import java.util.stream.Stream;
@@ -66,7 +66,7 @@ public class ValueProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> innerStatements() {
+    public Stream<Statement> statements() {
         return CommonUtil.optionalToStream(predicate().getInnerVar());
     }
 

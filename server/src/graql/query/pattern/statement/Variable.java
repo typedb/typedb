@@ -16,13 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.pattern;
+package grakn.core.graql.query.pattern.statement;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.Query;
 
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
@@ -36,29 +34,37 @@ public class Variable {
 
     private final String name;
     private final Type type;
+    private final boolean visible;
     private volatile String symbol;
 
     public Variable() {
-        this(Long.toString(counter.getAndIncrement()), Variable.Type.Generated);
+        this(true);
+    }
+
+    public Variable(boolean visible) {
+        this(Long.toString(counter.getAndIncrement()), Variable.Type.ANONYMOUS, visible);
     }
 
     public Variable(String name) {
-        this(name, Variable.Type.UserDefined);
+        this(name, Variable.Type.NAMED);
     }
 
     public Variable(String name, Type type) {
+        this(name, type, true);
+    }
+
+    private Variable(String name, Type type, boolean visible) {
         if (name == null) {
             throw new NullPointerException("Null name");
+        } else if (!VALID_VAR.matcher(name).matches()) {
+            throw new IllegalArgumentException("Variable name [" + name + "] is invalid. Must match regex " + VALID_VAR);
         }
-        Preconditions.checkArgument(
-                VALID_VAR.matcher(name).matches(),
-                "Var value [%s] is invalid. Must match regex %s", name, VALID_VAR
-        );
         this.name = name;
         if (type == null) {
             throw new NullPointerException("Null kind");
         }
         this.type = type;
+        this.visible = visible;
     }
 
     /**
@@ -75,13 +81,17 @@ public class Variable {
         return type;
     }
 
+    public boolean isVisible() {
+        return visible;
+    }
+
     /**
      * Whether the variable has been manually defined or automatically generated.
      *
      * @return whether the variable has been manually defined or automatically generated.
      */
     public boolean isUserDefinedName() {
-        return type() == Type.UserDefined;
+        return type() == Type.NAMED;
     }
 
     /**
@@ -94,7 +104,7 @@ public class Variable {
         if (isUserDefinedName()) {
             return this;
         } else {
-            return new Variable(name(), Type.UserDefined);
+            return new Variable(name(), Type.NAMED);
         }
     }
 
@@ -112,17 +122,13 @@ public class Variable {
         return symbol;
     }
 
-    public Variable var() {
-        return this;
-    }
-
-    public Set<VarProperty> properties() {
-        return ImmutableSet.of();
-    }
-
     @Override
     public String toString() {
-        return "$" + name();
+        if (isUserDefinedName()) {
+            return Query.Char.$ + name();
+        } else {
+            return Query.Char.$_.toString();
+        }
     }
 
     @Override
@@ -147,14 +153,14 @@ public class Variable {
      */
     public enum Type {
 
-        UserDefined {
+        NAMED {
             @Override
             public char prefix() {
                 return '§';
             }
         },
 
-        Generated {
+        ANONYMOUS {
             @Override
             public char prefix() {
                 return '#';
