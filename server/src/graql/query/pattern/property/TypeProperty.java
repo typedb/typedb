@@ -43,7 +43,7 @@ public class TypeProperty extends VarProperty {
 
     @Override
     public String keyword() {
-        return Query.Property.LABEL.toString();
+        return Query.Property.TYPE.toString();
     }
 
     @Override

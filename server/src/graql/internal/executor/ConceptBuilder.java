@@ -278,7 +278,7 @@ public class ConceptBuilder {
 
     private static final BuilderParam<Type> TYPE = BuilderParam.of(Query.Property.ISA);
     private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(Query.Property.SUB);
-    private static final BuilderParam<Label> LABEL = BuilderParam.of(Query.Property.LABEL);
+    private static final BuilderParam<Label> LABEL = BuilderParam.of(Query.Property.TYPE);
     private static final BuilderParam<ConceptId> ID = BuilderParam.of(Query.Property.ID);
     private static final BuilderParam<Object> VALUE = BuilderParam.of(Query.Property.VALUE);
     private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(Query.Property.DATA_TYPE);

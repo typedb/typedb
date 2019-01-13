@@ -359,7 +359,7 @@ public class GraknClientIT {
         try (Transaction remoteTx = remoteSession.transaction(Transaction.Type.READ);
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
-            GetQuery query = Graql.match(var("x")).get();
+            GetQuery query = Graql.match(var("x").isa("thing")).get();
 
             remoteTx.stream(query).forEach( answer -> {
                 Concept remoteConcept = answer.get("x");
@@ -570,13 +570,13 @@ public class GraknClientIT {
     public void testGettingARule_TheInformationOnTheRuleIsCorrect() {
         try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putAttributeType("name", DataType.STRING);
-            Pattern when = Graql.parsePattern("$x has name 'expectation-when'");
-            Pattern then = Graql.parsePattern("$x has name 'expectation-then'");
+            Pattern when = Graql.parsePattern("$x has name 'expectation-when';");
+            Pattern then = Graql.parsePattern("$x has name 'expectation-then';");
 
             tx.putRule("expectation-rule", when, then);
 
-            when = Graql.parsePattern("$x has name 'materialize-when'");
-            then = Graql.parsePattern("$x has name 'materialize-then'");
+            when = Graql.parsePattern("$x has name 'materialize-when';");
+            then = Graql.parsePattern("$x has name 'materialize-then';");
             tx.putRule("materialize-rule", when, then);
             tx.commit();
         }

@@ -751,6 +751,11 @@ public class Statement implements Pattern {
         }
     }
 
+    @Override // TODO: Remove this method altogether once we make compile time validation more strict
+    public String toString() {
+        throw new IllegalStateException("Invalid Statement: with just a Variable and no properties");
+    }
+
     @Override
     public boolean equals(Object o) {
         // This equals implementation is special: it considers all non-user-defined vars as equivalent

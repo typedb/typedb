@@ -117,7 +117,7 @@ public interface Query {
         ABSTRACT("abstract"),
         ISA("isa"),
         ISAX("isa!"),
-        LABEL("label"),
+        TYPE("type"),
         NEQ("!="),
         PLAYS("plays"),
         REGEX("regex"),
