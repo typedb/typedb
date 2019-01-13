@@ -187,17 +187,17 @@ public class GraknConsoleIT {
     @Test
     public void when_writingRelationships_expect_dataIsWritten() throws Exception {
         assertConsoleSessionMatches(
-                "define name sub attribute datatype string;",
+                "define name sub attribute, datatype string;",
                 anything(),
                 "define marriage sub relationship, relates spouse;",
                 anything(),
                 "define person sub entity, has name, plays spouse;",
                 anything(),
-                "insert isa person has name \"Bill Gates\";",
+                "insert $_ isa person, has name \"Bill Gates\";",
                 anything(),
-                "insert isa person has name \"Melinda Gates\";",
+                "insert $_ isa person, has name \"Melinda Gates\";",
                 anything(),
-                "match $husband isa person has name \"Bill Gates\"; $wife isa person has name \"Melinda Gates\"; insert (spouse: $husband, spouse: $wife) isa marriage;",
+                "match $husband isa person, has name \"Bill Gates\"; $wife isa person, has name \"Melinda Gates\"; insert (spouse: $husband, spouse: $wife) isa marriage;",
                 anything(),
                 "match $x isa marriage; get;",
                 allOf(containsString("spouse"), containsString("isa"), containsString("marriage"))
@@ -257,16 +257,16 @@ public class GraknConsoleIT {
     public void when_startingConsoleWithOptionNoInfer_expect_queriesDoNotInfer() throws Exception {
         assertConsoleSessionMatches(
                 ImmutableList.of("--no_infer"),
-                "define man sub entity has name; name sub attribute datatype string;",
+                "define man sub entity, has name; name sub attribute, datatype string;",
                 anything(),
                 "define person sub entity;",
                 anything(),
-                "insert has name 'felix' isa man;",
+                "insert $_ isa man, has name 'felix';",
                 anything(),
-                "define my-rule sub rule when {$x isa man;} then {$x isa person;};",
+                "define my-rule sub rule, when {$x isa man;}, then {$x isa person;};",
                 anything(),
                 "commit",
-                "match isa person, has name $x; get;"
+                "match $_ isa person, has name $x; get;"
                 // No results
         );
     }
@@ -274,18 +274,18 @@ public class GraknConsoleIT {
     @Test
     public void when_startingConsoleWithoutOptionNoInfer_expect_queriesToInfer() throws Exception {
         assertConsoleSessionMatches(
-                "define man sub entity has name; name sub attribute datatype string;",
+                "define man sub entity, has name; name sub attribute, datatype string;",
                 anything(),
                 "define person sub entity;",
                 anything(),
-                "insert has name 'felix' isa man;",
+                "insert $_ isa man, has name 'felix';",
                 anything(),
-                "match isa person, has name $x; get;",
+                "match $_ isa person, has name $x; get;",
                 // No results
-                "define my-rule sub rule when {$x isa man;} then {$x isa person;};",
+                "define my-rule sub rule, when {$x isa man;}, then {$x isa person;};",
                 anything(),
                 "commit",
-                "match isa person, has name $x; get;",
+                "match $_ isa person, has name $x; get;",
                 containsString("felix") // Results after result is added
         );
     }
@@ -313,10 +313,10 @@ public class GraknConsoleIT {
 
     @Test
     public void when_rollback_expect_transactionIsCancelled() {
-        String[] result = runConsoleSessionWithoutExpectingErrors("define E sub entity;\nrollback\nmatch $x label E; get;\n").split("\n");
+        String[] result = runConsoleSessionWithoutExpectingErrors("define E sub entity;\nrollback\nmatch $x type E; get;\n").split("\n");
 
         // Make sure there are no results for get query
-        assertThat(result[result.length - 2], endsWith("> match $x label E; get;"));
+        assertThat(result[result.length - 2], endsWith("> match $x type E; get;"));
         assertThat(result[result.length - 1], endsWith("> "));
     }
 
