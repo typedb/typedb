@@ -46,8 +46,11 @@ commands:
       - run:
           name: Install rpm (for rpmbuild)
           command: sudo apt update && sudo apt install rpm -y
-
 jobs:
+  tests:
+    machine: true
+    steps:
+      - run: echo test succeeded.
   build:
     machine: true
     working_directory: ~/grakn
@@ -238,126 +241,223 @@ jobs:
           command: bazel build //:distribution
       - bazel:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
-
-  build-workbase-linux:
-      machine: true
-      working_directory: ~/grakn
-      steps:
-        - attach_workspace:
-            at: ~/grakn
-        - bazel:
-            command: bazel run @nodejs//:npm install
-        - bazel:
-            command: bazel build //workbase:distribution
-        - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV # TODO: remove 'v' from tag name and use it as Grakn Version to be released
-        # TODO: make a separate rule for building on Linux / use another naming scheme
-        - run: mv ./bazel-genfiles/workbase/grakn-workbase.zip ~/grakn/artifacts/grakn-workbase-${GRAKN_VERSION}-linux.tar.gz
-        - persist_to_workspace:
-            root: ~/grakn
-            paths:
-              - artifacts/*-linux.tar.gz
-
-  build-workbase-mac:
-      macos:
-          xcode: "9.0"
-      working_directory: ~/grakn
-      steps:
-        - attach_workspace:
-            at: ~/grakn
-        - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV # TODO: remove 'v' from tag name and use it as Grakn Version to be released
-        - run: unzip artifacts/grakn-core-${GRAKN_VERSION}.zip
-        - run: cd grakn-core-${GRAKN_VERSION} && nohup ./grakn server start
-        - run: cd grakn-core-${GRAKN_VERSION} && ./graql console -f ./examples/basic-genealogy.gql -k gene
-        - bazel:
-            command: bazel run @nodejs//:npm install
-        - bazel:
-            command: bazel test //workbase:tests-e2e --test_output=errors
-        - bazel:
-            command: bazel build //workbase:distribution
-        - run: mv ./bazel-genfiles/workbase/grakn-workbase.zip ~/grakn/artifacts/grakn-workbase-${GRAKN_VERSION}-mac.zip
-        - persist_to_workspace:
-            root: ~/grakn
-            paths:
-              - artifacts/*-mac.zip
-
-  publish-github-draft:
-    docker:
-      - image: cibuilds/github:0.10
-    working_directory: ~/grakn
-    steps:
-      - attach_workspace:
-          at: ~/grakn
-      - run:
-          name: "Publish Draft Release on GitHub"
-          command: |
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete -draft ${CIRCLE_TAG} ./artifacts
-
-  grakn-release-build:
+  distributions:
     machine: true
-    working_directory: ~/grakn
     steps:
-      - checkout
-      - bazel_install
-      - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV # TODO: remove 'v' from tag name and use it as Grakn Version to be released
-      - run: mvn --batch-mode install -T 2.5C -DskipTests=true
-      - run: mkdir ~/grakn/artifacts
-      - run: mv grakn-dist/target/grakn-core-${GRAKN_VERSION}.zip ~/grakn/artifacts
-      - persist_to_workspace: # TODO: share Grakn with other jobs by putting it in the workspace
-          root: ~/grakn
-          paths:
-            - ./artifacts
-            - ./workbase
-
+      - run: echo distributions succeeded.
+  dist-mac:
+    machine: true
+    steps:
+      - run: echo dist-mac succeeded.
+  dist-ubuntu:
+    machine: true
+    steps:
+      - run: echo dist-ubuntu succeeded.
+  dist-centos:
+    machine: true
+    steps:
+      - run: echo dist-centos succeeded.
+  dist-win:
+    machine: true
+    steps:
+      - run: echo dist-win succeeded.
+  ci-summary:
+    machine: true
+    steps:
+      - run:
+          name: Displaying tests and benchmark results
+          command: echo 'see tests and benchmark results here - https://source.cloud.google.com/results/invocations/c4456b19-e749-4644-a0ae-c71cf1dc5871/targets.'
+  approve-release:
+    machine: true
+    steps:
+      - run: echo approve-release succeeded.
+  deploy-github:
+    machine: true
+    steps:
+      - run: echo deploy-github succeeded.
+  deploy-maven:
+    machine: true
+    steps:
+      - run: echo deploy-maven succeeded.
+  deploy-npm:
+    machine: true
+    steps:
+      - run: echo deploy-npm succeeded.
+  deploy-pypi:
+    machine: true
+    steps:
+      - run: echo deploy-pypi succeeded.
+  deploy-deb:
+    machine: true
+    steps:
+      - run: echo deploy-deb succeeded.
+  deploy-rpm:
+    machine: true
+    steps:
+      - run: echo deploy-rpm succeeded.
+  deploy-brew:
+    machine: true
+    steps:
+      - run: echo deploy-brew succeeded.
+  deploy-workbase:
+    machine: true
+    steps:
+      - run: echo deploy-workbase succeeded.
+  deploy-workbase-mac:
+    machine: true
+    steps:
+      - run: echo deploy-workbase-mac succeeded.
+  deploy-workbase-linux:
+    machine: true
+    steps:
+      - run: echo deploy-workbase-linux succeeded.
+  deploy-workbase-windows:
+    machine: true
+    steps:
+      - run: echo deploy-workbase-windows succeeded.
+  git-tag-release:
+    machine: true
+    steps:
+      - run: echo git-tag-release succeeded.
+  docs-merge-dev-to-master:
+    machine: true
+    steps:
+      - run: echo docs-merge-dev-to-master succeeded.
 workflows:
   version: 2
-  grakn-core-ci:
+  grakn-core-continuous-release:
     jobs:
-      - build
-      - client-java
-      - client-nodejs
-      - client-python
-      - common
-      - console
-      - graql
-      - server
-      - workbase
-      - test-integration
-      - test-integration-reasoner
-      - test-integration-reasoner-general
-      - test-integration-reasoner-components
-      - test-integration-analytics
-      - test-end-to-end
-
-  build-and-deploy:
-    jobs:
-      - grakn-release-build:
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - build-workbase-mac:
+      - tests
+      - build:
           requires:
-             - grakn-release-build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - build-workbase-linux:
+            - tests
+      - client-java:
           requires:
-             - grakn-release-build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - publish-github-draft:
+            - tests
+      - client-nodejs:
           requires:
-            - build-workbase-mac
-            - build-workbase-linux
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
+            - tests
+      - client-python:
+          requires:
+            - tests
+      - common:
+          requires:
+            - tests
+      - console:
+          requires:
+            - tests
+      - graql:
+          requires:
+            - tests
+      - server:
+          requires:
+            - tests
+      - workbase:
+          requires:
+            - tests
+      - test-integration:
+          requires:
+            - tests
+      - test-integration-reasoner:
+          requires:
+            - tests
+      - test-integration-reasoner-general:
+          requires:
+            - tests
+      - test-integration-reasoner-components:
+          requires:
+            - tests
+      - test-integration-analytics:
+          requires:
+            - tests
+      - test-end-to-end:
+          requires:
+            - tests
+      - distributions:
+          requires:
+            - build
+            - client-java
+            - client-nodejs
+            - client-python
+            - common
+            - console
+            - graql
+            - server
+            - workbase
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-reasoner-general
+            - test-integration-reasoner-components
+            - test-integration-analytics
+            - test-end-to-end
+      - dist-mac:
+          requires:
+            - distributions
+      - dist-ubuntu:
+          requires:
+            - distributions
+      - dist-centos:
+          requires:
+            - distributions
+      - dist-win:
+          requires:
+            - distributions
+      - approve-deploy-github:
+          type: approval
+          requires:
+            - dist-mac
+            - dist-ubuntu
+            - dist-centos
+            - dist-win
+      - deploy-github:
+          requires:
+            - approve-deploy-github
+      - approve-deploy-all:
+          type: approval
+          requires:
+            - deploy-github
+      - deploy-maven:
+          requires:
+            - approve-deploy-all
+      - deploy-npm:
+          requires:
+            - approve-deploy-all
+      - deploy-pypi:
+          requires:
+            - approve-deploy-all
+      - deploy-deb:
+          requires:
+            - approve-deploy-all
+      - deploy-rpm:
+          requires:
+            - approve-deploy-all
+      - deploy-brew:
+          requires:
+            - approve-deploy-all
+      - deploy-workbase-mac:
+          requires:
+            - approve-deploy-all
+      - deploy-workbase-linux:
+          requires:
+            - approve-deploy-all
+      - deploy-workbase-windows:
+          requires:
+            - approve-deploy-all
+      - git-tag-release:
+          requires:
+            - deploy-maven
+            - deploy-npm
+            - deploy-pypi
+            - deploy-deb
+            - deploy-rpm
+            - deploy-brew
+            - deploy-workbase-mac
+            - deploy-workbase-linux
+            - deploy-workbase-windows
+      - approve-docs-merge:
+          type: approval
+          requires:
+            - git-tag-release
+      - docs-merge-dev-to-master:
+          requires:
+            - approve-docs-merge
