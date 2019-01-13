@@ -8,7 +8,14 @@ commands:
             curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-linux-x86_64.sh
             chmod +x bazel-0.20.0-installer-linux-x86_64.sh
             sudo ./bazel-0.20.0-installer-linux-x86_64.sh
-
+  bazel_install_mac:
+    steps:
+      - run:
+          name: Bazel - Install
+          command: |
+            curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-darwin-x86_64.sh
+            chmod +x bazel-0.20.0-installer-darwin-x86_64.sh
+            sudo ./bazel-0.20.0-installer-darwin-x86_64.sh
   bazel_add_rbe_credential:
     steps:
       - run:
@@ -246,21 +253,90 @@ jobs:
     steps:
       - run: echo distributions succeeded.
   dist-mac:
-    machine: true
+    macos:
+      xcode: "9.0"
+    working_directory: ~/grakn
     steps:
-      - run: echo dist-mac succeeded.
+      - checkout
+      - bazel_install_mac
+      - bazel_add_rbe_credential
+      - run: bazel build //:distribution
+      - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
+      - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+      - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server stop
   dist-ubuntu:
-    machine: true
+    docker:
+      - image: ubuntu:16.04
+        environment:
+          _JAVA_OPTIONS: -Xmx2g
+    working_directory: ~/grakn
     steps:
-      - run: echo dist-ubuntu succeeded.
-  dist-centos:
-    machine: true
+      - run: apt-get update
+      - run: apt-get install -y software-properties-common
+      - run: add-apt-repository ppa:openjdk-r/ppa
+      - run: apt-get update
+      - run: apt-get install -y sudo curl unzip git python gcc python-dev build-essential openjdk-8-jdk
+      
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      
+      - run: bazel build --jobs 1 //:distribution-deb
+      - run: dpkg -i bazel-bin/distribution-deb.deb
+      - run: bazel build --jobs 1 //server:distribution-deb
+      - run: dpkg -i bazel-bin/server/distribution-deb.deb
+      - run: bazel build --jobs 1 //console:distribution-deb
+      - run: dpkg -i bazel-bin/console/distribution-deb.deb
+      - run: nohup grakn server start
+      - run: nohup grakn server stop
+
+  # TODO: enable once issue #4811 is fixed
+  # dist-centos:
+  #   docker:
+  #     - image: centos:7.6.1810
+  #       environment:
+  #         _JAVA_OPTIONS: -Xmx2g
+  #   working_directory: ~/grakn
+  #   steps:
+  #     - run: yum install -y http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
+  #     - run: yum update -y
+  #     - run: yum install -y sudo procps which gcc gcc-c++ python-devel unzip git java-1.8.0-openjdk-devel rpm-build
+  #     - run: git version
+  #     - checkout
+  #     - bazel_install
+  #     - bazel_add_rbe_credential
+  #     - run: bazel build --jobs 1 //:distribution-rpm
+  #     - run: yum localinstall -y bazel-bin/distribution-rpm.rpm
+  #     - run: bazel build --jobs 1 //server:distribution-rpm
+  #     - run: yum localinstall -y bazel-bin/server/distribution-rpm.rpm
+  #     - run: bazel build --jobs 1 //console:distribution-rpm
+  #     - run: yum localinstall -y bazel-bin/console/distribution-rpm.rpm
+  #     - run: nohup grakn server start
+  #     - run: nohup grakn server stop
+
+  dist-fedora:
+    docker:
+      - image: fedora:29
+        environment:
+          _JAVA_OPTIONS: -Xmx2g
+    working_directory: ~/grakn
     steps:
-      - run: echo dist-centos succeeded.
-  dist-win:
-    machine: true
-    steps:
-      - run: echo dist-win succeeded.
+      - run: yum install -y http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
+      - run: yum update -y
+      - run: yum install -y sudo procps which gcc gcc-c++ python-devel unzip git java-1.8.0-openjdk-devel rpm-build
+      - run: git version
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - run: bazel build --jobs 1 //:distribution-rpm
+      - run: yum localinstall -y bazel-bin/distribution-rpm.rpm
+      - run: bazel build --jobs 1 //server:distribution-rpm
+      - run: yum localinstall -y bazel-bin/server/distribution-rpm.rpm
+      - run: bazel build --jobs 1 //console:distribution-rpm
+      - run: yum localinstall -y bazel-bin/console/distribution-rpm.rpm
+      - run: grakn server start
+      - run: grakn server stop
+
   ci-summary:
     machine: true
     steps:
@@ -396,10 +472,10 @@ workflows:
       - dist-ubuntu:
           requires:
             - distributions
-      - dist-centos:
-          requires:
-            - distributions
-      - dist-win:
+      # - dist-centos:
+      #     requires:
+      #       - distributions
+      - dist-fedora:
           requires:
             - distributions
       - approve-deploy-github:
@@ -407,8 +483,7 @@ workflows:
           requires:
             - dist-mac
             - dist-ubuntu
-            - dist-centos
-            - dist-win
+            - dist-fedora
       - deploy-github:
           requires:
             - approve-deploy-github
