@@ -27,25 +27,25 @@ available-ingredient-occuring-in-recipe sub ingredient;
 available-ingredient sub ingredient;
 recipe-with-unavailable-ingredient sub recipe;
 
-#rule-1 sub rule
-#    when {
-#        $r isa recipe;
-#        $i isa ingredient;
-#        ($r, $i) isa requires;
-#        ($i) isa containes;
-#    }
-#    then {
-#        $i isa available-ingredient-occuring-in-recipe;
-#    };
+rule-1 sub rule
+    when {
+        $r isa recipe;
+        $i isa ingredient;
+        ($r, $i) isa requires;
+        ($i) isa containes;
+    }
+    then {
+        $i isa available-ingredient-occuring-in-recipe;
+    };
 
-#rule-2 sub rule
-#    when {
-#       $i isa ingredient;
-#        ($i) isa containes;
-#    }
-#    then {
-#        $i isa available-ingredient;
-#    };
+rule-2 sub rule
+    when {
+       $i isa ingredient;
+       ($i) isa containes;
+    }
+    then {
+        $i isa available-ingredient;
+    };
 
 #rule-3 sub rule
 #    when {

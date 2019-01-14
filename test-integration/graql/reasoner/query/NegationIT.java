@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.EntityType;
@@ -38,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -420,15 +422,16 @@ public class NegationIT {
              * recipe-with-unavailable-ingredient($r) :- R($r), requires($r, $i), ¬available-ingredient-occuring-in-recipe($i)
              */
 
-            /*
-            List<ConceptMap> recipesWithUnavailableIngredients = tx.execute(
+            Set<ConceptMap> allRecipes = tx.stream(Graql.<GetQuery>parse("match $r isa recipe;get;")).collect(Collectors.toSet());
+
+            Set<ConceptMap> recipesWithUnavailableIngredients = tx.stream(
                     Graql.<GetQuery>parse("match " +
                             "$r isa recipe;" +
                             "($r, $i) isa requires;" +
                             "NOT {$i isa available-ingredient};" +
                             "get $r;"
-                    ));
-
+                    )).collect(Collectors.toSet());
+            /*
             List<ConceptMap> recipesWithUnavailableIngredients2 = tx.execute(
                     Graql.<GetQuery>parse("match " +
                             "$r isa recipe-with-unavailable-ingredient;" +
@@ -442,18 +445,18 @@ public class NegationIT {
                             "get $r;"
                     ));
             */
-            List<ConceptMap> recipesWithAllIngredientsAvailable = tx.execute(Graql.<GetQuery>parse("match " +
-                    "$r isa recipe has name $n;" +
+            Set<ConceptMap> recipesWithAllIngredientsAvailable = tx.stream(Graql.<GetQuery>parse("match " +
+                    "$r isa recipe;" +
                     "NOT {" +
                         "{" +
                             "($r, $i) isa requires;" +
                              "NOT {$i isa available-ingredient};" +
                         "}" +
                     "};" +
-                    "get $n;"
-            ));
+                    "get $r;"
+            )).collect(Collectors.toSet());
 
-            assertEquals(3, recipesWithAllIngredientsAvailable.size());
+            assertEquals(recipesWithAllIngredientsAvailable, Sets.difference(allRecipes, recipesWithUnavailableIngredients));
         }
     }
 
