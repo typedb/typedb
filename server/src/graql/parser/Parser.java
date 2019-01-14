@@ -56,6 +56,7 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.DefaultErrorStrategy;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -83,10 +84,8 @@ import static java.util.stream.Collectors.toSet;
  * Graql query string parser to produce Graql Java objects
  */
 // This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
-@SuppressWarnings({"unchecked", "Duplicates"})
+@SuppressWarnings({"unchecked", "Duplicates"}) // TODO: remove this soon
 public class Parser extends GraqlBaseVisitor {
-
-    public Parser() {}
 
     private GraqlParser parse(String queryString, ErrorListener errorListener) {
         CharStream charStream = CharStreams.fromString(queryString);
@@ -103,8 +102,9 @@ public class Parser extends GraqlBaseVisitor {
         return parser;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends Query> T parseQueryEOF(String queryString) {
+    private <CONTEXT extends ParserRuleContext, RETURN> RETURN parseQuery(
+            String queryString, Function<GraqlParser, CONTEXT> parserMethod, Function<CONTEXT, RETURN> visitor
+    ) {
         ErrorListener errorListener = ErrorListener.of(queryString);
         GraqlParser parser = parse(queryString, errorListener);
 
@@ -114,9 +114,9 @@ public class Parser extends GraqlBaseVisitor {
         parser.setErrorHandler(new BailErrorStrategy());
         parser.getInterpreter().setPredictionMode(PredictionMode.SLL);
 
-        GraqlParser.Eof_queryContext eofQueryContext;
+        CONTEXT queryContext;
         try {
-            eofQueryContext = parser.eof_query();
+            queryContext = parserMethod.apply(parser);
         } catch (ParseCancellationException e) {
             // We parse the query one more time, with "strict strategy" :
             // DefaultErrorStrategy + LL_EXACT_AMBIG_DETECTION
@@ -124,62 +124,30 @@ public class Parser extends GraqlBaseVisitor {
             // to produce detailed/useful error message
             parser.setErrorHandler(new DefaultErrorStrategy());
             parser.getInterpreter().setPredictionMode(PredictionMode.LL_EXACT_AMBIG_DETECTION);
-            parser.eof_query();
+            parserMethod.apply(parser);
 
             throw GraqlSyntaxException.create(errorListener.toString());
         }
 
-        return (T) visitEof_query(eofQueryContext);
+        return visitor.apply(queryContext);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends Query> T parseQueryEOF(String queryString) {
+        return (T) parseQuery(queryString, GraqlParser::eof_query, this::visitEof_query);
     }
 
     @SuppressWarnings("unchecked")
     public <T extends Query> Stream<T> parseQueryListEOF(String queryString) {
-        ErrorListener errorListener = ErrorListener.of(queryString);
-        GraqlParser parser = parse(queryString, errorListener);
-
-        // BailErrorStrategy is also optimal for parsing very large files
-        // as it will terminate upon the first error encountered
-        parser.setErrorHandler(new BailErrorStrategy());
-
-        GraqlParser.Eof_query_listContext eofQueryListContext;
-        try {
-            eofQueryListContext = parser.eof_query_list();
-        } catch (ParseCancellationException e) {
-            throw GraqlSyntaxException.create(errorListener.toString());
-        }
-
-        return (Stream<T>) this.visitEof_query_list(eofQueryListContext);
+        return (Stream<T>) parseQuery(queryString, GraqlParser::eof_query_list, this::visitEof_query_list);
     }
 
     public Pattern parsePatternEOF(String patternString) {
-        ErrorListener errorListener = ErrorListener.of(patternString);
-        GraqlParser parser = parse(patternString, errorListener);
-
-        GraqlParser.Eof_patternContext eofPatternContext = parser.eof_pattern();
-        if (errorListener.hasErrors()) {
-            throw GraqlSyntaxException.create(errorListener.toString());
-        }
-
-        return visitEof_pattern(eofPatternContext);
+        return parseQuery(patternString, GraqlParser::eof_pattern, this::visitEof_pattern);
     }
 
     public Stream<? extends Pattern> parsePatternListEOF(String patternsString) {
-        ErrorListener errorListener = ErrorListener.of(patternsString);
-        GraqlParser parser = parse(patternsString, errorListener);
-
-        // If we're using the BailErrorStrategy, we will throw here
-        // This strategy is designed for parsing very large files
-        // and terminate upon the first error encountered
-        parser.setErrorHandler(new BailErrorStrategy());
-
-        GraqlParser.Eof_pattern_listContext eofPatternListContext;
-        try {
-            eofPatternListContext = parser.eof_pattern_list();
-        } catch (ParseCancellationException e) {
-            throw GraqlSyntaxException.create(errorListener.toString());
-        }
-
-        return visitEof_pattern_list(eofPatternListContext);
+        return parseQuery(patternsString, GraqlParser::eof_pattern_list, this::visitEof_pattern_list);
     }
 
     // GLOBAL HELPER METHODS ===================================================
@@ -429,7 +397,7 @@ public class Parser extends GraqlBaseVisitor {
         } else if (ctx.pattern_disjunction() != null) {
             return visitPattern_disjunction(ctx.pattern_disjunction());
 
-        } else if (ctx.pattern_conjunction() != null){
+        } else if (ctx.pattern_conjunction() != null) {
             return visitPattern_conjunction(ctx.pattern_conjunction());
 
         } else if (ctx.pattern_negation() != null) {
@@ -478,7 +446,7 @@ public class Parser extends GraqlBaseVisitor {
         if (ctx.statement_instance() != null) {
             return visitStatement_instance(ctx.statement_instance());
 
-        } else if (ctx.statement_type() != null){
+        } else if (ctx.statement_type() != null) {
             return visitStatement_type(ctx.statement_type());
 
         } else if (ctx.statement_negation() != null) {
@@ -518,7 +486,7 @@ public class Parser extends GraqlBaseVisitor {
             } else if (property.SUB_() != null) {
                 Query.Property sub = Query.Property.of(property.SUB_().getText());
 
-                if (sub != null && sub.equals(Query.Property.SUB)){
+                if (sub != null && sub.equals(Query.Property.SUB)) {
                     type = type.sub(visitType(property.type(0)));
 
                 } else if (sub != null && sub.equals(Query.Property.SUBX)) {
@@ -605,8 +573,8 @@ public class Parser extends GraqlBaseVisitor {
         } else if (ctx.ID() != null) {
             instance = instance.id(ctx.id().getText());
 
-        } else if (ctx.NEQ() != null){
-            instance = instance.neq(ctx.VAR_(1).getText());
+        } else if (ctx.NEQ() != null) {
+            instance = instance.neq(getVar(ctx.VAR_(1)));
         }
 
         if (ctx.attributes() != null) {
@@ -671,7 +639,7 @@ public class Parser extends GraqlBaseVisitor {
     private IsaProperty getIsaProperty(TerminalNode isaToken, GraqlParser.TypeContext ctx) {
         Query.Property isa = Query.Property.of(isaToken.getText());
 
-        if (isa != null && isa.equals(Query.Property.ISA)){
+        if (isa != null && isa.equals(Query.Property.ISA)) {
             return new IsaProperty(visitType(ctx));
 
         } else if (isa != null && isa.equals(Query.Property.ISAX)) {

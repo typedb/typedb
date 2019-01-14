@@ -446,18 +446,29 @@ public class Statement implements Pattern {
      */
     @CheckReturnValue
     public StatementThing neq(String var) {
-        return neq(Graql.var(var));
+        return neq(new Variable(var));
     }
 
     /**
      * Specify that the variable is different to another variable
      *
-     * @param statement the variable pattern that this variable should not be equal to
+     * @param var the variable pattern that this variable should not be equal to
      * @return this
      */
     @CheckReturnValue
-    public StatementThing neq(Statement statement) {
-        return StatementThing.create(this, new NeqProperty(statement));
+    public StatementThing neq(Variable var) {
+        return neq(new NeqProperty(new Statement(var)));
+    }
+
+    /**
+     * Specify that the variable is different to another variable
+     *
+     * @param property the NEQ property containing variable pattern that this variable should not be equal to
+     * @return this
+     */
+    @CheckReturnValue
+    public StatementThing neq(NeqProperty property) {
+        return StatementThing.create(this, property);
     }
 
     // RELATION STATEMENT PROPERTIES --------------------------------------------

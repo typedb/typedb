@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.pattern.statement;
 
-import com.google.common.base.Preconditions;
 import grakn.core.graql.query.Query;
 
 import java.util.concurrent.atomic.AtomicLong;

@@ -185,11 +185,14 @@ public class ConsoleSession implements AutoCloseable {
                 }
             });
         } catch (RuntimeException e) {
+            // Flush out all answers from previous iterators in the stream
+            consoleReader.flush();
+
             if (catchRuntimeException) {
                 if (!e.getMessage().isEmpty()) {
-                    printErr.println(e.getMessage());
+                    printErr.println("Error: " + e.getMessage());
                 } else {
-                    printErr.println(e.getClass().getName());
+                    printErr.println("Error: " + e.getClass().getName());
                 }
                 reopenTransaction();
             } else {

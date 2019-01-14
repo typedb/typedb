@@ -61,7 +61,7 @@ public class ThenProperty extends VarProperty {
         if (pattern instanceof Conjunction) {
             then.append(((Conjunction<?>) pattern).getPatterns().stream()
                                 .map(Object::toString)
-                                .collect(joining(Query.Char.COMMA_SPACE.toString())));
+                                .collect(joining(Query.Char.SPACE.toString())));
         } else {
             then.append(pattern.toString());
         }

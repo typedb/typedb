@@ -207,7 +207,7 @@ public class DeleteQueryIT {
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
-        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete(x.var(), y.var()));
+        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y.var())).delete(x.var(), y.var()));
 
         assertNotExists(tx, var().isa("fake-type"));
     }
@@ -219,7 +219,7 @@ public class DeleteQueryIT {
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
-        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete());
+        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y.var())).delete());
 
         assertNotExists(tx, var().isa("fake-type"));
     }

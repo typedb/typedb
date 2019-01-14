@@ -61,7 +61,7 @@ public class WhenProperty extends VarProperty {
         if (pattern instanceof Conjunction) {
             when.append(((Conjunction<?>) pattern).getPatterns().stream()
                                 .map(Object::toString)
-                                .collect(joining(Query.Char.COMMA_SPACE.toString())));
+                                .collect(joining(Query.Char.SPACE.toString())));
         } else {
             when.append(pattern);
         }
