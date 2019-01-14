@@ -233,7 +233,7 @@ public class Graql {
      * @return a pattern that will match when no contained pattern matches
      */
     @CheckReturnValue
-    public static Pattern not(Pattern pattern) {
+    public static Negation<Pattern> not(Pattern pattern) {
         return new Negation<>(pattern);
     }
 

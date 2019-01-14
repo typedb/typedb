@@ -252,7 +252,7 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public Statement visitPositiveStatement(GraqlParser.PositiveStatementContext ctx) {
+    public Statement visitStatement(GraqlParser.StatementContext ctx) {
         Statement var;
 
         if (ctx.VARIABLE() != null) {
@@ -261,18 +261,6 @@ public class Parser extends GraqlBaseVisitor {
             var = visitVariable(ctx.variable());
         }
         return getVarProperties(ctx.property()).apply(var);
-    }
-
-    @Override
-    public Statement visitNegativeStatement (GraqlParser.NegativeStatementContext ctx) {
-        return visitPositiveStatement(ctx.positiveStatement()).negate();
-    }
-
-    @Override
-    public Statement visitStatement(GraqlParser.StatementContext ctx) {
-        return ctx.positiveStatement() != null ?
-                visitPositiveStatement(ctx.positiveStatement()) :
-                visitNegativeStatement(ctx.negativeStatement());
     }
 
     @Override

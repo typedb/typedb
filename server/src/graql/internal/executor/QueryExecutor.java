@@ -35,6 +35,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
@@ -48,6 +49,7 @@ import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
@@ -94,24 +96,27 @@ public class QueryExecutor {
         this.transaction = transaction;
     }
 
-    private Stream<ConceptMap> resolveConjunction(Conjunction<Statement> conj, TransactionOLTP tx){
-        ReasonerQuery conjQuery = ReasonerQueries.create(conj, tx).rewrite();
-        conjQuery.checkValid();
+    private Stream<ConceptMap> resolveConjunction(Conjunction<Pattern> conj, TransactionOLTP tx){
+        CompositeQuery query = ReasonerQueries.composite(conj, tx);
+       // query.checkValid();
 
         //TODO
         // - handling of empty query is a hack, need to solve in another PR
         // - atom parsing doesn't recognise nested statements so we do not resolve if possible
-        boolean doNotResolve = conjQuery.getAtoms().isEmpty()
-                || (conjQuery.isPositive() && !conjQuery.isRuleResolvable());
+        /*
+        boolean doNotResolve = query.getAtoms().isEmpty()
+                || (query.isPositive() && !query.isRuleResolvable());
         return doNotResolve?
                 tx.stream(Graql.match(conj), false) :
-                conjQuery.resolve();
+                query.resolve();
+                */
+        return query.resolve();
     }
 
     public Stream<ConceptMap> match(MatchClause matchClause) {
         //validatePattern
         for (Statement statement : matchClause.getPatterns().statements()) {
-            statement.properties().stream().forEach(property -> validateProperty(property, statement));
+            statement.properties().forEach(property -> validateProperty(property, statement));
         }
 
         if (!infer) {
@@ -120,7 +125,7 @@ public class QueryExecutor {
         }
 
         try {
-            Iterator<Conjunction<Statement>> conjIt = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().iterator();
+            Iterator<Conjunction<Pattern>> conjIt = matchClause.getPatterns().getNegationDNF().getPatterns().iterator();
             Stream<ConceptMap> answerStream = Stream.empty();
             while (conjIt.hasNext()) {
                 answerStream = Stream.concat(answerStream, resolveConjunction(conjIt.next(), transaction));

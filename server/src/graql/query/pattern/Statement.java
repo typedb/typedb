@@ -169,6 +169,7 @@ public class Statement implements Pattern {
             return Graql.or(Collections.singleton(conjunction));
 
         } else {
+            //TODO should be undefined
             // Flatten if multiple properties present
             // TODO this is hacky. Redo when atoms are independent of transactions.
             HashMultimap<VarProperty, VarProperty> propertyMap = HashMultimap.create();
@@ -187,6 +188,12 @@ public class Statement implements Pattern {
 
             return Graql.or(patterns);
         }
+    }
+
+    @Override
+    public Disjunction<Conjunction<Pattern>> getNegationDNF() {
+        Conjunction<Pattern> conjunction = Graql.and(Collections.singleton(this));
+        return Graql.or(Collections.singleton(conjunction));
     }
 
     /**

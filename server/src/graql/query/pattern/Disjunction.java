@@ -67,6 +67,14 @@ public class Disjunction<T extends Pattern> implements Pattern {
     }
 
     @Override
+    public Disjunction<Conjunction<Pattern>> getNegationDNF() {
+        Set<Conjunction<Pattern>> dnf = getPatterns().stream()
+                .flatMap(p -> p.getNegationDNF().getPatterns().stream())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        return Graql.or(dnf);
+    }
+
+    @Override
     public Conjunction<? extends Pattern> negate() {
         return Graql.and(getPatterns().stream().map(Pattern::negate).collect(toSet()));
     }

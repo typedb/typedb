@@ -95,12 +95,7 @@ pattern        : statement                     # patternStatement
                ;
 
 statements    : (statement ';')+ ;
-statement     : positiveStatement
-               | negativeStatement
-               ;
-
-positiveStatement : VARIABLE | variable? property (','? property)* ;
-negativeStatement : 'NOT' positiveStatement ;
+statement     : VARIABLE | variable? property (','? property)* ;
 
 property       : 'isa' variable                     # isa
                | 'isa!' variable                    # isaExplicit

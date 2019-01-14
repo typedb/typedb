@@ -51,7 +51,6 @@ import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.internal.reasoner.state.AnswerState;
 import grakn.core.graql.internal.reasoner.state.ConjunctiveState;
 import grakn.core.graql.internal.reasoner.state.CumulativeState;
-import grakn.core.graql.internal.reasoner.state.NegatedConjunctiveState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
@@ -78,7 +77,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ *
  * Base reasoner query providing resolution and atom handling facilities for conjunctive graql queries.
+ *
  */
 public class ReasonerQueryImpl implements ReasonerQuery {
 
@@ -94,7 +95,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .build();
 
         if (!isNegationSafe()){
-            throw new IllegalStateException("Negated pattern unsafe! Negated pattern variables not bound!");
+            throw new IllegalStateException("Query:\n" + this + "\nis unsafe! Negated pattern variables not bound!");
         }
     }
 
@@ -492,7 +493,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     public Stream<ConceptMap> resolve(MultilevelSemanticCache cache){
-        return new ResolutionIterator(this, cache).hasStream();
+        return new ResolutionIterator(new CompositeQuery(this, null), cache).hasStream();
     }
 
     /**
@@ -504,8 +505,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return resolution subGoal formed from this query
      */
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
-        ConjunctiveState conjunctiveState = new ConjunctiveState(this, sub, u, parent, subGoals, cache);
-        return isPositive()? conjunctiveState : new NegatedConjunctiveState(conjunctiveState);
+        return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
     }
 
     /**

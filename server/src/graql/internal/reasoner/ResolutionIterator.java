@@ -20,6 +20,7 @@ package grakn.core.graql.internal.reasoner;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
@@ -43,7 +44,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     private int iter = 0;
     private long oldAns = 0;
-    private final ReasonerQueryImpl query;
+    private final CompositeQuery query;
     private final Set<ConceptMap> answers = new HashSet<>();
 
     private final MultilevelSemanticCache cache;
@@ -54,9 +55,9 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionIterator.class);
 
-    public ResolutionIterator(ReasonerQueryImpl q, MultilevelSemanticCache cache){
+    public ResolutionIterator(CompositeQuery q, MultilevelSemanticCache cache){
         this.query = q;
-        this.reiterationRequired = q.requiresReiteration();
+        this.reiterationRequired = true; //q.requiresReiteration();
         this.cache = cache;
         states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, new HashSet<>(), cache));
     }

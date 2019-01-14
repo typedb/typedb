@@ -23,6 +23,7 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.server.session.TransactionOLTP;
 
@@ -38,6 +39,15 @@ import java.util.Set;
  *
  */
 public class ReasonerQueries {
+
+
+    public static CompositeQuery composite(Conjunction<Pattern> pattern, TransactionOLTP tx){
+        return new CompositeQuery(pattern, tx);
+    }
+
+    public static CompositeQuery composite(CompositeQuery q, ConceptMap sub){
+        return q.withSubstitution(sub);
+    }
 
     /**
      * create a reasoner query from a conjunctive pattern with types inferred
@@ -128,4 +138,6 @@ public class ReasonerQueries {
     public static ReasonerAtomicQuery atomic(ReasonerAtomicQuery q, ConceptMap sub){
         return q.withSubstitution(sub).inferTypes();
     }
+
+
 }

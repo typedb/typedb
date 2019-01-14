@@ -84,6 +84,18 @@ public class Conjunction<T extends Pattern> implements Pattern {
     }
 
     @Override
+    public Disjunction<Conjunction<Pattern>> getNegationDNF() {
+        List<Set<Conjunction<Pattern>>> disjunctionsOfConjunctions = getPatterns().stream()
+                .map(p -> p.getNegationDNF().getPatterns())
+                .collect(toList());
+
+        Set<Conjunction<Pattern>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
+                .map(Conjunction::fromConjunctions)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        return Graql.or(dnf);
+    }
+
+    @Override
     public Disjunction<? extends Pattern> negate() {
         return Graql.or(getPatterns().stream().map(Pattern::negate).collect(toSet()));
     }
