@@ -63,12 +63,15 @@ public interface Query {
      */
     enum Char {
         EQUAL("="),
+        COLON(":"),
         SEMICOLON(";"),
         SPACE(" "),
         COMMA(","),
         COMMA_SPACE(", "),
         CURLY_OPEN("{"),
         CURLY_CLOSE("}"),
+        PARAN_OPEN("("),
+        PARAN_CLOSE(")"),
         SQUARE_OPEN("["),
         SQUARE_CLOSE("]"),
         QUOTE("\""),

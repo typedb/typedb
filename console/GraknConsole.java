@@ -22,7 +22,9 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import grakn.core.client.GraknClient;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.util.GraknVersion;
+import grakn.core.console.exception.GraknConsoleException;
 import io.grpc.Status;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -141,15 +143,25 @@ public class GraknConsole {
         try {
             GraknConsole console = new GraknConsole(Arrays.copyOfRange(args, 1, args.length), System.out, System.err);
             console.run();
-
             System.exit(0);
-        } catch (Exception e) {
+
+        } catch (GraknConsoleException e) {
+            System.err.println(e.getMessage());
+            System.err.println("Cause: " + e.getCause().getClass().getName());
+            System.err.println(e.getCause().getMessage());
+            System.exit(1);
+
+        } catch (GraknException e) {
+            // TODO: don't do if-checks. Use different catch-clauses by class
             if (e.getMessage().startsWith(Status.Code.UNAVAILABLE.name())) {
                 System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
             } else {
-                System.err.println(e.getMessage());
+                e.printStackTrace(System.err);
             }
+            System.exit(1);
 
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
             System.exit(1);
         }
     }
