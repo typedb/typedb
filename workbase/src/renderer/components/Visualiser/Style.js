@@ -132,13 +132,13 @@ function nodeShape(node) {
       shape = 'dot';
       break;
     case 'RELATIONSHIP_TYPE':
-      shape = 'box';
+      shape = 'diamond';
       break;
     case 'ENTITY_TYPE':
       shape = 'box';
       break;
     case 'ATTRIBUTE_TYPE':
-      shape = 'box';
+      shape = 'ellipse';
       break;
     default:
       shape = DEFAULT_NODE_SHAPE;
