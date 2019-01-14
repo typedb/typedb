@@ -47,7 +47,6 @@ public abstract class QueryCacheBase<
 
     private final Map<QE, CacheEntry<Q, SE>> cache = new HashMap<>();
     private final StructuralCache<Q> sCache = new StructuralCache<>();
-    private final RuleCache ruleCache = new RuleCache();
 
     QueryCacheBase() { }
 
@@ -64,8 +63,6 @@ public abstract class QueryCacheBase<
      * @return structural cache of this cache
      */
     StructuralCache<Q> structuralCache() { return sCache;}
-
-    public RuleCache ruleCache() { return ruleCache;}
 
     @Override
     public CacheEntry<Q, SE> record(Q query, ConceptMap answer) {
