@@ -1,6 +1,6 @@
 <template>
     <div v-show="contextMenu.show" ref="contextMenu" id="context-menu" class="z-depth-2">
-        <li @click="(enableDelete) ? deleteNode() : false" class="context-action delete-nodes" :class="{'disabled':!enableDelete}">Delete</li>
+        <li @click="(enableDelete) ? deleteNode() : false" class="context-action delete-nodes" :class="{'disabled':!enableDelete}">Hide</li>
         <li @click="(enableExplain) ? explainNode() : false" class="context-action explain-node" :class="{'disabled':!enableExplain}">Explain</li>
         <li @click="(enableShortestPath) ? computeShortestPath() : false" class="context-action compute-shortest-path" :class="{'disabled':!enableShortestPath}">Shortest Path</li>
     </div>
