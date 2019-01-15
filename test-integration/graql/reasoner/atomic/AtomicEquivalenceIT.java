@@ -112,9 +112,9 @@ public class AtomicEquivalenceIT {
 
     @Test
     public void testEquality_DifferentHasVariants(){
-        String patternString = "{$x has resource;}";
-        String patternString2 = "{$y has resource;}";
-        String patternString3 = "{$x has " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + ";}";
+        String patternString = "{ $x has resource; };";
+        String patternString2 = "{ $y has resource; };";
+        String patternString3 = "{ $x has " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + "; };";
 
         atomicEquality(patternString, patternString, true, tx);
         atomicEquality(patternString, patternString2, false, tx);
@@ -124,15 +124,15 @@ public class AtomicEquivalenceIT {
 
     @Test
     public void testEquivalence_DifferentRelationVariants(){
-        String pattern = "{(baseRole1: $x, baseRole2: $y) isa binary;}";
-        String directPattern = "{(baseRole1: $x, baseRole2: $y) isa! binary;}";
-        String pattern2 = "{$r (baseRole1: $x, baseRole2: $y) isa binary;}";
-        String pattern3 = "{$z (baseRole1: $x, baseRole2: $y) isa binary;}";
-        String pattern4 = "{(baseRole1: $x, baseRole2: $y);}";
-        String pattern5 = "{(baseRole1: $z, baseRole2: $v) isa binary;}";
-        String pattern6 = "{(role: $x, baseRole2: $y) isa binary;}";
-        String pattern7 = "{(baseRole1: $x, baseRole2: $y) isa $type;}";
-        String pattern8 = "{(baseRole1: $x, baseRole2: $y) isa $type;$type label binary;}";
+        String pattern = "{ (baseRole1: $x, baseRole2: $y) isa binary; };";
+        String directPattern = "{ (baseRole1: $x, baseRole2: $y) isa! binary; };";
+        String pattern2 = "{ $r (baseRole1: $x, baseRole2: $y) isa binary; };";
+        String pattern3 = "{ $z (baseRole1: $x, baseRole2: $y) isa binary; };";
+        String pattern4 = "{ (baseRole1: $x, baseRole2: $y); };";
+        String pattern5 = "{ (baseRole1: $z, baseRole2: $v) isa binary; };";
+        String pattern6 = "{ (role: $x, baseRole2: $y) isa binary; };";
+        String pattern7 = "{ (baseRole1: $x, baseRole2: $y) isa $type; };";
+        String pattern8 = "{ (baseRole1: $x, baseRole2: $y) isa $type;$type type binary; };";
 
         atomicEquality(pattern, pattern, true, tx);
         atomicEquality(pattern, directPattern, false, tx);
@@ -146,24 +146,24 @@ public class AtomicEquivalenceIT {
     }
 
     private void testEquality_DifferentTypeVariants(TransactionOLTP tx, String keyword, String label, String label2){
-        String variantAString = "{$x " + keyword + " " + label + ";}";
-        String variantAString2 = "{$y " + keyword + " " + label + ";}";
-        String variantAString3 = "{$y " + keyword + " " + label2 + ";}";
+        String variantAString = "{ $x " + keyword + " " + label + "; };";
+        String variantAString2 = "{ $y " + keyword + " " + label + "; };";
+        String variantAString3 = "{ $y " + keyword + " " + label2 + "; };";
         atomicEquality(variantAString, variantAString, true, tx);
         atomicEquality(variantAString, variantAString2, false, tx);
         atomicEquality(variantAString2, variantAString3, false, tx);
 
-        String variantBString = "{$x " + keyword + " $type;$type label " + label +";}";
-        String variantBString2 = "{$x " + keyword + " $type;$type label " + label2 +";}";
-        String variantBString3 = "{$x " + keyword + " $var;$var label " + label +";}";
-        String variantBString4 = "{$y " + keyword + " $type;$type label " + label +";}";
+        String variantBString = "{ $x " + keyword + " $type; $type type " + label +"; };";
+        String variantBString2 = "{ $x " + keyword + " $type; $type type " + label2 +"; };";
+        String variantBString3 = "{ $x " + keyword + " $var; $var type " + label +"; };";
+        String variantBString4 = "{ $y " + keyword + " $type; $type type " + label +"; };";
         atomicEquality(variantBString, variantBString, true, tx);
         atomicEquality(variantBString, variantBString2, false, tx);
         atomicEquality(variantBString, variantBString3, true, tx);
         atomicEquality(variantBString, variantBString4, false, tx);
 
-        String variantCString = "{$x " + keyword + " $y;}";
-        String variantCString2 = "{$x " + keyword + " $z;}";
+        String variantCString = "{ $x " + keyword + " $y; };";
+        String variantCString2 = "{ $x " + keyword + " $z; };";
         atomicEquality(variantCString, variantCString, true, tx);
         atomicEquality(variantCString, variantCString2, true, tx);
 

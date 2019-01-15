@@ -4,11 +4,11 @@ define
 # Schema
 ##################################################################
 
-word sub entity
-    plays subtype
-    plays supertype
-    plays prep
-    plays pobj
+word sub entity,
+    plays subtype,
+    plays supertype,
+    plays prep,
+    plays pobj,
     has name;
 
 f sub word;
@@ -19,30 +19,30 @@ prep sub role;
 subtype sub role;
 supertype sub role;
 
-inheritance sub relationship
-    relates supertype
+inheritance sub relationship,
+    relates supertype,
     relates subtype;
 
-pair sub relationship
-    relates prep
-    relates pobj
-    has typ
+pair sub relationship,
+    relates prep,
+    relates pobj,
+    has typ,
     has name;
 
-name sub attribute datatype string;
-typ sub attribute datatype string;
+name sub attribute, datatype string;
+typ sub attribute, datatype string;
 
 ##################################################################
 # Inference: all pairs;
 ##################################################################
 
-rule-1 sub rule
+rule-1 sub rule,
     when {
         $x isa word;
         $y isa word;
         $x has name !== 'f';
         $y has name !== 'o';
-    }
+    },
     then {
         (prep: $x, pobj: $y) isa pair;
     };
@@ -51,13 +51,13 @@ rule-1 sub rule
 # Inference: pairs FF
 ##################################################################
 
-rule-2 sub rule
+rule-2 sub rule,
     when {
         $f isa f;
         (subtype: $prep, supertype: $f) isa inheritance;
         (subtype: $pobj, supertype: $f) isa inheritance;
         $p (prep: $prep, pobj: $pobj) isa pair;
-    }
+    },
     then {
         $p has name 'ff';
     };
@@ -66,14 +66,14 @@ rule-2 sub rule
 # Inference: pairs FO
 ##################################################################
 
-rule-3 sub rule
+rule-3 sub rule,
     when {
         $f isa f;
         $o isa o;
         (subtype: $prep, supertype: $f) isa inheritance;
         (subtype: $pobj, supertype: $o) isa inheritance;
         $p (prep: $prep, pobj: $pobj) isa pair;
-    }
+    },
     then {
         $p has name 'fo';
     };

@@ -321,7 +321,7 @@ public class Parser extends GraqlBaseVisitor {
 
         for (GraqlParser.Compute_conditionContext conditionCtx : conditions.compute_condition()) {
             if (conditionCtx.FROM() != null) {
-                query.from(ConceptId.of(visitId((conditionCtx.id()))));
+                query.from(ConceptId.of(visitId(conditionCtx.id())));
 
             } else if (conditionCtx.TO() != null) {
                 query.to(ConceptId.of(visitId(conditionCtx.id())));
@@ -571,7 +571,7 @@ public class Parser extends GraqlBaseVisitor {
             instance = instance.isa(getIsaProperty(ctx.ISA_(), ctx.type()));
 
         } else if (ctx.ID() != null) {
-            instance = instance.id(ctx.id().getText());
+            instance = instance.id(visitId(ctx.id()));
 
         } else if (ctx.NEQ() != null) {
             instance = instance.neq(getVar(ctx.VAR_(1)));

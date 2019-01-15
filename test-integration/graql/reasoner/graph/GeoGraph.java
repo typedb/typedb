@@ -47,11 +47,11 @@ public class GeoGraph {
     private static Thing Poland, England, Germany, France, Italy;
     private static Thing UW, PW, Imperial, UCL;
 
-    public GeoGraph(Session session){
+    public GeoGraph(Session session) {
         this.session = session;
     }
 
-    public void load(){
+    public void load() {
         tx = session.transaction(Transaction.Type.WRITE);
         buildSchema();
         buildInstances();
@@ -154,7 +154,6 @@ public class GeoGraph {
                 .assign(entityLocation, Silesia);
 
 
-
         isLocatedIn.create()
                 .assign(geoEntity, Imperial)
                 .assign(entityLocation, London);
@@ -203,9 +202,11 @@ public class GeoGraph {
     }
 
     private void buildRules() {
-        Pattern transitivity_LHS = Graql.parsePattern("{(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "(geo-entity: $y, entity-location: $z) isa is-located-in;}");
-        Pattern transitivity_RHS = Graql.parsePattern("{(geo-entity: $x, entity-location: $z) isa is-located-in;}");
+        Pattern transitivity_LHS = Graql.parsePattern(
+                "{ (geo-entity: $x, entity-location: $y) isa is-located-in; " +
+                        "(geo-entity: $y, entity-location: $z) isa is-located-in; };"
+        );
+        Pattern transitivity_RHS = Graql.parsePattern("{ (geo-entity: $x, entity-location: $z) isa is-located-in; };");
         tx.putRule("Geo Rule", transitivity_LHS, transitivity_RHS);
     }
 

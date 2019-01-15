@@ -4,7 +4,7 @@ define
 ####################Schema######################
 #################################################
 
-vertex sub entity
+vertex sub entity,
     has index;
 
 coordinate sub role;

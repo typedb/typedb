@@ -82,12 +82,12 @@ public class VariableRolesIT {
             */
             //9 binary-base instances with {role, role1, role2} = 3 roles for r2 -> 27 answers
             String queryString2 = "match " +
-                    "(role: $a, $r2: $b) isa binary-base;" +
+                    "(role: $a, $r2: $b) isa binary-base; " +
                     "get;";
 
             String equivalentQueryString2 = "match " +
-                    "($r1: $a, $r2: $b) isa binary-base;" +
-                    "$r1 label 'role';" +
+                    "($r1: $a, $r2: $b) isa binary-base; " +
+                    "$r1 type 'role' ;" +
                     "get $a, $b, $r2;";
 
             GetQuery query2 = Graql.<GetQuery>parse(queryString2);

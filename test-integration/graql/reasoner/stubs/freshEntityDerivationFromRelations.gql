@@ -7,27 +7,27 @@ role2 sub role;
 
 #Entities
 
-baseEntity sub entity
-    plays role1
+baseEntity sub entity,
+    plays role1,
     plays role2;
 
-derivedEntity sub entity
-    plays role1
+derivedEntity sub entity,
+    plays role1,
     plays role2;
 
 #Relations
 
-baseRelation sub relationship
-    relates role1
+baseRelation sub relationship,
+    relates role1,
     relates role2;
 
 #Rules
 
-rule-1 sub rule
+rule-1 sub rule,
     when {
     	(role1:$x, role2:$y) isa baseRelation;
     	(role1:$y, role2:$z) isa baseRelation;
-    }
+    },
     then {
     	$u isa derivedEntity;
     };

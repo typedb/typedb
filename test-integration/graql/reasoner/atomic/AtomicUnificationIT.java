@@ -113,31 +113,31 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_RelationWithRolesExchanged(){
-        String relation = "{(baseRole1: $x, baseRole2: $y) isa binary;}";
-        String relation2 = "{(baseRole1: $y, baseRole2: $x) isa binary;}";
+        String relation = "{ (baseRole1: $x, baseRole2: $y) isa binary; };";
+        String relation2 = "{ (baseRole1: $y, baseRole2: $x) isa binary; };";
         exactUnification(relation, relation2, true, true, tx);
     }
 
     @Test
     public void testUnification_RelationWithMetaRole(){
-        String relation = "{(baseRole1: $x, role: $y) isa binary;}";
-        String relation2 = "{(baseRole1: $y, role: $x) isa binary;}";
+        String relation = "{ (baseRole1: $x, role: $y) isa binary; };";
+        String relation2 = "{ (baseRole1: $y, role: $x) isa binary; };";
         exactUnification(relation, relation2, true, true, tx);
     }
 
     @Test
     public void testUnification_RelationWithRelationVar(){
-        String relation = "{$x (baseRole1: $r, baseRole2: $z) isa binary;}";
-        String relation2 = "{$r (baseRole1: $x, baseRole2: $y) isa binary;}";
+        String relation = "{ $x (baseRole1: $r, baseRole2: $z) isa binary; };";
+        String relation2 = "{ $r (baseRole1: $x, baseRole2: $y) isa binary; };";
         exactUnification(relation, relation2, true, true, tx);
     }
 
     @Test
     public void testUnification_RelationWithMetaRolesAndIds(){
         Concept instance = tx.execute(Graql.<GetQuery>parse("match $x isa subRoleEntity; get;")).iterator().next().get("x");
-        String relation = "{(role: $x, role: $y) isa binary; $y id '" + instance.id().getValue() + "';}";
-        String relation2 = "{(role: $z, role: $v) isa binary; $z id '" + instance.id().getValue() + "';}";
-        String relation3 = "{(role: $z, role: $v) isa binary; $v id '" + instance.id().getValue() + "';}";
+        String relation = "{ (role: $x, role: $y) isa binary; $y id '" + instance.id().getValue() + "'; };";
+        String relation2 = "{ (role: $z, role: $v) isa binary; $z id '" + instance.id().getValue() + "'; };";
+        String relation3 = "{ (role: $z, role: $v) isa binary; $v id '" + instance.id().getValue() + "'; };";
 
         exactUnification(relation, relation2, true, true, tx);
         exactUnification(relation, relation3, true, true, tx);
@@ -146,12 +146,12 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_BinaryRelationWithRoleHierarchy_ParentWithBaseRoles(){
-        String parentRelation = "{(baseRole1: $x, baseRole2: $y);}";
-        String specialisedRelation = "{(subRole1: $u, anotherSubRole2: $v);}";
-        String specialisedRelation2 = "{(subRole1: $y, anotherSubRole2: $x);}";
-        String specialisedRelation3 = "{(subSubRole1: $u, subSubRole2: $v);}";
-        String specialisedRelation4 = "{(subSubRole1: $y, subSubRole2: $x);}";
-        String specialisedRelation5 = "{(subRole1: $u, anotherSubRole1: $v);}";
+        String parentRelation = "{ (baseRole1: $x, baseRole2: $y); };";
+        String specialisedRelation = "{ (subRole1: $u, anotherSubRole2: $v); };";
+        String specialisedRelation2 = "{ (subRole1: $y, anotherSubRole2: $x); };";
+        String specialisedRelation3 = "{ (subSubRole1: $u, subSubRole2: $v); };";
+        String specialisedRelation4 = "{ (subSubRole1: $y, subSubRole2: $x); };";
+        String specialisedRelation5 = "{ (subRole1: $u, anotherSubRole1: $v); };";
 
         exactUnification(parentRelation, specialisedRelation, false, false, tx);
         exactUnification(parentRelation, specialisedRelation2, false, false, tx);
@@ -162,13 +162,13 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_BinaryRelationWithRoleHierarchy_ParentWithSubRoles(){
-        String parentRelation = "{(subRole1: $x, subRole2: $y);}";
-        String specialisedRelation = "{(subRole1: $u, subSubRole2: $v);}";
-        String specialisedRelation2 = "{(subRole1: $y, subSubRole2: $x);}";
-        String specialisedRelation3 = "{(subSubRole1: $u, subSubRole2: $v);}";
-        String specialisedRelation4 = "{(subSubRole1: $y, subSubRole2: $x);}";
-        String specialisedRelation5 = "{(subSubRole1: $u, baseRole3: $v);}";
-        String specialisedRelation6 = "{(baseRole1: $u, baseRole2: $v);}";
+        String parentRelation = "{ (subRole1: $x, subRole2: $y); };";
+        String specialisedRelation = "{ (subRole1: $u, subSubRole2: $v); };";
+        String specialisedRelation2 = "{ (subRole1: $y, subSubRole2: $x); };";
+        String specialisedRelation3 = "{ (subSubRole1: $u, subSubRole2: $v); };";
+        String specialisedRelation4 = "{ (subSubRole1: $y, subSubRole2: $x); };";
+        String specialisedRelation5 = "{ (subSubRole1: $u, baseRole3: $v); };";
+        String specialisedRelation6 = "{ (baseRole1: $u, baseRole2: $v); };";
 
         exactUnification(parentRelation, specialisedRelation, false, false, tx);
         exactUnification(parentRelation, specialisedRelation2, false, false, tx);
@@ -180,12 +180,12 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles(){
-        String parentRelation = "{(baseRole1: $x, baseRole2: $y, baseRole3: $z);}";
-        String specialisedRelation = "{(baseRole1: $u, subRole2: $v, subSubRole3: $q);}";
-        String specialisedRelation2 = "{(baseRole1: $z, subRole2: $y, subSubRole3: $x);}";
-        String specialisedRelation3 = "{(subRole1: $u, subRole2: $v, subSubRole3: $q);}";
-        String specialisedRelation4 = "{(subRole1: $y, subRole2: $z, subSubRole3: $x);}";
-        String specialisedRelation5 = "{(subRole1: $u, subRole1: $v, subSubRole3: $q);}";
+        String parentRelation = "{ (baseRole1: $x, baseRole2: $y, baseRole3: $z); };";
+        String specialisedRelation = "{ (baseRole1: $u, subRole2: $v, subSubRole3: $q); };";
+        String specialisedRelation2 = "{ (baseRole1: $z, subRole2: $y, subSubRole3: $x); };";
+        String specialisedRelation3 = "{ (subRole1: $u, subRole2: $v, subSubRole3: $q); };";
+        String specialisedRelation4 = "{ (subRole1: $y, subRole2: $z, subSubRole3: $x); };";
+        String specialisedRelation5 = "{ (subRole1: $u, subRole1: $v, subSubRole3: $q); };";
 
         exactUnification(parentRelation, specialisedRelation, false, true, tx);
         exactUnification(parentRelation, specialisedRelation2, false, true, tx);
@@ -196,13 +196,13 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithSubRoles(){
-        String parentRelation = "{(subRole1: $x, subRole2: $y, subRole3: $z);}";
-        String specialisedRelation = "{(baseRole1: $u, subRole2: $v, subSubRole3: $q);}";
-        String specialisedRelation2 = "{(subRole1: $u, subRole2: $v, subSubRole3: $q);}";
-        String specialisedRelation3 = "{(subRole1: $y, subRole2: $z, subSubRole3: $x);}";
-        String specialisedRelation4 = "{(subSubRole1: $u, subRole2: $v, subSubRole3: $q);}";
-        String specialisedRelation5 = "{(subSubRole1: $y, subRole2: $z, subSubRole3: $x);}";
-        String specialisedRelation6 = "{(subRole1: $u, subRole1: $v, subSubRole3: $q);}";
+        String parentRelation = "{ (subRole1: $x, subRole2: $y, subRole3: $z); };";
+        String specialisedRelation = "{ (baseRole1: $u, subRole2: $v, subSubRole3: $q); };";
+        String specialisedRelation2 = "{ (subRole1: $u, subRole2: $v, subSubRole3: $q); };";
+        String specialisedRelation3 = "{ (subRole1: $y, subRole2: $z, subSubRole3: $x); };";
+        String specialisedRelation4 = "{ (subSubRole1: $u, subRole2: $v, subSubRole3: $q); };";
+        String specialisedRelation5 = "{ (subSubRole1: $y, subRole2: $z, subSubRole3: $x); };";
+        String specialisedRelation6 = "{ (subRole1: $u, subRole1: $v, subSubRole3: $q); };";
 
         nonExistentUnifier(parentRelation, specialisedRelation, tx);
         exactUnification(parentRelation, specialisedRelation2, false, false, tx);
@@ -214,12 +214,12 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles_childrenRepeatRolePlayers(){
-        String parentRelation = "{(baseRole1: $x, baseRole2: $y, baseRole3: $z);}";
-        String specialisedRelation = "{(baseRole1: $u, subRole2: $u, subSubRole3: $q);}";
-        String specialisedRelation2 = "{(baseRole1: $y, subRole2: $y, subSubRole3: $x);}";
-        String specialisedRelation3 = "{(subRole1: $u, subRole2: $u, subSubRole3: $q);}";
-        String specialisedRelation4 = "{(subRole1: $y, subRole2: $y, subSubRole3: $x);}";
-        String specialisedRelation5 = "{(subRole1: $u, subRole1: $u, subSubRole3: $q);}";
+        String parentRelation = "{ (baseRole1: $x, baseRole2: $y, baseRole3: $z); };";
+        String specialisedRelation = "{ (baseRole1: $u, subRole2: $u, subSubRole3: $q); };";
+        String specialisedRelation2 = "{ (baseRole1: $y, subRole2: $y, subSubRole3: $x); };";
+        String specialisedRelation3 = "{ (subRole1: $u, subRole2: $u, subSubRole3: $q); };";
+        String specialisedRelation4 = "{ (subRole1: $y, subRole2: $y, subSubRole3: $x); };";
+        String specialisedRelation5 = "{ (subRole1: $u, subRole1: $u, subSubRole3: $q); };";
 
         exactUnification(parentRelation, specialisedRelation, false, false, tx);
         exactUnification(parentRelation, specialisedRelation2, false, false, tx);
@@ -230,12 +230,12 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles_parentRepeatRolePlayers(){
-        String parentRelation = "{(baseRole1: $x, baseRole2: $x, baseRole3: $y);}";
-        String specialisedRelation = "{(baseRole1: $u, subRole2: $v, subSubRole3: $q);}";
-        String specialisedRelation2 = "{(baseRole1: $z, subRole2: $y, subSubRole3: $x);}";
-        String specialisedRelation3 = "{(subRole1: $u, subRole2: $v, subSubRole3: $q);}";
-        String specialisedRelation4 = "{(subRole1: $y, subRole2: $y, subSubRole3: $x);}";
-        String specialisedRelation5 = "{(subRole1: $u, subRole1: $v, subSubRole3: $q);}";
+        String parentRelation = "{ (baseRole1: $x, baseRole2: $x, baseRole3: $y); };";
+        String specialisedRelation = "{ (baseRole1: $u, subRole2: $v, subSubRole3: $q); };";
+        String specialisedRelation2 = "{ (baseRole1: $z, subRole2: $y, subSubRole3: $x); };";
+        String specialisedRelation3 = "{ (subRole1: $u, subRole2: $v, subSubRole3: $q); };";
+        String specialisedRelation4 = "{ (subRole1: $y, subRole2: $y, subSubRole3: $x); };";
+        String specialisedRelation5 = "{ (subRole1: $u, subRole1: $v, subSubRole3: $q); };";
 
         exactUnification(parentRelation, specialisedRelation, false, false, tx);
         exactUnification(parentRelation, specialisedRelation2, false, false, tx);
@@ -246,11 +246,11 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_VariousResourceAtoms(){
-        String resource = "{$x has resource $r;$r 'f';}";
-        String resource2 = "{$r has resource $x;$x 'f';}";
-        String resource3 = "{$r has resource 'f';}";
-        String resource4 = "{$x has resource $y via $r;$y 'f';}";
-        String resource5 = "{$y has resource $r via $x;$r 'f';}";
+        String resource = "{ $x has resource $r;$r 'f'; };";
+        String resource2 = "{ $r has resource $x;$x 'f'; };";
+        String resource3 = "{ $r has resource 'f'; };";
+        String resource4 = "{ $x has resource $y via $r;$y 'f'; };";
+        String resource5 = "{ $y has resource $r via $x;$r 'f'; };";
         exactUnification(resource, resource2, true, true, tx);
         exactUnification(resource, resource3, true, true, tx);
         exactUnification(resource2, resource3, true, true, tx);
@@ -259,10 +259,10 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_VariousTypeAtoms(){
-        String type = "{$x isa baseRoleEntity;}";
-        String type2 = "{$y isa baseRoleEntity;}";
-        String userDefinedType = "{$y isa $x;$x label 'baseRoleEntity';}";
-        String userDefinedType2 = "{$u isa $v;$v label 'baseRoleEntity';}";
+        String type = "{ $x isa baseRoleEntity; };";
+        String type2 = "{ $y isa baseRoleEntity; };";
+        String userDefinedType = "{ $y isa $x;$x type 'baseRoleEntity'; };";
+        String userDefinedType2 = "{ $u isa $v;$v type 'baseRoleEntity'; };";
 
         exactUnification(type, type2, true, true, tx);
         exactUnification(userDefinedType, userDefinedType2, true, true, tx);
@@ -272,9 +272,9 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_ParentHasFewerRelationPlayers() {
-        String childString = "{(subRole1: $y, subRole2: $x) isa binary;}";
-        String parentString = "{(subRole1: $x) isa binary;}";
-        String parentString2 = "{(subRole2: $y) isa binary;}";
+        String childString = "{ (subRole1: $y, subRole2: $x) isa binary; };";
+        String parentString = "{ (subRole1: $x) isa binary; };";
+        String parentString2 = "{ (subRole2: $y) isa binary; };";
 
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction(childString, tx), tx);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction(parentString, tx), tx);
@@ -311,15 +311,15 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_ResourceWithIndirectValuePredicate(){
-        String resource = "{$x has resource $r;$r == 'f';}";
-        String resource2 = "{$r has resource $x;$x == 'f';}";
-        String resource3 = "{$r has resource 'f';}";
+        String resource = "{ $x has resource $r;$r == 'f'; };";
+        String resource2 = "{ $r has resource $x;$x == 'f'; };";
+        String resource3 = "{ $r has resource 'f'; };";
 
         ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction(resource, tx), tx);
         ReasonerAtomicQuery resourceQuery2 = ReasonerQueries.atomic(conjunction(resource2, tx), tx);
         ReasonerAtomicQuery resourceQuery3 = ReasonerQueries.atomic(conjunction(resource3, tx), tx);
 
-        String type = "{$x isa resource;$x id '" + tx.execute(resourceQuery.getQuery(), false).iterator().next().get("r").id().getValue()  + "';}";
+        String type = "{ $x isa resource;$x id '" + tx.execute(resourceQuery.getQuery(), false).iterator().next().get("r").id().getValue()  + "'; };";
         ReasonerAtomicQuery typeQuery = ReasonerQueries.atomic(conjunction(type, tx), tx);
         Atom typeAtom = typeQuery.getAtom();
 
@@ -343,11 +343,11 @@ public class AtomicUnificationIT {
 
     @Test
     public void testRewriteAndUnification(){
-        String parentString = "{$r (subRole1: $x) isa binary;}";
+        String parentString = "{ $r (subRole1: $x) isa binary; };";
         Atom parentAtom = ReasonerQueries.atomic(conjunction(parentString, tx), tx).getAtom();
         Variable parentVarName = parentAtom.getVarName();
 
-        String childPatternString = "(subRole1: $x, subRole2: $y) isa binary";
+        String childPatternString = "(subRole1: $x, subRole2: $y) isa binary;";
         InferenceRule testRule = new InferenceRule(
                 tx.putRule("Checking Rewrite & Unification",
                            Graql.parsePattern(childPatternString),
@@ -375,8 +375,8 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_MatchAllParentAtom(){
-        String parentString = "{$r($a, $x);}";
-        String childString = "{$rel (baseRole1: $z, baseRole2: $b) isa binary;}";
+        String parentString = "{ $r($a, $x); };";
+        String childString = "{ $rel (baseRole1: $z, baseRole2: $b) isa binary; };";
         Atom parent = ReasonerQueries.atomic(conjunction(parentString, tx), tx).getAtom();
         Atom child = ReasonerQueries.atomic(conjunction(childString, tx), tx).getAtom();
 
@@ -408,14 +408,14 @@ public class AtomicUnificationIT {
         ReasonerAtomicQuery childQuery = ReasonerQueries
                 .atomic(conjunction(
                         "{($r1: $x1, $r2: $x2) isa binary;" +
-                                "$r1 label 'subRole1';" +
-                                "$r2 label 'subSubRole2';}"
+                                "$r1 type 'subRole1';" +
+                                "$r2 type 'subSubRole2'; };"
                         , tx), tx);
         ReasonerAtomicQuery parentQuery = ReasonerQueries
                 .atomic(conjunction(
-                        "{($R1: $x, $R2: $y) isa binary;" +
-                                "$R1 label 'subRole1';" +
-                                "$R2 label 'subSubRole2';}"
+                        "{ ($R1: $x, $R2: $y) isa binary;" +
+                                "$R1 type 'subRole1';" +
+                                "$R2 type 'subSubRole2'; };"
                         , tx), tx);
         exactUnification(parentQuery, childQuery, true, true);
         exactUnification(baseQuery, parentQuery, true, true);
@@ -431,15 +431,15 @@ public class AtomicUnificationIT {
         ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Graql.and(Sets.newHashSet(basePattern)), tx);
         ReasonerAtomicQuery childQuery = ReasonerQueries
                 .atomic(conjunction(
-                        "{($r1: $x1, $r2: $x2);" +
-                                "$r1 label 'subRole1';" +
-                                "$r2 label 'subSubRole2';}"
+                        "{ ($r1: $x1, $r2: $x2); " +
+                                "$r1 type 'subRole1';" +
+                                "$r2 type 'subSubRole2'; };"
                         , tx), tx);
         ReasonerAtomicQuery parentQuery = ReasonerQueries
                 .atomic(conjunction(
-                        "{($R1: $x, $R2: $y);" +
-                                "$R1 label 'subRole1';" +
-                                "$R2 label 'subSubRole2';}"
+                        "{ ($R1: $x, $R2: $y); " +
+                                "$R1 type 'subRole1';" +
+                                "$R2 type 'subSubRole2'; };"
                         , tx), tx);
         exactUnification(parentQuery, childQuery, true, true);
         exactUnification(baseQuery, parentQuery, true, true);
