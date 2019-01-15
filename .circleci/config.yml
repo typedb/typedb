@@ -349,8 +349,20 @@ jobs:
       - run: echo approve-release succeeded.
   deploy-github:
     machine: true
+    working_directory: ~/grakn
     steps:
-      - run: echo deploy-github succeeded.
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - run:
+          name: "Publish Draft Release on GitHub"
+          command: |
+            bazel build //:distribution
+            mv bazel-genfiles/grakn-core-all.zip bazel-genfiles/grakn-core-$(cat "VERSION").zip
+            wget https://github.com/tcnksm/ghr/releases/download/v0.12.0/ghr_v0.12.0_linux_386.tar.gz
+            tar xvf ghr_v0.12.0_linux_386.tar.gz
+            VERSION_TAG="v"$(cat "VERSION")
+            ghr_v0.12.0_linux_386/ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -draft ${VERSION_TAG} bazel-genfiles/grakn-core-$(cat "VERSION").zip
   deploy-maven:
     machine: true
     steps:
@@ -403,136 +415,137 @@ workflows:
   version: 2
   grakn-core-continuous-release:
     jobs:
-      - tests
-      - build:
-          requires:
-            - tests
-      - client-java:
-          requires:
-            - tests
-      - client-nodejs:
-          requires:
-            - tests
-      - client-python:
-          requires:
-            - tests
-      - common:
-          requires:
-            - tests
-      - console:
-          requires:
-            - tests
-      - graql:
-          requires:
-            - tests
-      - server:
-          requires:
-            - tests
-      - workbase:
-          requires:
-            - tests
-      - test-integration:
-          requires:
-            - tests
-      - test-integration-reasoner:
-          requires:
-            - tests
-      - test-integration-reasoner-general:
-          requires:
-            - tests
-      - test-integration-reasoner-components:
-          requires:
-            - tests
-      - test-integration-analytics:
-          requires:
-            - tests
-      - test-end-to-end:
-          requires:
-            - tests
-      - distributions:
-          requires:
-            - build
-            - client-java
-            - client-nodejs
-            - client-python
-            - common
-            - console
-            - graql
-            - server
-            - workbase
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-reasoner-general
-            - test-integration-reasoner-components
-            - test-integration-analytics
-            - test-end-to-end
-      - dist-mac:
-          requires:
-            - distributions
-      - dist-ubuntu:
-          requires:
-            - distributions
-      # - dist-centos:
+      - deploy-github
+      # - tests
+      # - build:
+      #     requires:
+      #       - tests
+      # - client-java:
+      #     requires:
+      #       - tests
+      # - client-nodejs:
+      #     requires:
+      #       - tests
+      # - client-python:
+      #     requires:
+      #       - tests
+      # - common:
+      #     requires:
+      #       - tests
+      # - console:
+      #     requires:
+      #       - tests
+      # - graql:
+      #     requires:
+      #       - tests
+      # - server:
+      #     requires:
+      #       - tests
+      # - workbase:
+      #     requires:
+      #       - tests
+      # - test-integration:
+      #     requires:
+      #       - tests
+      # - test-integration-reasoner:
+      #     requires:
+      #       - tests
+      # - test-integration-reasoner-general:
+      #     requires:
+      #       - tests
+      # - test-integration-reasoner-components:
+      #     requires:
+      #       - tests
+      # - test-integration-analytics:
+      #     requires:
+      #       - tests
+      # - test-end-to-end:
+      #     requires:
+      #       - tests
+      # - distributions:
+      #     requires:
+      #       - build
+      #       - client-java
+      #       - client-nodejs
+      #       - client-python
+      #       - common
+      #       - console
+      #       - graql
+      #       - server
+      #       - workbase
+      #       - test-integration
+      #       - test-integration-reasoner
+      #       - test-integration-reasoner-general
+      #       - test-integration-reasoner-components
+      #       - test-integration-analytics
+      #       - test-end-to-end
+      # - dist-mac:
       #     requires:
       #       - distributions
-      - dist-fedora:
-          requires:
-            - distributions
-      - approve-deploy-github:
-          type: approval
-          requires:
-            - dist-mac
-            - dist-ubuntu
-            - dist-fedora
-      - deploy-github:
-          requires:
-            - approve-deploy-github
-      - approve-deploy-all:
-          type: approval
-          requires:
-            - deploy-github
-      - deploy-maven:
-          requires:
-            - approve-deploy-all
-      - deploy-npm:
-          requires:
-            - approve-deploy-all
-      - deploy-pypi:
-          requires:
-            - approve-deploy-all
-      - deploy-deb:
-          requires:
-            - approve-deploy-all
-      - deploy-rpm:
-          requires:
-            - approve-deploy-all
-      - deploy-brew:
-          requires:
-            - approve-deploy-all
-      - deploy-workbase-mac:
-          requires:
-            - approve-deploy-all
-      - deploy-workbase-linux:
-          requires:
-            - approve-deploy-all
-      - deploy-workbase-windows:
-          requires:
-            - approve-deploy-all
-      - git-tag-release:
-          requires:
-            - deploy-maven
-            - deploy-npm
-            - deploy-pypi
-            - deploy-deb
-            - deploy-rpm
-            - deploy-brew
-            - deploy-workbase-mac
-            - deploy-workbase-linux
-            - deploy-workbase-windows
-      - approve-docs-merge:
-          type: approval
-          requires:
-            - git-tag-release
-      - docs-merge-dev-to-master:
-          requires:
-            - approve-docs-merge
+      # - dist-ubuntu:
+      #     requires:
+      #       - distributions
+      # # - dist-centos:
+      # #     requires:
+      # #       - distributions
+      # - dist-fedora:
+      #     requires:
+      #       - distributions
+      # - approve-deploy-github:
+      #     type: approval
+      #     requires:
+      #       - dist-mac
+      #       - dist-ubuntu
+      #       - dist-fedora
+      # - deploy-github:
+      #     requires:
+      #       - approve-deploy-github
+      # - approve-deploy-all:
+      #     type: approval
+      #     requires:
+      #       - deploy-github
+      # - deploy-maven:
+      #     requires:
+      #       - approve-deploy-all
+      # - deploy-npm:
+      #     requires:
+      #       - approve-deploy-all
+      # - deploy-pypi:
+      #     requires:
+      #       - approve-deploy-all
+      # - deploy-deb:
+      #     requires:
+      #       - approve-deploy-all
+      # - deploy-rpm:
+      #     requires:
+      #       - approve-deploy-all
+      # - deploy-brew:
+      #     requires:
+      #       - approve-deploy-all
+      # - deploy-workbase-mac:
+      #     requires:
+      #       - approve-deploy-all
+      # - deploy-workbase-linux:
+      #     requires:
+      #       - approve-deploy-all
+      # - deploy-workbase-windows:
+      #     requires:
+      #       - approve-deploy-all
+      # - git-tag-release:
+      #     requires:
+      #       - deploy-maven
+      #       - deploy-npm
+      #       - deploy-pypi
+      #       - deploy-deb
+      #       - deploy-rpm
+      #       - deploy-brew
+      #       - deploy-workbase-mac
+      #       - deploy-workbase-linux
+      #       - deploy-workbase-windows
+      # - approve-docs-merge:
+      #     type: approval
+      #     requires:
+      #       - git-tag-release
+      # - docs-merge-dev-to-master:
+      #     requires:
+      #       - approve-docs-merge
