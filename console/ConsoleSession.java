@@ -194,6 +194,7 @@ public class ConsoleSession implements AutoCloseable {
                 } else {
                     printErr.println("Error: " + e.getClass().getName());
                 }
+                printErr.println("All uncommitted data is cleared");
                 reopenTransaction();
             } else {
                 throw e;
@@ -212,6 +213,7 @@ public class ConsoleSession implements AutoCloseable {
             tx.commit();
         } catch (RuntimeException e) {
             printErr.println(e.getMessage());
+            printErr.println("All uncommitted data is cleared");
         } finally {
             reopenTransaction();
         }
