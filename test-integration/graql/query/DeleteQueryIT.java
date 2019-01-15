@@ -227,7 +227,7 @@ public class DeleteQueryIT {
     @Test
     public void whenDeletingAVariableNotInTheQuery_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y));
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y.var()));
         tx.execute(Graql.match(x.isa("movie")).delete(y.var()));
     }
 
