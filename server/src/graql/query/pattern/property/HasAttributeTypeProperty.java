@@ -53,6 +53,7 @@ public class HasAttributeTypeProperty extends VarProperty {
     private final boolean isKey;
 
     public HasAttributeTypeProperty(Statement attributeType, boolean isKey) {
+        // TODO: this may the cause of issue #4664
         Label resourceLabel = attributeType.getTypeLabel().orElseThrow(
                 () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType)
         );
