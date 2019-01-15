@@ -66,10 +66,14 @@ public interface Pattern {
     Disjunction<Conjunction<Pattern>> getNegationDNF();
 
     /**
-     * @return true if this pattern contains only positive patterns
+     * @return true if this pattern corresponds to a negation pattern
      */
     @CheckReturnValue
-    default boolean isPositive(){
-        return true;
-    }
+    default boolean isNegation(){ return false; }
+
+    /**
+     * @return this Pattern as a Negation, if it is one.
+     */
+    @CheckReturnValue
+    default Negation<?> asNegation(){ throw new UnsupportedOperationException(); }
 }

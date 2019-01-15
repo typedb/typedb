@@ -58,7 +58,7 @@ public class CompositeQuery implements ReasonerQuery {
     CompositeQuery(Conjunction<Pattern> pattern, TransactionOLTP tx) {
         Conjunction<Statement> positiveConj = Graql.and(
                 pattern.getPatterns().stream()
-                        .filter(Pattern::isPositive)
+                        .filter(p -> !p.isNegation())
                         .flatMap(p -> p.statements().stream())
                         .collect(Collectors.toSet())
         );
@@ -101,9 +101,9 @@ public class CompositeQuery implements ReasonerQuery {
 
     private Set<Conjunction<Pattern>> complementPattern(Conjunction<Pattern> pattern){
         return pattern.getPatterns().stream()
-                .filter(p -> !p.isPositive())
-                .map(p -> (Negation) p)
-                .map((Function<Negation, Pattern>) Negation::getPattern)
+                .filter(Pattern::isNegation)
+                .map(Pattern::asNegation)
+                .map(Negation::getPattern)
                 .map(p -> p.getNegationDNF().getPatterns().iterator().next())
                 .collect(Collectors.toSet());
     }

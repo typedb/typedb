@@ -702,11 +702,7 @@ public class Statement implements Pattern {
             builder.append(property.toString());
         }
 
-        if (isPositive()) {
-            return builder.toString();
-        } else {
-            return "NOT " + builder.toString();
-        }
+        return builder.toString();
     }
 
     @Override

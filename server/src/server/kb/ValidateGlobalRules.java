@@ -279,7 +279,7 @@ class ValidateGlobalRules {
     static Set<String> validateRuleIsValidHornClause(Transaction graph, Rule rule){
         Set<String> errors = new HashSet<>();
         /*
-        if (!combinedRuleQuery(graph, rule).isPositive()){
+        if (!combinedRuleQuery(graph, rule).isNegation()){
             errors.add(ErrorMessage.VALIDATION_RULE_NEGATIVE_STATEMENTS_UNSUPPORTED_IN_RULES.getMessage(rule.label()));
         }
         */
