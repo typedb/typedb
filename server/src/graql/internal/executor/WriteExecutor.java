@@ -377,6 +377,6 @@ public class WriteExecutor {
             }
         }
 
-        return new Statement(var, propertiesOfVar);
+        return Statement.create(var, propertiesOfVar);
     }
 }

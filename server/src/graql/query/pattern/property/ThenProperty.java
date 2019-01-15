@@ -21,6 +21,7 @@ package grakn.core.graql.query.pattern.property;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.statement.StatementType;
 
 import java.util.stream.Collectors;
 
@@ -73,6 +74,11 @@ public class ThenProperty extends VarProperty {
     @Override
     public boolean isUnique() {
         return true;
+    }
+
+    @Override
+    public Class statementClass() {
+        return StatementType.class;
     }
 
     @Override

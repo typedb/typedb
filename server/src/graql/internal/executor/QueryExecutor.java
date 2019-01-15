@@ -185,6 +185,8 @@ public class QueryExecutor {
                 executors.addAll(PropertyExecutor.definable(statement.var(), property).defineExecutors());
             }
         }
+
+        System.out.println("xxxx> " + query.toString());
         return WriteExecutor.create(transaction, executors.build()).write(new ConceptMap());
     }
 

@@ -320,7 +320,8 @@ public class ConceptBuilder {
         if (value == null) value = defaultValue;
 
         if (value == null) {
-            throw GraqlQueryException.insertNoExpectedProperty(param.name(), executor.printableRepresentation(var));
+            Statement owner = executor.printableRepresentation(var);
+            throw GraqlQueryException.insertNoExpectedProperty(param.name(), owner);
         }
 
         return value;

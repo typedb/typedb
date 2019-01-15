@@ -58,7 +58,7 @@ public class TypeExecutor implements PropertyExecutor.Referrable {
     }
 
     @Override
-    public Referrer referencer() {
+    public Referrer referrer() {
         return new TypeReferrer();
     }
 

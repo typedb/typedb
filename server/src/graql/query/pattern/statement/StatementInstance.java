@@ -122,7 +122,7 @@ public abstract class StatementInstance extends Statement {
             this(statement.var(), statement.properties(), statement.sign());
         }
 
-        private StatementThing(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
+        StatementThing(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
             super(var, properties, sign);
         }
 
@@ -191,7 +191,7 @@ public abstract class StatementInstance extends Statement {
             this(statement.var(), statement.properties(), statement.sign());
         }
 
-        private StatementRelation(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
+        StatementRelation(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
             super(var, properties, sign);
         }
 
@@ -299,7 +299,7 @@ public abstract class StatementInstance extends Statement {
             this(statement.var(), statement.properties(), statement.sign());
         }
 
-        private StatementAttribute(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
+        StatementAttribute(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
             super(var, properties, sign);
         }
 

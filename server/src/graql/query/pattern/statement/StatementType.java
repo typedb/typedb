@@ -34,7 +34,7 @@ public class StatementType extends Statement {
         this(statement.var(), statement.properties(), statement.sign());
     }
 
-    private StatementType(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
+    StatementType(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
         super(var, properties, sign);
     }
 
@@ -60,7 +60,7 @@ public class StatementType extends Statement {
         return new StatementType(this.var(), newProperties, this.sign());
     }
 
-    @Override @SuppressWarnings("Duplicates")
+    @Override
     public String toString() {
         Collection<Statement> innerStatements = innerStatements();
         innerStatements.remove(this);

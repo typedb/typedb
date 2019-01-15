@@ -59,20 +59,20 @@ public interface PropertyExecutor {
 
         @Override
         default Set<Writer> defineExecutors() {
-            return ImmutableSet.of(referencer());
+            return ImmutableSet.of(referrer());
         }
 
         @Override
         default Set<Writer> undefineExecutors() {
-            return ImmutableSet.of(referencer());
+            return ImmutableSet.of(referrer());
         }
 
         @Override
         default Set<Writer> insertExecutors() {
-            return ImmutableSet.of(referencer());
+            return ImmutableSet.of(referrer());
         }
 
-        Referrer referencer();
+        Referrer referrer();
     }
 
     interface Definable extends PropertyExecutor {

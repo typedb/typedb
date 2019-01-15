@@ -71,6 +71,9 @@ public abstract class VarProperty {
         return statements();
     }
 
+    @CheckReturnValue // TODO: This should be temporary until we make statements to be strict typing
+    public abstract Class statementClass();
+
     /**
      * Whether this property will uniquely identify a concept in the graph, if one exists.
      * This is used for recognising equivalent variables in insert queries.

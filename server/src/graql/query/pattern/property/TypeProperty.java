@@ -19,6 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.statement.StatementType;
 import grakn.core.graql.util.StringUtil;
 
 /**
@@ -54,6 +55,11 @@ public class TypeProperty extends VarProperty {
     @Override
     public boolean isUnique() {
         return true;
+    }
+
+    @Override
+    public Class statementClass() {
+        return StatementType.class;
     }
 
     @Override

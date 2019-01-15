@@ -139,6 +139,50 @@ public class Statement implements Pattern {
         this.sign = sign;
     }
 
+    public static Statement create(Variable var, LinkedHashSet<VarProperty> properties) {
+        return create(var, properties, Sign.POSITIVE);
+    }
+
+    // TODO: This may not be needed once we have strict typing for statements
+    public static Statement create(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
+        Set<Class> statementClasses = properties.stream().map(VarProperty::statementClass).collect(toSet());
+
+        if (statementClasses.size() > 2) {
+            throw new IllegalStateException("Not allowed to mix Properties for various Type/Instance statements");
+        }
+        if (statementClasses.size() == 2) {
+            if (statementClasses.contains(StatementType.class)) {
+                throw new IllegalStateException("Not allowed to mix Properties for Type and Instance statements");
+            } else if (statementClasses.contains(StatementInstance.class)) {
+                statementClasses.remove(StatementInstance.class);
+                return create(statementClasses.iterator().next(), var, properties, sign);
+            } else {
+                throw new IllegalStateException("Not allowed to mix Properties for different Instance stateents");
+            }
+        } else {
+            return create(statementClasses.iterator().next(), var, properties, sign);
+        }
+    }
+
+    private static Statement create(Class statementClass, Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
+        if (statementClass == StatementType.class) {
+            return new StatementType(var, properties, sign);
+
+        } else if (statementClass == StatementInstance.class
+                || statementClass == StatementThing.class) {
+            return new StatementThing(var, properties, sign);
+
+        } else if (statementClass == StatementRelation.class) {
+            return new StatementRelation(var, properties, sign);
+
+        } else if (statementClass == StatementAttribute.class) {
+            return new StatementAttribute(var, properties, sign);
+
+        } else {
+            throw new IllegalArgumentException("Unrecognised Statement class: " + statementClass.getName());
+        }
+    }
+
     // TYPE STATEMENT PROPERTIES ===============================================
 
     /**
@@ -764,7 +808,7 @@ public class Statement implements Pattern {
 
     @Override // TODO: Remove this method altogether once we make compile time validation more strict
     public String toString() {
-        throw new IllegalStateException("Invalid Statement: with just a Variable and no properties");
+        throw new IllegalStateException("Invalid Statement: with just a Variable [" + var + "] and no properties");
     }
 
     @Override
