@@ -21,7 +21,6 @@ package grakn.core.graql.internal.reasoner;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.CompositeQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import org.slf4j.Logger;

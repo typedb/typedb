@@ -29,7 +29,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * Query state corresponding to a conjunctive query with negated var patterns.
+ * Query state corresponding to a conjunctive query with negated var patterns (CompositeQuery).
  *
  * Q = A ∧ {...} ∧ ¬B ∧ ¬C ∧ {...}
  *
@@ -61,14 +61,13 @@ public class CompositeState extends ConjunctiveState {
     private final ResolutionState baseConjunctionState;
     private boolean visited = false;
 
-    private final CompositeQuery complementQuery;
+    private final Set<CompositeQuery> complements;
 
     public CompositeState(CompositeQuery query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache) {
         super(query.getConjunctiveQuery(), sub, u, parent, subGoals, cache);
         this.baseConjunctionState = getQuery().subGoal(getSubstitution(), getUnifier(), this, getVisitedSubGoals(), getCache());
-        this.complementQuery = query.getComplementQuery();
-        System.out.println("conj Query: " + getQuery());
-        System.out.println("complement Query: " + complementQuery);
+        this.complements = query.getComplementQueries();
+        System.out.println("conj Query: " + query);
     }
 
     @Override
@@ -79,7 +78,9 @@ public class CompositeState extends ConjunctiveState {
         answer.map().entrySet().stream().filter(e -> e.getValue().isAttribute()).forEach(e -> System.out.println(e.getKey() + ": " + e.getValue().asAttribute().value()));
         answer.map().entrySet().stream().filter(e -> e.getValue().isThing()).forEach(e -> System.out.println(e.getKey() + " type: " + e.getValue().asThing().type()));
 
-        boolean isNegationSatistfied = !ReasonerQueries.composite(complementQuery, answer).resolve(getCache()).findFirst().isPresent();
+        boolean isNegationSatistfied = complements.stream()
+                .map(q -> ReasonerQueries.composite(q, answer))
+                .noneMatch(q -> q.resolve(getCache()).findFirst().isPresent());
 
         if (isNegationSatistfied) {
             System.out.println(">>>>>>>>>>>>Negation answer: " + answer);

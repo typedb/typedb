@@ -353,7 +353,6 @@ public class NegationIT {
         }
     }
 
-    @Ignore
     @Test
     public void negateMultipleStatements(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -378,7 +377,6 @@ public class NegationIT {
                             .collect(toSet()),
                     answersWithoutSpecifcTypeAndValue
             );
-
         }
     }
 

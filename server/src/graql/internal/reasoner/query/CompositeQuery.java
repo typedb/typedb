@@ -45,7 +45,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  *
@@ -53,7 +52,7 @@ import javax.annotation.Nullable;
 public class CompositeQuery implements ReasonerQuery {
 
     final private ReasonerQueryImpl conjunctiveQuery;
-    @Nullable final private CompositeQuery complementQuery;
+    final private Set<CompositeQuery> complementQueries;
     final private Transaction tx;
 
     CompositeQuery(Conjunction<Pattern> pattern, TransactionOLTP tx) {
@@ -65,24 +64,25 @@ public class CompositeQuery implements ReasonerQuery {
         );
         this.tx = tx;
         //conjunction of negation patterns
-        Conjunction<Pattern> complementPattern = complementPattern(pattern);
+        Set<Conjunction<Pattern>> complementPattern = complementPattern(pattern);
         this.conjunctiveQuery = new ReasonerQueryImpl(positiveConj, tx);
-        this.complementQuery = !complementPattern.getPatterns().isEmpty()?
-                new CompositeQuery(complementPattern, tx) : null;
+        this.complementQueries = complementPattern.stream()
+                        .map(comp -> new CompositeQuery(comp, tx))
+                        .collect(Collectors.toSet());
     }
 
-    private Conjunction<Pattern> complementPattern(Conjunction<Pattern> pattern){
-        Set<Pattern> complements = pattern.getPatterns().stream()
+    private Set<Conjunction<Pattern>> complementPattern(Conjunction<Pattern> pattern){
+        return pattern.getPatterns().stream()
                 .filter(p -> !p.isPositive())
                 .map(p -> (Negation) p)
                 .map((Function<Negation, Pattern>) Negation::getPattern)
+                .map(p -> p.getNegationDNF().getPatterns().iterator().next())
                 .collect(Collectors.toSet());
-        return Graql.and(complements).getNegationDNF().getPatterns().iterator().next();
     }
 
-    CompositeQuery(ReasonerQueryImpl conj, CompositeQuery neg, Transaction tx) {
+    CompositeQuery(ReasonerQueryImpl conj, Set<CompositeQuery> neg, Transaction tx) {
         this.conjunctiveQuery = conj;
-        this.complementQuery = neg;
+        this.complementQueries = neg;
         this.tx = tx;
     }
 
@@ -93,7 +93,7 @@ public class CompositeQuery implements ReasonerQuery {
     CompositeQuery withSubstitution(ConceptMap sub){
         return new CompositeQuery(
                 getConjunctiveQuery().withSubstitution(sub),
-                getComplementQuery() != null? getComplementQuery().withSubstitution(sub) : null,
+                getComplementQueries().stream().map(q -> q.withSubstitution(sub)).collect(Collectors.toSet()),
                 tx()
         );
     }
@@ -102,12 +102,18 @@ public class CompositeQuery implements ReasonerQuery {
         return conjunctiveQuery;
     }
 
-    @Nullable public CompositeQuery getComplementQuery() {
-        return complementQuery;
+    public Set<CompositeQuery> getComplementQueries() {
+        return complementQueries;
     }
 
     public boolean isPositive(){
-        return complementQuery == null;
+        return complementQueries.isEmpty();
+    }
+
+    @Override
+    public String toString(){
+        return getConjunctiveQuery().toString() +
+                (getComplementQueries() != null? "\nNOT{\n" + getComplementQueries() + "\n}" : "");
     }
 
     @Override
@@ -122,48 +128,49 @@ public class CompositeQuery implements ReasonerQuery {
     @Override
     public void checkValid() {
         getConjunctiveQuery().checkValid();
-        if (getComplementQuery() != null) getComplementQuery().checkValid();
+        getComplementQueries().forEach(CompositeQuery::checkValid);
     }
 
     @Override
     public Set<Variable> getVarNames() {
         Set<Variable> varNames = getConjunctiveQuery().getVarNames();
-        if (getComplementQuery() != null) varNames.addAll(getComplementQuery().getVarNames());
+        getComplementQueries().stream().flatMap(q -> q.getVarNames().stream()).forEach(varNames::add);
         return varNames;
     }
 
     @Override
     public Set<Atomic> getAtoms() {
         Set<Atomic> atoms = new HashSet<>(getConjunctiveQuery().getAtoms());
-        if (getComplementQuery() != null) atoms.addAll(getComplementQuery().getAtoms());
+        getComplementQueries().stream().flatMap(q -> q.getAtoms().stream()).forEach(atoms::add);
         return atoms;
     }
 
     @Override
     public Conjunction<Pattern> getPattern() {
         Set<Pattern> pattern = Sets.newHashSet(getConjunctiveQuery().getPattern());
-        if (getComplementQuery() != null) pattern.add(getComplementQuery().getPattern());
+         getComplementQueries().stream().map(CompositeQuery::getPattern).forEach(pattern::add);
         return Graql.and(pattern);
     }
 
     @Override
     public ConceptMap getSubstitution() {
         ConceptMap sub = getConjunctiveQuery().getSubstitution();
-        if (getComplementQuery() != null) sub = sub.merge(getComplementQuery().getSubstitution());
+        for (CompositeQuery comp : getComplementQueries()) {
+            sub = sub.merge(comp.getSubstitution());
+        }
         return sub;
     }
 
     @Override
     public Set<String> validateOntologically() {
         Set<String> validation = getConjunctiveQuery().validateOntologically();
-        if (getComplementQuery() != null) validation.addAll(getComplementQuery().validateOntologically());
+        getComplementQueries().stream().map(CompositeQuery::validateOntologically).forEach(validation::addAll);
         return validation;
     }
 
     @Override
     public boolean isRuleResolvable() {
-        return getConjunctiveQuery().isRuleResolvable() ||
-                (getComplementQuery() != null && getComplementQuery().isRuleResolvable());
+        return getConjunctiveQuery().isRuleResolvable() || getComplementQueries().stream().anyMatch(CompositeQuery::isRuleResolvable);
     }
 
     @Override
