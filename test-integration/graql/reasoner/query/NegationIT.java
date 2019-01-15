@@ -75,9 +75,6 @@ public class NegationIT {
         negationSession.close();
     }
 
-
-    //TODO
-    @Ignore
     @Test (expected = IllegalStateException.class)
     public void whenNegatingSinglePattern_exceptionIsThrown () {
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -90,7 +87,6 @@ public class NegationIT {
                             "get;"
             ));
         }
-
     }
 
     @Test

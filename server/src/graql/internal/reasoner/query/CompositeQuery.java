@@ -38,22 +38,33 @@ import grakn.core.graql.query.pattern.Negation;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Statement;
 import grakn.core.graql.query.pattern.Variable;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ *
+ * A class representing a composite query: a conjunctive query containing a positive and negative part:
+ *
+ * For a conjunctive query Q := P, ¬R1, ¬R2, ... ¬Ri
+ *
+ * the corresponding composite query is:
+ *
+ * CQ : [ P, {R1, R2, ... Ri} ]
+ *
+ * The positive part P is defined by a conjunctive query.
+ * The negative {R1, R2, ... Ri} part is a set of composite queries (we allow nesting).
+ *
+ * The negative part is stored in terms of the negation complement - hence all stored queries are positive.
  *
  */
 public class CompositeQuery implements ReasonerQuery {
 
     final private ReasonerQueryImpl conjunctiveQuery;
     final private Set<CompositeQuery> complementQueries;
-    final private Transaction tx;
+    final private TransactionOLTP tx;
 
     CompositeQuery(Conjunction<Pattern> pattern, TransactionOLTP tx) {
         Conjunction<Statement> positiveConj = Graql.and(
@@ -75,28 +86,15 @@ public class CompositeQuery implements ReasonerQuery {
         }
     }
 
-    CompositeQuery(ReasonerQueryImpl conj, Set<CompositeQuery> neg, Transaction tx) {
+    CompositeQuery(ReasonerQueryImpl conj, Set<CompositeQuery> neg, TransactionOLTP tx) {
         this.conjunctiveQuery = conj;
         this.complementQueries = neg;
         this.tx = tx;
     }
 
-    /**
-     *
-     * @return
-     */
     private boolean isNegationSafe(){
-        /*
-        Set<NegatedAtomic> negated = getAtoms(NegatedAtomic.class).collect(Collectors.toSet());
-        Set<Variable> negatedVars = negated.stream().flatMap(at -> at.getVarNames().stream()).collect(Collectors.toSet());
-        Set<Variable> boundVars = getAtoms().stream().filter(at -> !negated.contains(at)).flatMap(at -> at.getVarNames().stream()).collect(Collectors.toSet());
-
-        negated.stream().map(NegatedAtomic::inner).filter(Atomic::isAtom).map(Atom.class::cast).flatMap(Atom::getInnerPredicates).flatMap(at -> at.getVarNames().stream()).forEach(boundVars::add);
-        getAtoms(Atom.class).flatMap(Atom::getInnerPredicates).flatMap(at -> at.getVarNames().stream()).forEach(boundVars::add);
-        return boundVars.containsAll(negatedVars);
-        */
-
-        return true;
+        return getComplementQueries().isEmpty() ||
+                !Sets.intersection(getConjunctiveQuery().getVarNames(), getComplementQueries().stream().flatMap(q -> q.getVarNames().stream()).collect(Collectors.toSet())).isEmpty();
     }
 
     private Set<Conjunction<Pattern>> complementPattern(Conjunction<Pattern> pattern){
@@ -140,12 +138,18 @@ public class CompositeQuery implements ReasonerQuery {
 
     @Override
     public ReasonerQuery conjunction(ReasonerQuery q) {
-        //TODO
-        return null;
+        return new CompositeQuery(
+                Graql.and(
+                    Sets.union(
+                        this.getPattern().getPatterns(),
+                        q.getPattern().getPatterns()
+                    )),
+                this.tx()
+        );
     }
 
     @Override
-    public Transaction tx() { return tx; }
+    public TransactionOLTP tx() { return tx; }
 
     @Override
     public void checkValid() {
@@ -170,7 +174,7 @@ public class CompositeQuery implements ReasonerQuery {
     @Override
     public Conjunction<Pattern> getPattern() {
         Set<Pattern> pattern = Sets.newHashSet(getConjunctiveQuery().getPattern());
-         getComplementQueries().stream().map(CompositeQuery::getPattern).forEach(pattern::add);
+        getComplementQueries().stream().map(CompositeQuery::getPattern).forEach(pattern::add);
         return Graql.and(pattern);
     }
 

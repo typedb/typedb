@@ -49,10 +49,8 @@ public class Negation<T extends Pattern> implements Pattern {
 
     @Override
     public Disjunction<Conjunction<Pattern>> getNegationDNF() {
-        return pattern.isNegation()?
-                pattern.asNegation().getPattern().getNegationDNF() :
-                Graql.or(Collections.singleton(Graql.and(Collections.singleton(this))));
-
+        if(pattern.isNegation()) return pattern.asNegation().getPattern().getNegationDNF();
+        return Graql.or(Collections.singleton(Graql.and(Collections.singleton(this))));
     }
 
     @Override

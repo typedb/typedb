@@ -29,7 +29,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * Query state corresponding to a conjunctive query with negated var patterns (CompositeQuery).
+ * Query state corresponding to a conjunctive query with negated patterns present(CompositeQuery).
  *
  * Q = A ∧ {...} ∧ ¬B ∧ ¬C ∧ {...}
  *
