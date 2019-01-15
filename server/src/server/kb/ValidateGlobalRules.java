@@ -278,11 +278,9 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleIsValidHornClause(Transaction graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        /*
-        if (!combinedRuleQuery(graph, rule).isNegation()){
+        if (!combinedRuleQuery(graph, rule).isPositive()){
             errors.add(ErrorMessage.VALIDATION_RULE_NEGATIVE_STATEMENTS_UNSUPPORTED_IN_RULES.getMessage(rule.label()));
         }
-        */
         if (rule.when() instanceof Disjunction){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
         }
@@ -293,8 +291,8 @@ class ValidateGlobalRules {
     }
 
     private static ReasonerQuery combinedRuleQuery(Transaction graph, Rule rule){
-        ReasonerQuery bodyQuery = rule.when().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
-        ReasonerQuery headQuery =  rule.then().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
+        ReasonerQuery bodyQuery = rule.when().getNegationDNF().getPatterns().iterator().next().toReasonerQuery(graph);
+        ReasonerQuery headQuery =  rule.then().getNegationDNF().getPatterns().iterator().next().toReasonerQuery(graph);
         return headQuery.conjunction(bodyQuery);
     }
 

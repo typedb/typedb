@@ -21,8 +21,6 @@ package grakn.core.graql.admin;
 import com.google.common.collect.ImmutableMap;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.Variable;
@@ -55,6 +53,11 @@ public interface ReasonerQuery{
     @CheckReturnValue
     Transaction tx();
 
+    /**
+     * @return true if this query contains strictly non-negated atomics
+     */
+    @CheckReturnValue
+    default boolean isPositive(){ return true;}
 
     /**
      * validate the query wrt transaction it is defined in
@@ -76,6 +79,7 @@ public interface ReasonerQuery{
     /**
      * @return the conjunction pattern that represent this query
      */
+    @CheckReturnValue
     Conjunction<Pattern> getPattern();
 
     /**
