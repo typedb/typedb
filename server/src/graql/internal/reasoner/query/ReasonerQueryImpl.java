@@ -92,13 +92,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
                 .build();
-
-        /*
-        //TODO move to CompositeQuery
-        if (!isNegationSafe()){
-            throw new IllegalStateException("Query:\n" + this + "\nis unsafe! Negated pattern variables not bound!");
-        }
-        */
     }
 
     ReasonerQueryImpl(Set<Atomic> atoms, TransactionOLTP tx){
@@ -229,18 +222,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .flatMap(at -> at.validateOntologically().stream())
                 .collect(Collectors.toSet());
     }
-
-    /*
-    private boolean isNegationSafe(){
-        Set<NegatedAtomic> negated = getAtoms(NegatedAtomic.class).collect(Collectors.toSet());
-        Set<Variable> negatedVars = negated.stream().flatMap(at -> at.getVarNames().stream()).collect(Collectors.toSet());
-        Set<Variable> boundVars = getAtoms().stream().filter(at -> !negated.contains(at)).flatMap(at -> at.getVarNames().stream()).collect(Collectors.toSet());
-
-        negated.stream().map(NegatedAtomic::inner).filter(Atomic::isAtom).map(Atom.class::cast).flatMap(Atom::getInnerPredicates).flatMap(at -> at.getVarNames().stream()).forEach(boundVars::add);
-        getAtoms(Atom.class).flatMap(Atom::getInnerPredicates).flatMap(at -> at.getVarNames().stream()).forEach(boundVars::add);
-        return boundVars.containsAll(negatedVars);
-    }
-    */
 
     @Override
     public boolean isRuleResolvable() {
@@ -485,6 +466,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
+    public boolean requiresReiteration() {
+        Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
+        return RuleUtils.subGraphIsCyclical(dependentRules)||
+                RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
+    }
+
+    @Override
     public Stream<ConceptMap> resolve() {
         return resolve(new MultilevelSemanticCache());
     }
@@ -548,18 +536,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new ConceptMap(), parent.getUnifier(), parent, subGoals, cache));
         }
         return Iterators.concat(dbIterator, subGoalIterator);
-    }
-
-
-    /**
-     * reiteration might be required if rule graph contains loops with negative flux
-     * or there exists a rule which head satisfies body
-     * @return true if because of the rule graph form, the resolution of this query may require reiteration
-     */
-    public boolean requiresReiteration() {
-        Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
-        return RuleUtils.subGraphIsCyclical(dependentRules)||
-            RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
     }
 
     /**

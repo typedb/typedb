@@ -56,7 +56,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     public ResolutionIterator(CompositeQuery q, MultilevelSemanticCache cache){
         this.query = q;
-        this.reiterationRequired = true; //q.requiresReiteration();
+        this.reiterationRequired = q.requiresReiteration();
         this.cache = cache;
         states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, new HashSet<>(), cache));
     }

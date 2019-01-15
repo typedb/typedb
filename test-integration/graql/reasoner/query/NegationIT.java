@@ -397,15 +397,33 @@ public class NegationIT {
         }
     }
 
-    /*
-    //TODO
     @Test
     public void allRecipesThatDoNotContainAllergens(){
         try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
+            Set<ConceptMap> allRecipes = tx.stream(Graql.<GetQuery>parse("match $r isa recipe;get;")).collect(Collectors.toSet());
+            Set<ConceptMap> recipesContainingAllergens = tx.stream(
+                    Graql.<GetQuery>parse("match " +
+                            "$r isa recipe;" +
+                            "($r, $i) isa requires;" +
+                            "$i isa allergenic-ingredient;" +
+                            "get $r;"
+                    )).collect(Collectors.toSet());
 
+            Set<ConceptMap> recipesWithoutAllergenIngredients = tx.stream(Graql.<GetQuery>parse("match " +
+                    "$r isa recipe;" +
+                    "NOT {" +
+                    "{" +
+                        "$r isa recipe;" +
+                        "($r, $i) isa requires;" +
+                        "$i isa allergenic-ingredient;" +
+                    "}" +
+                    "};" +
+                    "get $r;"
+            )).collect(Collectors.toSet());
+
+            assertEquals(recipesWithoutAllergenIngredients, Sets.difference(allRecipes, recipesContainingAllergens));
         }
     }
-    */
 
     @Test
     public void allRecipesContainingAvailableIngredients(){
@@ -433,6 +451,22 @@ public class NegationIT {
                             "get $r;"
                     ));
             */
+            Set<ConceptMap> recipesWithAllIngredientsAvailableExplicit = tx.stream(Graql.<GetQuery>parse("match " +
+                    "$r isa recipe;" +
+                    "NOT {" +
+                        "{" +
+                            "($r, $i) isa requires;" +
+                            "NOT {" +
+                                "{" +
+                                    "$i isa ingredient;" +
+                                    "($i) isa containes;" +
+                                "}" +
+                            "};" +
+                        "}" +
+                    "};" +
+                    "get $r;"
+            )).collect(Collectors.toSet());
+
             Set<ConceptMap> recipesWithAllIngredientsAvailable = tx.stream(Graql.<GetQuery>parse("match " +
                     "$r isa recipe;" +
                     "NOT {" +
@@ -444,6 +478,8 @@ public class NegationIT {
                     "get $r;"
             )).collect(Collectors.toSet());
 
+            assertTrue(!recipesWithAllIngredientsAvailable.isEmpty());
+            assertEquals(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailable);
             assertEquals(recipesWithAllIngredientsAvailable, Sets.difference(allRecipes, recipesWithUnavailableIngredients));
         }
     }

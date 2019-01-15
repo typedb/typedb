@@ -69,6 +69,34 @@ public class CompositeQuery implements ReasonerQuery {
         this.complementQueries = complementPattern.stream()
                         .map(comp -> new CompositeQuery(comp, tx))
                         .collect(Collectors.toSet());
+
+        if (!isNegationSafe()){
+            throw new IllegalStateException("Query:\n" + this + "\nis unsafe! Negated pattern variables not bound!");
+        }
+    }
+
+    CompositeQuery(ReasonerQueryImpl conj, Set<CompositeQuery> neg, Transaction tx) {
+        this.conjunctiveQuery = conj;
+        this.complementQueries = neg;
+        this.tx = tx;
+    }
+
+    /**
+     *
+     * @return
+     */
+    private boolean isNegationSafe(){
+        /*
+        Set<NegatedAtomic> negated = getAtoms(NegatedAtomic.class).collect(Collectors.toSet());
+        Set<Variable> negatedVars = negated.stream().flatMap(at -> at.getVarNames().stream()).collect(Collectors.toSet());
+        Set<Variable> boundVars = getAtoms().stream().filter(at -> !negated.contains(at)).flatMap(at -> at.getVarNames().stream()).collect(Collectors.toSet());
+
+        negated.stream().map(NegatedAtomic::inner).filter(Atomic::isAtom).map(Atom.class::cast).flatMap(Atom::getInnerPredicates).flatMap(at -> at.getVarNames().stream()).forEach(boundVars::add);
+        getAtoms(Atom.class).flatMap(Atom::getInnerPredicates).flatMap(at -> at.getVarNames().stream()).forEach(boundVars::add);
+        return boundVars.containsAll(negatedVars);
+        */
+
+        return true;
     }
 
     private Set<Conjunction<Pattern>> complementPattern(Conjunction<Pattern> pattern){
@@ -78,12 +106,6 @@ public class CompositeQuery implements ReasonerQuery {
                 .map((Function<Negation, Pattern>) Negation::getPattern)
                 .map(p -> p.getNegationDNF().getPatterns().iterator().next())
                 .collect(Collectors.toSet());
-    }
-
-    CompositeQuery(ReasonerQueryImpl conj, Set<CompositeQuery> neg, Transaction tx) {
-        this.conjunctiveQuery = conj;
-        this.complementQueries = neg;
-        this.tx = tx;
     }
 
     /**
@@ -199,6 +221,11 @@ public class CompositeQuery implements ReasonerQuery {
     @Override
     public Stream<ConceptMap> resolve() {
         return resolve(new MultilevelSemanticCache());
+    }
+
+    @Override
+    public boolean requiresReiteration() {
+        return getConjunctiveQuery().requiresReiteration() || getComplementQueries().stream().anyMatch(CompositeQuery::requiresReiteration);
     }
 
     public Stream<ConceptMap> resolve(MultilevelSemanticCache cache){
