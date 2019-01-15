@@ -297,13 +297,13 @@ public class MovieGraph {
 
     private static void buildRules(Transaction tx) {
         // These rules are totally made up for testing purposes and don't work!
-        Pattern when = Graql.parsePattern("$x has name 'expectation-when'");
-        Pattern then = Graql.parsePattern("$x has name 'expectation-then'");
+        Pattern when = Graql.parsePattern("$x has name 'expectation-when';");
+        Pattern then = Graql.parsePattern("$x has name 'expectation-then';");
 
         tx.putRule("expectation-rule", when, then);
 
-        when = Graql.parsePattern("$x has name 'materialize-when'");
-        then = Graql.parsePattern("$x has name 'materialize-then'");
+        when = Graql.parsePattern("$x has name 'materialize-when';");
+        then = Graql.parsePattern("$x has name 'materialize-then';");
         tx.putRule("materialize-rule", when, then);
     }
 
