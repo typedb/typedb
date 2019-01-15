@@ -40,13 +40,12 @@ import java.util.Set;
  */
 public class ReasonerQueries {
 
-
     public static CompositeQuery composite(Conjunction<Pattern> pattern, TransactionOLTP tx){
-        return new CompositeQuery(pattern, tx);
+        return new CompositeQuery(pattern, tx).inferTypes();
     }
 
     public static CompositeQuery composite(CompositeQuery q, ConceptMap sub){
-        return q.withSubstitution(sub);
+        return q.withSubstitution(sub).inferTypes();
     }
 
     /**

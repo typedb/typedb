@@ -118,6 +118,10 @@ public class CompositeQuery implements ReasonerQuery {
         );
     }
 
+    public CompositeQuery inferTypes() {
+        return new CompositeQuery(getConjunctiveQuery().inferTypes(), getComplementQueries(), this.tx());
+    }
+
     public ReasonerQueryImpl getConjunctiveQuery() {
         return conjunctiveQuery;
     }
