@@ -106,7 +106,6 @@ public class CompositeQuery implements ReasonerQuery {
         return complementQuery;
     }
 
-    @Override
     public boolean isPositive(){
         return complementQuery == null;
     }

@@ -412,19 +412,6 @@ public class NegationIT {
     @Test
     public void allRecipesContainingAvailableIngredients(){
         try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
-
-            /**
-             * Q: recipes with all ingredients being available
-             *
-             * Recipes containing at least one available ingredient:
-             *
-             * available-ingredient-occuring-in-recipe($i) :- R($r), requires($r, $i), contains($i)
-             *
-             * recipe-with-available-ingredient($r) :- R($r), requires($r, $i), contains($i)
-             *
-             * recipe-with-unavailable-ingredient($r) :- R($r), requires($r, $i), ¬available-ingredient-occuring-in-recipe($i)
-             */
-
             Set<ConceptMap> allRecipes = tx.stream(Graql.<GetQuery>parse("match $r isa recipe;get;")).collect(Collectors.toSet());
 
             Set<ConceptMap> recipesWithUnavailableIngredients = tx.stream(

@@ -36,7 +36,6 @@ import grakn.core.graql.internal.reasoner.ResolutionIterator;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
-import grakn.core.graql.internal.reasoner.atom.NegatedAtomic;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -94,9 +93,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
                 .build();
 
+        /*
+        //TODO move to CompositeQuery
         if (!isNegationSafe()){
             throw new IllegalStateException("Query:\n" + this + "\nis unsafe! Negated pattern variables not bound!");
         }
+        */
     }
 
     ReasonerQueryImpl(Set<Atomic> atoms, TransactionOLTP tx){
@@ -228,6 +230,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .collect(Collectors.toSet());
     }
 
+    /*
     private boolean isNegationSafe(){
         Set<NegatedAtomic> negated = getAtoms(NegatedAtomic.class).collect(Collectors.toSet());
         Set<Variable> negatedVars = negated.stream().flatMap(at -> at.getVarNames().stream()).collect(Collectors.toSet());
@@ -237,14 +240,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         getAtoms(Atom.class).flatMap(Atom::getInnerPredicates).flatMap(at -> at.getVarNames().stream()).forEach(boundVars::add);
         return boundVars.containsAll(negatedVars);
     }
+    */
 
     @Override
     public boolean isRuleResolvable() {
         return selectAtoms().anyMatch(Atom::isRuleResolvable);
     }
-
-    @Override
-    public boolean isPositive() { return getAtoms().stream().allMatch(Atomic::isPositive); }
 
     /**
      * @return true if this query contains disconnected atoms that are unbounded
