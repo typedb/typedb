@@ -201,19 +201,17 @@ public class CompositeQuery implements ReasonerQuery {
 
     @Override
     public boolean isTypeRoleCompatible(Variable typedVar, Type parentType) {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public MultiUnifier getMultiUnifier(ReasonerQuery parent) {
-        //TODO throw
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public ImmutableMap<Variable, Type> getVarTypeMap() {
-        //TODO throw
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
