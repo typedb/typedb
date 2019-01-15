@@ -88,7 +88,9 @@ public interface ReasonerQuery{
      * @return stream of atoms of specified type defined in this query
      */
     @CheckReturnValue
-    <T extends Atomic> Stream<T> getAtoms(Class<T> type);
+    default <T extends Atomic> Stream<T> getAtoms(Class<T> type) {
+        return getAtoms().stream().filter(type::isInstance).map(type::cast);
+    }
 
     /**
      * @return (partial) substitution obtained from all id predicates (including internal) in the query

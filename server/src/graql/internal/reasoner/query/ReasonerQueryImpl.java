@@ -292,11 +292,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public Set<Atomic> getAtoms() { return atomSet;}
 
     @Override
-    public <T extends Atomic> Stream<T> getAtoms(Class<T> type) {
-        return getAtoms().stream().filter(type::isInstance).map(type::cast);
-    }
-
-    @Override
     public Set<Variable> getVarNames() {
         Set<Variable> vars = new HashSet<>();
         getAtoms().forEach(atom -> vars.addAll(atom.getVarNames()));
@@ -361,6 +356,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return varTypeMap;
     }
 
+    @Override
     public ImmutableMap<Variable, Type> getVarTypeMap(boolean inferTypes) {
         Set<IsaAtomBase> isas = getAtoms(IsaAtomBase.class).collect(Collectors.toSet());
         return ImmutableMap.copyOf(
@@ -493,7 +489,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     public Stream<ConceptMap> resolve(MultilevelSemanticCache cache){
-        return new ResolutionIterator(new CompositeQuery(this, null), cache).hasStream();
+        return new ResolutionIterator(new CompositeQuery(this, null, tx()), cache).hasStream();
     }
 
     /**

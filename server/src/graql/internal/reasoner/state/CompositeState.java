@@ -18,20 +18,13 @@
 
 package grakn.core.graql.internal.reasoner.state;
 
-import com.google.common.collect.Sets;
-
-import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.reasoner.atom.Atom;
-import grakn.core.graql.internal.reasoner.atom.NegatedAtomic;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -76,12 +69,6 @@ public class CompositeState extends ConjunctiveState {
         this.complementQuery = query.getComplementQuery();
         System.out.println("conj Query: " + getQuery());
         System.out.println("complement Query: " + complementQuery);
-    }
-
-    private static ReasonerQueryImpl complement(Atomic at, ReasonerQueryImpl baseConjQuery){
-        return at.isAtom()?
-                ReasonerQueries.atomic((Atom) at) :
-                ReasonerQueries.create(Sets.union(baseConjQuery.getAtoms(), Sets.newHashSet(at)), baseConjQuery.tx());
     }
 
     @Override
