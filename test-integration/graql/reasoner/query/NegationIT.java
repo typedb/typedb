@@ -398,7 +398,36 @@ public class NegationIT {
     }
 
     @Test
-    public void allRecipesThatDoNotContainAllergens(){
+    public void doubleNegation_recipesContainingAllergens(){
+        try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
+            Set<ConceptMap> recipesContainingAllergens = tx.stream(
+                    Graql.<GetQuery>parse("match " +
+                            "$r isa recipe;" +
+                            "($r, $i) isa requires;" +
+                            "$i isa allergenic-ingredient;" +
+                            "get $r;"
+                    )).collect(Collectors.toSet());
+
+            Set<ConceptMap> doubleNegationEquivalent = tx.stream(Graql.<GetQuery>parse("match " +
+                    "$r isa recipe;" +
+                    "NOT {" +
+                        "NOT {" +
+                            "{" +
+                                "$r isa recipe;" +
+                                "($r, $i) isa requires;" +
+                                "$i isa allergenic-ingredient;" +
+                            "}" +
+                        "}" +
+                    "};" +
+                    "get $r;"
+            )).collect(Collectors.toSet());
+
+            assertEquals(recipesContainingAllergens, doubleNegationEquivalent);
+        }
+    }
+
+    @Test
+    public void negatedConjunction_allRecipesThatDoNotContainAllergens(){
         try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
             Set<ConceptMap> allRecipes = tx.stream(Graql.<GetQuery>parse("match $r isa recipe;get;")).collect(Collectors.toSet());
             Set<ConceptMap> recipesContainingAllergens = tx.stream(

@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.pattern;
 
-import grakn.core.graql.query.Graql;
 import javax.annotation.CheckReturnValue;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -67,21 +66,10 @@ public interface Pattern {
     Disjunction<Conjunction<Pattern>> getNegationDNF();
 
     /**
-     * @return this pattern negated
-     */
-    @CheckReturnValue
-    Pattern negate();
-
-    /**
      * @return true if this pattern contains only positive patterns
      */
     @CheckReturnValue
     default boolean isPositive(){
         return true;
-        /*
-        return getDisjunctiveNormalForm().getPatterns().stream()
-                .flatMap(p -> p.getPatterns().stream())
-                .allMatch(Pattern::isPositive);
-                */
     }
 }

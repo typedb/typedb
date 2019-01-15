@@ -44,22 +44,19 @@ public class Negation<T extends Pattern> implements Pattern {
 
     @Override
     public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
-        return pattern.negate().getDisjunctiveNormalForm();
+        return pattern.getDisjunctiveNormalForm();
     }
 
     @Override
     public Disjunction<Conjunction<Pattern>> getNegationDNF() {
-        return Graql.or(Collections.singleton(Graql.and(Collections.singleton(this))));
+        return pattern.isPositive()?
+                Graql.or(Collections.singleton(Graql.and(Collections.singleton(this)))) :
+                ((Negation) pattern).getPattern().getNegationDNF();
     }
 
     @Override
     public boolean isPositive() {
         return false;
-    }
-
-    @Override
-    public Pattern negate() {
-        return pattern;
     }
 
     @Override

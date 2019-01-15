@@ -18,11 +18,9 @@
 
 package grakn.core.graql.query.pattern;
 
-import com.google.common.collect.HashMultimap;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.property.AbstractProperty;
@@ -46,11 +44,6 @@ import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,6 +54,10 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -78,48 +75,19 @@ import static java.util.stream.Collectors.toSet;
 public class Statement implements Pattern {
 
     protected final Logger LOG = LoggerFactory.getLogger(Statement.class);
-    private final Sign sign;
     private final Variable var;
     private final LinkedHashSet<VarProperty> properties;
     private int hashCode = 0;
-
-    enum Sign {
-        POSITIVE("+"),
-        NEGATIVE("-");
-
-        private final String sign;
-
-        Sign(String sign) {
-            this.sign = sign;
-        }
-
-        @Override
-        public String toString() {
-            return this.sign;
-        }
-    }
 
     public Statement(Variable var) {
         this(var, new LinkedHashSet<>());
     }
 
-    public Statement(Variable var, Statement.Sign sign) {
-        this(var, new LinkedHashSet<>(), sign);
-    }
-
     public Statement(Variable var, List<VarProperty> properties) {
-        this(var, new LinkedHashSet<>(properties), Sign.POSITIVE);
+        this(var, new LinkedHashSet<>(properties));
     }
 
     public Statement(Variable var, LinkedHashSet<VarProperty> properties) {
-        this(var, properties, Sign.POSITIVE);
-    }
-
-    public Statement(Variable var, List<VarProperty> properties, Statement.Sign sign) {
-        this(var, new LinkedHashSet<>(properties), sign);
-    }
-
-    public Statement(Variable var, LinkedHashSet<VarProperty> properties, Statement.Sign sign) {
         if (var == null) {
             throw new NullPointerException("Null var");
         }
@@ -128,10 +96,6 @@ public class Statement implements Pattern {
             throw new NullPointerException("Null properties");
         }
         this.properties = properties;
-        if (sign == null) {
-            throw new NullPointerException("Null sign");
-        }
-        this.sign = sign;
     }
 
     /**
@@ -146,48 +110,11 @@ public class Statement implements Pattern {
         return properties;
     }
 
-    public Sign sign() {
-        return sign;
-    }
-
-    @Override
-    public boolean isPositive() {
-        return sign().equals(Sign.POSITIVE);
-    }
-
-    @Override
-    public Statement negate() {
-        Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
-        return new Statement(var(), properties(), negated);
-    }
-
     @Override
     public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
-        if (isPositive()) {
-            // A disjunction containing only one option
-            Conjunction<Statement> conjunction = Graql.and(Collections.singleton(this));
-            return Graql.or(Collections.singleton(conjunction));
-
-        } else {
-            //TODO should be undefined
-            // Flatten if multiple properties present
-            // TODO this is hacky. Redo when atoms are independent of transactions.
-            HashMultimap<VarProperty, VarProperty> propertyMap = HashMultimap.create();
-            properties().forEach(p -> {
-                if (PropertyExecutor.create(this.var(), p).mappable(this)) {
-                    propertyMap.put(p, p);
-                } else {
-                    getProperties(RelationProperty.class).forEach(rp -> propertyMap.put(rp, p));
-                }
-            });
-
-            Set<Conjunction<Statement>> patterns = propertyMap.asMap().entrySet().stream()
-                    .map(e -> new Statement(var(), new LinkedHashSet<>(e.getValue()), Sign.NEGATIVE))
-                    .map(p -> Graql.and(Collections.singleton(p)))
-                    .collect(Collectors.toSet());
-
-            return Graql.or(patterns);
-        }
+        // A disjunction containing only one option
+        Conjunction<Statement> conjunction = Graql.and(Collections.singleton(this));
+        return Graql.or(Collections.singleton(conjunction));
     }
 
     @Override
@@ -729,14 +656,14 @@ public class Statement implements Pattern {
         Variable name = var();
         LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties);
         newProperties.add(property);
-        return new Statement(name, newProperties, sign());
+        return new Statement(name, newProperties);
     }
 
     private Statement removeProperty(VarProperty property) {
         Variable name = var();
         LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties);
         newProperties.remove(property);
-        return new Statement(name, newProperties, sign());
+        return new Statement(name, newProperties);
     }
 
     @Override
@@ -807,7 +734,6 @@ public class Statement implements Pattern {
             hashCode = properties().hashCode();
             if (var().isUserDefinedName()) hashCode = 31 * hashCode + var().hashCode();
             hashCode = 31 * hashCode + (var().isUserDefinedName() ? 1 : 0);
-            hashCode = 31 * hashCode + (isPositive() ? 1 : 0);
         }
         return hashCode;
     }

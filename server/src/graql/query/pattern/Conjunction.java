@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * A class representing a conjunction (and) of patterns. All inner patterns must match in a query
@@ -93,11 +92,6 @@ public class Conjunction<T extends Pattern> implements Pattern {
                 .map(Conjunction::fromConjunctions)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         return Graql.or(dnf);
-    }
-
-    @Override
-    public Disjunction<? extends Pattern> negate() {
-        return Graql.or(getPatterns().stream().map(Pattern::negate).collect(toSet()));
     }
 
     @Override
