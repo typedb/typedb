@@ -149,8 +149,8 @@ public class Statement implements Pattern {
 
         if (statementClasses.size() > 2) {
             throw new IllegalStateException("Not allowed to mix Properties for various Type/Instance statements");
-        }
-        if (statementClasses.size() == 2) {
+
+        } else if (statementClasses.size() == 2) {
             if (statementClasses.contains(StatementType.class)) {
                 throw new IllegalStateException("Not allowed to mix Properties for Type and Instance statements");
             } else if (statementClasses.contains(StatementInstance.class)) {
@@ -159,8 +159,10 @@ public class Statement implements Pattern {
             } else {
                 throw new IllegalStateException("Not allowed to mix Properties for different Instance stateents");
             }
-        } else {
+        } else if (statementClasses.size() == 1) {
             return create(statementClasses.iterator().next(), var, properties, sign);
+        } else {
+            return new Statement(var, sign);
         }
     }
 

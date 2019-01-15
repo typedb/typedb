@@ -43,8 +43,8 @@ import static java.util.stream.Collectors.joining;
 public abstract class StatementInstance extends Statement {
 
     private static IllegalArgumentException illegalArgumentException(Statement statement, VarProperty varProperty) {
-        String message = "Not allowed to provided Statement Property: [" + varProperty.toString() + "] ";
-        message += "to " + statement.getClass().getName() + ": [" + statement.toString() + "]";
+        String message = "Not allowed to provide Statement Property: [" + varProperty.toString() + "] ";
+        message += "to " + statement.getClass().getSimpleName() + ": [" + statement.toString() + "]";
         throw new IllegalArgumentException(message);
     }
 
