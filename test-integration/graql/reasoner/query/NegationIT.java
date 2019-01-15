@@ -399,12 +399,15 @@ public class NegationIT {
         }
     }
 
+    /*
+    //TODO
     @Test
     public void allRecipesThatDoNotContainAllergens(){
         try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
-            //TODO
+
         }
     }
+    */
 
     @Test
     public void allRecipesContainingAvailableIngredients(){
