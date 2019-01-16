@@ -19,6 +19,7 @@
 exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
 load("@graknlabs_rules_deployment//brew:rules.bzl", deploy_brew = "deploy_brew")
 load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution_structure", "distribution_zip", "distribution_deb", "distribution_rpm")
+load("@graknlabs_rules_deployment//rpm/deployment:rules.bzl", "deploy_rpm")
 
 
 py_binary(
@@ -83,6 +84,11 @@ distribution_rpm(
     },
 )
 
+deploy_rpm(
+    name = "deploy-rpm",
+    target = ":distribution-rpm",
+    deployment_properties = "//:deployment.properties",
+)
 
 distribution_zip(
     name = "distribution",
