@@ -103,8 +103,8 @@ public class RuleCacheIT {
     @Before
     public void onStartup(){
         tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
-        String recordPatternString = "{(someRole: $x, subRole: $y) isa reifiable-relation;}";
-        String retrievePatternString = "{(someRole: $p1, subRole: $p2) isa reifiable-relation;}";
+        String recordPatternString = "{ (someRole: $x, subRole: $y) isa reifiable-relation; };";
+        String retrievePatternString = "{ (someRole: $p1, subRole: $p2) isa reifiable-relation; };";
         Conjunction<Statement> recordPattern = conjunction(recordPatternString);
         Conjunction<Statement> retrievePattern = conjunction(retrievePatternString);
         recordQuery = ReasonerQueries.atomic(recordPattern, tx);
@@ -148,8 +148,8 @@ public class RuleCacheIT {
 
     @Test
     public void whenAddingARule_cacheContainsUpdatedEntry(){
-        Pattern when = Graql.parsePattern("{$x isa entity;$y isa entity;}");
-        Pattern then = Graql.parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
+        Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
+        Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
@@ -162,8 +162,8 @@ public class RuleCacheIT {
         tx.close();
         tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
 
-        Pattern when = Graql.parsePattern("{$x isa entity;$y isa entity;}");
-        Pattern then = Graql.parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
+        Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
+        Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
