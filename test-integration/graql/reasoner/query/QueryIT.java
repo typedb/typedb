@@ -43,6 +43,7 @@ import org.junit.Test;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")
@@ -76,12 +77,14 @@ public class QueryIT {
     }
 
 
-//    @Test
-//    public void testQueryReiterationCondition_CyclicalRuleGraph(){
-////        String patternString = "{ ($x, $y) isa is-located-in; };";
-//        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
-//        assertTrue(query.requiresReiteration());
-//    }
+    @Test
+    public void testQueryReiterationCondition_CyclicalRuleGraph(){
+        String patternString = "{ ($x, $y) isa is-located-in; };";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
+        assertTrue(query.requiresReiteration());
+    }
+
+//    TODO: The following tests are commented out because they use SNB, we update them or remove them
 //
 //    @Test
 //    public void testQueryReiterationCondition_AcyclicalRuleGraph(){
@@ -247,7 +250,8 @@ public class QueryIT {
         queryEquivalence(query6, query7, false);
     }
 
-    //Bug #11150 Relations with resources as single VarPatternAdmin
+//    Bug #11150 Relations with resources as single VarPatternAdmin
+//    TODO: replace this with different schema than genealogySchema
 //    @Test //tests whether directly and indirectly reified relations are equivalent
 //    public void testAlphaEquivalence_reifiedRelation(){
 //        TransactionImpl<?> tx = genealogySchema.tx();
