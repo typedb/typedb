@@ -153,8 +153,8 @@ dependencies_for_github_deployment()
 
 git_repository(
     name="com_github_google_bazel_common",
-    remote="https://github.com/graknlabs/bazel-common",
-    commit="550f0490798a4e4b6c5ff8cac3b6f5c2a5e81e21",
+    remote="https://github.com/lolski/bazel-common",
+    commit="e205ddc696ab5ee989c87fc88513e395fabfc832",
 )
 
 load("@com_github_google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
