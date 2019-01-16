@@ -129,7 +129,7 @@ public class ResolutionPlanIT {
                 "$x isa someEntity;" +
                 "$y isa resource;$y 'value';" +
                 "$z isa relation;" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
     }
@@ -141,7 +141,7 @@ public class ResolutionPlanIT {
                 "$x isa someEntity;$x id 'V123';" +
                 "$y isa resource;" +
                 "$z isa relation;" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
     }
@@ -154,7 +154,7 @@ public class ResolutionPlanIT {
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$w id 'sampleId';" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "yetAnotherRelation", tx),
@@ -172,7 +172,7 @@ public class ResolutionPlanIT {
                 "(someRole:$x, otherRole: $y) isa relation;" +
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
                 "$z id 'sampleId';" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "derivedRelation", tx),
@@ -191,7 +191,7 @@ public class ResolutionPlanIT {
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$z id 'sampleId';" +
                 "$w id 'sampleId2';" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "yetAnotherRelation", tx),
@@ -210,7 +210,7 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "(someRole:$x, otherRole: $y) isa relation;" +
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "relation", tx),
@@ -229,7 +229,7 @@ public class ResolutionPlanIT {
                 "(someRole:$x, otherRole: $y) isa relation;" +
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
         assertTrue(!new ResolutionPlan(query).plan().get(0).isRuleResolvable());
@@ -243,7 +243,7 @@ public class ResolutionPlanIT {
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$w has resource 'test';" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "resource", tx),
@@ -263,7 +263,7 @@ public class ResolutionPlanIT {
                 "(someRole:$x, otherRole: $y) isa derivedRelation;" +
                 "$y isa someEntity;" +
                 "$x has resource 'test';" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "resource", tx),
@@ -282,7 +282,7 @@ public class ResolutionPlanIT {
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$x has anotherResource $r;" +
                 "$w has resource 'test';" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "resource", tx),
@@ -302,7 +302,7 @@ public class ResolutionPlanIT {
                 "(someRole:$x, otherRole: $y) isa derivedRelation;" +
                 "$x has resource $xr;" +
                 "$y has resource $yr;" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         assertEquals(new ResolutionPlan(query).plan().get(0), getAtomOfType(query, "derivedRelation", tx));
         checkPlanSanity(query);
@@ -327,7 +327,7 @@ public class ResolutionPlanIT {
                 "$link isa someEntity;" +
                 "$end isa someOtherEntity;" +
                 "$anotherlink isa yetAnotherEntity;" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
 
@@ -357,7 +357,7 @@ public class ResolutionPlanIT {
                 "$link isa someEntity;" +
                 "$end isa someOtherEntity;" +
                 "$anotherlink isa yetAnotherEntity;" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
 
@@ -390,7 +390,7 @@ public class ResolutionPlanIT {
                 "(someRole: $link, otherRole: $start) isa relation;" +
                 "(someRole: $link, otherRole: $anotherlink) isa derivedRelation;" +
                 "(someRole: $anotherlink, otherRole: $end) isa anotherDerivedRelation;" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
 
@@ -410,7 +410,7 @@ public class ResolutionPlanIT {
                 "(someRole:$x, otherRole: $xx) isa anotherRelation;$xx isa! $type;" +
                 "(someRole:$y, otherRole: $yy) isa anotherRelation;$yy isa! $type;" +
                 "$y != $x;" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkAtomPlanComplete(query, new ResolutionPlan(query));
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
@@ -429,11 +429,11 @@ public class ResolutionPlanIT {
         String xPatternString = "{" +
                 "$x id '" + concept.id() + "';" +
                 basePatternString +
-                "}";
+                "};";
         String yPatternString = "{" +
                 "$y id '" + concept.id() + "';" +
                 basePatternString +
-                "}";
+                "};";
         ReasonerQueryImpl queryX = ReasonerQueries.create(conjunction(xPatternString), tx);
         ReasonerQueryImpl queryY = ReasonerQueries.create(conjunction(yPatternString), tx);
 
@@ -453,7 +453,7 @@ public class ResolutionPlanIT {
                 "(someRole:$z, otherRole: $w) isa relation;" +
                 "(someRole:$w, otherRole: $u) isa anotherRelation;" +
                 "(someRole:$u, otherRole: $v) isa relation;" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
     }
@@ -468,7 +468,7 @@ public class ResolutionPlanIT {
                 "(someRole:$w, otherRole: $u) isa relation;" +
                 "(someRole:$u, otherRole: $v) isa anotherRelation;" +
                 "(someRole:$v, otherRole: $q) isa yetAnotherRelation;"+
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
     }
@@ -494,14 +494,14 @@ public class ResolutionPlanIT {
                         "($d, $g) isa yetAnotherRelation;" +
                         "($g, $h) isa anotherDerivedRelation;";
 
-        String queryString = "{" + basePatternString + "}";
+        String queryString = "{" + basePatternString + "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
 
         String attributedQueryString = "{" +
                 "$a has resource 'someValue';" +
                 basePatternString +
-                "}";
+                "};";
         ReasonerQueryImpl attributedQuery = ReasonerQueries.create(conjunction(attributedQueryString), tx);
         ResolutionPlan attributedResolutionPlan = new ResolutionPlan(attributedQuery);
         checkPlanSanity(attributedQuery);
@@ -532,14 +532,14 @@ public class ResolutionPlanIT {
                         "($b, $e) isa derivedRelation;" +
                         "($e, $f) isa derivedRelation;";
 
-        String queryString = "{" + basePatternString + "}";
+        String queryString = "{" + basePatternString + "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
 
         String attributedQueryString = "{" +
                 "$g has resource 'someValue';" +
                 basePatternString +
-                "}";
+                "};";
         ReasonerQueryImpl attributedQuery = ReasonerQueries.create(conjunction(attributedQueryString), tx);
         ResolutionPlan attributedResolutionPlan = new ResolutionPlan(attributedQuery);
         checkPlanSanity(attributedQuery);
@@ -561,7 +561,7 @@ public class ResolutionPlanIT {
                 "($c, $d) isa relation; $d isa someOtherEntity;" +
                 "$e isa baseEntity;" +
                 "($e, $f) isa anotherRelation; $f isa yetAnotherEntity;" +
-                "}";
+                "};";
 
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkAtomPlanComplete(query, new ResolutionPlan(query));
@@ -581,7 +581,7 @@ public class ResolutionPlanIT {
                 "($e, $f) isa relation; $f isa baseEntity;" +
                 "($f, $g) isa anotherRelation; $g isa yetAnotherEntity;" +
                 "($g, $h) isa derivedRelation; $h isa yetAnotherEntity;" +
-                "}";
+                "};";
 
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkAtomPlanComplete(query, new ResolutionPlan(query));
@@ -602,7 +602,7 @@ public class ResolutionPlanIT {
 
                 "$x has derivedResource 'value';" +
                 "$x has yetAnotherResource 'someValue';" +
-                "}";
+                "};";
 
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkAtomPlanComplete(query, new ResolutionPlan(query));
@@ -621,7 +621,7 @@ public class ResolutionPlanIT {
                 "$y isa someEntity;" +
                 "$y has resource 'someValue';" +
                 "($x, $y) isa derivedRelation;" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ResolutionPlan resolutionPlan = new ResolutionPlan(query);
         checkAtomPlanComplete(query, resolutionPlan);
@@ -642,7 +642,7 @@ public class ResolutionPlanIT {
                 "($b, $c) isa anotherRelation; $b isa someEntity;" +
                 "($c, $d) isa yetAnotherRelation; $c isa someOtherEntity;" +
                 "($d, $e) isa relation; $d isa yetAnotherEntity;" +
-                "}";
+                "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
         //todo
