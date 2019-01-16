@@ -99,7 +99,7 @@ public class AtomicQueryIT {
     @Test(expected = IllegalArgumentException.class)
     public void testWhenConstructingNonAtomicQuery_ExceptionIsThrown() {
         try (TransactionOLTP tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            String patternString = "{$x isa university;$y isa country;($x, $y) isa is-located-in;($y, $z) isa is-located-in;}";
+            String patternString = "{ $x isa university;$y isa country;($x, $y) isa is-located-in;($y, $z) isa is-located-in; };";
             ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(conjunction(patternString), tx);
         }
     }
@@ -107,7 +107,7 @@ public class AtomicQueryIT {
     @Test(expected = GraqlQueryException.class)
     public void testWhenCreatingQueryWithNonexistentType_ExceptionIsThrown() {
         try (TransactionOLTP tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
-            String patternString = "{$x isa someType;}";
+            String patternString = "{ $x isa someType; };";
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString), tx);
         }
     }
@@ -119,7 +119,7 @@ public class AtomicQueryIT {
         GetQuery explicitGetQuery = Graql.parse(explicitGetQueryStr);
         assertFalse(tx.stream(explicitGetQuery,false).iterator().hasNext());
 
-        String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
+        String patternString = "{ (geo-entity: $x, entity-location: $y) isa is-located-in; };";
         Conjunction<Statement> pattern = conjunction(patternString);
         List<ConceptMap> answers = new ArrayList<>();
 
@@ -139,7 +139,7 @@ public class AtomicQueryIT {
     @Test
     public void testWhenMaterialisingEntity_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
         TransactionOLTP tx = materialisationTestSession.transaction(Transaction.Type.WRITE);
-        ReasonerAtomicQuery entityQuery = ReasonerQueries.atomic(conjunction("$x isa newEntity"), tx);
+        ReasonerAtomicQuery entityQuery = ReasonerQueries.atomic(conjunction("$x isa newEntity;"), tx);
         assertEquals(entityQuery.materialise(new ConceptMap()).findFirst().orElse(null).get("x").asEntity().isInferred(), true);
         tx.close();
     }
@@ -151,13 +151,13 @@ public class AtomicQueryIT {
         Concept secondEntity = Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse("match $x isa entity2; get;"), false)).get("x");
         Concept resource = Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse("match $x isa resource; get;"), false)).get("x");
 
-        ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction("{$x has resource $r;$r == 'inferred';$x id " + firstEntity.id().getValue() + ";}"), tx);
+        ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction("{ $x has resource $r;$r == 'inferred';$x id " + firstEntity.id().getValue() + "; };"), tx);
         String reuseResourcePatternString =
                 "{" +
-                        "$x has resource $r;" +
-                        "$x id " + secondEntity.id().getValue() + ";" +
-                        "$r id " + resource.id().getValue() + ";" +
-                        "}";
+                        " $x has resource $r;" +
+                        " $x id " + secondEntity.id().getValue() + ";" +
+                        " $r id " + resource.id().getValue() + ";" +
+                        " };";
 
         ReasonerAtomicQuery reuseResourceQuery = ReasonerQueries.atomic(conjunction(reuseResourcePatternString), tx);
 
@@ -187,10 +187,10 @@ public class AtomicQueryIT {
 
         ReasonerAtomicQuery relationQuery = ReasonerQueries.atomic(conjunction(
                 "{" +
-                        "$r (role1: $x, role2: $y);" +
-                        "$x id " + firstEntity.id().getValue() + ";" +
-                        "$y id " + secondEntity.id().getValue() + ";" +
-                        "}"
+                        " $r (role1: $x, role2: $y);" +
+                        " $x id " + firstEntity.id().getValue() + ";" +
+                        " $y id " + secondEntity.id().getValue() + ";" +
+                        " };"
                                                                    ),
                                                                    tx
         );
@@ -202,7 +202,7 @@ public class AtomicQueryIT {
     @Test
     public void testWhenCopying_TheCopyIsAlphaEquivalent() {
         TransactionOLTP tx = geoGraphSession.transaction(Transaction.Type.WRITE);
-        String patternString = "{($x, $y) isa is-located-in;}";
+        String patternString = "{ ($x, $y) isa is-located-in; };";
         Conjunction<Statement> pattern = conjunction(patternString);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, tx);
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
