@@ -9,7 +9,7 @@ baseType sub entity,
     plays anotherRole,
     plays otherRole;
 
-type sub baseType;
+someType sub baseType;
 anotherType sub baseType;
 derived-type sub baseType;
 
@@ -47,7 +47,7 @@ attachUnattachedResourceToEntity sub rule,
     when {
         $x isa resource-string;
         $x == 'unattached';
-        $y isa type;
+        $y isa someType;
     },
     then {
         $y has derived-resource-string 'attached';
@@ -99,7 +99,7 @@ ternaryEquivalence sub rule,
 
 typeDerivation sub rule,
     when {
-        $x isa type;
+        $x isa someType;
         ($x, $y) isa binary;
     },
     then {
@@ -110,10 +110,10 @@ insert
 
 #Data
 
-$x isa type, has resource-string "value";
-$y isa type;
-$z isa type;
-$v isa type, has resource-string "someString";
+$x isa someType, has resource-string "value";
+$y isa someType;
+$z isa someType;
+$v isa someType, has resource-string "someString";
 (someRole: $x, otherRole: $y) isa binary;
 (someRole: $x, otherRole: $z) isa binary;
 (someRole: $y, otherRole: $q) isa binary;

@@ -139,6 +139,12 @@ public abstract class StatementInstance extends Statement {
             }
         }
 
+        @Override
+        public StatementThing negate() {
+            Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
+            return new StatementThing(var(), properties(), negated);
+        }
+
         @CheckReturnValue
         StatementThing addProperty(VarProperty property) {
             validateNonUniqueOrThrow(property);
@@ -228,6 +234,12 @@ public abstract class StatementInstance extends Statement {
             }
         }
 
+        @Override
+        public StatementRelation negate() {
+            Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
+            return new StatementRelation(var(), properties(), negated);
+        }
+
         private StatementRelation addRolePlayer(RelationProperty.RolePlayer rolePlayer) {
             Optional<RelationProperty> oldRelationProperty = getProperty(RelationProperty.class);
 
@@ -314,6 +326,12 @@ public abstract class StatementInstance extends Statement {
             } else {
                 throw illegalArgumentException(statement, varProperty);
             }
+        }
+
+        @Override
+        public StatementAttribute negate() {
+            Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
+            return new StatementAttribute(var(), properties(), negated);
         }
 
         @CheckReturnValue

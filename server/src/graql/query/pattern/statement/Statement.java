@@ -646,8 +646,13 @@ public class Statement implements Pattern {
 
     @Override
     public Statement negate() {
-        Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
-        return new Statement(var(), properties(), negated);
+        if ((this instanceof StatementType) || (this instanceof StatementInstance)) {
+            return this.negate();
+        } else { // TODO: this may not be needed once we may statements to be strict typing
+            throw new IllegalStateException(
+                    "Attempted to negate invalid statement: with just a Variable [" + var + "] and no properties"
+            );
+        }
     }
 
     @Override
@@ -810,7 +815,9 @@ public class Statement implements Pattern {
 
     @Override // TODO: Remove this method altogether once we make compile time validation more strict
     public String toString() {
-        throw new IllegalStateException("Invalid Statement: with just a Variable [" + var + "] and no properties");
+        throw new IllegalStateException(
+                "Attempted to print invalid statement: with just a Variable [" + var + "] and no properties"
+        );
     }
 
     @Override

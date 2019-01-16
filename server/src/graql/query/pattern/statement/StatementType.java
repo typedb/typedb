@@ -52,6 +52,12 @@ public class StatementType extends Statement {
         }
     }
 
+    @Override
+    public StatementType negate() {
+        Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
+        return new StatementType(var(), properties(), negated);
+    }
+
     @CheckReturnValue
     private StatementType addProperty(VarProperty property) {
         validateNonUniqueOrThrow(property);
