@@ -82,7 +82,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
             } else if (dataType.equals(AttributeType.DataType.DATE) && (value instanceof Long)) {
                 return value;
             } else {
-                return dataType.getPersistenceValue(value);
+                return dataType.getPersistedValue(value);
             }
         } catch (ClassCastException e) {
             throw TransactionException.invalidAttributeValue(value, dataType);

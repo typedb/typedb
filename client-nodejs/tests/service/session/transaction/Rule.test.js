@@ -41,8 +41,8 @@ describe("Rule methods", () => {
 
     test("get When/Then", async () => {
         const label = "genderisedParentship";
-        const when = "{(parent: $p, child: $c) isa parentship; $c has gender \"male\"; $p has gender \"female\";}"
-        const then = "{(mother: $p, son: $c) isa parentship;}";
+        const when = "{ (parent: $p, child: $c) isa parentship; $c has gender \"male\"; $p has gender \"female\"; };";
+        const then = "{ (mother: $p, son: $c) isa parentship; };";
         const rule = await tx.putRule(label, when, then);
         expect(await rule.getWhen()).toBe(when);
         expect(await rule.getThen()).toBe(then);

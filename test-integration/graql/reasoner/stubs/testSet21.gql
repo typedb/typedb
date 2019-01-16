@@ -8,10 +8,10 @@ anotherBaseEntity sub entity;
 
 #Rules
 
-rule-1 sub rule
+rule-1 sub rule,
     when {
     	$x isa anotherBaseEntity;
-    }
+    },
     then {
     	$x isa subEntity;
     };

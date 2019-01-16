@@ -26,7 +26,7 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 
 import javax.annotation.Nullable;

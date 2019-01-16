@@ -19,7 +19,8 @@
 package grakn.core.graql.query.predicate;
 
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.statement.Statement;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 
@@ -64,7 +65,7 @@ class RegexPredicate implements ValuePredicate {
 
     @Override
     public String toString() {
-        return "/" + pattern().replaceAll("/", "\\\\/") + "/";
+        return Query.Operator.LIKE + " \"" + pattern().replaceAll("/", "\\\\/") + "\"";
     }
 
     @Override

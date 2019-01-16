@@ -21,8 +21,8 @@ package grakn.core.graql.query.predicate;
 import grakn.core.graql.concept.AttributeType.DataType;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -80,19 +80,23 @@ public abstract class ComparatorPredicate implements ValuePredicate {
 
     abstract <V> P<V> gremlinPredicate(V value);
 
+    private DataType dataType(Object value) {
+        // Convert values to how they are stored in the graph
+        DataType dataType = DataType.SUPPORTED_TYPES.get(value.getClass().getName());
+
+        if (dataType == null) {
+            throw GraqlQueryException.invalidValueClass(value);
+        }
+
+        return dataType;
+    }
+
     final Optional<Object> persistedValue() {
         return value().map(value -> {
-
-            // Convert values to how they are stored in the graph
-            DataType dataType = DataType.SUPPORTED_TYPES.get(value.getClass().getName());
-
-            if (dataType == null) {
-                throw GraqlQueryException.invalidValueClass(value);
-            }
-
+            DataType dataType = dataType(value);
             // We can trust the `SUPPORTED_TYPES` map to store things with the right type
             //noinspection unchecked
-            return dataType.getPersistenceValue(value);
+            return dataType.getPersistedValue(value);
         });
     }
 
@@ -103,7 +107,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
     public String toString() {
         // If there is no value, then there must be a var
         //noinspection OptionalGetWithoutIsPresent
-        String argument = persistedValue().map(StringUtil::valueToString).orElseGet(() -> var.get().getPrintableName());
+        String argument = value().map(value1 -> StringUtil.valueToString(value1)).orElseGet(() -> var.get().getPrintableName());
 
         return getSymbol() + " " + argument;
     }

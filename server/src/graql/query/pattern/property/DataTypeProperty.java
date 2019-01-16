@@ -19,6 +19,7 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.statement.StatementType;
 
 /**
  * Represents the {@code datatype} property on a AttributeType.
@@ -53,6 +54,11 @@ public class DataTypeProperty extends VarProperty {
     @Override
     public boolean isUnique() {
         return true;
+    }
+
+    @Override
+    public Class statementClass() {
+        return StatementType.class;
     }
 
     @Override

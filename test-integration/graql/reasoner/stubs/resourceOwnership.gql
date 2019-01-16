@@ -1,9 +1,9 @@
 define
 
-someEntity sub entity
+someEntity sub entity,
   has name;
 
-name sub attribute datatype string,
+name sub attribute, datatype string,
   plays applicable-name;
 
 step sub entity,
@@ -19,7 +19,7 @@ relation sub relationship,
 
 insert
 
-$name isa name "someName";
+$name "someName" isa name;
 $step isa step;
 $module isa module;
 

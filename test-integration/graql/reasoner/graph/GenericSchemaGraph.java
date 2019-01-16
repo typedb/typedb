@@ -28,7 +28,7 @@ import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.pattern.RelationPattern;
-import grakn.core.graql.reasoner.pattern.ResourcePattern;
+import grakn.core.graql.reasoner.pattern.AttributePattern;
 import grakn.core.graql.reasoner.pattern.TypePattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -89,7 +89,7 @@ public class GenericSchemaGraph {
                 binary.label(), ternary.label(), tx.getMetaRelationType().label(),
                 relation.id(), anotherRelation.id());
 
-        this.differentResourceVariants = new ResourcePattern(
+        this.differentResourceVariants = new AttributePattern(
                 resourceType.label(), anotherResourceType.label(),
                 entityType.label(), anotherEntityType.label(),
                 entity.id(), anotherEntity.id(), resource.id(), anotherResource.id());

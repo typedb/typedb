@@ -19,7 +19,8 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.StatementInstance;
 
 import java.util.stream.Stream;
 
@@ -66,8 +67,13 @@ public class IsaProperty extends VarProperty {
     }
 
     @Override
-    public final Stream<Statement> innerStatements() {
+    public final Stream<Statement> statements() {
         return Stream.of(type());
+    }
+
+    @Override
+    public Class statementClass() {
+        return StatementInstance.class;
     }
 
     @Override

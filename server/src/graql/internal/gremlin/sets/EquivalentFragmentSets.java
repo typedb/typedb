@@ -27,7 +27,7 @@ import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.server.Transaction;

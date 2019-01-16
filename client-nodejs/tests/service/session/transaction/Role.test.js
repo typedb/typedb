@@ -41,7 +41,7 @@ describe("Role methods", () => {
 
     test("relationships", async () => {
         await tx.query('define parentship sub relationship, relates parent, relates child;');
-        const result = await tx.query('match $x label parent; get;');
+        const result = await tx.query('match $x type parent; get;');
         const concepts = (await result.collectConcepts());
         const role = concepts[0];
         expect(role.baseType).toBe('ROLE');
@@ -52,8 +52,8 @@ describe("Role methods", () => {
 
     test("players", async () => {
         await tx.query('define parentship sub relationship, relates parent, relates child;');
-        await tx.query('define person sub entity plays parent;')
-        const result = await tx.query('match $x label parent; get;');
+        await tx.query('define person sub entity, plays parent;');
+        const result = await tx.query('match $x type parent; get;');
         const concepts = (await result.collectConcepts());
         const role = concepts[0];
         expect(role.baseType).toBe('ROLE');

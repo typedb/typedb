@@ -48,8 +48,8 @@ import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
@@ -185,6 +185,7 @@ public class QueryExecutor {
                 executors.addAll(PropertyExecutor.definable(statement.var(), property).defineExecutors());
             }
         }
+
         return WriteExecutor.create(transaction, executors.build()).write(new ConceptMap());
     }
 
@@ -318,7 +319,7 @@ public class QueryExecutor {
             validateRelationshipProperty((RelationProperty) varProperty, statement);
         }
 
-        varProperty.innerStatements()
+        varProperty.statements()
                 .map(Statement::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
                 .forEach(label -> {

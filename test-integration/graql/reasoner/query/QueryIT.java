@@ -26,7 +26,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -43,6 +43,7 @@ import org.junit.Test;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")
@@ -76,17 +77,19 @@ public class QueryIT {
     }
 
 
-//    @Test
-//    public void testQueryReiterationCondition_CyclicalRuleGraph(){
-////        String patternString = "{($x, $y) isa is-located-in;}";
-//        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
-//        assertTrue(query.requiresReiteration());
-//    }
+    @Test
+    public void testQueryReiterationCondition_CyclicalRuleGraph(){
+        String patternString = "{ ($x, $y) isa is-located-in; };";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
+        assertTrue(query.requiresReiteration());
+    }
+
+//    TODO: The following tests are commented out because they use SNB, we update them or remove them
 //
 //    @Test
 //    public void testQueryReiterationCondition_AcyclicalRuleGraph(){
 //        TransactionImpl<?> tx = snbGraph.tx();
-//        String patternString = "{($x, $y) isa recommendation;}";
+//        String patternString = "{ ($x, $y) isa recommendation; };";
 //        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
 //        assertFalse(query.requiresReiteration());
 //    }
@@ -94,33 +97,33 @@ public class QueryIT {
 //    @Test
 //    public void testQueryReiterationCondition_AnotherCyclicalRuleGraph(){
 //        TransactionImpl<?> tx = snbGraph.tx();
-//        String patternString = "{($x, $y);}";
+//        String patternString = "{ ($x, $y); };";
 //        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
 //        assertTrue(query.requiresReiteration());
 //    }
 
     @Test //simple equality tests between original and a copy of a query
     public void testAlphaEquivalence_QueryCopyIsAlphaEquivalent(){
-        String patternString = "{$x isa city;$y isa country;($x, $y) isa is-located-in;}";
+        String patternString = "{ $x isa city;$y isa country;($x, $y) isa is-located-in; };";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
         queryEquivalence(query, (ReasonerQueryImpl) query.copy(), true);
     }
 
     @Test //check two queries are alpha-equivalent - equal up to the choice of free variables
     public void testAlphaEquivalence() {
-        String patternString = "{" +
+        String patternString = "{ " +
                 "$x isa city, has name 'Warsaw';" +
                 "$y isa region;" +
                 "($x, $y) isa is-located-in;" +
                 "($y, $z) isa is-located-in;" +
-                "$z isa country, has name 'Poland';}";
+                "$z isa country, has name 'Poland'; };";
 
-        String patternString2 = "{"+
+        String patternString2 = "{ "+
                 "($r, $ctr) isa is-located-in;" +
                 "($c, $r) isa is-located-in;" +
                 "$c isa city, has name 'Warsaw';" +
                 "$r isa region;" +
-                "$ctr isa country, has name 'Poland';}";
+                "$ctr isa country, has name 'Poland'; };";
 
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
         ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, tx), tx);
@@ -160,11 +163,11 @@ public class QueryIT {
     @Test //tests various configurations of alpha-equivalence with extra type atoms present
     public void testAlphaEquivalence_nonMatchingTypes() {
         String polandId = getConcept(tx, "name", "Poland").id().getValue();
-        String patternString = "{$y id '" + polandId + "'; $y isa country; (geo-entity: $y1, entity-location: $y), isa is-located-in;}";
-        String patternString2 = "{$x1 id '" + polandId + "'; $y isa country; (geo-entity: $x1, entity-location: $x2), isa is-located-in;}";
-        String patternString3 = "{$y id '" + polandId + "'; $x isa city; (geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;}";
-        String patternString4 = "{$x isa city; (entity-location: $y1, geo-entity: $x), isa is-located-in;}";
-        String patternString5 = "{(geo-entity: $y1, entity-location: $y2), isa is-located-in;}";
+        String patternString = "{ $y id '" + polandId + "'; $y isa country; (geo-entity: $y1, entity-location: $y) isa is-located-in; };";
+        String patternString2 = "{ $x1 id '" + polandId + "'; $y isa country; (geo-entity: $x1, entity-location: $x2) isa is-located-in; };";
+        String patternString3 = "{ $y id '" + polandId + "'; $x isa city; (geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country; };";
+        String patternString4 = "{ $x isa city; (entity-location: $y1, geo-entity: $x) isa is-located-in; };";
+        String patternString5 = "{ (geo-entity: $y1, entity-location: $y2) isa is-located-in; };";
 
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
         ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, tx), tx);
@@ -184,10 +187,10 @@ public class QueryIT {
 
     @Test //tests alpha-equivalence of queries with indirect types
     public void testAlphaEquivalence_indirectTypes(){
-        String patternString = "{(entity-location: $x2, geo-entity: $x1) isa is-located-in;" +
-                "$x1 isa $t1; $t1 sub geoObject;}";
-        String patternString2 = "{(geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
-                "$y1 isa $t2; $t2 sub geoObject;}";
+        String patternString = "{ (entity-location: $x2, geo-entity: $x1) isa is-located-in;" +
+                "$x1 isa $t1; $t1 sub geoObject; };";
+        String patternString2 = "{ (geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
+                "$y1 isa $t2; $t2 sub geoObject; };";
 
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
         ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, tx), tx);
@@ -196,13 +199,13 @@ public class QueryIT {
 
     @Test
     public void testAlphaEquivalence_RelationsWithSubstitution(){
-        String patternString = "{(role: $x, role: $y);$x id 'V666';}";
-        String patternString2 = "{(role: $x, role: $y);$y id 'V666';}";
-        String patternString3 = "{(role: $x, role: $y);$x id 'V666';$y id 'V667';}";
-        String patternString4 = "{(role: $x, role: $y);$y id 'V666';$x id 'V667';}";
-        String patternString5 = "{(entity-location: $x, geo-entity: $y);$x id 'V666';$y id 'V667';}";
-        String patternString6 = "{(entity-location: $x, geo-entity: $y);$y id 'V666';$x id 'V667';}";
-        String patternString7 = "{(role: $x, role: $y);$x id 'V666';$y id 'V666';}";
+        String patternString = "{ (role: $x, role: $y);$x id 'V666'; };";
+        String patternString2 = "{ (role: $x, role: $y);$y id 'V666'; };";
+        String patternString3 = "{ (role: $x, role: $y);$x id 'V666';$y id 'V667'; };";
+        String patternString4 = "{ (role: $x, role: $y);$y id 'V666';$x id 'V667'; };";
+        String patternString5 = "{ (entity-location: $x, geo-entity: $y);$x id 'V666';$y id 'V667'; };";
+        String patternString6 = "{ (entity-location: $x, geo-entity: $y);$y id 'V666';$x id 'V667'; };";
+        String patternString7 = "{ (role: $x, role: $y);$x id 'V666';$y id 'V666'; };";
         Conjunction<Statement> pattern = conjunction(patternString, tx);
         Conjunction<Statement> pattern2 = conjunction(patternString2, tx);
         Conjunction<Statement> pattern3 = conjunction(patternString3, tx);
@@ -247,12 +250,13 @@ public class QueryIT {
         queryEquivalence(query6, query7, false);
     }
 
-    //Bug #11150 Relations with resources as single VarPatternAdmin
+//    Bug #11150 Relations with resources as single VarPatternAdmin
+//    TODO: replace this with different schema than genealogySchema
 //    @Test //tests whether directly and indirectly reified relations are equivalent
 //    public void testAlphaEquivalence_reifiedRelation(){
 //        TransactionImpl<?> tx = genealogySchema.tx();
-//        String patternString = "{$rel (happening: $b, protagonist: $p) isa event-protagonist has event-role 'parent';}";
-//        String patternString2 = "{$rel (happening: $c, protagonist: $r) isa event-protagonist; $rel has event-role 'parent';}";
+//        String patternString = "{ $rel (happening: $b, protagonist: $p) isa event-protagonist has event-role 'parent'; };";
+//        String patternString2 = "{ $rel (happening: $c, protagonist: $r) isa event-protagonist; $rel has event-role 'parent'; };";
 //
 //        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
 //        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, tx), tx);
@@ -261,8 +265,8 @@ public class QueryIT {
 
     @Test
     public void testWhenReifyingRelation_ExtraAtomIsCreatedWithUserDefinedName(){
-        String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
-        String patternString2 = "{($x, $y) relates geo-entity;}";
+        String patternString = "{ (geo-entity: $x, entity-location: $y) isa is-located-in; };";
+        String patternString2 = "{ ($x, $y) has name 'Poland'; };";
 
         Conjunction<Statement> pattern = conjunction(patternString, tx);
         Conjunction<Statement> pattern2 = conjunction(patternString2, tx);

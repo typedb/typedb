@@ -24,8 +24,8 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
@@ -55,26 +55,24 @@ public interface PropertyExecutor {
 
     Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements);
 
-    default boolean mappable(Statement statement){ return true;}
-
     interface Referrable extends Definable, Insertable {
 
         @Override
         default Set<Writer> defineExecutors() {
-            return ImmutableSet.of(referencer());
+            return ImmutableSet.of(referrer());
         }
 
         @Override
         default Set<Writer> undefineExecutors() {
-            return ImmutableSet.of(referencer());
+            return ImmutableSet.of(referrer());
         }
 
         @Override
         default Set<Writer> insertExecutors() {
-            return ImmutableSet.of(referencer());
+            return ImmutableSet.of(referrer());
         }
 
-        Referrer referencer();
+        Referrer referrer();
     }
 
     interface Definable extends PropertyExecutor {

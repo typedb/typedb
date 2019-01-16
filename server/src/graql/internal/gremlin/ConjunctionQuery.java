@@ -26,8 +26,8 @@ import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.Transaction;
 
 import java.util.Collection;

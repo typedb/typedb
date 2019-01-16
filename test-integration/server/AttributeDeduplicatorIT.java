@@ -194,9 +194,9 @@ public class AttributeDeduplicatorIT {
         }
 
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.<InsertQuery>parse("insert $owned isa owned-attribute \"" + ownedAttributeValue + "\"; $owner1 isa owner has owned-attribute $owned; $owner2 isa owner has owned-attribute $owned;"));
-            tx.execute(Graql.<InsertQuery>parse("insert $owned isa owned-attribute \"" + ownedAttributeValue + "\"; $owner1 isa owner has owned-attribute $owned; $owner2 isa owner has owned-attribute $owned;"));
-            tx.execute(Graql.<InsertQuery>parse("insert $owned isa owned-attribute \"" + ownedAttributeValue + "\"; $owner1 isa owner has owned-attribute $owned;"));
+            tx.execute(Graql.<InsertQuery>parse("insert $owned \"" + ownedAttributeValue + "\"isa owned-attribute; $owner1 isa owner, has owned-attribute $owned; $owner2 isa owner, has owned-attribute $owned;"));
+            tx.execute(Graql.<InsertQuery>parse("insert $owned \"" + ownedAttributeValue + "\" isa owned-attribute; $owner1 isa owner, has owned-attribute $owned; $owner2 isa owner, has owned-attribute $owned;"));
+            tx.execute(Graql.<InsertQuery>parse("insert $owned \"" + ownedAttributeValue + "\" isa owned-attribute; $owner1 isa owner, has owned-attribute $owned;"));
             tx.commit();
         }
 
@@ -237,9 +237,9 @@ public class AttributeDeduplicatorIT {
 
         // use the 'via' feature when inserting to force reification
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.<InsertQuery>parse("insert $owner isa owner has owned-attribute '" + ownedAttributeValue + "' via $reified;"));
-            tx.execute(Graql.<InsertQuery>parse("insert $owner isa owner has owned-attribute '" + ownedAttributeValue + "' via $reified;"));
-            tx.execute(Graql.<InsertQuery>parse("insert $owner isa owner has owned-attribute '" + ownedAttributeValue + "' via $reified;"));
+            tx.execute(Graql.<InsertQuery>parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;"));
+            tx.execute(Graql.<InsertQuery>parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;"));
+            tx.execute(Graql.<InsertQuery>parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;"));
             tx.commit();
         }
 

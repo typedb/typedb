@@ -78,9 +78,9 @@ describe("Transaction methods", () => {
   });
 
   test("execute aggregate count on empty graph - Answer of Value", async () => {
-    const result = await tx.query("match $x; get; count;");
+    const result = await tx.query("match $x sub thing; get; count;");
     const answer = await(result.next());
-    expect(answer.number()).toBe(6);
+    expect(answer.number()).toBe(4);
   });
 
   async function buildParentship(localTx){
@@ -202,8 +202,8 @@ describe("Transaction methods", () => {
 
   test("putRule", async () => {
     const label = "genderisedParentship";
-    const when = "{(parent: $p, child: $c) isa parentship; $p has gender 'female'; $c has gender 'male';}"
-    const then = "{(mother: $p, son: $c) isa parentship;}";
+    const when = "{ (parent: $p, child: $c) isa parentship; $p has gender 'female'; $c has gender 'male'; };";
+    const then = "{ (mother: $p, son: $c) isa parentship; };";
     const rule = await tx.putRule(label, when, then);
     expect(await rule.label()).toBe(label);
     expect(rule.isRule()).toBeTruthy();

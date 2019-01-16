@@ -23,7 +23,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -207,7 +207,7 @@ public class DeleteQueryIT {
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
-        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete(x.var(), y.var()));
+        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y.var())).delete(x.var(), y.var()));
 
         assertNotExists(tx, var().isa("fake-type"));
     }
@@ -219,7 +219,7 @@ public class DeleteQueryIT {
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
-        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).delete());
+        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y.var())).delete());
 
         assertNotExists(tx, var().isa("fake-type"));
     }
@@ -227,7 +227,7 @@ public class DeleteQueryIT {
     @Test
     public void whenDeletingAVariableNotInTheQuery_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y));
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y.var()));
         tx.execute(Graql.match(x.isa("movie")).delete(y.var()));
     }
 

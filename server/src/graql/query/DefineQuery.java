@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 
 import java.util.List;
 
@@ -31,6 +31,8 @@ public class DefineQuery implements Query {
     public DefineQuery(List<? extends Statement> statements) {
         if (statements == null) {
             throw new NullPointerException("Null statements");
+        } else if (statements.isEmpty()) {
+            throw new IllegalArgumentException("Define Statements could not be empty");
         }
         this.statements = statements;
     }
@@ -39,14 +41,17 @@ public class DefineQuery implements Query {
         return statements;
     }
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public String toString() {
         StringBuilder query = new StringBuilder();
 
-        query.append(Command.DEFINE).append(Char.SPACE);
+        query.append(Command.DEFINE);
+        if (statements.size()>1) query.append(Char.NEW_LINE);
+        else query.append(Char.SPACE);
+
         query.append(statements().stream()
-                             .map(s -> s + Char.SEMICOLON.toString())
-                             .collect(joining(Char.NEW_LINE.toString())).trim());
+                             .map(Statement::toString)
+                             .collect(joining(Char.NEW_LINE.toString())));
 
         return query.toString();
     }

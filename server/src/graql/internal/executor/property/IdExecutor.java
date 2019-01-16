@@ -26,8 +26,8 @@ import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
@@ -56,7 +56,7 @@ public class IdExecutor implements PropertyExecutor.Referrable {
     }
 
     @Override
-    public Referrer referencer() {
+    public Referrer referrer() {
         return new IdReferrer();
     }
 

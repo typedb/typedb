@@ -34,8 +34,8 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
@@ -151,7 +151,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
         }
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         relVar = isaProp instanceof IsaExplicitProperty ?
-                relVar.isaExplicit(new Statement(typeVariable.asUserDefined())) :
+                relVar.isaX(new Statement(typeVariable.asUserDefined())) :
                 relVar.isa(new Statement(typeVariable.asUserDefined()));
         return RelationshipAtom.create(relVar, typeVariable, predicateId, parent);
     }

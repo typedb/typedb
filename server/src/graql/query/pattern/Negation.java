@@ -18,6 +18,10 @@
 
 package grakn.core.graql.query.pattern;
 
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
+
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
@@ -57,7 +61,18 @@ public class Negation<T extends Pattern> implements Pattern {
 
     @Override
     public String toString() {
-        return "NOT {" + pattern + "; }";
+        StringBuilder negation = new StringBuilder();
+        negation.append(Query.Operator.NOT).append(Query.Char.SPACE);
+
+        if (pattern instanceof Conjunction<?>) {
+            negation.append(pattern.toString());
+        } else {
+            negation.append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE);
+            negation.append(pattern.toString());
+            negation.append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE);
+        }
+
+        return negation.toString();
     }
 }
 

@@ -1,13 +1,13 @@
 define
 
 relation sub relationship,
-    relates someRole
-    relates anotherRole
-    relates yetAnotherRole
-    relates andYetAnotherRole
+    relates someRole,
+    relates anotherRole,
+    relates yetAnotherRole,
+    relates andYetAnotherRole,
     relates inferredRole;
 
-derivedRelation sub relationship
+derivedRelation sub relationship,
     relates inferredRole;
 
 someRole sub role;
@@ -17,83 +17,64 @@ andYetAnotherRole sub role;
 inferredRole sub role;
 
 baseEntity sub entity,
-    plays someRole
-    plays anotherRole
-    plays yetAnotherRole
-    plays andYetAnotherRole
+    plays someRole,
+    plays anotherRole,
+    plays yetAnotherRole,
+    plays andYetAnotherRole,
     has resource;
 
-someEntity sub baseEntity
+someEntity sub baseEntity,
     plays inferredRole;
 
-resource sub attribute datatype string;
+resource sub attribute, datatype string;
 
-appendRole sub rule
+appendRole sub rule,
 when {
-    $r(
-    someRole: $x
-    ) isa relation;
+    $r(someRole: $x) isa relation;
     $z isa someEntity;
-}
+},
 then {
-    $r(
-    inferredRole: $z
-    ) isa relation;
+    $r(inferredRole: $z) isa relation;
 };
 
-degenerateRole sub rule
+degenerateRole sub rule,
 when {
-    $r(
-    someRole: $x,
-    anotherRole: $y
-    ) isa relation;
+    $r(someRole: $x, anotherRole: $y) isa relation;
     $z isa someEntity;
-}
+},
 then {
-    $r(
-    anotherRole: $z
-    ) isa relation;
+    $r(anotherRole: $z) isa relation;
 };
 
-degenerateRolePlayer sub rule
+degenerateRolePlayer sub rule,
 when {
-    $r (
-    someRole: $x,
-    andYetAnotherRole: $y
-    ) isa relation;
-}
+    $r (someRole: $x, andYetAnotherRole: $y) isa relation;
+},
 then {
-    $r (
-    yetAnotherRole: $y
-    ) isa relation;
+    $r (yetAnotherRole: $y) isa relation;
 };
 
-degenerateRole-RolePlayer sub rule
+degenerateRole-RolePlayer sub rule,
 when {
-    $r (
-    anotherRole: $y,
-    andYetAnotherRole: $z
-    ) isa relation;
-}
+    $r (anotherRole: $y, andYetAnotherRole: $z) isa relation;
+},
 then {
-    $r (
-    anotherRole: $y
-    ) isa relation;
+    $r (anotherRole: $y) isa relation;
 };
 
-defineAppendAsAnotherRelation sub rule
+defineAppendAsAnotherRelation sub rule,
 when {
     (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z) isa relation;
-}
+},
 then {
     (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation;
 };
 
-defineAppendAsAnotherRelationConj sub rule
+defineAppendAsAnotherRelationConj sub rule,
 when {
     (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;
     $y has resource 'value';
-}
+},
 then {
     (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation;
 };

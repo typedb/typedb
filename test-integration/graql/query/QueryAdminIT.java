@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -109,7 +109,7 @@ public class QueryAdminIT {
         InsertQuery query = Graql.match(var("x").isa("movie")).insert(var().id("123").isa("movie"));
         assertEquals("match $x isa movie;", query.match().toString());
 
-        query = Graql.match(var("x").isaExplicit("movie")).insert(var().id("123").isa("movie"));
+        query = Graql.match(var("x").isaX("movie")).insert(var().id("123").isa("movie"));
         assertEquals("match $x isa! movie;", query.match().toString());
     }
 
@@ -125,7 +125,7 @@ public class QueryAdminIT {
         DeleteQuery query = Graql.match(var("x").isa("movie")).delete("x");
         assertEquals("match $x isa movie;", query.match().toString());
 
-        query = Graql.match(var("x").isaExplicit("movie")).delete("x");
+        query = Graql.match(var("x").isaX("movie")).delete("x");
         assertEquals("match $x isa! movie;", query.match().toString());
     }
 }

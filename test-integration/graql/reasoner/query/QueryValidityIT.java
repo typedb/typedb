@@ -114,7 +114,7 @@ public class QueryValidityIT {
 
     @Test
     public void whenQueryingForInexistentEntityTypeLabelViaVariable_emptyResultReturned(){
-                String queryString = "match $x isa $type; $type label polok; get;";
+                String queryString = "match $x isa $type; $type type polok; get;";
         assertThat(tx.execute(Graql.<GetQuery>parse(queryString)), empty());
     }
 
@@ -138,7 +138,7 @@ public class QueryValidityIT {
 
     @Test
     public void whenQueryingForInexistentRelationTypeLabelViaVariable_emptyResultReturned(){
-                String queryString = "match ($x, $y) isa $type; $type label jakas-relacja; get;";
+                String queryString = "match ($x, $y) isa $type; $type type jakas-relacja; get;";
         assertThat(tx.execute(Graql.<GetQuery>parse(queryString)), empty());
     }
 
