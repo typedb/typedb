@@ -32,40 +32,40 @@ public class TypePattern extends QueryPattern {
             Label type, Label anotherType, Label metaType,
             ConceptId conceptId, ConceptId anotherConceptId) {
         this.patterns =  Lists.newArrayList(
-                "{$x isa $type;}",
-                "{$xb isa  " + type + ";}",
-                "{$xc isa! " + type + ";}",
-                "{$xd isa $typed;$typed label " + anotherType + ";}",
-                "{$xe isa " + anotherType + ";}",
-                "{$xf isa " + metaType + ";}",
+                "{ $x isa $type; };",
+                "{ $xb isa  " + type + "; };",
+                "{ $xc isa! " + type + "; };",
+                "{ $xd isa $typed;$typed type " + anotherType + "; };",
+                "{ $xe isa " + anotherType + "; };",
+                "{ $xf isa " + metaType + "; };",
 
                 //6-8
-                "{$x1a isa " + type + "; $x1a id '" + conceptId + "';}",
-                "{$x1b isa " + type + "; $x1b id '" + anotherConceptId + "';}",
-                "{$x1c isa $type1; $type1 label " + type + ";$x1c id '" + anotherConceptId + "';}",
+                "{ $x1a isa " + type + "; $x1a id '" + conceptId + "'; };",
+                "{ $x1b isa " + type + "; $x1b id '" + anotherConceptId + "'; };",
+                "{ $x1c isa $type1; $type1 type " + type + ";$x1c id '" + anotherConceptId + "'; };",
 
                 //9-12
-                "{$x2a isa " + type + "; $x2a == 'someValue';}",
-                "{$x2b isa " + type + "; $x2b == 'someOtherValue';}",
+                "{ $x2a isa " + type + "; $x2a == 'someValue'; };",
+                "{ $x2b isa " + type + "; $x2b == 'someOtherValue'; };",
 
-                "{$x2c isa " + type + "; $x2c contains 'Value';}",
-                "{$x2d isa " + type + "; $x2d contains 'Other';}",
+                "{ $x2c isa " + type + "; $x2c contains 'Value'; };",
+                "{ $x2d isa " + type + "; $x2d contains 'Other'; };",
 
                 //13-14
-                "{$x3a isa " + anotherType + "; $x3a == '0';}",
-                "{$x3b isa " + anotherType + "; $x3b == '1';}",
+                "{ $x3a isa " + anotherType + "; $x3a == '0'; };",
+                "{ $x3b isa " + anotherType + "; $x3b == '1'; };",
 
                 //15-18
-                "{$x4a isa " + anotherType + "; $x4a > '0';}",
-                "{$x4b isa " + anotherType + "; $x4b < '1';}",
-                "{$x4c isa " + anotherType + "; $x4c >= '0';}",
-                "{$x4d isa " + anotherType + "; $x4d <= '1';}"
+                "{ $x4a isa " + anotherType + "; $x4a > '0'; };",
+                "{ $x4b isa " + anotherType + "; $x4b < '1'; };",
+                "{ $x4c isa " + anotherType + "; $x4c >= '0'; };",
+                "{ $x4d isa " + anotherType + "; $x4d <= '1'; };"
 
                 //16-18
                 //TODO
-                //"{$x5a isa resource ; $x5a != $f;}",
-                //"{$x5b isa resource ; $x5b != $fb; $x5b id '" + resourceId + "';}",
-                //"{$x5c isa resource ; $x5c != $fc; $fc id '" + resourceId + "';}"
+                //"{ $x5a isa resource ; $x5a != $f; };",
+                //"{ $x5b isa resource ; $x5b != $fb; $x5b id '" + resourceId + "'; };",
+                //"{ $x5c isa resource ; $x5c != $fc; $fc id '" + resourceId + "'; };"
         );
     }
 

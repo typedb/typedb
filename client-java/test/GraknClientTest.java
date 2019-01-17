@@ -32,7 +32,7 @@ import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
@@ -223,7 +223,7 @@ public class GraknClientTest {
     @SuppressWarnings("CheckReturnValue")
     @Test
     public void whenAnErrorOccurs_TheTxCloses() {
-        GetQuery query = match(var("x")).get();
+        GetQuery query = match(var("x").isa("thing")).get();
 
         SessionProto.Transaction.Req execQueryRequest = RequestBuilder.Transaction.query(query);
         GraknException expectedException = GraqlQueryException.create("well something went wrong.");
@@ -231,7 +231,7 @@ public class GraknClientTest {
 
         try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             try {
-                tx.execute(Graql.match(var("x")).get());
+                tx.execute(Graql.match(var("x").isa("thing")).get());
             } catch (RuntimeException e) {
                 System.out.println(e.getMessage());
                 assertTrue(e.getMessage().contains(expectedException.getName()));
@@ -244,7 +244,7 @@ public class GraknClientTest {
     @SuppressWarnings("CheckReturnValue")
     @Test
     public void whenAnErrorOccurs_AllFutureActionsThrow() {
-        GetQuery query = match(var("x")).get();
+        GetQuery query = match(var("x").isa("thing")).get();
 
         SessionProto.Transaction.Req execQueryRequest = RequestBuilder.Transaction.query(query);
         GraknException expectedException = GraqlQueryException.create("well something went wrong.");
@@ -252,7 +252,7 @@ public class GraknClientTest {
 
         try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             try {
-                tx.execute(Graql.match(var("x")).get());
+                tx.execute(Graql.match(var("x").isa("thing")).get());
             } catch (RuntimeException e) {
                 System.out.println(e.getMessage());
                 assertTrue(e.getMessage().contains(expectedException.getName()));

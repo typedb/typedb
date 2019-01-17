@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 public class AggregateQuery implements Query {
 

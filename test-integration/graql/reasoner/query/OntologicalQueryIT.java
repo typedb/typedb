@@ -134,7 +134,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void instancesOfSubsetOfTypesExcludingGivenType() {
-        String queryString = "match $x isa $type; $type sub entity; $type2 label noRoleEntity; $type2 != $type; get $x, $type;";
+        String queryString = "match $x isa $type; $type sub entity; $type2 type noRoleEntity; $type2 != $type; get $x, $type;";
 
         List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString), false);
         List<ConceptMap> answersInferred = tx.execute(Graql.<GetQuery>parse(queryString));
@@ -156,7 +156,7 @@ public class OntologicalQueryIT {
     @Test
     @Ignore //TODO: re-enable this test once we figure out why it randomly fails
     public void allRolePlayerPairsAndTheirRelationType() {
-                String relationString = "match $x isa relationship;get;";
+                String relationString = "match $x isa relationship; get;";
         String rolePlayerPairString = "match ($u, $v) isa $type; get;";
 
         GetQuery rolePlayerQuery = Graql.parse(rolePlayerPairString);

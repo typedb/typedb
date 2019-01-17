@@ -18,7 +18,8 @@
 
 package(default_visibility = ["//visibility:__subpackages__"])
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution", "distribution_deb", "distribution_rpm")
+load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution_structure", "distribution_zip", "distribution_deb", "distribution_rpm")
+load("@graknlabs_rules_deployment//rpm/deployment:rules.bzl", "deploy_rpm")
 
 java_library(
     name = "console",
@@ -70,11 +71,21 @@ deploy_maven_jar(
     package = "console",
 )
 
-distribution(
-    name = "distribution",
+distribution_structure(
+    name="grakn-core-console",
     targets = {
         "//console:console-binary": "console/services/lib/"
     },
+    additional_files = {
+        "//server:conf/logback.xml": "console/conf/logback.xml",
+        "//server:conf/grakn.properties": "console/conf/grakn.properties",
+    },
+    visibility = ["//:__pkg__"]
+)
+
+distribution_zip(
+    name = "distribution",
+    distribution_structures = [":grakn-core-console", "//:grakn-core-bin"],
     additional_files = {
         "//:grakn": 'grakn',
         "//server:conf/logback.xml": "conf/logback.xml",
@@ -84,7 +95,7 @@ distribution(
 )
 
 distribution_deb(
-    name = "deploy-deb",
+    name = "distribution-deb",
     package_name = "grakn-core-console",
     maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (console)",
@@ -93,8 +104,8 @@ distribution_deb(
       "openjdk-8-jre",
       "grakn-core-bin"
     ],
-    target = ":console-binary",
-    installation_dir = "/opt/grakn/core/console/",
+    distribution_structures = [":grakn-core-console"],
+    installation_dir = "/opt/grakn/core/",
     empty_dirs = [
          "opt/grakn/core/console/services/lib/",
     ],
@@ -102,15 +113,21 @@ distribution_deb(
 
 
 distribution_rpm(
-    name = "deploy-rpm",
+    name = "distribution-rpm",
     package_name = "grakn-core-console",
-    installation_dir = "/opt/grakn/core/console/",
+    installation_dir = "/opt/grakn/core/",
     version_file = "//:VERSION",
     spec_file = "//dependencies/distribution/rpm:grakn-core-console.spec",
-    target = ":console-binary",
+    distribution_structures = [":grakn-core-console"],
     empty_dirs = [
          "opt/grakn/core/console/services/lib/",
     ],
+)
+
+deploy_rpm(
+    name = "deploy-rpm",
+    target = ":distribution-rpm",
+    deployment_properties = "//:deployment.properties",
 )
 
 test_suite(

@@ -19,7 +19,7 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 import org.junit.Test;
 
 import java.util.Collection;

@@ -27,19 +27,19 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.HashSet;
 import java.util.Locale;
-import java.util.stream.Stream;
-
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
+import java.util.Set;
 
 /**
  * Some helper methods in dealing with strings in the context of Graql.
  */
 public class StringUtil {
 
+    // TODO: This is critical knowledge that is lost in a Util class.
+    //       Move it to important class along with other Syntax rules
     private static final ImmutableSet<String> ALLOWED_ID_KEYWORDS = ImmutableSet.of(
             "min", "max", "median", "mean", "std", "sum", "count", "path", "cluster", "degrees", "members", "persist"
     );
-    public static final ImmutableSet<String> GRAQL_KEYWORDS = getKeywords().collect(toImmutableSet());
+    public static final Set<String> GRAQL_KEYWORDS = getKeywords();
 
     /**
      * @param string the string to unescape
@@ -110,7 +110,8 @@ public class StringUtil {
     }
 
     private static String escapeLabelOrId(String value) {
-        if (value.matches("^[a-zA-Z_][a-zA-Z0-9_-]*$") && !GRAQL_KEYWORDS.contains(value)) {
+        if (value.matches("^@?[a-zA-Z_][a-zA-Z0-9_-]*$") &&
+                (!GRAQL_KEYWORDS.contains(value)) || ALLOWED_ID_KEYWORDS.contains(value)) {
             return value;
         } else {
             return quoteString(value);
@@ -120,14 +121,16 @@ public class StringUtil {
     /**
      * @return all Graql keywords
      */
-    private static Stream<String> getKeywords() {
+    private static Set<String> getKeywords() {
         HashSet<String> keywords = new HashSet<>();
 
-        for (int i = 1; GraqlLexer.VOCABULARY.getLiteralName(i) != null; i ++) {
-            String name = GraqlLexer.VOCABULARY.getLiteralName(i);
-            keywords.add(name.replaceAll("'", ""));
+        for (int i = 1; i <= GraqlLexer.VOCABULARY.getMaxTokenType(); i ++) {
+            if (GraqlLexer.VOCABULARY.getLiteralName(i) != null) {
+                String name = GraqlLexer.VOCABULARY.getLiteralName(i);
+                keywords.add(name.replaceAll("'", ""));
+            }
         }
 
-        return keywords.stream().filter(keyword -> !ALLOWED_ID_KEYWORDS.contains(keyword));
+        return ImmutableSet.copyOf(keywords);
     }
 }

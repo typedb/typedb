@@ -22,7 +22,7 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 import org.junit.Test;
 
 import static grakn.core.graql.query.Graql.var;
@@ -40,11 +40,11 @@ public class IsaExplicitTest {
     public void testInsertSyntax() {
         InsertQuery insertQuery;
 
-        insertQuery = Graql.insert(x.isaExplicit(thingy));
+        insertQuery = Graql.insert(x.isaX(thingy));
         assertEquals("insert $x isa! thingy;", insertQuery.toString());
 
         insertQuery = Graql.parse("insert $x isa! thingy;");
-        assertEquals(Graql.insert(x.isaExplicit(thingy)), insertQuery);
+        assertEquals(Graql.insert(x.isaX(thingy)), insertQuery);
     }
 
 
@@ -54,16 +54,16 @@ public class IsaExplicitTest {
         MatchClause matchQuery;
         GetQuery getQuery;
 
-        matchQuery = Graql.match(x.isaExplicit(thingy1));
+        matchQuery = Graql.match(x.isaX(thingy1));
         assertEquals("match $x isa! thingy1;", matchQuery.toString());
 
-        matchQuery = Graql.match(x.isaExplicit(y));
+        matchQuery = Graql.match(x.isaX(y));
         assertEquals("match $x isa! $y;", matchQuery.toString());
 
         getQuery = Graql.parse("match $x isa! thingy1; get;");
-        assertEquals(Graql.match(x.isaExplicit(thingy1)), getQuery.match());
+        assertEquals(Graql.match(x.isaX(thingy1)), getQuery.match());
 
         getQuery = Graql.parse("match $x isa! $y; get;");
-        assertEquals(Graql.match(x.isaExplicit(y)), getQuery.match());
+        assertEquals(Graql.match(x.isaX(y)), getQuery.match());
     }
 }

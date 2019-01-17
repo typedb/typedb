@@ -21,8 +21,12 @@ package grakn.core.graql.query.pattern;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -80,9 +84,31 @@ public class Disjunction<T extends Pattern> implements Pattern {
 
     @Override
     public String toString() {
-        return getPatterns().stream()
-                .map(Object::toString)
-                .collect(Collectors.joining(" or "));
+        StringBuilder disjunction = new StringBuilder();
+
+        Iterator<T> patternIter = patterns.iterator();
+        while (patternIter.hasNext()) {
+            Pattern pattern = patternIter.next();
+            disjunction.append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE);
+
+            if (pattern instanceof Conjunction<?>) {
+                disjunction.append(((Conjunction<? extends Pattern>) pattern).getPatterns().stream()
+                                           .map(Object::toString)
+                                           .collect(Collectors.joining(Query.Char.SPACE.toString())));
+            } else {
+                disjunction.append(pattern.toString());
+            }
+
+            disjunction.append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE);
+
+            if (patternIter.hasNext()) {
+                disjunction.append(Query.Char.SPACE).append(Query.Operator.OR).append(Query.Char.SPACE);
+            }
+        }
+
+        disjunction.append(Query.Char.SEMICOLON);
+
+        return disjunction.toString();
     }
 
     @Override

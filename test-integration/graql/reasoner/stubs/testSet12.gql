@@ -7,55 +7,55 @@ role2 sub role;
 
 #Entities
 
-entity1 sub entity
-    plays role1
+entity1 sub entity,
+    plays role1,
     plays role2;
 
 #Relations
 
-relation1 sub relationship
-    relates role1
+relation1 sub relationship,
+    relates role1,
     relates role2;
 
-relation2 sub relationship
-    relates role1
+relation2 sub relationship,
+    relates role1,
     relates role2;
 
-relation3 sub relationship
-    relates role1
+relation3 sub relationship,
+    relates role1,
     relates role2;
 
 #Rules
 
-rule-1 sub rule
+rule-1 sub rule,
     when {
     	(role1:$x, role2:$y) isa relation1;
     	(role1:$y, role2:$z) isa relation1;
-    }
+    },
     then {
     	(role1:$x, role2:$z) isa relation1;
     };
 
-rule-2 sub rule
+rule-2 sub rule,
     when {
     	(role1:$x, role2:$y) isa relation1;
-    }
+    },
     then {
     	(role1:$x, role2:$y) isa relation2;
     };
 
-rule-3 sub rule
+rule-3 sub rule,
     when {
     	(role1:$x, role2:$y) isa relation3;
-    }
+    },
     then {
     	(role1:$x, role2:$y) isa relation2;
     };
 
-rule-4 sub rule
+rule-4 sub rule,
     when {
     	(role1:$x, role2:$y) isa relation2;
-    }
+    },
     then {
     	(role1:$x, role2:$y) isa relation3;
     };

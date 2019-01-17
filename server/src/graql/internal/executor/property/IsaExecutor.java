@@ -28,8 +28,8 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
@@ -39,8 +39,7 @@ import java.util.Set;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
-public class IsaExecutor implements PropertyExecutor.Insertable,
-                                    PropertyExecutor {
+public class IsaExecutor implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final IsaProperty property;
@@ -60,15 +59,9 @@ public class IsaExecutor implements PropertyExecutor.Insertable,
     }
 
     @Override
-    public boolean mappable(Statement statement) {
-        //IsaProperty is unique within a var, so skip if this is a relation
-        return !statement.hasProperty(RelationProperty.class);
-    }
-
-    @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         //IsaProperty is unique within a var, so skip if this is a relation
-        if (!mappable(statement)) return null;
+        if (statement.hasProperty(RelationProperty.class)) return null;
 
         Variable varName = var.asUserDefined();
         Variable typeVar = property.type().var();
@@ -80,7 +73,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable,
         Statement isaVar;
 
         if (property instanceof IsaExplicitProperty) {
-            isaVar = new Statement(varName).isaExplicit(new Statement(typeVar));
+            isaVar = new Statement(varName).isaX(new Statement(typeVar));
         } else {
             isaVar = new Statement(varName).isa(new Statement(typeVar));
         }

@@ -36,8 +36,10 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.StatementInstance;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -58,6 +60,7 @@ import org.junit.rules.ExpectedException;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -274,8 +277,7 @@ public class InsertQueryIT {
 
     @Test
     public void testErrorWhenSubRelation() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty("sub").getMessage());
+        exception.expect(IllegalArgumentException.class);
         tx.execute(Graql.insert(
                 var().sub("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y"),
                 var("x").id("Godfather").isa("movie"),
@@ -423,15 +425,13 @@ public class InsertQueryIT {
 
     @Test
     public void whenInsertingAnInstanceWithALabel_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("label"), containsString("abc")));
+        exception.expect(IllegalArgumentException.class);
         tx.execute(Graql.insert(type("abc").isa("movie")));
     }
 
     @Test
     public void whenInsertingAResourceWithALabel_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("label"), containsString("bobby")));
+        exception.expect(IllegalArgumentException.class);
         tx.execute(Graql.insert(type("bobby").val("bob").isa("name")));
     }
 
@@ -579,9 +579,9 @@ public class InsertQueryIT {
 
         // We have to construct it this way because you can't have two `isa`s normally
         // TODO: less bad way?
-        Statement varPattern = new Statement(
+        Statement varPattern = Statement.create(
                 new Variable("x"),
-                ImmutableList.of(new IsaProperty(type("movie")), new IsaProperty(type("person")))
+                new LinkedHashSet<>(ImmutableList.of(new IsaProperty(type("movie")), new IsaProperty(type("person"))))
         );
 
         // We don't know in what order the message will be

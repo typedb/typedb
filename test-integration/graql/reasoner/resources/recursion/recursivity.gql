@@ -84,7 +84,7 @@ then {
 
 rule-5
 when {
-($x, $y) isa B4;}
+($x, $y) isa B4;},
 then {
 ($x, $y) isa P1;};
 

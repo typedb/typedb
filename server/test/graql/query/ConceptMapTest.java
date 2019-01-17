@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

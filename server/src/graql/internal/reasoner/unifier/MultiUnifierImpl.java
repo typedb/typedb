@@ -25,7 +25,7 @@ import com.google.common.collect.UnmodifiableIterator;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;

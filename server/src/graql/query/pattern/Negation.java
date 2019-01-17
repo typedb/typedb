@@ -20,6 +20,9 @@ package grakn.core.graql.query.pattern;
 
 import grakn.core.graql.query.Graql;
 import java.util.Collections;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
+
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
@@ -66,9 +69,7 @@ public class Negation<T extends Pattern> implements Pattern {
 
     @Override
     public String toString() {
-        return pattern.statements().size() == 1?
-                "NOT {" + pattern +"}" :
-                "NOT {" + pattern + ";}";
+        return "NOT {" + pattern + ";}";
     }
 }
 

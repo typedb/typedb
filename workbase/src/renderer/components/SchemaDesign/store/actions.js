@@ -17,17 +17,20 @@ import {
 } from '@/components/shared/StoresActions';
 import logger from '@/../Logger';
 
+import {
+  META_CONCEPTS,
+  relationshipTypesOutboundEdges,
+  ownerHasEdges,
+  computeSubConcepts,
+} from '@/components/shared/SharedUtils';
+
 import Grakn from 'grakn';
 import SchemaHandler from '../SchemaHandler';
 import {
-  META_CONCEPTS,
-  computeSubConcepts,
-  relationshipTypesOutboundEdges,
   updateNodePositions,
   loadMetaTypeInstances,
   typeInboundEdges,
   computeAttributes,
-  ownerHasEdges,
 } from '../SchemaUtils';
 import SchemaCanvasEventsHandler from '../SchemaCanvasEventsHandler';
 

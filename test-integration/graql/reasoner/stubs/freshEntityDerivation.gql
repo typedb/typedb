@@ -7,10 +7,10 @@ derivedEntity sub entity;
 
 #Rules
 
-rule-1 sub rule
+rule-1 sub rule,
     when {
     	$x isa baseEntity;
-    }
+    },
     then {
     	$y isa derivedEntity;
     };

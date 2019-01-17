@@ -27,6 +27,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.util.StringUtil;
 
 import java.util.Collection;
@@ -65,18 +66,25 @@ class StringPrinter extends Printer<StringBuilder> {
 
         // Display values for resources and ids for everything else
         if (concept.isAttribute()) {
-            output.append(colorKeyword("val ")).append(StringUtil.valueToString(concept.asAttribute().value()));
+            output.append(StringUtil.valueToString(concept.asAttribute().value()));
         } else if (concept.isSchemaConcept()) {
             SchemaConcept ontoConcept = concept.asSchemaConcept();
-            output.append(colorKeyword("label ")).append(colorType(ontoConcept));
+            output.append(colorKeyword(Query.Property.TYPE.toString()))
+                    .append(Query.Char.SPACE)
+                    .append(colorType(ontoConcept));
 
             SchemaConcept superConcept = ontoConcept.sup();
 
             if (superConcept != null) {
-                output.append(colorKeyword(" sub ")).append(colorType(superConcept));
+                output.append(Query.Char.SPACE)
+                        .append(colorKeyword(Query.Property.SUB.toString()))
+                        .append(Query.Char.SPACE)
+                        .append(colorType(superConcept));
             }
         } else {
-            output.append(colorKeyword("id ")).append(idToString(concept.id()));
+            output.append(colorKeyword(Query.Property.ID.toString()))
+                    .append(Query.Char.SPACE)
+                    .append(idToString(concept.id()));
         }
 
         if (concept.isRelationship()) {
@@ -86,32 +94,44 @@ class StringPrinter extends Printer<StringBuilder> {
                 Set<Thing> things = rolePlayers.getValue();
 
                 for (Thing thing : things) {
-                    rolePlayerList.add(colorType(role) + ": id " + idToString(thing.id()));
+                    rolePlayerList.add(
+                            colorType(role) + Query.Char.COLON + Query.Char.SPACE +
+                                    Query.Property.ID + Query.Char.SPACE + idToString(thing.id()));
                 }
             }
 
-            String relationString = rolePlayerList.stream().collect(Collectors.joining(", "));
-            output.append(" (").append(relationString).append(")");
+            String relationString = rolePlayerList.stream().collect(Collectors.joining(Query.Char.COMMA_SPACE.toString()));
+            output.append(Query.Char.SPACE).append(Query.Char.PARAN_OPEN).append(relationString).append(Query.Char.PARAN_CLOSE);
         }
 
         // Display type of each instance
         if (concept.isThing()) {
             Type type = concept.asThing().type();
-            output.append(colorKeyword(" isa ")).append(colorType(type));
+            output.append(Query.Char.SPACE)
+                    .append(colorKeyword(Query.Property.ISA.toString()))
+                    .append(Query.Char.SPACE)
+                    .append(colorType(type));
         }
 
         // Display when and then for rules
         if (concept.isRule()) {
-            output.append(colorKeyword(" when ")).append("{ ").append(concept.asRule().when()).append(" }");
-            output.append(colorKeyword(" then ")).append("{ ").append(concept.asRule().then()).append(" }");
+            output.append(Query.Char.SPACE).append(colorKeyword(Query.Property.WHEN.toString())).append(Query.Char.SPACE)
+                    .append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE)
+                    .append(concept.asRule().when())
+                    .append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE);
+            output.append(Query.Char.SPACE).append(colorKeyword(Query.Property.THEN.toString())).append(Query.Char.SPACE)
+                    .append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE)
+                    .append(concept.asRule().then())
+                    .append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE);
         }
 
         // Display any requested resources
         if (concept.isThing() && attributeTypes.length > 0) {
             concept.asThing().attributes(attributeTypes).forEach(resource -> {
-                String resourceType = colorType(resource.type());
+                String attributeType = colorType(resource.type());
                 String value = StringUtil.valueToString(resource.value());
-                output.append(colorKeyword(" has ")).append(resourceType).append(" ").append(value);
+                output.append(Query.Char.SPACE).append(colorKeyword(Query.Property.HAS.toString())).append(Query.Char.SPACE)
+                        .append(attributeType).append(Query.Char.SPACE).append(value);
             });
         }
 
@@ -133,10 +153,10 @@ class StringPrinter extends Printer<StringBuilder> {
     protected StringBuilder collection(Collection<?> collection) {
         StringBuilder builder = new StringBuilder();
 
-        builder.append("{");
+        builder.append(Query.Char.CURLY_OPEN);
         collection.stream().findFirst().ifPresent(item -> builder.append(build(item)));
-        collection.stream().skip(1).forEach(item -> builder.append(", ").append(build(item)));
-        builder.append("}");
+        collection.stream().skip(1).forEach(item -> builder.append(Query.Char.COMMA_SPACE).append(build(item)));
+        builder.append(Query.Char.CURLY_CLOSE);
 
         return builder;
     }
@@ -149,25 +169,26 @@ class StringPrinter extends Printer<StringBuilder> {
     @Override
     protected StringBuilder answerGroup(AnswerGroup<?> answer) {
         StringBuilder builder = new StringBuilder();
-        return builder.append('{')
+        return builder.append(Query.Char.CURLY_OPEN)
                 .append(concept(answer.owner()))
-                .append(": ")
+                .append(Query.Char.COLON).append(Query.Char.SPACE)
                 .append(build(answer.answers()))
-                .append('}');
+                .append(Query.Char.CURLY_CLOSE);
     }
 
     @Override
     protected StringBuilder conceptMap(ConceptMap answer) {
         StringBuilder builder = new StringBuilder();
 
-        answer.forEach((name, concept) -> builder.append(name).append(" ").append(concept(concept)).append("; "));
-        return new StringBuilder("{" + builder.toString().trim() + "}");
+        answer.forEach((name, concept) -> builder.append(name).append(Query.Char.SPACE)
+                .append(concept(concept)).append(Query.Char.SEMICOLON).append(Query.Char.SPACE));
+        return new StringBuilder(Query.Char.CURLY_OPEN + builder.toString().trim() + Query.Char.CURLY_CLOSE);
     }
 
     @Override
     protected StringBuilder conceptSetMeasure(ConceptSetMeasure answer) {
         StringBuilder builder = new StringBuilder();
-        return builder.append(answer.measurement()).append(": ").append(collection(answer.set()));
+        return builder.append(answer.measurement()).append(Query.Char.COLON).append(Query.Char.SPACE).append(collection(answer.set()));
     }
 
     @Override
@@ -178,10 +199,10 @@ class StringPrinter extends Printer<StringBuilder> {
             Map.Entry<?, ?> entry = (Map.Entry<?, ?>) object;
 
             builder.append(build(entry.getKey()));
-            builder.append(": ");
+            builder.append(Query.Char.COLON).append(Query.Char.SPACE);
             builder.append(build(entry.getValue()));
         } else if (object != null) {
-            builder.append(Objects.toString(object));
+            builder.append(object);
         }
 
         return builder;

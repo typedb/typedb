@@ -28,7 +28,7 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -90,7 +90,7 @@ public class ReasoningIT {
                 assertEquals(attributes, attributesFromAPI);
                 assertEquals(attributes, attributesFromImplicitRelation);
 
-                tx.execute(Graql.<InsertQuery>parse("match $rmn isa model-name 'someName', has specific-indicator 'someIndicator' via $a; insert $a has indicator-name 'someIndicatorName';"));
+                tx.execute(Graql.<InsertQuery>parse("match $rmn 'someName' isa model-name, has specific-indicator 'someIndicator' via $a; insert $a has indicator-name 'someIndicatorName';"));
 
                 Set<Attribute<Object>> newAttributes = tx.stream(attributeQuery,false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
                 Set<Attribute<Object>> newAttributesFromImplicitRelation = tx.stream(attributeRelationQuery,false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
@@ -290,10 +290,10 @@ public class ReasoningIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 
 
-                String queryString = "match $x isa resource 'partial bad flag'; ($x, resource-owner: $y) isa resource-relation; get;";
-                String queryString2 = "match $x isa resource 'partial bad flag 2'; ($x, resource-owner: $y) isa resource-relation; get;";
-                String queryString3 = "match $x isa resource 'bad flag' ; ($x, resource-owner: $y) isa resource-relation; get;";
-                String queryString4 = "match $x isa resource 'no flag' ; ($x, resource-owner: $y) isa resource-relation; get;";
+                String queryString = "match $x 'partial bad flag' isa resource; ($x, resource-owner: $y) isa resource-relation; get;";
+                String queryString2 = "match $x 'partial bad flag 2' isa resource; ($x, resource-owner: $y) isa resource-relation; get;";
+                String queryString3 = "match $x 'bad flag' isa resource ; ($x, resource-owner: $y) isa resource-relation; get;";
+                String queryString4 = "match $x 'no flag' isa resource ; ($x, resource-owner: $y) isa resource-relation; get;";
                 String queryString5 = "match $x isa resource; ($x, resource-owner: $y) isa resource-relation; get;";
                 String queryString6 = "match $x isa resource; $x contains 'bad flag';($x, resource-owner: $y) isa resource-relation; get;";
 
@@ -330,10 +330,10 @@ public class ReasoningIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 
 
-                String queryString = "match $x isa resource 'partial bad flag'; ($x, resource-owner: $y) isa another-resource-relation; get;";
-                String queryString2 = "match $x isa resource 'partial bad flag 2'; ($x, resource-owner: $y) isa another-resource-relation; get;";
-                String queryString3 = "match $x isa resource 'bad flag' ; ($x, resource-owner: $y) isa another-resource-relation; get;";
-                String queryString4 = "match $x isa resource 'no flag' ; ($x, resource-owner: $y) isa another-resource-relation; get;";
+                String queryString = "match $x 'partial bad flag' isa resource; ($x, resource-owner: $y) isa another-resource-relation; get;";
+                String queryString2 = "match $x 'partial bad flag 2' isa resource; ($x, resource-owner: $y) isa another-resource-relation; get;";
+                String queryString3 = "match $x 'bad flag' isa resource ; ($x, resource-owner: $y) isa another-resource-relation; get;";
+                String queryString4 = "match $x 'no flag' isa resource ; ($x, resource-owner: $y) isa another-resource-relation; get;";
                 String queryString5 = "match $x isa resource; ($x, resource-owner: $y) isa another-resource-relation; get;";
                 String queryString6 = "match $x isa resource; $x contains 'bad flag';($x, resource-owner: $y) isa another-resource-relation; get;";
 

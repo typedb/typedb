@@ -23,7 +23,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;

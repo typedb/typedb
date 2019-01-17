@@ -20,7 +20,8 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.StatementInstance;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -77,13 +78,18 @@ public class RelationProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> innerStatements() {
+    public Stream<Statement> statements() {
         return relationPlayers().stream().flatMap(relationPlayer -> {
             Stream.Builder<Statement> stream = Stream.builder();
             stream.add(relationPlayer.getPlayer());
             relationPlayer.getRole().ifPresent(stream::add);
             return stream.build();
         });
+    }
+
+    @Override
+    public Class statementClass() {
+        return StatementInstance.StatementRelation.class;
     }
 
     @Override

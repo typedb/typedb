@@ -28,7 +28,7 @@ import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 import org.junit.Test;
 
 import java.util.HashMap;

@@ -23,7 +23,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -32,6 +32,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -159,8 +160,8 @@ public class GeoInferenceIT {
                     "($x, $y) isa is-located-in;" +
                     "$y has name 'Masovia'; get;";
             String explicitString = "match " +
-                    "{(geo-entity: $x, entity-location: $y) isa is-located-in or " +
-                    "(geo-entity: $y, entity-location: $x) isa is-located-in;};" +
+                    "{ (geo-entity: $x, entity-location: $y) isa is-located-in; } or " +
+                    "{ (geo-entity: $y, entity-location: $x) isa is-located-in; };" +
                     "$y has name 'Masovia'; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
@@ -210,8 +211,8 @@ public class GeoInferenceIT {
                     "$y id '" + masovia.id().getValue() + "'; get;";
 
             String queryString2 = "match " +
-                    "{(geo-entity: $x, entity-location: $y) isa is-located-in or " +
-                    "(geo-entity: $y, entity-location: $x) isa is-located-in;};" +
+                    "{ (geo-entity: $x, entity-location: $y) isa is-located-in; } or " +
+                    "{ (geo-entity: $y, entity-location: $x) isa is-located-in; };" +
                     "$y id '" + masovia.id().getValue() + "'; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
@@ -361,7 +362,7 @@ public class GeoInferenceIT {
         }
     }
 
-    @Test
+    @Test @Ignore // TODO: enable once we re-implement query limits
     public void testLazy() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
             

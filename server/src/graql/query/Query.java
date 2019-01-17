@@ -63,17 +63,21 @@ public interface Query {
      */
     enum Char {
         EQUAL("="),
+        COLON(":"),
         SEMICOLON(";"),
         SPACE(" "),
         COMMA(","),
         COMMA_SPACE(", "),
         CURLY_OPEN("{"),
         CURLY_CLOSE("}"),
+        PARAN_OPEN("("),
+        PARAN_CLOSE(")"),
         SQUARE_OPEN("["),
         SQUARE_CLOSE("]"),
         QUOTE("\""),
         NEW_LINE("\n"),
         UNDERSCORE("_"),
+        $_("$_"),
         $("$");
 
         private final String character;
@@ -92,7 +96,8 @@ public interface Query {
         AND("and"),
         OR("or"),
         NOT("not"),
-        EQUAL("=");
+        EQUAL("="),
+        LIKE("like");
         // TODO: other predicates
 
         private final String operator;
@@ -115,7 +120,7 @@ public interface Query {
         ABSTRACT("abstract"),
         ISA("isa"),
         ISAX("isa!"),
-        LABEL("label"),
+        TYPE("type"),
         NEQ("!="),
         PLAYS("plays"),
         REGEX("regex"),

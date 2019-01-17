@@ -19,11 +19,10 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 import static java.util.stream.Collectors.joining;

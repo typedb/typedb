@@ -7,32 +7,32 @@ role2 sub role;
 
 #Entities
 
-entity1 sub entity
+entity1 sub entity,
     plays role1;
 
-entity2 sub entity
-    plays role2
+entity2 sub entity,
+    plays role2,
     has res1;
 
-relation1 sub relationship
-    relates role1
-    relates role2
+relation1 sub relationship,
+    relates role1,
+    relates role2,
     has res2;
 
-relation2 sub relationship
-    relates role1
+relation2 sub relationship,
+    relates role1,
     relates role2;
 
-relation3 sub relationship
-    relates role1
+relation3 sub relationship,
+    relates role1,
     relates role2;
 
-res1 sub attribute datatype string;
-res2 sub attribute datatype string;
+res1 sub attribute, datatype string;
+res2 sub attribute, datatype string;
 
 #Rules
 
-my-rule sub rule
+my-rule sub rule,
     when{
         $b isa entity2;
         $b has res1 'value';
@@ -40,15 +40,15 @@ my-rule sub rule
         $rel1 (role1: $p, role2: $b) isa relation1;
         $rel2 has res2 'value2';
         $rel2 (role1: $c, role2: $b) isa relation1;
-    }
+    },
     then {
         (role1: $p, role2: $c) isa relation2;
     };
 
-dummyRule sub rule
+dummyRule sub rule,
     when{
         (role1: $p, role2: $c) isa relation3;
-    }
+    },
     then {
         (role1: $p, role2: $c) isa relation1;
     };

@@ -33,8 +33,8 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.property.PropertyExecutor.Writer;
 import grakn.core.graql.internal.util.Partition;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.server.Transaction;
 import org.slf4j.Logger;
@@ -377,6 +377,6 @@ public class WriteExecutor {
             }
         }
 
-        return new Statement(var, propertiesOfVar);
+        return Statement.create(var, propertiesOfVar);
     }
 }

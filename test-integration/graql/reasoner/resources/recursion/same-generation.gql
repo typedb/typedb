@@ -4,7 +4,7 @@ define
 ####################Schema######################
 #################################################
 
-"person" sub entity
+"person" sub entity,
       has name;
 
 "parent" sub role;

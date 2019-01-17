@@ -148,9 +148,9 @@ public class ClientJavaE2E {
         localhostGraknTx(tx -> {
             String[] names = lionNames();
             InsertQuery insertLionQuery = Graql.insert(
-                    var().isa("lion").has("name").val(names[0]),
-                    var().isa("lion").has("name").val(names[1]),
-                    var().isa("lion").has("name").val(names[2])
+                    var().isa("lion").has("name", names[0]),
+                    var().isa("lion").has("name", names[1]),
+                    var().isa("lion").has("name", names[2])
             );
             LOG.info("clientJavaE2E() - insert some data...");
             LOG.info("clientJavaE2E() - '" + insertLionQuery + "'");
@@ -163,17 +163,17 @@ public class ClientJavaE2E {
             String[] familyMembers = lionNames();
             LOG.info("clientJavaE2E() - inserting mating relationships...");
             InsertQuery insertMatingQuery = Graql.match(
-                            var("lion").isa("lion").has("name").val(familyMembers[0]),
-                            var("lioness").isa("lion").has("name").val(familyMembers[1]))
+                            var("lion").isa("lion").has("name", familyMembers[0]),
+                            var("lioness").isa("lion").has("name", familyMembers[1]))
                     .insert(var().isa("mating").rel("male-partner", var("lion")).rel("female-partner", var("lioness")));
             LOG.info("clientJavaE2E() - '" + insertMatingQuery + "'");
             List<ConceptMap> insertedMating = tx.execute(insertMatingQuery);
 
             LOG.info("clientJavaE2E() - inserting child-bearing relationships...");
             InsertQuery insertChildBearingQuery = Graql.match(
-                            var("lion").isa("lion").has("name").val(familyMembers[0]),
-                            var("lioness").isa("lion").has("name").val(familyMembers[1]),
-                            var("offspring").isa("lion").has("name").val(familyMembers[2]),
+                            var("lion").isa("lion").has("name", familyMembers[0]),
+                            var("lioness").isa("lion").has("name", familyMembers[1]),
+                            var("offspring").isa("lion").has("name", familyMembers[2]),
                             var("mating").rel("male-partner", var("lion")).rel("female-partner", var("lioness")).isa("mating")
                     )
                     .insert(var("childbearing").rel("child-bearer", var("mating")).rel("offspring", var("offspring")).isa("child-bearing"));

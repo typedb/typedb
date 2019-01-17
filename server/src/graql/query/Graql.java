@@ -18,15 +18,19 @@
 
 package grakn.core.graql.query;
 
-import com.google.common.collect.Sets;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.parser.Parser;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Negation;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.property.ValueProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.StatementInstance;
+import grakn.core.graql.query.pattern.statement.StatementInstance.StatementAttribute;
+import grakn.core.graql.query.pattern.statement.StatementInstance.StatementRelation;
+import grakn.core.graql.query.pattern.statement.StatementType;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
@@ -39,6 +43,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.query.ComputeQuery.Method;
@@ -60,16 +65,19 @@ public class Graql {
         return parser.parseQueryEOF(queryString);
     }
 
+    @CheckReturnValue
     public static <T extends Query> Stream<T> parseList(String queryString) {
-        return parser.parseQueryList(queryString);
+        return parser.parseQueryListEOF(queryString);
     }
 
+    @CheckReturnValue
     public static Pattern parsePattern(String pattern) {
-        return parser.parsePattern(pattern);
+        return parser.parsePatternEOF(pattern);
     }
 
+    @CheckReturnValue
     public static List<Pattern> parsePatternList(String pattern) {
-        return parser.parsePatterns(pattern);
+        return parser.parsePatternListEOF(pattern).collect(Collectors.toList());
     }
 
     /**
@@ -153,20 +161,29 @@ public class Graql {
 
 
     /**
-     * @param name the name of the variable
-     * @return a new query variable
-     */
-    @CheckReturnValue
-    public static Statement var(String name) {
-        return new Statement(new Variable(name));
-    }
-
-    /**
-     * @return a new, anonymous query variable
+     * @return a new statement with an anonymous Variable
      */
     @CheckReturnValue
     public static Statement var() {
-        return new Statement(new Variable());
+        return var(new Variable());
+    }
+
+    /**
+     * @param name the name of the variable
+     * @return a new statement with a variable of a given name
+     */
+    @CheckReturnValue
+    public static Statement var(String name) {
+        return var(new Variable(name));
+    }
+
+    /**
+     * @param var a variable to create a statement
+     * @return a new statement with a provided variable
+     */
+    @CheckReturnValue
+    public static Statement var(Variable var) {
+        return new Statement(var);
     }
 
     /**
@@ -174,16 +191,41 @@ public class Graql {
      * @return a variable pattern that identifies a concept by label
      */
     @CheckReturnValue
-    public static Statement type(String label) {
-        return var().type(label);
+    public static StatementType type(String label) {
+        return var(new Variable(false)).type(label);
     }
+
+    @CheckReturnValue
+    public static StatementRelation rel(String player) {
+        return var(new Variable(false)).rel(player);
+    }
+
+    @CheckReturnValue
+    public static StatementRelation rel(String role, String player) {
+        return var(new Variable(false)).rel(role, player);
+    }
+
+    public static StatementRelation rel(Statement role, Statement player) {
+        return var(new Variable(false)).rel(role, player);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute val(Object value) {
+        return var(new Variable(false)).val(Graql.eq(value));
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute val(ValuePredicate predicate) {
+        return var(new Variable(false)).val(new ValueProperty(predicate));
+    }
+
 
     /**
      * @param patterns an array of patterns to match
      * @return a pattern that will match only when all contained patterns match
      */
     @CheckReturnValue
-    public static Pattern and(Pattern... patterns) {
+    public static Conjunction<?> and(Pattern... patterns) {
         return and(Arrays.asList(patterns));
     }
 
@@ -192,7 +234,7 @@ public class Graql {
      * @return a pattern that will match only when all contained patterns match
      */
     @CheckReturnValue
-    public static Pattern and(Collection<? extends Pattern> patterns) {
+    public static Conjunction<?> and(Collection<? extends Pattern> patterns) {
         return and(new LinkedHashSet<>(patterns));
     }
 
@@ -364,7 +406,7 @@ public class Graql {
      * @return a predicate that returns true when a value matches the given regular expression
      */
     @CheckReturnValue
-    public static ValuePredicate regex(String pattern) {
+    public static ValuePredicate like(String pattern) {
         Objects.requireNonNull(pattern);
         return Predicates.regex(pattern);
     }
