@@ -47,6 +47,12 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.match;
+import static grakn.core.graql.query.Graql.or;
+import static grakn.core.graql.query.Graql.parse;
+import static grakn.core.graql.query.Graql.rel;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;

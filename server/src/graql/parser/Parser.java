@@ -51,6 +51,7 @@ import graql.grammar.GraqlBaseVisitor;
 import graql.grammar.GraqlLexer;
 import graql.grammar.GraqlParser;
 import graql.parser.ErrorListener;
+import java.util.Collection;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -411,7 +412,14 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public Pattern visitPattern_disjunction(GraqlParser.Pattern_disjunctionContext ctx) {
-        return or(ctx.pattern().stream().map(this::visitPattern).collect(toList()));
+        Set<Pattern> patterns = ctx.patterns().stream()
+                .map(patternsCtx -> {
+                    Set<Pattern> patternSet = visitPatterns(patternsCtx);
+                    if (patternSet.size() > 1) return and(patternSet);
+                    else return patternSet.iterator().next();
+                })
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        return Graql.or(patterns);
     }
 
     @Override
