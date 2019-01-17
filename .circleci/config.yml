@@ -413,9 +413,9 @@ jobs:
       - run: echo docs-merge-dev-to-master succeeded.
 workflows:
   version: 2
-  grakn-core-continuous-release:
+  ci-pipeline-release:
     jobs:
-      - deploy-github
+      - dist-ubuntu
       # - tests
       # - build:
       #     requires:
