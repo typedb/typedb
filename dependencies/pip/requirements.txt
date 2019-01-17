@@ -7,3 +7,16 @@ enum34==1.1.6
 setuptools>=38.6.0 # for supporting Markdown
 wheel==0.32.3 # for supporting bdist_wheel
 twine==1.12.1 # for uploading the package
+requests==2.21.0 # twine dependency
+urllib3==1.24.1 # requests dependency
+chardet==3.0.4 # requests dependency
+certifi==2018.11.29 # requests dependency
+idna==2.8 # requests dependency
+requests-toolbelt==0.8.0 # requests dependency
+tqdm==4.29.1 # twine dependency
+pkginfo==1.5.0.1 # twine dependency
+readme-renderer==24.0 # twine dependency
+Pygments==2.3.1 # readme-renderer
+docutils==0.14 # readme-renderer
+bleach==3.1.0 # readme-renderer
+webencodings==0.5.1 # bleach
