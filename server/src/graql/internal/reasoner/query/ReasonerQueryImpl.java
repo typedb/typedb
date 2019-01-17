@@ -478,7 +478,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     public Stream<ConceptMap> resolve(MultilevelSemanticCache cache){
-        return new ResolutionIterator(new CompositeQuery(this, null, tx()), cache).hasStream();
+        return new ResolutionIterator(new CompositeQuery(this, new HashSet<>(), tx()), cache).hasStream();
     }
 
     /**
