@@ -326,7 +326,7 @@ public class Graql {
      * @return a predicate that is true when a value is strictly greater than the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate gt(Comparable value) {
+    public static ValuePredicate gt(Object value) {
         Objects.requireNonNull(value);
         return Predicates.gt(value);
     }
@@ -346,7 +346,7 @@ public class Graql {
      * @return a predicate that is true when a value is greater or equal to the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate gte(Comparable value) {
+    public static ValuePredicate gte(Object value) {
         Objects.requireNonNull(value);
         return Predicates.gte(value);
     }
@@ -366,7 +366,7 @@ public class Graql {
      * @return a predicate that is true when a value is strictly less than the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate lt(Comparable value) {
+    public static ValuePredicate lt(Object value) {
         Objects.requireNonNull(value);
         return Predicates.lt(value);
     }
@@ -386,7 +386,7 @@ public class Graql {
      * @return a predicate that is true when a value is less or equal to the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate lte(Comparable value) {
+    public static ValuePredicate lte(Object value) {
         Objects.requireNonNull(value);
         return Predicates.lte(value);
     }
