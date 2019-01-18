@@ -46,6 +46,19 @@ py_library(
         requirement("twine"),
         requirement("setuptools"),
         requirement("wheel"),
+        requirement("requests"),
+        requirement("urllib3"),
+        requirement("chardet"),
+        requirement("certifi"),
+        requirement("idna"),
+        requirement("tqdm"),
+        requirement("requests_toolbelt"),
+        requirement("pkginfo"),
+        requirement("readme_renderer"),
+        requirement("Pygments"),
+        requirement("docutils"),
+        requirement("bleach"),
+        requirement("webencodings"),
     ]
 )
 
