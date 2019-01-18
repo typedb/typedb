@@ -421,7 +421,14 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public Pattern visitPattern_negation(GraqlParser.Pattern_negationContext ctx) {
-        return not(visitPattern(ctx.pattern()));
+        Set<Pattern> patterns = visitPatterns(ctx.patterns());
+
+        if (patterns.size() == 1) {
+            return not(patterns.iterator().next());
+
+        } else {
+            return not(and(patterns));
+        }
     }
 
     // PATTERN STATEMENTS ======================================================

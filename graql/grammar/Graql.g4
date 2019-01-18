@@ -114,7 +114,7 @@ pattern             :   pattern_statement
 
 pattern_conjunction :   '{' patterns '}' ';' ;
 pattern_disjunction :   '{' patterns '}'  ( OR '{' patterns '}' )+  ';' ;
-pattern_negation    :   NOT '{' pattern '}' ';' ;
+pattern_negation    :   NOT '{' patterns '}' ';' ;
 
 // PATTERN STATEMENTS ==========================================================
 
