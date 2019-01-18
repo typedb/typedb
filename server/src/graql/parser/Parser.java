@@ -18,9 +18,7 @@
 
 package grakn.core.graql.parser;
 
-import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.query.AggregateQuery;
@@ -509,7 +507,7 @@ public class Parser extends GraqlBaseVisitor {
                                 .collect(Collectors.toList())
                 ));
             } else if (property.TYPE() != null) {
-                type = type.type(visitLabel(property.label()).getValue());
+                type = type.type(visitLabel(property.label()));
 
             } else {
                 throw new IllegalArgumentException("Unrecognised Type Statement: " + property.getText());
@@ -680,14 +678,14 @@ public class Parser extends GraqlBaseVisitor {
     @Override
     public Statement visitType(GraqlParser.TypeContext ctx) {
         if (ctx.label() != null) {
-            return type(visitLabel(ctx.label()).getValue());
+            return type(visitLabel(ctx.label()));
         } else {
             return new Statement(getVar(ctx.VAR_()));
         }
     }
 
     @Override
-    public Set<Label> visitLabels(GraqlParser.LabelsContext labels) {
+    public Set<String> visitLabels(GraqlParser.LabelsContext labels) {
         List<GraqlParser.LabelContext> labelsList = new ArrayList<>();
 
         if (labels.label() != null) {
@@ -700,11 +698,11 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public Label visitLabel(GraqlParser.LabelContext ctx) {
+    public String visitLabel(GraqlParser.LabelContext ctx) {
         if (ctx.identifier() != null) {
-            return Label.of(visitIdentifier(ctx.identifier()));
+            return visitIdentifier(ctx.identifier());
         } else {
-            return Label.of(ctx.ID_IMPLICIT_().getText());
+            return ctx.ID_IMPLICIT_().getText();
         }
     }
 
@@ -815,7 +813,7 @@ public class Parser extends GraqlBaseVisitor {
         } else if (datatype.STRING() != null) {
             return Query.DataType.STRING;
         } else {
-            throw CommonUtil.unreachableStatement("Unrecognised " + datatype);
+            throw new IllegalArgumentException("Unrecognised DataType: " + datatype);
         }
     }
 
@@ -850,7 +848,6 @@ public class Parser extends GraqlBaseVisitor {
         return StringUtil.unescapeString(unquoted);
     }
 
-    // TODO: we may be able to merge this if all tokenised strings should be unescaped using StringUtil.unescapeString()
     private String unquoteString(TerminalNode string) {
         return string.getText().substring(1, string.getText().length() - 1);
     }

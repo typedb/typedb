@@ -234,9 +234,8 @@ public class ConnectedComponentIT {
             assertEquals(1, populationCount1.get(7).intValue());
 
             // test on subtypes. This will change existing cluster labels.
-            Set<Label> subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
-                    resourceType3, resourceType4, resourceType5, resourceType6)
-                    .stream().map(Label::of).collect(Collectors.toSet());
+            Set<String> subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
+                    resourceType3, resourceType4, resourceType5, resourceType6);
             clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in(subTypes));
             assertEquals(17, clusterList.size()); // No relationships, so this is the entity count;
         }

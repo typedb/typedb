@@ -27,7 +27,6 @@ import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.util.StringUtil;
 
@@ -47,7 +46,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 
@@ -78,8 +76,8 @@ public class ComputeQuery<T extends Answer> implements Query {
     // All these condition properties need to start off as NULL, they will be initialised when the user provides input
     private ConceptId fromID = null;
     private ConceptId toID = null;
-    private Set<Label> ofTypes = null;
-    private Set<Label> inTypes = null;
+    private Set<String> ofTypes = null;
+    private Set<String> inTypes = null;
     private Algorithm algorithm = null;
     private Arguments arguments = null; // But arguments will also be set when where() is called for cluster/centrality
 
@@ -235,17 +233,17 @@ public class ComputeQuery<T extends Answer> implements Query {
         typeList.add(type);
         typeList.addAll(Arrays.asList(types));
 
-        return of(typeList.stream().map(Label::of).collect(toImmutableSet()));
+        return of(typeList);
     }
 
-    public final ComputeQuery<T> of(Collection<Label> types) {
+    public final ComputeQuery<T> of(Collection<String> types) {
         this.ofTypes = ImmutableSet.copyOf(types);
 
         return this;
     }
 
     @CheckReturnValue
-    public final Optional<Set<Label>> of() {
+    public final Optional<Set<String>> of(){
         return Optional.ofNullable(ofTypes);
     }
 
@@ -254,16 +252,16 @@ public class ComputeQuery<T extends Answer> implements Query {
         typeList.add(type);
         typeList.addAll(Arrays.asList(types));
 
-        return in(typeList.stream().map(Label::of).collect(toImmutableSet()));
+        return in(typeList);
     }
 
-    public final ComputeQuery<T> in(Collection<Label> types) {
+    public final ComputeQuery<T> in(Collection<String> types) {
         this.inTypes = ImmutableSet.copyOf(types);
         return this;
     }
 
     @CheckReturnValue
-    public final Optional<Set<Label>> in() {
+    public final Optional<Set<String>> in() {
         if (this.inTypes == null) return Optional.of(ImmutableSet.of());
         return Optional.of(this.inTypes);
     }
@@ -396,14 +394,17 @@ public class ComputeQuery<T extends Answer> implements Query {
         return "";
     }
 
-    private String typesSyntax(Set<Label> types) {
+    private String typesSyntax(Set<String> types) {
         StringBuilder inTypesString = new StringBuilder();
 
         if (!types.isEmpty()) {
-            if (types.size() == 1) inTypesString.append(StringUtil.typeLabelToString(types.iterator().next()));
-            else {
+            if (types.size() == 1) {
+                inTypesString.append(StringUtil.typeLabelToString(types.iterator().next()));
+            } else {
                 inTypesString.append(Char.SQUARE_OPEN);
-                inTypesString.append(inTypes.stream().map(StringUtil::typeLabelToString).collect(joining(Char.COMMA_SPACE.toString())));
+                inTypesString.append(inTypes.stream()
+                                             .map(StringUtil::typeLabelToString)
+                                             .collect(joining(Char.COMMA_SPACE.toString())));
                 inTypesString.append(Char.SQUARE_CLOSE);
             }
         }
