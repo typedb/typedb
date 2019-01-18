@@ -65,19 +65,18 @@ public interface Pattern {
     @CheckReturnValue
     Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm();
 
-    /**
-     * @return this pattern negated
-     */
     @CheckReturnValue
-    Pattern negate();
+    Disjunction<Conjunction<Pattern>> getNegationDNF();
 
     /**
-     * @return true if this pattern contains only positive patterns
+     * @return true if this pattern corresponds to a negation pattern
      */
     @CheckReturnValue
-    default boolean isPositive(){
-        return getDisjunctiveNormalForm().getPatterns().stream()
-                .flatMap(p -> p.getPatterns().stream())
-                .allMatch(Pattern::isPositive);
-    }
+    default boolean isNegation(){ return false; }
+
+    /**
+     * @return this Pattern as a Negation, if it is one.
+     */
+    @CheckReturnValue
+    default Negation<?> asNegation(){ throw new UnsupportedOperationException(); }
 }

@@ -41,18 +41,6 @@ public interface Atomic {
     Atomic copy(ReasonerQuery parent);
 
     /**
-     * @return true if this atomic is positive (non-negated)
-     */
-    @CheckReturnValue
-    boolean isPositive();
-
-    /**
-     * @return negated version of this atomic
-     */
-    @CheckReturnValue
-    Atomic negate();
-
-    /**
      * @return variable name of this atomic
      */
     @CheckReturnValue

@@ -32,7 +32,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toSet;
 
 /**
  * A class representing a disjunction (or) of patterns. Any inner pattern must match in a query
@@ -71,8 +70,11 @@ public class Disjunction<T extends Pattern> implements Pattern {
     }
 
     @Override
-    public Conjunction<? extends Pattern> negate() {
-        return Graql.and(getPatterns().stream().map(Pattern::negate).collect(toSet()));
+    public Disjunction<Conjunction<Pattern>> getNegationDNF() {
+        Set<Conjunction<Pattern>> dnf = getPatterns().stream()
+                .flatMap(p -> p.getNegationDNF().getPatterns().stream())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        return Graql.or(dnf);
     }
 
     @Override

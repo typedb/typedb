@@ -23,7 +23,6 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.util.Objects;
 import java.util.Set;
@@ -43,7 +42,8 @@ public class AtomicFactory {
     public static Stream<Atomic> createAtoms(Conjunction<Statement> pattern, ReasonerQuery parent) {
         Set<Atomic> atoms = pattern.statements().stream()
                 .flatMap(statement -> statement.properties().stream()
-                        .map(property -> createAtom(property, statement, pattern.statements(), parent))
+                        .map(property -> PropertyExecutor.create(statement.var(), property)
+                                .atomic(parent, statement, pattern.statements()))
                         .filter(Objects::nonNull))
                 .collect(Collectors.toSet());
 
@@ -54,22 +54,6 @@ public class AtomicFactory {
                         .flatMap(Atom::getInnerPredicates)
                         .noneMatch(at::equals)
                 );
-    }
-
-    /**
-     * maps a provided var property to a reasoner atom
-     *
-     * @param property {@link VarProperty} to map
-     * @param statement    {@link Statement} this property belongs to
-     * @param statements   Vars constituting the pattern this property belongs to
-     * @param parent reasoner query this atom should belong to
-     * @return created atom
-     */
-    private static Atomic createAtom(VarProperty property, Statement statement, Set<Statement> statements, ReasonerQuery parent){
-        Atomic atomic = PropertyExecutor.create(statement.var(), property)
-                .atomic(parent, statement, statements);
-        if (atomic == null) return null;
-        return statement.isPositive() ? atomic : NegatedAtomic.create(atomic);
     }
 
 }

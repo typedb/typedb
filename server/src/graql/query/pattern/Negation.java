@@ -18,7 +18,8 @@
 
 package grakn.core.graql.query.pattern;
 
-import grakn.core.graql.query.Query;
+import grakn.core.graql.query.Graql;
+import java.util.Collections;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 
@@ -46,13 +47,20 @@ public class Negation<T extends Pattern> implements Pattern {
 
     @Override
     public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
-        return pattern.negate().getDisjunctiveNormalForm();
+        return pattern.getDisjunctiveNormalForm();
     }
 
     @Override
-    public Pattern negate() {
-        return pattern;
+    public Disjunction<Conjunction<Pattern>> getNegationDNF() {
+        if(pattern.isNegation()) return pattern.asNegation().getPattern().getNegationDNF();
+        return Graql.or(Collections.singleton(Graql.and(Collections.singleton(this))));
     }
+
+    @Override
+    public boolean isNegation() { return true; }
+
+    @Override
+    public Negation<?> asNegation() { return this; }
 
     @Override
     public Set<Variable> variables() {
@@ -61,18 +69,7 @@ public class Negation<T extends Pattern> implements Pattern {
 
     @Override
     public String toString() {
-        StringBuilder negation = new StringBuilder();
-        negation.append(Query.Operator.NOT).append(Query.Char.SPACE);
-
-        if (pattern instanceof Conjunction<?>) {
-            negation.append(pattern.toString());
-        } else {
-            negation.append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE);
-            negation.append(pattern.toString());
-            negation.append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE);
-        }
-
-        return negation.toString();
+        return "NOT {" + pattern + ";}";
     }
 }
 

@@ -31,11 +31,11 @@ import static java.util.stream.Collectors.joining;
 public class StatementType extends Statement {
 
     private StatementType(Statement statement) {
-        this(statement.var(), statement.properties(), statement.sign());
+        this(statement.var(), statement.properties());
     }
 
-    StatementType(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
-        super(var, properties, sign);
+    StatementType(Variable var, LinkedHashSet<VarProperty> properties) {
+        super(var, properties);
     }
 
     public static StatementType create(Statement statement, VarProperty varProperty) {
@@ -52,18 +52,12 @@ public class StatementType extends Statement {
         }
     }
 
-    @Override
-    public StatementType negate() {
-        Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
-        return new StatementType(var(), properties(), negated);
-    }
-
     @CheckReturnValue
     private StatementType addProperty(VarProperty property) {
         validateNonUniqueOrThrow(property);
         LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties());
         newProperties.add(property);
-        return new StatementType(this.var(), newProperties, this.sign());
+        return new StatementType(this.var(), newProperties);
     }
 
     @Override
@@ -79,9 +73,6 @@ public class StatementType extends Statement {
         }
 
         StringBuilder statement = new StringBuilder();
-        if (!isPositive()) {
-            statement.append(Query.Operator.NOT).append(Query.Char.SPACE);
-        }
 
         if (this.var().isVisible()) {
             statement.append(this.var()).append(Query.Char.SPACE);

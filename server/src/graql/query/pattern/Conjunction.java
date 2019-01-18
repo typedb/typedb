@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * A class representing a conjunction (and) of patterns. All inner patterns must match in a query
@@ -87,8 +86,15 @@ public class Conjunction<T extends Pattern> implements Pattern {
     }
 
     @Override
-    public Disjunction<? extends Pattern> negate() {
-        return Graql.or(getPatterns().stream().map(Pattern::negate).collect(toSet()));
+    public Disjunction<Conjunction<Pattern>> getNegationDNF() {
+        List<Set<Conjunction<Pattern>>> disjunctionsOfConjunctions = getPatterns().stream()
+                .map(p -> p.getNegationDNF().getPatterns())
+                .collect(toList());
+
+        Set<Conjunction<Pattern>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
+                .map(Conjunction::fromConjunctions)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        return Graql.or(dnf);
     }
 
     @Override
@@ -101,9 +107,9 @@ public class Conjunction<T extends Pattern> implements Pattern {
      */
     @CheckReturnValue
     public ReasonerQuery toReasonerQuery(Transaction tx) {
-        Conjunction<Statement> pattern = getDisjunctiveNormalForm().getPatterns().iterator().next();
+        Conjunction<Pattern> pattern = getNegationDNF().getPatterns().iterator().next();
         // TODO: This cast is unsafe - this method should accept an `TransactionImpl`
-        return ReasonerQueries.create(pattern, (TransactionOLTP) tx);
+        return ReasonerQueries.composite(pattern, (TransactionOLTP) tx);
     }
 
     private static <U extends Pattern> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {

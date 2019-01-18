@@ -48,17 +48,16 @@ public interface ReasonerQuery{
     ReasonerQuery conjunction(ReasonerQuery q);
 
     /**
-     * @return true if this query contains strictly non-negated atomics
-     */
-    @CheckReturnValue
-    boolean isPositive();
-
-    /**
      * @return {@link Transaction} associated with this reasoner query
      */
     @CheckReturnValue
     Transaction tx();
 
+    /**
+     * @return true if this query contains strictly non-negated atomics
+     */
+    @CheckReturnValue
+    default boolean isPositive(){ return true;}
 
     /**
      * validate the query wrt transaction it is defined in
@@ -80,6 +79,7 @@ public interface ReasonerQuery{
     /**
      * @return the conjunction pattern that represent this query
      */
+    @CheckReturnValue
     Conjunction<Pattern> getPattern();
 
     /**
@@ -88,7 +88,9 @@ public interface ReasonerQuery{
      * @return stream of atoms of specified type defined in this query
      */
     @CheckReturnValue
-    <T extends Atomic> Stream<T> getAtoms(Class<T> type);
+    default <T extends Atomic> Stream<T> getAtoms(Class<T> type) {
+        return getAtoms().stream().filter(type::isInstance).map(type::cast);
+    }
 
     /**
      * @return (partial) substitution obtained from all id predicates (including internal) in the query
@@ -129,6 +131,14 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     Stream<ConceptMap> resolve();
+
+    /**
+     * reiteration might be required if rule graph contains loops with negative flux
+     * or there exists a rule which head satisfies body
+     * @return true if because of the rule graph form, the resolution of this query may require reiteration
+     */
+    @CheckReturnValue
+    boolean requiresReiteration();
 
     /**
      * Returns a var-type map local to this query. Map is cached.

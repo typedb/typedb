@@ -111,20 +111,17 @@ pattern             :   pattern_statement
                     |   pattern_disjunction
                     |   pattern_negation
                     ;
+
 pattern_conjunction :   '{' patterns '}' ';' ;
 pattern_disjunction :   '{' patterns '}'  ( OR '{' patterns '}' )+  ';' ;
-
-pattern_negation    :   NOT '{' patterns '}' ';' ;
+pattern_negation    :   NOT '{' pattern '}' ';' ;
 
 // PATTERN STATEMENTS ==========================================================
 
 pattern_statement   :   statement_type
                     |   statement_instance
-                    |   statement_negation
                     ;
-statement_negation  :   NOT statement_type
-                    |   NOT statement_instance
-                    ;
+
 // TYPE STATEMENTS =============================================================
 
 statement_type      :   type        type_property ( ',' type_property )* ';' ;

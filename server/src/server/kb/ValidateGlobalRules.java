@@ -291,8 +291,8 @@ class ValidateGlobalRules {
     }
 
     private static ReasonerQuery combinedRuleQuery(Transaction graph, Rule rule){
-        ReasonerQuery bodyQuery = rule.when().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
-        ReasonerQuery headQuery =  rule.then().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
+        ReasonerQuery bodyQuery = rule.when().getNegationDNF().getPatterns().iterator().next().toReasonerQuery(graph);
+        ReasonerQuery headQuery =  rule.then().getNegationDNF().getPatterns().iterator().next().toReasonerQuery(graph);
         return headQuery.conjunction(bodyQuery);
     }
 

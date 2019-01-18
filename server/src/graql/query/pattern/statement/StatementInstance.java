@@ -42,14 +42,8 @@ import static java.util.stream.Collectors.joining;
 
 public abstract class StatementInstance extends Statement {
 
-    private static IllegalArgumentException illegalArgumentException(Statement statement, VarProperty varProperty) {
-        String message = "Not allowed to provide Statement Property: [" + varProperty.toString() + "] ";
-        message += "to " + statement.getClass().getSimpleName() + ": [" + statement.toString() + "]";
-        throw new IllegalArgumentException(message);
-    }
-
-    private StatementInstance(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
-        super(var, properties, sign);
+    private StatementInstance(Variable var, LinkedHashSet<VarProperty> properties) {
+        super(var, properties);
     }
 
     @SuppressWarnings("Duplicates")
@@ -88,6 +82,12 @@ public abstract class StatementInstance extends Statement {
         }
     }
 
+    private static IllegalArgumentException illegalArgumentException(Statement statement, VarProperty varProperty) {
+        String message = "Not allowed to provide Statement Property: [" + varProperty.toString() + "] ";
+        message += "to " + statement.getClass().getSimpleName() + ": [" + statement.toString() + "]";
+        throw new IllegalArgumentException(message);
+    }
+
     String isaSyntax() {
         // TODO: Merge IsaPoperty and IsaExplicitProperty into one
         if (getProperty(IsaProperty.class).isPresent()) {
@@ -108,6 +108,28 @@ public abstract class StatementInstance extends Statement {
                 .collect(joining(Query.Char.COMMA_SPACE.toString()));
     }
 
+    @Override
+    public String toString() {
+        validateRecursion();
+
+        StringBuilder statement = new StringBuilder();
+
+        if (this.var().isVisible()) {
+            statement.append(this.var()).append(Query.Char.SPACE);
+        }
+        getProperty(RelationProperty.class).ifPresent(statement::append);
+        getProperty(ValueProperty.class).ifPresent(statement::append);
+
+        String properties = Stream.of(isaSyntax(), hasSyntax()).filter(s -> !s.isEmpty())
+                .collect(joining(Query.Char.COMMA_SPACE.toString()));
+
+        if (!properties.isEmpty()) {
+            statement.append(Query.Char.SPACE).append(properties);
+        }
+        statement.append(Query.Char.SEMICOLON);
+        return statement.toString();
+    }
+
     /**
      * A Graql statement describe a Thing, which is the super type of an Entity,
      * Relation and Attribute
@@ -115,15 +137,15 @@ public abstract class StatementInstance extends Statement {
     public static class StatementThing extends StatementInstance {
 
         public StatementThing(Variable var) {
-            this(var, new LinkedHashSet<>(), Sign.POSITIVE);
+            this(var, new LinkedHashSet<>());
         }
 
         private StatementThing(Statement statement) {
-            this(statement.var(), statement.properties(), statement.sign());
+            this(statement.var(), statement.properties());
         }
 
-        StatementThing(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
-            super(var, properties, sign);
+        StatementThing(Variable var, LinkedHashSet<VarProperty> properties) {
+            super(var, properties);
         }
 
         public static StatementThing create(Statement statement, VarProperty varProperty) {
@@ -139,18 +161,12 @@ public abstract class StatementInstance extends Statement {
             }
         }
 
-        @Override
-        public StatementThing negate() {
-            Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
-            return new StatementThing(var(), properties(), negated);
-        }
-
         @CheckReturnValue
         StatementThing addProperty(VarProperty property) {
             validateNonUniqueOrThrow(property);
             LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties());
             newProperties.add(property);
-            return new StatementThing(this.var(), newProperties, this.sign());
+            return new StatementThing(this.var(), newProperties);
         }
 
         private String thingSyntax() {
@@ -167,14 +183,11 @@ public abstract class StatementInstance extends Statement {
             }
         }
 
-        @Override @SuppressWarnings("Duplicates")
+        @Override
         public String toString() {
             validateRecursion();
 
             StringBuilder statement = new StringBuilder();
-            if (!isPositive()) {
-                statement.append(Query.Operator.NOT).append(Query.Char.SPACE);
-            }
             statement.append(this.var());
 
             String properties = Stream.of(thingSyntax(), hasSyntax()).filter(s -> !s.isEmpty())
@@ -194,11 +207,11 @@ public abstract class StatementInstance extends Statement {
     public static class StatementRelation extends StatementInstance {
 
         private StatementRelation(Statement statement) {
-            this(statement.var(), statement.properties(), statement.sign());
+            this(statement.var(), statement.properties());
         }
 
-        StatementRelation(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
-            super(var, properties, sign);
+        StatementRelation(Variable var, LinkedHashSet<VarProperty> properties) {
+            super(var, properties);
         }
 
         private static StatementRelation createOrCast(Statement statement) {
@@ -234,12 +247,6 @@ public abstract class StatementInstance extends Statement {
             }
         }
 
-        @Override
-        public StatementRelation negate() {
-            Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
-            return new StatementRelation(var(), properties(), negated);
-        }
-
         private StatementRelation addRolePlayer(RelationProperty.RolePlayer rolePlayer) {
             Optional<RelationProperty> oldRelationProperty = getProperty(RelationProperty.class);
 
@@ -266,39 +273,14 @@ public abstract class StatementInstance extends Statement {
             validateNonUniqueOrThrow(property);
             LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties());
             newProperties.add(property);
-            return new StatementRelation(this.var(), newProperties, this.sign());
+            return new StatementRelation(this.var(), newProperties);
         }
 
         private StatementRelation removeProperty(VarProperty property) {
             Variable name = var();
             LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties());
             newProperties.remove(property);
-            return new StatementRelation(name, newProperties, sign());
-        }
-
-        @Override @SuppressWarnings("Duplicates")
-        public String toString() {
-            validateRecursion();
-
-            StringBuilder statement = new StringBuilder();
-            if (!isPositive()) {
-                statement.append(Query.Operator.NOT).append(Query.Char.SPACE);
-            }
-            if (this.var().isVisible()) {
-                statement.append(this.var()).append(Query.Char.SPACE);
-            }
-
-            // TODO: Make RelationProperty NOT optional for Relation Statement
-            statement.append(getProperty(RelationProperty.class).get());
-
-            String properties = Stream.of(isaSyntax(), hasSyntax()).filter(s -> !s.isEmpty())
-                    .collect(joining(Query.Char.COMMA_SPACE.toString()));
-
-            if (!properties.isEmpty()) {
-                statement.append(Query.Char.SPACE).append(properties);
-            }
-            statement.append(Query.Char.SEMICOLON);
-            return statement.toString();
+            return new StatementRelation(name, newProperties);
         }
     }
 
@@ -308,11 +290,11 @@ public abstract class StatementInstance extends Statement {
     public static class StatementAttribute extends StatementInstance {
 
         private StatementAttribute(Statement statement) {
-            this(statement.var(), statement.properties(), statement.sign());
+            this(statement.var(), statement.properties());
         }
 
-        StatementAttribute(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
-            super(var, properties, sign);
+        StatementAttribute(Variable var, LinkedHashSet<VarProperty> properties) {
+            super(var, properties);
         }
 
         public static StatementAttribute create(Statement statement, VarProperty varProperty) {
@@ -328,44 +310,12 @@ public abstract class StatementInstance extends Statement {
             }
         }
 
-        @Override
-        public StatementAttribute negate() {
-            Sign negated = isPositive() ? Sign.NEGATIVE : Sign.POSITIVE;
-            return new StatementAttribute(var(), properties(), negated);
-        }
-
         @CheckReturnValue
         StatementAttribute addProperty(VarProperty property) {
             validateNonUniqueOrThrow(property);
             LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties());
             newProperties.add(property);
-            return new StatementAttribute(this.var(), newProperties, this.sign());
-        }
-
-        @Override @SuppressWarnings("Duplicates")
-        public String toString() {
-            validateRecursion();
-
-            StringBuilder statement = new StringBuilder();
-            if (!isPositive()) {
-                statement.append(Query.Operator.NOT).append(Query.Char.SPACE);
-            }
-
-            if (this.var().isVisible()) {
-                statement.append(this.var()).append(Query.Char.SPACE);
-            }
-
-            // TODO: Make ValueProperty NOT optional for Attribute Statement
-            statement.append(getProperty(ValueProperty.class).get());
-
-            String properties = Stream.of(isaSyntax(), hasSyntax()).filter(s -> !s.isEmpty())
-                    .collect(joining(Query.Char.COMMA_SPACE.toString()));
-
-            if (!properties.isEmpty()) {
-                statement.append(Query.Char.SPACE).append(properties);
-            }
-            statement.append(Query.Char.SEMICOLON);
-            return statement.toString();
+            return new StatementAttribute(this.var(), newProperties);
         }
     }
 }

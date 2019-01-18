@@ -121,9 +121,7 @@ public class ReasonerUtils {
     public static Stream<ValuePredicate> getValuePredicates(Variable valueVariable, Statement valueVar, Set<Statement> vars, ReasonerQuery parent){
         Stream<Statement> sourceVars;
         if (valueVar.var().isUserDefinedName()) {
-            sourceVars = vars.stream()
-                    .filter(v -> v.var().equals(valueVariable))
-                    .filter(v -> v.sign() == valueVar.sign());
+            sourceVars = vars.stream().filter(v -> v.var().equals(valueVariable));
         }
         else {
             sourceVars = Stream.of(valueVar);

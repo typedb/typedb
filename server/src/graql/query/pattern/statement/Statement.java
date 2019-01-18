@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.pattern.statement;
 
-import com.google.common.collect.HashMultimap;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -51,11 +50,6 @@ import grakn.core.graql.query.pattern.statement.StatementInstance.StatementRelat
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementThing;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -66,6 +60,10 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -83,48 +81,19 @@ import static java.util.stream.Collectors.toSet;
 public class Statement implements Pattern {
 
     protected final Logger LOG = LoggerFactory.getLogger(Statement.class);
-    private final Sign sign;
     private final Variable var;
     private final LinkedHashSet<VarProperty> properties;
     private int hashCode = 0;
-
-    enum Sign {
-        POSITIVE("+"),
-        NEGATIVE("-");
-
-        private final String sign;
-
-        Sign(String sign) {
-            this.sign = sign;
-        }
-
-        @Override
-        public String toString() {
-            return this.sign;
-        }
-    }
 
     public Statement(Variable var) {
         this(var, new LinkedHashSet<>());
     }
 
-    public Statement(Variable var, Statement.Sign sign) {
-        this(var, new LinkedHashSet<>(), sign);
-    }
-
     public Statement(Variable var, List<VarProperty> properties) {
-        this(var, new LinkedHashSet<>(properties), Sign.POSITIVE);
+        this(var, new LinkedHashSet<>(properties));
     }
 
     public Statement(Variable var, LinkedHashSet<VarProperty> properties) {
-        this(var, properties, Sign.POSITIVE);
-    }
-
-    public Statement(Variable var, List<VarProperty> properties, Statement.Sign sign) {
-        this(var, new LinkedHashSet<>(properties), sign);
-    }
-
-    public Statement(Variable var, LinkedHashSet<VarProperty> properties, Statement.Sign sign) {
         if (var == null) {
             throw new NullPointerException("Null var");
         }
@@ -133,18 +102,10 @@ public class Statement implements Pattern {
             throw new NullPointerException("Null properties");
         }
         this.properties = properties;
-        if (sign == null) {
-            throw new NullPointerException("Null sign");
-        }
-        this.sign = sign;
-    }
-
-    public static Statement create(Variable var, LinkedHashSet<VarProperty> properties) {
-        return create(var, properties, Sign.POSITIVE);
     }
 
     // TODO: This may not be needed once we have strict typing for statements
-    public static Statement create(Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
+    public static Statement create(Variable var, LinkedHashSet<VarProperty> properties) {
         Set<Class> statementClasses = properties.stream().map(VarProperty::statementClass).collect(toSet());
 
         if (statementClasses.size() > 2) {
@@ -155,30 +116,30 @@ public class Statement implements Pattern {
                 throw new IllegalStateException("Not allowed to mix Properties for Type and Instance statements");
             } else if (statementClasses.contains(StatementInstance.class)) {
                 statementClasses.remove(StatementInstance.class);
-                return create(statementClasses.iterator().next(), var, properties, sign);
+                return create(statementClasses.iterator().next(), var, properties);
             } else {
                 throw new IllegalStateException("Not allowed to mix Properties for different Instance stateents");
             }
         } else if (statementClasses.size() == 1) {
-            return create(statementClasses.iterator().next(), var, properties, sign);
+            return create(statementClasses.iterator().next(), var, properties);
         } else {
-            return new Statement(var, sign);
+            return new Statement(var);
         }
     }
 
-    private static Statement create(Class statementClass, Variable var, LinkedHashSet<VarProperty> properties, Sign sign) {
+    private static Statement create(Class statementClass, Variable var, LinkedHashSet<VarProperty> properties) {
         if (statementClass == StatementType.class) {
-            return new StatementType(var, properties, sign);
+            return new StatementType(var, properties);
 
         } else if (statementClass == StatementInstance.class
                 || statementClass == StatementThing.class) {
-            return new StatementThing(var, properties, sign);
+            return new StatementThing(var, properties);
 
         } else if (statementClass == StatementRelation.class) {
-            return new StatementRelation(var, properties, sign);
+            return new StatementRelation(var, properties);
 
         } else if (statementClass == StatementAttribute.class) {
-            return new StatementAttribute(var, properties, sign);
+            return new StatementAttribute(var, properties);
 
         } else {
             throw new IllegalArgumentException("Unrecognised Statement class: " + statementClass.getName());
@@ -635,56 +596,18 @@ public class Statement implements Pattern {
         return properties;
     }
 
-    public Sign sign() {
-        return sign;
-    }
-
-    @Override
-    public boolean isPositive() {
-        return sign().equals(Sign.POSITIVE);
-    }
-
-    @Override
-    public Statement negate() {
-        if ((this instanceof StatementType) || (this instanceof StatementInstance)) {
-            return this.negate();
-        } else { // TODO: this may not be needed once we may statements to be strict typing
-            throw new IllegalStateException(
-                    "Attempted to negate invalid statement: with just a Variable [" + var + "] and no properties"
-            );
-        }
-    }
-
     @Override
     public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
-        if (isPositive()) {
-            // A disjunction containing only one option
-            Conjunction<Statement> conjunction = Graql.and(Collections.singleton(this));
-            return Graql.or(Collections.singleton(conjunction));
-
-        } else {
-            // Flatten if multiple properties present
-            // TODO this is hacky. Redo when atoms are independent of transactions.
-            HashMultimap<VarProperty, VarProperty> propertyMap = HashMultimap.create();
-            properties().forEach(p -> {
-                if (!(p instanceof IsaProperty && this.hasProperty(RelationProperty.class))) {
-                    propertyMap.put(p, p);
-                } else {
-                    getProperties(RelationProperty.class).forEach(rp -> propertyMap.put(rp, p));
-                }
-            });
-
-            Set<Conjunction<Statement>> patterns = propertyMap.asMap().entrySet().stream()
-                    .map(e -> new Statement(var(),
-                                            new LinkedHashSet<>(e.getValue()),
-                                            Sign.NEGATIVE))
-                    .map(p -> Graql.and(Collections.singleton(p)))
-                    .collect(Collectors.toSet());
-
-            return Graql.or(patterns);
-        }
+        // A disjunction containing only one option
+        Conjunction<Statement> conjunction = Graql.and(Collections.singleton(this));
+        return Graql.or(Collections.singleton(conjunction));
     }
 
+    @Override
+    public Disjunction<Conjunction<Pattern>> getNegationDNF() {
+        Conjunction<Pattern> conjunction = Graql.and(Collections.singleton(this));
+        return Graql.or(Collections.singleton(conjunction));
+    }
     /**
      * @return the name this variable represents, if it represents something with a specific name
      */
@@ -813,6 +736,13 @@ public class Statement implements Pattern {
         }
     }
 
+    private Statement removeProperty(VarProperty property) {
+        Variable name = var();
+        LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties);
+        newProperties.remove(property);
+        return new Statement(name, newProperties);
+    }
+
     @Override // TODO: Remove this method altogether once we make compile time validation more strict
     public String toString() {
         throw new IllegalStateException(
@@ -845,7 +775,6 @@ public class Statement implements Pattern {
             hashCode = properties().hashCode();
             if (var().isUserDefinedName()) hashCode = 31 * hashCode + var().hashCode();
             hashCode = 31 * hashCode + (var().isUserDefinedName() ? 1 : 0);
-            hashCode = 31 * hashCode + (isPositive() ? 1 : 0);
         }
         return hashCode;
     }

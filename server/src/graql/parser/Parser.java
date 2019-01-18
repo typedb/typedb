@@ -51,6 +51,7 @@ import graql.grammar.GraqlBaseVisitor;
 import graql.grammar.GraqlLexer;
 import graql.grammar.GraqlParser;
 import graql.parser.ErrorListener;
+import java.util.Collection;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -76,6 +77,7 @@ import java.util.stream.Stream;
 import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.eq;
 import static grakn.core.graql.query.Graql.not;
+import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.type;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -409,7 +411,7 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public Disjunction<?> visitPattern_disjunction(GraqlParser.Pattern_disjunctionContext ctx) {
+    public Pattern visitPattern_disjunction(GraqlParser.Pattern_disjunctionContext ctx) {
         Set<Pattern> patterns = ctx.patterns().stream()
                 .map(patternsCtx -> {
                     Set<Pattern> patternSet = visitPatterns(patternsCtx);
@@ -421,20 +423,13 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public Conjunction<?> visitPattern_conjunction(GraqlParser.Pattern_conjunctionContext ctx) {
+    public Pattern visitPattern_conjunction(GraqlParser.Pattern_conjunctionContext ctx) {
         return and(visitPatterns(ctx.patterns()));
     }
 
     @Override
-    public Negation<?> visitPattern_negation(GraqlParser.Pattern_negationContext ctx) {
-        Set<Pattern> patterns = visitPatterns(ctx.patterns());
-
-        if (patterns.size() == 1) {
-            return not(patterns.iterator().next());
-
-        } else {
-            return not(and(patterns));
-        }
+    public Pattern visitPattern_negation(GraqlParser.Pattern_negationContext ctx) {
+        return not(visitPattern(ctx.pattern()));
     }
 
     // PATTERN STATEMENTS ======================================================
@@ -449,24 +444,8 @@ public class Parser extends GraqlBaseVisitor {
         } else if (ctx.statement_type() != null) {
             return visitStatement_type(ctx.statement_type());
 
-        } else if (ctx.statement_negation() != null) {
-            return visitStatement_negation(ctx.statement_negation());
-
         } else {
             throw new IllegalArgumentException("Unrecognised Statement class: " + ctx.getText());
-        }
-    }
-
-    @Override
-    public Statement visitStatement_negation(GraqlParser.Statement_negationContext ctx) {
-        if (ctx.statement_type() != null) {
-            return visitStatement_type(ctx.statement_type()).negate();
-
-        } else if (ctx.statement_instance() != null) {
-            return visitStatement_instance(ctx.statement_instance()).negate();
-
-        } else {
-            throw new IllegalArgumentException("Unrecognised Negation Statement: " + ctx.getText());
         }
     }
 
