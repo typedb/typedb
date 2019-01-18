@@ -37,7 +37,6 @@ import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 import grakn.core.graql.query.pattern.property.RelatesProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
-import grakn.core.graql.query.pattern.property.SubExplicitProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.ThenProperty;
 import grakn.core.graql.query.pattern.property.TypeProperty;
@@ -181,7 +180,7 @@ public class Statement implements Pattern {
      */
     @CheckReturnValue
     public StatementType sub(Statement type) {
-        return StatementType.create(this, new SubProperty(type));
+        return sub(new SubProperty(type));
     }
 
     /**
@@ -199,7 +198,12 @@ public class Statement implements Pattern {
      */
     @CheckReturnValue
     public StatementType subX(Statement type) {
-        return StatementType.create(this, new SubExplicitProperty(type));
+        return sub(new SubProperty(type, true));
+    }
+
+    @CheckReturnValue
+    public StatementType sub(SubProperty property) {
+        return StatementType.create(this, property);
     }
 
     /**

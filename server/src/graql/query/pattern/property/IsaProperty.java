@@ -62,13 +62,13 @@ public class IsaProperty extends VarProperty {
     }
 
     @Override
-    public boolean isExplicit() {
-        return explicit;
+    public final String property() {
+        return type().getPrintableName();
     }
 
     @Override
-    public final String property() {
-        return type().getPrintableName();
+    public boolean isExplicit() {
+        return explicit;
     }
 
     @Override
@@ -93,17 +93,14 @@ public class IsaProperty extends VarProperty {
 
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof IsaProperty) {
-            IsaProperty that = (IsaProperty) o;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-            // We ignore `directType` because the object is irrelevant
-            return (this.type().equals(that.type()) &&
-                    this.isExplicit() == that.isExplicit());
-        }
-        return false;
+        IsaProperty that = (IsaProperty) o;
+
+        // We ignore `directType` because the object is irrelevant
+        return (this.type().equals(that.type()) &&
+                this.isExplicit() == that.isExplicit());
     }
 
     @Override

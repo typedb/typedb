@@ -35,7 +35,6 @@ import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 import grakn.core.graql.query.pattern.property.RelatesProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
-import grakn.core.graql.query.pattern.property.SubExplicitProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.ThenProperty;
 import grakn.core.graql.query.pattern.property.TypeProperty;
@@ -168,9 +167,6 @@ public interface PropertyExecutor {
 
         } else if (property instanceof RelationProperty) {
             return new RelationExecutor(var, (RelationProperty) property);
-
-        } else if (property instanceof SubExplicitProperty) {
-            return new SubExecutor.SubExplicitExecutor(var, (SubExplicitProperty) property);
 
         } else if (property instanceof SubProperty) {
             return new SubExecutor(var, (SubProperty) property);
