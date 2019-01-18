@@ -20,6 +20,7 @@ package(default_visibility = ["//visibility:__subpackages__"])
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution_structure", "distribution_zip", "distribution_deb", "distribution_rpm")
 load("@graknlabs_rules_deployment//rpm/deployment:rules.bzl", "deploy_rpm")
+load("@graknlabs_rules_deployment//deb/deployment:rules.bzl", "deploy_deb")
 
 java_library(
     name = "console",
@@ -111,6 +112,11 @@ distribution_deb(
     ],
 )
 
+deploy_deb(
+    name = "deploy-deb",
+    target = ":distribution-deb",
+    deployment_properties = "//:deployment.properties",
+)
 
 distribution_rpm(
     name = "distribution-rpm",
