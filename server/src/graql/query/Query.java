@@ -96,12 +96,13 @@ public interface Query {
         AND("and"),
         OR("or"),
         NOT("not"),
-        EQUAL("="),
+        EQ("="),
+        NEQ("!="),
         EQV("=="),
         NEQV("!=="),
         GT(">"),
         GTE(">="),
-        LT(">"),
+        LT("<"),
         LTE("<="),
         CONTAINS("contains"), // TODO: remove duplicate in ComputeQuery.Param
         LIKE("like");
@@ -137,7 +138,6 @@ public interface Query {
         ISA("isa"),
         ISAX("isa!"),
         TYPE("type"),
-        NEQ("!="),
         PLAYS("plays"),
         REGEX("regex"),
         RELATES("relates"),

@@ -180,7 +180,7 @@ label_array         :   '[' label ( ',' label )* ']' ;
 label               :   identifier | ID_IMPLICIT_;
 
 id                  :   identifier ;
-identifier          :   ID_ | STRING_ | unreserved ;                            // TODO: disallow quoted strings as IDs
+identifier          :   ID_ | STRING_ | UNRESERVED_ ;                            // TODO: disallow quoted strings as IDs
 
 // ATTRIBUTE OPERATION CONSTRUCTS ==============================================
 
@@ -203,15 +203,6 @@ datatype            :   LONG        |   DOUBLE      |   STRING
 literal             :   STRING_     |   INTEGER_    |   REAL_
                     |   BOOLEAN_    |   DATE_       |   DATETIME_   ;
 regex               :   STRING_     ;
-
-// UNRESERVED KEYWORDS =========================================================
-// Most of Graql syntax should not be reserved from being used as identifiers
-
-unreserved      : MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-                | FROM | TO | OF | IN
-                | DEGREE | K_CORE | CONNECTED_COMPONENT
-                | MIN_K | K | CONTAINS | SIZE | WHERE
-                ;
 
 // GRAQL SYNTAX KEYWORDS =======================================================
 
@@ -275,10 +266,9 @@ STRING          : 'string'      ;   BOOLEAN         : 'boolean'     ;
 DATE            : 'date'        ;
 
 // LITERAL VALUE KEYWORDS
-
+BOOLEAN_        : TRUE | FALSE  ; // order of lexer declaration matters
 TRUE            : 'true'        ;
 FALSE           : 'false'       ;
-BOOLEAN_        : TRUE | FALSE  ;
 STRING_         : '"'  (~["\\/] | ESCAPE_SEQ_ )* '"'
                 | '\'' (~['\\/] | ESCAPE_SEQ_ )* '\''   ;
 INTEGER_        : ('+' | '-')? [0-9]+                   ;
@@ -293,6 +283,17 @@ VAR_ANONYMOUS_  : '$_' ;
 VAR_NAMED_      : '$' [a-zA-Z0-9_-]* ;
 ID_             : [a-zA-Z_] [a-zA-Z0-9_-]* ;
 ID_IMPLICIT_    : '@' [a-zA-Z0-9_-]+ ;
+
+// UNRESERVED KEYWORDS =========================================================
+// Most of Graql syntax should not be reserved from being used as identifiers
+
+UNRESERVED_     : MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
+                | FROM | TO | OF | IN
+                | DEGREE | K_CORE | CONNECTED_COMPONENT
+                | MIN_K | K | CONTAINS | SIZE | WHERE
+                ;
+
+// FRAGMENTS OF KEYWORDS =======================================================
 
 fragment DATE_FRAGMENT_ : YEAR_ '-' MONTH_ '-' DAY_ ;
 fragment MONTH_         : [0-1][0-9] ;
