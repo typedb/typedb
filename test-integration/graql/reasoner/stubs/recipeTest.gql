@@ -1,0 +1,106 @@
+define
+
+named-entity sub entity,
+    has name;
+
+pantry sub entity,
+    plays containing-pantry;
+recipe sub named-entity,
+    plays requiring-recipe;
+ingredient sub named-entity,
+    plays contained-ingredient,
+    plays required-ingredient;
+allergenic-ingredient sub ingredient;
+
+requires sub relationship,
+    relates required-ingredient,
+    relates requiring-recipe;
+
+containes sub relationship,
+    relates contained-ingredient,
+    relates containing-pantry;
+
+name sub attribute, datatype string;
+
+
+available-ingredient-occuring-in-recipe sub ingredient;
+available-ingredient sub ingredient;
+recipe-with-unavailable-ingredient sub recipe;
+
+rule-1 sub rule,
+    when {
+        $r isa recipe;
+        $i isa ingredient;
+        ($r, $i) isa requires;
+        ($i) isa containes;
+    },
+    then {
+        $i isa available-ingredient-occuring-in-recipe;
+    };
+
+rule-2 sub rule,
+    when {
+       $i isa ingredient;
+       ($i) isa containes;
+    },
+    then {
+        $i isa available-ingredient;
+    };
+
+#rule-3 sub rule,
+#    when {
+#        $r isa recipe;
+#        ($r, $i) isa requires;
+#        NOT {$i isa available-ingredient;};
+#    },
+#    then {
+#        $r isa recipe-with-unavailable-ingredient;
+#    };
+
+insert
+$n isa allergenic-ingredient, has name 'nuts';
+$l isa allergenic-ingredient, has name 'milk';
+$f isa ingredient, has name 'flour';
+$w isa ingredient, has name 'water';
+$m isa ingredient, has name 'malt';
+$h isa ingredient, has name 'hops';
+$y isa ingredient, has name 'yeast';
+$c isa allergenic-ingredient, has name 'cocoa';
+
+$p isa pantry;
+
+(contained-ingredient: $f, containing-pantry: $p) isa containes;
+(contained-ingredient: $w, containing-pantry: $p) isa containes;
+(contained-ingredient: $m, containing-pantry: $p) isa containes;
+(contained-ingredient: $h, containing-pantry: $p) isa containes;
+(contained-ingredient: $y, containing-pantry: $p) isa containes;
+
+$r1 isa recipe, has name 'lager';
+$r2 isa recipe, has name 'stout';
+$r3 isa recipe, has name 'kakao';
+$r4 isa recipe, has name 'pie';
+$r5 isa recipe, has name 'cheesecake';
+
+(required-ingredient: $w, requiring-recipe: $r1) isa requires;
+(required-ingredient: $m, requiring-recipe: $r1) isa requires;
+(required-ingredient: $h, requiring-recipe: $r1) isa requires;
+(required-ingredient: $y, requiring-recipe: $r1) isa requires;
+
+(required-ingredient: $w, requiring-recipe: $r2) isa requires;
+(required-ingredient: $m, requiring-recipe: $r2) isa requires;
+(required-ingredient: $h, requiring-recipe: $r2) isa requires;
+(required-ingredient: $y, requiring-recipe: $r2) isa requires;
+(required-ingredient: $c, requiring-recipe: $r2) isa requires;
+
+(required-ingredient: $m, requiring-recipe: $r3) isa requires;
+(required-ingredient: $c, requiring-recipe: $r3) isa requires;
+
+(required-ingredient: $f, requiring-recipe: $r4) isa requires;
+(required-ingredient: $w, requiring-recipe: $r4) isa requires;
+(required-ingredient: $y, requiring-recipe: $r4) isa requires;
+
+(required-ingredient: $f, requiring-recipe: $r5) isa requires;
+(required-ingredient: $m, requiring-recipe: $r5) isa requires;
+(required-ingredient: $y, requiring-recipe: $r5) isa requires;
+
+

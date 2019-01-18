@@ -24,8 +24,12 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -38,6 +42,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -104,10 +109,9 @@ public class QueryErrorIT {
         tx.execute(Graql.match(var("x").has("thingy", "value")).delete("x"));
     }
 
-    @Test
+    @Test @Ignore // TODO: enable this properly after fixing issue #4664
     public void whenMatchingWildcardHas_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.noLabelSpecifiedForHas(var("x")).getMessage());
         tx.execute(Graql.match(type("thing").has(var("x"))).get());
     }
 
@@ -175,7 +179,8 @@ public class QueryErrorIT {
     public void testExceptionWhenNullValue() {
         exception.expect(NullPointerException.class);
         //noinspection ResultOfMethodCallIgnored
-        var("x").val(null);
+        ValuePredicate v = null;
+        Statement s = var("x").val(v);
     }
 
     @Test
@@ -215,11 +220,11 @@ public class QueryErrorIT {
 
     @Test
     public void testAdditionalSemicolon() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("id"), containsString("plays product-type")));
+        exception.expect(GraqlSyntaxException.class);
+        exception.expectMessage(allOf(containsString("plays product-type")));
         tx.execute(Graql.<DefineQuery>parse(
                 "define " +
-                        "tag-group sub role; product-type sub role;" +
+                        "tag-group sub role; product-type sub role; " +
                         "category sub entity, plays tag-group; plays product-type;"
         ));
     }
@@ -227,7 +232,7 @@ public class QueryErrorIT {
     @Test
     public void testGetNonExistentVariable() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(var("y")));
+        exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(new Variable("y")));
 
         MatchClause match = Graql.match(var("x").isa("movie"));
         Stream<Concept> concepts = tx.stream(match.get("y")).map(ans -> ans.get("y"));

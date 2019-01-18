@@ -26,7 +26,7 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 
 import javax.annotation.Nullable;
@@ -53,12 +53,6 @@ public abstract class AtomicBase implements Atomic {
 
     @Override
     public String toString(){ return getPattern().toString(); }
-
-    @Override
-    public boolean isPositive() { return true; }
-
-    @Override
-    public Atomic negate() { return NegatedAtomic.create(this); }
 
     boolean containsVar(Variable name){ return getVarNames().contains(name);}
 

@@ -26,6 +26,7 @@ filegroup(
         "freshEntityDerivationFromRelations.gql",
         "freshRelationDerivation.gql",
         "negation.gql",
+        "recipeTest.gql",
         "reflexiveRelation.gql",
         "reflexiveSymmetricRelation.gql",
         "resourceAttachment.gql",

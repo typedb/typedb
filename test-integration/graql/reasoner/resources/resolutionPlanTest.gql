@@ -7,10 +7,10 @@ otherRole sub role;
 
 #Entities
 
-baseEntity sub entity
-    plays someRole
-    plays otherRole
-    has resource
+baseEntity sub entity,
+    plays someRole,
+    plays otherRole,
+    has resource,
     has anotherResource;
 
 someEntity sub baseEntity;
@@ -19,32 +19,32 @@ yetAnotherEntity sub baseEntity;
 
 #Relations
 
-relation sub relationship
-    relates someRole
+relation sub relationship,
+    relates someRole,
     relates otherRole;
 
-anotherRelation sub relationship
-    relates someRole
+anotherRelation sub relationship,
+    relates someRole,
     relates otherRole;
 
-yetAnotherRelation sub relationship
-    relates someRole
+yetAnotherRelation sub relationship,
+    relates someRole,
     relates otherRole;
 
-derivedRelation sub relationship
-    relates someRole
+derivedRelation sub relationship,
+    relates someRole,
     relates otherRole;
 
-anotherDerivedRelation sub relationship
-    relates someRole
+anotherDerivedRelation sub relationship,
+    relates someRole,
     relates otherRole;
 
 
-resource sub attribute datatype string;
-anotherResource sub attribute datatype string;
-yetAnotherResource sub attribute datatype string;
-derivedResource sub attribute datatype string;
-anotherDerivedResource sub attribute datatype string;
+resource sub attribute, datatype string;
+anotherResource sub attribute, datatype string;
+yetAnotherResource sub attribute, datatype string;
+derivedResource sub attribute, datatype string;
+anotherDerivedResource sub attribute, datatype string;
 
 simple-relation-rule
 when {

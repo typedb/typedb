@@ -109,7 +109,15 @@ class test_grakn_Base(test_Base):
             tx = session.transaction(grakn.TxType.WRITE)
             try:
                 # define parentship roles to test agains
-                tx.query("define parent sub role; child sub role; mother sub role; son sub role; person sub entity, has age, has gender, plays parent, plays child, plays mother, plays son; age sub attribute datatype long; gender sub attribute datatype string; parentship sub relationship, relates parent, relates child, relates mother, relates son;")
+                tx.query("define "
+                         "parent sub role; "
+                         "child sub role; "
+                         "mother sub role; "
+                         "son sub role; "
+                         "person sub entity, has age, has gender, plays parent, plays child, plays mother, plays son; "
+                         "age sub attribute, datatype long; "
+                         "gender sub attribute, datatype string; "
+                         "parentship sub relationship, relates parent, relates child, relates mother, relates son;")
             except GraknError as ce:
                 print(ce)
     
@@ -388,8 +396,8 @@ class test_Transaction(test_grakn_Base):
 
         # create a role which creates a trivial "ancestor" relationship
         label = "genderizedparentship"
-        when = "{(parent: $p, child: $c) isa parentship; $p has gender 'female'; $c has gender 'male';}"
-        then = "{(mother: $p, son: $c) isa parentship;}"
+        when = "{ (parent: $p, child: $c) isa parentship; $p has gender 'female'; $c has gender 'male'; };"
+        then = "{ (mother: $p, son: $c) isa parentship; };"
 
         rule = self.tx.put_rule(label, when, then)
         self.assertTrue(rule.is_rule())

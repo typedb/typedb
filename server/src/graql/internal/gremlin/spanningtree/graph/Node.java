@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.gremlin.spanningtree.graph;
 
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import java.util.HashSet;
 import java.util.Map;

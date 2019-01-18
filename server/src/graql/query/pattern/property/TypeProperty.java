@@ -18,8 +18,8 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.statement.StatementType;
 import grakn.core.graql.util.StringUtil;
 
 /**
@@ -44,17 +44,22 @@ public class TypeProperty extends VarProperty {
 
     @Override
     public String keyword() {
-        return Query.Property.LABEL.toString();
+        return Query.Property.TYPE.toString();
     }
 
     @Override
     public String property() {
-        return StringUtil.typeLabelToString(Label.of(name()));
+        return StringUtil.typeLabelToString(name());
     }
 
     @Override
     public boolean isUnique() {
         return true;
+    }
+
+    @Override
+    public Class statementClass() {
+        return StatementType.class;
     }
 
     @Override

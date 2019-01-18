@@ -184,35 +184,7 @@ jobs:
     - bazel_install
     - bazel_add_rbe_credential
     - bazel:
-        command: bazel test //test-integration/graql/reasoner:reasoning-it --test_output=errors
-    - bazel:
-        command: bazel test //test-integration/graql/reasoner:geo-inference-it --test_output=errors
-
-  test-integration-reasoner-general:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - bazel:
-        command: bazel test //test-integration/graql/reasoner/reasoning/... --test_output=errors
-
-  test-integration-reasoner-components:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - bazel:
-        command: bazel test //test-integration/graql/reasoner/atomic/... --test_output=errors
-    - bazel:
-        command: bazel test //test-integration/graql/reasoner/benchmark/... --test_output=errors
-    - bazel:
-        command: bazel test //test-integration/graql/reasoner/cache/... --test_output=errors
-    - bazel:
-        command: bazel test //test-integration/graql/reasoner/query/... --test_output=errors
+        command: bazel test //test-integration/graql/reasoner/... --test_output=errors
 
   test-integration-analytics:
     machine: true
@@ -320,8 +292,6 @@ workflows:
       - workbase
       - test-integration
       - test-integration-reasoner
-      - test-integration-reasoner-general
-      - test-integration-reasoner-components
       - test-integration-analytics
       - test-end-to-end
 

@@ -18,21 +18,18 @@
 
 package grakn.core.graql.internal.reasoner.state;
 
-import com.google.common.collect.Sets;
-
-import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.reasoner.atom.Atom;
-import grakn.core.graql.internal.reasoner.atom.NegatedAtomic;
+import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.internal.reasoner.query.CompositeQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  *
  * <p>
- * Query state corresponding to a conjunctive query with negated var patterns.
+ * Query state corresponding to a conjunctive query with negated patterns present(CompositeQuery).
  *
  * Q = A ∧ {...} ∧ ¬B ∧ ¬C ∧ {...}
  *
@@ -59,45 +56,28 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class NegatedConjunctiveState extends ConjunctiveState {
+public class CompositeState extends ConjunctiveState {
 
     private final ResolutionState baseConjunctionState;
     private boolean visited = false;
 
-    private final Set<ReasonerQueryImpl> complements;
+    private final Set<CompositeQuery> complements;
 
-    public NegatedConjunctiveState(ConjunctiveState conjState) {
-        super(conjState.getQuery(), conjState.getSubstitution(), conjState.getUnifier(), conjState.getParentState(), conjState.getVisitedSubGoals(), conjState.getCache());
-
-        ReasonerQueryImpl baseConjQuery = ReasonerQueries.create(
-                getQuery().getAtoms().stream().filter(Atomic::isPositive).collect(Collectors.toSet()),
-                getQuery().tx());
-
-        this.baseConjunctionState = baseConjQuery
-                .subGoal(getSubstitution(), getUnifier(), this, getVisitedSubGoals(), getCache());
-
-        this.complements = getQuery().getAtoms(NegatedAtomic.class)
-                .filter(at -> !at.isPositive())
-                .map(NegatedAtomic::negate)
-                .map(at -> complement(at, baseConjQuery))
-                .collect(Collectors.toSet());
-    }
-
-    private static ReasonerQueryImpl complement(Atomic at, ReasonerQueryImpl baseConjQuery){
-        return at.isAtom()?
-                ReasonerQueries.atomic((Atom) at) :
-                ReasonerQueries.create(Sets.union(baseConjQuery.getAtoms(), Sets.newHashSet(at)), baseConjQuery.tx());
+    public CompositeState(CompositeQuery query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache) {
+        super(query.getConjunctiveQuery(), sub, u, parent, subGoals, cache);
+        this.baseConjunctionState = getQuery().subGoal(getSubstitution(), getUnifier(), this, getVisitedSubGoals(), getCache());
+        this.complements = query.getComplementQueries();
     }
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap answer = state.getAnswer();
 
-        boolean isNegationSatistfied = complements.stream()
-                .map(q -> ReasonerQueries.create(q, answer))
+        boolean isNegationSatisfied = complements.stream()
+                .map(q -> ReasonerQueries.composite(q, answer))
                 .noneMatch(q -> q.resolve(getCache()).findFirst().isPresent());
 
-        return isNegationSatistfied?
+        return isNegationSatisfied?
                 new AnswerState(answer, getUnifier(), getParentState()) :
                 null;
     }

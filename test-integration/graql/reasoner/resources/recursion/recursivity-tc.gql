@@ -4,7 +4,7 @@ define
 ####################Schema######################
 #################################################
 
-entity2 sub entity
+entity2 sub entity,
     has index;
 q sub entity2;
 

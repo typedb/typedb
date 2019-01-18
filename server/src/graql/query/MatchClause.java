@@ -21,8 +21,8 @@ package grakn.core.graql.query;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
@@ -187,7 +187,17 @@ public class MatchClause {
 
     @Override
     public final String toString() {
-        return "match " + pattern.getPatterns().stream().map(p -> p + ";").collect(joining(" "));
+        StringBuilder query = new StringBuilder();
+
+        query.append(Query.Command.MATCH);
+        if (pattern.getPatterns().size()>1) query.append(Query.Char.NEW_LINE);
+        else query.append(Query.Char.SPACE);
+
+        query.append(pattern.getPatterns().stream()
+                             .map(Object::toString)
+                             .collect(Collectors.joining(Query.Char.NEW_LINE.toString())));
+
+        return query.toString();
     }
 
     @Override
@@ -200,7 +210,7 @@ public class MatchClause {
     }
 
     @Override
-    public int hashCode() {
+    public int hashCode() { // TODO: multiple with a large prime number
         return pattern.hashCode();
     }
 }

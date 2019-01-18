@@ -4,9 +4,9 @@ define
 ####################Schema######################
 #################################################
 
-vertex sub entity
+vertex sub entity,
    has index;
-start-vertex sub entity
+start-vertex sub entity,
    has index;
 
 arc-from sub role;

@@ -19,7 +19,13 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.statement.StatementType;
+
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * Represents the {@code then} (right-hand side) property on a rule.
@@ -47,14 +53,32 @@ public class ThenProperty extends VarProperty {
         return Query.Property.THEN.toString();
     }
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public String property() {
-        return pattern().toString();
+        StringBuilder then = new StringBuilder();
+
+        then.append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE);
+
+        if (pattern instanceof Conjunction) {
+            then.append(((Conjunction<?>) pattern).getPatterns().stream()
+                                .map(Object::toString)
+                                .collect(joining(Query.Char.SPACE.toString())));
+        } else {
+            then.append(pattern.toString());
+        }
+
+        then.append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE);
+        return then.toString();
     }
 
     @Override
     public boolean isUnique() {
         return true;
+    }
+
+    @Override
+    public Class statementClass() {
+        return StatementType.class;
     }
 
     @Override

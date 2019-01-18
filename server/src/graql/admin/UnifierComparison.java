@@ -20,7 +20,7 @@ package grakn.core.graql.admin;
 
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import java.util.Set;
 import java.util.function.BiFunction;

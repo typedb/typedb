@@ -673,7 +673,7 @@ public class TransactionOLTP implements Transaction {
         AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
 
         //noinspection unchecked
-        getConcepts(dataType.getVertexProperty(), dataType.getPersistenceValue(value)).forEach(concept -> {
+        getConcepts(dataType.getVertexProperty(), dataType.getPersistedValue(value)).forEach(concept -> {
             if (concept != null && concept.isAttribute()) {
                 //noinspection unchecked
                 attributes.add(concept.asAttribute());

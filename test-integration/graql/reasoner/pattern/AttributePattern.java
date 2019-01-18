@@ -24,82 +24,82 @@ import grakn.core.graql.concept.Label;
 
 import java.util.List;
 
-public class ResourcePattern extends QueryPattern {
+public class AttributePattern extends QueryPattern {
 
     private final List<String> patterns;
 
-    public ResourcePattern(
+    public AttributePattern(
             Label resource, Label anotherResource,
             Label type, Label anotherType,
             ConceptId entityId, ConceptId anotherEntityId,
             ConceptId resourceId, ConceptId anotherResourceId) {
         this.patterns = Lists.newArrayList(
-                "{$x has " + resource + " $r;}",
-                "{$xb has " + anotherResource + " $rb;}",
-                "{$xc has " + anotherResource + " $rc; $xc isa " + type + ";}",
+                "{ $x has " + resource + " $r; };",
+                "{ $xb has " + anotherResource + " $rb; };",
+                "{ $xc has " + anotherResource + " $rc; $xc isa " + type + "; };",
 
-                "{$xd has attribute $rd;}",
-                "{$xd has attribute 'someValue';}",
+                "{ $xd has attribute $rd; };",
+                "{ $xd has attribute 'someValue'; };",
 
                 //5-6
-                "{$x1a has " + resource + " $r1a; $x1a id '" + entityId + "';}",
-                "{$x1b has " + resource + " $r1b; $x1b id '" + anotherEntityId + "';}",
+                "{ $x1a has " + resource + " $r1a; $x1a id '" + entityId + "'; };",
+                "{ $x1b has " + resource + " $r1b; $x1b id '" + anotherEntityId + "'; };",
 
                 //7-8
-                "{$x2a has " + resource + " $r2a; $r2a id '" + resourceId + "';}",
-                "{$x2b has " + resource + " $r2b; $r2b id '" + anotherResourceId + "';}",
+                "{ $x2a has " + resource + " $r2a; $r2a id '" + resourceId + "'; };",
+                "{ $x2b has " + resource + " $r2b; $r2b id '" + anotherResourceId + "'; };",
 
                 //9-12
-                "{$x3a has " + resource + " 'someValue';}",
-                "{$x3b has " + resource + " 'someOtherValue';}",
-                "{$x3c has " + resource + " $r3c; $r3c == 'someValue';}",
-                "{$x3d has " + resource + " $r3d; $r3d == 'someOtherValue';}",
+                "{ $x3a has " + resource + " 'someValue'; };",
+                "{ $x3b has " + resource + " 'someOtherValue'; };",
+                "{ $x3c has " + resource + " $r3c; $r3c == 'someValue'; };",
+                "{ $x3d has " + resource + " $r3d; $r3d == 'someOtherValue'; };",
 
                 //13-14
-                "{$x3e has " + resource + " $r3e; $r3e contains 'Value';}",
-                "{$x3f has " + resource + " $r3f; $r3f contains 'Other';}",
+                "{ $x3e has " + resource + " $r3e; $r3e contains 'Value'; };",
+                "{ $x3f has " + resource + " $r3f; $r3f contains 'Other'; };",
 
                 //15-18
-                "{$x4a has " + anotherResource + " 0;}",
-                "{$x4b has " + anotherResource + " 1;}",
-                "{$x4c has " + anotherResource + " $r4c; $r4c == 0;}",
-                "{$x4d has " + anotherResource + " $r4d; $r4d == 1;}",
+                "{ $x4a has " + anotherResource + " 0; };",
+                "{ $x4b has " + anotherResource + " 1; };",
+                "{ $x4c has " + anotherResource + " $r4c; $r4c == 0; };",
+                "{ $x4d has " + anotherResource + " $r4d; $r4d == 1; };",
 
                 //19-22
-                "{$x5a has " + anotherResource + " $r5a; $r5a > 0;}",
-                "{$x5b has " + anotherResource + " $r5b; $r5b < 1;}",
-                "{$x5c has " + anotherResource + " $r5c; $r5c >= 0;}",
-                "{$x5d has " + anotherResource + " $r5d; $r5d <= 1;}",
+                "{ $x5a has " + anotherResource + " $r5a; $r5a > 0; };",
+                "{ $x5b has " + anotherResource + " $r5b; $r5b < 1; };",
+                "{ $x5c has " + anotherResource + " $r5c; $r5c >= 0; };",
+                "{ $x5d has " + anotherResource + " $r5d; $r5d <= 1; };",
 
                 //23-25
-                "{$x7a has " + anotherResource + " $r7a;$r7a > 23; $r7a < 27;}",
-                "{$x7b isa " + type + ", has " + anotherResource + " $r7b;$r7b > 23; $r7b < 27;}",
-                "{$x7c isa $type;$type label " + type + ";$x7c has " + anotherResource + " $r7c;$r7c > 23; $r7c < 27;}",
+                "{ $x7a has " + anotherResource + " $r7a; $r7a > 23; $r7a < 27; };",
+                "{ $x7b isa " + type + ", has " + anotherResource + " $r7b; $r7b > 23; $r7b < 27; };",
+                "{ $x7c isa $type; $type type " + type + "; $x7c has " + anotherResource + " $r7c; $r7c > 23; $r7c < 27; };",
 
                 //26-27
-                "{$x7d isa " + type + ";$x7d has " + anotherResource + " > 23;}",
-                "{$x7e isa " + type + ";$x7e has " + anotherResource + " $r7e;$r7e > 23;}",
+                "{ $x7d isa " + type + "; $x7d has " + anotherResource + " > 23; };",
+                "{ $x7e isa " + type + "; $x7e has " + anotherResource + " $r7e; $r7e > 23; };",
 
                 //28-30
-                "{$x7f isa " + type + ";$x7f has " + anotherResource + " $r7f;$r7f > 27;$r7f < 29;}",
-                "{$x7h isa " + type + ";$x7h has " + anotherResource + " $r7h;$r7h > 23; $r2_7h < 27;}",
-                "{$x7i isa " + anotherType + ";$x7i has " + anotherResource + " $r7i;$r7i > 23; $r7i < 27;}",
+                "{ $x7f isa " + type + "; $x7f has " + anotherResource + " $r7f; $r7f > 27; $r7f < 29; };",
+                "{ $x7h isa " + type + "; $x7h has " + anotherResource + " $r7h; $r7h > 23; $r2_7h < 27; };",
+                "{ $x7i isa " + anotherType + "; $x7i has " + anotherResource + " $r7i; $r7i > 23; $r7i < 27; };",
 
                 //31-32
                 //contradiction between attribute concept and provided value
-                "{$x8b has " + resource + " $r8b; $r8b id '" + anotherResourceId + "';$r8b 'someValue';}",
+                "{ $x8b has " + resource + " $r8b; $r8b id '" + anotherResourceId + "'; $r8b 'someValue'; };",
                 //contradicting value predicates
-                "{$x8c isa " + type + ";$x8c has " + anotherResource + " $r8c;$r8c > 27;$r8c < 23;}"
+                "{ $x8c isa " + type + "; $x8c has " + anotherResource + " $r8c; $r8c > 27; $r8c < 23; };"
 
                 //TODO leads to potential type contradictions
-                //"{$x8a has attribute $r8a;$r8a isa " + resource  + ";}",
+                //"{ $x8a has attribute $r8a; $r8a isa " + resource  + "; };",
                 //TODO
                 //18-22
-                //"{$x6a has " + resource + " $r6a;$r6a != $r2_6a;}",
-                //"{$x6b has " + resource + " $r6b;$r6b != $r2_6b; $r2_6b id '" + resourceId + "';}",
-                //"{$x6c has " + resource + " $r6c;$x6c != $x2_6c;}",
-                //"{$x6d has " + resource + " $r6d;$x6d != $x2_6d; $x2_6d id '" + resourceId + "';}",
-                //"{$x6e has " + resource + " $r6e;$x6e != $r6e;}",
+                //"{ $x6a has " + resource + " $r6a; $r6a != $r2_6a; };",
+                //"{ $x6b has " + resource + " $r6b; $r6b != $r2_6b; $r2_6b id '" + resourceId + "'; };",
+                //"{ $x6c has " + resource + " $r6c; $x6c != $x2_6c; };",
+                //"{ $x6d has " + resource + " $r6d; $x6d != $x2_6d; $x2_6d id '" + resourceId + "'; };",
+                //"{ $x6e has " + resource + " $r6e; $x6e != $r6e; };",
         );
     }
 

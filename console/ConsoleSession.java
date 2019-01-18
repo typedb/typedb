@@ -20,6 +20,9 @@ package grakn.core.console;
 
 import com.google.common.base.StandardSystemProperty;
 import grakn.core.client.GraknClient;
+import grakn.core.common.exception.GraknException;
+import grakn.core.console.exception.GraknConsoleException;
+import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.printer.Printer;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
@@ -31,6 +34,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -92,16 +96,20 @@ public class ConsoleSession implements AutoCloseable {
     }
 
     void load(Path filePath) throws IOException {
-        String queries = readFile(filePath);
+        consoleReader.println("Loading: " + filePath.toString());
+        consoleReader.println("...");
+        consoleReader.flush();
+
         tx = client.session(keyspace).transaction(GraknClient.Transaction.Type.WRITE);
 
         try {
-            consoleReader.print("Loading: " + filePath.toString());
-            consoleReader.println("...");
-            executeQuery(queries);
+            String queries = readFile(filePath);
+            executeQuery(queries, false);
             commit();
-            consoleReader.println("...");
-            consoleReader.println("Successful commit: " + filePath.toString());
+            consoleReader.println("Successful commit: " + filePath.getFileName().toString());
+        } catch (GraknException e) {
+            String error = "Failed to load file: " + filePath.getFileName().toString();
+            throw new GraknConsoleException(error, e);
         } finally {
             consoleReader.flush();
         }
@@ -119,9 +127,12 @@ public class ConsoleSession implements AutoCloseable {
                 executeQuery(openTextEditor());
 
             } else if (queryString.startsWith(LOAD + ' ')) {
-                queryString = readFile(Paths.get(unescapeJava(queryString.substring(LOAD.length() + 1))));
-                executeQuery(queryString);
-
+                try{
+                    queryString = readFile(Paths.get(unescapeJava(queryString.substring(LOAD.length() + 1))));
+                    executeQuery(queryString);
+                } catch (NoSuchFileException e) {
+                    System.err.println("File not found: " + e.getMessage());
+                }
             } else if (queryString.equals(COMMIT)) {
                 commit();
 
@@ -152,6 +163,9 @@ public class ConsoleSession implements AutoCloseable {
     }
 
     private void executeQuery(String queryString) throws IOException {
+        executeQuery(queryString, true);
+    }
+    private void executeQuery(String queryString, boolean catchRuntimeException) throws IOException {
         // We'll use streams so we can print the answer out much faster and smoother
         try {
             // Parse the string to get a stream of Graql Queries
@@ -162,7 +176,7 @@ public class ConsoleSession implements AutoCloseable {
             // Combine the stream of printed answers into one stream (queries.flatMap(..))
             Stream<String> answers = queries.flatMap(query -> printer.toStream(tx.stream(query, infer)));
 
-            // For each printed answer, print them them on one line
+            // For each printed answer, print them on one line
             answers.forEach(answer -> {
                 try {
                     consoleReader.println(answer);
@@ -171,8 +185,20 @@ public class ConsoleSession implements AutoCloseable {
                 }
             });
         } catch (RuntimeException e) {
-            printErr.println(e.getMessage());
-            reopenTransaction();
+            // Flush out all answers from previous iterators in the stream
+            consoleReader.flush();
+
+            if (catchRuntimeException) {
+                if (!e.getMessage().isEmpty()) {
+                    printErr.println("Error: " + e.getMessage());
+                } else {
+                    printErr.println("Error: " + e.getClass().getName());
+                }
+                printErr.println("All uncommitted data is cleared");
+                reopenTransaction();
+            } else {
+                throw e;
+            }
         }
 
         consoleReader.flush(); // Flush the ConsoleReader before the next command
@@ -187,6 +213,7 @@ public class ConsoleSession implements AutoCloseable {
             tx.commit();
         } catch (RuntimeException e) {
             printErr.println(e.getMessage());
+            printErr.println("All uncommitted data is cleared");
         } finally {
             reopenTransaction();
         }

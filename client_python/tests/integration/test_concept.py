@@ -40,7 +40,15 @@ class test_concept_Base(test_Base):
         tx = session.transaction(grakn.TxType.WRITE)
         try:
             # define parentship roles to test agains
-            tx.query("define parent sub role; child sub role; mother sub role; son sub role; person sub entity, has age, has gender, plays parent, plays child, plays mother, plays son; age sub attribute datatype long; gender sub attribute datatype string; parentship sub relationship, relates parent, relates child, relates mother, relates son;")
+            tx.query("define "
+                     "parent sub role; "
+                     "child sub role; "
+                     "mother sub role; "
+                     "son sub role; "
+                     "person sub entity, has age, has gender, plays parent, plays child, plays mother, plays son; "
+                     "age sub attribute, datatype long; "
+                     "gender sub attribute, datatype string; "
+                     "parentship sub relationship, relates parent, relates child, relates mother, relates son;")
         except GraknError as ce: 
             print(ce)
 
@@ -375,8 +383,8 @@ class test_Rule(test_concept_Base):
     def test_when_then(self):
         """ Test get valid  when/then """
         label = "genderizedparentship"
-        when = "{(parent: $p, child: $c) isa parentship; $c has gender \"male\"; $p has gender \"female\";}"
-        then = "{(mother: $p, son: $c) isa parentship;}"
+        when = "{ (parent: $p, child: $c) isa parentship; $c has gender \"male\"; $p has gender \"female\"; };"
+        then = "{ (mother: $p, son: $c) isa parentship; };"
         rule = self.tx.put_rule(label, when, then)
 
         self.assertEqual(rule.get_when(), when)
@@ -394,7 +402,7 @@ class test_Role(test_concept_Base):
     def test_relationships(self):
         """ Test retrieving relationships of a role """
         # parent role, parentship already exist
-        result = self.tx.query("match $x label parent; get;").collect_concepts()
+        result = self.tx.query("match $x type parent; get;").collect_concepts()
         parent_role = result[0]
         self.assertEqual(parent_role.base_type, "ROLE")
 
@@ -405,7 +413,7 @@ class test_Role(test_concept_Base):
 
     def test_players(self):
         """ Test retrieving entity types playing this role """
-        result = self.tx.query("match $x label parent; get;").collect_concepts()
+        result = self.tx.query("match $x type parent; get;").collect_concepts()
         parent_role = result[0]
         self.assertEqual(parent_role.base_type, "ROLE")
 

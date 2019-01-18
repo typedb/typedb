@@ -17,14 +17,15 @@
 #
 
 exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
-load("@graknlabs_rules_deployment//brew:rules.bzl", deploy_brew = "deploy_brew")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution_structure", "distribution_zip", "distribution_deb", "distribution_rpm")
-load("@graknlabs_rules_deployment//rpm/deployment:rules.bzl", "deploy_rpm")
+load("@graknlabs_bazel_distribution//brew:rules.bzl", deploy_brew = "deploy_brew")
+load("@graknlabs_bazel_distribution//distribution:rules.bzl", "distribution_structure", "distribution_zip", "distribution_deb", "distribution_rpm")
+load("@graknlabs_bazel_distribution//rpm/deployment:rules.bzl", "deploy_rpm")
+load("@graknlabs_bazel_distribution//deb/deployment:rules.bzl", "deploy_deb")
 
 
 py_binary(
     name = "deploy-github-zip",
-    srcs = ["@graknlabs_rules_deployment//github:deployment.py"],
+    srcs = ["@graknlabs_bazel_distribution//github:deployment.py"],
     data = [":distribution", ":VERSION", ":deployment.properties", "@ghr_osx_zip//file:file", "@ghr_linux_tar//file:file"],
     main = "deployment.py"
 )
@@ -62,6 +63,12 @@ distribution_deb(
         "usr/local/bin/grakn": "/opt/grakn/core/grakn",
         "opt/grakn/core/logs": "/var/log/grakn/",
     },
+)
+
+deploy_deb(
+    name = "deploy-deb",
+    target = ":distribution-deb",
+    deployment_properties = "//:deployment.properties",
 )
 
 

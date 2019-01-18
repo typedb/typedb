@@ -269,7 +269,8 @@ public final class GraknClient {
                 case OK:
                     return response.ok();
                 case ERROR:
-                    throw new RuntimeException(response.error().getMessage());
+                    // TODO: parse different GRPC errors into specific GraknClientException
+                    throw GraknClientException.create(response.error().getMessage());
                 case COMPLETED:
                 default:
                     throw CommonUtil.unreachableStatement("Unexpected response " + response);

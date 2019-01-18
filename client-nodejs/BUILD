@@ -22,7 +22,7 @@ exports_files([
 
 load("@stackb_rules_proto//node:node_grpc_compile.bzl", "node_grpc_compile")
 load("@build_bazel_rules_nodejs//:defs.bzl", "npm_package", "nodejs_jest_test", "babel_library")
-load("@graknlabs_rules_deployment//npm:rules.bzl", "deploy_npm")
+load("@graknlabs_bazel_distribution//npm:rules.bzl", "deploy_npm")
 
 
 node_grpc_compile(

@@ -23,7 +23,8 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.server.session.TransactionOLTP;
 
 import java.util.List;
@@ -39,6 +40,14 @@ import java.util.Set;
  */
 public class ReasonerQueries {
 
+    public static CompositeQuery composite(Conjunction<Pattern> pattern, TransactionOLTP tx){
+        return new CompositeQuery(pattern, tx).inferTypes();
+    }
+
+    public static CompositeQuery composite(CompositeQuery q, ConceptMap sub){
+        return q.withSubstitution(sub).inferTypes();
+    }
+
     /**
      * create a reasoner query from a conjunctive pattern with types inferred
      * @param pattern conjunctive pattern defining the query
@@ -47,7 +56,7 @@ public class ReasonerQueries {
      */
     public static ReasonerQueryImpl create(Conjunction<Statement> pattern, TransactionOLTP tx) {
         ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, tx).inferTypes();
-        return (query.isAtomic() && query.isPositive())?
+        return query.isAtomic()?
                 new ReasonerAtomicQuery(query.getAtoms(), tx) :
                 query;
     }
@@ -60,8 +69,7 @@ public class ReasonerQueries {
      */
     public static ReasonerQueryImpl create(Set<Atomic> as, TransactionOLTP tx){
         boolean isAtomic = as.stream().filter(Atomic::isSelectable).count() == 1;
-        boolean isPositive = as.stream().allMatch(Atomic::isPositive);
-        return (isAtomic && isPositive)?
+        return isAtomic?
                 new ReasonerAtomicQuery(as, tx).inferTypes() :
                 new ReasonerQueryImpl(as, tx).inferTypes();
     }
@@ -75,8 +83,7 @@ public class ReasonerQueries {
      */
     public static ReasonerQueryImpl create(List<Atom> as, TransactionOLTP tx){
         boolean isAtomic = as.size() == 1;
-        boolean isPositive = as.stream().allMatch(Atomic::isPositive);
-        return (isAtomic && isPositive)?
+        return isAtomic?
                 new ReasonerAtomicQuery(Iterables.getOnlyElement(as)).inferTypes() :
                 new ReasonerQueryImpl(as, tx).inferTypes();
     }
@@ -128,4 +135,6 @@ public class ReasonerQueries {
     public static ReasonerAtomicQuery atomic(ReasonerAtomicQuery q, ConceptMap sub){
         return q.withSubstitution(sub).inferTypes();
     }
+
+
 }
