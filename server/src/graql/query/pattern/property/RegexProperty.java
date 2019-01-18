@@ -20,7 +20,7 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.statement.StatementType;
-import grakn.core.graql.util.StringUtil;
+import graql.util.StringUtil;
 
 /**
  * Represents the {@code regex} property on a AttributeType. This property can be queried and inserted.

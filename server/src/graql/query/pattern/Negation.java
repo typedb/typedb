@@ -19,11 +19,11 @@
 package grakn.core.graql.query.pattern;
 
 import grakn.core.graql.query.Graql;
-import java.util.Collections;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Collections;
 import java.util.Set;
 
 /**

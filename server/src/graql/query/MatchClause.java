@@ -35,8 +35,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.joining;
-
 /**
  * A part of a query used for finding data in a knowledge base that matches the given patterns.
  * The match clause is the pattern-matching part of a query. The patterns are described in a declarative fashion,

@@ -26,7 +26,6 @@ import grakn.core.graql.query.pattern.Negation;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.StatementInstance;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementAttribute;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementRelation;
 import grakn.core.graql.query.pattern.statement.StatementType;
