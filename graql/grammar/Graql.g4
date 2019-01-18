@@ -180,7 +180,7 @@ label_array         :   '[' label ( ',' label )* ']' ;
 label               :   identifier | ID_IMPLICIT_;
 
 id                  :   identifier ;
-identifier          :   ID_ | STRING_ | UNRESERVED_ ;                            // TODO: disallow quoted strings as IDs
+identifier          :   ID_ | STRING_ | unreserved ;                            // TODO: disallow quoted strings as IDs
 
 // ATTRIBUTE OPERATION CONSTRUCTS ==============================================
 
@@ -203,6 +203,15 @@ datatype            :   LONG        |   DOUBLE      |   STRING
 literal             :   STRING_     |   INTEGER_    |   REAL_
                     |   BOOLEAN_    |   DATE_       |   DATETIME_   ;
 regex               :   STRING_     ;
+
+// UNRESERVED KEYWORDS =========================================================
+// Most of Graql syntax should not be reserved from being used as identifiers
+
+unreserved          : MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT
+                    | PATH | CLUSTER | FROM | TO | OF | IN
+                    | DEGREE | K_CORE | CONNECTED_COMPONENT
+                    | MIN_K | K | CONTAINS | SIZE | WHERE
+                    ;
 
 // GRAQL SYNTAX KEYWORDS =======================================================
 
@@ -283,15 +292,6 @@ VAR_ANONYMOUS_  : '$_' ;
 VAR_NAMED_      : '$' [a-zA-Z0-9_-]* ;
 ID_             : [a-zA-Z_] [a-zA-Z0-9_-]* ;
 ID_IMPLICIT_    : '@' [a-zA-Z0-9_-]+ ;
-
-// UNRESERVED KEYWORDS =========================================================
-// Most of Graql syntax should not be reserved from being used as identifiers
-
-UNRESERVED_     : MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-                | FROM | TO | OF | IN
-                | DEGREE | K_CORE | CONNECTED_COMPONENT
-                | MIN_K | K | CONTAINS | SIZE | WHERE
-                ;
 
 // FRAGMENTS OF KEYWORDS =======================================================
 
