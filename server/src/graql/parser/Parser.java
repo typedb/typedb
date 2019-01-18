@@ -18,9 +18,7 @@
 
 package grakn.core.graql.parser;
 
-import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.query.AggregateQuery;
@@ -34,24 +32,19 @@ import grakn.core.graql.query.GroupQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Disjunction;
-import grakn.core.graql.query.pattern.Negation;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.predicate.ValuePredicate;
-import grakn.core.graql.util.StringUtil;
 import graql.grammar.GraqlBaseVisitor;
 import graql.grammar.GraqlLexer;
 import graql.grammar.GraqlParser;
 import graql.parser.ErrorListener;
-import java.util.Collection;
+import graql.util.StringUtil;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -68,6 +61,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -75,9 +69,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.query.Graql.and;
-import static grakn.core.graql.query.Graql.eq;
 import static grakn.core.graql.query.Graql.not;
-import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.type;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -85,8 +77,6 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Graql query string parser to produce Graql Java objects
  */
-// This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
-@SuppressWarnings({"unchecked", "Duplicates"}) // TODO: remove this soon
 public class Parser extends GraqlBaseVisitor {
 
     private GraqlParser parse(String queryString, ErrorListener errorListener) {
@@ -318,7 +308,7 @@ public class Parser extends GraqlBaseVisitor {
         GraqlParser.Compute_methodContext method = ctx.compute_method();
         GraqlParser.Compute_conditionsContext conditions = ctx.compute_conditions();
 
-        ComputeQuery query = Graql.compute(ComputeQuery.Method.of(method.getText()));
+        ComputeQuery<?> query = Graql.compute(ComputeQuery.Method.of(method.getText()));
         if (conditions == null) return query;
 
         for (GraqlParser.Compute_conditionContext conditionCtx : conditions.compute_condition()) {
@@ -429,7 +419,14 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public Pattern visitPattern_negation(GraqlParser.Pattern_negationContext ctx) {
-        return not(visitPattern(ctx.pattern()));
+        Set<Pattern> patterns = visitPatterns(ctx.patterns());
+
+        if (patterns.size() == 1) {
+            return not(patterns.iterator().next());
+
+        } else {
+            return not(and(patterns));
+        }
     }
 
     // PATTERN STATEMENTS ======================================================
@@ -510,7 +507,7 @@ public class Parser extends GraqlBaseVisitor {
                                 .collect(Collectors.toList())
                 ));
             } else if (property.TYPE() != null) {
-                type = type.type(visitLabel(property.label()).getValue());
+                type = type.type(visitLabel(property.label()));
 
             } else {
                 throw new IllegalArgumentException("Unrecognised Type Statement: " + property.getText());
@@ -540,7 +537,7 @@ public class Parser extends GraqlBaseVisitor {
         }
     }
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public Statement visitStatement_thing(GraqlParser.Statement_thingContext ctx) {
         // TODO: restrict for Insert VS Match
 
@@ -565,7 +562,7 @@ public class Parser extends GraqlBaseVisitor {
         return instance;
     }
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public Statement visitStatement_relation(GraqlParser.Statement_relationContext ctx) {
         // TODO: restrict for Insert VS Match
 
@@ -590,7 +587,7 @@ public class Parser extends GraqlBaseVisitor {
         return instance;
     }
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public Statement visitStatement_attribute(GraqlParser.Statement_attributeContext ctx) {
         // TODO: restrict for Insert VS Match
 
@@ -601,7 +598,7 @@ public class Parser extends GraqlBaseVisitor {
             instance = Graql.var();
         }
 
-        instance = instance.val(new ValueProperty(visitPredicate(ctx.predicate())));
+        instance = instance.val(new ValueProperty(visitOperation(ctx.operation())));
         if (ctx.ISA_() != null) {
             instance = instance.isa(getIsaProperty(ctx.ISA_(), ctx.type()));
         }
@@ -622,7 +619,7 @@ public class Parser extends GraqlBaseVisitor {
             return new IsaProperty(visitType(ctx));
 
         } else if (isa != null && isa.equals(Query.Property.ISAX)) {
-            return new IsaExplicitProperty(visitType(ctx));
+            return new IsaProperty(visitType(ctx), true);
 
         } else {
             throw new IllegalArgumentException("Unrecognised ISA property: " + ctx.getText());
@@ -647,8 +644,8 @@ public class Parser extends GraqlBaseVisitor {
             } else {
                 return new HasAttributeProperty(type, variable);
             }
-        } else if (ctx.predicate() != null) {
-            Statement value = Graql.var().val(visitPredicate(ctx.predicate()));
+        } else if (ctx.operation() != null) {
+            Statement value = Graql.var().val(visitOperation(ctx.operation()));
             if (ctx.via() != null) {
                 return new HasAttributeProperty(type, value, Graql.var(getVar(ctx.via().VAR_())));
             } else {
@@ -676,53 +673,37 @@ public class Parser extends GraqlBaseVisitor {
         return new RelationProperty(rolePlayers);
     }
 
-    // TYPE STATEMENT CONSTRUCT ================================================
+    // TYPE, LABEL, AND IDENTIFIER CONSTRUCTS ==================================
 
     @Override
     public Statement visitType(GraqlParser.TypeContext ctx) {
         if (ctx.label() != null) {
-            return type(visitLabel(ctx.label()).getValue());
+            return type(visitLabel(ctx.label()));
         } else {
             return new Statement(getVar(ctx.VAR_()));
         }
     }
 
-    // DATA TYPE AND VALUE STATEMENT CONSTRUCTS ====================================
-
     @Override
-    public String visitRegex(GraqlParser.RegexContext ctx) {
-        // Remove surrounding /.../
-        String unquoted = unquoteString(ctx.STRING_());
-        return unquoted.replaceAll("\\\\/", "/");
-        // TODO: Why replace \\/ with / in the regex?
-    }
-
-
-    // ============================================================================================================== //
-    // ============================================================================================================== //
-    // ============================================================================================================== //
-
-
-    @Override
-    public Label visitLabel(GraqlParser.LabelContext ctx) {
-        if (ctx.identifier() != null) {
-            return Label.of(visitIdentifier(ctx.identifier()));
-        } else {
-            return Label.of(ctx.ID_IMPLICIT_().getText());
-        }
-    }
-
-    @Override
-    public Set<Label> visitLabels(GraqlParser.LabelsContext labels) {
+    public Set<String> visitLabels(GraqlParser.LabelsContext labels) {
         List<GraqlParser.LabelContext> labelsList = new ArrayList<>();
 
         if (labels.label() != null) {
             labelsList.add(labels.label());
-        } else if (labels.labelsArray() != null) {
-            labelsList.addAll(labels.labelsArray().label());
+        } else if (labels.label_array() != null) {
+            labelsList.addAll(labels.label_array().label());
         }
 
         return labelsList.stream().map(this::visitLabel).collect(toSet());
+    }
+
+    @Override
+    public String visitLabel(GraqlParser.LabelContext ctx) {
+        if (ctx.identifier() != null) {
+            return visitIdentifier(ctx.identifier());
+        } else {
+            return ctx.ID_IMPLICIT_().getText();
+        }
     }
 
     @Override
@@ -739,91 +720,84 @@ public class Parser extends GraqlBaseVisitor {
         }
     }
 
-    @Override
-    public ValuePredicate visitPredicateEq(GraqlParser.PredicateEqContext ctx) {
-        return eq(visitValue(ctx.value()));
+    // ATTRIBUTE OPERATION CONSTRUCTS ==========================================
+
+    @Override // TODO: this visitor method should not return a Predicate if we have the right data structure
+    public ValuePredicate visitOperation(GraqlParser.OperationContext ctx) {
+        if (ctx.assignment() != null) {
+            return visitAssignment(ctx.assignment());
+        } else if (ctx.comparison() != null) {
+            return visitComparison(ctx.comparison());
+        } else {
+            throw new IllegalArgumentException("Unreconigsed Attribute Operation: " + ctx.getText());
+        }
+    }
+
+    @Override // TODO: this visitor method should not return a Predicate if we have the right data structure
+              //       Graql.eq() should be replaced with an assignment property
+    public ValuePredicate visitAssignment(GraqlParser.AssignmentContext ctx) {
+        return Graql.eq(visitLiteral(ctx.literal()));
     }
 
     @Override
-    public ValuePredicate visitPredicateVariable(GraqlParser.PredicateVariableContext ctx) {
-        return eq(new Statement(getVar(ctx.VAR_())));
+    public ValuePredicate visitComparison(GraqlParser.ComparisonContext ctx) {
+        if (ctx.comparator() != null) {
+            return getComparablePredicate(ctx.comparator(), ctx.comparable());
+
+        } else if (ctx.CONTAINS() != null) {
+            if (ctx.containable().STRING_() != null) {
+                return Graql.contains(getString(ctx.containable().STRING_()));
+            } else if (ctx.containable().VAR_() != null) {
+                return Graql.contains(new Statement(getVar(ctx.containable().VAR_())));
+            } else {
+                throw new IllegalArgumentException("Unrecognised CONTAINS Comparison: " + ctx.getText());
+            }
+        } else if (ctx.LIKE() != null) {
+            return Graql.like(visitRegex(ctx.regex()));
+        } else {
+            throw new IllegalArgumentException("Unrecognised Comparison: " + ctx.getText());
+        }
     }
 
-    @Override
-    public ValuePredicate visitPredicateNeq(GraqlParser.PredicateNeqContext ctx) {
-        return applyPredicate(Graql::neq, Graql::neq, visitValueOrVar(ctx.valueOrVar()));
+    private ValuePredicate getComparablePredicate(GraqlParser.ComparatorContext comparator, GraqlParser.ComparableContext comparable) {
+        Object literal = null;
+        Statement variable = null;
+        if (comparable.literal() != null) {
+            literal = visitLiteral(comparable.literal());
+        } else if (comparable.VAR_() != null) {
+            variable = new Statement(getVar(comparable.VAR_()));
+        } else {
+            throw new IllegalArgumentException("Unrecognised Comparable token: " + comparable.getText());
+        }
+
+        Query.Operator operator = Query.Operator.of(comparator.getText());
+
+
+        switch (Objects.requireNonNull(operator)){
+            case EQV:
+                return literal != null ? Graql.eq(literal) : Graql.eq(variable);
+            case NEQV:
+                return literal != null ? Graql.neq(literal) : Graql.neq(variable);
+            case GT:
+                return literal != null ? Graql.gt(literal) : Graql.gt(variable);
+            case GTE:
+                return literal != null ? Graql.gte(literal) : Graql.gte(variable);
+            case LT:
+                return literal != null ? Graql.lt(literal) : Graql.lt(variable);
+            case LTE:
+                return literal != null ? Graql.lte(literal) : Graql.lte(variable);
+            default:
+                throw new IllegalArgumentException("Unrecognised Comparison Comparator: " + comparator.getText());
+        }
     }
 
-    @Override
-    public ValuePredicate visitPredicateGt(GraqlParser.PredicateGtContext ctx) {
-        return applyPredicate((Function<Comparable<?>, ValuePredicate>) Graql::gt, Graql::gt, visitValueOrVar(ctx.valueOrVar()));
-    }
+    // LITERAL INPUT VALUES ====================================================
 
     @Override
-    public ValuePredicate visitPredicateGte(GraqlParser.PredicateGteContext ctx) {
-        return applyPredicate((Function<Comparable<?>, ValuePredicate>) Graql::gte, Graql::gte, visitValueOrVar(ctx.valueOrVar()));
-    }
-
-    @Override
-    public ValuePredicate visitPredicateLt(GraqlParser.PredicateLtContext ctx) {
-        return applyPredicate((Function<Comparable<?>, ValuePredicate>) Graql::lt, Graql::lt, visitValueOrVar(ctx.valueOrVar()));
-    }
-
-    @Override
-    public ValuePredicate visitPredicateLte(GraqlParser.PredicateLteContext ctx) {
-        return applyPredicate((Function<Comparable<?>, ValuePredicate>) Graql::lte, Graql::lte, visitValueOrVar(ctx.valueOrVar()));
-    }
-
-    @Override
-    public ValuePredicate visitPredicateContains(GraqlParser.PredicateContainsContext ctx) {
-        Object stringOrStatement = ctx.STRING_() != null ? getString(ctx.STRING_()) : new Statement(getVar(ctx.VAR_()));
-
-        return applyPredicate((Function<String, ValuePredicate>) Graql::contains, Graql::contains, stringOrStatement);
-    }
-
-    @Override
-    public ValuePredicate visitPredicateRegex(GraqlParser.PredicateRegexContext ctx) {
-        return Graql.like(visitRegex(ctx.regex()));
-    }
-
-    @Override
-    public Statement visitValueVariable(GraqlParser.ValueVariableContext ctx) {
-        return new Statement(getVar(ctx.VAR_()));
-    }
-
-    @Override
-    public String visitValueString(GraqlParser.ValueStringContext ctx) {
-        return getString(ctx.STRING_());
-    }
-
-    @Override
-    public Long visitValueInteger(GraqlParser.ValueIntegerContext ctx) {
-        return getInteger(ctx.INTEGER_());
-    }
-
-    @Override
-    public Double visitValueReal(GraqlParser.ValueRealContext ctx) {
-        return Double.valueOf(ctx.REAL_().getText());
-    }
-
-    @Override
-    public Boolean visitValueBoolean(GraqlParser.ValueBooleanContext ctx) {
-        return visitBool(ctx.bool());
-    }
-
-    @Override
-    public LocalDateTime visitValueDate(GraqlParser.ValueDateContext ctx) {
-        return LocalDate.parse(ctx.DATE_().getText(), DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
-    }
-
-    @Override
-    public LocalDateTime visitValueDateTime(GraqlParser.ValueDateTimeContext ctx) {
-        return LocalDateTime.parse(ctx.DATETIME_().getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-    }
-
-    @Override
-    public Boolean visitBool(GraqlParser.BoolContext ctx) {
-        return ctx.TRUE() != null;
+    public String visitRegex(GraqlParser.RegexContext ctx) {
+        // Remove surrounding /.../
+        String unquoted = unquoteString(ctx.STRING_());
+        return unquoted.replaceAll("\\\\/", "/");
     }
 
     @Override
@@ -839,20 +813,33 @@ public class Parser extends GraqlBaseVisitor {
         } else if (datatype.STRING() != null) {
             return Query.DataType.STRING;
         } else {
-            throw CommonUtil.unreachableStatement("Unrecognised " + datatype);
+            throw new IllegalArgumentException("Unrecognised DataType: " + datatype);
         }
     }
 
-    private ValuePredicate visitPredicate(GraqlParser.PredicateContext ctx) {
-        return (ValuePredicate) visit(ctx);
-    }
+    @Override
+    public Object visitLiteral(GraqlParser.LiteralContext ctx) {
+        if (ctx.STRING_() != null) {
+            return getString(ctx.STRING_());
 
-    private Object visitValueOrVar(GraqlParser.ValueOrVarContext ctx) {
-        return visit(ctx);
-    }
+        } else if (ctx.INTEGER_() != null) {
+            return getInteger(ctx.INTEGER_());
 
-    private Object visitValue(GraqlParser.ValueContext ctx) {
-        return visit(ctx);
+        } else if (ctx.REAL_() != null) {
+            return Double.valueOf(ctx.REAL_().getText());
+
+        } else if (ctx.BOOLEAN_() != null) {
+            return getBoolean(ctx.BOOLEAN_());
+
+        } else if (ctx.DATE_() != null) {
+            return getDate(ctx.DATE_());
+
+        } else if (ctx.DATETIME_() != null) {
+            return getDateTime(ctx.DATETIME_());
+
+        } else {
+            throw new IllegalArgumentException("Unrecognised Literal token: " + ctx.getText());
+        }
     }
 
     private String getString(TerminalNode string) {
@@ -865,17 +852,30 @@ public class Parser extends GraqlBaseVisitor {
         return string.getText().substring(1, string.getText().length() - 1);
     }
 
-    protected long getInteger(TerminalNode integer) {
+    private long getInteger(TerminalNode integer) {
         return Long.parseLong(integer.getText());
     }
 
-    private <T> ValuePredicate applyPredicate(
-            Function<T, ValuePredicate> valPred, Function<Statement, ValuePredicate> varPred, Object obj
-    ) {
-        if (obj instanceof Statement) {
-            return varPred.apply((Statement) obj);
+    private boolean getBoolean(TerminalNode bool) {
+        Query.Literal literal = Query.Literal.of(bool.getText());
+
+        if (literal != null && literal.equals(Query.Literal.TRUE)) {
+            return true;
+
+        } else if (literal != null && literal.equals(Query.Literal.FALSE)) {
+            return false;
+
         } else {
-            return valPred.apply((T) obj);
+            throw new IllegalArgumentException("Unrecognised Boolean token: " + bool.getText());
         }
+    }
+
+    private LocalDateTime getDate(TerminalNode date) {
+        return LocalDate.parse(date.getText(),
+                               DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
+    }
+
+    private LocalDateTime getDateTime(TerminalNode dateTime) {
+        return LocalDateTime.parse(dateTime.getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 }

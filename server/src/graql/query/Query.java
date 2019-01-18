@@ -96,9 +96,17 @@ public interface Query {
         AND("and"),
         OR("or"),
         NOT("not"),
-        EQUAL("="),
+        EQ("="),
+        NEQ("!="),
+        EQV("=="),
+        NEQV("!=="),
+        GT(">"),
+        GTE(">="),
+        LT("<"),
+        LTE("<="),
+        CONTAINS("contains"), // TODO: remove duplicate in ComputeQuery.Param
         LIKE("like");
-        // TODO: other predicates
+
 
         private final String operator;
 
@@ -109,6 +117,15 @@ public interface Query {
         @Override
         public String toString() {
             return this.operator;
+        }
+
+        public static Operator of(String value) {
+            for (Operator c : values()) {
+                if (c.operator.equals(value)) {
+                    return c;
+                }
+            }
+            return null;
         }
     }
 
@@ -121,7 +138,6 @@ public interface Query {
         ISA("isa"),
         ISAX("isa!"),
         TYPE("type"),
-        NEQ("!="),
         PLAYS("plays"),
         REGEX("regex"),
         RELATES("relates"),
@@ -174,6 +190,31 @@ public interface Query {
         public static DataType of(String value) {
             for (DataType c : values()) {
                 if (c.type.equals(value)) {
+                    return c;
+                }
+            }
+            return null;
+        }
+    }
+
+    enum Literal {
+        TRUE("true"),
+        FALSE("false");
+
+        private final String literal;
+
+        Literal(String type) {
+            this.literal = type;
+        }
+
+        @Override
+        public String toString() {
+            return this.literal;
+        }
+
+        public static Literal of(String value) {
+            for (Literal c : values()) {
+                if (c.literal.equals(value)) {
                     return c;
                 }
             }

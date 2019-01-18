@@ -258,7 +258,7 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(attributeType + " must have data type of `long` or `double`, but was " + dataType.getName());
     }
 
-    public static GraqlQueryException attributesWithDifferentDataTypes(Collection<? extends Label> attributeTypes) {
+    public static GraqlQueryException attributesWithDifferentDataTypes(Collection<String> attributeTypes) {
         return new GraqlQueryException("resource types " + attributeTypes + " have different data types");
     }
 

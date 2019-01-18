@@ -114,7 +114,7 @@ pattern             :   pattern_statement
 
 pattern_conjunction :   '{' patterns '}' ';' ;
 pattern_disjunction :   '{' patterns '}'  ( OR '{' patterns '}' )+  ';' ;
-pattern_negation    :   NOT '{' pattern '}' ';' ;
+pattern_negation    :   NOT '{' patterns '}' ';' ;
 
 // PATTERN STATEMENTS ==========================================================
 
@@ -153,17 +153,17 @@ statement_relation  :   VAR_? relation      ISA_ type   ( ',' attributes )? ';'
                     |   VAR_? relation      attributes                      ';'
                     |   VAR_? relation                                      ';'
                     ;
-statement_attribute :   VAR_? predicate     ISA_ type   ( ',' attributes )? ';'
-                    |   VAR_? predicate     attributes                      ';'
-                    |   VAR_? predicate                                     ';'
+statement_attribute :   VAR_? operation     ISA_ type   ( ',' attributes )? ';'
+                    |   VAR_? operation     attributes                      ';'
+                    |   VAR_? operation                                     ';'
                     ;
 
-// ATTRIBUTE STATEMENT CONSTRUCT ===============================================
+// ATTRIBUTE CONSTRUCT =========================================================
 
 attributes          :   attribute ( ',' attribute )* ;
-attribute           :   HAS label ( VAR_ | predicate ) via? ;                   // Attribute ownership by variable or a
+attribute           :   HAS label ( VAR_ | operation ) via? ;                   // Attribute ownership by variable or a
                                                                                 // predicate, and the "via" Relation
-// RELATION STATEMENT CONSTRUCT ================================================
+// RELATION CONSTRUCT ==========================================================
 
 relation            :   '(' role_player ( ',' role_player )* ')' ;              // A list of role players in a Relations
 role_player         :   type ':' player                                         // The Role type and and player variable
@@ -172,45 +172,46 @@ player              :   VAR_ ;                                                  
 via                 :   VIA VAR_ ;                                              // The Relation variable that holds the
                                                                                 // assertion between an Attribute and
                                                                                 // its owner (any Thing)
-// TYPE STATEMENT CONSTRUCT ====================================================
+// TYPE, LABEL AND IDENTIFIER CONSTRUCTS =======================================
 
-type                :   label | VAR_ ;                                          // Matching a Type can done by providing
-                                                                                // a label or variable
-// PREDICATE STATEMENT CONSTRUCT ===============================================
+type                :   label | VAR_ ;                                          // A type can be a label or variable
+labels              :   label | label_array ;
+label_array         :   '[' label ( ',' label )* ']' ;
+label               :   identifier | ID_IMPLICIT_;
 
-predicate           :   '=='?   value                   # predicateEq           // TODO: split with value assignment
-                    |   '=='    VAR_                    # predicateVariable
-                    |   '!=='   valueOrVar              # predicateNeq
-                    |   '>'     valueOrVar              # predicateGt
-                    |   '>='    valueOrVar              # predicateGte
-                    |   '<'     valueOrVar              # predicateLt
-                    |   '<='    valueOrVar              # predicateLte
-                    |   'contains' (STRING_ | VAR_)    # predicateContains
-                    |   LIKE    regex                   # predicateRegex
+id                  :   identifier ;
+identifier          :   ID_ | STRING_ | unreserved ;                            // TODO: disallow quoted strings as IDs
+
+// ATTRIBUTE OPERATION CONSTRUCTS ==============================================
+
+operation           :   assignment
+                    |   comparison
                     ;
-valueOrVar          :   VAR_       # valueVariable
-                    |   value      # valuePrimitive
+assignment          :   literal   ;
+comparison          :   comparator  comparable
+                    |   CONTAINS    containable
+                    |   LIKE        regex
                     ;
+comparator          :   EQV | NEQV | GT | GTE | LT | LTE ;
+comparable          :   literal | VAR_  ;
+containable         :   STRING_ | VAR_  ;
 
-// DATA TYPE AND VALUE STATEMENT CONSTRUCTS ====================================
+// LITERAL INPUT VALUES =======================================================
 
-value               :   STRING_    # valueString
-                    |   INTEGER_   # valueInteger
-                    |   REAL_      # valueReal
-                    |   bool       # valueBoolean
-                    |   DATE_      # valueDate
-                    |   DATETIME_  # valueDateTime
+datatype            :   LONG        |   DOUBLE      |   STRING
+                    |   BOOLEAN     |   DATE        ;
+literal             :   STRING_     |   INTEGER_    |   REAL_
+                    |   BOOLEAN_    |   DATE_       |   DATETIME_   ;
+regex               :   STRING_     ;
+
+// UNRESERVED KEYWORDS =========================================================
+// Most of Graql syntax should not be reserved from being used as identifiers
+
+unreserved          : MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT
+                    | PATH | CLUSTER | FROM | TO | OF | IN
+                    | DEGREE | K_CORE | CONNECTED_COMPONENT
+                    | MIN_K | K | CONTAINS | SIZE | WHERE
                     ;
-
-regex               : STRING_ ;
-datatype            : LONG | DOUBLE | STRING | BOOLEAN | DATE ;
-bool                : TRUE | FALSE ;
-
-labels              : labelsArray | label ;
-labelsArray         : '[' label (',' label)* ']' ;
-label               : identifier | ID_IMPLICIT_;
-id                  : identifier ;
-identifier          : ID_ | STRING_ | unreserved ;                              // TODO: disallow quoted strings as IDs
 
 // GRAQL SYNTAX KEYWORDS =======================================================
 
@@ -263,6 +264,9 @@ SIZE            : 'size'        ;   CONTAINS        : 'contains'    ;
 
 OR              : 'or'          ;   NOT             : 'not'         ;
 LIKE            : 'like'        ;   NEQ             : '!='          ;
+EQV             : '=='          ;   NEQV            : '!=='         ;
+GT              : '>'           ;   GTE             : '>='          ;
+LT              : '<'           ;   LTE             : '<='          ;
 
 // DATA TYPE KEYWORDS
 
@@ -270,18 +274,16 @@ LONG            : 'long'        ;   DOUBLE          : 'double'      ;
 STRING          : 'string'      ;   BOOLEAN         : 'boolean'     ;
 DATE            : 'date'        ;
 
-// BOOLEAN KEYWORDS
-
-TRUE            : 'true'        ;   FALSE           : 'false'       ;
-
-// UNRESERVED KEYWORDS
-// Most of Graql syntax should not be reserved from being used as identifiers
-
-unreserved      : MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-                | FROM | TO | OF | IN
-                | DEGREE | K_CORE | CONNECTED_COMPONENT
-                | MIN_K | K | CONTAINS | SIZE | WHERE
-                ;
+// LITERAL VALUE KEYWORDS
+BOOLEAN_        : TRUE | FALSE  ; // order of lexer declaration matters
+TRUE            : 'true'        ;
+FALSE           : 'false'       ;
+STRING_         : '"'  (~["\\/] | ESCAPE_SEQ_ )* '"'
+                | '\'' (~['\\/] | ESCAPE_SEQ_ )* '\''   ;
+INTEGER_        : ('+' | '-')? [0-9]+                   ;
+REAL_           : ('+' | '-')? [0-9]+ '.' [0-9]+        ;
+DATE_           : DATE_FRAGMENT_                        ;
+DATETIME_       : DATE_FRAGMENT_ 'T' TIME_              ;
 
 // GRAQL INPUT TOKEN PATTERNS
 // All token names must end with an underscore ('_')
@@ -290,13 +292,8 @@ VAR_ANONYMOUS_  : '$_' ;
 VAR_NAMED_      : '$' [a-zA-Z0-9_-]* ;
 ID_             : [a-zA-Z_] [a-zA-Z0-9_-]* ;
 ID_IMPLICIT_    : '@' [a-zA-Z0-9_-]+ ;
-STRING_         : '"' (~["\\/] | ESCAPE_SEQ_ )* '"' | '\'' (~['\\/] | ESCAPE_SEQ_)* '\'';
-//REGEX_          : '"' (~'/' | '\\/')* '"' | '\'' (~'/' | '\\/')* '\'' ;
-//REGEX_          : '/' (~'/' | '\\/')* '/' ;
-INTEGER_        : ('+' | '-')? [0-9]+ ;
-REAL_           : ('+' | '-')? [0-9]+ '.' [0-9]+ ;
-DATE_           : DATE_FRAGMENT_ ;
-DATETIME_       : DATE_FRAGMENT_ 'T' TIME_ ;
+
+// FRAGMENTS OF KEYWORDS =======================================================
 
 fragment DATE_FRAGMENT_ : YEAR_ '-' MONTH_ '-' DAY_ ;
 fragment MONTH_         : [0-1][0-9] ;

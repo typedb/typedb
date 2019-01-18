@@ -28,12 +28,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- *
- * <p>
  * Basic interface for logical atoms used in reasoning.
- * </p>
- *
- *
  */
 public interface Atomic {
 

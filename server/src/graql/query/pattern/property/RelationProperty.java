@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.StatementInstance;
@@ -74,7 +73,8 @@ public class RelationProperty extends VarProperty {
 
     @Override
     public Stream<Statement> types() {
-        return relationPlayers().stream().map(RolePlayer::getRole).flatMap(CommonUtil::optionalToStream);
+        return relationPlayers().stream().map(RolePlayer::getRole)
+                .flatMap(optional -> optional.map(Stream::of).orElseGet(Stream::empty));
     }
 
     @Override

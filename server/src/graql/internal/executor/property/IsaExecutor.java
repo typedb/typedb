@@ -28,12 +28,11 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import java.util.Set;
 
@@ -52,10 +51,16 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         Variable directTypeVar = new Variable();
-        return ImmutableSet.of(
-                EquivalentFragmentSets.isa(property, var, directTypeVar, true),
-                EquivalentFragmentSets.sub(property, directTypeVar, property.type().var())
-        );
+        if (!property.isExplicit()) {
+            return ImmutableSet.of(
+                    EquivalentFragmentSets.isa(property, var, directTypeVar, true),
+                    EquivalentFragmentSets.sub(property, directTypeVar, property.type().var())
+            );
+        } else {
+            return ImmutableSet.of(
+                    EquivalentFragmentSets.isa(property, var, property.type().var(), true)
+            );
+        }
     }
 
     @Override
@@ -72,7 +77,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
         //isa part
         Statement isaVar;
 
-        if (property instanceof IsaExplicitProperty) {
+        if (property.isExplicit()) {
             isaVar = new Statement(varName).isaX(new Statement(typeVar));
         } else {
             isaVar = new Statement(varName).isa(new Statement(typeVar));
@@ -84,22 +89,6 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
     @Override
     public Set<PropertyExecutor.Writer> insertExecutors() {
         return ImmutableSet.of(new InsertIsa());
-    }
-
-    public static class IsaExplicitExecutor extends IsaExecutor {
-
-        IsaExplicitExecutor(Variable var, IsaProperty property) {
-            super(var, property);
-        }
-
-        @Override
-        public Set<EquivalentFragmentSet> matchFragments() {
-            return ImmutableSet.of(EquivalentFragmentSets.isa(super.property,
-                                                              super.var,
-                                                              super.property.type().var(),
-                                                              true)
-            );
-        }
     }
 
     private class InsertIsa implements PropertyExecutor.Writer {

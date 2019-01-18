@@ -16,20 +16,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//graql/java:__subpackages__"])
 
-load("@com_github_google_bazel_common//tools/jarjar:jarjar.bzl", "jarjar_library")
 
-jarjar_library(
-    name = 'graql',
-    jars = [
-        "//graql/java/parser:parser",
-        "//graql/java/exception:exception",
-        "//graql/java/util:util",
-    ],
+java_library(
+    name = "util",
+    srcs = glob(["**/*.java"]),
     deps = [
-        "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/antlr:antlr4-runtime", # sync version with @antlr4_runtime//jar
-    ]
+            "//graql/java/parser:parser",
+
+            # External dependencies
+            "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        ]
+)
+
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+checkstyle_test(
+    name = "util-checkstyle",
+    target = ":util",
+    config = "//config/checkstyle:checkstyle.xml",
+    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
+    licenses = ["//config/checkstyle:licenses"],
 )

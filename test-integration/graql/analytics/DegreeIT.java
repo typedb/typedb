@@ -25,7 +25,6 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
@@ -184,8 +183,7 @@ public class DegreeIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             // set subgraph, use animal instead of dog
-            Set<Label> ct = Sets.newHashSet(Label.of("person"), Label.of("animal"),
-                    Label.of("mans-best-friend"));
+            Set<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
             List<ConceptSetMeasure> degrees = tx.execute(Graql.compute(CENTRALITY).using(DEGREE).in(ct));
             // check that dog has a degree to confirm sub has been inferred
             assertTrue(correctDegrees.containsAll(degrees));
@@ -234,15 +232,13 @@ public class DegreeIT {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
 
             // create a subgraph excluding attributes and their relationship
-            HashSet<Label> subGraphTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
-                    Label.of("mans-best-friend"));
+            HashSet<String> subGraphTypes = Sets.newHashSet("animal", "person", "mans-best-friend");
             List<ConceptSetMeasure> degrees = tx.execute(Graql.compute(CENTRALITY).using(DEGREE)
                     .in(subGraphTypes));
             assertTrue(subgraphReferenceDegrees.containsAll(degrees));
 
             // create a subgraph excluding one attribute type only
-            HashSet<Label> almostFullTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
-                    Label.of("mans-best-friend"), Label.of("@has-name"), Label.of("name"));
+            HashSet<String> almostFullTypes = Sets.newHashSet("animal", "person", "mans-best-friend", "@has-name", "name");
             degrees = tx.execute(Graql.compute(CENTRALITY).using(DEGREE).in(almostFullTypes));
             assertTrue(almostFullReferenceDegrees.containsAll(degrees));
 

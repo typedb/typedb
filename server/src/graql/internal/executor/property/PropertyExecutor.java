@@ -24,27 +24,25 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.pattern.property.AbstractProperty;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.IdProperty;
-import grakn.core.graql.query.pattern.property.AbstractProperty;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.RegexProperty;
 import grakn.core.graql.query.pattern.property.RelatesProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
-import grakn.core.graql.query.pattern.property.SubExplicitProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.ThenProperty;
 import grakn.core.graql.query.pattern.property.TypeProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import java.util.Set;
 
@@ -149,9 +147,6 @@ public interface PropertyExecutor {
         } else if (property instanceof AbstractProperty) {
             return new AbstractExecutor(var, (AbstractProperty) property);
 
-        } else if (property instanceof IsaExplicitProperty) {
-            return new IsaExecutor.IsaExplicitExecutor(var, (IsaExplicitProperty) property);
-
         } else if (property instanceof IsaProperty) {
             return new IsaExecutor(var, (IsaProperty) property);
 
@@ -172,9 +167,6 @@ public interface PropertyExecutor {
 
         } else if (property instanceof RelationProperty) {
             return new RelationExecutor(var, (RelationProperty) property);
-
-        } else if (property instanceof SubExplicitProperty) {
-            return new SubExecutor.SubExplicitExecutor(var, (SubExplicitProperty) property);
 
         } else if (property instanceof SubProperty) {
             return new SubExecutor(var, (SubProperty) property);

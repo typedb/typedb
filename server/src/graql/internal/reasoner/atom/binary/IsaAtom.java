@@ -35,11 +35,10 @@ import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 
 import javax.annotation.Nullable;
@@ -95,7 +94,9 @@ public abstract class IsaAtom extends IsaAtomBase {
     public IsaAtom toIsaAtom(){ return this; }
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass() { return isDirect()? IsaExplicitProperty.class : IsaProperty.class;}
+    public Class<? extends VarProperty> getVarPropertyClass() {
+        return IsaProperty.class;
+    }
 
     //NB: overriding as these require a derived property
     @Override

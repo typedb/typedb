@@ -20,7 +20,7 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.statement.StatementType;
-import grakn.core.graql.util.StringUtil;
+import graql.util.StringUtil;
 
 /**
  * Represents the {@code label} property on a Type.
@@ -49,7 +49,7 @@ public class TypeProperty extends VarProperty {
 
     @Override
     public String property() {
-        return StringUtil.typeLabelToString(name());
+        return StringUtil.escapeLabelOrId(name());
     }
 
     @Override

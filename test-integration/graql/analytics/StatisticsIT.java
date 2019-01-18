@@ -138,7 +138,7 @@ public class StatisticsIT {
             assertGraqlQueryExceptionThrown(tx, Graql.compute(MEDIAN).of(resourceType4));
 
             // resource-types have different data types
-            Set<Label> resourceTypes = Sets.newHashSet(Label.of(resourceType1), Label.of(resourceType2));
+            Set<String> resourceTypes = Sets.newHashSet(resourceType1, resourceType2);
             assertGraqlQueryExceptionThrown(tx, Graql.compute(MAX).of(resourceTypes));
             assertGraqlQueryExceptionThrown(tx, Graql.compute(MIN).of(resourceTypes));
             assertGraqlQueryExceptionThrown(tx, Graql.compute(MEAN).of(resourceTypes));

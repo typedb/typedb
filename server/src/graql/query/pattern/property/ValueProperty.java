@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.StatementInstance;
@@ -68,7 +67,7 @@ public class ValueProperty extends VarProperty {
 
     @Override
     public Stream<Statement> statements() {
-        return CommonUtil.optionalToStream(predicate().getInnerVar());
+        return predicate().getInnerVar().map(Stream::of).orElseGet(Stream::empty);
     }
 
     @Override
