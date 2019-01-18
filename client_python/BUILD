@@ -19,6 +19,7 @@
 
 load("@io_bazel_rules_python//python:python.bzl", "py_library", "py_test")
 load("@pypi_dependencies//:requirements.bzl", "requirement")
+load("@pypi_deployment_dependencies//:requirements.bzl", deployment_requirement = "requirement")
 load("@graknlabs_bazel_distribution//pip:rules.bzl", "deploy_pip")
 
 
@@ -42,23 +43,6 @@ py_library(
         requirement("grpcio"),
         requirement("six"),
         requirement("enum34"),
-        # Only needed for deployment
-        requirement("twine"),
-        requirement("setuptools"),
-        requirement("wheel"),
-        requirement("requests"),
-        requirement("urllib3"),
-        requirement("chardet"),
-        requirement("certifi"),
-        requirement("idna"),
-        requirement("tqdm"),
-        requirement("requests_toolbelt"),
-        requirement("pkginfo"),
-        requirement("readme_renderer"),
-        requirement("Pygments"),
-        requirement("docutils"),
-        requirement("bleach"),
-        requirement("webencodings"),
     ]
 )
 
@@ -92,6 +76,24 @@ deploy_pip(
     deployment_properties = "//:deployment.properties",
     description = "A Python client for Grakn.",
     long_description_file = "//client_python:README.md",
+    deps = [
+        deployment_requirement("twine"),
+        deployment_requirement("setuptools"),
+        deployment_requirement("wheel"),
+        deployment_requirement("requests"),
+        deployment_requirement("urllib3"),
+        deployment_requirement("chardet"),
+        deployment_requirement("certifi"),
+        deployment_requirement("idna"),
+        deployment_requirement("tqdm"),
+        deployment_requirement("requests_toolbelt"),
+        deployment_requirement("pkginfo"),
+        deployment_requirement("readme_renderer"),
+        deployment_requirement("Pygments"),
+        deployment_requirement("docutils"),
+        deployment_requirement("bleach"),
+        deployment_requirement("webencodings")
+    ],
     target = ":client_python"
 )
 

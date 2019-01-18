@@ -141,13 +141,20 @@ node_grpc_compile()
 #     Load Deployment Dependencies     #
 ########################################
 
+# TODO(vmax): replace with upstream once graknlabs/bazel-distribution#35 is merged
 git_repository(
     name="graknlabs_bazel_distribution",
-    remote="https://github.com/graknlabs/bazel-distribution",
-    commit="f6bfb0c319cc63b4aaa7abe40f11f89a4d751c8f"
+    remote="https://github.com/vmax/graknlabs-bazel-distribution",
+    commit="f43b5fe4b01633cc97394ff326a60ba2e5755afc"
 )
 
 load("@graknlabs_bazel_distribution//github:dependencies.bzl", "dependencies_for_github_deployment")
+pip_import(
+    name = "pypi_deployment_dependencies",
+    requirements = "@graknlabs_bazel_distribution//pip:requirements.txt",
+)
+load("@pypi_deployment_dependencies//:requirements.bzl", "pip_install")
+pip_install()
 dependencies_for_github_deployment()
 
 
