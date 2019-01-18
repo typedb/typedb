@@ -37,9 +37,9 @@ import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -92,7 +92,8 @@ public abstract class Binary extends Atom {
     }
 
     public boolean isDirect(){
-        return getPattern().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
+        return getPattern().getProperties(IsaProperty.class).findFirst()
+                .map(IsaProperty::isExplicit).orElse(false);
     }
 
     @Override

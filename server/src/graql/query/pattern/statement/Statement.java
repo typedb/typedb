@@ -31,7 +31,6 @@ import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.IdProperty;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
@@ -50,6 +49,11 @@ import grakn.core.graql.query.pattern.statement.StatementInstance.StatementRelat
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementThing;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -58,12 +62,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -351,11 +350,6 @@ public class Statement implements Pattern {
         return isa(new IsaProperty(type));
     }
 
-    @CheckReturnValue
-    public StatementInstance isa(IsaProperty property) {
-        return StatementInstance.create(this, property);
-    }
-
     /**
      * @param type a concept type id that the variable must be of this type directly
      * @return this
@@ -371,11 +365,11 @@ public class Statement implements Pattern {
      */
     @CheckReturnValue
     public StatementInstance isaX(Statement type) {
-        return isaX(new IsaExplicitProperty(type));
+        return isa(new IsaProperty(type, true));
     }
 
     @CheckReturnValue
-    public StatementInstance isaX(IsaExplicitProperty property) {
+    public StatementInstance isa(IsaProperty property) {
         return StatementInstance.create(this, property);
     }
 

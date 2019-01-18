@@ -21,7 +21,6 @@ package grakn.core.graql.query.pattern.statement;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.IdProperty;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
@@ -89,12 +88,8 @@ public abstract class StatementInstance extends Statement {
     }
 
     String isaSyntax() {
-        // TODO: Merge IsaPoperty and IsaExplicitProperty into one
         if (getProperty(IsaProperty.class).isPresent()) {
             return getProperty(IsaProperty.class).get().toString();
-
-        } else if (getProperty(IsaExplicitProperty.class).isPresent()) {
-            return getProperty(IsaExplicitProperty.class).get().toString();
 
         } else {
             return "";

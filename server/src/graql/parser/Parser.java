@@ -34,12 +34,8 @@ import grakn.core.graql.query.GroupQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Disjunction;
-import grakn.core.graql.query.pattern.Negation;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
@@ -51,7 +47,6 @@ import graql.grammar.GraqlBaseVisitor;
 import graql.grammar.GraqlLexer;
 import graql.grammar.GraqlParser;
 import graql.parser.ErrorListener;
-import java.util.Collection;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -77,7 +72,6 @@ import java.util.stream.Stream;
 import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.eq;
 import static grakn.core.graql.query.Graql.not;
-import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.type;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -86,7 +80,7 @@ import static java.util.stream.Collectors.toSet;
  * Graql query string parser to produce Graql Java objects
  */
 // This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
-@SuppressWarnings({"unchecked", "Duplicates"}) // TODO: remove this soon
+//@SuppressWarnings({"unchecked", "Duplicates"}) // TODO: remove this soon
 public class Parser extends GraqlBaseVisitor {
 
     private GraqlParser parse(String queryString, ErrorListener errorListener) {
@@ -318,7 +312,7 @@ public class Parser extends GraqlBaseVisitor {
         GraqlParser.Compute_methodContext method = ctx.compute_method();
         GraqlParser.Compute_conditionsContext conditions = ctx.compute_conditions();
 
-        ComputeQuery query = Graql.compute(ComputeQuery.Method.of(method.getText()));
+        ComputeQuery<?> query = Graql.compute(ComputeQuery.Method.of(method.getText()));
         if (conditions == null) return query;
 
         for (GraqlParser.Compute_conditionContext conditionCtx : conditions.compute_condition()) {
@@ -622,7 +616,7 @@ public class Parser extends GraqlBaseVisitor {
             return new IsaProperty(visitType(ctx));
 
         } else if (isa != null && isa.equals(Query.Property.ISAX)) {
-            return new IsaExplicitProperty(visitType(ctx));
+            return new IsaProperty(visitType(ctx), true);
 
         } else {
             throw new IllegalArgumentException("Unrecognised ISA property: " + ctx.getText());

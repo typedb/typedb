@@ -47,9 +47,9 @@ import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
+import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -187,7 +187,7 @@ public abstract class Atom extends AtomicBase {
      * @return var properties this atom (its pattern) contains
      */
     public Stream<VarProperty> getVarProperties() {
-        return getCombinedPattern().statements().stream().flatMap(vp -> vp.getProperties(getVarPropertyClass()));
+        return getCombinedPattern().statements().stream().flatMap(statement -> statement.getProperties(getVarPropertyClass()));
     }
 
     @Override
@@ -218,7 +218,9 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     public Stream<Rule> getPotentialRules() {
-        boolean isDirect = getPattern().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
+        boolean isDirect = getPattern().getProperties(IsaProperty.class).findFirst()
+                .map(IsaProperty::isExplicit).orElse(false);
+
         return getPossibleTypes().stream()
                 .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
                 .distinct();

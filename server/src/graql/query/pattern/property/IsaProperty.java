@@ -34,12 +34,18 @@ import java.util.stream.Stream;
 public class IsaProperty extends VarProperty {
 
     private final Statement type;
+    private final boolean explicit;
 
     public IsaProperty(Statement type) {
+        this(type, false);
+    }
+
+    public IsaProperty(Statement type, boolean explicit) {
         if (type == null) {
             throw new NullPointerException("Null type");
         }
         this.type = type;
+        this.explicit = explicit;
     }
 
     public Statement type() {
@@ -48,7 +54,16 @@ public class IsaProperty extends VarProperty {
 
     @Override
     public String keyword() {
-        return Query.Property.ISA.toString();
+        if (!explicit) {
+            return Query.Property.ISA.toString();
+        } else {
+            return Query.Property.ISAX.toString();
+        }
+    }
+
+    @Override
+    public boolean isExplicit() {
+        return explicit;
     }
 
     @Override
@@ -85,7 +100,8 @@ public class IsaProperty extends VarProperty {
             IsaProperty that = (IsaProperty) o;
 
             // We ignore `directType` because the object is irrelevant
-            return this.type().equals(that.type());
+            return (this.type().equals(that.type()) &&
+                    this.isExplicit() == that.isExplicit());
         }
         return false;
     }

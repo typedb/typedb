@@ -20,7 +20,6 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.statement.StatementInstance;
-import grakn.core.graql.query.pattern.statement.StatementType;
 
 /**
  * Represents the {@code id} property on a Concept.
