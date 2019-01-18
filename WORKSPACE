@@ -143,12 +143,12 @@ node_grpc_compile()
 
 
 git_repository(
-   name="graknlabs_rules_deployment",
-    remote="https://github.com/graknlabs/deployment",
+    name="graknlabs_bazel_distribution",
+    remote="https://github.com/graknlabs/bazel-distribution",
     commit="ccb0c649583290658fa981971c4994d7e32b7899"
 )
 
-load("@graknlabs_rules_deployment//github:dependencies.bzl", "dependencies_for_github_deployment")
+load("@graknlabs_bazel_distribution//github:dependencies.bzl", "dependencies_for_github_deployment")
 dependencies_for_github_deployment()
 
 
