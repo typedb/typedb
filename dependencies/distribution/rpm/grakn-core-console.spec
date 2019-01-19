@@ -4,6 +4,7 @@ Release: 1
 Summary: Grakn Core (console)
 URL: https://grakn.ai
 License: Apache License, v2.0
+AutoReqProv: no
 
 Source0: {_grakn-core-console-rpm-tar.tar.gz}
 
