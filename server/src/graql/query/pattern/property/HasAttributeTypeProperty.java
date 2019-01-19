@@ -18,20 +18,11 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.StatementType;
 
 import java.util.stream.Stream;
-
-import static grakn.core.graql.internal.Schema.ImplicitType.KEY;
-import static grakn.core.graql.internal.Schema.ImplicitType.KEY_OWNER;
-import static grakn.core.graql.internal.Schema.ImplicitType.KEY_VALUE;
-import static grakn.core.graql.query.Graql.var;
 
 /**
  * Represents the {@code has} and {@code key} properties on a Type.
@@ -46,71 +37,15 @@ import static grakn.core.graql.query.Graql.var;
 public class HasAttributeTypeProperty extends VarProperty {
 
     private final Statement attributeType;
-    private final Statement ownerRole;
-    private final Statement valueRole;
-    private final Statement relationOwner;
-    private final Statement relationValue;
     private final boolean isKey;
 
     public HasAttributeTypeProperty(Statement attributeType, boolean isKey) {
-        // TODO: this may the cause of issue #4664
-        Label resourceLabel = attributeType.getTypeLabel().orElseThrow(
-                () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType.var())
-        );
-
-        Statement role = Graql.type(Schema.MetaSchema.ROLE.getLabel().getValue());
-
-        // TODO: To fix issue #4664 (querying schema with variable attribute type), it's not enough to just remove the
-        //       exception handling above. We need to be able to restrict the direcitonality of the following ownerRole
-        //       and valueRole. For example, for keys, we restrict the role names to start with `key-`. However, we
-        //       cannot do this because the name of the variable attribute type is unknown. This means that we need to
-        //       change the data structure so that we have meta-super-roles for attribute-owners and attribute-values
-        Statement ownerRole = var().sub(role);
-        Statement valueRole = var().sub(role);
-        Statement relationType = var().sub(Graql.type(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()));
-
-        // If a key, limit only to the implicit key type
-        if (isKey) {
-            ownerRole = ownerRole.type(KEY_OWNER.getLabel(resourceLabel).getValue());
-            valueRole = valueRole.type(KEY_VALUE.getLabel(resourceLabel).getValue());
-            relationType = relationType.type(KEY.getLabel(resourceLabel).getValue());
-        }
-
-        Statement relationOwner = relationType.relates(ownerRole);
-        Statement relationValue = relationType.relates(valueRole);
-
         this.attributeType = attributeType;
-        this.ownerRole = ownerRole;
-        this.valueRole = valueRole;
-        if (relationOwner == null) {
-            throw new NullPointerException("Null relationOwner");
-        }
-        this.relationOwner = relationOwner;
-        if (relationValue == null) {
-            throw new NullPointerException("Null relationValue");
-        }
-        this.relationValue = relationValue;
         this.isKey = isKey;
     }
 
     public Statement attributeType() {
         return attributeType;
-    }
-
-    public Statement ownerRole() {
-        return ownerRole;
-    }
-
-    public Statement valueRole() {
-        return valueRole;
-    }
-
-    public Statement relationOwner() {
-        return relationOwner;
-    }
-
-    public Statement relationValue() {
-        return relationValue;
     }
 
     public boolean isKey() {
@@ -149,19 +84,13 @@ public class HasAttributeTypeProperty extends VarProperty {
 
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof HasAttributeTypeProperty) {
-            HasAttributeTypeProperty that = (HasAttributeTypeProperty) o;
-            return (this.attributeType.equals(that.attributeType))
-                    && (this.ownerRole.equals(that.ownerRole))
-                    && (this.valueRole.equals(that.valueRole))
-                    && (this.relationOwner.equals(that.relationOwner))
-                    && (this.relationValue.equals(that.relationValue))
-                    && (this.isKey == that.isKey);
-        }
-        return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        HasAttributeTypeProperty that = (HasAttributeTypeProperty) o;
+
+        return (this.attributeType.equals(that.attributeType) &&
+                this.isKey == that.isKey);
     }
 
     @Override
@@ -169,14 +98,6 @@ public class HasAttributeTypeProperty extends VarProperty {
         int h = 1;
         h *= 1000003;
         h ^= this.attributeType.hashCode();
-        h *= 1000003;
-        h ^= this.ownerRole.hashCode();
-        h *= 1000003;
-        h ^= this.valueRole.hashCode();
-        h *= 1000003;
-        h ^= this.relationOwner.hashCode();
-        h *= 1000003;
-        h ^= this.relationValue.hashCode();
         h *= 1000003;
         h ^= this.isKey ? 1231 : 1237;
         return h;
