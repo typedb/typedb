@@ -30,9 +30,11 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.printer.Printer;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
@@ -48,6 +50,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.List;
+
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;
@@ -58,7 +62,6 @@ import static grakn.core.graql.internal.Schema.MetaSchema.ENTITY;
 import static grakn.core.graql.internal.Schema.MetaSchema.RELATIONSHIP;
 import static grakn.core.graql.internal.Schema.MetaSchema.ROLE;
 import static grakn.core.graql.internal.Schema.MetaSchema.RULE;
-import static grakn.core.graql.query.Graql.define;
 import static grakn.core.graql.query.Graql.parse;
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;

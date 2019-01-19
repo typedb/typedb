@@ -45,7 +45,6 @@ public abstract class StatementInstance extends Statement {
         super(var, properties);
     }
 
-    @SuppressWarnings("Duplicates")
     void validateRecursion() {
         Collection<Statement> toValidate = innerStatements();
         toValidate.remove(this);

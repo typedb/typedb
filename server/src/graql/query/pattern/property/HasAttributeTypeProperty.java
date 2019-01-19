@@ -55,11 +55,16 @@ public class HasAttributeTypeProperty extends VarProperty {
     public HasAttributeTypeProperty(Statement attributeType, boolean isKey) {
         // TODO: this may the cause of issue #4664
         Label resourceLabel = attributeType.getTypeLabel().orElseThrow(
-                () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType)
+                () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType.var())
         );
 
         Statement role = Graql.type(Schema.MetaSchema.ROLE.getLabel().getValue());
 
+        // TODO: To fix issue #4664 (querying schema with variable attribute type), it's not enough to just remove the
+        //       exception handling above. We need to be able to restrict the direcitonality of the following ownerRole
+        //       and valueRole. For example, for keys, we restrict the role names to start with `key-`. However, we
+        //       cannot do this because the name of the variable attribute type is unknown. This means that we need to
+        //       change the data structure so that we have meta-super-roles for attribute-owners and attribute-values
         Statement ownerRole = var().sub(role);
         Statement valueRole = var().sub(role);
         Statement relationType = var().sub(Graql.type(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()));
@@ -100,6 +105,14 @@ public class HasAttributeTypeProperty extends VarProperty {
         return valueRole;
     }
 
+    public Statement relationOwner() {
+        return relationOwner;
+    }
+
+    public Statement relationValue() {
+        return relationValue;
+    }
+
     public boolean isKey() {
         return isKey;
     }
@@ -128,11 +141,6 @@ public class HasAttributeTypeProperty extends VarProperty {
     public Stream<Statement> statements() {
         return Stream.of(attributeType);
     }
-//
-//    @Override
-//    public Stream<Statement> statementsImplicit() {
-//        return Stream.of(attributeType, ownerRole, valueRole, relationOwner, relationValue);
-//    }
 
     @Override
     public Class statementClass() {

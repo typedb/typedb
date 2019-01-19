@@ -119,7 +119,7 @@ class ConjunctionQuery {
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(Statement statement) {
-        return statement.implicitInnerStatements().stream().flatMap(s -> equivalentFragmentSets(s));
+        return statement.innerStatements().stream().flatMap(s -> equivalentFragmentSets(s));
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSets(Statement statement) {

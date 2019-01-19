@@ -40,6 +40,7 @@ import grakn.core.graql.query.pattern.property.VarProperty;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
 
@@ -65,9 +66,17 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         NeqProperty neqProperty = new NeqProperty(property.ownerRole());
         NeqExecutor neqExecutor = new NeqExecutor(property.valueRole().var(), neqProperty);
 
+        // Add fragments for HasAttributeType property
         fragments.addAll(playsOwnerExecutor.matchFragments());
         fragments.addAll(playsValueExecutor.matchFragments());
         fragments.addAll(neqExecutor.matchFragments());
+
+        // Add fragments for the implicit relationship property
+        // These implicit statements make sure that statement variable (owner) and the attribute type form a
+        // connected (non-disjoint) set of fragments for match execution
+        Stream.of(property.ownerRole(), property.valueRole(), property.relationOwner(), property.relationValue())
+                .forEach(statement -> statement.properties()
+                        .forEach(p -> fragments.addAll(PropertyExecutor.create(statement.var(), p).matchFragments())));
 
         return ImmutableSet.copyOf(fragments);
     }
@@ -79,8 +88,8 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         Label label = property.attributeType().getTypeLabel().orElse(null);
 
         Variable predicateVar = new Variable();
-        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
-        ConceptId predicateId = schemaConcept != null ? schemaConcept.id() : null;
+        SchemaConcept attributeType = parent.tx().getSchemaConcept(label);
+        ConceptId predicateId = attributeType != null ? attributeType.id() : null;
         //isa part
         Statement resVar = new Statement(varName).has(Graql.type(label.getValue()));
         return HasAtom.create(resVar, predicateVar, predicateId, parent);
