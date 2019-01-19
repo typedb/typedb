@@ -684,18 +684,18 @@ public class Statement implements Pattern {
      */
     @CheckReturnValue
     public Collection<Statement> implicitInnerStatements() {
-        Stack<Statement> newVars = new Stack<>();
-        List<Statement> vars = new ArrayList<>();
+        Stack<Statement> statementStack = new Stack<>();
+        List<Statement> statements = new ArrayList<>();
 
-        newVars.add(this);
+        statementStack.add(this);
 
-        while (!newVars.isEmpty()) {
-            Statement var = newVars.pop();
-            vars.add(var);
-            var.properties().stream().flatMap(varProperty -> varProperty.statementsImplicit()).forEach(newVars::add);
+        while (!statementStack.isEmpty()) {
+            Statement var = statementStack.pop();
+            statements.add(var);
+            var.properties().stream().flatMap(varProperty -> varProperty.statementsImplicit()).forEach(statementStack::add);
         }
 
-        return vars;
+        return statements;
     }
 
     @Override

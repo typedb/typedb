@@ -128,11 +128,11 @@ public class HasAttributeTypeProperty extends VarProperty {
     public Stream<Statement> statements() {
         return Stream.of(attributeType);
     }
-
-    @Override
-    public Stream<Statement> statementsImplicit() {
-        return Stream.of(attributeType, ownerRole, valueRole, relationOwner, relationValue);
-    }
+//
+//    @Override
+//    public Stream<Statement> statementsImplicit() {
+//        return Stream.of(attributeType, ownerRole, valueRole, relationOwner, relationValue);
+//    }
 
     @Override
     public Class statementClass() {
