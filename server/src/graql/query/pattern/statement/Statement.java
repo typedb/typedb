@@ -661,7 +661,7 @@ public class Statement implements Pattern {
     }
 
     /**
-     * @return all variables that this variable references
+     * @return all statements that this statement contains
      */
     @CheckReturnValue
     public Collection<Statement> innerStatements() {
@@ -673,29 +673,12 @@ public class Statement implements Pattern {
         while (!statementStack.isEmpty()) {
             Statement statement = statementStack.pop();
             statements.add(statement);
-            statement.properties().stream().flatMap(varProperty -> varProperty.statements()).forEach(statementStack::add);
+            statement.properties().stream()
+                    .flatMap(varProperty -> varProperty.statements())
+                    .forEach(statementStack::add);
         }
 
         return statements;
-    }
-
-    /**
-     * Get all inner variables, including implicit variables such as in a has property
-     */
-    @CheckReturnValue
-    public Collection<Statement> implicitInnerStatements() {
-        Stack<Statement> newVars = new Stack<>();
-        List<Statement> vars = new ArrayList<>();
-
-        newVars.add(this);
-
-        while (!newVars.isEmpty()) {
-            Statement var = newVars.pop();
-            vars.add(var);
-            var.properties().stream().flatMap(varProperty -> varProperty.statementsImplicit()).forEach(newVars::add);
-        }
-
-        return vars;
     }
 
     @Override

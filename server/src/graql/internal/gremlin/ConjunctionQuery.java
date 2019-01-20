@@ -42,15 +42,13 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * A query that does not contain any disjunctions, so it can be represented as a single gremlin traversal.
- * <p>
- * The {@code ConjunctionQuery} is passed a {@link Conjunction<  Statement  >}.
+ * The {@code ConjunctionQuery} is passed a {@link Conjunction<Statement>}.
  * {@link EquivalentFragmentSet}s can be extracted from each {@link GraqlTraversal}.
- * <p>
  * The {@link EquivalentFragmentSet}s are sorted to produce a set of lists of {@link Fragment}s. Each list of fragments
  * describes a connected component in the query. Most queries are completely connected, so there will be only one
  * list of fragments in the set. If the query is disconnected (e.g. match $x isa movie, $y isa person), then there
  * will be multiple lists of fragments in the set.
- * <p>
+ *
  * A gremlin traversal is created by concatenating the traversals within each fragment.
  */
 class ConjunctionQuery {
@@ -120,8 +118,8 @@ class ConjunctionQuery {
         return Sets.cartesianProduct(fragments).stream();
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(Statement var) {
-        return var.implicitInnerStatements().stream().flatMap(ConjunctionQuery::equivalentFragmentSets);
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(Statement statement) {
+        return statement.innerStatements().stream().flatMap(s -> equivalentFragmentSets(s));
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSets(Statement statement) {

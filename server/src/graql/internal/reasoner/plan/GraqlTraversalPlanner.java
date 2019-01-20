@@ -47,12 +47,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- *
- * <p>
  * Resolution planner using {@link GreedyTraversalPlan} to establish optimal resolution order..
- * </p>
- *
- *
  */
 public class GraqlTraversalPlanner {
 

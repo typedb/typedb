@@ -62,15 +62,6 @@ public abstract class VarProperty {
         return Stream.empty();
     }
 
-    /**
-     * Get a stream of any inner Statement within this `VarProperty`, including any that may have been
-     * implicitly created (such as with "has").
-     */
-    @CheckReturnValue
-    public Stream<Statement> statementsImplicit() {
-        return statements();
-    }
-
     @CheckReturnValue // TODO: This should be temporary until we make statements to be strict typing
     public abstract Class statementClass();
 

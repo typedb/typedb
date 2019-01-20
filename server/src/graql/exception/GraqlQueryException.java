@@ -318,8 +318,8 @@ public class GraqlQueryException extends GraknException {
         throw new GraqlQueryException("Cannot parse date value " + originalDate + " with format " + originalFormat, cause);
     }
 
-    public static GraqlQueryException noLabelSpecifiedForHas(Statement varPattern) {
-        return create("'has' argument '%s' requires a label", varPattern);
+    public static GraqlQueryException noLabelSpecifiedForHas(Variable var) {
+        return create("'has' argument '%s' requires a label", var);
     }
 
     public static GraqlQueryException insertRolePlayerWithoutRoleType() {
