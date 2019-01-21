@@ -459,23 +459,24 @@ workflows:
       - distributions:
           requires:
             - tests
-      - dist-mac:
-          requires:
-            - distributions
+      # - dist-mac:
+      #     requires:
+      #       - distributions
       - dist-ubuntu:
           requires:
             - distributions
-      - dist-centos:
-          requires:
-            - distributions
-      - dist-fedora:
-          requires:
-            - distributions
+      # - dist-centos:
+      #     requires:
+      #       - distributions
+      # - dist-fedora:
+      #     requires:
+      #       - distributions
       - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit:
           requires:
-            - dist-mac
+            # - dist-mac
             - dist-ubuntu
-            - dist-fedora
+            # - dist-centos
+            # - dist-fedora
       - approve-deploy-github:
           type: approval
           requires:
