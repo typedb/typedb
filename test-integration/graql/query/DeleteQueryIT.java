@@ -28,6 +28,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.exception.GraqlException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -37,11 +38,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static graql.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
+import static graql.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -226,7 +227,7 @@ public class DeleteQueryIT {
 
     @Test
     public void whenDeletingAVariableNotInTheQuery_Throw() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y.var()));
         tx.execute(Graql.match(x.isa("movie")).delete(y.var()));
     }
