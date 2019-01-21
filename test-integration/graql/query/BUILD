@@ -23,8 +23,9 @@ java_test(
     test_class = "grakn.core.graql.query.AggregateQueryIT",
     srcs = ["AggregateQueryIT.java"],
     deps = [
-        "//common",
-        "//server",
+        "//common:common",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
     ],
@@ -70,8 +71,9 @@ java_test(
     test_class = "grakn.core.graql.query.DeleteQueryIT",
     srcs = ["DeleteQueryIT.java"],
     deps = [
-        "//common",
-        "//server",
+        "//common:common",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
