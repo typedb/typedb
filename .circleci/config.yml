@@ -290,29 +290,28 @@ jobs:
       - run: nohup grakn server start
       - run: nohup grakn server stop
 
-  # TODO: enable once issue #4811 is fixed
-  # dist-centos:
-  #   docker:
-  #     - image: centos:7.6.1810
-  #       environment:
-  #         _JAVA_OPTIONS: -Xmx2g
-  #   working_directory: ~/grakn
-  #   steps:
-  #     - run: yum install -y http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
-  #     - run: yum update -y
-  #     - run: yum install -y sudo procps which gcc gcc-c++ python-devel unzip git java-1.8.0-openjdk-devel rpm-build
-  #     - run: git version
-  #     - checkout
-  #     - bazel_install
-  #     - bazel_add_rbe_credential
-  #     - run: bazel build --jobs 1 //:distribution-rpm
-  #     - run: yum localinstall -y bazel-bin/distribution-rpm.rpm
-  #     - run: bazel build --jobs 1 //server:distribution-rpm
-  #     - run: yum localinstall -y bazel-bin/server/distribution-rpm.rpm
-  #     - run: bazel build --jobs 1 //console:distribution-rpm
-  #     - run: yum localinstall -y bazel-bin/console/distribution-rpm.rpm
-  #     - run: nohup grakn server start
-  #     - run: nohup grakn server stop
+  dist-centos:
+    docker:
+      - image: centos:7.6.1810
+        environment:
+          _JAVA_OPTIONS: -Xmx2g
+    working_directory: ~/grakn
+    steps:
+      - run: yum install -y http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
+      - run: yum update -y
+      - run: yum install -y sudo procps which gcc gcc-c++ python-devel unzip git java-1.8.0-openjdk-devel rpm-build
+      - run: git version
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - run: bazel build --jobs 1 //:distribution-rpm
+      - run: yum localinstall -y bazel-bin/distribution-rpm.rpm
+      - run: bazel build --jobs 1 //server:distribution-rpm
+      - run: yum localinstall -y bazel-bin/server/distribution-rpm.rpm
+      - run: bazel build --jobs 1 //console:distribution-rpm
+      - run: yum localinstall -y bazel-bin/console/distribution-rpm.rpm
+      - run: nohup grakn server start
+      - run: nohup grakn server stop
 
   dist-fedora:
     docker:
@@ -415,137 +414,213 @@ workflows:
   version: 2
   ci-pipeline-release:
     jobs:
-      - dist-ubuntu
-      # - tests
-      # - build:
-      #     requires:
-      #       - tests
-      # - client-java:
-      #     requires:
-      #       - tests
-      # - client-nodejs:
-      #     requires:
-      #       - tests
-      # - client-python:
-      #     requires:
-      #       - tests
-      # - common:
-      #     requires:
-      #       - tests
-      # - console:
-      #     requires:
-      #       - tests
-      # - graql:
-      #     requires:
-      #       - tests
-      # - server:
-      #     requires:
-      #       - tests
-      # - workbase:
-      #     requires:
-      #       - tests
-      # - test-integration:
-      #     requires:
-      #       - tests
-      # - test-integration-reasoner:
-      #     requires:
-      #       - tests
-      # - test-integration-reasoner-general:
-      #     requires:
-      #       - tests
-      # - test-integration-reasoner-components:
-      #     requires:
-      #       - tests
-      # - test-integration-analytics:
-      #     requires:
-      #       - tests
-      # - test-end-to-end:
-      #     requires:
-      #       - tests
-      # - distributions:
-      #     requires:
-      #       - build
-      #       - client-java
-      #       - client-nodejs
-      #       - client-python
-      #       - common
-      #       - console
-      #       - graql
-      #       - server
-      #       - workbase
-      #       - test-integration
-      #       - test-integration-reasoner
-      #       - test-integration-reasoner-general
-      #       - test-integration-reasoner-components
-      #       - test-integration-analytics
-      #       - test-end-to-end
-      # - dist-mac:
-      #     requires:
-      #       - distributions
-      # - dist-ubuntu:
-      #     requires:
-      #       - distributions
-      # # - dist-centos:
-      # #     requires:
-      # #       - distributions
-      # - dist-fedora:
-      #     requires:
-      #       - distributions
-      # - approve-deploy-github:
-      #     type: approval
-      #     requires:
-      #       - dist-mac
-      #       - dist-ubuntu
-      #       - dist-fedora
-      # - deploy-github:
-      #     requires:
-      #       - approve-deploy-github
-      # - approve-deploy-all:
-      #     type: approval
-      #     requires:
-      #       - deploy-github
-      # - deploy-maven:
-      #     requires:
-      #       - approve-deploy-all
-      # - deploy-npm:
-      #     requires:
-      #       - approve-deploy-all
-      # - deploy-pypi:
-      #     requires:
-      #       - approve-deploy-all
-      # - deploy-deb:
-      #     requires:
-      #       - approve-deploy-all
-      # - deploy-rpm:
-      #     requires:
-      #       - approve-deploy-all
-      # - deploy-brew:
-      #     requires:
-      #       - approve-deploy-all
-      # - deploy-workbase-mac:
-      #     requires:
-      #       - approve-deploy-all
-      # - deploy-workbase-linux:
-      #     requires:
-      #       - approve-deploy-all
-      # - deploy-workbase-windows:
-      #     requires:
-      #       - approve-deploy-all
-      # - git-tag-release:
-      #     requires:
-      #       - deploy-maven
-      #       - deploy-npm
-      #       - deploy-pypi
-      #       - deploy-deb
-      #       - deploy-rpm
-      #       - deploy-brew
-      #       - deploy-workbase-mac
-      #       - deploy-workbase-linux
-      #       - deploy-workbase-windows
-      # - approve-docs-merge:
-      #     type: approval
-      #     requires:
-      #       - git-tag-release
-      # - docs-merge-dev-to-master:
-      #     requires:
-      #       - approve-docs-merge
+      - tests
+      - distributions:
+          requires:
+            - tests
+      - dist-mac:
+          requires:
+            - distributions
+      - dist-ubuntu:
+          requires:
+            - distributions
+      - dist-centos:
+          requires:
+            - distributions
+      - dist-fedora:
+          requires:
+            - distributions
+      - approve-deploy-github:
+          type: approval
+          requires:
+            - dist-mac
+            - dist-ubuntu
+            - dist-fedora
+      - deploy-github:
+          requires:
+            - approve-deploy-github
+      - approve-deploy-all:
+          type: approval
+          requires:
+            - deploy-github
+      - deploy-maven:
+          requires:
+            - approve-deploy-all
+      - deploy-npm:
+          requires:
+            - approve-deploy-all
+      - deploy-pypi:
+          requires:
+            - approve-deploy-all
+      - deploy-deb:
+          requires:
+            - approve-deploy-all
+      - deploy-rpm:
+          requires:
+            - approve-deploy-all
+      - deploy-brew:
+          requires:
+            - approve-deploy-all
+      - deploy-workbase-mac:
+          requires:
+            - approve-deploy-all
+      - deploy-workbase-linux:
+          requires:
+            - approve-deploy-all
+      - deploy-workbase-windows:
+          requires:
+            - approve-deploy-all
+      - git-tag-release:
+          requires:
+            - deploy-maven
+            - deploy-npm
+            - deploy-pypi
+            - deploy-deb
+            - deploy-rpm
+            - deploy-brew
+            - deploy-workbase-mac
+            - deploy-workbase-linux
+            - deploy-workbase-windows
+      - approve-docs-merge:
+          type: approval
+          requires:
+            - git-tag-release
+      - docs-merge-dev-to-master:
+          requires:
+            - approve-docs-merge
+
+  # ci-pipeline-release:
+  #   jobs:
+  #     - tests
+  #     - build:
+  #         requires:
+  #           - tests
+  #     - client-java:
+  #         requires:
+  #           - tests
+  #     - client-nodejs:
+  #         requires:
+  #           - tests
+  #     - client-python:
+  #         requires:
+  #           - tests
+  #     - common:
+  #         requires:
+  #           - tests
+  #     - console:
+  #         requires:
+  #           - tests
+  #     - graql:
+  #         requires:
+  #           - tests
+  #     - server:
+  #         requires:
+  #           - tests
+  #     - workbase:
+  #         requires:
+  #           - tests
+  #     - test-integration:
+  #         requires:
+  #           - tests
+  #     - test-integration-reasoner:
+  #         requires:
+  #           - tests
+  #     - test-integration-reasoner-general:
+  #         requires:
+  #           - tests
+  #     - test-integration-reasoner-components:
+  #         requires:
+  #           - tests
+  #     - test-integration-analytics:
+  #         requires:
+  #           - tests
+  #     - test-end-to-end:
+  #         requires:
+  #           - tests
+  #     - distributions:
+  #         requires:
+  #           - build
+  #           - client-java
+  #           - client-nodejs
+  #           - client-python
+  #           - common
+  #           - console
+  #           - graql
+  #           - server
+  #           - workbase
+  #           - test-integration
+  #           - test-integration-reasoner
+  #           - test-integration-reasoner-general
+  #           - test-integration-reasoner-components
+  #           - test-integration-analytics
+  #           - test-end-to-end
+  #     - dist-mac:
+  #         requires:
+  #           - distributions
+  #     - dist-ubuntu:
+  #         requires:
+  #           - distributions
+  #     # - dist-centos:
+  #     #     requires:
+  #     #       - distributions
+  #     - dist-fedora:
+  #         requires:
+  #           - distributions
+  #     - approve-deploy-github:
+  #         type: approval
+  #         requires:
+  #           - dist-mac
+  #           - dist-ubuntu
+  #           - dist-fedora
+  #     - deploy-github:
+  #         requires:
+  #           - approve-deploy-github
+  #     - approve-deploy-all:
+  #         type: approval
+  #         requires:
+  #           - deploy-github
+  #     - deploy-maven:
+  #         requires:
+  #           - approve-deploy-all
+  #     - deploy-npm:
+  #         requires:
+  #           - approve-deploy-all
+  #     - deploy-pypi:
+  #         requires:
+  #           - approve-deploy-all
+  #     - deploy-deb:
+  #         requires:
+  #           - approve-deploy-all
+  #     - deploy-rpm:
+  #         requires:
+  #           - approve-deploy-all
+  #     - deploy-brew:
+  #         requires:
+  #           - approve-deploy-all
+  #     - deploy-workbase-mac:
+  #         requires:
+  #           - approve-deploy-all
+  #     - deploy-workbase-linux:
+  #         requires:
+  #           - approve-deploy-all
+  #     - deploy-workbase-windows:
+  #         requires:
+  #           - approve-deploy-all
+  #     - git-tag-release:
+  #         requires:
+  #           - deploy-maven
+  #           - deploy-npm
+  #           - deploy-pypi
+  #           - deploy-deb
+  #           - deploy-rpm
+  #           - deploy-brew
+  #           - deploy-workbase-mac
+  #           - deploy-workbase-linux
+  #           - deploy-workbase-windows
+  #     - approve-docs-merge:
+  #         type: approval
+  #         requires:
+  #           - git-tag-release
+  #     - docs-merge-dev-to-master:
+  #         requires:
+  #           - approve-docs-merge
