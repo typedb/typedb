@@ -31,12 +31,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- *
- * <p>
  * Interface for conjunctive reasoner queries.
- * </p>
- *
- *
  */
 public interface ReasonerQuery{
 
