@@ -167,8 +167,6 @@ public enum ErrorMessage {
     AGGREGATE_ARGUMENT_NUM("aggregate '%s' takes %s arguments, but got %s"),
     UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
 
-    VARIABLE_NOT_IN_QUERY("the variable %s is not in the query"),
-    NO_PATTERNS("no patterns have been provided. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
     MULTIPLE_TX("a graph has been specified twice for this query"),
 

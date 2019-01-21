@@ -42,7 +42,7 @@ import org.junit.rules.ExpectedException;
 import java.util.Collections;
 import java.util.List;
 
-import static grakn.core.common.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
+import static graql.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static grakn.core.graql.query.Graql.var;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;

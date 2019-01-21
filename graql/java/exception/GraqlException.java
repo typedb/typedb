@@ -33,6 +33,14 @@ public class GraqlException extends RuntimeException {
         return new GraqlException(ErrorMessage.CONFLICTING_PROPERTIES.getMessage(statement, property, other));
     }
 
+    public static GraqlException varNotInQuery(String var) {
+        return new GraqlException(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(var));
+    }
+
+    public static GraqlException noPatterns() {
+        return new GraqlException(ErrorMessage.NO_PATTERNS.getMessage());
+    }
+
     public String getName() {
         return this.getClass().getName();
     }

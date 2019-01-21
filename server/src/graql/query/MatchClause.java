@@ -18,11 +18,11 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
+import graql.exception.GraqlException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
@@ -46,7 +46,7 @@ public class MatchClause {
 
     public MatchClause(Conjunction<Pattern> pattern) {
         if (pattern.getPatterns().size() == 0) {
-            throw GraqlQueryException.noPatterns();
+            throw GraqlException.noPatterns();
         }
 
         this.pattern = pattern;

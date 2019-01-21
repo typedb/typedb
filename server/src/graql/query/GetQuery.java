@@ -18,8 +18,8 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.statement.Variable;
+import graql.exception.GraqlException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.LinkedHashSet;
@@ -51,7 +51,7 @@ public class GetQuery implements Query {
         }
         for (Variable var : vars) {
             if (!match.getSelectedNames().contains(var)) {
-                throw GraqlQueryException.varNotInQuery(var);
+                throw GraqlException.varNotInQuery(var.toString());
             }
         }
         this.match = match;

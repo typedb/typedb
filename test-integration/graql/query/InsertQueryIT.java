@@ -63,7 +63,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.common.exception.ErrorMessage.NO_PATTERNS;
+import static graql.exception.ErrorMessage.NO_PATTERNS;
 import static grakn.core.graql.internal.Schema.MetaSchema.ENTITY;
 import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.query.Graql.type;
