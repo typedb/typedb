@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
@@ -50,12 +49,12 @@ import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -323,20 +322,20 @@ public class QueryExecutor {
         }
 
         varProperty.statements()
-                .map(Statement::getTypeLabel)
+                .map(Statement::getType)
                 .flatMap(CommonUtil::optionalToStream)
-                .forEach(label -> {
-                    if (transaction.getSchemaConcept(label) == null) {
-                        throw GraqlQueryException.labelNotFound(label);
+                .forEach(type -> {
+                    if (transaction.getSchemaConcept(Label.of(type)) == null) {
+                        throw GraqlQueryException.labelNotFound(Label.of(type));
                     }
                 });
     }
 
     private void validateIsaProperty(IsaProperty varProperty) {
-        varProperty.type().getTypeLabel().ifPresent(typeLabel -> {
-            SchemaConcept theSchemaConcept = transaction.getSchemaConcept(typeLabel);
+        varProperty.type().getType().ifPresent(type -> {
+            SchemaConcept theSchemaConcept = transaction.getSchemaConcept(Label.of(type));
             if (theSchemaConcept != null && !theSchemaConcept.isType()) {
-                throw GraqlQueryException.cannotGetInstancesOfNonType(typeLabel);
+                throw GraqlQueryException.cannotGetInstancesOfNonType(Label.of(type));
             }
         });
     }
@@ -355,11 +354,11 @@ public class QueryExecutor {
     private void validateRelationshipProperty(RelationProperty varProperty, Statement statement) {
         Set<Label> roleTypes = varProperty.relationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole).flatMap(CommonUtil::optionalToStream)
-                .map(Statement::getTypeLabel).flatMap(CommonUtil::optionalToStream)
-                .collect(toSet());
+                .map(Statement::getType).flatMap(CommonUtil::optionalToStream)
+                .map(Label::of).collect(toSet());
 
-        Optional<Label> maybeLabel =
-                statement.getProperty(IsaProperty.class).map(IsaProperty::type).flatMap(Statement::getTypeLabel);
+        Optional<Label> maybeLabel = statement.getProperty(IsaProperty.class)
+                .map(IsaProperty::type).flatMap(Statement::getType).map(Label::of);
 
         maybeLabel.ifPresent(label -> {
             SchemaConcept schemaConcept = transaction.getSchemaConcept(label);

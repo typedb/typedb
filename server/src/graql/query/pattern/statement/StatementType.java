@@ -54,7 +54,7 @@ public class StatementType extends Statement {
 
     @CheckReturnValue
     private StatementType addProperty(VarProperty property) {
-        validateNonUniqueOrThrow(property);
+        validateNoConflictOrThrow(property);
         LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties());
         newProperties.add(property);
         return new StatementType(this.var(), newProperties);

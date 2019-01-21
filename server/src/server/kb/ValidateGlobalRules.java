@@ -371,10 +371,10 @@ class ValidateGlobalRules {
 
         pattern.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
-                .flatMap(statement -> statement.getTypeLabels().stream()).forEach(typeLabel -> {
-                    SchemaConcept schemaConcept = graph.getSchemaConcept(typeLabel);
+                .flatMap(statement -> statement.getTypes().stream()).forEach(type -> {
+                    SchemaConcept schemaConcept = graph.getSchemaConcept(Label.of(type));
                     if(schemaConcept == null){
-                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.label(), typeLabel));
+                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.label(), type));
                     } else {
                         if(Schema.VertexProperty.RULE_WHEN.equals(side)){
                             if (schemaConcept.isType()){

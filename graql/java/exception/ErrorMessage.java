@@ -20,7 +20,8 @@ package graql.exception;
 
 public enum ErrorMessage {
     SYNTAX_ERROR_NO_POINTER("syntax error at line %s:\n%s"),
-    SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s");
+    SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
+    CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'");
 
     private final String message;
 

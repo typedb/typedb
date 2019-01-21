@@ -93,14 +93,6 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(message);
     }
 
-    public static GraqlQueryException conflictingProperties(
-            Statement varPattern, VarProperty property, VarProperty other) {
-        String message = ErrorMessage.CONFLICTING_PROPERTIES.getMessage(
-                varPattern.getPrintableName(), property.toString(), other.toString()
-        );
-        return new GraqlQueryException(message);
-    }
-
     public static GraqlQueryException idNotFound(ConceptId id) {
         return new GraqlQueryException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
     }
