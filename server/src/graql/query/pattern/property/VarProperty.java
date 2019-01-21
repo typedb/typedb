@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 
 import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;
@@ -58,18 +58,12 @@ public abstract class VarProperty {
      * Get a stream of any inner Statement within this `VarProperty`.
      */
     @CheckReturnValue
-    public Stream<Statement> innerStatements() {
+    public Stream<Statement> statements() {
         return Stream.empty();
     }
 
-    /**
-     * Get a stream of any inner Statement within this `VarProperty`, including any that may have been
-     * implicitly created (such as with "has").
-     */
-    @CheckReturnValue
-    public Stream<Statement> implicitInnerStatements() {
-        return innerStatements();
-    }
+    @CheckReturnValue // TODO: This should be temporary until we make statements to be strict typing
+    public abstract Class statementClass();
 
     /**
      * Whether this property will uniquely identify a concept in the graph, if one exists.

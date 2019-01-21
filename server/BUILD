@@ -19,7 +19,9 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
-load("@graknlabs_rules_deployment//distribution:rules.bzl", "distribution_structure", "distribution_zip", "distribution_deb", "distribution_rpm")
+load("@graknlabs_bazel_distribution//distribution:rules.bzl", "distribution_structure", "distribution_zip", "distribution_deb", "distribution_rpm")
+load("@graknlabs_bazel_distribution//rpm/deployment:rules.bzl", "deploy_rpm")
+load("@graknlabs_bazel_distribution//deb/deployment:rules.bzl", "deploy_deb")
 
 exports_files(
     glob(["conf/**", "services/**"]),
@@ -169,6 +171,11 @@ distribution_deb(
     },
 )
 
+deploy_deb(
+    name = "deploy-deb",
+    target = ":distribution-deb",
+    deployment_properties = "//:deployment.properties",
+)
 
 distribution_rpm(
     name = "distribution-rpm",
@@ -195,4 +202,10 @@ distribution_rpm(
     symlinks = {
         "opt/grakn/core/server/db/": "/var/lib/grakn/db/",
     },
+)
+
+deploy_rpm(
+    name = "deploy-rpm",
+    target = ":distribution-rpm",
+    deployment_properties = "//:deployment.properties",
 )

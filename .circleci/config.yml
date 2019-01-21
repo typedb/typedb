@@ -169,19 +169,16 @@ jobs:
     - checkout
     - bazel_install
     - bazel_add_rbe_credential
-    - bazel:
-        command: bazel test //workbase:tests-unit --test_output=errors
+    - run: bazel test //workbase:tests-unit --test_output=errors
     - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
     - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
-    - bazel:
-        command: bazel build //:distribution
+    - run: bazel build //:distribution
     - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
     - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
     - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
     - run: Xvfb :99 &
     - run: export DISPLAY=:99
-    - bazel:
-        command: bazel test //workbase:tests-e2e --test_output=streamed
+    - run: bazel test //workbase:tests-e2e --test_output=streamed
 
   test-integration:
     machine: true
@@ -205,35 +202,7 @@ jobs:
     - bazel_install
     - bazel_add_rbe_credential
     - bazel:
-        command: bazel test //test-integration/graql/reasoner:reasoning-it --test_output=errors
-    - bazel:
-        command: bazel test //test-integration/graql/reasoner:geo-inference-it --test_output=errors
-
-  test-integration-reasoner-general:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - bazel:
-        command: bazel test //test-integration/graql/reasoner/reasoning/... --test_output=errors
-
-  test-integration-reasoner-components:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - bazel:
-        command: bazel test //test-integration/graql/reasoner/atomic/... --test_output=errors
-    - bazel:
-        command: bazel test //test-integration/graql/reasoner/benchmark/... --test_output=errors
-    - bazel:
-        command: bazel test //test-integration/graql/reasoner/cache/... --test_output=errors
-    - bazel:
-        command: bazel test //test-integration/graql/reasoner/query/... --test_output=errors
+        command: bazel test //test-integration/graql/reasoner/... --test_output=errors
 
   test-integration-analytics:
     machine: true

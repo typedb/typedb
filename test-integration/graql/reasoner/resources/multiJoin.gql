@@ -7,9 +7,9 @@ define
 fromRole sub role;
 toRole sub role;
 
-genericEntity sub entity
-    has index
-    plays fromRole
+genericEntity sub entity,
+    has index,
+    plays fromRole,
     plays toRole;
 
 A sub relationship, relates fromRole, relates toRole;

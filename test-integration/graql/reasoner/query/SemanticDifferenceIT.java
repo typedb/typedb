@@ -35,8 +35,8 @@ import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -132,7 +132,7 @@ public class SemanticDifferenceIT {
             Role role = tx.getRole("baseRole1");
             String base = "($role: $x, baseRole2: $y) isa binary;";
             String parentPattern = patternise(base);
-            String childPattern = patternise(base, "$role label " + role.label() + ";");
+            String childPattern = patternise(base, "$role type " + role.label() + ";");
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -158,8 +158,8 @@ public class SemanticDifferenceIT {
             Role baseRole = tx.getRole("baseRole1");
             Role subRole = tx.getRole("subRole1");
             String base = "($role: $x, baseRole2: $y) isa binary;";
-            String parentPattern = patternise(base, "$role label " + baseRole.label() + ";");
-            String childPattern = patternise(base, "$role label " + subRole.label() + ";");
+            String parentPattern = patternise(base, "$role type " + baseRole.label() + ";");
+            String childPattern = patternise(base, "$role type " + subRole.label() + ";");
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -264,7 +264,7 @@ public class SemanticDifferenceIT {
     }
 
     private String patternise(String... patterns){
-        return "{" + String.join("", Sets.newHashSet(patterns)) + "}";
+        return "{ " + String.join("", Sets.newHashSet(patterns)) + " };";
     }
 
     private Conjunction<Statement> conjunction(String patternString){

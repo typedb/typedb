@@ -30,8 +30,8 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.ComputeQuery;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.time.format.DateTimeParseException;
@@ -258,7 +258,7 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(attributeType + " must have data type of `long` or `double`, but was " + dataType.getName());
     }
 
-    public static GraqlQueryException attributesWithDifferentDataTypes(Collection<? extends Label> attributeTypes) {
+    public static GraqlQueryException attributesWithDifferentDataTypes(Collection<String> attributeTypes) {
         return new GraqlQueryException("resource types " + attributeTypes + " have different data types");
     }
 
@@ -318,8 +318,8 @@ public class GraqlQueryException extends GraknException {
         throw new GraqlQueryException("Cannot parse date value " + originalDate + " with format " + originalFormat, cause);
     }
 
-    public static GraqlQueryException noLabelSpecifiedForHas(Statement varPattern) {
-        return create("'has' argument '%s' requires a label", varPattern);
+    public static GraqlQueryException noLabelSpecifiedForHas(Variable var) {
+        return create("'has' argument '%s' requires a label", var);
     }
 
     public static GraqlQueryException insertRolePlayerWithoutRoleType() {

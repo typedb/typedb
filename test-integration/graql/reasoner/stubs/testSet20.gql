@@ -7,30 +7,30 @@ role2 sub role;
 
 #Entities
 
-entity1 sub entity
-    plays role1
+entity1 sub entity,
+    plays role1,
     plays role2;
 
 #Relations
 
-relation1 sub relationship
-    relates role1
+relation1 sub relationship,
+    relates role1,
     relates role2;
 
-sub-relation1 sub relation1
-    relates role1
+sub-relation1 sub relation1,
+    relates role1,
     relates role2;
 
-relation2 sub relationship
-    relates role1
+relation2 sub relationship,
+    relates role1,
     relates role2;
 
 #Rules
 
-rule-1 sub rule
+rule-1 sub rule,
     when {
     	(role1:$x, role2:$y) isa relation2;
-    }
+    },
     then {
     	(role1:$x, role2:$y) isa sub-relation1;
     };

@@ -1,6 +1,6 @@
 load("@stackb_rules_proto//python:python_grpc_compile.bzl", "python_grpc_compile")
 load("@io_bazel_rules_python//python:python.bzl", "py_library")
-load("@graknlabs_rules_deployment//pip:rules.bzl", "py_replace_imports")
+load("@graknlabs_bazel_distribution//pip:rules.bzl", "py_replace_imports")
 
 
 exports_files([

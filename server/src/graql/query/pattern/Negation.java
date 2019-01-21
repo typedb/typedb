@@ -18,7 +18,12 @@
 
 package grakn.core.graql.query.pattern;
 
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
+
 import javax.annotation.CheckReturnValue;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -42,13 +47,20 @@ public class Negation<T extends Pattern> implements Pattern {
 
     @Override
     public Disjunction<Conjunction<Statement>> getDisjunctiveNormalForm() {
-        return pattern.negate().getDisjunctiveNormalForm();
+        return pattern.getDisjunctiveNormalForm();
     }
 
     @Override
-    public Pattern negate() {
-        return pattern;
+    public Disjunction<Conjunction<Pattern>> getNegationDNF() {
+        if(pattern.isNegation()) return pattern.asNegation().getPattern().getNegationDNF();
+        return Graql.or(Collections.singleton(Graql.and(Collections.singleton(this))));
     }
+
+    @Override
+    public boolean isNegation() { return true; }
+
+    @Override
+    public Negation<?> asNegation() { return this; }
 
     @Override
     public Set<Variable> variables() {
@@ -57,7 +69,7 @@ public class Negation<T extends Pattern> implements Pattern {
 
     @Override
     public String toString() {
-        return "NOT {" + pattern + "; }";
+        return "NOT {" + pattern + ";}";
     }
 }
 

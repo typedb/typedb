@@ -19,7 +19,8 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
-import grakn.core.graql.util.StringUtil;
+import grakn.core.graql.query.pattern.statement.StatementType;
+import graql.util.StringUtil;
 
 /**
  * Represents the {@code regex} property on a AttributeType. This property can be queried and inserted.
@@ -48,12 +49,17 @@ public class RegexProperty extends VarProperty {
 
     @Override
     public String property() {
-        return "/" + StringUtil.escapeString(regex()) + "/";
+        return "\"" + StringUtil.escapeString(regex()) + "\"";
     }
 
     @Override
     public boolean isUnique() {
         return true;
+    }
+
+    @Override
+    public Class statementClass() {
+        return StatementType.class;
     }
 
     @Override

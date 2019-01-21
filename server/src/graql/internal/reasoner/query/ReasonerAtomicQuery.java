@@ -33,6 +33,7 @@ import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
+import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.state.AnswerState;
 import grakn.core.graql.internal.reasoner.state.AtomicStateProducer;
 import grakn.core.graql.internal.reasoner.state.CacheCompletionState;
@@ -42,10 +43,11 @@ import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.server.session.TransactionOLTP;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -231,10 +233,19 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             subGoalIterator = Collections.emptyIterator();
         } else {
             visitedSubGoals.add(this);
-            subGoalIterator = cache.ruleCache().getRuleStream(this.getAtom())
+            subGoalIterator = getRuleStream()
                     .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals, cache))
                     .iterator();
         }
         return Iterators.concat(dbIterator, dbCompletionIterator, subGoalIterator);
+    }
+
+    /**
+     * @return stream of all rules applicable to this atom including permuted cases when the role types are meta roles
+     */
+    private Stream<Pair<InferenceRule, Unifier>> getRuleStream() {
+        return this.getAtom().getApplicableRules()
+                .flatMap(r -> r.getMultiUnifier(this.getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
+                .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));
     }
 }

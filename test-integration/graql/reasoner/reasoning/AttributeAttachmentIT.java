@@ -22,8 +22,8 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -53,30 +53,30 @@ import static org.junit.Assert.assertTrue;
  * Suite of tests checking different meanders and aspects of reasoning - full reasoning cycle is being tested.
  */
 @SuppressWarnings("CheckReturnValue")
-public class ResourceAttachmentIT {
+public class AttributeAttachmentIT {
 
     private static String resourcePath = "test-integration/graql/reasoner/stubs/";
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl resourceAttachmentSession;
+    private static SessionImpl attributeAttachmentSession;
     @BeforeClass
     public static void loadContext(){
-        resourceAttachmentSession = server.sessionWithNewKeyspace();
-        loadFromFileAndCommit(resourcePath, "resourceAttachment.gql", resourceAttachmentSession);
+        attributeAttachmentSession = server.sessionWithNewKeyspace();
+        loadFromFileAndCommit(resourcePath, "resourceAttachment.gql", attributeAttachmentSession);
     }
 
     @AfterClass
     public static void closeSession(){
-        resourceAttachmentSession.close();
+        attributeAttachmentSession.close();
 
     }
 
     @Test
-    //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources_reattachingResourceToEntity() {
-        try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
+    //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
+    public void reusingAttribute_reattachingAttributeToEntity() {
+        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
             String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; get;";
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
@@ -89,9 +89,9 @@ public class ResourceAttachmentIT {
     }
 
     @Test
-    //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources_queryingForGenericRelation() {
-        try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
+    //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
+    public void reusingAttributes_queryingForGenericRelation() {
+        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
             String queryString = "match $x isa genericEntity;($x, $y); get;";
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
@@ -102,9 +102,9 @@ public class ResourceAttachmentIT {
     }
 
     @Test
-    //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources_usingExistingResourceToDefineSubResource() {
-        try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
+    //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
+    public void reusingAttributes_usingExistingAttributeToDefineSubAttribute() {
+        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
                         String queryString = "match $x isa genericEntity, has subResource $y; get;";
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             assertEquals(tx.getEntityType("genericEntity").instances().count(), answers.size());
@@ -124,16 +124,16 @@ public class ResourceAttachmentIT {
     }
 
     @Test
-    public void whenReasoningWithResourcesInRelationForm_ResultsAreComplete() {
-        try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
+    public void whenReasoningWithAttributesInRelationForm_ResultsAreComplete() {
+        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
-            List<ConceptMap> concepts = tx.execute(Graql.<GetQuery>parse("match $x isa genericEntity;get;"));
+            List<ConceptMap> concepts = tx.execute(Graql.<GetQuery>parse("match $x isa genericEntity; get;"));
             List<ConceptMap> subResources = tx.execute(Graql.<GetQuery>parse(
-                    "match $x isa genericEntity has subResource $res; get;"));
+                    "match $x isa genericEntity, has subResource $res; get;"));
 
             String queryString = "match " +
-                    "$rel($role:$x) isa @has-reattachable-resource-string;" +
-                    "$x isa genericEntity;" +
+                    "$rel($role:$x) isa @has-reattachable-resource-string; " +
+                    "$x isa genericEntity; " +
                     "get;";
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             //base resource yield 3 roles: metarole, base attribute rule, specific role
@@ -146,8 +146,8 @@ public class ResourceAttachmentIT {
     //TODO leads to cache inconsistency
     @Ignore
     @Test
-    public void whenReasoningWithResourcesWithRelationVar_ResultsAreComplete() {
-        try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
+    public void whenReasoningWithAttributesWithRelationVar_ResultsAreComplete() {
+        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
             Statement has = var("x").has("reattachable-resource-string", var("y"), var("r"));
             List<ConceptMap> answers = tx.execute(Graql.match(has).get());
@@ -158,7 +158,7 @@ public class ResourceAttachmentIT {
 
     @Test
     public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
-        try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
             Statement owner = type(HAS_OWNER.getLabel("reattachable-resource-string").getValue());
             Statement value = type(HAS_VALUE.getLabel("reattachable-resource-string").getValue());
@@ -180,8 +180,8 @@ public class ResourceAttachmentIT {
 
     @Test
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources_attachingExistingResourceToARelation() {
-        try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
+    public void reusingAttributes_attachingExistingAttributeToARelation() {
+        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
             String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; $z isa relation; get;";
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
@@ -207,9 +207,9 @@ public class ResourceAttachmentIT {
     }
 
     @Test
-    //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources_derivingResourceFromOtherResourceWithConditionalValue() {
-        try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
+    //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
+    public void reusingAttributes_derivingAttributeFromOtherAttributeWithConditionalValue() {
+        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
                         String queryString = "match $x has derived-resource-boolean $r; get;";
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             assertEquals(1, answers.size());
@@ -217,9 +217,9 @@ public class ResourceAttachmentIT {
     }
 
     @Test
-    //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void derivingResourceWithSpecificValue() {
-        try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
+    //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
+    public void derivingAttributeWithSpecificValue() {
+        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
                         String queryString = "match $x has derived-resource-string 'value'; get;";
             String queryString2 = "match $x has derived-resource-string $r; get;";
             GetQuery query = Graql.parse(queryString);
@@ -235,9 +235,9 @@ public class ResourceAttachmentIT {
     }
 
     @Test
-    //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources_attachingStrayResourceToEntityDoesntThrowErrors() {
-        try(Transaction tx = resourceAttachmentSession.transaction(Transaction.Type.WRITE)) {
+    //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
+    public void reusingAttributes_attachingStrayAttributeToEntityDoesntThrowErrors() {
+        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
                         String queryString = "match $x isa yetAnotherEntity, has derived-resource-string 'unattached'; get;";
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             assertEquals(2, answers.size());

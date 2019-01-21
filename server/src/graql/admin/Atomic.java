@@ -20,37 +20,20 @@ package grakn.core.graql.admin;
 
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
- *
- * <p>
  * Basic interface for logical atoms used in reasoning.
- * </p>
- *
- *
  */
 public interface Atomic {
 
     @CheckReturnValue
     Atomic copy(ReasonerQuery parent);
-
-    /**
-     * @return true if this atomic is positive (non-negated)
-     */
-    @CheckReturnValue
-    boolean isPositive();
-
-    /**
-     * @return negated version of this atomic
-     */
-    @CheckReturnValue
-    Atomic negate();
 
     /**
      * @return variable name of this atomic

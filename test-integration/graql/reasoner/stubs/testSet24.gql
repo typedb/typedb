@@ -7,37 +7,37 @@ role2 sub role;
 
 #Entities
 
-entity1 sub entity
-    plays role1
+entity1 sub entity,
+    plays role1,
     plays role2;
 
 #Relations
 
-reflexiveRelation sub relationship
-    relates role1
+reflexiveRelation sub relationship,
+    relates role1,
     relates role2;
 
-uniquePairRelation sub relationship
-    relates role1
+uniquePairRelation sub relationship,
+    relates role1,
     relates role2;
 
 #Rules
 
-rule-1 sub rule
+rule-1 sub rule,
     when {
     	$x isa entity1;
     	$y isa entity1;
-    }
+    },
     then {
     	(role1:$x, role2:$y) isa reflexiveRelation;
     };
 
-rule-2 sub rule
+rule-2 sub rule,
     when {
     	$x isa entity1;
     	$y isa entity1;
     	$x != $y;
-    }
+    },
     then {
     	(role1:$x, role2:$y) isa uniquePairRelation;
     };

@@ -21,14 +21,17 @@ package grakn.core.graql.query.pattern;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toSet;
 
 /**
  * A class representing a disjunction (or) of patterns. Any inner pattern must match in a query
@@ -67,8 +70,11 @@ public class Disjunction<T extends Pattern> implements Pattern {
     }
 
     @Override
-    public Conjunction<? extends Pattern> negate() {
-        return Graql.and(getPatterns().stream().map(Pattern::negate).collect(toSet()));
+    public Disjunction<Conjunction<Pattern>> getNegationDNF() {
+        Set<Conjunction<Pattern>> dnf = getPatterns().stream()
+                .flatMap(p -> p.getNegationDNF().getPatterns().stream())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        return Graql.or(dnf);
     }
 
     @Override
@@ -78,9 +84,31 @@ public class Disjunction<T extends Pattern> implements Pattern {
 
     @Override
     public String toString() {
-        return getPatterns().stream()
-                .map(Object::toString)
-                .collect(Collectors.joining(" or "));
+        StringBuilder disjunction = new StringBuilder();
+
+        Iterator<T> patternIter = patterns.iterator();
+        while (patternIter.hasNext()) {
+            Pattern pattern = patternIter.next();
+            disjunction.append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE);
+
+            if (pattern instanceof Conjunction<?>) {
+                disjunction.append(((Conjunction<? extends Pattern>) pattern).getPatterns().stream()
+                                           .map(Object::toString)
+                                           .collect(Collectors.joining(Query.Char.SPACE.toString())));
+            } else {
+                disjunction.append(pattern.toString());
+            }
+
+            disjunction.append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE);
+
+            if (patternIter.hasNext()) {
+                disjunction.append(Query.Char.SPACE).append(Query.Operator.OR).append(Query.Char.SPACE);
+            }
+        }
+
+        disjunction.append(Query.Char.SEMICOLON);
+
+        return disjunction.toString();
     }
 
     @Override

@@ -7,25 +7,26 @@ friend2 sub role;
 
 #Entities
 
-person sub entity
-    plays friend1
+person sub entity,
+    plays friend1,
     plays friend2;
 
 #Relations
 
-knows-trans sub relationship
-    relates friend1
+knows-trans sub relationship,
+    relates friend1,
     relates friend2;
-knows sub knows-trans
-    relates friend1
+knows sub knows-trans,
+    relates friend1,
     relates friend2;
 
 #Rules
 
-rule0 sub rule
+rule0 sub rule,
     when {
         (friend1:$x, friend2:$y);
-        (friend1:$y, friend2:$z); }
+        (friend1:$y, friend2:$z);
+    },
     then {
         (friend1:$x, friend2:$z) isa knows-trans;
     };

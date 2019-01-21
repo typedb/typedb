@@ -1,241 +1,309 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 grammar Graql;
 
-queryList : query* EOF ;
+// Graql end-of-file (aka. end-of-string) query parser
+// Needed by Graql's Parser to ensure that it parses till end of string
 
-queryEOF       : query EOF ;
-query          : defineQuery | undefineQuery
-               | insertQuery | deleteQuery
-               | getQuery | aggregateQuery | groupQuery
-               | computeQuery
-               ;
+eof_query           :   query       EOF ;
+eof_query_list      :   query*      EOF ;
+eof_pattern         :   pattern     EOF ;
+eof_pattern_list    :   pattern*    EOF ;
 
-matchClause    : MATCH patterns                             # matchBase
-               ;
+// GRAQL QUERY LANGUAGE ========================================================
 
-getQuery       : matchClause 'get' variables? ';' ;
-insertQuery    : matchClause? INSERT statements ;
-defineQuery    : DEFINE statements ;
-undefineQuery  : UNDEFINE statements ;
-deleteQuery    : matchClause 'delete' variables? ';' ;
+query               :   query_define    |   query_undefine                      // define / undefine types from schema
+                    |   query_insert    |   query_delete                        // insert / delete data from graph
+                    |   query_get       |   query_aggregate |   query_group     // read data from graph (OLTP)
+                    |   query_compute   ;                                       // compute analytics over graph (OLAP)
 
-variables      : VARIABLE (',' VARIABLE)* ;
+query_define        :   DEFINE      statement_type+ ;
+query_undefine      :   UNDEFINE    statement_type+ ;
 
-// AGGREGATE QUERY =====================================================================================================
-//
-// An aggregate query is composed 3 things:
-// A GET QUERY, followed by the "aggregate" keyword, and an aggregate function
+query_insert        :   MATCH       pattern+    INSERT  statement_instance+
+                    |                           INSERT  statement_instance+ ;
+
+query_delete        :   MATCH       pattern+    DELETE  variables   modifier* ; // GET QUERY followed by aggregate fn
+query_get           :   MATCH       pattern+    GET     variables   modifier* ; // GET QUERY followed by group fn, and
+                                                                                // optionally, an aggregate fn
+
+query_aggregate     :   query_get   function_aggregate  ;
+query_group         :   query_get   function_group      function_aggregate? ;
+
+query_compute       :   COMPUTE     compute_method      compute_conditions? ';';// TODO: embbed ';' into subrule
+
+// DELETE AND GET QUERY MODIFIERS ==============================================
+
+variables           :   ( VAR_ ( ',' VAR_ )* )? ';'     ;
+
+modifier            :   offset  |   limit   |   order   ;
+
+offset              :   OFFSET      INTEGER_    ';'     ;
+limit               :   LIMIT       INTEGER_    ';'     ;
+order               :   ORDER     ( ASC|DESC )? ';'     ;
+
+// GET AGGREGATE QUERY =========================================================
 //
 // An aggregate function is composed of 2 things:
-// The aggregate method name, followed by 0 or more variables to be applied to
+// The aggregate method name, followed by the variable to apply the function to
+
+function_aggregate  :   function_method    VAR_?   ';';                         // method and, optionally, a variable
+function_method     :   COUNT   |   MAX     |   MEAN    |   MEDIAN              // calculate statistical values
+                    |   MIN     |   STD     |   SUM     ;
+
+// GET GROUP QUERY =============================================================
 //
-// An aggregate method could only be;
-// count, max, mean, median, min, std, sum
+// An group function is composed of 2 things:
+// The 'GROUP' method name, followed by the variable to group the results by
 
-aggregateQuery      : getQuery aggregateFunction ';' ;
+function_group      :   GROUP   VAR_    ';' ;
 
-aggregateFunction   : aggregateMethod VARIABLE? ;                               // method and, optionally, variables
-aggregateMethod     : COUNT | MAX | MEAN | MEDIAN | MIN | STD | SUM             // calculate statistical values
-                    ;
-
-// GROUP QUERY =========================================================================================================
-//
-// A group query is composed of 4 things:
-// A GET QUERY, followed by the "group" keyword, the VARIABLE to group by,
-// and optionally, an aggregate function to apply on every group
-//
-// An aggregate function is composed of 2 things:
-// The aggregate method name, followed by 0 or more variables to be applied to
-
-groupQuery          : getQuery GROUP VARIABLE ';' ( aggregateFunction ';' )? ;  // 'group' and variable, and optionally
-                                                                                // a value aggregate for each group
-
-// COMPUTE QUERY =======================================================================================================
+// COMPUTE QUERY ===============================================================
 //
 // A compute query is composed of 3 things:
-// The "compute" keyword, followed by a compute method, and optionally a set of conditions
-//
-// A compute method could only be:
-// count, min, max, median, mean, std, sum, path, centrality, cluster
-//
-// The compute conditions can be a set of zero or more individual condition separated by a comma
-// A compute condition can either be a FromID, ToID, OfLabels, InLabels, Algorithm or Args
+// The "compute" keyword followed by a method and optionally a set of conditions
 
-computeQuery        : COMPUTE computeMethod computeConditions? ';';
-computeMethod       : COUNT                                                     // compute the number of concepts
-                    | MIN | MAX | MEDIAN | MEAN | STD | SUM                     // compute statistics functions
-                    | PATH                                                      // compute the paths between concepts
-                    | CENTRALITY                                                // compute density of connected concepts
-                    | CLUSTER                                                   // compute detection of cluster
+compute_method      :   COUNT                                                   // compute the number of concepts
+                    |   MIN         |   MAX         |   MEDIAN                  // compute statistics functions
+                    |   MEAN        |   STD         |   SUM
+                    |   PATH                                                    // compute the paths between concepts
+                    |   CENTRALITY                                              // compute density of connected concepts
+                    |   CLUSTER                                                 // compute detection of cluster
                     ;
-computeConditions   : computeCondition ( ',' computeCondition )* ;
-computeCondition    : FROM      id                  # computeConditionFrom      // an instance to start the compute from
-                    | TO        id                  # computeConditionTo        // an instance to end the compute at
-                    | OF        labels              # computeConditionOf        // type(s) of instances to apply compute
-                    | IN        labels              # computeConditionIn        // type(s) to scope compute visibility
-                    | USING     computeAlgorithm    # computeConditionUsing     // algorithm to determine how to compute
-                    | WHERE     computeArgs         # computeConditionWhere     // additional args for compute method
+compute_conditions  :   compute_condition ( ',' compute_condition )* ;
+compute_condition   :   FROM    id                                              // an instance to start the compute from
+                    |   TO      id                                              // an instance to end the compute at
+                    |   OF      labels                                          // type(s) of instances to apply compute
+                    |   IN      labels                                          // type(s) to scope compute visibility
+                    |   USING   compute_algorithm                               // algorithm to determine how to compute
+                    |   WHERE   compute_args                                    // additional args for compute method
                     ;
-
-computeAlgorithm    : DEGREE | K_CORE | CONNECTED_COMPONENT ;                   // algorithm to determine how to compute
-computeArgs         : computeArg | computeArgsArray ;                           // single argument or array of arguments
-computeArgsArray    : '[' computeArg (',' computeArg)* ']' ;                    // an array of arguments
-computeArg          : MIN_K     '=' INTEGER         # computeArgMinK            // a single argument for min-k=INTEGER
-                    | K         '=' INTEGER         # computeArgK               // a single argument for k=INTEGER
-                    | SIZE      '=' INTEGER         # computeArgSize            // a single argument for size=INTEGER
-                    | CONTAINS  '=' id              # computeArgContains        // a single argument for contains=ID
+compute_algorithm   :   DEGREE | K_CORE | CONNECTED_COMPONENT ;                 // algorithm to determine how to compute
+compute_args        :   compute_arg | compute_args_array ;                      // single argument or array of arguments
+compute_args_array  :   '[' compute_arg (',' compute_arg)* ']' ;                // an array of arguments
+compute_arg         :   MIN_K     '=' INTEGER_                                  // a single argument for min-k=INTEGER
+                    |   K         '=' INTEGER_                                  // a single argument for k=INTEGER
+                    |   SIZE      '=' INTEGER_                                  // a single argument for size=INTEGER
+                    |   CONTAINS  '=' id                                        // a single argument for contains=ID
                     ;
 
-// =====================================================================================================================
+// QUERY PATTERNS ==============================================================
 
-patterns       : (pattern ';')+ ;
-pattern        : statement                     # patternStatement
-               | 'NOT' '{' pattern '}'         # patternNegation
-               | pattern 'or' pattern          # patternDisjunction
-               | '{' patterns '}'              # patternConjunction
-               ;
+patterns            :   pattern+ ;
+pattern             :   pattern_statement
+                    |   pattern_conjunction
+                    |   pattern_disjunction
+                    |   pattern_negation
+                    ;
 
-statements    : (statement ';')+ ;
-statement     : positiveStatement
-               | negativeStatement
-               ;
+pattern_conjunction :   '{' patterns '}' ';' ;
+pattern_disjunction :   '{' patterns '}'  ( OR '{' patterns '}' )+  ';' ;
+pattern_negation    :   NOT '{' patterns '}' ';' ;
 
-positiveStatement : VARIABLE | variable? property (','? property)* ;
-negativeStatement : 'NOT' positiveStatement ;
+// PATTERN STATEMENTS ==========================================================
 
-property       : 'isa' variable                     # isa
-               | 'isa!' variable                    # isaExplicit
-               | 'sub' variable                     # sub
-               | 'sub!' variable                    # subExplicit
-               | 'relates' role=variable ('as' superRole=variable)? # relates
-               | 'plays' variable                   # plays
-               | 'id' id                            # propId
-               | 'label' label                      # propLabel
-               |  predicate                         # propValue
-               | 'when' '{' patterns '}'            # propWhen
-               | 'then' '{' statements '}'         # propThen
-               | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)? # propHas
-               | 'has' variable                     # propResource
-               | 'key' variable                     # propKey
-               | '(' casting (',' casting)* ')'     # propRel
-               | 'abstract'                         # abstract
-               | 'datatype' datatype                # propDatatype
-               | 'regex' REGEX                      # propRegex
-               | '!=' variable                      # propNeq
-               ;
+pattern_statement   :   statement_type
+                    |   statement_instance
+                    ;
 
-casting        : variable (':' VARIABLE)?
-               | variable VARIABLE         {notifyErrorListeners("expecting {',', ':'}");};
+// TYPE STATEMENTS =============================================================
 
-variable       : label | VARIABLE ;
+statement_type      :   type        type_property ( ',' type_property )* ';' ;
+type_property       :   ABSTRACT
+                    |   SUB_        type
+                    |   KEY         type
+                    |   HAS         type
+                    |   PLAYS       type
+                    |   RELATES     type ( AS type )?
+                    |   DATATYPE    datatype
+                    |   REGEX       regex
+                    |   WHEN    '{' pattern+              '}'
+                    |   THEN    '{' statement_instance+   '}'                   // TODO: remove '+'
+                    |   TYPE        label
+                    ;
 
-predicate      : '=='? value                    # predicateEq
-               | '==' VARIABLE                  # predicateVariable
-               | '!==' valueOrVar               # predicateNeq
-               | '>' valueOrVar                 # predicateGt
-               | '>=' valueOrVar                # predicateGte
-               | '<' valueOrVar                 # predicateLt
-               | '<=' valueOrVar                # predicateLte
-               | 'contains' (STRING | VARIABLE) # predicateContains
-               | REGEX                          # predicateRegex
-               ;
-valueOrVar     : VARIABLE # valueVariable
-               | value    # valuePrimitive
-               ;
-value          : STRING   # valueString
-               | INTEGER  # valueInteger
-               | REAL     # valueReal
-               | bool     # valueBoolean
-               | DATE     # valueDate
-               | DATETIME # valueDateTime
-               ;
+// INSTANCE STATEMENTS =========================================================
 
-labels         : labelsArray | label ;
-labelsArray    : '[' label (',' label)* ']' ;
-label          : identifier | IMPLICIT_IDENTIFIER;
-id             : identifier ;
+statement_instance  :   statement_thing
+                    |   statement_relation
+                    |   statement_attribute
+                    ;
+statement_thing     :   VAR_                ISA_ type   ( ',' attributes )? ';'
+                    |   VAR_                ID   id     ( ',' attributes )? ';'
+                    |   VAR_                NEQ  VAR_                       ';'
+                    |   VAR_                attributes                      ';'
+                    ;
+statement_relation  :   VAR_? relation      ISA_ type   ( ',' attributes )? ';'
+                    |   VAR_? relation      attributes                      ';'
+                    |   VAR_? relation                                      ';'
+                    ;
+statement_attribute :   VAR_? operation     ISA_ type   ( ',' attributes )? ';'
+                    |   VAR_? operation     attributes                      ';'
+                    |   VAR_? operation                                     ';'
+                    ;
 
-// Some keywords can also be used as identifiers
-identifier     : ID | STRING
-               | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-               | FROM | TO | OF | IN
-               | DEGREE | K_CORE | CONNECTED_COMPONENT
-               | MIN_K | K | CONTAINS | SIZE | WHERE
-               ;
+// ATTRIBUTE CONSTRUCT =========================================================
 
-datatype       : LONG_TYPE | DOUBLE_TYPE | STRING_TYPE | BOOLEAN_TYPE | DATE_TYPE ;
-order          : ASC | DESC ;
-bool           : TRUE | FALSE ;
+attributes          :   attribute ( ',' attribute )* ;
+attribute           :   HAS label ( VAR_ | operation ) via? ;                   // Attribute ownership by variable or a
+                                                                                // predicate, and the "via" Relation
+// RELATION CONSTRUCT ==========================================================
 
-// keywords
-GROUP          : 'group';
-MIN            : 'min' ;
-MAX            : 'max' ;
-MEDIAN         : 'median' ;
-MEAN           : 'mean' ;
-STD            : 'std' ;
-SUM            : 'sum' ;
-COUNT          : 'count' ;
-PATH           : 'path' ;
-CLUSTER        : 'cluster' ;
-CENTRALITY     : 'centrality' ;
-FROM           : 'from' ;
-TO             : 'to' ;
-OF             : 'of' ;
-IN             : 'in' ;
-DEGREE         : 'degree' ;
-K_CORE         : 'k-core' ;
-CONNECTED_COMPONENT : 'connected-component' ;
-MIN_K          : 'min-k' ;
-K              : 'k' ;
-CONTAINS       : 'contains' ;
-SIZE           : 'size' ;
-USING          : 'using' ;
-WHERE          : 'where' ;
-DEFINE         : 'define' ;
-UNDEFINE       : 'undefine' ;
-MATCH          : 'match' ;
-INSERT         : 'insert' ;
-DELETE         : 'delete' ;
-AGGREGATE      : 'aggregate' ;
-COMPUTE        : 'compute' ;
-ASC            : 'asc' ;
-DESC           : 'desc' ;
-LONG_TYPE      : 'long' ;
-DOUBLE_TYPE    : 'double' ;
-STRING_TYPE    : 'string' ;
-BOOLEAN_TYPE   : 'boolean' ;
-DATE_TYPE      : 'date' ;
-TRUE           : 'true' ;
-FALSE          : 'false' ;
+relation            :   '(' role_player ( ',' role_player )* ')' ;              // A list of role players in a Relations
+role_player         :   type ':' player                                         // The Role type and and player variable
+                    |            player ;                                       // Or just the player variable
+player              :   VAR_ ;                                                  // A player is just a variable
+via                 :   VIA VAR_ ;                                              // The Relation variable that holds the
+                                                                                // assertion between an Attribute and
+                                                                                // its owner (any Thing)
+// TYPE, LABEL AND IDENTIFIER CONSTRUCTS =======================================
 
-// In StringConverter.java we inspect the lexer to find out which values are keywords.
-// If literals are used in an alternation (e.g. `'true' | 'false'`) in the grammar, then they don't register as keywords.
-// Therefore, we never use an alternation of literals and instead give them proper rule names (e.g. `TRUE | FALSE`).
-VARIABLE       : '$' [a-zA-Z0-9_-]+ ;
-ID             : [a-zA-Z_] [a-zA-Z0-9_-]* ;
-STRING         : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
-REGEX          : '/' (~'/' | '\\/')* '/' ;
-INTEGER        : ('+' | '-')? [0-9]+ ;
-REAL           : ('+' | '-')? [0-9]+ '.' [0-9]+ ;
-DATE           : DATE_FRAGMENT ;
-DATETIME       : DATE_FRAGMENT 'T' TIME ;
+type                :   label | VAR_ ;                                          // A type can be a label or variable
+labels              :   label | label_array ;
+label_array         :   '[' label ( ',' label )* ']' ;
+label               :   identifier | ID_IMPLICIT_;
 
-fragment DATE_FRAGMENT : YEAR '-' MONTH '-' DAY ;
-fragment MONTH         : [0-1][0-9] ;
-fragment DAY           : [0-3][0-9] ;
-fragment YEAR          : [0-9][0-9][0-9][0-9] | ('+' | '-') [0-9]+ ;
-fragment TIME          : HOUR ':' MINUTE (':' SECOND)? ;
-fragment HOUR          : [0-2][0-9] ;
-fragment MINUTE        : [0-6][0-9] ;
-fragment SECOND        : [0-6][0-9] ('.' [0-9]+)? ;
+id                  :   identifier ;
+identifier          :   ID_ | STRING_ | unreserved ;                            // TODO: disallow quoted strings as IDs
 
-fragment ESCAPE_SEQ : '\\' . ;
+// ATTRIBUTE OPERATION CONSTRUCTS ==============================================
 
-COMMENT : '#' .*? '\r'? ('\n' | EOF) -> channel(HIDDEN) ;
+operation           :   assignment
+                    |   comparison
+                    ;
+assignment          :   literal   ;
+comparison          :   comparator  comparable
+                    |   CONTAINS    containable
+                    |   LIKE        regex
+                    ;
+comparator          :   EQV | NEQV | GT | GTE | LT | LTE ;
+comparable          :   literal | VAR_  ;
+containable         :   STRING_ | VAR_  ;
 
-IMPLICIT_IDENTIFIER : '@' [a-zA-Z0-9_-]+ ;
+// LITERAL INPUT VALUES =======================================================
 
-WS : [ \t\r\n]+ -> channel(HIDDEN) ;
+datatype            :   LONG        |   DOUBLE      |   STRING
+                    |   BOOLEAN     |   DATE        ;
+literal             :   STRING_     |   INTEGER_    |   REAL_
+                    |   BOOLEAN_    |   DATE_       |   DATETIME_   ;
+regex               :   STRING_     ;
 
-// Unused lexer rule to help with autocomplete on variable names
-DOLLAR : '$' ;
+// UNRESERVED KEYWORDS =========================================================
+// Most of Graql syntax should not be reserved from being used as identifiers
+
+unreserved          : MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT
+                    | PATH | CLUSTER | FROM | TO | OF | IN
+                    | DEGREE | K_CORE | CONNECTED_COMPONENT
+                    | MIN_K | K | CONTAINS | SIZE | WHERE
+                    ;
+
+// GRAQL SYNTAX KEYWORDS =======================================================
+
+// QUERY COMMAND KEYWORDS
+
+MATCH           : 'match'       ;   GET             : 'get'         ;
+DEFINE          : 'define'      ;   UNDEFINE        : 'undefine'    ;
+INSERT          : 'insert'      ;   DELETE          : 'delete'      ;
+AGGREGATE       : 'aggregate'   ;   COMPUTE         : 'compute'     ;
+
+// DELETE AND GET QUERY MODIFIER KEYWORDS
+
+OFFSET          : 'offset'      ;   LIMIT           : 'limit'       ;
+ASC             : 'asc'         ;   DESC            : 'desc'        ;
+ORDER           : 'order'       ;
+
+// STATEMENT PROPERTY KEYWORDS
+
+ABSTRACT        : 'abstract'    ;
+VIA             : 'via'         ;   AS              : 'as'          ;
+ID              : 'id'          ;   TYPE            : 'type'        ;
+ISA_            : ISA | ISAX    ;   SUB_            : SUB | SUBX    ;
+ISA             : 'isa'         ;   ISAX            : 'isa!'        ;
+SUB             : 'sub'         ;   SUBX            : 'sub!'        ;
+KEY             : 'key'         ;   HAS             : 'has'         ;
+PLAYS           : 'plays'       ;   RELATES         : 'relates'     ;
+DATATYPE        : 'datatype'    ;   REGEX           : 'regex'       ;
+WHEN            : 'when'        ;   THEN            : 'then'        ;
+
+// GROUP AND AGGREGATE QUERY KEYWORDS (also used by COMPUTE QUERY)
+
+GROUP           : 'group'       ;   COUNT           : 'count'       ;
+MAX             : 'max'         ;   MIN             : 'min'         ;
+MEAN            : 'mean'        ;   MEDIAN          : 'median'      ;
+STD             : 'std'         ;   SUM             : 'sum'         ;
+
+// COMPUTE QUERY KEYWORDS
+
+CLUSTER         : 'cluster'     ;   CENTRALITY      : 'centrality'  ;
+PATH            : 'path'        ;   DEGREE          : 'degree'      ;
+K_CORE          : 'k-core'      ;   CONNECTED_COMPONENT : 'connected-component';
+FROM            : 'from'        ;   TO              : 'to'          ;
+OF              : 'of'          ;   IN              : 'in'          ;
+USING           : 'using'       ;   WHERE           : 'where'       ;
+MIN_K           : 'min-k'       ;   K               : 'k'           ;
+SIZE            : 'size'        ;   CONTAINS        : 'contains'    ;
+
+
+// OPERATOR KEYWORDS
+
+OR              : 'or'          ;   NOT             : 'not'         ;
+LIKE            : 'like'        ;   NEQ             : '!='          ;
+EQV             : '=='          ;   NEQV            : '!=='         ;
+GT              : '>'           ;   GTE             : '>='          ;
+LT              : '<'           ;   LTE             : '<='          ;
+
+// DATA TYPE KEYWORDS
+
+LONG            : 'long'        ;   DOUBLE          : 'double'      ;
+STRING          : 'string'      ;   BOOLEAN         : 'boolean'     ;
+DATE            : 'date'        ;
+
+// LITERAL VALUE KEYWORDS
+BOOLEAN_        : TRUE | FALSE  ; // order of lexer declaration matters
+TRUE            : 'true'        ;
+FALSE           : 'false'       ;
+STRING_         : '"'  (~["\\/] | ESCAPE_SEQ_ )* '"'
+                | '\'' (~['\\/] | ESCAPE_SEQ_ )* '\''   ;
+INTEGER_        : ('+' | '-')? [0-9]+                   ;
+REAL_           : ('+' | '-')? [0-9]+ '.' [0-9]+        ;
+DATE_           : DATE_FRAGMENT_                        ;
+DATETIME_       : DATE_FRAGMENT_ 'T' TIME_              ;
+
+// GRAQL INPUT TOKEN PATTERNS
+// All token names must end with an underscore ('_')
+VAR_            : VAR_ANONYMOUS_ | VAR_NAMED_ ;
+VAR_ANONYMOUS_  : '$_' ;
+VAR_NAMED_      : '$' [a-zA-Z0-9_-]* ;
+ID_             : [a-zA-Z_] [a-zA-Z0-9_-]* ;
+ID_IMPLICIT_    : '@' [a-zA-Z0-9_-]+ ;
+
+// FRAGMENTS OF KEYWORDS =======================================================
+
+fragment DATE_FRAGMENT_ : YEAR_ '-' MONTH_ '-' DAY_ ;
+fragment MONTH_         : [0-1][0-9] ;
+fragment DAY_           : [0-3][0-9] ;
+fragment YEAR_          : [0-9][0-9][0-9][0-9] | ('+' | '-') [0-9]+ ;
+fragment TIME_          : HOUR_ ':' MINUTE_ (':' SECOND_)? ;
+fragment HOUR_          : [0-2][0-9] ;
+fragment MINUTE_        : [0-6][0-9] ;
+fragment SECOND_        : [0-6][0-9] ('.' [0-9]+)? ;
+fragment ESCAPE_SEQ_    : '\\' . ;
+
+COMMENT         : '#' .*? '\r'? ('\n' | EOF)    -> channel(HIDDEN) ;
+WS              : [ \t\r\n]+                    -> channel(HIDDEN) ;

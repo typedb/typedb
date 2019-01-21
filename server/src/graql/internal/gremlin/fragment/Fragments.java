@@ -24,7 +24,7 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.graql.util.StringUtil;

@@ -29,7 +29,7 @@ import grakn.core.graql.internal.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import java.util.Set;
 

@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query.predicate;
 
+import grakn.core.graql.query.Query;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.junit.Test;
 
@@ -64,13 +65,13 @@ public class RegexPredicateTest {
     public void regexPredicateToStringDoesNotEscapeMostThings() {
         RegexPredicate predicate = new RegexPredicate("don't escape these: \\d, \", \n ok");
 
-        assertEquals("/don't escape these: \\d, \", \n ok/", predicate.toString());
+        assertEquals(Query.Operator.LIKE + " \"don't escape these: \\d, \", \n ok\"", predicate.toString());
     }
 
     @Test
     public void regexPredicateToStringEscapesForwardSlashes() {
         RegexPredicate predicate = new RegexPredicate("escape this: / ok");
 
-        assertEquals("/escape this: \\/ ok/", predicate.toString());
+        assertEquals(Query.Operator.LIKE + " \"escape this: \\/ ok\"", predicate.toString());
     }
 }

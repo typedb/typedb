@@ -267,7 +267,7 @@ public class RecursionIT {
             graph.load(N, N);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x has index 'a0'; get $y;";
-                String explicitQuery = "match $y isa a-entity or $y isa end; get;";
+                String explicitQuery = "match { $y isa a-entity; } or { $y isa end; }; get;";
 
                 GraqlTestUtil.assertCollectionsEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
             }
@@ -340,7 +340,7 @@ public class RecursionIT {
             LinearTransitivityMatrixGraph graph = new LinearTransitivityMatrixGraph(session);
             graph.load(N, M);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                String queryString = "match (P-from: $x, P-to: $y) isa P;$x has index 'a'; get $y;";
+                String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a'; get $y;";
                 String explicitQuery = "match $y isa a-entity; get;";
 
                 GraqlTestUtil.assertCollectionsEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));

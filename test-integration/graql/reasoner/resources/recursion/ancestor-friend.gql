@@ -5,7 +5,7 @@ define
 ####################Schema########################
 #################################################
 
-person sub entity
+person sub entity,
     has name;
 
 friend sub role;

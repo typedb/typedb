@@ -32,8 +32,8 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import org.junit.Before;
@@ -266,21 +266,21 @@ public class BenchmarkBigIT {
                 String queryString = "match " + queryPattern + " get;";
                 String subbedQueryString = "match " +
                         queryPattern +
-                        "$x id '" + entityId.getValue() + "';" +
-                        "get;";
+                        " $x id '" + entityId.getValue() + "';" +
+                        " get;";
                 String subbedQueryString2 = "match " +
                         queryPattern +
-                        "$y id '" + entityId.getValue() + "';" +
-                        "get;";
+                        " $y id '" + entityId.getValue() + "';" +
+                        " get;";
                 String limitedQueryString = "match " +
                         queryPattern +
-                        "limit " + limit + ";" +
-                        "get;";
+                        " limit " + limit + ";" +
+                        " get;";
 
                 executeQuery(queryString, tx, "full");
                 executeQuery(subbedQueryString, tx, "first argument bound");
                 executeQuery(subbedQueryString2, tx, "second argument bound");
-                executeQuery(limitedQueryString, tx, "limit " + limit);
+                //executeQuery(limitedQueryString, tx, "limit " + limit); // TODO: re-enable after implementing limits
             }
         }
     }
@@ -312,21 +312,21 @@ public class BenchmarkBigIT {
                 String queryString = "match " + queryPattern + " get;";
                 String subbedQueryString = "match " +
                         queryPattern +
-                        "$x id '" + entityId.getValue() + "';" +
-                        "get;";
+                        " $x id '" + entityId.getValue() + "';" +
+                        " get;";
                 String subbedQueryString2 = "match " +
                         queryPattern +
-                        "$y id '" + entityId.getValue() + "';" +
-                        "get;";
+                        " $y id '" + entityId.getValue() + "';" +
+                        " get;";
                 String limitedQueryString = "match " +
                         queryPattern +
-                        "limit " + limit + ";" +
-                        "get;";
+                        " limit " + limit + ";" +
+                        " get;";
 
                 executeQuery(queryString, tx, "full");
                 executeQuery(subbedQueryString, tx, "first argument bound");
                 executeQuery(subbedQueryString2, tx, "second argument bound");
-                executeQuery(limitedQueryString, tx, "limit " + limit);
+                //executeQuery(limitedQueryString, tx, "limit " + limit); // TODO: re-enable after implementing limits
             }
         }
     }

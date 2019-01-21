@@ -18,9 +18,9 @@
 
 package grakn.core.graql.query.pattern.property;
 
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.util.StringUtil;
+import grakn.core.graql.query.pattern.statement.StatementType;
+import graql.util.StringUtil;
 
 /**
  * Represents the {@code label} property on a Type.
@@ -44,17 +44,22 @@ public class TypeProperty extends VarProperty {
 
     @Override
     public String keyword() {
-        return Query.Property.LABEL.toString();
+        return Query.Property.TYPE.toString();
     }
 
     @Override
     public String property() {
-        return StringUtil.typeLabelToString(Label.of(name()));
+        return StringUtil.escapeLabelOrId(name());
     }
 
     @Override
     public boolean isUnique() {
         return true;
+    }
+
+    @Override
+    public Class statementClass() {
+        return StatementType.class;
     }
 
     @Override

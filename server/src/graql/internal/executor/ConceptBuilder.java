@@ -33,8 +33,8 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -278,7 +278,7 @@ public class ConceptBuilder {
 
     private static final BuilderParam<Type> TYPE = BuilderParam.of(Query.Property.ISA);
     private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(Query.Property.SUB);
-    private static final BuilderParam<Label> LABEL = BuilderParam.of(Query.Property.LABEL);
+    private static final BuilderParam<Label> LABEL = BuilderParam.of(Query.Property.TYPE);
     private static final BuilderParam<ConceptId> ID = BuilderParam.of(Query.Property.ID);
     private static final BuilderParam<Object> VALUE = BuilderParam.of(Query.Property.VALUE);
     private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(Query.Property.DATA_TYPE);
@@ -320,7 +320,8 @@ public class ConceptBuilder {
         if (value == null) value = defaultValue;
 
         if (value == null) {
-            throw GraqlQueryException.insertNoExpectedProperty(param.name(), executor.printableRepresentation(var));
+            Statement owner = executor.printableRepresentation(var);
+            throw GraqlQueryException.insertNoExpectedProperty(param.name(), owner);
         }
 
         return value;

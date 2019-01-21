@@ -9,35 +9,35 @@ successor sub role;
 
 #Entities
 
-post sub entity
-    plays original
-    plays reply
-    plays predecessor
-    plays successor
+post sub entity,
+    plays original,
+    plays reply,
+    plays predecessor,
+    plays successor,
     has creation-date;
 
 #Relations
 
-reply-of sub relationship
-    relates original
+reply-of sub relationship,
+    relates original,
     relates reply;
 
-message-succession sub relationship
-    relates predecessor
+message-succession sub relationship,
+    relates predecessor,
     relates successor;
 
-creation-date sub attribute datatype long;
+creation-date sub attribute, datatype long;
 
 #Rules
 
-rule2 sub rule
+rule2 sub rule,
     when{
         (original:$p, reply:$s) isa reply-of;
         $s has creation-date $d1;
         $d1 < $d2;
         (original:$p, reply:$r) isa reply-of;
         $r has creation-date $d2;
-    }
+    },
     then {
         (predecessor:$s, successor:$r) isa message-succession;
     };

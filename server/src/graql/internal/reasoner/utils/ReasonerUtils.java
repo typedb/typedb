@@ -39,8 +39,8 @@ import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.TypeProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
@@ -121,9 +121,7 @@ public class ReasonerUtils {
     public static Stream<ValuePredicate> getValuePredicates(Variable valueVariable, Statement valueVar, Set<Statement> vars, ReasonerQuery parent){
         Stream<Statement> sourceVars;
         if (valueVar.var().isUserDefinedName()) {
-            sourceVars = vars.stream()
-                    .filter(v -> v.var().equals(valueVariable))
-                    .filter(v -> v.sign() == valueVar.sign());
+            sourceVars = vars.stream().filter(v -> v.var().equals(valueVariable));
         }
         else {
             sourceVars = Stream.of(valueVar);

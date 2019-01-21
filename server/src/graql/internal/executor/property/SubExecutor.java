@@ -29,10 +29,10 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.binary.SubAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -53,7 +53,7 @@ public class SubExecutor implements PropertyExecutor.Definable {
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
-        return ImmutableSet.of(EquivalentFragmentSets.sub(property, var, property.type().var()));
+        return ImmutableSet.of(EquivalentFragmentSets.sub(property, var, property.type().var(), property.isExplicit()));
     }
 
     @Override
@@ -71,18 +71,6 @@ public class SubExecutor implements PropertyExecutor.Definable {
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
         return ImmutableSet.of(new UndefineSub());
-    }
-
-    public static class SubExplicitExecutor extends SubExecutor {
-
-        SubExplicitExecutor(Variable var, SubProperty property) {
-            super(var, property);
-        }
-
-        @Override
-        public Set<EquivalentFragmentSet> matchFragments() {
-            return ImmutableSet.of(EquivalentFragmentSets.sub(super.property, super.var, super.property.type().var(), true));
-        }
     }
 
     private abstract class SubWriter {

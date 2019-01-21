@@ -1,68 +1,68 @@
 define
 
-generic-entity sub entity
-    has detailed-resource
+generic-entity sub entity,
+    has detailed-resource,
     plays resource-owner;
 
-detailed-resource sub attribute datatype long;
-resource sub attribute datatype string
+detailed-resource sub attribute, datatype long;
+resource sub attribute, datatype string,
     plays resource-value;
 
 resource-owner sub role;
 resource-value sub role;
 
-resource-relation sub relationship
-    relates resource-value
+resource-relation sub relationship,
+    relates resource-value,
     relates resource-owner;
 
-another-resource-relation sub relationship
-    relates resource-value
+another-resource-relation sub relationship,
+    relates resource-value,
     relates resource-owner;
 
-no-flag sub rule
+no-flag sub rule,
 when{
     $x has detailed-resource >= 400;
-    $y isa resource "no flag";
-}
+    $y "no flag" isa resource;
+},
 then{
     (resource-owner: $x, resource-value: $y) isa resource-relation;
 };
 
-flag-bad-1 sub rule
+flag-bad-1 sub rule,
 when{
     $x has detailed-resource < 400;
-    $y isa resource "partial bad flag";
-}
+    $y "partial bad flag" isa resource;
+},
 then{
     (resource-owner: $x, resource-value: $y) isa resource-relation;
 };
 
-flag-bad-2 sub rule
+flag-bad-2 sub rule,
 when{
     $x has detailed-resource < 200;
-    $y isa resource "partial bad flag 2";
-}
+    $y "partial bad flag 2" isa resource;
+},
 then{
     (resource-owner: $x, resource-value: $y) isa resource-relation;
 };
 
-flag-bad sub rule
+flag-bad sub rule,
 when{
     (resource-owner: $x, resource-value: $y1) isa resource-relation;
-    $y1 isa resource "partial bad flag";
+    $y1 "partial bad flag" isa resource;
     (resource-owner: $x, resource-value: $y2) isa resource-relation;
-    $y2 isa resource "partial bad flag 2";
-    $y isa resource "bad flag";
-}
+    $y2 "partial bad flag 2" isa resource;
+    $y "bad flag" isa resource;
+},
 then{ 
     (resource-owner: $x, resource-value: $y) isa resource-relation;
 };
 
-flag-generic sub rule
+flag-generic sub rule,
 when{
     $x has detailed-resource $r;
     $y isa resource;
-}
+},
 then{
     (resource-owner: $x, resource-value: $y) isa another-resource-relation;
 };
@@ -73,7 +73,7 @@ $x isa generic-entity, has detailed-resource 300;
 $y isa generic-entity, has detailed-resource 500;
 $z isa generic-entity, has detailed-resource 100;
 
-$r isa resource "bad flag";
-$r2 isa resource "partial bad flag";
-$r3 isa resource "partial bad flag 2";
-$r4 isa resource "no flag";
+$r "bad flag" isa resource;
+$r2 "partial bad flag" isa resource;
+$r3 "partial bad flag 2" isa resource;
+$r4 "no flag" isa resource;

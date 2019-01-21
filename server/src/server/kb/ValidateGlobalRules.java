@@ -36,7 +36,7 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.concept.RelationshipTypeImpl;
@@ -291,8 +291,8 @@ class ValidateGlobalRules {
     }
 
     private static ReasonerQuery combinedRuleQuery(Transaction graph, Rule rule){
-        ReasonerQuery bodyQuery = rule.when().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
-        ReasonerQuery headQuery =  rule.then().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
+        ReasonerQuery bodyQuery = rule.when().getNegationDNF().getPatterns().iterator().next().toReasonerQuery(graph);
+        ReasonerQuery headQuery =  rule.then().getNegationDNF().getPatterns().iterator().next().toReasonerQuery(graph);
         return headQuery.conjunction(bodyQuery);
     }
 

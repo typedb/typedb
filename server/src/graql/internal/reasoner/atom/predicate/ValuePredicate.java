@@ -23,8 +23,8 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 

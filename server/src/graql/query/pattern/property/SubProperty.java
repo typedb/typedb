@@ -19,7 +19,8 @@
 package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.Statement;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.StatementType;
 
 import java.util.stream.Stream;
 
@@ -32,12 +33,18 @@ import java.util.stream.Stream;
 public class SubProperty extends VarProperty {
 
     private final Statement type;
+    private final boolean explicit;
 
     public SubProperty(Statement type) {
+        this(type, false);
+    }
+
+    public SubProperty(Statement type, boolean explicit) {
         if (type == null) {
             throw new NullPointerException("Null superType");
         }
         this.type = type;
+        this.explicit = explicit;
     }
 
     public Statement type() {
@@ -46,12 +53,21 @@ public class SubProperty extends VarProperty {
 
     @Override
     public String keyword() {
-        return Query.Property.SUB.toString();
+        if (!explicit) {
+            return Query.Property.SUB.toString();
+        } else {
+            return Query.Property.SUBX.toString();
+        }
     }
 
     @Override
     public String property() {
         return type().getPrintableName();
+    }
+
+    @Override
+    public boolean isExplicit() {
+        return explicit;
     }
 
     @Override
@@ -65,20 +81,24 @@ public class SubProperty extends VarProperty {
     }
 
     @Override
-    public Stream<Statement> innerStatements() {
+    public Stream<Statement> statements() {
         return Stream.of(type());
     }
 
     @Override
+    public Class statementClass() {
+        return StatementType.class;
+    }
+
+    @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof SubProperty) {
-            SubProperty that = (SubProperty) o;
-            return (this.type().equals(that.type()));
-        }
-        return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SubProperty that = (SubProperty) o;
+
+        return (this.type().equals(that.type()) &&
+                this.isExplicit() == that.isExplicit());
     }
 
     @Override

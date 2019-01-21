@@ -1,27 +1,27 @@
 define
 
-genericEntity sub entity
-    has extendedResource
-    has anotherExtendedResource
-    has furtherExtendedResource
+genericEntity sub entity,
+    has extendedResource,
+    has anotherExtendedResource,
+    has furtherExtendedResource,
     has simpleResource;
 
 genericRole sub role;
 
-relation sub relationship
+relation sub relationship,
     relates genericRole;
 
-baseResource sub attribute datatype string
+baseResource sub attribute, datatype string,
     plays genericRole;
 
-extendedResource sub baseResource datatype string;
-anotherExtendedResource sub baseResource datatype string;
+extendedResource sub baseResource, datatype string;
+anotherExtendedResource sub baseResource, datatype string;
 
-furtherExtendedResource sub extendedResource datatype string;
+furtherExtendedResource sub extendedResource, datatype string;
 
-simpleResource sub attribute datatype string;
+simpleResource sub attribute, datatype string;
 
 
 insert
-$x isa baseResource == 'value';
-$y isa extendedResource == 'pupa';
+$x 'value' isa baseResource;
+$y 'pupa' isa extendedResource;

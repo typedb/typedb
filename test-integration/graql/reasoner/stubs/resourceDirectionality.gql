@@ -1,8 +1,8 @@
 define
 
-name sub attribute datatype string;
+name sub attribute, datatype string;
 
-indicator sub attribute datatype string,
+indicator sub attribute, datatype string,
   plays action;
 
 specific-indicator sub indicator;
@@ -27,7 +27,7 @@ indicator-name sub name;
 
 insert
 $r isa router, has specific-indicator $w, has model-name $rmn;
-$rmn isa model-name "someName", has specific-indicator $w;
+$rmn "someName" isa model-name, has specific-indicator $w;
 $w "someIndicator";
 $d(subject: $r, action: $w) isa diagnosis;
 

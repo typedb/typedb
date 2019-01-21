@@ -101,6 +101,7 @@ import static grakn.core.graql.query.ComputeQuery.Method.MIN;
 import static grakn.core.graql.query.ComputeQuery.Method.PATH;
 import static grakn.core.graql.query.ComputeQuery.Method.STD;
 import static grakn.core.graql.query.ComputeQuery.Method.SUM;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * A Graql Compute query executor
@@ -383,13 +384,14 @@ class ComputeExecutor<T extends Answer> {
             targetTypeLabels = scopeTypeLabels();
         } else {
             targetTypeLabels = query.of().get().stream()
-                    .flatMap(typeLabel -> {
+                    .flatMap(t -> {
+                        Label typeLabel = Label.of(t);
                         Type type = tx.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
                         return type.subs();
                     })
                     .map(SchemaConcept::label)
-                    .collect(Collectors.toSet());
+                    .collect(toSet());
         }
 
         Set<Label> scopeTypeLabels = Sets.union(scopeTypeLabels(), targetTypeLabels);
@@ -428,14 +430,15 @@ class ComputeExecutor<T extends Answer> {
             targetTypeLabels = scopeTypeLabels();
         } else {
             targetTypeLabels = query.of().get().stream()
-                    .flatMap(typeLabel -> {
+                    .flatMap(t -> {
+                        Label typeLabel = Label.of(t);
                         Type type = tx.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
                         if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
                         return type.subs();
                     })
                     .map(SchemaConcept::label)
-                    .collect(Collectors.toSet());
+                    .collect(toSet());
         }
 
         Set<Label> scopeTypeLabels = Sets.union(scopeTypeLabels(), targetTypeLabels);
@@ -628,7 +631,7 @@ class ComputeExecutor<T extends Answer> {
                 .flatMap(Role::players)
                 .map(type -> tx.convertToId(type.label()))
                 .filter(LabelId::isValid)
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 
     /**
@@ -642,7 +645,7 @@ class ComputeExecutor<T extends Answer> {
         return types.stream()
                 .filter(Concept::isAttributeType)
                 .map(attributeType -> Schema.ImplicitType.HAS.getLabel(attributeType.label()))
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 
     /**
@@ -656,7 +659,8 @@ class ComputeExecutor<T extends Answer> {
         }
 
         return query.of().get().stream()
-                .map((label) -> {
+                .map(t -> {
+                    Label label = Label.of(t);
                     Type type = tx.getSchemaConcept(label);
                     if (type == null) throw GraqlQueryException.labelNotFound(label);
                     if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.label());
@@ -712,7 +716,7 @@ class ComputeExecutor<T extends Answer> {
     private Set<Label> extendedScopeTypeLabels() {
         Set<Label> extendedTypeLabels = getAttributeImplicitRelationTypeLabes(targetTypes());
         extendedTypeLabels.addAll(scopeTypeLabels());
-        extendedTypeLabels.addAll(query.of().get());
+        extendedTypeLabels.addAll(query.of().get().stream().map(Label::of).collect(toSet()));
         return extendedTypeLabels;
     }
 
@@ -737,7 +741,8 @@ class ComputeExecutor<T extends Answer> {
 
             return typeBuilder.build().stream();
         } else {
-            Stream<Type> subTypes = query.in().get().stream().map(label -> {
+            Stream<Type> subTypes = query.in().get().stream().map(t -> {
+                Label label = Label.of(t);
                 Type type = tx.getType(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
                 return type;
@@ -804,7 +809,8 @@ class ComputeExecutor<T extends Answer> {
      */
     private boolean scopeIncludesImplicitOrAttributeTypes() {
         if (!query.in().isPresent()) return false;
-        return query.in().get().stream().anyMatch(label -> {
+        return query.in().get().stream().anyMatch(t -> {
+            Label label = Label.of(t);
             SchemaConcept type = tx.getSchemaConcept(label);
             return (type != null && (type.isAttributeType() || type.isImplicit()));
         });
@@ -820,7 +826,7 @@ class ComputeExecutor<T extends Answer> {
         return labelSet.stream()
                 .map(tx::convertToId)
                 .filter(LabelId::isValid)
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 
 }

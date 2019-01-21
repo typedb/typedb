@@ -11,18 +11,18 @@ directDerivedEntity sub derivedEntity;
 
 #Rules
 
-isaRule sub rule
+isaRule sub rule,
     when {
     	$x isa subEntity;
-    }
+    },
     then {
     	$x isa derivedEntity;
     };
 
-directIsaRule sub rule
+directIsaRule sub rule,
     when {
     	$x isa! subEntity;
-    }
+    },
     then {
     	$x isa directDerivedEntity;
     };

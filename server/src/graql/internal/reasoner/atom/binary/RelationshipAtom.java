@@ -65,8 +65,9 @@ import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.StatementInstance;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -246,7 +247,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return getSchemaConcept() == null?
                 relationPattern() :
                 isDirect()?
-                        relationPattern().isaExplicit(getSchemaConcept().label().getValue()):
+                        relationPattern().isaX(getSchemaConcept().label().getValue()):
                         relationPattern().isa(getSchemaConcept().label().getValue());
     }
 
@@ -803,7 +804,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Statement relationPattern = relationPattern(getVarName(), inferredRelationPlayers);
         Statement newPattern =
                 (isDirect()?
-                        relationPattern.isaExplicit(new Statement(getPredicateVariable())) :
+                        relationPattern.isaX(new Statement(getPredicateVariable())) :
                         relationPattern.isa(new Statement(getPredicateVariable()))
                 );
         return create(newPattern, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
@@ -1072,7 +1073,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         if (!parentAtom.requiresRoleExpansion()) return this;
 
         Statement relVar = getPattern().getProperty(IsaProperty.class)
-                .map(prop -> new Statement(getVarName()).isa(prop.type())).orElse(new Statement(getVarName()));
+                .map(prop -> new Statement(getVarName()).isa(prop.type()))
+                .orElse(new StatementInstance.StatementThing(getVarName()));
 
         for (RelationProperty.RolePlayer rp: getRelationPlayers()) {
             Statement rolePattern = rp.getRole().orElse(null);
@@ -1098,7 +1100,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Override
     public RelationshipAtom rewriteWithRelationVariable(){
-        Statement newVar = new Statement(new Variable().asUserDefined());
+        StatementInstance newVar = new StatementInstance.StatementThing(new Variable().asUserDefined());
         Statement relVar = getPattern().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.type()))
                 .orElse(newVar);

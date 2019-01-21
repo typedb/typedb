@@ -26,48 +26,109 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.PlaysProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
+
+import static grakn.core.graql.internal.Schema.ImplicitType.KEY;
+import static grakn.core.graql.internal.Schema.ImplicitType.KEY_OWNER;
+import static grakn.core.graql.internal.Schema.ImplicitType.KEY_VALUE;
+import static grakn.core.graql.query.Graql.var;
 
 public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final HasAttributeTypeProperty property;
 
+    private final Statement attributeType;
+    private final Statement ownerRole;
+    private final Statement valueRole;
+    private final Statement relationOwner;
+    private final Statement relationValue;
+
     HasAttributeTypeExecutor(Variable var, HasAttributeTypeProperty property) {
         this.var = var;
         this.property = property;
+        this.attributeType = property.attributeType();
+
+        // TODO: this may the cause of issue #4664
+        Label resourceLabel = attributeType.getTypeLabel().orElseThrow(
+                () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType.var())
+        );
+
+        Statement role = Graql.type(Schema.MetaSchema.ROLE.getLabel().getValue());
+
+        // TODO: To fix issue #4664 (querying schema with variable attribute type), it's not enough to just remove the
+        //       exception handling above. We need to be able to restrict the direcitonality of the following ownerRole
+        //       and valueRole. For example, for keys, we restrict the role names to start with `key-`. However, we
+        //       cannot do this because the name of the variable attribute type is unknown. This means that we need to
+        //       change the data structure so that we have meta-super-roles for attribute-owners and attribute-values
+        Statement ownerRole = var().sub(role);
+        Statement valueRole = var().sub(role);
+        Statement relationType = var().sub(Graql.type(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()));
+
+        // If a key, limit only to the implicit key type
+        if (property.isKey()) {
+            ownerRole = ownerRole.type(KEY_OWNER.getLabel(resourceLabel).getValue());
+            valueRole = valueRole.type(KEY_VALUE.getLabel(resourceLabel).getValue());
+            relationType = relationType.type(KEY.getLabel(resourceLabel).getValue());
+        }
+
+        Statement relationOwner = relationType.relates(ownerRole);
+        Statement relationValue = relationType.relates(valueRole);
+
+        this.ownerRole = ownerRole;
+        this.valueRole = valueRole;
+        if (relationOwner == null) {
+            throw new NullPointerException("Null relationOwner");
+        }
+        this.relationOwner = relationOwner;
+        if (relationValue == null) {
+            throw new NullPointerException("Null relationValue");
+        }
+        this.relationValue = relationValue;
+
     }
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         Set<EquivalentFragmentSet> fragments = new HashSet<>();
 
-        PlaysProperty playsOwnerProperty = new PlaysProperty(property.ownerRole(), property.isKey());
+        PlaysProperty playsOwnerProperty = new PlaysProperty(ownerRole, property.isKey());
         PlaysExecutor playsOwnerExecutor = new PlaysExecutor(var, playsOwnerProperty);
 
         //TODO: Get this to use real constraints no just the required flag
-        PlaysProperty playsValueProperty = new PlaysProperty(property.valueRole(), false);
-        PlaysExecutor playsValueExecutor = new PlaysExecutor(property.attributeType().var(), playsValueProperty);
+        PlaysProperty playsValueProperty = new PlaysProperty(valueRole, false);
+        PlaysExecutor playsValueExecutor = new PlaysExecutor(attributeType.var(), playsValueProperty);
 
-        NeqProperty neqProperty = new NeqProperty(property.ownerRole());
-        NeqExecutor neqExecutor = new NeqExecutor(property.valueRole().var(), neqProperty);
+        NeqProperty neqProperty = new NeqProperty(ownerRole);
+        NeqExecutor neqExecutor = new NeqExecutor(valueRole.var(), neqProperty);
 
+        // Add fragments for HasAttributeType property
         fragments.addAll(playsOwnerExecutor.matchFragments());
         fragments.addAll(playsValueExecutor.matchFragments());
         fragments.addAll(neqExecutor.matchFragments());
+
+        // Add fragments for the implicit relationship property
+        // These implicit statements make sure that statement variable (owner) and the attribute type form a
+        // connected (non-disjoint) set of fragments for match execution
+        Stream.of(ownerRole, valueRole, relationOwner, relationValue)
+                .forEach(statement -> statement.properties()
+                        .forEach(p -> fragments.addAll(PropertyExecutor.create(statement.var(), p).matchFragments())));
 
         return ImmutableSet.copyOf(fragments);
     }
@@ -79,8 +140,8 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         Label label = property.attributeType().getTypeLabel().orElse(null);
 
         Variable predicateVar = new Variable();
-        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
-        ConceptId predicateId = schemaConcept != null ? schemaConcept.id() : null;
+        SchemaConcept attributeType = parent.tx().getSchemaConcept(label);
+        ConceptId predicateId = attributeType != null ? attributeType.id() : null;
         //isa part
         Statement resVar = new Statement(varName).has(Graql.type(label.getValue()));
         return HasAtom.create(resVar, predicateVar, predicateId, parent);

@@ -30,63 +30,62 @@ subSubRole3 sub subRole3;
 #Entities
 #simple vertical hierarchy
 
-baseEntity sub entity
-    has resource
-    plays baseRole1
-    plays baseRole2
-    plays baseRole3
+baseEntity sub entity,
+    has resource,
+    plays baseRole1,
+    plays baseRole2,
+    plays baseRole3,
     abstract;
 
 baseRoleEntity sub baseEntity;
 anotherBaseRoleEntity sub baseEntity;
 
-subRoleEntity sub baseRoleEntity
-    plays subRole1
-    plays anotherSubRole1
-    plays subRole2
-    plays anotherSubRole2
+subRoleEntity sub baseRoleEntity,
+    plays subRole1,
+    plays anotherSubRole1,
+    plays subRole2,
+    plays anotherSubRole2,
     plays subRole3;
 
-subSubRoleEntity sub subRoleEntity
-    plays subSubRole1
-    plays subSubRole2
+subSubRoleEntity sub subRoleEntity,
+    plays subSubRole1,
+    plays subSubRole2,
     plays subSubRole3;
 
-baseRelation sub relationship
-    abstract
+baseRelation sub relationship, abstract,
     has resource;
 
-binary sub baseRelation
-    relates baseRole1
-    relates baseRole2
-    relates subRole1
-    relates subRole2
-    relates anotherSubRole1
-    relates anotherSubRole2
-    relates subSubRole1
+binary sub baseRelation,
+    relates baseRole1,
+    relates baseRole2,
+    relates subRole1,
+    relates subRole2,
+    relates anotherSubRole1,
+    relates anotherSubRole2,
+    relates subSubRole1,
     relates subSubRole2;
 
-ternary sub baseRelation
-    relates baseRole1
-    relates baseRole2
-    relates baseRole3
-    relates subRole1
-    relates subRole2
-    relates subRole3
-    relates anotherSubRole1
-    relates anotherSubRole2
-    relates subSubRole1
-    relates subSubRole2
+ternary sub baseRelation,
+    relates baseRole1,
+    relates baseRole2,
+    relates baseRole3,
+    relates subRole1,
+    relates subRole2,
+    relates subRole3,
+    relates anotherSubRole1,
+    relates anotherSubRole2,
+    relates subSubRole1,
+    relates subSubRole2,
     relates subSubRole3;
 
 #Resources
 
-resource sub attribute datatype string
-    plays baseRole1
+resource sub attribute, datatype string,
+    plays baseRole1,
     plays baseRole2;
 
-resource-long sub attribute datatype long
-    plays baseRole1
+resource-long sub attribute, datatype long,
+    plays baseRole1,
     plays baseRole2;
 
 insert
@@ -124,6 +123,5 @@ $s isa subSubRoleEntity, has resource 's';
 (subSubRole1: $m, subSubRole2: $d, subSubRole3: $s) isa ternary;
 (subSubRole1: $m, subSubRole2: $m, subSubRole3: $s) isa ternary;
 
-$dummy isa resource-long == 0;
-$dummy2 isa resource-long == 1;
-
+$dummy 0 isa resource-long;
+$dummy2 1 isa resource-long;

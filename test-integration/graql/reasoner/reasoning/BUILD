@@ -62,12 +62,12 @@ checkstyle_test(
 )
 
 java_test(
-    name = "resource-attachment-it",
+    name = "attribute-attachment-it",
     size = "medium",
-    srcs = ["ResourceAttachmentIT.java"],
+    srcs = ["AttributeAttachmentIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.graql.reasoner.reasoning.ResourceAttachmentIT",
+    test_class = "grakn.core.graql.reasoner.reasoning.AttributeAttachmentIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -78,8 +78,8 @@ java_test(
 )
 
 checkstyle_test(
- name = "resource-attachment-it-checkstyle",
- target = ":resource-attachment-it",
+ name = "attribute-attachment-it-checkstyle",
+ target = ":attribute-attachment-it",
  config = "//config/checkstyle:checkstyle.xml",
  suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
  licenses = ["//config/checkstyle:licenses"],

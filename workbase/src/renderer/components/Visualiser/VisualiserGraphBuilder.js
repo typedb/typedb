@@ -1,3 +1,8 @@
+import {
+  relationshipTypesOutboundEdges,
+  ownerHasEdges,
+  computeSubConcepts,
+} from '@/components/shared/SharedUtils';
 import Style from './Style';
 import NodeSettings from './RightBar/SettingsTab/DisplaySettings';
 import QuerySettings from './RightBar/SettingsTab/QuerySettings';
@@ -171,6 +176,19 @@ async function computeAttributeEdges(attributes, thingIds) {
   }));
 }
 
+async function computeSchemaEdges(nodes) {
+  // Find nodes that are subconcepts of existing types - these nodes will only have isa edges
+  const subConceptEdges = (await computeSubConcepts(nodes)).edges;
+
+  // Draw all edges from relationships to roleplayers
+  const relEdges = await relationshipTypesOutboundEdges(nodes);
+
+  // Draw all edges from owners to attributes
+  const hasEdges = await ownerHasEdges(nodes);
+
+  return relEdges.concat(hasEdges, subConceptEdges);
+}
+
 async function constructEdges(result) {
   const conceptMaps = result.map(x => Array.from(x.map().values()));
 
@@ -181,6 +199,7 @@ async function constructEdges(result) {
 
     const attributes = map.filter(x => x.isAttribute());
     const relationships = map.filter(x => x.isRelationship());
+    const schemaConcepts = map.filter(x => x.isSchemaConcept());
 
     // Compute edges that connect things to their attributes
     const attributeEdges = await computeAttributeEdges(attributes, thingIds);
@@ -188,8 +207,11 @@ async function constructEdges(result) {
     const roleplayers = await relationshipsRolePlayers(relationships, false);
     // Compute edges that connect things to their role players
     const relationshipEdges = roleplayers.edges.filter(edge => thingIds.includes(edge.to));
-    // Combine attribute and relationship edges
-    return attributeEdges.concat(relationshipEdges).flatMap(x => x);
+
+    const schemaEdges = await computeSchemaEdges(schemaConcepts);
+
+    // Combine attribute, relationship, and schema edges
+    return attributeEdges.concat(relationshipEdges, schemaEdges).flatMap(x => x);
   }));
   return edges.flatMap(x => x);
 }

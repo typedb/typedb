@@ -37,7 +37,7 @@ checkstyle_test(
 
 java_library(
     name = "resource-pattern",
-    srcs = ["ResourcePattern.java"],
+    srcs = ["AttributePattern.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",

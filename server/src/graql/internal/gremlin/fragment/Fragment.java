@@ -26,8 +26,8 @@ import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
-import grakn.core.graql.query.pattern.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -205,7 +205,7 @@ public abstract class Fragment {
 
     /**
      * @param traversal the traversal to extend with this Fragment
-     * @param tx     the {@link TransactionImpl} to execute the traversal on
+     * @param tx     the transaction to execute the traversal on
      * @param vars
      */
     abstract GraphTraversal<Vertex, ? extends Element> applyTraversalInner(

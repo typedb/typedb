@@ -2,35 +2,35 @@ define
 
 #Entities
 
-baseEntity sub entity
+baseEntity sub entity,
     plays baseRole;
 
-baseRelation sub relationship
+baseRelation sub relationship,
     relates baseRole;
-subRelation sub baseRelation
+subRelation sub baseRelation,
     relates baseRole;
-subSubRelation sub subRelation
+subSubRelation sub subRelation,
     relates baseRole;
 
-derivedRelation sub relationship
+derivedRelation sub relationship,
     relates baseRole;
-directDerivedRelation sub derivedRelation
+directDerivedRelation sub derivedRelation,
     relates baseRole;
 
 #Rules
 
-relationRule sub rule
+relationRule sub rule,
     when {
         ($x, $y) isa subRelation;
-    }
+    },
     then {
         ($x, $y) isa derivedRelation;
     };
 
-directRelationRule sub rule
+directRelationRule sub rule,
     when {
         ($x, $y) isa! subRelation;
-    }
+    },
     then {
         ($x, $y) isa directDerivedRelation;
     };

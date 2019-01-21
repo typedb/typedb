@@ -35,11 +35,10 @@ import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.Statement;
-import grakn.core.graql.query.pattern.Variable;
-import grakn.core.graql.query.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 
 import javax.annotation.Nullable;
@@ -69,7 +68,7 @@ public abstract class IsaAtom extends IsaAtomBase {
 
     public static IsaAtom create(Variable var, Variable predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent) {
         Statement pattern = isDirect ?
-                new Statement(var).isaExplicit(new Statement(predicateVar)) :
+                new Statement(var).isaX(new Statement(predicateVar)) :
                 new Statement(var).isa(new Statement(predicateVar));
 
         return new AutoValue_IsaAtom(var, predicateId, predicateVar, pattern, parent);
@@ -77,7 +76,7 @@ public abstract class IsaAtom extends IsaAtomBase {
 
     public static IsaAtom create(Variable var, Variable predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent) {
         Statement pattern = isDirect ?
-                new Statement(var).isaExplicit(new Statement(predicateVar)) :
+                new Statement(var).isaX(new Statement(predicateVar)) :
                 new Statement(var).isa(new Statement(predicateVar));
 
         return new AutoValue_IsaAtom(var, type.id(), predicateVar, pattern, parent);
@@ -95,7 +94,9 @@ public abstract class IsaAtom extends IsaAtomBase {
     public IsaAtom toIsaAtom(){ return this; }
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass() { return isDirect()? IsaExplicitProperty.class : IsaProperty.class;}
+    public Class<? extends VarProperty> getVarPropertyClass() {
+        return IsaProperty.class;
+    }
 
     //NB: overriding as these require a derived property
     @Override
@@ -132,7 +133,7 @@ public abstract class IsaAtom extends IsaAtomBase {
         return getSchemaConcept() == null?
                 new Statement(getVarName()).isa(new Statement(getPredicateVariable())) :
                 isDirect()?
-                        new Statement(getVarName()).isaExplicit(getSchemaConcept().label().getValue()) :
+                        new Statement(getVarName()).isaX(getSchemaConcept().label().getValue()) :
                         new Statement(getVarName()).isa(getSchemaConcept().label().getValue()) ;
     }
 

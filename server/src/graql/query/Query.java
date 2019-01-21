@@ -63,17 +63,21 @@ public interface Query {
      */
     enum Char {
         EQUAL("="),
+        COLON(":"),
         SEMICOLON(";"),
         SPACE(" "),
         COMMA(","),
         COMMA_SPACE(", "),
         CURLY_OPEN("{"),
         CURLY_CLOSE("}"),
+        PARAN_OPEN("("),
+        PARAN_CLOSE(")"),
         SQUARE_OPEN("["),
         SQUARE_CLOSE("]"),
         QUOTE("\""),
         NEW_LINE("\n"),
         UNDERSCORE("_"),
+        $_("$_"),
         $("$");
 
         private final String character;
@@ -92,8 +96,17 @@ public interface Query {
         AND("and"),
         OR("or"),
         NOT("not"),
-        EQUAL("=");
-        // TODO: other predicates
+        EQ("="),
+        NEQ("!="),
+        EQV("=="),
+        NEQV("!=="),
+        GT(">"),
+        GTE(">="),
+        LT("<"),
+        LTE("<="),
+        CONTAINS("contains"), // TODO: remove duplicate in ComputeQuery.Param
+        LIKE("like");
+
 
         private final String operator;
 
@@ -105,6 +118,15 @@ public interface Query {
         public String toString() {
             return this.operator;
         }
+
+        public static Operator of(String value) {
+            for (Operator c : values()) {
+                if (c.operator.equals(value)) {
+                    return c;
+                }
+            }
+            return null;
+        }
     }
 
     enum Property {
@@ -115,8 +137,7 @@ public interface Query {
         ABSTRACT("abstract"),
         ISA("isa"),
         ISAX("isa!"),
-        LABEL("label"),
-        NEQ("!="),
+        TYPE("type"),
         PLAYS("plays"),
         REGEX("regex"),
         RELATES("relates"),
@@ -169,6 +190,31 @@ public interface Query {
         public static DataType of(String value) {
             for (DataType c : values()) {
                 if (c.type.equals(value)) {
+                    return c;
+                }
+            }
+            return null;
+        }
+    }
+
+    enum Literal {
+        TRUE("true"),
+        FALSE("false");
+
+        private final String literal;
+
+        Literal(String type) {
+            this.literal = type;
+        }
+
+        @Override
+        public String toString() {
+            return this.literal;
+        }
+
+        public static Literal of(String value) {
+            for (Literal c : values()) {
+                if (c.literal.equals(value)) {
                     return c;
                 }
             }
