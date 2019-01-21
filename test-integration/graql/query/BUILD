@@ -31,15 +31,6 @@ java_test(
     size = "medium"
 )
 
-checkstyle_test(
- name = "aggregate-query-it-checkstyle",
- target = ":aggregate-query-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "define-query-it",
     test_class = "grakn.core.graql.query.DefineQueryIT",
@@ -56,15 +47,6 @@ java_test(
     size = "medium"
 )
 
-checkstyle_test(
- name = "define-query-it-checkstyle",
- target = ":define-query-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "delete-query-it",
     test_class = "grakn.core.graql.query.DeleteQueryIT",
@@ -77,15 +59,6 @@ java_test(
         "//test-integration/util:graql-test-util",
     ],
     size = "medium"
-)
-
-checkstyle_test(
- name = "delete-query-it-checkstyle",
- target = ":delete-query-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -106,15 +79,6 @@ java_test(
     size = "medium"
 )
 
-checkstyle_test(
- name = "insert-query-it-checkstyle",
- target = ":insert-query-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "undefine-query-it",
     test_class = "grakn.core.graql.query.UndefineQueryIT",
@@ -132,15 +96,6 @@ java_test(
     size = "medium"
 )
 
-checkstyle_test(
- name = "undefine-query-it-checkstyle",
- target = ":undefine-query-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "query-builder-it",
     test_class = "grakn.core.graql.query.QueryBuilderIT",
@@ -152,15 +107,6 @@ java_test(
         "//test-integration/util:graql-test-util",
     ],
     size = "medium"
-)
-
-checkstyle_test(
- name = "query-builder-it-checkstyle",
- target = ":query-builder-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -175,15 +121,6 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
     size = "medium"
-)
-
-checkstyle_test(
- name = "query-admin-it-checkstyle",
- target = ":query-admin-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -202,15 +139,6 @@ java_test(
     size = "medium"
 )
 
-checkstyle_test(
- name = "query-error-it-checkstyle",
- target = ":query-error-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "query-planner-it",
     test_class = "grakn.core.graql.query.QueryPlannerIT",
@@ -227,10 +155,16 @@ java_test(
 )
 
 checkstyle_test(
- name = "query-planner-it-checkstyle",
- target = ":query-planner-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":aggregate-query-it",
+        ":define-query-it",
+        ":delete-query-it",
+        ":insert-query-it",
+        ":undefine-query-it",
+        ":query-builder-it",
+        ":query-admin-it",
+        ":query-error-it",
+        ":query-planner-it"
+    ]
 )

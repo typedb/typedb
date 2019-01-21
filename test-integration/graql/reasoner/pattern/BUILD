@@ -6,15 +6,6 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
 )
 
-checkstyle_test(
- name = "query-pattern-checkstyle",
- target = ":query-pattern",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_library(
     name = "relation-pattern",
     srcs = ["RelationPattern.java"],
@@ -26,15 +17,6 @@ java_library(
     ],
 )
 
-checkstyle_test(
- name = "relation-pattern-checkstyle",
- target = ":relation-pattern",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_library(
     name = "resource-pattern",
     srcs = ["AttributePattern.java"],
@@ -44,15 +26,6 @@ java_library(
         "//server",
         "//test-integration/graql/reasoner/pattern:query-pattern",
     ],
-)
-
-checkstyle_test(
- name = "resource-pattern-checkstyle",
- target = ":resource-pattern",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_library(
@@ -67,10 +40,11 @@ java_library(
 )
 
 checkstyle_test(
- name = "type-pattern-checkstyle",
- target = ":type-pattern",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":query-pattern",
+        ":relation-pattern",
+        ":resource-pattern",
+        ":type-pattern"
+    ]
 )

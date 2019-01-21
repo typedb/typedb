@@ -14,15 +14,6 @@ java_test(
     data = ["//:distribution"]
 )
 
-checkstyle_test(
- name = "grakn-graql-commands-e2e-checkstyle",
- target = ":grakn-graql-commands-e2e",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "grakn-graql-commands-with-a-running-grakn-e2e",
     test_class = "grakn.core.distribution.GraknGraqlCommands_WithARunningGraknE2E",
@@ -38,10 +29,9 @@ java_test(
 )
 
 checkstyle_test(
- name = "grakn-graql-commands-with-a-running-grakn-e2e-checkstyle",
- target = ":grakn-graql-commands-with-a-running-grakn-e2e",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":grakn-graql-commands-e2e",
+        ":grakn-graql-commands-with-a-running-grakn-e2e"
+    ]
 )

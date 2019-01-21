@@ -9,12 +9,12 @@ java_test(
 )
 
 checkstyle_test(
- name = "eq-predicate-test-checkstyle",
- target = ":eq-predicate-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":eq-predicate-test",
+        ":regex-predicate-test",
+        ":comparator-predicate-test"
+    ]
 )
 
 java_test(
@@ -25,15 +25,6 @@ java_test(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//server"],
     size = "small"
-)
-
-checkstyle_test(
- name = "regex-predicate-test-checkstyle",
- target = ":regex-predicate-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -47,12 +38,4 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
     size = "small"
-)
-
-checkstyle_test(
- name = "comparator-predicate-test-checkstyle",
- target = ":comparator-predicate-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
 )

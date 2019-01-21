@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
      name = "grakn-config-test",
      test_class = "grakn.core.common.config.test.ConfigTest",
@@ -7,11 +9,9 @@ java_test(
      size = "small"
  )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "grakn-config-test-checkstyle",
- target = ":grakn-config-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
+    name = "checkstyle",
+    targets = [
+        ":grakn-config-test"
+    ],
 )

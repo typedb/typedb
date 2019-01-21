@@ -14,12 +14,11 @@ java_test(
 )
 
 checkstyle_test(
- name = "label-fragment-set-test-checkstyle",
- target = ":label-fragment-set-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":label-fragment-set-test",
+        ":roleplayer-fragment-set-test",
+    ],
 )
 
 java_test(
@@ -32,13 +31,4 @@ java_test(
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
         "//server"],
     size = "small"
-)
-
-checkstyle_test(
- name = "roleplayer-fragment-set-test-checkstyle",
- target = ":roleplayer-fragment-set-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
