@@ -333,8 +333,8 @@ jobs:
       - run: yum localinstall -y bazel-bin/server/distribution-rpm.rpm
       - run: bazel build --jobs 1 //console:distribution-rpm
       - run: yum localinstall -y bazel-bin/console/distribution-rpm.rpm
-      - run: grakn server start
-      - run: grakn server stop
+      - run: nohup grakn server start
+      - run: nohup grakn server stop
 
   ci-summary:
     machine: true
