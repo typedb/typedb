@@ -453,30 +453,33 @@ jobs:
           # git push https://sorsaffari:or9PMF8oo0Ns@github.com/sorsaffari/ci-web-dev.git master
 workflows:
   version: 2
-  ci-pipeline-release:
+  ci-pipeline-pr:
     jobs:
       - tests
-      - distributions:
+      - client-java:
           requires:
             - tests
-      # - dist-mac:
-      #     requires:
-      #       - distributions
+      - distributions:
+          requires:
+            - client-java
       - dist-ubuntu:
           requires:
             - distributions
-      # - dist-centos:
-      #     requires:
-      #       - distributions
-      # - dist-fedora:
-      #     requires:
-      #       - distributions
+  ci-pipeline-release:
+    jobs:
+      - tests
+      - client-java:
+          requires:
+            - tests
+      - distributions:
+          requires:
+            - client-java
+      - dist-ubuntu:
+          requires:
+            - distributions
       - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit:
           requires:
-            # - dist-mac
             - dist-ubuntu
-            # - dist-centos
-            # - dist-fedora
       - approve-deploy-github:
           type: approval
           requires:
@@ -484,48 +487,9 @@ workflows:
       - deploy-github:
           requires:
             - approve-deploy-github
-      - approve-deploy-all:
-          type: approval
-          requires:
-            - deploy-github
-      - deploy-maven:
-          requires:
-            - approve-deploy-all
-      - deploy-npm:
-          requires:
-            - approve-deploy-all
-      - deploy-pypi:
-          requires:
-            - approve-deploy-all
-      - deploy-deb:
-          requires:
-            - approve-deploy-all
-      - deploy-rpm:
-          requires:
-            - approve-deploy-all
-      - deploy-brew:
-          requires:
-            - approve-deploy-all
-      - deploy-workbase-mac:
-          requires:
-            - approve-deploy-all
-      - deploy-workbase-linux:
-          requires:
-            - approve-deploy-all
-      - deploy-workbase-windows:
-          requires:
-            - approve-deploy-all
       - docs-create-pr-to-partially-merge-dev-to-master:
           requires:
-            - deploy-maven
-            - deploy-npm
-            - deploy-pypi
-            - deploy-deb
-            - deploy-rpm
-            - deploy-brew
-            - deploy-workbase-mac
-            - deploy-workbase-linux
-            - deploy-workbase-windows
+            - deploy-github
       - is-docs-merged:
           type: approval
           requires:
@@ -533,138 +497,3 @@ workflows:
       - docs-deploy-to-production:
           requires:
             - is-docs-merged
-  # ci-pipeline-release:
-  #   jobs:
-  #     - tests
-  #     - build:
-  #         requires:
-  #           - tests
-  #     - client-java:
-  #         requires:
-  #           - tests
-  #     - client-nodejs:
-  #         requires:
-  #           - tests
-  #     - client-python:
-  #         requires:
-  #           - tests
-  #     - common:
-  #         requires:
-  #           - tests
-  #     - console:
-  #         requires:
-  #           - tests
-  #     - graql:
-  #         requires:
-  #           - tests
-  #     - server:
-  #         requires:
-  #           - tests
-  #     - workbase:
-  #         requires:
-  #           - tests
-  #     - test-integration:
-  #         requires:
-  #           - tests
-  #     - test-integration-reasoner:
-  #         requires:
-  #           - tests
-  #     - test-integration-reasoner-general:
-  #         requires:
-  #           - tests
-  #     - test-integration-reasoner-components:
-  #         requires:
-  #           - tests
-  #     - test-integration-analytics:
-  #         requires:
-  #           - tests
-  #     - test-end-to-end:
-  #         requires:
-  #           - tests
-  #     - distributions:
-  #         requires:
-  #           - build
-  #           - client-java
-  #           - client-nodejs
-  #           - client-python
-  #           - common
-  #           - console
-  #           - graql
-  #           - server
-  #           - workbase
-  #           - test-integration
-  #           - test-integration-reasoner
-  #           - test-integration-reasoner-general
-  #           - test-integration-reasoner-components
-  #           - test-integration-analytics
-  #           - test-end-to-end
-  #     - dist-mac:
-  #         requires:
-  #           - distributions
-  #     - dist-ubuntu:
-  #         requires:
-  #           - distributions
-  #     # - dist-centos:
-  #     #     requires:
-  #     #       - distributions
-  #     - dist-fedora:
-  #         requires:
-  #           - distributions
-  #     - approve-deploy-github:
-  #         type: approval
-  #         requires:
-  #           - dist-mac
-  #           - dist-ubuntu
-  #           - dist-fedora
-  #     - deploy-github:
-  #         requires:
-  #           - approve-deploy-github
-  #     - approve-deploy-all:
-  #         type: approval
-  #         requires:
-  #           - deploy-github
-  #     - deploy-maven:
-  #         requires:
-  #           - approve-deploy-all
-  #     - deploy-npm:
-  #         requires:
-  #           - approve-deploy-all
-  #     - deploy-pypi:
-  #         requires:
-  #           - approve-deploy-all
-  #     - deploy-deb:
-  #         requires:
-  #           - approve-deploy-all
-  #     - deploy-rpm:
-  #         requires:
-  #           - approve-deploy-all
-  #     - deploy-brew:
-  #         requires:
-  #           - approve-deploy-all
-  #     - deploy-workbase-mac:
-  #         requires:
-  #           - approve-deploy-all
-  #     - deploy-workbase-linux:
-  #         requires:
-  #           - approve-deploy-all
-  #     - deploy-workbase-windows:
-  #         requires:
-  #           - approve-deploy-all
-  #     - git-tag-release:
-  #         requires:
-  #           - deploy-maven
-  #           - deploy-npm
-  #           - deploy-pypi
-  #           - deploy-deb
-  #           - deploy-rpm
-  #           - deploy-brew
-  #           - deploy-workbase-mac
-  #           - deploy-workbase-linux
-  #           - deploy-workbase-windows
-  #     - approve-docs-merge:
-  #         type: approval
-  #         requires:
-  #           - git-tag-release
-  #     - docs-merge-dev-to-master:
-  #         requires:
-  #           - approve-docs-merge
