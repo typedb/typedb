@@ -276,11 +276,11 @@ jobs:
       - run: add-apt-repository ppa:openjdk-r/ppa
       - run: apt-get update
       - run: apt-get install -y sudo curl unzip git python gcc python-dev build-essential openjdk-8-jdk
-      
+
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
-      
+
       - run: bazel build --jobs 1 //:distribution-deb
       - run: dpkg -i bazel-bin/distribution-deb.deb
       - run: bazel build --jobs 1 //server:distribution-deb
@@ -336,12 +336,24 @@ jobs:
       - run: nohup grakn server start
       - run: nohup grakn server stop
 
-  ci-summary:
+  update-grakn-dependency-on-docs-dev-to-match-latest-master-commit:
     machine: true
     steps:
-      - run:
-          name: Displaying tests and benchmark results
-          command: echo 'see tests and benchmark results here - https://source.cloud.google.com/results/invocations/c4456b19-e749-4644-a0ae-c71cf1dc5871/targets.'
+      # - grabl-is-the-github-user
+      - run: |
+          echo "hellow"
+          # # get the last commit on master of grakn
+          # new_commit=$(git ls-remote https://github.com/sorsaffari/ci-grakn.git HEAD | awk '{ print $1}')
+          # git clone https://github.com/sorsaffari/ci-docs.git
+          # cd ci-docs
+          # git checkout development
+          # # update the content of WORKSPACE file to contain the new_commit for grakn dependency
+          # workspace=$(cat WORKSPACE)
+          # new_workspace=$(sed -e "s/commit = .*# grakn-dependency/commit = '$new_commit' \# grakn-dependency/g" \<<< "$workspace")
+          # echo "$new_workspace" > WORKSPACE
+          # git add .
+          # git commit -m "set grakn dependency to latest master commit"
+          # git push https://sorsaffari:or9PMF8oo0Ns@github.com/sorsaffari/ci-docs.git development
   approve-release:
     machine: true
     steps:
@@ -402,14 +414,43 @@ jobs:
     machine: true
     steps:
       - run: echo deploy-workbase-windows succeeded.
-  git-tag-release:
+  docs-create-pr-to-partially-merge-dev-to-master:
     machine: true
     steps:
-      - run: echo git-tag-release succeeded.
-  docs-merge-dev-to-master:
+      # - grabl-is-the-github-user
+      - run: |
+          echo "hello"
+          # git clone https://github.com/sorsaffari/ci-docs.git
+          # cd ci-docs
+          # git checkout -b auto-merge-by-grabl
+          # # excluding certain files from merge > partial merge
+          # # see: https://github.com/RWTH-EBC/AixLib/wiki/How-to:-Exclude-files-or-folder-from-merge
+          # git merge --no-commit --no-ff origin/development ## merge without commiting
+          # git reset HEAD -- ./client.txt ## unstage ./client.txt
+          # git stash save --keep-index --include-untracked ## discard unstage changes
+          # git commit -m "partially merge development to master"
+          # git push https://sorsaffari:or9PMF8oo0Ns@github.com/sorsaffari/ci-docs.git auto-merge-by-grabl
+          # # using `hub` to make a PR for the partial merge just made
+          # # see: https://hub.github.com/hub-pull-request.1.html
+          # wget https://github.com/github/hub/releases/download/v2.7.0/hub-linux-amd64-2.7.0.tgz
+          # tar -xvzf hub-linux-amd64-2.7.0.tgz
+          # hub-linux-amd64-2.7.0/bin/hub pull-request -m "Grabl - merging development to master with the exception of client files
+          # This is an automated PR made by Grabl to merge development to master. The merge ignores changes made to the client files. Make sure to review all changes before approving. Docs on master must by in sync with the latest RELEASE of Grakn and its Clients."
+  docs-deploy-to-production:
     machine: true
     steps:
-      - run: echo docs-merge-dev-to-master succeeded.
+      # - grabl-is-the-github-user
+      - run: |
+          echo "hello"
+          # # --recursive clones web-dev as well as the docs submodule
+          # git clone --recursive git@github.com:sorsaffari/ci-web-dev.git
+          # cd ci-web-dev
+          # cd ci-docs
+          # git pull origin master
+          # cd ../
+          # git add .
+          # git commit -m "update docs submodule"
+          # git push https://sorsaffari:or9PMF8oo0Ns@github.com/sorsaffari/ci-web-dev.git master
 workflows:
   version: 2
   ci-pipeline-release:
@@ -430,12 +471,15 @@ workflows:
       - dist-fedora:
           requires:
             - distributions
-      - approve-deploy-github:
-          type: approval
+      - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit:
           requires:
             - dist-mac
             - dist-ubuntu
             - dist-fedora
+      - approve-deploy-github:
+          type: approval
+          requires:
+            - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit
       - deploy-github:
           requires:
             - approve-deploy-github
@@ -470,7 +514,7 @@ workflows:
       - deploy-workbase-windows:
           requires:
             - approve-deploy-all
-      - git-tag-release:
+      - docs-create-pr-to-partially-merge-dev-to-master:
           requires:
             - deploy-maven
             - deploy-npm
@@ -481,14 +525,13 @@ workflows:
             - deploy-workbase-mac
             - deploy-workbase-linux
             - deploy-workbase-windows
-      - approve-docs-merge:
+      - is-docs-merged:
           type: approval
           requires:
-            - git-tag-release
-      - docs-merge-dev-to-master:
+            - docs-create-pr-to-partially-merge-dev-to-master
+      - docs-deploy-to-production:
           requires:
-            - approve-docs-merge
-
+            - is-docs-merged
   # ci-pipeline-release:
   #   jobs:
   #     - tests
