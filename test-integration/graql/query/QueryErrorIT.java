@@ -37,6 +37,7 @@ import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.exception.GraqlException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -141,7 +142,7 @@ public class QueryErrorIT {
 
     @Test
     public void testErrorMultipleIsa() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage(allOf(
                 containsString("abc"), containsString("isa"), containsString("person"), containsString("has-cast")
         ));

@@ -93,8 +93,9 @@ java_test(
     test_class = "grakn.core.graql.query.InsertQueryIT",
     srcs = ["InsertQueryIT.java"],
     deps = [
-        "//common",
-        "//server",
+        "//common:common",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -191,8 +192,9 @@ java_test(
     test_class = "grakn.core.graql.query.QueryErrorIT",
     srcs = ["QueryErrorIT.java"],
     deps = [
-        "//common",
-        "//server",
+        "//common:common",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
 
