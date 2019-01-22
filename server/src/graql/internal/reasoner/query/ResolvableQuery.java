@@ -37,22 +37,28 @@ import javax.annotation.CheckReturnValue;
 public interface ResolvableQuery extends ReasonerQuery {
 
     @CheckReturnValue
+    ResolvableQuery copy();
+
+    @CheckReturnValue
     Stream<Atom> selectAtoms();
 
     /**
      * @param sub substitution to be inserted into the query
      * @return corresponding query with additional substitution
      */
+    @CheckReturnValue
     ResolvableQuery withSubstitution(ConceptMap sub);
 
     /**
      * @return corresponding positive query (with neq predicates removed)
      */
+    @CheckReturnValue
     ResolvableQuery positive();
 
     /**
      * @return corresponding reasoner query with inferred types
      */
+    @CheckReturnValue
     ResolvableQuery inferTypes();
 
     @CheckReturnValue
@@ -79,9 +85,15 @@ public interface ResolvableQuery extends ReasonerQuery {
     @CheckReturnValue
     Stream<ConceptMap> resolve();
 
+    /**
+     *
+     * @param subGoals already visited subgoals
+     * @param cache query cache
+     * @param reiterate true if reiteration should be performed
+     * @return stream of resolved answers
+     */
     @CheckReturnValue
     Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache, boolean reiterate);
-
 
     /**
      * @param sub partial substitution

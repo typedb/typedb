@@ -134,8 +134,12 @@ public class CompositeQuery implements ResolvableQuery {
     }
 
     @Override
-    public ReasonerQuery copy() {
-        return null;
+    public ResolvableQuery copy() {
+        return new CompositeQuery(
+                getConjunctiveQuery().copy(),
+                getComplementQueries().stream().map(ResolvableQuery::copy).collect(Collectors.toSet()),
+                this.tx()
+        );
     }
 
     @Override

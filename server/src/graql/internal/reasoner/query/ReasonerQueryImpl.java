@@ -169,7 +169,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     @Override
-    public ReasonerQuery copy() {
+    public ReasonerQueryImpl copy() {
         return new ReasonerQueryImpl(this);
     }
 

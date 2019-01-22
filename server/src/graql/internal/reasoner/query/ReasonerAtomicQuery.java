@@ -92,7 +92,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
+    public ReasonerAtomicQuery copy(){ return new ReasonerAtomicQuery(this);}
 
     @Override
     public ReasonerAtomicQuery withSubstitution(ConceptMap sub){

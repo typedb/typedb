@@ -40,9 +40,6 @@ import java.util.stream.Stream;
  */
 public interface ReasonerQuery{
 
-    @CheckReturnValue
-    ReasonerQuery copy();
-
     /**
      * @param q query to combine
      * @return a query formed as conjunction of this and provided query

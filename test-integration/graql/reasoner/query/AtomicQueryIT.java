@@ -205,7 +205,7 @@ public class AtomicQueryIT {
         String patternString = "{ ($x, $y) isa is-located-in; };";
         Conjunction<Statement> pattern = conjunction(patternString);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, tx);
-        ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
+        ReasonerAtomicQuery copy = atomicQuery.copy();
         assertEquals(atomicQuery, copy);
         assertEquals(atomicQuery.hashCode(), copy.hashCode());
         tx.close();
