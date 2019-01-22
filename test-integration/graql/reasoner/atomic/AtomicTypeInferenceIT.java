@@ -380,7 +380,7 @@ public class AtomicTypeInferenceIT {
             assertEquals(possibleTypes, relationshipTypes);
             assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
         } else {
-            GraqlTestUtil.assertCollectionsEqual(possibleTypes, relationshipTypes);
+            GraqlTestUtil.assertCollectionsNonTriviallyEqual(possibleTypes, relationshipTypes);
             assertEquals(atom.getSchemaConcept(), null);
         }
 
@@ -401,8 +401,8 @@ public class AtomicTypeInferenceIT {
             assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
             assertEquals(subbedAtom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
         } else {
-            GraqlTestUtil.assertCollectionsEqual(possibleTypes, relationshipTypes);
-            GraqlTestUtil.assertCollectionsEqual(relationshipTypes, subbedRelationshipTypes);
+            GraqlTestUtil.assertCollectionsNonTriviallyEqual(possibleTypes, relationshipTypes);
+            GraqlTestUtil.assertCollectionsNonTriviallyEqual(relationshipTypes, subbedRelationshipTypes);
 
             assertEquals(atom.getSchemaConcept(), null);
             assertEquals(subbedAtom.getSchemaConcept(), null);
@@ -416,7 +416,7 @@ public class AtomicTypeInferenceIT {
         List<ConceptMap> typedAnswers = typedAnswers(possibleTypes, pattern, tx);
         List<ConceptMap> unTypedAnswers = tx.execute(Graql.match(Graql.parsePattern(pattern)).get());
         assertEquals(typedAnswers.size(), unTypedAnswers.size());
-        GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
+        GraqlTestUtil.assertCollectionsNonTriviallyEqual(typedAnswers, unTypedAnswers);
     }
 
     private List<ConceptMap> typedAnswers(List<SchemaConcept> possibleTypes, String pattern, TransactionOLTP tx){

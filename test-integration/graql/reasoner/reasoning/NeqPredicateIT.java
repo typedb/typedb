@@ -29,7 +29,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -51,7 +51,7 @@ public class NeqPredicateIT {
 
                 List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
                 List<ConceptMap> exact = tx.execute(Graql.<GetQuery>parse("match $s isa state, has name 's2'; get;"));
-                assertCollectionsEqual(exact, answers);
+                assertCollectionsNonTriviallyEqual(exact, answers);
             }
         }
     }
@@ -80,7 +80,7 @@ public class NeqPredicateIT {
 
                 List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
                 List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(explicitString));
-                assertCollectionsEqual(answers, answers2);
+                assertCollectionsNonTriviallyEqual(answers, answers2);
             }
         }
     }
@@ -125,7 +125,7 @@ public class NeqPredicateIT {
                 List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString + "get;"));
                 List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(explicitString + "get;"), false);
                 assertTrue(baseAnswers.containsAll(answers));
-                assertCollectionsEqual(answers, answers2);
+                assertCollectionsNonTriviallyEqual(answers, answers2);
             }
         }
     }
@@ -170,7 +170,7 @@ public class NeqPredicateIT {
 
                 List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString + "get;"));
                 List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(explicitString + "get;"), false);
-                assertCollectionsEqual(answers, answers2);
+                assertCollectionsNonTriviallyEqual(answers, answers2);
             }
         }
     }

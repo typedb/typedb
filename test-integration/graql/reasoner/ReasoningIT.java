@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
 import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;
-import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
@@ -160,7 +160,7 @@ public class ReasoningIT {
                 instances.forEach(attribute -> assertThat(attribute.owners().collect(toSet()), empty()));
 
                 assertThat(answers, empty());
-                assertCollectionsEqual(implicitAnswers, answers);
+                assertCollectionsNonTriviallyEqual(implicitAnswers, answers);
             }
         }
     }
@@ -385,7 +385,7 @@ public class ReasoningIT {
                 for (int i = 0; i < 5; i++) {
                     List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
                     assertEquals(6, answers.size());
-                    assertCollectionsEqual(oldAnswers, answers);
+                    assertCollectionsNonTriviallyEqual(oldAnswers, answers);
                 }
             }
         }
@@ -586,7 +586,7 @@ public class ReasoningIT {
                         .map(ans -> ans.project(Sets.newHashSet(new Variable("r"))))
                         .collect(Collectors.toSet());
 
-                assertCollectionsEqual("Rules are not matched correctly!", variants, inferredRelations);
+                assertCollectionsNonTriviallyEqual("Rules are not matched correctly!", variants, inferredRelations);
 
                 List<ConceptMap> derivedRPTriples = tx.execute(Graql.<GetQuery>parse("match (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;"));
                 assertEquals("Rule body is not rewritten correctly!", 2, derivedRPTriples.size());
