@@ -157,7 +157,7 @@ public abstract class StatementInstance extends Statement {
 
         @CheckReturnValue
         StatementThing addProperty(VarProperty property) {
-            validateNonUniqueOrThrow(property);
+            validateNoConflictOrThrow(property);
             LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties());
             newProperties.add(property);
             return new StatementThing(this.var(), newProperties);
@@ -264,7 +264,7 @@ public abstract class StatementInstance extends Statement {
 
         @CheckReturnValue
         StatementRelation addProperty(VarProperty property) {
-            validateNonUniqueOrThrow(property);
+            validateNoConflictOrThrow(property);
             LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties());
             newProperties.add(property);
             return new StatementRelation(this.var(), newProperties);
@@ -306,7 +306,7 @@ public abstract class StatementInstance extends Statement {
 
         @CheckReturnValue
         StatementAttribute addProperty(VarProperty property) {
-            validateNonUniqueOrThrow(property);
+            validateNoConflictOrThrow(property);
             LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties());
             newProperties.add(property);
             return new StatementAttribute(this.var(), newProperties);

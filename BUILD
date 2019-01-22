@@ -25,9 +25,9 @@ load("@graknlabs_bazel_distribution//deb/deployment:rules.bzl", "deploy_deb")
 
 py_binary(
     name = "deploy-github-zip",
-    srcs = ["@graknlabs_bazel_distribution//github:deployment.py"],
+    srcs = ["@graknlabs_bazel_distribution//github:deploy.py"],
     data = [":distribution", ":VERSION", ":deployment.properties", "@ghr_osx_zip//file:file", "@ghr_linux_tar//file:file"],
-    main = "deployment.py"
+    main = "deploy.py"
 )
 
 

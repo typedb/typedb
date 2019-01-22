@@ -613,8 +613,8 @@ public class TransactionOLTP implements Transaction {
         //NB: this will cache also non-committed rules
         if (rule.then() != null) {
             rule.then().statements().stream()
-                    .flatMap(v -> v.getTypeLabels().stream())
-                    .map(vl -> this.<SchemaConcept>getSchemaConcept(vl))
+                    .flatMap(v -> v.getTypes().stream())
+                    .map(type -> this.<SchemaConcept>getSchemaConcept(Label.of(type)))
                     .filter(Objects::nonNull)
                     .filter(Concept::isType)
                     .forEach(type -> ruleCache.updateRules(type, rule));

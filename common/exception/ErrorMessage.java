@@ -160,7 +160,6 @@ public enum ErrorMessage {
     LABEL_NOT_FOUND("label '%s' not found"),
     NOT_A_ROLE_TYPE("'%s' is not a role type. perhaps you meant 'isa %s'?"),
     NOT_A_RELATION_TYPE("'%s' is not a relation type. perhaps you forgot to separate your statements with a ';'?"),
-    CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'"),
     NON_POSITIVE_LIMIT("limit %s should be positive"),
     NEGATIVE_OFFSET("offset %s should be non-negative"),
     INVALID_VALUE("unsupported attribute value type %s"),
@@ -168,8 +167,6 @@ public enum ErrorMessage {
     AGGREGATE_ARGUMENT_NUM("aggregate '%s' takes %s arguments, but got %s"),
     UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
 
-    VARIABLE_NOT_IN_QUERY("the variable %s is not in the query"),
-    NO_PATTERNS("no patterns have been provided. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
     MULTIPLE_TX("a graph has been specified twice for this query"),
 

@@ -36,16 +36,15 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.StatementInstance;
-import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.exception.GraqlException;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -64,13 +63,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.common.exception.ErrorMessage.NO_PATTERNS;
 import static grakn.core.graql.internal.Schema.MetaSchema.ENTITY;
 import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
+import static graql.exception.ErrorMessage.NO_PATTERNS;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -257,7 +256,7 @@ public class InsertQueryIT {
 
     @Test
     public void testErrorWhenInsertWithMultipleIds() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage(allOf(containsString("id"), containsString("123"), containsString("456")));
         tx.execute(Graql.insert(var().id("123").id("456").isa("movie")));
     }
@@ -550,7 +549,7 @@ public class InsertQueryIT {
 
     @Test
     public void whenMatchInsertingAnEmptyPattern_Throw() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
         tx.execute(Graql.match(var()).insert(Collections.EMPTY_SET));
     }
@@ -567,7 +566,7 @@ public class InsertQueryIT {
 
     @Test
     public void whenInsertingAnEmptyPattern_Throw() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
         tx.execute(Graql.insert(Collections.EMPTY_SET));
     }

@@ -23,6 +23,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.statement.Variable;
+import graql.exception.GraqlException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -50,8 +51,8 @@ public class ConceptMapTest {
     public void whenGettingAConceptThatIsNotInTheAnswer_Throw() {
         Variable varNotInAnswer = new Variable("y");
 
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.varNotInQuery(varNotInAnswer).getMessage());
+        exception.expect(GraqlException.class);
+        exception.expectMessage(GraqlException.varNotInQuery(varNotInAnswer.toString()).getMessage());
 
         answer.get(varNotInAnswer);
     }

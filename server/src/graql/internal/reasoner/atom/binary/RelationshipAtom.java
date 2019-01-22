@@ -65,12 +65,12 @@ import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.StatementInstance;
-import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.StatementInstance;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.RelationshipTypeImpl;
 
@@ -121,9 +121,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 relationPlayers.stream()
                         .map(RelationProperty.RolePlayer::getRole)
                         .flatMap(CommonUtil::optionalToStream)
-                        .map(Statement::getTypeLabel)
+                        .map(Statement::getType)
                         .flatMap(CommonUtil::optionalToStream)
-                        .iterator()
+                        .map(Label::of).iterator()
         ).build();
         return new AutoValue_RelationshipAtom(pattern.var(), pattern, parent, predicateVar, predicateId, relationPlayers, roleLabels);
     }
@@ -397,14 +397,14 @@ public abstract class RelationshipAtom extends IsaAtomBase {
             if (role == null){
                 errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
             } else {
-                Label roleLabel = role.getTypeLabel().orElse(null);
+                String roleLabel = role.getType().orElse(null);
                 if (roleLabel == null){
                     errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
                 } else {
-                    if (Schema.MetaSchema.isMetaLabel(roleLabel)) {
+                    if (Schema.MetaSchema.isMetaLabel(Label.of(roleLabel))) {
                         errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
                     }
-                    Role roleType = tx().getRole(roleLabel.getValue());
+                    Role roleType = tx().getRole(roleLabel);
                     if (roleType != null && roleType.isImplicit()) {
                         errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE.getMessage(rule.then(), rule.label()));
                     }
@@ -457,10 +457,10 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .map(RelationProperty.RolePlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
                 .filter(var -> var.var().isUserDefinedName())
-                .filter(vp -> vp.getTypeLabel().isPresent())
+                .filter(vp -> vp.getType().isPresent())
                 .map(vp -> {
-                    Label label = vp.getTypeLabel().orElse(null);
-                    return IdPredicate.create(vp.var(), tx().getRole(label.getValue()).id(), getParentQuery());
+                    String label = vp.getType().orElse(null);
+                    return IdPredicate.create(vp.var(), tx().getRole(label).id(), getParentQuery());
                 });
     }
 
@@ -538,9 +538,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(Statement::getTypeLabel)
+                .map(Statement::getType)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(graph::<Role>getSchemaConcept);
+                .map(label -> graph.getSchemaConcept(Label.of(label)));
     }
 
     @Override
@@ -704,7 +704,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .map(RelationProperty.RolePlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
                 .filter(p -> p.var().isUserDefinedName())
-                .filter(p -> !p.getTypeLabel().isPresent())
+                .filter(p -> !p.getType().isPresent())
                 .map(statement -> statement.var())
                 .collect(Collectors.toSet());
     }
@@ -717,9 +717,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                         .map(RelationProperty.RolePlayer::getRole)
                         .flatMap(CommonUtil::optionalToStream)
                         .filter(vp -> vp.var().isUserDefinedName())
-                        .map(vp -> new Pair<>(vp.var(), vp.getTypeLabel().orElse(null)))
+                        .map(vp -> new Pair<>(vp.var(), vp.getType().orElse(null)))
                         .filter(p -> Objects.nonNull(p.getValue()))
-                        .map(p -> IdPredicate.create(p.getKey(), p.getValue(), getParentQuery()))
+                        .map(p -> IdPredicate.create(p.getKey(), Label.of(p.getValue()), getParentQuery()))
         );
     }
 
@@ -746,9 +746,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
             Variable varName = rp.getPlayer().var();
             Statement rolePattern = rp.getRole().orElse(null);
             if (rolePattern != null) {
-                Label roleLabel = rolePattern.getTypeLabel().orElse(null);
+                String roleLabel = rolePattern.getType().orElse(null);
                 //allocate if variable role or if label non meta
-                if (roleLabel == null || !Schema.MetaSchema.isMetaLabel(roleLabel)) {
+                if (roleLabel == null || !Schema.MetaSchema.isMetaLabel(Label.of(roleLabel))) {
                     inferredRelationPlayers.add(new RelationProperty.RolePlayer(rolePattern, new Statement(varName)));
                     allocatedRelationPlayers.add(rp);
                 }
@@ -823,8 +823,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
             Statement rolePattern = c.getRole().orElse(null);
             if (rolePattern != null) {
                 //try directly
-                Label typeLabel = rolePattern.getTypeLabel().orElse(null);
-                Role role = typeLabel != null ? graph.getRole(typeLabel.getValue()) : null;
+                String typeLabel = rolePattern.getType().orElse(null);
+                Role role = typeLabel != null ? graph.getRole(typeLabel) : null;
                 //try indirectly
                 if (role == null && rolePattern.var().isUserDefinedName()) {
                     IdPredicate rolePredicate = getIdPredicate(rolePattern.var());
@@ -850,8 +850,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     .filter(rp -> rp.getRole().isPresent())
                     .forEach(rp -> {
                         Statement roleTypeVar = rp.getRole().orElse(null);
-                        Label rl = roleTypeVar != null ? roleTypeVar.getTypeLabel().orElse(null) : null;
-                        if (roleLabel != null && roleLabel.equals(rl)) {
+                        String rl = roleTypeVar != null ? roleTypeVar.getType().orElse(null) : null;
+                        if (roleLabel != null && roleLabel.equals(Label.of(rl))) {
                             roleRelationPlayerMap.put(role, rp);
                         }
                     });
@@ -882,14 +882,14 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     if (parentRolePattern == null){
                         throw GraqlQueryException.rolePatternAbsent(this);
                     }
-                    Label parentRoleLabel = parentRolePattern.getTypeLabel().orElse(null);
+                    String parentRoleLabel = parentRolePattern.getType().orElse(null);
 
                     if (parentRoleLabel != null) {
                         Variable parentRolePlayer = prp.getPlayer().var();
                         Type parentType = parentVarTypeMap.get(parentRolePlayer);
 
                         Set<Role> compatibleRoles = compatibleRoles(
-                                tx().getSchemaConcept(parentRoleLabel),
+                                tx().getSchemaConcept(Label.of(parentRoleLabel)),
                                 parentType,
                                 childRoles);
 
@@ -1032,7 +1032,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 Set<Label> roleLabel = this.getRelationPlayers().stream()
                         .filter(rp -> rp.getRole().isPresent())
                         .filter(rp -> rp.getRole().get().var().equals(childVar))
-                        .map(rp -> rp.getRole().get().getTypeLabel().get())
+                        .map(rp -> Label.of(rp.getRole().get().getType().get()))
                         .collect(toSet());
                 role = tx().getRole(Iterables.getOnlyElement(roleLabel).getValue());
             }
@@ -1080,8 +1080,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
             Statement rolePattern = rp.getRole().orElse(null);
             if (rolePattern != null) {
                 Variable roleVar = rolePattern.var();
-                Label roleLabel = rolePattern.getTypeLabel().orElse(null);
-                relVar = relVar.rel(new Statement(roleVar.asUserDefined()).type(roleLabel.getValue()), rp.getPlayer());
+                String roleLabel = rolePattern.getType().orElse(null);
+                relVar = relVar.rel(new Statement(roleVar.asUserDefined()).type(roleLabel), rp.getPlayer());
             } else {
                 relVar = relVar.rel(rp.getPlayer());
             }

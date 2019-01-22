@@ -144,17 +144,18 @@ node_grpc_compile()
 git_repository(
     name="graknlabs_bazel_distribution",
     remote="https://github.com/graknlabs/bazel-distribution",
-    commit="2e932a2555d1e43f75c8ee676c926399bd12f240"
+    commit="df751d03b1fcbb69ed11dd1e7265020144d7233b"
 )
 
-load("@graknlabs_bazel_distribution//github:dependencies.bzl", "dependencies_for_github_deployment")
+load("@graknlabs_bazel_distribution//github:dependencies.bzl", "github_dependencies_for_deployment")
+github_dependencies_for_deployment()
+
 pip_import(
     name = "pypi_deployment_dependencies",
     requirements = "@graknlabs_bazel_distribution//pip:requirements.txt",
 )
 load("@pypi_deployment_dependencies//:requirements.bzl", "pip_install")
 pip_install()
-dependencies_for_github_deployment()
 
 
 git_repository(

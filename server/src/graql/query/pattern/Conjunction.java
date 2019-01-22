@@ -18,18 +18,14 @@
 
 package grakn.core.graql.query.pattern;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.server.Transaction;
-import grakn.core.server.session.TransactionOLTP;
 
 import javax.annotation.CheckReturnValue;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -98,17 +94,7 @@ public class Conjunction<T extends Pattern> implements Pattern {
 
     @Override
     public Set<Variable> variables() {
-        return getPatterns().stream().map(Pattern::variables).reduce(ImmutableSet.of(), Sets::union);
-    }
-
-    /**
-     * @return the corresponding reasoner query
-     */
-    @CheckReturnValue
-    public ReasonerQuery toReasonerQuery(Transaction tx) {
-        Conjunction<Pattern> pattern = getNegationDNF().getPatterns().iterator().next();
-        // TODO: This cast is unsafe - this method should accept an `TransactionImpl`
-        return ReasonerQueries.composite(pattern, (TransactionOLTP) tx);
+        return getPatterns().stream().map(Pattern::variables).reduce(new HashSet<>(), Sets::union);
     }
 
     private static <U extends Pattern> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {

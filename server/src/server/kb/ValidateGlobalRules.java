@@ -33,6 +33,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
@@ -44,6 +45,7 @@ import grakn.core.server.kb.concept.RuleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.Casting;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -276,7 +278,7 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated
      * @return Error messages if the rule is not a valid Horn clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
-    static Set<String> validateRuleIsValidHornClause(Transaction graph, Rule rule){
+    static Set<String> validateRuleIsValidHornClause(TransactionOLTP graph, Rule rule){
         Set<String> errors = new HashSet<>();
         if (!combinedRuleQuery(graph, rule).isPositive()){
             errors.add(ErrorMessage.VALIDATION_RULE_NEGATIVE_STATEMENTS_UNSUPPORTED_IN_RULES.getMessage(rule.label()));
@@ -290,9 +292,9 @@ class ValidateGlobalRules {
         return errors;
     }
 
-    private static ReasonerQuery combinedRuleQuery(Transaction graph, Rule rule){
-        ReasonerQuery bodyQuery = rule.when().getNegationDNF().getPatterns().iterator().next().toReasonerQuery(graph);
-        ReasonerQuery headQuery =  rule.then().getNegationDNF().getPatterns().iterator().next().toReasonerQuery(graph);
+    private static ReasonerQuery combinedRuleQuery(TransactionOLTP graph, Rule rule){
+        ReasonerQuery bodyQuery = ReasonerQueries.create(Iterables.getOnlyElement(rule.when().getDisjunctiveNormalForm().getPatterns()), graph);
+        ReasonerQuery headQuery = ReasonerQueries.create(Iterables.getOnlyElement(rule.then().getDisjunctiveNormalForm().getPatterns()), graph);
         return headQuery.conjunction(bodyQuery);
     }
 
@@ -302,7 +304,7 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated ontologically
      * @return Error messages if the rule has ontological inconsistencies
      */
-    static Set<String> validateRuleOntologically(Transaction graph, Rule rule) {
+    static Set<String> validateRuleOntologically(TransactionOLTP graph, Rule rule) {
         Set<String> errors = new HashSet<>();
 
         //both body and head refer to the same graph and have to be valid with respect to the schema that governs it
@@ -318,15 +320,16 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated
      * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain illegal atomics and is ontologically valid
      */
-    private static Set<String> validateRuleHead(Transaction graph, Rule rule) {
+    private static Set<String> validateRuleHead(TransactionOLTP graph, Rule rule) {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<Statement>> headPatterns = rule.then().getDisjunctiveNormalForm().getPatterns();
+        Set<Conjunction<Statement>> bodyPatterns = rule.when().getDisjunctiveNormalForm().getPatterns();
 
         if (headPatterns.size() != 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.label()));
         } else {
-            ReasonerQuery bodyQuery = Iterables.getOnlyElement(rule.when().getDisjunctiveNormalForm().getPatterns()).toReasonerQuery(graph);
-            ReasonerQuery headQuery = Iterables.getOnlyElement(headPatterns).toReasonerQuery(graph);
+            ReasonerQuery bodyQuery = ReasonerQueries.create(Iterables.getOnlyElement(bodyPatterns), graph);
+            ReasonerQuery headQuery = ReasonerQueries.create(Iterables.getOnlyElement(headPatterns), graph);
             ReasonerQuery combinedQuery = headQuery.conjunction(bodyQuery);
 
             Set<Atomic> headAtoms = headQuery.getAtoms();
@@ -371,10 +374,10 @@ class ValidateGlobalRules {
 
         pattern.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
-                .flatMap(statement -> statement.getTypeLabels().stream()).forEach(typeLabel -> {
-                    SchemaConcept schemaConcept = graph.getSchemaConcept(typeLabel);
+                .flatMap(statement -> statement.getTypes().stream()).forEach(type -> {
+                    SchemaConcept schemaConcept = graph.getSchemaConcept(Label.of(type));
                     if(schemaConcept == null){
-                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.label(), typeLabel));
+                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.label(), type));
                     } else {
                         if(Schema.VertexProperty.RULE_WHEN.equals(side)){
                             if (schemaConcept.isType()){

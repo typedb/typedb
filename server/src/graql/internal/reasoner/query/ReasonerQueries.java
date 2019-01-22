@@ -31,12 +31,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- *
- * <p>
  * Factory for reasoner queries.
- * </p>
- *
- *
  */
 public class ReasonerQueries {
 
