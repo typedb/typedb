@@ -46,14 +46,6 @@ java_test(
     size = "small",
 )
 
-checkstyle_test(
-    name = "grakn-client-test-checkstyle",
-    target = ":grakn-client-test",
-    config = "//config/checkstyle:checkstyle.xml",
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    licenses = ["//config/checkstyle:licenses"],
-)
-
 java_test(
     name = "grakn-client-it",
     srcs = ["GraknClientIT.java"],
@@ -75,10 +67,9 @@ java_test(
 )
 
 checkstyle_test(
-    name = "grakn-client-it-checkstyle",
-    target = ":grakn-client-it",
-    config = "//config/checkstyle:checkstyle.xml",
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":grakn-client-test",
+        ":grakn-client-it",
+    ],
 )

@@ -125,7 +125,7 @@ def _checkstyle_test_impl(ctx):
         is_executable = True,
     )
 
-    files = [ctx.outputs.checkstyle_script] + ctx.files.licenses + all_java_files + ctx.files._classpath + inputs
+    files = [ctx.outputs.checkstyle_script] + ctx.files.license_files + all_java_files + ctx.files._classpath + inputs
     runfiles = ctx.runfiles(
         files = files,
         collect_data = True
@@ -142,15 +142,18 @@ checkstyle_test = rule(
     attrs = {
         "config": attr.label(
             allow_single_file=True,
-            doc = "A checkstyle configuration file"
+            doc = "A checkstyle configuration file",
+            default = "//config/checkstyle:checkstyle.xml"
         ),
         "suppressions": attr.label(
             allow_single_file=True,
-            doc = "A checkstyle suppressions file"
+            doc = "A checkstyle suppressions file",
+            default = "//config/checkstyle:checkstyle-suppressions.xml",
         ),
-        "licenses": attr.label_list(
+        "license_files": attr.label_list(
             allow_files=True,
-            doc = "License file(s) that can be used with the checkstyle license target"
+            doc = "License file(s) that can be used with the checkstyle license target",
+            default = ["//config/checkstyle:license_files"]
         ),
         "properties": attr.label(
             allow_single_file=True,

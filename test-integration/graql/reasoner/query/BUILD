@@ -16,14 +16,6 @@ java_test(
     ],
 )
 
-checkstyle_test(
-    name = "query-equivalence-it-checkstyle",
-    config = "//config/checkstyle:checkstyle.xml",
-    licenses = ["//config/checkstyle:licenses"],
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    target = ":query-equivalence-it",
-)
-
 java_test(
     name = "atomic-query-it",
     size = "medium",
@@ -39,14 +31,6 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
-)
-
-checkstyle_test(
-    name = "atomic-query-it-checkstyle",
-    config = "//config/checkstyle:checkstyle.xml",
-    licenses = ["//config/checkstyle:licenses"],
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    target = ":atomic-query-it",
 )
 
 java_test(
@@ -68,14 +52,6 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
-)
-
-checkstyle_test(
-    name = "negation-it-checkstyle",
-    config = "//config/checkstyle:checkstyle.xml",
-    licenses = ["//config/checkstyle:licenses"],
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    target = ":negation-it",
 )
 
 java_test(
@@ -106,14 +82,6 @@ java_test(
     ],
 )
 
-checkstyle_test(
-    name = "query-unification-it-checkstyle",
-    config = "//config/checkstyle:checkstyle.xml",
-    licenses = ["//config/checkstyle:licenses"],
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    target = ":query-unification-it",
-)
-
 java_test(
     name = "query-validity-it",
     size = "medium",
@@ -128,14 +96,6 @@ java_test(
     ],
 )
 
-checkstyle_test(
-    name = "query-validity-it-checkstyle",
-    config = "//config/checkstyle:checkstyle.xml",
-    licenses = ["//config/checkstyle:licenses"],
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    target = ":query-validity-it",
-)
-
 java_test(
     name = "query-it",
     size = "medium",
@@ -147,14 +107,6 @@ java_test(
         "//test-integration/graql/reasoner/graph:geo-graph",
         "//test-integration/rule:grakn-test-server",
     ],
-)
-
-checkstyle_test(
-    name = "query-it-checkstyle",
-    config = "//config/checkstyle:checkstyle.xml",
-    licenses = ["//config/checkstyle:licenses"],
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    target = ":query-it",
 )
 
 java_test(
@@ -173,14 +125,6 @@ java_test(
     ],
 )
 
-checkstyle_test(
-    name = "ontological-query-it-checkstyle",
-    config = "//config/checkstyle:checkstyle.xml",
-    licenses = ["//config/checkstyle:licenses"],
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    target = ":ontological-query-it",
-)
-
 java_test(
     name = "resolution-plan-it",
     size = "medium",
@@ -194,14 +138,6 @@ java_test(
         "//server",
         "//test-integration/rule:grakn-test-server",
     ],
-)
-
-checkstyle_test(
-    name = "resolution-plan-it-checkstyle",
-    config = "//config/checkstyle:checkstyle.xml",
-    licenses = ["//config/checkstyle:licenses"],
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    target = ":resolution-plan-it",
 )
 
 java_test(
@@ -219,14 +155,6 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
-)
-
-checkstyle_test(
-    name = "semantic-difference-it-checkstyle",
-    config = "//config/checkstyle:checkstyle.xml",
-    licenses = ["//config/checkstyle:licenses"],
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    target = ":semantic-difference-it",
 )
 
 java_test(
@@ -254,9 +182,17 @@ java_test(
 )
 
 checkstyle_test(
-    name = "subsumption-it-checkstyle",
-    config = "//config/checkstyle:checkstyle.xml",
-    licenses = ["//config/checkstyle:licenses"],
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    target = ":subsumption-it",
+    name = "checkstyle",
+    targets = [
+        ":atomic-query-it",
+        ":query-equivalence-it",
+        ":negation-it",
+        ":query-unification-it",
+        ":query-validity-it",
+        ":query-it",
+        ":ontological-query-it",
+        ":resolution-plan-it",
+        ":semantic-difference-it",
+        "//test-integration/graql/reasoner/query:subsumption-it",
+    ]
 )

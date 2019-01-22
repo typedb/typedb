@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "rocks-db-queue-test",
     test_class = "grakn.core.server.deduplicator.RocksDbQueueTest",
@@ -29,12 +31,9 @@ java_test(
     flaky = True
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "rocks-db-queue-test-checkstyle",
- target = ":rocks-db-queue-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":rocks-db-queue-test"
+    ],
 )

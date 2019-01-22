@@ -18,6 +18,8 @@
 
 package(default_visibility = ["//visibility:__pkg__"])
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "remote-concept-it",
     srcs = ["RemoteConceptIT.java"],
@@ -37,11 +39,7 @@ java_test(
 )
 
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
-    name = "remote-concept-it-checkstyle",
-    target = ":remote-concept-it",
-    config = "//config/checkstyle:checkstyle.xml",
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    licenses = ["//config/checkstyle:licenses"],
+    name = "checkstyle",
+    targets = [":remote-concept-it"],
 )

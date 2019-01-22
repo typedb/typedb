@@ -14,15 +14,6 @@ java_test(
      size = "medium"
 )
 
-checkstyle_test(
- name = "validator-it-checkstyle",
- target = ":validator-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
   name = "validate-global-rules-it",
   srcs = ["ValidateGlobalRulesIT.java"],
@@ -33,15 +24,6 @@ java_test(
   ],
   size = "medium",
   classpath_resources = ["//test-integration/resources:logback-test"]
-)
-
-checkstyle_test(
- name = "validate-global-rules-it-checkstyle",
- target = ":validate-global-rules-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -60,10 +42,10 @@ java_test(
 )
 
 checkstyle_test(
- name = "grakn-tx-it-checkstyle",
- target = ":grakn-tx-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":validator-it",
+        ":validate-global-rules-it",
+        ":grakn-tx-it",
+    ]
 )

@@ -29,15 +29,6 @@ java_library(
     ],
 )
 
-checkstyle_test(
- name = "diagonal-graph-checkstyle",
- target = ":diagonal-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_library(
     name = "dual-linear-transitivity-graph",
     srcs = ["DualLinearTransitivityMatrixGraph.java"],
@@ -47,15 +38,6 @@ java_library(
         "//server",
         "//test-integration/util:graql-test-util",
     ],
-)
-
-checkstyle_test(
- name = "dual-linear-transitivity-graph-checkstyle",
- target = ":dual-linear-transitivity-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_library(
@@ -74,29 +56,11 @@ java_library(
     ],
 )
 
-checkstyle_test(
- name = "generic-schema-graph-checkstyle",
- target = ":generic-schema-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_library(
     name = "geo-graph",
     srcs = ["GeoGraph.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = ["//server"],
-)
-
-checkstyle_test(
- name = "geo-graph-checkstyle",
- target = ":geo-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_library(
@@ -108,15 +72,6 @@ java_library(
         "//server",
         "//test-integration/util:graql-test-util",
     ],
-)
-
-checkstyle_test(
- name = "linear-transitivity-matrix-graph-checkstyle",
- target = ":linear-transitivity-matrix-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_library(
@@ -131,15 +86,6 @@ java_library(
     ],
 )
 
-checkstyle_test(
- name = "nguyen-graph-checkstyle",
- target = ":nguyen-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_library(
     name = "path-matrix-graph",
     srcs = ["PathMatrixGraph.java"],
@@ -152,14 +98,6 @@ java_library(
     ],
 )
 
-checkstyle_test(
- name = "path-matrix-graph-checkstyle",
- target = ":path-matrix-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-)
-
 java_library(
     name = "path-tree-graph",
     srcs = ["PathTreeGraph.java"],
@@ -170,14 +108,6 @@ java_library(
         "//server",
         "//test-integration/util:graql-test-util",
     ],
-)
-
-checkstyle_test(
- name = "path-tree-graph-checkstyle",
- target = ":path-tree-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
 )
 
 java_library(
@@ -195,15 +125,6 @@ java_library(
     ],
 )
 
-checkstyle_test(
- name = "path-tree-symmetric-graph-checkstyle",
- target = ":path-tree-symmetric-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_library(
     name = "tail-recursion-graph",
     srcs = ["TailRecursionGraph.java"],
@@ -216,15 +137,6 @@ java_library(
     ],
 )
 
-checkstyle_test(
- name = "tail-recursion-graph-checkstyle",
- target = ":tail-recursion-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_library(
     name = "transitivity-chain-graph",
     srcs = ["TransitivityChainGraph.java"],
@@ -234,15 +146,6 @@ java_library(
         "//server",
         "//test-integration/util:graql-test-util",
     ],
-)
-
-checkstyle_test(
- name = "transitivity-chain-graph-checkstyle",
- target = ":transitivity-chain-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_library(
@@ -257,10 +160,19 @@ java_library(
 )
 
 checkstyle_test(
- name = "transitivity-matrix-graph-checkstyle",
- target = ":transitivity-matrix-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+ name = "checkstyle",
+ targets = [
+   ":diagonal-graph",
+   ":dual-linear-transitivity-graph",
+   ":generic-schema-graph",
+   ":geo-graph",
+   ":linear-transitivity-matrix-graph",
+   ":nguyen-graph",
+   ":path-matrix-graph",
+   ":path-tree-graph",
+   ":path-tree-symmetric-graph",
+   ":tail-recursion-graph",
+   ":transitivity-chain-graph",
+   ":transitivity-matrix-graph",
+ ],
 )

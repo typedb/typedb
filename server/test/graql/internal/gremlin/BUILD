@@ -14,15 +14,6 @@ java_test(
     size = "small"
 )
 
-checkstyle_test(
- name = "graql-traversal-test-checkstyle",
- target = ":graql-traversal-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "conjunction-query-test",
     test_class = "grakn.core.graql.internal.gremlin.ConjunctionQueryTest",
@@ -35,10 +26,9 @@ java_test(
 )
 
 checkstyle_test(
- name = "conjunction-query-test-checkstyle",
- target = ":conjunction-query-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":graql-traversal-test",
+        ":conjunction-query-test"
+    ],
 )

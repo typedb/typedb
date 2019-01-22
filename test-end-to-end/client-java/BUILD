@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "client-java-e2e",
     test_class = "grakn.core.client.ClientJavaE2E",
@@ -14,12 +16,9 @@ java_test(
     data = ["//:distribution"]
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "client-java-e2e-checkstyle",
- target = ":client-java-e2e",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":client-java-e2e"
+    ],
 )

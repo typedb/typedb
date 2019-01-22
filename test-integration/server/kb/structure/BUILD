@@ -13,15 +13,6 @@ java_test(
   classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
-checkstyle_test(
- name = "casting-it-checkstyle",
- target = ":casting-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
   name = "edge-it",
   srcs = ["EdgeIT.java"],
@@ -36,10 +27,9 @@ java_test(
 )
 
 checkstyle_test(
- name = "edge-it-checkstyle",
- target = ":edge-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":casting-it",
+        ":edge-it"
+    ]
 )
