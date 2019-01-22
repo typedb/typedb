@@ -316,8 +316,9 @@ jobs:
       - grabl-is-the-github-user
       - run: |
           # get the last commit on master of grakn
-          new_commit=$(git ls-remote https://github.com/lolski/test-ci-grakn.git HEAD | awk '{ print $1}')
-          git clone https://github.com/lolski/test-ci-docs.git
+          # new_commit=$(git ls-remote https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-grakn.git HEAD | awk '{ print $1}')
+          new_commit=$(git ls-remote https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-grakn.git refs/heads/continuous-release-docs | awk '{ print $1}')
+          git clone https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-docs.git
           cd test-ci-docs
           git checkout development
           # update the content of WORKSPACE file to contain the new_commit for grakn dependency
@@ -326,7 +327,7 @@ jobs:
           echo "$new_workspace" > WORKSPACE
           git add .
           git commit -m "set grakn dependency to latest master commit"
-          git push https://grabl:5444161b178e1418fac769f586b9ff74e0cf4dc7@github.com/lolski/test-ci-docs.git development
+          git push https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-docs.git development
   approve-release:
     machine: true
     steps:
@@ -384,36 +385,38 @@ jobs:
     steps:
       - grabl-is-the-github-user
       - run: |
-          git clone https://github.com/lolski/test-ci-docs.git
+          git clone https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-docs.git
           cd test-ci-docs
+          git checkout master
           git checkout -b auto-merge-by-grabl
-          # excluding certain files from merge > partial merge
+          # excluding certain files from merge > partial merge.
           # see: https://github.com/RWTH-EBC/AixLib/wiki/How-to:-Exclude-files-or-folder-from-merge
           git merge --no-commit --no-ff origin/development ## merge without commiting
           git reset HEAD -- ./03-client-api/ ## unstage the client files
           git stash save --keep-index --include-untracked ## discard unstage changes
           git commit -m "partially merge development to master"
-          git push https://grabl:5444161b178e1418fac769f586b9ff74e0cf4dc7@github.com/lolski/ci-docs.git auto-merge-by-grabl
+          git push https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-docs.git auto-merge-by-grabl
           # using `hub` to make a PR for the partial merge just made
           # see: https://hub.github.com/hub-pull-request.1.html
           wget https://github.com/github/hub/releases/download/v2.7.0/hub-linux-amd64-2.7.0.tgz
           tar -xvzf hub-linux-amd64-2.7.0.tgz
-          hub-linux-amd64-2.7.0/bin/hub pull-request -m "Grabl - merging development to master with the exception of client files
-          This is an automated PR made by Grabl to merge development to master. The merge ignores changes made to the client files. Make sure to review all changes before approving. Docs on master must by in sync with the latest RELEASE of Grakn and its Clients."
+          GITHUB_TOKEN=$GRABL_TOKEN hub-linux-amd64-2.7.0/bin/hub pull-request -m "Grabl - merging development to master with the exception of client files
+
+          This is an automated PR made by Grabl to merge development to master. The merge ignores changes made to the client files. Make sure to review all changes before approving. Docs on master must by in sync with the LATEST RELEASE of Grakn and its Clients."
   docs-deploy-to-production:
     machine: true
     steps:
       - grabl-is-the-github-user
       - run: |
           # --recursive clones web-dev as well as the docs submodule
-          git clone --recursive git@github.com:lolski/test-ci-web-dev.git
+          git clone --recursive https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-web-dev.git
           cd test-ci-web-dev
-          cd docs
+          cd test-ci-docs
           git pull origin master
           cd ../
           git add .
-          git commit -m "update docs submodule"
-          git push https://grabl:5444161b178e1418fac769f586b9ff74e0cf4dc7@github.com/lolski/test-ci-web-dev.git master
+          git commit -m "update test-ci-docs submodule"
+          git push https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-web-dev.git master
 workflows:
   version: 2
   ci-pipeline-pr:
@@ -470,12 +473,13 @@ workflows:
           type: approval
           requires:
             - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit
-      - deploy-github:
-          requires:
-            - approve-deploy-github
+      # - deploy-github:
+      #     requires:
+      #       - approve-deploy-github
       - docs-create-pr-to-partially-merge-dev-to-master:
           requires:
-            - deploy-github
+            # - deploy-github
+            - approve-deploy-github
       - is-docs-merged:
           type: approval
           requires:
