@@ -50,7 +50,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.util.GraqlTestUtil.assertNonTrivialEquals;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
@@ -97,7 +96,7 @@ public class SemanticDifferenceIT {
             assertEquals(expected, semanticPair.getValue());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
-            assertNonTrivialEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+            assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
@@ -123,7 +122,7 @@ public class SemanticDifferenceIT {
             assertEquals(expected, semanticPair.getValue());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
-            assertNonTrivialEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+            assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
@@ -149,7 +148,7 @@ public class SemanticDifferenceIT {
             assertEquals(expected, semanticPair.getValue());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
-            assertNonTrivialEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+            assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
@@ -175,7 +174,7 @@ public class SemanticDifferenceIT {
             assertEquals(expected, semanticPair.getValue());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
-            assertNonTrivialEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+            assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
@@ -201,7 +200,7 @@ public class SemanticDifferenceIT {
             assertEquals(expected, semanticPair.getValue());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
-            assertNonTrivialEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+            assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
@@ -227,7 +226,7 @@ public class SemanticDifferenceIT {
             assertEquals(expected, semanticPair.getValue());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
-            assertNonTrivialEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+            assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
@@ -253,7 +252,7 @@ public class SemanticDifferenceIT {
             assertEquals(expected, semanticPair.getValue());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
-            assertNonTrivialEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+            assertEquals(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
