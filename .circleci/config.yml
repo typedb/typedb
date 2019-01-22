@@ -242,28 +242,25 @@ jobs:
       - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
       - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server stop
   dist-ubuntu:
-    docker:
-      - image: ubuntu:16.04
-        environment:
-          _JAVA_OPTIONS: -Xmx2g
+    machine: true
     working_directory: ~/grakn
     steps:
-      - run: apt-get update
-      - run: apt-get install -y software-properties-common
-      - run: add-apt-repository ppa:openjdk-r/ppa
-      - run: apt-get update
-      - run: apt-get install -y sudo curl unzip git python gcc python-dev build-essential openjdk-8-jdk
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y software-properties-common
+      - run: sudo add-apt-repository ppa:openjdk-r/ppa
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y sudo curl unzip git python gcc python-dev build-essential openjdk-8-jdk
 
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
 
       - run: bazel build --jobs 1 //:distribution-deb
-      - run: dpkg -i bazel-bin/distribution-deb.deb
+      - run: sudo dpkg -i bazel-bin/distribution-deb.deb
       - run: bazel build --jobs 1 //server:distribution-deb
-      - run: dpkg -i bazel-bin/server/distribution-deb.deb
+      - run: sudo dpkg -i bazel-bin/server/distribution-deb.deb
       - run: bazel build --jobs 1 //console:distribution-deb
-      - run: dpkg -i bazel-bin/console/distribution-deb.deb
+      - run: sudo dpkg -i bazel-bin/console/distribution-deb.deb
       - run: nohup grakn server start
       - run: nohup grakn server stop
 
@@ -341,15 +338,7 @@ jobs:
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
-      - run:
-          name: "Publish Draft Release on GitHub"
-          command: |
-            bazel build //:distribution
-            mv bazel-genfiles/grakn-core-all.zip bazel-genfiles/grakn-core-$(cat "VERSION").zip
-            wget https://github.com/tcnksm/ghr/releases/download/v0.12.0/ghr_v0.12.0_linux_386.tar.gz
-            tar xvf ghr_v0.12.0_linux_386.tar.gz
-            VERSION_TAG="v"$(cat "VERSION")
-            ghr_v0.12.0_linux_386/ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -draft ${VERSION_TAG} bazel-genfiles/grakn-core-$(cat "VERSION").zip
+      - run: bazel run //:deploy-github-zip -- ${GRABL_TOKEN}
   deploy-maven:
     machine: true
     steps:
@@ -433,9 +422,20 @@ workflows:
       - client-java:
           requires:
             - tests
+      - common:
+          requires:
+            - tests
+      - console:
+          requires:
+            - tests
       - distributions:
           requires:
             - client-java
+            - common
+            - console
+      - dist-mac:
+          requires:
+            - distributions
       - dist-ubuntu:
           requires:
             - distributions
@@ -445,15 +445,27 @@ workflows:
       - client-java:
           requires:
             - tests
+      - common:
+          requires:
+            - tests
+      - console:
+          requires:
+            - tests
       - distributions:
           requires:
             - client-java
+            - common
+            - console
+      - dist-mac:
+          requires:
+            - distributions
       - dist-ubuntu:
           requires:
             - distributions
       - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit:
           requires:
             - dist-ubuntu
+            - dist-mac
       - approve-deploy-github:
           type: approval
           requires:
