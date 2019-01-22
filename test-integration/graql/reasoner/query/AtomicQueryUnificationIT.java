@@ -772,26 +772,26 @@ public class AtomicQueryUnificationIT {
         } else {
             Unifier inverse = unifier.inverse();
             if(!ignoreTypes) {
-                assertCollectionsEqual(parentAnswers, unifiedAnswers);
+                assertCollectionsNonTriviallyEqual(parentAnswers, unifiedAnswers);
                 List<ConceptMap> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
-                assertCollectionsEqual(parentToChild, childAnswers);
+                assertCollectionsNonTriviallyEqual(parentToChild, childAnswers);
             } else {
                 Set<Variable> childNonTypeVariables = Sets.difference(child.getAtom().getVarNames(), Sets.newHashSet(child.getAtom().getPredicateVariable()));
                 List<ConceptMap> projectedParentAnswers = parentAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
                 List<ConceptMap> projectedUnified = unifiedAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
                 List<ConceptMap> projectedChild = childAnswers.stream().map(ans -> ans.project(childNonTypeVariables)).collect(Collectors.toList());
 
-                assertCollectionsEqual(projectedParentAnswers, projectedUnified);
+                assertCollectionsNonTriviallyEqual(projectedParentAnswers, projectedUnified);
                 List<ConceptMap> projectedParentToChild = projectedParentAnswers.stream()
                         .map(a -> a.unify(inverse))
                         .map(ans -> ans.project(childNonTypeVariables))
                         .collect(Collectors.toList());
-                assertCollectionsEqual(projectedParentToChild, projectedChild);
+                assertCollectionsNonTriviallyEqual(projectedParentToChild, projectedChild);
             }
         }
     }
 
-    private static <T> void assertCollectionsEqual(Collection<T> c1, Collection<T> c2) {
+    private static <T> void assertCollectionsNonTriviallyEqual(Collection<T> c1, Collection<T> c2) {
         assertTrue(isEqualCollection(c1, c2));
     }
 

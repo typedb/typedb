@@ -62,7 +62,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.graql.query.Graql.var;
-import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -291,7 +291,7 @@ public class AtomicUnificationIT {
         Unifier unifier = childAtom.getUnifier(parentAtom, UnifierType.EXACT);
         Unifier unifier2 = childAtom.getUnifier(parentAtom2, UnifierType.EXACT);
 
-        assertCollectionsEqual(
+        assertCollectionsNonTriviallyEqual(
                 parentAnswers,
                 childAnswers.stream()
                         .map(a -> a.unify(unifier))
@@ -299,7 +299,7 @@ public class AtomicUnificationIT {
                         .distinct()
                         .collect(Collectors.toList())
         );
-        assertCollectionsEqual(
+        assertCollectionsNonTriviallyEqual(
                 parentAnswers2,
                 childAnswers.stream()
                         .map(a -> a.unify(unifier2))
@@ -504,10 +504,10 @@ public class AtomicUnificationIT {
         if (!checkEquality){
             assertTrue(parentAnswers.containsAll(unifiedAnswers));
         } else {
-            assertCollectionsEqual(parentAnswers, unifiedAnswers);
+            assertCollectionsNonTriviallyEqual(parentAnswers, unifiedAnswers);
             Unifier inverse = unifier.inverse();
             List<ConceptMap> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
-            assertCollectionsEqual(parentToChild, childAnswers);
+            assertCollectionsNonTriviallyEqual(parentToChild, childAnswers);
         }
     }
 

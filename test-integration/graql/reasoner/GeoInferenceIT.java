@@ -87,7 +87,7 @@ public class GeoInferenceIT {
                     "$x isa university;$x has name $name;" +
                     "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';}; get;";
 
-            assertCollectionsEqual(
+            assertCollectionsNonTriviallyEqual(
                     tx.execute(Graql.<GetQuery>parse(queryString)),
                     tx.execute(Graql.<GetQuery>parse(explicitQuery), false)
             );
@@ -114,11 +114,11 @@ public class GeoInferenceIT {
                     "$z2 isa university;$z2 has name $name;" +
                     "{$z2 has name 'University-of-Warsaw';} or {$z2 has name'Warsaw-Polytechnics';}; get;";
 
-            assertCollectionsEqual(
+            assertCollectionsNonTriviallyEqual(
                     tx.execute(Graql.<GetQuery>parse(queryString)),
                     tx.execute(Graql.<GetQuery>parse(explicitQuery), false)
             );
-            assertCollectionsEqual(
+            assertCollectionsNonTriviallyEqual(
                     tx.execute(Graql.<GetQuery>parse(queryString2)),
                     tx.execute(Graql.<GetQuery>parse(explicitQuery2), false)
             );
@@ -170,7 +170,7 @@ public class GeoInferenceIT {
             answers.forEach(ans -> assertEquals(2, ans.size()));
             answers.forEach(ans -> assertEquals(masovia.id().getValue(), ans.get("y").id().getValue()));
             assertEquals(5, answers.size());
-            assertCollectionsEqual(answers, explicitAnswers);
+            assertCollectionsNonTriviallyEqual(answers, explicitAnswers);
         }
     }
 
@@ -220,7 +220,7 @@ public class GeoInferenceIT {
             answers.forEach(ans -> assertEquals(masovia.id().getValue(), ans.get("y").id().getValue()));
             assertEquals(5, answers.size());
             List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
-            assertCollectionsEqual(answers, answers2);
+            assertCollectionsNonTriviallyEqual(answers, answers2);
         }
     }
 
@@ -383,7 +383,7 @@ public class GeoInferenceIT {
                 .map(ans -> ans.get("x")).findAny().orElse(null);
     }
 
-    private static <T> void assertCollectionsEqual(Collection<T> c1, Collection<T> c2) {
+    private static <T> void assertCollectionsNonTriviallyEqual(Collection<T> c1, Collection<T> c2) {
         assertTrue(CollectionUtils.isEqualCollection(c1, c2));
     }
 }

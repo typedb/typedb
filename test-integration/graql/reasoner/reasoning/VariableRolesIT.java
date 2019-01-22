@@ -101,7 +101,7 @@ public class VariableRolesIT {
             System.out.println();
 
             //assertEquals(27, answers2.size());
-            //assertCollectionsEqual(answers2, equivalentAnswers2);
+            //assertCollectionsNonTriviallyEqual(answers2, equivalentAnswers2);
 
             /*
             //role variables bound hence should return original 9 instances
@@ -118,7 +118,7 @@ public class VariableRolesIT {
             List<ConceptMap> answers3 = tx.execute(Graql.<GetQuery>parse(queryString3));
             List<ConceptMap> equivalentAnswers3 = tx.execute(Graql.<GetQuery>parse(equivalentQueryString3));
             assertEquals(9, answers3.size());
-            assertCollectionsEqual(answers3, equivalentAnswers3);
+            assertCollectionsNonTriviallyEqual(answers3, equivalentAnswers3);
 
             //9 relation instances with 7 possible permutations for each - 63 answers
             String queryString4 = "match " +

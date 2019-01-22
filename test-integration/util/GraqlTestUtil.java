@@ -73,9 +73,14 @@ public class GraqlTestUtil {
         assertTrue(msg, CollectionUtils.isEqualCollection(c1, c2));
     }
 
-    public static <T> void assertNonTrivialEquals(String msg, Collection<T> c1, Collection<T> c2){
-        assertFalse("Trivial equality!", c1.isEmpty() == c2.isEmpty());
-        assertEquals(msg, c1, c2);
+    public static <T> void assertCollectionsNonTriviallyEqual(Collection<T> c1, Collection<T> c2){
+        assertFalse("Trivial equality!", c1.isEmpty() && c2.isEmpty());
+        assertCollectionsEqual(c1, c2);
+    }
+
+    public static <T> void assertCollectionsNonTriviallyEqual(String msg, Collection<T> c1, Collection<T> c2){
+        assertFalse("Trivial equality!", c1.isEmpty() && c2.isEmpty());
+        assertCollectionsEqual(msg, c1, c2);
     }
 
     public static void loadFromFile(String gqlPath, String file, Transaction tx) {

@@ -62,6 +62,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AtomicTypeInferenceIT {
@@ -380,7 +381,7 @@ public class AtomicTypeInferenceIT {
             assertEquals(possibleTypes, relationshipTypes);
             assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
         } else {
-            GraqlTestUtil.assertCollectionsEqual(possibleTypes, relationshipTypes);
+            GraqlTestUtil.assertCollectionsNonTriviallyEqual(possibleTypes, relationshipTypes);
             assertEquals(atom.getSchemaConcept(), null);
         }
 
@@ -404,8 +405,8 @@ public class AtomicTypeInferenceIT {
             GraqlTestUtil.assertCollectionsEqual(possibleTypes, relationshipTypes);
             GraqlTestUtil.assertCollectionsEqual(relationshipTypes, subbedRelationshipTypes);
 
-            assertEquals(atom.getSchemaConcept(), null);
-            assertEquals(subbedAtom.getSchemaConcept(), null);
+            assertNull(atom.getSchemaConcept());
+            assertNull(subbedAtom.getSchemaConcept());
         }
 
         typeInferenceQueries(possibleTypes, pattern, tx);
