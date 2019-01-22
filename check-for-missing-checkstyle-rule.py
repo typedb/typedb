@@ -27,7 +27,10 @@ import sys
 
 def check_output_discarding_stderr(*args, **kwargs):
     with open(os.devnull, 'w') as devnull:
-        return subprocess.check_output(*args, stderr=devnull, **kwargs)
+        output = subprocess.check_output(*args, stderr=devnull, **kwargs)
+        if type(output) == bytes:
+            output = output.decode()
+        return output
 
 
 def try_decode(s):
@@ -36,17 +39,13 @@ def try_decode(s):
     return s
 
 
-def lmap(func, seq):
-    return list(map(func, seq))
-
-
 print('Checking if there are any source files not covered by checkstyle...')
 
-java_targets = lmap(try_decode, check_output_discarding_stderr([
+java_targets = check_output_discarding_stderr([
     'bazel', 'query',
     '(kind(java_library, //...) union kind(java_test, //...)) '
     'except //dependencies/... except attr("tags", "checkstyle_ignore", //...)'
-]).split())
+]).split()
 
 checkstyle_targets_xml = check_output_discarding_stderr([
     'bazel', 'query', 'kind(checkstyle_test, //...)', '--output', 'xml'
@@ -54,8 +53,8 @@ checkstyle_targets_xml = check_output_discarding_stderr([
 checkstyle_targets_tree = ElementTree.fromstring(checkstyle_targets_xml)
 java_targets_covered_by_target_attr = checkstyle_targets_tree.findall(".//label[@name='target'][@value]")
 java_targets_covered_by_targets_attr = checkstyle_targets_tree.findall(".//list[@name='targets']//label[@value]")
-checkstyle_targets = lmap(
-    lambda x: try_decode(x.get('value')), java_targets_covered_by_target_attr + java_targets_covered_by_targets_attr)
+checkstyle_targets = list(map(
+    lambda x: x.get('value'), java_targets_covered_by_target_attr + java_targets_covered_by_targets_attr))
 unique_checkstyle_targets = set(checkstyle_targets)
 
 if len(unique_checkstyle_targets) != len(checkstyle_targets):
