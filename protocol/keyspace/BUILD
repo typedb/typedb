@@ -20,18 +20,8 @@ exports_files([
     "Keyspace.proto"
 ])
 
-package(
-    default_visibility = [
-        "//protocol:__subpackages__",
-        "//server:__subpackages__",
-        "//client-java:__subpackages__",
-        "//client-nodejs:__subpackages__",
-        "//client_python:__subpackages__",
-    ]
-)
-
 proto_library(
     name = "keyspace-proto",
     srcs = ["Keyspace.proto"],
-    # proto_source_root = "protocol/keyspace",
+    visibility = ["//visibility:public"]
 )
