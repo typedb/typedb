@@ -36,6 +36,7 @@ import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
@@ -96,7 +97,7 @@ public class QueryExecutor {
     }
 
     private Stream<ConceptMap> resolveConjunction(Conjunction<Pattern> conj, TransactionOLTP tx){
-        CompositeQuery query = ReasonerQueries.composite(conj, tx);
+        ResolvableQuery query = ReasonerQueries.resolvable(conj, tx);
         query.checkValid();
 
         //TODO

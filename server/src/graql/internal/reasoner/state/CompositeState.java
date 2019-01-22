@@ -24,6 +24,7 @@ import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
 import java.util.Set;
 
 /**
@@ -56,26 +57,38 @@ import java.util.Set;
  * @author Kasper Piskorski
  *
  */
-public class CompositeState extends ConjunctiveState {
+public class CompositeState extends QueryStateBase {
 
     private final ResolutionState baseConjunctionState;
     private boolean visited = false;
 
-    private final Set<CompositeQuery> complements;
+    private final CompositeQuery query;
+    private final Set<ResolvableQuery> complements;
 
     public CompositeState(CompositeQuery query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache) {
-        super(query.getConjunctiveQuery(), sub, u, parent, subGoals, cache);
-        this.baseConjunctionState = getQuery().subGoal(getSubstitution(), getUnifier(), this, getVisitedSubGoals(), getCache());
+        super(sub, u, parent, subGoals, cache);
+        this.query = query;
+        this.baseConjunctionState = query.getConjunctiveQuery().subGoal(getSubstitution(), getUnifier(), this, getVisitedSubGoals(), getCache());
         this.complements = query.getComplementQueries();
     }
+
+    @Override
+    public String toString(){
+        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" +
+                query.toString() +
+                (!complements.isEmpty()? "\nNOT{\n" + complements + "\n}" : "");
+    }
+
+    @Override
+    ConceptMap consumeAnswer(AnswerState state) { return state.getSubstitution(); }
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap answer = state.getAnswer();
 
         boolean isNegationSatisfied = complements.stream()
-                .map(q -> ReasonerQueries.composite(q, answer))
-                .noneMatch(q -> q.resolve(getCache()).findFirst().isPresent());
+                .map(q -> ReasonerQueries.resolvable(q, answer))
+                .noneMatch(q -> q.resolve(getVisitedSubGoals(), getCache(), q.requiresReiteration()).findFirst().isPresent());
 
         return isNegationSatisfied?
                 new AnswerState(answer, getUnifier(), getParentState()) :

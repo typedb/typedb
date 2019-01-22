@@ -18,23 +18,17 @@
 
 package grakn.core.graql.internal.reasoner.state;
 
-import com.google.common.collect.Iterators;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
-
 import java.util.Iterator;
 import java.util.Set;
 
 /**
  *
  * <p>
- * State producing {@link AtomicState}s:
- * - typed {@link AtomicState}s if type inference is required
- * - {@link AtomicState} for non-negated non-ambiguous {@link ReasonerAtomicQuery}
- * - {@link NeqComplementState} for non-ambiguous {@link ReasonerAtomicQuery} with negation
+ * State producing {@link AtomicState}s when when atom type is unknown and type inference is required
  * </p>
  *
  *
@@ -45,16 +39,7 @@ public class AtomicStateProducer extends QueryStateBase {
 
     public AtomicStateProducer(ReasonerAtomicQuery query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache) {
         super(sub, u, parent, subGoals, cache);
-
-        if(query.getAtom().getSchemaConcept() == null){
-            this.subGoalIterator = query.subGoals(sub, u, parent, subGoals, cache).iterator();
-        } else {
-            this.subGoalIterator = Iterators.singletonIterator(
-                    query.getAtoms(NeqPredicate.class).findFirst().isPresent() ?
-                            new NeqComplementState(query, sub, u, parent, subGoals, cache) :
-                            new AtomicState(query, sub, u, parent, subGoals, cache)
-            );
-        }
+        this.subGoalIterator = query.subGoals(sub, u, parent, subGoals, cache).iterator();
     }
 
     @Override

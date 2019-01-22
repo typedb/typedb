@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
-import static org.junit.Assert.assertEquals;
+import static junit.framework.TestCase.assertEquals;
 
 @SuppressWarnings("Duplicates")
 public class SemanticDifferenceIT {
