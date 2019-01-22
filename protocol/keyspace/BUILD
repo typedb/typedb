@@ -16,6 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+package(
+    default_visibility = ["//visibility:public"]
+)
+
 exports_files([
     "Keyspace.proto"
 ])
@@ -23,5 +27,4 @@ exports_files([
 proto_library(
     name = "keyspace-proto",
     srcs = ["Keyspace.proto"],
-    visibility = ["//visibility:public"]
 )

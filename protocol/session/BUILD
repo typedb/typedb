@@ -16,6 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+package(
+    default_visibility = ["//visibility:public"]
+)
+
 exports_files([
     "Concept.proto",
     "Answer.proto",
@@ -25,19 +29,16 @@ exports_files([
 proto_library(
     name = "concept-proto",
     srcs = ["Concept.proto"],
-    visibility = ["//visibility:public"]
 )
 
 proto_library(
     name = "answer-proto",
     srcs = ["Answer.proto"],
     deps = [":concept-proto"],
-    visibility = ["//visibility:public"]
 )
 
 proto_library(
     name = "session-proto",
     srcs = ["Session.proto"],
     deps = [":concept-proto", ":answer-proto"],
-    visibility = ["//visibility:public"]
 )
