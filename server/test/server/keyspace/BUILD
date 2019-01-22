@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "keyspace-test",
     test_class = "grakn.core.server.keyspace.KeyspacesTest",
@@ -6,12 +8,9 @@ java_test(
     size = "small"
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "keyspace-test-checkstyle",
- target = ":keyspace-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":keyspace-test"
+    ],
 )

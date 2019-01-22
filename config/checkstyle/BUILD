@@ -4,7 +4,7 @@ exports_files([
 ])
 
 filegroup(
-    name = "licenses",
+    name = "license_files",
     srcs = [
         "checkstyle-file-header-agpl.txt",
         "checkstyle-file-header-apache.txt",

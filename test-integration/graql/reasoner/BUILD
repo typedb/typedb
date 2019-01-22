@@ -17,14 +17,6 @@ java_test(
     ],
 )
 
-checkstyle_test(
- name = "reasoning-it-checkstyle",
- target = ":reasoning-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-)
-
 java_test(
     name = "geo-inference-it",
     size = "medium",
@@ -46,10 +38,9 @@ java_test(
 )
 
 checkstyle_test(
- name = "geo-inference-it-checkstyle",
- target = ":geo-inference-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":reasoning-it",
+        ":geo-inference-it",
+    ]
 )

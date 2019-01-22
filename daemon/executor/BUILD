@@ -18,6 +18,8 @@
 
 package(default_visibility = ["//daemon:__pkg__"])
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_library(
     name = "grakn-daemon-executor",
     srcs = glob(["**/*.java"]),
@@ -41,12 +43,9 @@ java_library(
     ]
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "grakn-daemon-executor-checkstyle",
- target = ":grakn-daemon-executor",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":grakn-daemon-executor"
+    ],
 )

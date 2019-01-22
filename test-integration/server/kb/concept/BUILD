@@ -14,14 +14,6 @@ java_test(
      size = "medium",
 )
 
-checkstyle_test(
- name = "attribute-it-checkstyle",
- target = ":attribute-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
 java_test(
      name = "attribute-type-it",
      srcs = ["AttributeTypeIT.java"],
@@ -35,14 +27,6 @@ java_test(
      size = "medium"
 )
 
-checkstyle_test(
- name = "attribute-type-it-checkstyle",
- target = ":attribute-type-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
 java_test(
      name = "concept-it",
      srcs = ["ConceptIT.java"],
@@ -55,15 +39,6 @@ java_test(
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
      size = "medium"
-)
-
-checkstyle_test(
- name = "concept-it-checkstyle",
- target = ":concept-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -79,15 +54,6 @@ java_test(
      size = "medium"
 )
 
-checkstyle_test(
- name = "entity-it-checkstyle",
- target = ":entity-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
      name = "entity-type-it",
      srcs = ["EntityTypeIT.java"],
@@ -101,15 +67,6 @@ java_test(
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
      size = "large"
-)
-
-checkstyle_test(
- name = "entity-type-it-checkstyle",
- target = ":entity-type-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -128,15 +85,6 @@ java_test(
      size = "medium"
 )
 
-checkstyle_test(
- name = "relationship-it-checkstyle",
- target = ":relationship-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
      name = "relationship-type-it",
      srcs = ["RelationTypeIT.java"],
@@ -150,14 +98,6 @@ java_test(
      size = "medium"
 )
 
-checkstyle_test(
- name = "relationship-type-it-checkstyle",
- target = ":relationship-type-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
 java_test(
      name = "role-it",
      srcs = ["RoleIT.java"],
@@ -171,14 +111,6 @@ java_test(
      size = "medium"
 )
 
-checkstyle_test(
- name = "role-it-checkstyle",
- target = ":role-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
 java_test(
      name = "schema-concept-it",
      srcs = ["SchemaConceptIT.java"],
@@ -194,14 +126,6 @@ java_test(
      size = "medium"
 )
 
-checkstyle_test(
- name = "schema-concept-it-checkstyle",
- target = ":schema-concept-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
 java_test(
      name = "schema-mutation-it",
      srcs = ["SchemaMutationIT.java"],
@@ -218,10 +142,17 @@ java_test(
 )
 
 checkstyle_test(
- name = "schema-mutation-it-checkstyle",
- target = ":schema-mutation-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":attribute-it",
+        ":attribute-type-it",
+        ":concept-it",
+        ":entity-it",
+        ":entity-type-it",
+        ":relationship-it",
+        ":relationship-type-it",
+        ":role-it",
+        ":schema-concept-it",
+        ":schema-mutation-it",
+    ]
 )

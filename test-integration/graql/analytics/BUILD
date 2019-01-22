@@ -13,15 +13,6 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
-checkstyle_test(
- name = "analytics-it-checkstyle",
- target = ":analytics-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "connected-component-it",
     test_class = "grakn.core.graql.analytics.ConnectedComponentIT",
@@ -33,15 +24,6 @@ java_test(
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
-)
-
-checkstyle_test(
- name = "connected-component-it-checkstyle",
- target = ":connected-component-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -56,15 +38,6 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
-checkstyle_test(
- name = "coreness-it-checkstyle",
- target = ":coreness-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "count-it",
     test_class = "grakn.core.graql.analytics.CountIT",
@@ -75,15 +48,6 @@ java_test(
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
-)
-
-checkstyle_test(
- name = "count-it-checkstyle",
- target = ":count-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -99,15 +63,6 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
-checkstyle_test(
- name = "degree-it-checkstyle",
- target = ":degree-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "kcore-it",
     test_class = "grakn.core.graql.analytics.KCoreIT",
@@ -118,15 +73,6 @@ java_test(
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
-)
-
-checkstyle_test(
- name = "kcore-it-checkstyle",
- target = ":kcore-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -140,15 +86,6 @@ java_test(
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
-)
-
-checkstyle_test(
- name = "path-it-checkstyle",
- target = ":path-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -165,10 +102,15 @@ java_test(
 )
 
 checkstyle_test(
- name = "statistics-it-checkstyle",
- target = ":statistics-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":analytics-it",
+        ":connected-component-it",
+        ":coreness-it",
+        ":count-it",
+        ":degree-it",
+        ":kcore-it",
+        ":path-it",
+        ":statistics-it"
+    ]
 )

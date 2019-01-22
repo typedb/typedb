@@ -18,6 +18,8 @@
 
 package(default_visibility = ["//daemon:__subpackages__"])
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_library(
     name = "exception",
     srcs = glob(["**/*.java"]),
@@ -27,11 +29,7 @@ java_library(
     ]
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "exception-checkstyle",
- target = ":exception",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
+    name = "checkstyle",
+    targets = [":exception"],
 )

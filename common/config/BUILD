@@ -18,9 +18,6 @@ java_library(
 
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
-    name = "config-checkstyle",
-    target = ":config",
-    config = "//config/checkstyle:checkstyle.xml",
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    licenses = ["//config/checkstyle:licenses"],
+    name = "checkstyle",
+    targets = [":config"],
 )

@@ -56,6 +56,7 @@ import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -222,9 +223,10 @@ public class NegationIT {
                             "get;"
             ));
 
-            List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse("match $x isa entity;get;"));
-            Set<ConceptMap> expectedAnswers = fullAnswers.stream().filter(ans -> ans.get("x").asThing().attributes().noneMatch(a -> a.value().equals(specificStringValue))).collect(toSet());
-            assertCollectionsNonTriviallyEqual(
+            List<ConceptMap> expectedAnswers = tx.stream(Graql.<GetQuery>parse("match $x isa entity;get;"))
+                    .filter(ans -> ans.get("x").asThing().attributes().noneMatch(a -> a.value().equals(specificStringValue))).collect(toList());
+
+            assertCollectionsEqual(
                     expectedAnswers,
                     answersWithoutSpecificStringValue
             );
@@ -243,10 +245,11 @@ public class NegationIT {
                             "get;"
             ));
 
-            List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse("match $x has attribute $r;get;"));
+            List<ConceptMap> expectedAnswers = tx.stream(Graql.<GetQuery>parse("match $x has attribute $r;get;"))
+                    .filter(ans -> !ans.get("r").asAttribute().value().equals(specificStringValue)).collect(toList());
 
             assertCollectionsNonTriviallyEqual(
-                    fullAnswers.stream().filter(ans -> !ans.get("r").asAttribute().value().equals(specificStringValue)).collect(toSet()),
+                    expectedAnswers,
                     answersWithoutSpecificStringValue
             );
         }

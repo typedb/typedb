@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "attribute-deduplicator-e2e",
     test_class = "grakn.core.deduplicator.AttributeDeduplicatorE2E",
@@ -15,12 +17,7 @@ java_test(
     data = ["//:distribution"]
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "attribute-deduplicator-e2e-checkstyle",
- target = ":attribute-deduplicator-e2e",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [":attribute-deduplicator-e2e"],
 )
