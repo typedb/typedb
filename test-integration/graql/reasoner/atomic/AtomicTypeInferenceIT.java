@@ -62,6 +62,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AtomicTypeInferenceIT {
@@ -404,8 +405,8 @@ public class AtomicTypeInferenceIT {
             GraqlTestUtil.assertCollectionsNonTriviallyEqual(possibleTypes, relationshipTypes);
             GraqlTestUtil.assertCollectionsNonTriviallyEqual(relationshipTypes, subbedRelationshipTypes);
 
-            assertEquals(atom.getSchemaConcept(), null);
-            assertEquals(subbedAtom.getSchemaConcept(), null);
+            assertNull(atom.getSchemaConcept());
+            assertNull(subbedAtom.getSchemaConcept());
         }
 
         typeInferenceQueries(possibleTypes, pattern, tx);
@@ -416,7 +417,7 @@ public class AtomicTypeInferenceIT {
         List<ConceptMap> typedAnswers = typedAnswers(possibleTypes, pattern, tx);
         List<ConceptMap> unTypedAnswers = tx.execute(Graql.match(Graql.parsePattern(pattern)).get());
         assertEquals(typedAnswers.size(), unTypedAnswers.size());
-        GraqlTestUtil.assertCollectionsNonTriviallyEqual(typedAnswers, unTypedAnswers);
+        GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
     }
 
     private List<ConceptMap> typedAnswers(List<SchemaConcept> possibleTypes, String pattern, TransactionOLTP tx){
