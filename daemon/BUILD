@@ -18,6 +18,8 @@
 
 package(default_visibility = ["//visibility:__pkg__"])
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_library(
     name = "daemon",
     srcs = glob(["**/*.java"]),
@@ -41,11 +43,9 @@ java_library(
     visibility = ["//server:__pkg__"],
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "daemon-checkstyle",
- target = ":daemon",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
+    name = "checkstyle",
+    targets = [
+        ":daemon"
+    ],
 )

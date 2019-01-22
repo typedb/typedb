@@ -27,7 +27,16 @@ import sys
 
 def check_output_discarding_stderr(*args, **kwargs):
     with open(os.devnull, 'w') as devnull:
-        return subprocess.check_output(*args, stderr=devnull, **kwargs)
+        output = subprocess.check_output(*args, stderr=devnull, **kwargs)
+        if type(output) == bytes:
+            output = output.decode()
+        return output
+
+
+def try_decode(s):
+    if type(s) == bytes:
+        return s.decode()
+    return s
 
 
 print('Checking if there are any source files not covered by checkstyle...')
@@ -44,8 +53,8 @@ checkstyle_targets_xml = check_output_discarding_stderr([
 checkstyle_targets_tree = ElementTree.fromstring(checkstyle_targets_xml)
 java_targets_covered_by_target_attr = checkstyle_targets_tree.findall(".//label[@name='target'][@value]")
 java_targets_covered_by_targets_attr = checkstyle_targets_tree.findall(".//list[@name='targets']//label[@value]")
-checkstyle_targets = list(
-    map(lambda x: x.get('value'), java_targets_covered_by_target_attr + java_targets_covered_by_targets_attr))
+checkstyle_targets = list(map(
+    lambda x: x.get('value'), java_targets_covered_by_target_attr + java_targets_covered_by_targets_attr))
 unique_checkstyle_targets = set(checkstyle_targets)
 
 if len(unique_checkstyle_targets) != len(checkstyle_targets):

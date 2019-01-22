@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "isa-explicit-it",
     test_class = "grakn.core.graql.internal.IsaExplicitIT",
@@ -29,12 +31,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "isa-explicit-it-checkstyle",
- target = ":isa-explicit-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [":isa-explicit-it"],
 )

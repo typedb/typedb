@@ -1,3 +1,5 @@
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "rule-cache-it",
     size = "medium",
@@ -12,12 +14,9 @@ java_test(
     ],
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "rule-cache-it-checkstyle",
- target = ":rule-cache-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":rule-cache-it"
+    ],
 )

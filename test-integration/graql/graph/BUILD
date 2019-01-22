@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_library(
     name = "movie-graph",
     srcs = ["MovieGraph.java"],
@@ -26,12 +28,9 @@ java_library(
     ],
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "movie-graph-checkstyle",
- target = ":movie-graph",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
+    name = "checkstyle",
+    targets = [
+        ":movie-graph"
+    ],
+ )

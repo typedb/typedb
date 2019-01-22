@@ -12,30 +12,12 @@ java_test(
     size = "small"
 )
 
-checkstyle_test(
- name = "in-plays-fragment-test-checkstyle",
- target = ":in-plays-fragment-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "isa-explicit-test",
     srcs = ["IsaExplicitTest.java"],
     test_class = "grakn.core.graql.internal.gremlin.fragment.IsaExplicitTest",
     deps = ["//server"],
     size = "small"
-)
-
-checkstyle_test(
- name = "isa-explicit-test-checkstyle",
- target = ":isa-explicit-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -51,10 +33,10 @@ java_test(
 )
 
 checkstyle_test(
- name = "out-plays-fragment-test-checkstyle",
- target = ":out-plays-fragment-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":in-plays-fragment-test",
+        ":isa-explicit-test",
+        ":out-plays-fragment-test"
+    ],
 )

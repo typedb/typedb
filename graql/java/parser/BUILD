@@ -19,6 +19,7 @@
 package(default_visibility = ["//visibility:public"]) # TODO: Needs to be replaced with below
 #package(default_visibility = ["//graql/java:__subpackages__"])
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_library(
     name = "parser",
@@ -33,12 +34,9 @@ java_library(
     ]
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "parser-checkstyle",
- target = ":parser",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":parser"
+    ],
 )

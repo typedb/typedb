@@ -21,6 +21,8 @@ load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 load("@graknlabs_bazel_distribution//distribution:rules.bzl", "distribution_structure", "distribution_zip", "distribution_deb", "distribution_rpm")
 load("@graknlabs_bazel_distribution//rpm/deployment:rules.bzl", "deploy_rpm")
 load("@graknlabs_bazel_distribution//deb/deployment:rules.bzl", "deploy_deb")
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 
 java_library(
     name = "console",
@@ -50,13 +52,11 @@ java_library(
     tags = ["maven_coordinates=grakn.core:console:{pom_version}"],
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "console-checkstyle",
- target = ":console",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
+    name = "checkstyle",
+    targets = [
+        ":console"
+    ],
 )
 
 java_binary(

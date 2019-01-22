@@ -12,9 +12,8 @@ java_library(
 )
 
 checkstyle_test(
- name = "graql-test-util-checkstyle",
- target = ":graql-test-util",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
+    name = "checkstyle",
+    targets = [
+        ":graql-test-util"
+    ],
 )

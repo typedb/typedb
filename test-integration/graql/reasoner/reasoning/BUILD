@@ -14,15 +14,6 @@ java_test(
     ],
 )
 
-checkstyle_test(
- name = "neq-predicate-it-checkstyle",
- target = ":neq-predicate-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "recursion-it",
     size = "large",
@@ -52,15 +43,6 @@ java_test(
     ],
 )
 
-checkstyle_test(
- name = "recursion-it-checkstyle",
- target = ":recursion-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "attribute-attachment-it",
     size = "medium",
@@ -77,14 +59,6 @@ java_test(
     ],
 )
 
-checkstyle_test(
- name = "attribute-attachment-it-checkstyle",
- target = ":attribute-attachment-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-)
-
 java_test(
     name = "type-generation-it",
     size = "medium",
@@ -97,15 +71,6 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
-)
-
-checkstyle_test(
- name = "type-generation-it-checkstyle",
- target = ":type-generation-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -121,15 +86,6 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
-)
-
-checkstyle_test(
- name = "type-hierarchies-it-checkstyle",
- target = ":type-hierarchies-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -149,10 +105,13 @@ java_test(
 )
 
 checkstyle_test(
- name = "variable-roles-it-checkstyle",
- target = ":variable-roles-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":attribute-attachment-it",
+        ":neq-predicate-it",
+        ":recursion-it",
+        ":type-generation-it",
+        ":type-hierarchies-it",
+        ":variable-roles-it",
+    ]
 )

@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "attribute-deduplicator-it",
     test_class = "grakn.core.server.AttributeDeduplicatorIT",
@@ -27,12 +29,9 @@ java_test(
     size = "large"
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "attribute-deduplicator-it-checkstyle",
- target = ":attribute-deduplicator-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":attribute-deduplicator-it"
+    ],
 )
