@@ -18,16 +18,16 @@
 
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
-import com.google.auto.value.AutoValue;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.ValueProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -35,24 +35,58 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- *
- * <p>
  * Predicate implementation specialising it to be an value predicate. Corresponds to {@link ValueProperty}.
- * </p>
- *
- *
  */
-@AutoValue
-public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.predicate.ValuePredicate> {
+public class ValuePredicate extends Predicate<grakn.core.graql.query.predicate.ValuePredicate> {
 
-    @Override public abstract Statement getPattern();
-    @Override public abstract ReasonerQuery getParentQuery();
+    private final Variable varName;
+    private final Statement pattern;
+    private final ReasonerQuery parentQuery;
+    private final grakn.core.graql.query.predicate.ValuePredicate predicate;
 
-    //need to have it explicitly here cause autovalue gets confused with the generic
-    public abstract grakn.core.graql.query.predicate.ValuePredicate getPredicate();
+    private ValuePredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery,
+                           grakn.core.graql.query.predicate.ValuePredicate predicate) {
+        if (varName == null) {
+            throw new NullPointerException("Null varName");
+        }
+        this.varName = varName;
+        if (pattern == null) {
+            throw new NullPointerException("Null pattern");
+        }
+        this.pattern = pattern;
+        if (parentQuery == null) {
+            throw new NullPointerException("Null parentQuery");
+        }
+        this.parentQuery = parentQuery;
+        if (predicate == null) {
+            throw new NullPointerException("Null predicate");
+        }
+        this.predicate = predicate;
+    }
+
+    @CheckReturnValue
+    @Override
+    public Variable getVarName() {
+        return varName;
+    }
+
+    @Override
+    public Statement getPattern() {
+        return pattern;
+    }
+
+    @Override
+    public ReasonerQuery getParentQuery() {
+        return parentQuery;
+    }
+
+    @Override
+    public grakn.core.graql.query.predicate.ValuePredicate getPredicate() {
+        return predicate;
+    }
 
     public static ValuePredicate create(Statement pattern, ReasonerQuery parent) {
-        return new AutoValue_ValuePredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
+        return new ValuePredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
     public static ValuePredicate create(Variable varName, grakn.core.graql.query.predicate.ValuePredicate pred, ReasonerQuery parent) {
         return create(createValueVar(varName, pred), parent);

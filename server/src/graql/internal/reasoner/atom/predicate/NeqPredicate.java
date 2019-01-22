@@ -18,36 +18,70 @@
 
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.base.Equivalence;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.NeqProperty;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
 /**
- *
- * <p>
  * Predicate implementation specialising it to be an inequality predicate. Corresponds to graql {@link NeqProperty}.
- * </p>
- *
- *
  */
-@AutoValue
-public abstract class NeqPredicate extends Predicate<Variable> {
+public class NeqPredicate extends Predicate<Variable> {
 
-    @Override public abstract Statement getPattern();
-    @Override public abstract ReasonerQuery getParentQuery();
-    //need to have it explicitly here cause autovalue gets confused with the generic
-    public abstract Variable getPredicate();
+    private final Variable varName;
+    private final Statement pattern;
+    private final ReasonerQuery parentQuery;
+    private final Variable predicate;
+
+    NeqPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, Variable predicate) {
+        if (varName == null) {
+            throw new NullPointerException("Null varName");
+        }
+        this.varName = varName;
+        if (pattern == null) {
+            throw new NullPointerException("Null pattern");
+        }
+        this.pattern = pattern;
+        if (parentQuery == null) {
+            throw new NullPointerException("Null parentQuery");
+        }
+        this.parentQuery = parentQuery;
+        if (predicate == null) {
+            throw new NullPointerException("Null predicate");
+        }
+        this.predicate = predicate;
+    }
+
+    @CheckReturnValue
+    @Override
+    public Variable getVarName() {
+        return varName;
+    }
+
+    @Override
+    public Statement getPattern() {
+        return pattern;
+    }
+
+    @Override
+    public ReasonerQuery getParentQuery() {
+        return parentQuery;
+    }
+
+    @Override
+    public Variable getPredicate() {
+        return predicate;
+    }
 
     public static NeqPredicate create(Statement pattern, ReasonerQuery parent) {
-        return new AutoValue_NeqPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
+        return new NeqPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
     public static NeqPredicate create(Variable varName, NeqProperty prop, ReasonerQuery parent) {
         Statement pattern = new Statement(varName).neq(prop);
@@ -66,8 +100,15 @@ public abstract class NeqPredicate extends Predicate<Variable> {
         IdPredicate thatPredicate = that.getIdPredicate(that.getVarName());
         IdPredicate thisRefPredicate = this.getIdPredicate(this.getPredicate());
         IdPredicate thatRefPredicate = that.getIdPredicate(that.getPredicate());
-        return ( (thisPredicate == null) ? (thisPredicate == thatPredicate) : equiv.equivalent(thisPredicate, thatPredicate) )
-                && ( (thisRefPredicate == null) ? (thisRefPredicate == thatRefPredicate) : equiv.equivalent(thisRefPredicate, thatRefPredicate) );
+        return (
+                (thisPredicate == null) ?
+                thisPredicate == thatPredicate :
+                equiv.equivalent(thisPredicate, thatPredicate)
+        ) && (
+                (thisRefPredicate == null) ?
+                (thisRefPredicate == thatRefPredicate) :
+                equiv.equivalent(thisRefPredicate, thatRefPredicate)
+        );
     }
 
     private int bindingHash(AtomicEquivalence equiv){

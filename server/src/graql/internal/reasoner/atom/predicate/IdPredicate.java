@@ -18,65 +18,103 @@
 
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
-import com.google.auto.value.AutoValue;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.server.Transaction;
 
-/**
- *
- * <p>
- * Predicate implementation specialising it to be an id predicate. Corresponds to {@link IdProperty}.
- * </p>
- *
- *
- */
-@AutoValue
-public abstract class IdPredicate extends Predicate<ConceptId>{
+import javax.annotation.CheckReturnValue;
 
-    @Override public abstract Statement getPattern();
-    @Override public abstract ReasonerQuery getParentQuery();
-    //need to have it explicitly here cause autovalue gets confused with the generic
-    public abstract ConceptId getPredicate();
+/**
+ * Predicate implementation specialising it to be an id predicate. Corresponds to {@link IdProperty}.
+ */
+public class IdPredicate extends Predicate<ConceptId> {
+
+    private final Variable varName;
+    private final Statement pattern;
+    private final ReasonerQuery parentQuery;
+    private final ConceptId predicate;
+
+    IdPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, ConceptId predicate) {
+        if (varName == null) {
+            throw new NullPointerException("Null varName");
+        }
+        this.varName = varName;
+        if (pattern == null) {
+            throw new NullPointerException("Null pattern");
+        }
+        this.pattern = pattern;
+        if (parentQuery == null) {
+            throw new NullPointerException("Null parentQuery");
+        }
+        this.parentQuery = parentQuery;
+        if (predicate == null) {
+            throw new NullPointerException("Null predicate");
+        }
+        this.predicate = predicate;
+    }
+
+    @CheckReturnValue
+    @Override
+    public Variable getVarName() {
+        return varName;
+    }
+
+    @Override
+    public Statement getPattern() {
+        return pattern;
+    }
+
+    @Override
+    public ReasonerQuery getParentQuery() {
+        return parentQuery;
+    }
+
+    @Override
+    public ConceptId getPredicate() {
+        return predicate;
+    }
 
     public static IdPredicate create(Statement pattern, ReasonerQuery parent) {
-        return new AutoValue_IdPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
+        return new IdPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
+
     public static IdPredicate create(Variable varName, Label label, ReasonerQuery parent) {
         return create(createIdVar(varName.asUserDefined(), label, parent.tx()), parent);
     }
+
     public static IdPredicate create(Variable varName, ConceptId id, ReasonerQuery parent) {
         return create(createIdVar(varName.asUserDefined(), id), parent);
     }
+
     private static IdPredicate create(IdPredicate a, ReasonerQuery parent) {
         return create(a.getPattern(), parent);
     }
 
-    private static ConceptId extractPredicate(Statement var){
+    private static ConceptId extractPredicate(Statement var) {
         return var.getProperty(IdProperty.class).map(idProperty -> ConceptId.of(idProperty.id())).orElse(null);
     }
 
-    private static Statement createIdVar(Variable varName, ConceptId typeId){
+    private static Statement createIdVar(Variable varName, ConceptId typeId) {
         return new Statement(varName).id(typeId.getValue());
     }
 
-    private static Statement createIdVar(Variable varName, Label label, Transaction graph){
+    private static Statement createIdVar(Variable varName, Label label, Transaction graph) {
         SchemaConcept schemaConcept = graph.getSchemaConcept(label);
         if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label);
         return new Statement(varName).id(schemaConcept.id().getValue());
     }
 
     @Override
-    public boolean isStructurallyEquivalent(Object obj){
+    public boolean isStructurallyEquivalent(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         return true;
@@ -88,20 +126,20 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
     }
 
     @Override
-    public Atomic copy(ReasonerQuery parent){
+    public Atomic copy(ReasonerQuery parent) {
         return create(this, parent);
     }
 
     @Override
     public void checkValid() {
         ConceptId conceptId = getPredicate();
-        if (tx().getConcept(conceptId) == null){
+        if (tx().getConcept(conceptId) == null) {
             throw GraqlQueryException.idNotFound(conceptId);
         }
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "[" + getVarName() + "/" + getPredicateValue() + "]";
     }
 
@@ -112,10 +150,10 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
     /**
      * @return corresponding value predicate if transformation exists (id corresponds to an attribute concept)
      */
-    public ValuePredicate toValuePredicate(){
+    public ValuePredicate toValuePredicate() {
         Concept concept = tx().getConcept(this.getPredicate());
-        Object value = (concept != null && concept.isAttribute())? concept.asAttribute().value() : null;
-        return value != null?
+        Object value = (concept != null && concept.isAttribute()) ? concept.asAttribute().value() : null;
+        return value != null ?
                 ValuePredicate.create(this.getVarName(), Predicates.eq(value), this.getParentQuery()) : null;
     }
 }
