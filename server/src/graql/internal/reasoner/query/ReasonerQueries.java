@@ -35,16 +35,10 @@ import java.util.Set;
  */
 public class ReasonerQueries {
 
-
-    public static CompositeQuery composite(Conjunction<Pattern> pattern, TransactionOLTP tx) {
-        return new CompositeQuery(pattern, tx).inferTypes();
-    }
-
     /**
-     *
-     * @param pattern
-     * @param tx
-     * @return
+     * @param pattern conjunctive pattern defining the query
+     * @param tx corresponding transaction
+     * @return a resolvable reasoner query constructed from provided conjunctive pattern
      */
     public static ResolvableQuery resolvable(Conjunction<Pattern> pattern, TransactionOLTP tx){
         CompositeQuery query = new CompositeQuery(pattern, tx).inferTypes();
@@ -55,10 +49,9 @@ public class ReasonerQueries {
     }
 
     /**
-     *
-     * @param q
-     * @param sub
-     * @return
+     * @param q base query for substitution to be attached
+     * @param sub (partial) substitution
+     * @return resolvable query with the substitution contained in the query
      */
     public static ResolvableQuery resolvable(ResolvableQuery q, ConceptMap sub){
         return q.withSubstitution(sub).inferTypes();
