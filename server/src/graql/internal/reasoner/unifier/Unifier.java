@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.admin;
+package grakn.core.graql.internal.reasoner.unifier;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.query.pattern.statement.Variable;
@@ -27,18 +27,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
- * <p>
  * Interface for resolution unifier defined as a finite set of mappings between variables xi and terms ti:
- *
  * θ = {x1/t1, x2/t2, ..., xi/ti}.
  *
  * Both variables and terms are defined in terms of graql Vars.
- *
  * For a set of expressions Γ, the unifier θ maps elements from Γ to a single expression φ : Γθ = {φ}.
- * </p>
- *
- *
  */
 public interface Unifier{
 

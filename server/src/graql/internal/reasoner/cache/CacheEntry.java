@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
-import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 
 /**
  * Simple class for defining query entries.

@@ -16,11 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.admin;
+package grakn.core.graql.internal.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.statement.Variable;
@@ -31,12 +33,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- *
- * <p>
  * Interface for conjunctive reasoner queries.
- * </p>
- *
- *
  */
 public interface ReasonerQuery{
 

@@ -16,10 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.admin;
+package grakn.core.graql.internal.reasoner.unifier;
 
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.query.pattern.statement.Variable;
 
 import java.util.Set;

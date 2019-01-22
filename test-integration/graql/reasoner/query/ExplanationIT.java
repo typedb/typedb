@@ -24,7 +24,7 @@
 //import grakn.core.graql.query.QueryBuilder;
 //import grakn.core.graql.query.pattern.Var;
 //import grakn.core.graql.answer.Explanation;
-//import grakn.core.graql.admin.ReasonerQuery;
+//import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 //import grakn.core.graql.answer.ConceptMap;
 //import grakn.core.graql.answer.ConceptMapImpl;
 //import com.google.common.collect.ImmutableList;

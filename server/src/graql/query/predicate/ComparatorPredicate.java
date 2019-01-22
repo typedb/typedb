@@ -39,32 +39,33 @@ import java.util.stream.Stream;
 public abstract class ComparatorPredicate implements ValuePredicate {
 
     // Exactly one of these fields will be present
-    private final Optional<Object> value;
-    private final Optional<Statement> var;
+    private final Object value;
+    private final Statement var;
 
-    private static final String[] VALUE_PROPERTIES =
-            DataType.SUPPORTED_TYPES.values().stream()
-                    .map(DataType::getVertexProperty)
-                    .distinct()
-                    .map(Enum::name)
-                    .toArray(String[]::new);
+    private static final String[] VALUE_PROPERTIES = DataType.SUPPORTED_TYPES.values().stream()
+            .map(dataType -> dataType.getVertexProperty()).distinct()
+            .map(vertexProperty -> vertexProperty.name()).toArray(name -> new String[name]);
 
     /**
      * @param value the value that this predicate is testing against
      */
     ComparatorPredicate(Object value) {
+        if (value == null) {
+            throw new NullPointerException("Value is null");
+        }
+
         if (value instanceof Statement) {
-            this.value = Optional.empty();
-            this.var = Optional.of(((Statement) value));
+            this.value = null;
+            this.var = (Statement) value;
         } else {
             // Convert integers to longs for consistency
             if (value instanceof Integer) {
                 value = ((Integer) value).longValue();
             }
+            // TODO: why do not convert floats to doubles?
 
-            this.value = Optional.of(value);
-
-            this.var = Optional.empty();
+            this.value = value;
+            this.var = null;
         }
     }
 
@@ -72,44 +73,40 @@ public abstract class ComparatorPredicate implements ValuePredicate {
      * @param var the variable that this predicate is testing against
      */
     ComparatorPredicate(Statement var) {
-        this.value = Optional.empty();
-        this.var = Optional.of(var);
+        this.value = null;
+        this.var = var;
     }
 
     protected abstract String getSymbol();
 
     abstract <V> P<V> gremlinPredicate(V value);
 
-    private DataType dataType(Object value) {
-        // Convert values to how they are stored in the graph
-        DataType dataType = DataType.SUPPORTED_TYPES.get(value.getClass().getName());
-
-        if (dataType == null) {
-            throw GraqlQueryException.invalidValueClass(value);
-        }
-
-        return dataType;
-    }
-
     final Optional<Object> persistedValue() {
-        return value().map(value -> {
-            DataType dataType = dataType(value);
+        if (value == null) {
+            return Optional.empty();
+        } else {
+            // Convert values to how they are stored in the graph
+            DataType dataType = DataType.SUPPORTED_TYPES.get(value.getClass().getName());
+
+            if (dataType == null) {
+                throw GraqlQueryException.invalidValueClass(value);
+            }
+
             // We can trust the `SUPPORTED_TYPES` map to store things with the right type
             //noinspection unchecked
-            return dataType.getPersistedValue(value);
-        });
+            return Optional.of(dataType.getPersistedValue(value));
+        }
     }
 
     final Optional<Object> value() {
-        return value;
+        return Optional.ofNullable(value);
     }
 
     public String toString() {
         // If there is no value, then there must be a var
-        //noinspection OptionalGetWithoutIsPresent
-        String argument = value().map(value1 -> StringUtil.valueToString(value1)).orElseGet(() -> var.get().getPrintableName());
-
-        return getSymbol() + " " + argument;
+        return getSymbol() + " " + value()
+                .map(value -> StringUtil.valueToString(value))
+                .orElseGet(() -> var.getPrintableName());
     }
 
     @Override
@@ -131,13 +128,16 @@ public abstract class ComparatorPredicate implements ValuePredicate {
      */
     public boolean containsEquality(){ return false;}
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public boolean isCompatibleWith(ValuePredicate predicate) {
-        if (!(predicate instanceof ComparatorPredicate)
-                || predicate instanceof ContainsPredicate
-                || predicate instanceof NeqPredicate){
+        if (!(predicate instanceof ComparatorPredicate)) {
             return predicate.isCompatibleWith(this);
+
+        } else if (predicate instanceof ContainsPredicate || predicate instanceof NeqPredicate ){
+            return predicate.isCompatibleWith(this);
+
         }
+
         ComparatorPredicate that = (ComparatorPredicate) predicate;
         Object val = this.value().orElse(null);
         Object thatVal = that.value().orElse(null);
@@ -145,26 +145,28 @@ public abstract class ComparatorPredicate implements ValuePredicate {
         //NB this is potentially dangerous e.g. if a user types a long as a char in the query
         if (!val.getClass().equals(thatVal.getClass())) return false;
 
-        return val.equals(thatVal)?
+        return val.equals(thatVal) ?
                 (this.signum() * that.signum() > 0 || this.containsEquality() && that.containsEquality()) :
                 (this.gremlinPredicate(val).test(thatVal) || that.gremlinPredicate(thatVal).test(val));
     }
 
-    @Override
+    @Override @SuppressWarnings("Duplicates")
     public boolean subsumes(ValuePredicate predicate) {
-        if (!(predicate instanceof ComparatorPredicate)) return false;
+        if (!(predicate instanceof ComparatorPredicate)) {
+            return false;
+        }
+
         ComparatorPredicate that = (ComparatorPredicate) predicate;
         Object val = this.value().orElse(null);
         Object thatVal = that.value().orElse(null);
         if (val == null || thatVal == null) return true;
         //NB this is potentially dangerous e.g. if a user types a long as a char in the query
         if (!val.getClass().equals(thatVal.getClass())) return false;
-        return that.gremlinPredicate(thatVal).test(val)
-                && (
-                val.equals(thatVal)?
+
+        return that.gremlinPredicate(thatVal).test(val) &&
+                (val.equals(thatVal) ?
                         (this.isSpecific() || this.isSpecific() == that.isSpecific()) :
-                        ( !this.gremlinPredicate(val).test(thatVal))
-        );
+                        (!this.gremlinPredicate(val).test(thatVal)));
     }
 
     @Override
@@ -174,20 +176,20 @@ public abstract class ComparatorPredicate implements ValuePredicate {
 
     @Override
     public Optional<P<Object>> getPredicate() {
-        return persistedValue().map(this::gremlinPredicate);
+        return persistedValue().map(value -> gremlinPredicate(value));
     }
 
     @Override
     public Optional<Statement> getInnerVar() {
-        return var;
+        return Optional.ofNullable(var);
     }
 
     @Override
     public final <S, E> GraphTraversal<S, E> applyPredicate(GraphTraversal<S, E> traversal) {
-        var.ifPresent(theVar -> {
+        if (var != null) {
             // Compare to another variable
             String thisVar = UUID.randomUUID().toString();
-            Variable otherVar = theVar.var();
+            Variable otherVar = var.var();
             String otherValue = UUID.randomUUID().toString();
 
             Traversal[] traversals = Stream.of(VALUE_PROPERTIES)
@@ -195,16 +197,18 @@ public abstract class ComparatorPredicate implements ValuePredicate {
                     .toArray(Traversal[]::new);
 
             traversal.as(thisVar).select(otherVar.symbol()).or(traversals).select(thisVar);
-        });
+            return traversal;
 
-        persistedValue().ifPresent(theValue -> {
+        } else if (value != null) {
             // Compare to a given value
             DataType<?> dataType = DataType.SUPPORTED_TYPES.get(value().get().getClass().getTypeName());
             Schema.VertexProperty property = dataType.getVertexProperty();
-            traversal.has(property.name(), gremlinPredicate(theValue));
-        });
+            traversal.has(property.name(), gremlinPredicate(value));
+            return traversal;
 
-        return traversal;
+        } else {
+            throw new IllegalStateException("Both Value and Variable are null in Predicate: " + getSymbol());
+        }
     }
 
 }
