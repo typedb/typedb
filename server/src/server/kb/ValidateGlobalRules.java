@@ -301,7 +301,7 @@ class ValidateGlobalRules {
      */
     private static ReasonerQuery combinedRuleQuery(TransactionOLTP graph, Rule rule){
         ReasonerQuery bodyQuery = ReasonerQueries.create(Graql.and(rule.when().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())), graph);
-        ReasonerQuery headQuery = ReasonerQueries.create(Graql.and(rule.when().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())), graph);
+        ReasonerQuery headQuery = ReasonerQueries.create(Graql.and(rule.then().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())), graph);
         return headQuery.conjunction(bodyQuery);
     }
 

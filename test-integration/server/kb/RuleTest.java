@@ -53,56 +53,59 @@ public class RuleTest {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private Transaction tx;
     private Session session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
     public void tearDown(){
-        tx.close();
         session.close();
     }
     
     @Test
     public void whenCreatingRulesWithNullValues_Throw() throws Exception {
-        expectedException.expect(NullPointerException.class);
-        tx.putRule("A Thing", null, null);
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            expectedException.expect(NullPointerException.class);
+            tx.putRule("A Thing", null, null);
+        }
     }
 
     @Test
     public void whenCreatingRulesWithNonExistentEntityType_Throw() throws InvalidKBException {
-        tx.putEntityType("My-Type");
-        
-        Pattern when = Graql.parsePattern("$x isa Your-Type;");
-        Pattern then = Graql.parsePattern("$x isa My-Type;");
-        Rule rule = tx.putRule("My-Sad-Rule-Type", when, then);
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.putEntityType("My-Type");
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(
-                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(Schema.VertexProperty.RULE_WHEN.name(), rule.label(), "Your-Type"));
+            Pattern when = Graql.parsePattern("$x isa Your-Type;");
+            Pattern then = Graql.parsePattern("$x isa My-Type;");
+            Rule rule = tx.putRule("My-Sad-Rule-Type", when, then);
 
-        tx.commit();
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(
+                    ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(Schema.VertexProperty.RULE_WHEN.name(), rule.label(), "Your-Type"));
+
+            tx.commit();
+        }
     }
 
     @Test
     public void whenCreatingDistinctRulesWithSimilarStringHashes_EnsureRulesDoNotClash(){
-        String productRefused = "productRefused";
-        Pattern when1 = Graql.parsePattern("{$step has step-id 9; $e (process-case: $case) isa process-record; $case has consent false;};");
-        Pattern then1 = Graql.parsePattern("{(record: $e, step: $step) isa record-step;};");
-        Rule rule1 = tx.putRule(productRefused, when1, then1);
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            String productRefused = "productRefused";
+            Pattern when1 = Graql.parsePattern("{$step has step-id 9; $e (process-case: $case) isa process-record; $case has consent false;};");
+            Pattern then1 = Graql.parsePattern("{(record: $e, step: $step) isa record-step;};");
+            Rule rule1 = tx.putRule(productRefused, when1, then1);
 
-        String productAccepted = "productAccepted";
-        Pattern when2 = Graql.parsePattern("{$step has step-id 7; $e (process-case: $case) isa process-record; $case has consent true;};");
-        Pattern then2 = Graql.parsePattern("{(record: $e, step: $step) isa record-step;};");
-        Rule rule2 = tx.putRule(productAccepted, when2, then2);
+            String productAccepted = "productAccepted";
+            Pattern when2 = Graql.parsePattern("{$step has step-id 7; $e (process-case: $case) isa process-record; $case has consent true;};");
+            Pattern then2 = Graql.parsePattern("{(record: $e, step: $step) isa record-step;};");
+            Rule rule2 = tx.putRule(productAccepted, when2, then2);
 
-        assertEquals(rule1, tx.getRule(productRefused));
-        assertEquals(rule2, tx.getRule(productAccepted));
+            assertEquals(rule1, tx.getRule(productRefused));
+            assertEquals(rule2, tx.getRule(productAccepted));
+        }
     }
 
     @Test
@@ -282,10 +285,9 @@ public class RuleTest {
 
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_Predicate_Throw() throws InvalidKBException {
-        ConceptId randomId = tx.getMetaConcept().id();
         validateIllegalHead(
                 Graql.parsePattern("(role1: $x, role2: $y) isa relation1;"),
-                Graql.parsePattern("$x id '" + randomId.getValue() + "';"),
+                Graql.parsePattern("$x id 'V123';"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(
@@ -351,7 +353,7 @@ public class RuleTest {
     @Test
     public void whenAddingRuleInvalidOntologically_TypeCantPlayARole_Throw() throws InvalidKBException {
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("{$y isa entity1; };"),
+                Graql.parsePattern("{$x isa entity1;$y isa entity1; };"),
                 Graql.parsePattern("(role3: $x, role3: $y) isa relation2;"),
                 ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage("entity1", "role3", "relation2")
         );
@@ -361,8 +363,8 @@ public class RuleTest {
                 ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage("entity1", "role3", "relation2")
         );
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("role1: $x, role2: $y) isa relation1;"),
-                Graql.parsePattern("{$y isa entity1; (role3: $x, role3: $y) isa relation2;};"),
+                Graql.parsePattern("{(role1: $x, role2: $y) isa relation1;$y isa entity1;};"),
+                Graql.parsePattern("{(role3: $x, role3: $y) isa relation2;};"),
                 ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage("entity1", "role3", "relation2")
         );
     }
@@ -423,40 +425,97 @@ public class RuleTest {
         );
     }
 
-    private void validateOntologicallyIllegalRule(Pattern when, Pattern then, String message){
-        initTx(tx);
-        tx.putRule(UUID.randomUUID().toString(), when, then);
+    @Test
+    public void whenCreatingRules_EnsureHypothesisAndConclusionTypesAreFilledOnCommit() throws InvalidKBException {
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            EntityType t1 = tx.putEntityType("type1");
+            EntityType t2 = tx.putEntityType("type2");
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(message);
+            Pattern when = Graql.parsePattern("$x isa type1;");
+            Pattern then = Graql.parsePattern("$x isa type2;");
 
-        tx.commit();
+            Rule rule = tx.putRule("My-Happy-Rule", when, then);
+            assertThat(rule.whenTypes().collect(Collectors.toSet()), empty());
+            assertThat(rule.thenTypes().collect(Collectors.toSet()), empty());
+
+            tx.commit();
+
+            assertThat(rule.whenTypes().collect(Collectors.toSet()), containsInAnyOrder(t1));
+            assertThat(rule.thenTypes().collect(Collectors.toSet()), containsInAnyOrder(t2));
+        }
     }
-    
-    private void validateIllegalRule(Pattern when, Pattern then, ErrorMessage message){
-        initTx(tx);
-        Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(message.getMessage(rule.label()));
-        tx.commit();
+    @Test
+    public void whenAddingDuplicateRulesOfTheSameTypeWithTheSamePattern_ReturnTheSameRule(){
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.putEntityType("type1");
+            Pattern when = Graql.parsePattern("$x isa type1;");
+            Pattern then = Graql.parsePattern("$x isa type1;");
+
+            Rule rule1 = tx.putRule("My-Angry-Rule", when, then);
+            Rule rule2 = tx.putRule("My-Angry-Rule", when, then);
+
+            assertEquals(rule1, rule2);
+        }
+    }
+
+    @Ignore("This is ignored because we currently have no way to determine if patterns with different variables name are equivalent")
+    @Test
+    public void whenAddingDuplicateRulesOfTheSameTypeWithDifferentPatternVariables_ReturnTheSameRule(){
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.putEntityType("type1");
+            Pattern when = Graql.parsePattern("$x isa type1;");
+            Pattern then = Graql.parsePattern("$y isa type1;");
+
+            Rule rule1 = tx.putRule("My-Angry-Rule", when, then);
+            Rule rule2 = tx.putRule("My-Angry-Rule", when, then);
+
+            assertEquals(rule1, rule2);
+        }
+    }
+
+    private void validateOntologicallyIllegalRule(Pattern when, Pattern then, String message){
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            initTx(tx);
+            tx.putRule(UUID.randomUUID().toString(), when, then);
+
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(message);
+
+            tx.commit();
+        }
+    }
+
+    private void validateIllegalRule(Pattern when, Pattern then, ErrorMessage message){
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            initTx(tx);
+            Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
+
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(message.getMessage(rule.label()));
+            tx.commit();
+        }
     }
 
     private void validateIllegalHead(Pattern when, Pattern then, ErrorMessage message){
-        initTx(tx);
-        Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            initTx(tx);
+            Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(message.getMessage(then.toString(), rule.label()));
-        tx.commit();
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(message.getMessage(then.toString(), rule.label()));
+            tx.commit();
+        }
     }
 
     private void validateLegalHead(Pattern when, Pattern then){
-        initTx(tx);
-        tx.putRule(UUID.randomUUID().toString(), when, then);
-        tx.commit();
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            initTx(tx);
+            tx.putRule(UUID.randomUUID().toString(), when, then);
+            tx.commit();
+        }
     }
-    
+
     private void initTx(Transaction tx){
         AttributeType<Integer> res1 = tx.putAttributeType("res1", AttributeType.DataType.INTEGER);
         AttributeType<Integer> res2 = tx.putAttributeType("res2", AttributeType.DataType.INTEGER);
@@ -478,48 +537,5 @@ public class RuleTest {
                 .plays(role2);
         tx.putRelationshipType("relation2")
                 .relates(role3);
-    }
-
-    @Test
-    public void whenCreatingRules_EnsureHypothesisAndConclusionTypesAreFilledOnCommit() throws InvalidKBException {
-        EntityType t1 = tx.putEntityType("type1");
-        EntityType t2 = tx.putEntityType("type2");
-
-        Pattern when = Graql.parsePattern("$x isa type1;");
-        Pattern then = Graql.parsePattern("$x isa type2;");
-
-        Rule rule = tx.putRule("My-Happy-Rule", when, then);
-        assertThat(rule.whenTypes().collect(Collectors.toSet()), empty());
-        assertThat(rule.thenTypes().collect(Collectors.toSet()), empty());
-
-        tx.commit();
-
-        assertThat(rule.whenTypes().collect(Collectors.toSet()), containsInAnyOrder(t1));
-        assertThat(rule.thenTypes().collect(Collectors.toSet()), containsInAnyOrder(t2));
-    }
-
-    @Test
-    public void whenAddingDuplicateRulesOfTheSameTypeWithTheSamePattern_ReturnTheSameRule(){
-        tx.putEntityType("type1");
-        Pattern when = Graql.parsePattern("$x isa type1;");
-        Pattern then = Graql.parsePattern("$x isa type1;");
-
-        Rule rule1 = tx.putRule("My-Angry-Rule", when, then);
-        Rule rule2 = tx.putRule("My-Angry-Rule", when, then);
-
-        assertEquals(rule1, rule2);
-    }
-
-    @Ignore("This is ignored because we currently have no way to determine if patterns with different variables name are equivalent")
-    @Test
-    public void whenAddingDuplicateRulesOfTheSameTypeWithDifferentPatternVariables_ReturnTheSameRule(){
-        tx.putEntityType("type1");
-        Pattern when = Graql.parsePattern("$x isa type1;");
-        Pattern then = Graql.parsePattern("$y isa type1;");
-
-        Rule rule1 = tx.putRule("My-Angry-Rule", when, then);
-        Rule rule2 = tx.putRule("My-Angry-Rule", when, then);
-
-        assertEquals(rule1, rule2);
     }
 }

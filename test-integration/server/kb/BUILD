@@ -43,7 +43,7 @@ java_test(
 
 java_test(
     name = "rule-test-it",
-    size = "medium",
+    size = "large",
     srcs = ["RuleTest.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.kb.RuleTest",
