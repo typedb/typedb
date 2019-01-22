@@ -37,12 +37,12 @@ import java.util.Set;
  * Query state corresponding to an atomic query ({@link ReasonerAtomicQuery}) in the resolution tree.
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
-class AtomicState extends QueryState<ReasonerAtomicQuery> {
+public class AtomicState extends QueryState<ReasonerAtomicQuery> {
 
     private MultiUnifier cacheUnifier = null;
     private CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = null;
 
-    AtomicState(ReasonerAtomicQuery query,
+    public AtomicState(ReasonerAtomicQuery query,
                 ConceptMap sub,
                 Unifier u,
                 QueryStateBase parent,

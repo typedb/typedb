@@ -24,6 +24,7 @@ import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
 import java.util.Set;
 
 /**
@@ -61,7 +62,7 @@ public class CompositeState extends ConjunctiveState {
     private final ResolutionState baseConjunctionState;
     private boolean visited = false;
 
-    private final Set<CompositeQuery> complements;
+    private final Set<ResolvableQuery> complements;
 
     public CompositeState(CompositeQuery query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache) {
         super(query.getConjunctiveQuery(), sub, u, parent, subGoals, cache);
@@ -70,12 +71,25 @@ public class CompositeState extends ConjunctiveState {
     }
 
     @Override
+    public String toString(){
+        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" +
+                getQuery().toString() +
+                (!complements.isEmpty()? "\nNOT{\n" + complements + "\n}" : "");
+    }
+
+    @Override
     public ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap answer = state.getAnswer();
 
         boolean isNegationSatisfied = complements.stream()
-                .map(q -> ReasonerQueries.composite(q, answer))
-                .noneMatch(q -> q.resolve(getCache()).findFirst().isPresent());
+                .map(q -> ReasonerQueries.resolvable(q, answer))
+                .noneMatch(q -> {
+                    System.out.println(">>>>>>>>Resolve complement query; " + q);
+                    return q.resolve(getVisitedSubGoals(), getCache(), q.requiresReiteration()).findFirst().isPresent();
+                });
+
+        if (isNegationSatisfied) System.out.println(">>>>>>>>Answer not found -> negation satisfied with answer: " + answer);
+        else{ System.out.println(">>>>>>>>Answer found -> negation not satisfied!");}
 
         return isNegationSatisfied?
                 new AnswerState(answer, getUnifier(), getParentState()) :

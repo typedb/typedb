@@ -35,11 +35,27 @@ import java.util.Set;
  */
 public class ReasonerQueries {
 
-    public static CompositeQuery composite(Conjunction<Pattern> pattern, TransactionOLTP tx){
-        return new CompositeQuery(pattern, tx).inferTypes();
+    /**
+     *
+     * @param pattern
+     * @param tx
+     * @return
+     */
+    public static ResolvableQuery resolvable(Conjunction<Pattern> pattern, TransactionOLTP tx){
+        CompositeQuery query = new CompositeQuery(pattern, tx).inferTypes();
+        return query.isAtomic()?
+                new ReasonerAtomicQuery(query.getAtoms(), tx) :
+                query.isPositive()?
+                        query.getConjunctiveQuery() : query;
     }
 
-    public static CompositeQuery composite(CompositeQuery q, ConceptMap sub){
+    /**
+     *
+     * @param q
+     * @param sub
+     * @return
+     */
+    public static ResolvableQuery resolvable(ResolvableQuery q, ConceptMap sub){
         return q.withSubstitution(sub).inferTypes();
     }
 

@@ -20,16 +20,16 @@ package grakn.core.graql.internal.reasoner;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.graql.internal.reasoner.query.CompositeQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -43,7 +43,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     private int iter = 0;
     private long oldAns = 0;
-    private final CompositeQuery query;
+    private final ResolvableQuery query;
     private final Set<ConceptMap> answers = new HashSet<>();
 
     private final MultilevelSemanticCache cache;
@@ -54,18 +54,18 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionIterator.class);
 
-    public ResolutionIterator(CompositeQuery q, MultilevelSemanticCache cache){
+    public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache, boolean reiterate){
         this.query = q;
-        this.reiterationRequired = q.requiresReiteration();
+        this.reiterationRequired = reiterate;
         this.cache = cache;
-        states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, new HashSet<>(), cache));
+        states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, subGoals, cache));
     }
 
     private ConceptMap findNextAnswer(){
         while(!states.isEmpty()) {
             ResolutionState state = states.pop();
 
-            LOG.trace("state: " + state);
+            System.out.println("state: " + state);
 
             if (state.isAnswerState() && state.isTopState()) {
                 return state.getSubstitution();
@@ -76,7 +76,10 @@ public class ResolutionIterator extends ReasonerQueryIterator {
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);
             } else {
-                LOG.trace("new state: NULL");
+                System.out.println("new state: NULL");
+            }
+            if(states.isEmpty()){
+                System.out.println();
             }
         }
         return null;

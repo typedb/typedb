@@ -31,9 +31,17 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
+ *
+ * <p>
  * Interface for conjunctive reasoner queries.
+ * </p>
+ *
+ *
  */
 public interface ReasonerQuery{
+
+    @CheckReturnValue
+    ReasonerQuery copy();
 
     /**
      * @param q query to combine
@@ -53,6 +61,12 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     default boolean isPositive(){ return true;}
+
+    /**
+     * @return true if this query is atomic
+     */
+    @CheckReturnValue
+    boolean isAtomic();
 
     /**
      * validate the query wrt transaction it is defined in
@@ -119,21 +133,6 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     MultiUnifier getMultiUnifier(ReasonerQuery parent);
-
-    /**
-     * resolves the query
-     * @return stream of answers
-     */
-    @CheckReturnValue
-    Stream<ConceptMap> resolve();
-
-    /**
-     * reiteration might be required if rule graph contains loops with negative flux
-     * or there exists a rule which head satisfies body
-     * @return true if because of the rule graph form, the resolution of this query may require reiteration
-     */
-    @CheckReturnValue
-    boolean requiresReiteration();
 
     /**
      * Returns a var-type map local to this query. Map is cached.

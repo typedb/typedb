@@ -35,8 +35,10 @@ import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.state.AnswerState;
+import grakn.core.graql.internal.reasoner.state.AtomicState;
 import grakn.core.graql.internal.reasoner.state.AtomicStateProducer;
 import grakn.core.graql.internal.reasoner.state.CacheCompletionState;
+import grakn.core.graql.internal.reasoner.state.NeqComplementState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
@@ -240,12 +242,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return Iterators.concat(dbIterator, dbCompletionIterator, subGoalIterator);
     }
 
-    /**
-     * @return stream of all rules applicable to this atom including permuted cases when the role types are meta roles
-     */
     private Stream<Pair<InferenceRule, Unifier>> getRuleStream() {
-        return this.getAtom().getApplicableRules()
-                .flatMap(r -> r.getMultiUnifier(this.getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
+        return getAtom().getApplicableRules()
+                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
                 .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));
     }
 }
