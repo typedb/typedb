@@ -402,8 +402,8 @@ public class AtomicTypeInferenceIT {
             assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
             assertEquals(subbedAtom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
         } else {
-            GraqlTestUtil.assertCollectionsNonTriviallyEqual(possibleTypes, relationshipTypes);
-            GraqlTestUtil.assertCollectionsNonTriviallyEqual(relationshipTypes, subbedRelationshipTypes);
+            GraqlTestUtil.assertCollectionsEqual(possibleTypes, relationshipTypes);
+            GraqlTestUtil.assertCollectionsEqual(relationshipTypes, subbedRelationshipTypes);
 
             assertNull(atom.getSchemaConcept());
             assertNull(subbedAtom.getSchemaConcept());

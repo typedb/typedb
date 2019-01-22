@@ -53,6 +53,7 @@ import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.parse;
 import static grakn.core.graql.query.Graql.rel;
 import static grakn.core.graql.query.Graql.var;
+import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
@@ -315,7 +316,7 @@ public class NegationIT {
                             Label.of(connection),
                             tx))
                     .collect(toSet());
-            assertCollectionsNonTriviallyEqual(
+            assertCollectionsEqual(
                     expectedAnswers,
                     answersNotPlayingInRelation
             );
