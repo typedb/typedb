@@ -65,7 +65,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         while(!states.isEmpty()) {
             ResolutionState state = states.pop();
 
-            System.out.println("state: " + state);
+            LOG.trace("state: " + state);
 
             if (state.isAnswerState() && state.isTopState()) {
                 return state.getSubstitution();
@@ -76,10 +76,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);
             } else {
-                System.out.println("new state: NULL");
-            }
-            if(states.isEmpty()){
-                System.out.println();
+                LOG.trace("new state: NULL");
             }
         }
         return null;

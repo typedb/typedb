@@ -73,7 +73,6 @@ public class NeqComplementState extends QueryStateBase {
                 .project(this.neqPredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
         this.complementState = query.positive().subGoal(sub, u, this, subGoals, cache);
-        //new AtomicState(query.positive(), sub, u, this, subGoals, cache);
     }
 
     @Override

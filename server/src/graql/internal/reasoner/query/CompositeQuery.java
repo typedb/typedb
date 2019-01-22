@@ -29,7 +29,6 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.ResolutionIterator;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.graql.internal.reasoner.state.ConjunctiveState;
 import grakn.core.graql.internal.reasoner.state.CompositeState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
@@ -106,7 +105,6 @@ public class CompositeQuery implements ResolvableQuery {
                 .map(p -> p.getNegationDNF().getPatterns().iterator().next())
                 .collect(Collectors.toSet());
     }
-
 
     @Override
     public CompositeQuery withSubstitution(ConceptMap sub){
@@ -280,7 +278,7 @@ public class CompositeQuery implements ResolvableQuery {
     @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
         return isPositive()?
-                new ConjunctiveState(conjunctiveQuery, sub, u, parent, subGoals, cache) :
+                getConjunctiveQuery().subGoal(sub, u, parent, subGoals, cache) :
                 new CompositeState(this, sub, u, parent, subGoals, cache);
     }
 }

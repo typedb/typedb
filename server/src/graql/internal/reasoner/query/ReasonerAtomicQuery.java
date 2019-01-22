@@ -206,7 +206,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
-        return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
+        if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
+        return this.getAtoms(NeqPredicate.class).findFirst().isPresent() ?
+                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
+                new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
     @Override
