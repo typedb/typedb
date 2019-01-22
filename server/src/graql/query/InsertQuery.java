@@ -18,8 +18,8 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.statement.Statement;
+import graql.exception.GraqlException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -39,7 +39,7 @@ public class InsertQuery implements Query {
 
     public InsertQuery(@Nullable MatchClause match, List<Statement> statements) {
         if (statements.isEmpty()) {
-            throw GraqlQueryException.noPatterns();
+            throw GraqlException.noPatterns();
         }
 
         this.match = match;

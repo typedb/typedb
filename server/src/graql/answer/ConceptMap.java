@@ -34,6 +34,7 @@ import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.pattern.statement.Variable;
+import graql.exception.GraqlException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
@@ -114,7 +115,7 @@ public class ConceptMap implements Answer<ConceptMap> {
     @CheckReturnValue
     public Concept get(Variable var) {
         Concept concept = map.get(var);
-        if (concept == null) throw GraqlQueryException.varNotInQuery(var);
+        if (concept == null) throw GraqlException.varNotInQuery(var.toString());
         return concept;
     }
 

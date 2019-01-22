@@ -32,7 +32,6 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.VarProperty;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
@@ -49,7 +48,6 @@ import static grakn.core.common.exception.ErrorMessage.MISSING_COMPUTE_CONDITION
 import static grakn.core.common.exception.ErrorMessage.NEGATIVE_OFFSET;
 import static grakn.core.common.exception.ErrorMessage.NON_POSITIVE_LIMIT;
 import static grakn.core.common.exception.ErrorMessage.UNEXPECTED_RESULT;
-import static grakn.core.common.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static grakn.core.graql.query.ComputeQuery.ALGORITHMS_ACCEPTED;
 import static grakn.core.graql.query.ComputeQuery.ARGUMENTS_ACCEPTED;
 import static grakn.core.graql.query.ComputeQuery.CONDITIONS_ACCEPTED;
@@ -82,22 +80,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(String.format(formatString, args));
     }
 
-    public static GraqlQueryException noPatterns() {
-        return new GraqlQueryException(ErrorMessage.NO_PATTERNS.getMessage());
-    }
-
     public static GraqlQueryException incorrectAggregateArgumentNumber(
             String name, int minArgs, int maxArgs, Collection<Variable> args) {
         String expectedArgs = (minArgs == maxArgs) ? Integer.toString(minArgs) : minArgs + "-" + maxArgs;
         String message = ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage(name, expectedArgs, args.size());
-        return new GraqlQueryException(message);
-    }
-
-    public static GraqlQueryException conflictingProperties(
-            Statement varPattern, VarProperty property, VarProperty other) {
-        String message = ErrorMessage.CONFLICTING_PROPERTIES.getMessage(
-                varPattern.getPrintableName(), property.toString(), other.toString()
-        );
         return new GraqlQueryException(message);
     }
 
@@ -208,10 +194,6 @@ public class GraqlQueryException extends GraknException {
      */
     public static GraqlQueryException insertExistingConcept(Statement pattern, Concept concept) {
         return create("cannot overwrite properties `%s` on  concept `%s`", pattern, concept);
-    }
-
-    public static GraqlQueryException varNotInQuery(Variable var) {
-        return new GraqlQueryException(VARIABLE_NOT_IN_QUERY.getMessage(var));
     }
 
     public static GraqlQueryException noTx() {

@@ -66,7 +66,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         this.attributeType = property.attributeType();
 
         // TODO: this may the cause of issue #4664
-        Label resourceLabel = attributeType.getTypeLabel().orElseThrow(
+        String type = attributeType.getType().orElseThrow(
                 () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType.var())
         );
 
@@ -83,9 +83,9 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
 
         // If a key, limit only to the implicit key type
         if (property.isKey()) {
-            ownerRole = ownerRole.type(KEY_OWNER.getLabel(resourceLabel).getValue());
-            valueRole = valueRole.type(KEY_VALUE.getLabel(resourceLabel).getValue());
-            relationType = relationType.type(KEY.getLabel(resourceLabel).getValue());
+            ownerRole = ownerRole.type(KEY_OWNER.getLabel(type).getValue());
+            valueRole = valueRole.type(KEY_VALUE.getLabel(type).getValue());
+            relationType = relationType.type(KEY.getLabel(type).getValue());
         }
 
         Statement relationOwner = relationType.relates(ownerRole);
@@ -137,13 +137,13 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         //NB: HasResourceType is a special case and it doesn't allow variables as resource types
         Variable varName = var.asUserDefined();
-        Label label = property.attributeType().getTypeLabel().orElse(null);
+        String label = property.attributeType().getType().orElse(null);
 
         Variable predicateVar = new Variable();
-        SchemaConcept attributeType = parent.tx().getSchemaConcept(label);
+        SchemaConcept attributeType = parent.tx().getSchemaConcept(Label.of(label));
         ConceptId predicateId = attributeType != null ? attributeType.id() : null;
         //isa part
-        Statement resVar = new Statement(varName).has(Graql.type(label.getValue()));
+        Statement resVar = new Statement(varName).has(Graql.type(label));
         return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 

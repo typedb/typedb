@@ -18,9 +18,6 @@
 
 package grakn.core.graql.query.pattern.statement;
 
-import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Conjunction;
@@ -47,7 +44,8 @@ import grakn.core.graql.query.pattern.statement.StatementInstance.StatementAttri
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementRelation;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementThing;
 import grakn.core.graql.query.predicate.ValuePredicate;
-import grakn.core.graql.util.StringUtil;
+import graql.exception.GraqlException;
+import graql.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -610,19 +608,19 @@ public class Statement implements Pattern {
      * @return the name this variable represents, if it represents something with a specific name
      */
     @CheckReturnValue
-    public Optional<Label> getTypeLabel() {
-        return getProperty(TypeProperty.class).map(labelProperty -> Label.of(labelProperty.name()));
+    public Optional<String> getType() {
+        return getProperty(TypeProperty.class).map(TypeProperty::name);
     }
 
     /**
      * @return all type names that this variable refers to
      */
     @CheckReturnValue
-    public Set<Label> getTypeLabels() {
+    public Set<String> getTypes() {
         return properties().stream()
-                .flatMap(varProperty -> varProperty.types())
-                .map(statement -> statement.getTypeLabel())
-                .flatMap(optional -> CommonUtil.optionalToStream(optional))
+                .flatMap(property -> property.types())
+                .map(statement -> statement.getType())
+                .flatMap(opt -> opt.map(Stream::of).orElseGet(Stream::empty))
                 .collect(toSet());
     }
 
@@ -683,9 +681,8 @@ public class Statement implements Pattern {
 
     @Override
     public Set<Variable> variables() {
-        return innerStatements().stream()
-                .filter(v -> v.var().isUserDefinedName())
-                .map(statement -> statement.var())
+        return innerStatements().stream().map(Statement::var)
+                .filter(Variable::isUserDefinedName)
                 .collect(toSet());
     }
 
@@ -699,9 +696,9 @@ public class Statement implements Pattern {
             return var().toString();
         } else if (properties().size() == 1) {
             // If there is only a label, we display that
-            Optional<Label> label = getTypeLabel();
+            Optional<String> label = getType();
             if (label.isPresent()) {
-                return StringUtil.typeLabelToString(label.get());
+                return StringUtil.escapeLabelOrId(label.get());
             }
         }
 
@@ -709,19 +706,12 @@ public class Statement implements Pattern {
         return "`" + toString() + "`";
     }
 
-    void validateNonUniqueOrThrow(VarProperty property) {
+    void validateNoConflictOrThrow(VarProperty property) {
         if (property.isUnique()) {
             getProperty(property.getClass()).filter(other -> !other.equals(property)).ifPresent(other -> {
-                throw GraqlQueryException.conflictingProperties(this, property, other);
+                throw GraqlException.conflictingProperties(this.getPrintableName(), property.toString(), other.toString());
             });
         }
-    }
-
-    private Statement removeProperty(VarProperty property) {
-        Variable name = var();
-        LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>(this.properties);
-        newProperties.remove(property);
-        return new Statement(name, newProperties);
     }
 
     @Override // TODO: Remove this method altogether once we make compile time validation more strict

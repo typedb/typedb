@@ -21,7 +21,6 @@ package grakn.core.graql.internal.gremlin;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
@@ -29,6 +28,7 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.Transaction;
+import graql.exception.GraqlException;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -64,7 +64,7 @@ class ConjunctionQuery {
         statements = patternConjunction.getPatterns();
 
         if (statements.size() == 0) {
-            throw GraqlQueryException.noPatterns();
+            throw GraqlException.noPatterns();
         }
 
         ImmutableSet<EquivalentFragmentSet> fragmentSets =

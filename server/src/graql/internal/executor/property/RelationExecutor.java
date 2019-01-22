@@ -140,9 +140,9 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
         //Isa present
         if (isaProp != null) {
             Statement isaVar = isaProp.type();
-            Label label = isaVar.getTypeLabel().orElse(null);
+            String label = isaVar.getType().orElse(null);
             if (label != null) {
-                predicate = IdPredicate.create(typeVariable, label, parent);
+                predicate = IdPredicate.create(typeVariable, Label.of(label), parent);
             } else {
                 typeVariable = isaVar.var();
                 predicate = getUserDefinedIdPredicate(typeVariable, otherStatements, parent);

@@ -23,12 +23,12 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Thing;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import graql.exception.GraqlException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -42,8 +42,8 @@ import org.junit.rules.ExpectedException;
 import java.util.Collections;
 import java.util.List;
 
-import static grakn.core.common.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static grakn.core.graql.query.Graql.var;
+import static graql.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;
@@ -363,7 +363,7 @@ public class AggregateQueryIT {
 
     @Test
     public void whenGroupVarIsNotInQuery_Throw() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(new Variable("z")));
         tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).get().group("z").count());
     }

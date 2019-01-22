@@ -37,6 +37,7 @@ import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.exception.GraqlException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -50,9 +51,9 @@ import org.junit.rules.ExpectedException;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.INVALID_VALUE;
-import static grakn.core.common.exception.ErrorMessage.NO_PATTERNS;
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
+import static graql.exception.ErrorMessage.NO_PATTERNS;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -141,7 +142,7 @@ public class QueryErrorIT {
 
     @Test
     public void testErrorMultipleIsa() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage(allOf(
                 containsString("abc"), containsString("isa"), containsString("person"), containsString("has-cast")
         ));
@@ -169,7 +170,7 @@ public class QueryErrorIT {
 
     @Test
     public void testExceptionWhenNoPatternsProvided() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
         //noinspection ResultOfMethodCallIgnored
         Graql.match();
@@ -231,8 +232,8 @@ public class QueryErrorIT {
 
     @Test
     public void testGetNonExistentVariable() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(new Variable("y")));
+        exception.expect(GraqlException.class);
+        exception.expectMessage(graql.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(new Variable("y")));
 
         MatchClause match = Graql.match(var("x").isa("movie"));
         Stream<Concept> concepts = tx.stream(match.get("y")).map(ans -> ans.get("y"));
