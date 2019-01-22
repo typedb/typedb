@@ -29,6 +29,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.kb.RuleTest",
     deps = [
+        "//common",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/rule:grakn-test-server",
