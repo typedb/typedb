@@ -144,7 +144,7 @@ node_grpc_compile()
 git_repository(
     name="graknlabs_bazel_distribution",
     remote="https://github.com/graknlabs/bazel-distribution",
-    commit="df751d03b1fcbb69ed11dd1e7265020144d7233b"
+    commit="796cea2531404509a3298af65ab562b1929c3eb6"
 )
 
 load("@graknlabs_bazel_distribution//github:dependencies.bzl", "github_dependencies_for_deployment")

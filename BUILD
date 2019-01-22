@@ -30,7 +30,6 @@ py_binary(
     main = "deploy.py"
 )
 
-
 distribution_structure(
     name = "grakn-core-bin",
     additional_files = {
