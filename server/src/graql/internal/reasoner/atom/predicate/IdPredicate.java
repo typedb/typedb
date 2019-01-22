@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;

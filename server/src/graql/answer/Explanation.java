@@ -18,7 +18,7 @@
 
 package grakn.core.graql.answer;
 
-import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

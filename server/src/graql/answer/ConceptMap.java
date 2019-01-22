@@ -20,10 +20,10 @@ package grakn.core.graql.answer;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;

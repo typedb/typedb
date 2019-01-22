@@ -22,8 +22,6 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.UnmodifiableIterator;
-import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.statement.Variable;
 

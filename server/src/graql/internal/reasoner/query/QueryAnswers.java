@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.reasoner.query;
 
-import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 
 import javax.annotation.Nonnull;

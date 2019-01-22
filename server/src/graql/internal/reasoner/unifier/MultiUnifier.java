@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.admin;
+package grakn.core.graql.internal.reasoner.unifier;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -25,14 +25,9 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 /**
- *
- * <p>
  * Generalisation of the {@link Unifier} accounting for the possibility of existence of more than one unifier between two expressions.
  * Corresponds to a simple set U = {u1, u2, ..., ui}, where i e N, i >= 0.
  * The case of i = 0 corresponds to a case where no unifier exists.
- * </p>
- *
- *
  */
 public interface MultiUnifier extends Iterable<Unifier> {
 

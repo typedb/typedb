@@ -19,7 +19,6 @@
 package grakn.core.graql.internal.reasoner.atom;
 
 import com.google.common.base.Equivalence;
-import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 
 import java.util.Collection;

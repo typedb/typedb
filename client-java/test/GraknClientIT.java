@@ -26,7 +26,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.client.GraknClient;
-import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;

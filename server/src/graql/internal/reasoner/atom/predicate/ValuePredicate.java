@@ -19,9 +19,9 @@
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;

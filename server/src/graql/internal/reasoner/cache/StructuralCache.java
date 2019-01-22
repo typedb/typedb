@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.reasoner.cache;
 
 import com.google.common.base.Equivalence;
-import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;

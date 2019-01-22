@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
-import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Type;

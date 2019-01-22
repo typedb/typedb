@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Label;

@@ -19,7 +19,7 @@ package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 
