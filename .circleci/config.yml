@@ -396,8 +396,8 @@ jobs:
           - Before we can release the new version of Grakn + Documentation, changes made in the development(staging) branch of this repo need to be moved over to the master(production) branch.
           - This merge excludes the changes made in the client files, as those changes need to be merged only when a new version of a Grakn Client needs to be released.
           \## What does the PR do?
-          - Creates the `auto-merge-by-grabl` off latest `master`
-          - Merges latest `development` to `auto-merge-by-grabl` excluding files at `docs/03-client-api`
+          - Creates the auto-merge-by-grabl off latest master
+          - Merges latest development to auto-merge-by-grabl excluding files at docs/03-client-api
 
           \# WHAT NEXT?
           \**Merge PR branch to master\**
@@ -405,17 +405,17 @@ jobs:
           2. merge this PR
           2. delete the PR branch
           \**Submit PR to merge master to development\**
-          2. `git pull graknlabs master`
-          3. `git co development`
-          4. `git pull graknlabs development`
-          5. `git checkout -b manual-merge-of-master-to-development`
-          6. `git merge master`
-          7. `git push fork-remote manual-merge-of-master-to-development
+          2. git pull graknlabs master
+          3. git co development
+          4. git pull graknlabs development
+          5. git checkout -b manual-merge-of-master-to-development
+          6. git merge master
+          7. git push fork-remote manual-merge-of-master-to-development
           8. create the PR
           \**Merge new PR branch to development\**
           9. review and approve the new PR
-          10. merge the new PR
-          echo "IMORTANT: A PR was just created by Grabl on the docs repository. Make sure to follow the instructions in the PR's description before continuing this workflow."
+          10. merge the new PR"
+          echo "IMPORTANT - A PR was just created by Grabl on the docs repository. Make sure to follow the instructions in the PR's description before continuing this workflow."
   docs-deploy-to-production:
     machine: true
     steps:
