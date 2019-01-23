@@ -553,7 +553,7 @@ workflows:
               only: ci-pipeline
           requires:
             - approve-deploy-github
-      - docs-create-pr-to-partially-merge-dev-to-master:
+      - docs-submit-pr-to-partially-merge-dev-to-a-copy-of-master:
           filters:
             branches:
               only: ci-pipeline
@@ -565,7 +565,7 @@ workflows:
               only: ci-pipeline
           type: approval
           requires:
-            - docs-create-pr-to-partially-merge-dev-to-master
+            - docs-submit-pr-to-partially-merge-dev-to-a-copy-of-master
       - docs-deploy-to-production:
           filters:
             branches:
