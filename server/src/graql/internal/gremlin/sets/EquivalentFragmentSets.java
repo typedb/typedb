@@ -126,7 +126,7 @@ public class EquivalentFragmentSets {
      * An {@link EquivalentFragmentSet} that indicates a variable represents a resource with value matching a predicate.
      */
     public static EquivalentFragmentSet value(VarProperty varProperty, Variable resource, ValuePredicate predicate) {
-        return new AutoValue_ValueFragmentSet(varProperty, resource, predicate);
+        return new ValueFragmentSet(varProperty, resource, predicate);
     }
 
     /**

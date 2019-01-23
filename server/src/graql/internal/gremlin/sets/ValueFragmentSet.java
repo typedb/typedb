@@ -18,29 +18,76 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
-import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
+import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
-/**
- * @see EquivalentFragmentSets#value(VarProperty, Variable, ValuePredicate)
- *
- */
-@AutoValue
-abstract class ValueFragmentSet extends EquivalentFragmentSet {
+class ValueFragmentSet extends EquivalentFragmentSet {
+
+    private final Variable var;
+    private final ValuePredicate predicate;
+
+    @Nullable private final VarProperty varProperty;
+
+    ValueFragmentSet(@Nullable VarProperty varProperty, Variable var, ValuePredicate predicate) {
+        this.varProperty = varProperty;
+        if (var == null) {
+            throw new NullPointerException("Null var");
+        }
+        this.var = var;
+        if (predicate == null) {
+            throw new NullPointerException("Null predicate");
+        }
+        this.predicate = predicate;
+    }
+
+    Variable var() {
+        return var;
+    }
+
+    @Override @Nullable
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    ValuePredicate predicate() {
+        return predicate;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(Fragments.value(varProperty(), var(), predicate()));
     }
 
-    abstract Variable var();
-    abstract ValuePredicate predicate();
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ValueFragmentSet that = (ValueFragmentSet) o;
+
+        return (Objects.equals(this.varProperty, that.varProperty) &&
+                this.var.equals(that.var()) &&
+                this.predicate.equals(that.predicate()));
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.var.hashCode();
+        h *= 1000003;
+        h ^= this.predicate.hashCode();
+        return h;
+    }
 }

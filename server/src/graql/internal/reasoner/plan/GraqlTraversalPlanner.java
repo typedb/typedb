@@ -20,6 +20,7 @@ package grakn.core.graql.internal.reasoner.plan;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
@@ -143,26 +144,30 @@ public class GraqlTraversalPlanner {
      * @param queryPattern corresponding pattern
      * @return an optimally ordered list of provided atoms
      */
-    private static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, Pattern queryPattern, TransactionOLTP tx){
+    private static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, Conjunction<?> queryPattern, TransactionOLTP tx){
         Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
         atoms.stream()
-                .filter(at -> !(at instanceof OntologicalAtom))
-                .forEach(at -> at.getVarProperties().forEach(p -> propertyMap.put(p, at)));
+                .filter(atom -> !(atom instanceof OntologicalAtom))
+                .forEach(atom -> atom.getVarProperties().forEach(property -> propertyMap.put(property, atom)));
         Set<VarProperty> properties = propertyMap.keySet();
 
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(queryPattern, tx);
-        ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
+        ImmutableList<Fragment> fragments = Iterables.getOnlyElement(graqlTraversal.fragments());
 
         List<Atom> atomList = new ArrayList<>();
-        atoms.stream().filter(at -> at instanceof OntologicalAtom).forEach(atomList::add);
+
+        atoms.stream()
+                .filter(atom -> atom instanceof OntologicalAtom)
+                .forEach(atom -> atomList.add(atom));
+
         fragments.stream()
-                .map(Fragment::varProperty)
-                .filter(Objects::nonNull)
-                .filter(properties::contains)
+                .map(fragment -> fragment.varProperty())
+                .filter(property -> Objects.nonNull(property))
+                .filter(property -> properties.contains(property))
                 .distinct()
-                .flatMap(p -> propertyMap.get(p).stream())
+                .flatMap(property -> propertyMap.get(property).stream())
                 .distinct()
-                .forEach(atomList::add);
+                .forEach(atom -> atomList.add(atom));
 
         //add any unlinked items (disconnected and indexed for instance)
         propertyMap.values().stream()

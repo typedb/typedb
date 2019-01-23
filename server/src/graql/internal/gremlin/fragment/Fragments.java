@@ -45,7 +45,6 @@ import static java.util.stream.Collectors.joining;
 
 /**
  * Factory for creating instances of {@link Fragment}.
- *
  */
 public class Fragments {
 
@@ -117,7 +116,7 @@ public class Fragments {
     }
 
     public static Fragment value(VarProperty varProperty, Variable start, ValuePredicate predicate) {
-        return new AutoValue_ValueFragment(varProperty, start, predicate);
+        return new ValueFragment(varProperty, start, predicate);
     }
 
     public static Fragment isAbstract(VarProperty varProperty, Variable start) {

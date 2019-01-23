@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.server.session.TransactionOLTP;
@@ -26,20 +26,51 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 
 import static grakn.core.common.util.CommonUtil.optionalToStream;
 import static java.util.stream.Collectors.toSet;
 
-@AutoValue
-abstract class ValueFragment extends Fragment {
+public class ValueFragment extends Fragment {
 
-    abstract ValuePredicate predicate();
+    private final VarProperty varProperty;
+    private final Variable start;
+    private final ValuePredicate predicate;
+
+    ValueFragment(@Nullable VarProperty varProperty, Variable start, ValuePredicate predicate) {
+        this.varProperty = varProperty;
+        if (start == null) {
+            throw new NullPointerException("Null start");
+        }
+        this.start = start;
+        if (predicate == null) {
+            throw new NullPointerException("Null predicate");
+        }
+        this.predicate = predicate;
+    }
+
+    ValuePredicate predicate() {
+        return predicate;
+    }
+
+    @Nullable
+    @Override
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    @Override
+    public Variable start() {
+        return start;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars
+    ) {
 
         return predicate().applyPredicate(traversal);
     }
@@ -67,5 +98,29 @@ abstract class ValueFragment extends Fragment {
     @Override
     public Set<Variable> dependencies() {
         return optionalToStream(predicate().getInnerVar()).map(statement -> statement.var()).collect(toSet());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ValueFragment that = (ValueFragment) o;
+
+        return (Objects.equals(this.varProperty, that.varProperty) &&
+                this.start.equals(that.start()) &&
+                this.predicate.equals(that.predicate()));
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.predicate.hashCode();
+        return h;
     }
 }
