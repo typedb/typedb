@@ -242,7 +242,7 @@ jobs:
       - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
       - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server stop
   dist-ubuntu:
-    machine: true
+    machine: true # CircleCI's machine executor is a Ubuntu distribution (either 12.04 or 14.04)
     working_directory: ~/grakn
     steps:
       - run: sudo apt-get update
@@ -250,16 +250,17 @@ jobs:
       - run: sudo add-apt-repository ppa:openjdk-r/ppa
       - run: sudo apt-get update
       - run: sudo apt-get install -y sudo curl unzip git python gcc python-dev build-essential openjdk-8-jdk
-
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
-
-      - run: bazel build --jobs 1 //:distribution-deb
+      - bazel:
+          command: bazel build --jobs 1 //:distribution-deb
       - run: sudo dpkg -i bazel-bin/distribution-deb.deb
-      - run: bazel build --jobs 1 //server:distribution-deb
+      - bazel:
+          command: bazel build --jobs 1 //server:distribution-deb
       - run: sudo dpkg -i bazel-bin/server/distribution-deb.deb
-      - run: bazel build --jobs 1 //console:distribution-deb
+      - bazel:
+          command: bazel build --jobs 1 //console:distribution-deb
       - run: sudo dpkg -i bazel-bin/console/distribution-deb.deb
       - run: nohup grakn server start
       - run: nohup grakn server stop
