@@ -473,13 +473,12 @@ workflows:
           type: approval
           requires:
             - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit
-      # - deploy-github:
-      #     requires:
-      #       - approve-deploy-github
+      - deploy-github:
+          requires:
+            - approve-deploy-github
       - docs-create-pr-to-partially-merge-dev-to-master:
           requires:
-            # - deploy-github
-            - approve-deploy-github
+            - deploy-github
       - is-docs-merged:
           type: approval
           requires:
