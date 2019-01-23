@@ -54,7 +54,7 @@ commands:
           name: Install rpm (for rpmbuild)
           command: sudo apt update && sudo apt install rpm -y
 
-  grabl-is-the-github-user:
+  configure-grabl-to-be-git-user:
     steps:
       - run:
           name: Configure Grabl to be the Github user
@@ -314,7 +314,7 @@ jobs:
   update-grakn-dependency-on-docs-dev-to-match-latest-master-commit:
     machine: true
     steps:
-      - grabl-is-the-github-user
+      - configure-grabl-to-be-git-user
       - run: |
           # get the last commit on master of grakn
           # new_commit=$(git ls-remote https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-grakn.git HEAD | awk '{ print $1}')
@@ -381,10 +381,10 @@ jobs:
     machine: true
     steps:
       - run: echo deploy-workbase-windows succeeded.
-  docs-create-pr-to-partially-merge-dev-to-master:
+  docs-submit-pr-to-partially-merge-dev-to-a-copy-of-master:
     machine: true
     steps:
-      - grabl-is-the-github-user
+      - configure-grabl-to-be-git-user
       - run: |
           git clone https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-docs.git
           cd test-ci-docs
@@ -401,13 +401,37 @@ jobs:
           # see: https://hub.github.com/hub-pull-request.1.html
           wget https://github.com/github/hub/releases/download/v2.7.0/hub-linux-amd64-2.7.0.tgz
           tar -xvzf hub-linux-amd64-2.7.0.tgz
-          GITHUB_TOKEN=$GRABL_TOKEN hub-linux-amd64-2.7.0/bin/hub pull-request -m "Grabl - merging development to master with the exception of client files
+          GITHUB_TOKEN=$GRABL_TOKEN hub-linux-amd64-2.7.0/bin/hub pull-request -m "Grabl - merging development to auto-merge-by-grabl with the exception of client files
 
-          This is an automated PR made by Grabl to merge development to master. The merge ignores changes made to the client files. Make sure to review all changes before approving. Docs on master must by in sync with the LATEST RELEASE of Grakn and its Clients."
+          \## Why is this PR needed?
+          - This PR is submitted automatically by Grabl as a part of the release automation process.
+          - Before we can release the new version of Grakn + Documentation, changes made in the development(staging) branch of this repo need to be moved over to the master(production) branch.
+          - This merge excludes the changes made in the client files, as those changes need to be merged only when a new version of a Grakn Client needs to be released.
+          \## What does the PR do?
+          - Creates the `auto-merge-by-grabl` off latest `master`
+          - Merges latest `development` to `auto-merge-by-grabl` excluding files at `docs/03-client-api`
+
+          \# WHAT NEXT?
+          \**Merge PR branch to master\**
+          1. review and approve this PR
+          2. merge this PR
+          2. delete the PR branch
+          \**Submit PR to merge master to development\**
+          2. `git pull graknlabs master`
+          3. `git co development`
+          4. `git pull graknlabs development`
+          5. `git checkout -b manual-merge-of-master-to-development`
+          6. `git merge master`
+          7. `git push fork-remote manual-merge-of-master-to-development
+          8. create the PR
+          \**Merge new PR branch to development\**
+          9. review and approve the new PR
+          10. merge the new PR
+          echo "IMORTANT: A PR was just created by Grabl on the docs repository. Make sure to follow the instructions in the PR's description before continuing this workflow."
   docs-deploy-to-production:
     machine: true
     steps:
-      - grabl-is-the-github-user
+      - configure-grabl-to-be-git-user
       - run: |
           # --recursive clones web-dev as well as the docs submodule
           git clone --recursive https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-web-dev.git
