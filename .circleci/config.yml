@@ -437,29 +437,29 @@ workflows:
       - tests:
           filters:
             branches:
-              ignore: ci-pipeline
+              ignore: master
       - client-java:
           filters:
             branches:
-              ignore: ci-pipeline
+              ignore: master
           requires:
             - tests
       - common:
           filters:
             branches:
-              ignore: ci-pipeline
+              ignore: master
           requires:
             - tests
       - console:
           filters:
             branches:
-              ignore: ci-pipeline
+              ignore: master
           requires:
             - tests
       - distributions:
           filters:
             branches:
-              ignore: ci-pipeline
+              ignore: master
           requires:
             - client-java
             - common
@@ -467,13 +467,13 @@ workflows:
       - dist-mac:
           filters:
             branches:
-              ignore: ci-pipeline
+              ignore: master
           requires:
             - distributions
       - dist-ubuntu:
           filters:
             branches:
-              ignore: ci-pipeline
+              ignore: master
           requires:
             - distributions
 
@@ -482,29 +482,29 @@ workflows:
       - tests:
           filters:
             branches:
-              only: ci-pipeline
+              only: master
       - client-java:
           filters:
             branches:
-              only: ci-pipeline
+              only: master
           requires:
             - tests
       - common:
           filters:
             branches:
-              only: ci-pipeline
+              only: master
           requires:
             - tests
       - console:
           filters:
             branches:
-              only: ci-pipeline
+              only: master
           requires:
             - tests
       - distributions:
           filters:
             branches:
-              only: ci-pipeline
+              only: master
           requires:
             - client-java
             - common
@@ -512,19 +512,19 @@ workflows:
       - dist-mac:
           filters:
             branches:
-              only: ci-pipeline
+              only: master
           requires:
             - distributions
       - dist-ubuntu:
           filters:
             branches:
-              only: ci-pipeline
+              only: master
           requires:
             - distributions
       - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit:
           filters:
             branches:
-              only: ci-pipeline
+              only: master
           requires:
             - dist-ubuntu
             - dist-mac
@@ -532,31 +532,31 @@ workflows:
           type: approval
           filters:
             branches:
-              only: ci-pipeline
+              only: master
           requires:
             - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit
       - deploy-github:
           filters:
             branches:
-              only: ci-pipeline
+              only: master
           requires:
             - approve-deploy-github
       - docs-submit-pr-to-partially-merge-dev-to-a-copy-of-master:
           filters:
             branches:
-              only: ci-pipeline
+              only: master
           requires:
             - deploy-github
       - is-docs-merged:
           filters:
             branches:
-              only: ci-pipeline
+              only: master
           type: approval
           requires:
             - docs-submit-pr-to-partially-merge-dev-to-a-copy-of-master
       - docs-deploy-to-production:
           filters:
             branches:
-              only: ci-pipeline
+              only: master
           requires:
             - is-docs-merged
