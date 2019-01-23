@@ -20,15 +20,6 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
-checkstyle_test(
- name = "benchmark-big-it-checkstyle",
- target = ":benchmark-big-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "benchmark-small-it",
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkSmallIT",
@@ -53,10 +44,9 @@ java_test(
 )
 
 checkstyle_test(
- name = "benchmark-small-it-checkstyle",
- target = ":benchmark-small-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":benchmark-big-it",
+        ":benchmark-small-it"
+    ]
 )

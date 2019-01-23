@@ -23,10 +23,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -35,8 +34,10 @@ import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.state.AnswerState;
+import grakn.core.graql.internal.reasoner.state.AtomicState;
 import grakn.core.graql.internal.reasoner.state.AtomicStateProducer;
 import grakn.core.graql.internal.reasoner.state.CacheCompletionState;
+import grakn.core.graql.internal.reasoner.state.NeqComplementState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
@@ -56,13 +57,8 @@ import java.util.stream.Stream;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.typeUnifier;
 
 /**
- *
- * <p>
  * Base reasoner atomic query. An atomic query is a query constrained to having at most one rule-resolvable atom
  * together with its accompanying constraints (predicates and types).
- * </p>
- *
- *
  */
 @SuppressFBWarnings("EQ_DOESNT_OVERRIDE_EQUALS")
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
@@ -90,7 +86,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
+    public ReasonerAtomicQuery copy(){ return new ReasonerAtomicQuery(this);}
 
     @Override
     public ReasonerAtomicQuery withSubstitution(ConceptMap sub){
@@ -204,7 +200,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
-        return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
+        if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
+        return this.getAtoms(NeqPredicate.class).findFirst().isPresent() ?
+                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
+                new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
     @Override
@@ -240,12 +239,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return Iterators.concat(dbIterator, dbCompletionIterator, subGoalIterator);
     }
 
-    /**
-     * @return stream of all rules applicable to this atom including permuted cases when the role types are meta roles
-     */
     private Stream<Pair<InferenceRule, Unifier>> getRuleStream() {
-        return this.getAtom().getApplicableRules()
-                .flatMap(r -> r.getMultiUnifier(this.getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
+        return getAtom().getApplicableRules()
+                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
                 .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));
     }
 }

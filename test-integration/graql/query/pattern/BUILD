@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "pattern-it",
     test_class = "grakn.core.graql.query.pattern.PatternIT",
@@ -32,12 +34,9 @@ java_test(
     size = "medium"
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "pattern-it-checkstyle",
- target = ":pattern-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":pattern-it"
+    ],
 )

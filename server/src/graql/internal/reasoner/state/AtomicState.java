@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.reasoner.state;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.cache.CacheEntry;
 import grakn.core.graql.internal.reasoner.cache.IndexedAnswerSet;
@@ -37,12 +37,12 @@ import java.util.Set;
  * Query state corresponding to an atomic query ({@link ReasonerAtomicQuery}) in the resolution tree.
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
-class AtomicState extends QueryState<ReasonerAtomicQuery> {
+public class AtomicState extends QueryState<ReasonerAtomicQuery> {
 
     private MultiUnifier cacheUnifier = null;
     private CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = null;
 
-    AtomicState(ReasonerAtomicQuery query,
+    public AtomicState(ReasonerAtomicQuery query,
                 ConceptMap sub,
                 Unifier u,
                 QueryStateBase parent,

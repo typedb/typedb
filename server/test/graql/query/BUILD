@@ -30,15 +30,6 @@ java_test(
     size = "small"
 )
 
-checkstyle_test(
- name = "concept-map-test-checkstyle",
- target = ":concept-map-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "delete-query-test",
     test_class = "grakn.core.graql.query.DeleteQueryTest",
@@ -47,15 +38,6 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//server"],
     size = "small"
-)
-
-checkstyle_test(
- name = "delete-query-test-checkstyle",
- target = ":delete-query-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -71,10 +53,10 @@ java_test(
 )
 
 checkstyle_test(
- name = "insert-query-test-checkstyle",
- target = ":insert-query-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":concept-map-test",
+        ":delete-query-test",
+        ":insert-query-test"
+    ]
 )

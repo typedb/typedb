@@ -18,8 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom;
 
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.statement.Statement;

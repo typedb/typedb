@@ -21,8 +21,8 @@ package grakn.core.server.kb;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relation;
@@ -34,6 +34,7 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
@@ -280,10 +281,11 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleIsValidHornClause(TransactionOLTP graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        if (!combinedRuleQuery(graph, rule).isPositive()){
+        if (rule.when().getNegationDNF().getPatterns().stream().anyMatch(Pattern::isNegation)
+                || rule.then().getNegationDNF().getPatterns().stream().anyMatch(Pattern::isNegation)){
             errors.add(ErrorMessage.VALIDATION_RULE_NEGATIVE_STATEMENTS_UNSUPPORTED_IN_RULES.getMessage(rule.label()));
         }
-        if (rule.when() instanceof Disjunction){
+        if (rule.when().getDisjunctiveNormalForm().getPatterns().size() > 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
         }
         if (errors.isEmpty()){
@@ -292,9 +294,14 @@ class ValidateGlobalRules {
         return errors;
     }
 
+    /**
+     * @param graph graph (tx) of interest
+     * @param rule the rule to be cast into a combined conjunction query
+     * @return a combined conjunction created from statements from both the body and the head of the rule
+     */
     private static ReasonerQuery combinedRuleQuery(TransactionOLTP graph, Rule rule){
-        ReasonerQuery bodyQuery = ReasonerQueries.create(Iterables.getOnlyElement(rule.when().getDisjunctiveNormalForm().getPatterns()), graph);
-        ReasonerQuery headQuery = ReasonerQueries.create(Iterables.getOnlyElement(rule.then().getDisjunctiveNormalForm().getPatterns()), graph);
+        ReasonerQuery bodyQuery = ReasonerQueries.create(Graql.and(rule.when().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())), graph);
+        ReasonerQuery headQuery = ReasonerQueries.create(Graql.and(rule.then().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())), graph);
         return headQuery.conjunction(bodyQuery);
     }
 

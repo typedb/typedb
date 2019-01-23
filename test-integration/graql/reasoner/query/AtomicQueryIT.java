@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Concept;
@@ -205,7 +205,7 @@ public class AtomicQueryIT {
         String patternString = "{ ($x, $y) isa is-located-in; };";
         Conjunction<Statement> pattern = conjunction(patternString);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, tx);
-        ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
+        ReasonerAtomicQuery copy = atomicQuery.copy();
         assertEquals(atomicQuery, copy);
         assertEquals(atomicQuery.hashCode(), copy.hashCode());
         tx.close();

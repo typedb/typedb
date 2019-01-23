@@ -16,15 +16,6 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
-checkstyle_test(
- name = "atomic-type-inference-it-checkstyle",
- target = ":atomic-type-inference-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "atomic-unification-it",
     srcs = ["AtomicUnificationIT.java"],
@@ -40,15 +31,6 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
     size = "medium",
     classpath_resources = ["//test-integration/resources:logback-test"]
-)
-
-checkstyle_test(
- name = "atomic-unification-it-checkstyle",
- target = ":atomic-unification-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -69,15 +51,6 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
-checkstyle_test(
- name = "atomic-rule-applicability-it-checkstyle",
- target = ":atomic-rule-applicability-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "atomic-role-inference-it",
     srcs = ["AtomicRoleInferenceIT.java"],
@@ -93,15 +66,6 @@ java_test(
                      "//test-integration/graql/reasoner/resources:generic-schema"],
     size = "medium",
     classpath_resources = ["//test-integration/resources:logback-test"]
-)
-
-checkstyle_test(
- name = "atomic-role-inference-it-checkstyle",
- target = ":atomic-role-inference-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
 )
 
 java_test(
@@ -120,10 +84,12 @@ java_test(
 )
 
 checkstyle_test(
- name = "atomic-equivalence-it-checkstyle",
- target = ":atomic-equivalence-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":atomic-type-inference-it",
+        ":atomic-unification-it",
+        ":atomic-rule-applicability-it",
+        ":atomic-role-inference-it",
+        ":atomic-equivalence-it"
+    ],
 )

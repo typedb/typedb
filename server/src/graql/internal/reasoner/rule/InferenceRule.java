@@ -19,9 +19,9 @@
 package grakn.core.graql.internal.reasoner.rule;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;

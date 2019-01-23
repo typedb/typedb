@@ -20,7 +20,7 @@ package grakn.core.graql.internal.reasoner.cache;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;

@@ -22,10 +22,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -50,6 +49,7 @@ import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.internal.reasoner.state.AnswerState;
 import grakn.core.graql.internal.reasoner.state.ConjunctiveState;
 import grakn.core.graql.internal.reasoner.state.CumulativeState;
+import grakn.core.graql.internal.reasoner.state.NeqComplementState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
@@ -80,7 +80,7 @@ import java.util.stream.Stream;
  * Base reasoner query providing resolution and atom handling facilities for conjunctive graql queries.
  *
  */
-public class ReasonerQueryImpl implements ReasonerQuery {
+public class ReasonerQueryImpl implements ResolvableQuery {
 
     private final TransactionOLTP tx;
     private final ImmutableSet<Atomic> atomSet;
@@ -130,24 +130,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         );
     }
 
-    /**
-     * @param sub substitution to be inserted into the query
-     * @return corresponding query with additional substitution
-     */
+
+    @Override
     public ReasonerQueryImpl withSubstitution(ConceptMap sub){
         return new ReasonerQueryImpl(Sets.union(this.getAtoms(), sub.toPredicates(this)), this.tx());
     }
 
-    /**
-     * @return corresponding reasoner query with inferred types
-     */
+    @Override
     public ReasonerQueryImpl inferTypes() {
         return new ReasonerQueryImpl(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()), tx());
     }
 
-    /**
-     * @return corresponding positive query (with neq predicates removed)
-     */
+    @Override
     public ReasonerQueryImpl positive(){
         return new ReasonerQueryImpl(getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), tx());
     }
@@ -173,7 +167,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 "\n}";
     }
 
-    public ReasonerQuery copy() {
+    @Override
+    public ReasonerQueryImpl copy() {
         return new ReasonerQueryImpl(this);
     }
 
@@ -191,14 +186,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return ReasonerQueryEquivalence.AlphaEquivalence.hash(this);
     }
 
-    /**
-     * @param q query to be compared with
-     * @return true if two queries are alpha-equivalent
-     */
-    public boolean isEquivalent(ReasonerQueryImpl q) {
-        return ReasonerQueryEquivalence.AlphaEquivalence.equivalent(this, q);
-    }
-
     @Override
     public TransactionOLTP tx() {
         return tx;
@@ -207,6 +194,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public void checkValid() { getAtoms().forEach(Atomic::checkValid);}
 
+    @Override
     public Conjunction<Pattern> getPattern() {
         return Graql.and(
                 getAtoms().stream()
@@ -229,23 +217,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @return true if this query contains disconnected atoms that are unbounded
-     */
-    public boolean isBoundlesslyDisconnected(){
-        return !isAtomic()
-                && selectAtoms()
-                .filter(at -> !at.isBounded())
-                .anyMatch(Atom::isDisconnected);
-    }
-
-    /**
-     * @return true if the query requires direct schema lookups
-     */
-    public boolean requiresSchema(){ return selectAtoms().anyMatch(Atom::requiresSchema);}
-
-    /**
      * @return true if this query is atomic
      */
+    @Override
     public boolean isAtomic() {
         return atomSet.stream().filter(Atomic::isSelectable).count() == 1;
     }
@@ -269,6 +243,36 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                         //check if it can play it
                         .anyMatch(e -> e.getKey().players().noneMatch(parentTypes::contains)));
     }
+
+    /**
+     * @param q query to be compared with
+     * @return true if two queries are alpha-equivalent
+     */
+    public boolean isEquivalent(ReasonerQueryImpl q) {
+        return ReasonerQueryEquivalence.AlphaEquivalence.equivalent(this, q);
+    }
+
+    /**
+     * @return true if this query is a ground query
+     */
+    public boolean isGround(){
+        return getSubstitution().vars().containsAll(getVarNames());
+    }
+
+    /**
+     * @return true if this query contains disconnected atoms that are unbounded
+     */
+    public boolean isBoundlesslyDisconnected(){
+        return !isAtomic()
+                && selectAtoms()
+                .filter(at -> !at.isBounded())
+                .anyMatch(Atom::isDisconnected);
+    }
+
+    /**
+     * @return true if the query requires direct schema lookups
+     */
+    public boolean requiresSchema(){ return selectAtoms().anyMatch(Atom::requiresSchema);}
 
     @Override
     public Set<Atomic> getAtoms() { return atomSet;}
@@ -396,13 +400,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return transform;
     }
 
-    /**
-     * @return selected atoms
-     */
-    public Stream<Atom> selectAtoms() {
-        return getAtoms(Atom.class).filter(Atomic::isSelectable);
-    }
-
     /** Does id predicates -> answer conversion
      * @return substitution obtained from all id predicates (including internal) in the query
      */
@@ -440,21 +437,25 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @return true if this query is a ground query
+     * @return selected atoms
      */
-    public boolean isGround(){
-        return getSubstitution().vars().containsAll(getVarNames());
+    @Override
+    public Stream<Atom> selectAtoms() {
+        return getAtoms(Atom.class).filter(Atomic::isSelectable);
     }
 
     /**
      * @return true if this query requires atom decomposition
      */
+    @Override
     public boolean requiresDecomposition(){
         return this.selectAtoms().anyMatch(Atom::requiresDecomposition);
     }
+
     /**
      * @return rewritten (decomposed) version of the query
      */
+    @Override
     public ReasonerQueryImpl rewrite(){
         if (!requiresDecomposition()) return this;
         return new ReasonerQueryImpl(
@@ -474,23 +475,19 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Stream<ConceptMap> resolve() {
-        return resolve(new MultilevelSemanticCache());
+        return resolve(new HashSet<>(), new MultilevelSemanticCache(), this.requiresReiteration());
     }
 
-    public Stream<ConceptMap> resolve(MultilevelSemanticCache cache){
-        return new ResolutionIterator(new CompositeQuery(this, new HashSet<>(), tx()), cache).hasStream();
+    @Override
+    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache, boolean reiterate){
+        return new ResolutionIterator(this, subGoals, cache, reiterate).hasStream();
     }
 
-    /**
-     * @param sub partial substitution
-     * @param u unifier with parent state
-     * @param parent parent state
-     * @param subGoals set of visited sub goals
-     * @param cache query cache
-     * @return resolution subGoal formed from this query
-     */
+    @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
-        return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
+        return this.getAtoms(NeqPredicate.class).findFirst().isPresent() ?
+                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
+                new ConjunctiveState(this, sub, u, parent, subGoals, cache);
     }
 
     /**

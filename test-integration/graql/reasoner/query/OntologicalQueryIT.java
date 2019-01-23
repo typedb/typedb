@@ -47,7 +47,7 @@ import java.io.InputStreamReader;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -128,8 +128,8 @@ public class OntologicalQueryIT {
 //        List<ConceptMap> answersWithExclusionsInferred = tx.execute(Graql.<GetQuery>parse(queryWithExclusions));
 //        assertFalse(simpleAnswers.isEmpty());
 //        assertFalse(answersWithExclusions.isEmpty());
-//        assertCollectionsEqual(simpleAnswers, simpleAnswersInferred);
-//        assertCollectionsEqual(answersWithExclusions, answersWithExclusionsInferred);
+//        assertCollectionsNonTriviallyEqual(simpleAnswers, simpleAnswersInferred);
+//        assertCollectionsNonTriviallyEqual(answersWithExclusions, answersWithExclusionsInferred);
 //    }
 
     @Test
@@ -140,7 +140,7 @@ public class OntologicalQueryIT {
         List<ConceptMap> answersInferred = tx.execute(Graql.<GetQuery>parse(queryString));
 
         assertFalse(answers.isEmpty());
-        assertCollectionsEqual(answers, answersInferred);
+        assertCollectionsNonTriviallyEqual(answers, answersInferred);
     }
 
     //TODO need to correctly return THING and RELATIONSHIP mapping for %type
@@ -150,7 +150,7 @@ public class OntologicalQueryIT {
                 String queryString = "match $x isa $type; get;";
 
         List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
-        assertCollectionsEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
+        assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
     }
 
     @Test
@@ -188,7 +188,7 @@ public class OntologicalQueryIT {
         List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
         //1 x noRoleEntity + 3 x 3 (hierarchy) anotherTwoRoleEntities
         assertEquals(10, answers.size());
-        assertCollectionsEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
+        assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
     }
 
     @Test
@@ -199,7 +199,7 @@ public class OntologicalQueryIT {
         List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
 
         assertEquals(tx.execute(Graql.<GetQuery>parse(specificQueryString)).size() * tx.getRelationshipType("reifiable-relation").subs().count(), answers.size());
-        assertCollectionsEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
+        assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
     }
 
     /**
@@ -212,7 +212,7 @@ public class OntologicalQueryIT {
 
         List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
         assertEquals(tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count(), answers.size());
-        assertCollectionsEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
+        assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
     }
 
     @Test
@@ -221,7 +221,7 @@ public class OntologicalQueryIT {
         List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
 
         assertEquals(tx.getRelationshipType("relationship").subs().flatMap(RelationType::instances).count(), answers.size());
-        assertCollectionsEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
+        assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
     }
 
     @Test
@@ -250,7 +250,7 @@ public class OntologicalQueryIT {
         List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
         List<ConceptMap> reifiableRelations = tx.execute(Graql.<GetQuery>parse("match $x isa reifiable-relation;get;"));
         assertEquals(tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count() + reifiableRelations.size(), answers.size());
-        assertCollectionsEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
+        assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
     }
 
     /**
@@ -263,7 +263,7 @@ public class OntologicalQueryIT {
 
         List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
 
-        assertCollectionsEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
+        assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.<GetQuery>parse(queryString), false));
         List<ConceptMap> relations = tx.execute(Graql.<GetQuery>parse("match $x isa relationship;get;"),false);
         //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
         assertEquals(relations.stream().filter(ans -> !ans.get("x").asRelation().type().isImplicit()).count() + 3, answers.size());

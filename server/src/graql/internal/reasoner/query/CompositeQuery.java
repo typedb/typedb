@@ -20,15 +20,14 @@ package grakn.core.graql.internal.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.ResolutionIterator;
+import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.graql.internal.reasoner.state.ConjunctiveState;
 import grakn.core.graql.internal.reasoner.state.CompositeState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
@@ -60,10 +59,10 @@ import java.util.stream.Stream;
  * The negative part is stored in terms of the negation complement - hence all stored queries are positive.
  *
  */
-public class CompositeQuery implements ReasonerQuery {
+public class CompositeQuery implements ResolvableQuery {
 
     final private ReasonerQueryImpl conjunctiveQuery;
-    final private Set<CompositeQuery> complementQueries;
+    final private Set<ResolvableQuery> complementQueries;
     final private TransactionOLTP tx;
 
     CompositeQuery(Conjunction<Pattern> pattern, TransactionOLTP tx) {
@@ -76,19 +75,19 @@ public class CompositeQuery implements ReasonerQuery {
         this.tx = tx;
         //conjunction of negation patterns
         Set<Conjunction<Pattern>> complementPattern = complementPattern(pattern);
-        this.conjunctiveQuery = new ReasonerQueryImpl(positiveConj, tx);
+        this.conjunctiveQuery = ReasonerQueries.create(positiveConj, tx);
         this.complementQueries = complementPattern.stream()
-                        .map(comp -> new CompositeQuery(comp, tx))
-                        .collect(Collectors.toSet());
+                .map(comp -> ReasonerQueries.resolvable(comp, tx))
+                .collect(Collectors.toSet());
 
         if (!isNegationSafe()){
             throw new IllegalStateException("Query:\n" + this + "\nis unsafe! Negated pattern variables not bound!");
         }
     }
 
-    CompositeQuery(ReasonerQueryImpl conj, Set<CompositeQuery> neg, TransactionOLTP tx) {
+    private CompositeQuery(ReasonerQueryImpl conj, Set<ResolvableQuery> comp, TransactionOLTP tx) {
         this.conjunctiveQuery = conj;
-        this.complementQueries = neg;
+        this.complementQueries = comp;
         this.tx = tx;
     }
 
@@ -106,11 +105,8 @@ public class CompositeQuery implements ReasonerQuery {
                 .collect(Collectors.toSet());
     }
 
-    /**
-     * @param sub substitution to be inserted into the query
-     * @return corresponding query with additional substitution
-     */
-    CompositeQuery withSubstitution(ConceptMap sub){
+    @Override
+    public CompositeQuery withSubstitution(ConceptMap sub){
         return new CompositeQuery(
                 getConjunctiveQuery().withSubstitution(sub),
                 getComplementQueries().stream().map(q -> q.withSubstitution(sub)).collect(Collectors.toSet()),
@@ -118,16 +114,36 @@ public class CompositeQuery implements ReasonerQuery {
         );
     }
 
+    @Override
     public CompositeQuery inferTypes() {
         return new CompositeQuery(getConjunctiveQuery().inferTypes(), getComplementQueries(), this.tx());
+    }
+
+    @Override
+    public ResolvableQuery positive() {
+        return new CompositeQuery(getConjunctiveQuery().positive(), getComplementQueries(), tx());
     }
 
     public ReasonerQueryImpl getConjunctiveQuery() {
         return conjunctiveQuery;
     }
 
-    public Set<CompositeQuery> getComplementQueries() {
+    public Set<ResolvableQuery> getComplementQueries() {
         return complementQueries;
+    }
+
+    @Override
+    public ResolvableQuery copy() {
+        return new CompositeQuery(
+                getConjunctiveQuery().copy(),
+                getComplementQueries().stream().map(ResolvableQuery::copy).collect(Collectors.toSet()),
+                this.tx()
+        );
+    }
+
+    @Override
+    public boolean isAtomic() {
+        return getComplementQueries().isEmpty() && getConjunctiveQuery().isAtomic();
     }
 
     @Override
@@ -138,17 +154,17 @@ public class CompositeQuery implements ReasonerQuery {
     @Override
     public String toString(){
         return getConjunctiveQuery().toString() +
-                (getComplementQueries() != null? "\nNOT{\n" + getComplementQueries() + "\n}" : "");
+                (!getComplementQueries().isEmpty()? "\nNOT{\n" + getComplementQueries() + "\n}" : "");
     }
 
     @Override
     public ReasonerQuery conjunction(ReasonerQuery q) {
         return new CompositeQuery(
                 Graql.and(
-                    Sets.union(
-                        this.getPattern().getPatterns(),
-                        q.getPattern().getPatterns()
-                    )),
+                        Sets.union(
+                                this.getPattern().getPatterns(),
+                                q.getPattern().getPatterns()
+                        )),
                 this.tx()
         );
     }
@@ -159,7 +175,7 @@ public class CompositeQuery implements ReasonerQuery {
     @Override
     public void checkValid() {
         getConjunctiveQuery().checkValid();
-        getComplementQueries().forEach(CompositeQuery::checkValid);
+        getComplementQueries().forEach(ResolvableQuery::checkValid);
     }
 
     @Override
@@ -179,14 +195,14 @@ public class CompositeQuery implements ReasonerQuery {
     @Override
     public Conjunction<Pattern> getPattern() {
         Set<Pattern> pattern = Sets.newHashSet(getConjunctiveQuery().getPattern());
-        getComplementQueries().stream().map(CompositeQuery::getPattern).forEach(pattern::add);
+        getComplementQueries().stream().map(ResolvableQuery::getPattern).forEach(pattern::add);
         return Graql.and(pattern);
     }
 
     @Override
     public ConceptMap getSubstitution() {
         ConceptMap sub = getConjunctiveQuery().getSubstitution();
-        for (CompositeQuery comp : getComplementQueries()) {
+        for (ResolvableQuery comp : getComplementQueries()) {
             sub = sub.merge(comp.getSubstitution());
         }
         return sub;
@@ -195,13 +211,13 @@ public class CompositeQuery implements ReasonerQuery {
     @Override
     public Set<String> validateOntologically() {
         Set<String> validation = getConjunctiveQuery().validateOntologically();
-        getComplementQueries().stream().map(CompositeQuery::validateOntologically).forEach(validation::addAll);
+        getComplementQueries().stream().map(ResolvableQuery::validateOntologically).forEach(validation::addAll);
         return validation;
     }
 
     @Override
     public boolean isRuleResolvable() {
-        return getConjunctiveQuery().isRuleResolvable() || getComplementQueries().stream().anyMatch(CompositeQuery::isRuleResolvable);
+        return getConjunctiveQuery().isRuleResolvable() || getComplementQueries().stream().anyMatch(ResolvableQuery::isRuleResolvable);
     }
 
     @Override
@@ -227,29 +243,45 @@ public class CompositeQuery implements ReasonerQuery {
 
     @Override
     public Stream<ConceptMap> resolve() {
-        return resolve(new MultilevelSemanticCache());
+        return resolve(new HashSet<>(), new MultilevelSemanticCache(), this.requiresReiteration());
+    }
+
+    @Override
+    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache, boolean reiterate){
+        return new ResolutionIterator(this, subGoals, cache, reiterate).hasStream();
     }
 
     @Override
     public boolean requiresReiteration() {
-        return getConjunctiveQuery().requiresReiteration() || getComplementQueries().stream().anyMatch(CompositeQuery::requiresReiteration);
+        return getConjunctiveQuery().requiresReiteration() || getComplementQueries().stream().anyMatch(ResolvableQuery::requiresReiteration);
     }
 
-    public Stream<ConceptMap> resolve(MultilevelSemanticCache cache){
-        return new ResolutionIterator(this, cache).hasStream();
+    @Override
+    public Stream<Atom> selectAtoms() {
+        return getAtoms(Atom.class).filter(Atomic::isSelectable);
     }
 
-    /**
-     * @param sub partial substitution
-     * @param u unifier with parent state
-     * @param parent parent state
-     * @param subGoals set of visited sub goals
-     * @param cache query cache
-     * @return resolution subGoal formed from this query
-     */
+    @Override
+    public boolean requiresDecomposition() {
+        return getConjunctiveQuery().requiresDecomposition() ||
+                (!getComplementQueries().isEmpty() && getComplementQueries().stream().anyMatch(ResolvableQuery::requiresDecomposition));
+    }
+
+    @Override
+    public CompositeQuery rewrite(){
+        return new CompositeQuery(
+                getConjunctiveQuery().rewrite(),
+                getComplementQueries().isEmpty()?
+                        getComplementQueries() :
+                        getComplementQueries().stream().map(ResolvableQuery::rewrite).collect(Collectors.toSet()),
+                tx()
+        );
+    }
+
+    @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
         return isPositive()?
-                new ConjunctiveState(conjunctiveQuery, sub, u, parent, subGoals, cache) :
+                getConjunctiveQuery().subGoal(sub, u, parent, subGoals, cache) :
                 new CompositeState(this, sub, u, parent, subGoals, cache);
     }
 }

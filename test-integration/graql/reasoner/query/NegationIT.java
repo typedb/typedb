@@ -54,7 +54,9 @@ import static grakn.core.graql.query.Graql.parse;
 import static grakn.core.graql.query.Graql.rel;
 import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -122,7 +124,7 @@ public class NegationIT {
 
             Set<ConceptMap> expectedAnswers = fullAnswers.stream().filter(ans -> !ans.get("q").asThing().type().equals(unwantedType)).collect(toSet());
 
-            assertCollectionsEqual(
+            assertCollectionsNonTriviallyEqual(
                     expectedAnswers,
                     answersWithoutSpecificRoleplayerType
             );
@@ -161,7 +163,7 @@ public class NegationIT {
                             tx)
                     ).collect(toSet());
 
-            assertCollectionsEqual(
+            assertCollectionsNonTriviallyEqual(
                     expectedAnswers,
                     answersWithoutSpecificConnection
             );
@@ -202,7 +204,7 @@ public class NegationIT {
                             tx)
                     ).collect(toSet());
 
-            assertCollectionsEqual(
+            assertCollectionsNonTriviallyEqual(
                     expectedAnswers,
                     answersWithoutSpecificConnection
             );
@@ -221,8 +223,9 @@ public class NegationIT {
                             "get;"
             ));
 
-            List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse("match $x isa entity;get;"));
-            Set<ConceptMap> expectedAnswers = fullAnswers.stream().filter(ans -> ans.get("x").asThing().attributes().noneMatch(a -> a.value().equals(specificStringValue))).collect(toSet());
+            List<ConceptMap> expectedAnswers = tx.stream(Graql.<GetQuery>parse("match $x isa entity;get;"))
+                    .filter(ans -> ans.get("x").asThing().attributes().noneMatch(a -> a.value().equals(specificStringValue))).collect(toList());
+
             assertCollectionsEqual(
                     expectedAnswers,
                     answersWithoutSpecificStringValue
@@ -242,10 +245,11 @@ public class NegationIT {
                             "get;"
             ));
 
-            List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse("match $x has attribute $r;get;"));
+            List<ConceptMap> expectedAnswers = tx.stream(Graql.<GetQuery>parse("match $x has attribute $r;get;"))
+                    .filter(ans -> !ans.get("r").asAttribute().value().equals(specificStringValue)).collect(toList());
 
-            assertCollectionsEqual(
-                    fullAnswers.stream().filter(ans -> !ans.get("r").asAttribute().value().equals(specificStringValue)).collect(toSet()),
+            assertCollectionsNonTriviallyEqual(
+                    expectedAnswers,
                     answersWithoutSpecificStringValue
             );
         }
@@ -268,7 +272,7 @@ public class NegationIT {
             List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse("match $x has attribute $r;get;"));
 
             //TODO
-            assertCollectionsEqual(
+            assertCollectionsNonTriviallyEqual(
                     fullAnswers.stream().filter(ans -> !ans.get("r").asAttribute().value().equals(specificStringValue)).collect(toSet()),
                     answersWithoutSpecificStringValue
             );
@@ -290,7 +294,7 @@ public class NegationIT {
 
             List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse("match $x has attribute $r;get;"));
 
-            assertCollectionsEqual(
+            assertCollectionsNonTriviallyEqual(
                     fullAnswers.stream()
                             .filter(ans -> !ans.get("x").asThing().type().equals(specificType)).collect(toSet()),
                     answersWithoutSpecificType
@@ -353,7 +357,7 @@ public class NegationIT {
                             "get;"
             ));
 
-            assertCollectionsEqual(equivalentAnswers, answersWithoutSpecifcTypeAndValue);
+            assertCollectionsNonTriviallyEqual(equivalentAnswers, answersWithoutSpecifcTypeAndValue);
         }
     }
 
@@ -374,7 +378,7 @@ public class NegationIT {
                             "get;"
             ));
 
-            assertCollectionsEqual(
+            assertCollectionsNonTriviallyEqual(
                     fullAnswers.stream()
                             .filter(ans -> !ans.get("r").asAttribute().value().equals(anotherSpecificValue))
                             .filter(ans -> !ans.get("x").asThing().type().equals(specificType))

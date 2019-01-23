@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.query;
 
 import com.google.common.collect.Iterables;
-import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.query.pattern.Conjunction;
@@ -35,11 +35,25 @@ import java.util.Set;
  */
 public class ReasonerQueries {
 
-    public static CompositeQuery composite(Conjunction<Pattern> pattern, TransactionOLTP tx){
-        return new CompositeQuery(pattern, tx).inferTypes();
+    /**
+     * @param pattern conjunctive pattern defining the query
+     * @param tx corresponding transaction
+     * @return a resolvable reasoner query constructed from provided conjunctive pattern
+     */
+    public static ResolvableQuery resolvable(Conjunction<Pattern> pattern, TransactionOLTP tx){
+        CompositeQuery query = new CompositeQuery(pattern, tx).inferTypes();
+        return query.isAtomic()?
+                new ReasonerAtomicQuery(query.getAtoms(), tx) :
+                query.isPositive()?
+                        query.getConjunctiveQuery() : query;
     }
 
-    public static CompositeQuery composite(CompositeQuery q, ConceptMap sub){
+    /**
+     * @param q base query for substitution to be attached
+     * @param sub (partial) substitution
+     * @return resolvable query with the substitution contained in the query
+     */
+    public static ResolvableQuery resolvable(ResolvableQuery q, ConceptMap sub){
         return q.withSubstitution(sub).inferTypes();
     }
 
@@ -110,15 +124,6 @@ public class ReasonerQueries {
      */
     public static ReasonerAtomicQuery atomic(Atom atom){
         return new ReasonerAtomicQuery(atom).inferTypes();
-    }
-
-    /**
-     * create an atomic query copy from the provided query with the types inferred
-     * @param q query to be copied
-     * @return copied atomic query with inferred types
-     */
-    public static ReasonerAtomicQuery atomic(ReasonerAtomicQuery q){
-        return new ReasonerAtomicQuery(q).inferTypes();
     }
 
     /**

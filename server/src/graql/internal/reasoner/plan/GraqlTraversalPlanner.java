@@ -22,7 +22,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;

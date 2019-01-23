@@ -18,6 +18,8 @@
 
 package(default_visibility = ["//visibility:__pkg__"])
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_test(
     name = "grakn-console-it",
     srcs = ["GraknConsoleIT.java"],
@@ -43,12 +45,9 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "grakn-console-it-checkstyle",
- target = ":grakn-console-it",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":grakn-console-it"
+    ],
 )

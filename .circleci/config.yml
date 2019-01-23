@@ -108,18 +108,6 @@ jobs:
     - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
     - run: bazel test //client-nodejs:test-integration --test_output=streamed
 
-  client-python:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - run: bazel build //:distribution
-    - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
-    - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
-    - run: bazel test //client_python:test_integration --test_output=streamed
-
   common:
     machine: true
     working_directory: ~/grakn

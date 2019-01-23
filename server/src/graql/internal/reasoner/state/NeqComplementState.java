@@ -19,13 +19,14 @@
 package grakn.core.graql.internal.reasoner.state;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 
+import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,25 +54,25 @@ import java.util.stream.Collectors;
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
 public class NeqComplementState extends QueryStateBase {
 
-    private final AtomicState complementState;
+    private final ResolutionState complementState;
     private boolean visited = false;
 
     private final ConceptMap neqPredicateSub;
     private final Set<NeqPredicate> neqPredicates;
 
-    NeqComplementState(ReasonerAtomicQuery q,
-                       ConceptMap sub,
-                       Unifier u,
-                       QueryStateBase parent,
-                       Set<ReasonerAtomicQuery> subGoals,
-                       MultilevelSemanticCache cache) {
+    public NeqComplementState(ResolvableQuery q,
+                              ConceptMap sub,
+                              Unifier u,
+                              QueryStateBase parent,
+                              Set<ReasonerAtomicQuery> subGoals,
+                              MultilevelSemanticCache cache) {
         super(sub, u, parent, subGoals, cache);
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(q, sub);
+        ResolvableQuery query = ReasonerQueries.resolvable(q, sub);
         this.neqPredicates = q.getAtoms(NeqPredicate.class).collect(Collectors.toSet());
         this.neqPredicateSub = query.getSubstitution().merge(sub)
                 .project(this.neqPredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
-        this.complementState = new AtomicState(query.positive(), sub, u, this, subGoals, cache);
+        this.complementState = query.positive().subGoal(sub, u, this, subGoals, cache);
     }
 
     @Override
@@ -87,7 +88,7 @@ public class NeqComplementState extends QueryStateBase {
 
     @Override
     ConceptMap consumeAnswer(AnswerState state) {
-        return complementState.consumeAnswer(state);
+        return state.getSubstitution();
     }
 
     @Override

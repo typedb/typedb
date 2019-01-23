@@ -19,6 +19,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_library(
     name = "client-java",
@@ -53,14 +54,11 @@ java_library(
     tags = ["maven_coordinates=grakn.core:client:{pom_version}"],
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
-    name = "client-java-checkstyle",
-    target = ":client-java",
-    config = "//config/checkstyle:checkstyle.xml",
-    suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
-    licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":client-java"
+    ],
 )
 
 deploy_maven_jar(

@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -70,6 +71,16 @@ public class GraqlTestUtil {
 
     public static <T> void assertCollectionsEqual(String msg, Collection<T> c1, Collection<T> c2) {
         assertTrue(msg, CollectionUtils.isEqualCollection(c1, c2));
+    }
+
+    public static <T> void assertCollectionsNonTriviallyEqual(Collection<T> c1, Collection<T> c2){
+        assertFalse("Trivial equality!", c1.isEmpty() && c2.isEmpty());
+        assertCollectionsEqual(c1, c2);
+    }
+
+    public static <T> void assertCollectionsNonTriviallyEqual(String msg, Collection<T> c1, Collection<T> c2){
+        assertFalse("Trivial equality!", c1.isEmpty() && c2.isEmpty());
+        assertCollectionsEqual(msg, c1, c2);
     }
 
     public static void loadFromFile(String gqlPath, String file, Transaction tx) {

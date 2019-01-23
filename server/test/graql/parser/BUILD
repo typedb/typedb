@@ -31,15 +31,6 @@ java_test(
     size = "medium"
 )
 
-checkstyle_test(
- name = "parser-test-checkstyle",
- target = ":parser-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
-)
-
 java_test(
     name = "query-to-string-test",
     test_class = "grakn.core.graql.parser.QueryToStringTest",
@@ -53,10 +44,9 @@ java_test(
 )
 
 checkstyle_test(
- name = "query-to-string-test-checkstyle",
- target = ":query-to-string-test",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":parser-test",
+        ":query-to-string-test"
+    ]
 )

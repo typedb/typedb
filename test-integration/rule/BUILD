@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
 java_library(
     name = "grakn-test-server",
     srcs = ["GraknTestServer.java"],
@@ -37,12 +39,9 @@ java_library(
     visibility = ["//visibility:public"]
 )
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 checkstyle_test(
- name = "grakn-test-server-checkstyle",
- target = ":grakn-test-server",
- config = "//config/checkstyle:checkstyle.xml",
- suppressions = "//config/checkstyle:checkstyle-suppressions.xml",
- licenses = ["//config/checkstyle:licenses"],
-
+    name = "checkstyle",
+    targets = [
+        ":grakn-test-server"
+    ],
 )
