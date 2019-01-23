@@ -422,25 +422,46 @@ workflows:
   version: 2
   workflow-pr:
     jobs:
-      - tests
+      - tests:
+          filters:
+            branches:
+              ignore: ci-pipeline
       - client-java:
+          filters:
+            branches:
+              ignore: ci-pipeline
           requires:
             - tests
       - common:
+          filters:
+            branches:
+              ignore: ci-pipeline
           requires:
             - tests
       - console:
+          filters:
+            branches:
+              ignore: ci-pipeline
           requires:
             - tests
       - distributions:
+          filters:
+            branches:
+              ignore: ci-pipeline
           requires:
             - client-java
             - common
             - console
       - dist-mac:
+          filters:
+            branches:
+              ignore: ci-pipeline
           requires:
             - distributions
       - dist-ubuntu:
+          filters:
+            branches:
+              ignore: ci-pipeline
           requires:
             - distributions
 
