@@ -420,7 +420,7 @@ jobs:
           git push https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-web-dev.git master
 workflows:
   version: 2
-  ci-pipeline-pr:
+  workflow-pr:
     jobs:
       - tests
       - client-java:
@@ -443,47 +443,87 @@ workflows:
       - dist-ubuntu:
           requires:
             - distributions
-  ci-pipeline-release:
+
+  workflow-master:
     jobs:
-      - tests
+      - tests:
+          filters:
+            branches:
+              only: ci-pipeline
       - client-java:
+          filters:
+            branches:
+              only: ci-pipeline
           requires:
             - tests
       - common:
+          filters:
+            branches:
+              only: ci-pipeline
           requires:
             - tests
       - console:
+          filters:
+            branches:
+              only: ci-pipeline
           requires:
             - tests
       - distributions:
+          filters:
+            branches:
+              only: ci-pipeline
           requires:
             - client-java
             - common
             - console
       - dist-mac:
+          filters:
+            branches:
+              only: ci-pipeline
           requires:
             - distributions
       - dist-ubuntu:
+          filters:
+            branches:
+              only: ci-pipeline
           requires:
             - distributions
       - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit:
+          filters:
+            branches:
+              only: ci-pipeline
           requires:
             - dist-ubuntu
             - dist-mac
       - approve-deploy-github:
           type: approval
+          filters:
+            branches:
+              only: ci-pipeline
           requires:
             - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit
       - deploy-github:
+          filters:
+            branches:
+              only: ci-pipeline
           requires:
             - approve-deploy-github
       - docs-create-pr-to-partially-merge-dev-to-master:
+          filters:
+            branches:
+              only: ci-pipeline
           requires:
             - deploy-github
       - is-docs-merged:
+          filters:
+            branches:
+              only: ci-pipeline
           type: approval
           requires:
             - docs-create-pr-to-partially-merge-dev-to-master
       - docs-deploy-to-production:
+          filters:
+            branches:
+              only: ci-pipeline
           requires:
             - is-docs-merged
