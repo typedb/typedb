@@ -39,7 +39,7 @@ With the expressivity of the schema, inference through OLTP and distributed algo
 ## Download and Running Grakn Core
 1. Install Java 8 (OpenJDK or Oracle Java)
 2. If running on Windows version prior to 10, please make sure to have [Visual Studio C++ Runtime for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145) installed
-3. Download Grakn Core from the [Download Centre](https://grakn.ai/download) or [GitHub Releases](https://github.com/graknlabs/grakn/releases)), and follow the [Setup Guide](http://dev.grakn.ai/docs/general/quickstart).
+3. Follow the [Setup Guide](http://dev.grakn.ai/docs/running-grakn/install-and-run).
 
 ## Compiling Grakn Core from Source
 
