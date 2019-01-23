@@ -281,10 +281,12 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleIsValidHornClause(TransactionOLTP graph, Rule rule){
         Set<String> errors = new HashSet<>();
+        /*
         if (rule.when().getNegationDNF().getPatterns().stream().anyMatch(Pattern::isNegation)
                 || rule.then().getNegationDNF().getPatterns().stream().anyMatch(Pattern::isNegation)){
             errors.add(ErrorMessage.VALIDATION_RULE_NEGATIVE_STATEMENTS_UNSUPPORTED_IN_RULES.getMessage(rule.label()));
         }
+        */
         if (rule.when().getDisjunctiveNormalForm().getPatterns().size() > 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
         }

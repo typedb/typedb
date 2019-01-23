@@ -21,11 +21,13 @@ package grakn.core.graql.reasoner.reasoning;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.reasoner.graph.DualLinearTransitivityMatrixGraph;
+import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.NguyenGraph;
 import grakn.core.graql.reasoner.graph.PathMatrixGraph;
 import grakn.core.graql.reasoner.graph.PathTreeGraph;
 import grakn.core.graql.reasoner.graph.PathTreeSymmetricGraph;
+import grakn.core.graql.reasoner.graph.ReachabilityGraph;
 import grakn.core.graql.reasoner.graph.TailRecursionGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
@@ -180,17 +182,19 @@ public class RecursionIT {
     @Test
     public void testReachability() {
         try (Session session = server.sessionWithNewKeyspace()) {
-            GraqlTestUtil.loadFromFileAndCommit(resourcePath, "reachability.gql", session);
+            ReachabilityGraph graph = new ReachabilityGraph(session);
+            graph.load(5);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 String queryString = "match (reach-from: $x, reach-to: $y) isa reachable; get;";
                 String explicitQuery = "match $x has index $indX;$y has index $indY;" +
-                        "{$indX == 'a';$indY == 'b';} or" +
-                        "{$indX == 'b';$indY == 'c';} or" +
-                        "{$indX == 'c';$indY == 'c';} or" +
-                        "{$indX == 'c';$indY == 'd';} or" +
-                        "{$indX == 'a';$indY == 'c';} or" +
-                        "{$indX == 'b';$indY == 'd';} or" +
-                        "{$indX == 'a';$indY == 'd';};get $x, $y;";
+                        "{$indX == 'aa';$indY == 'bb';} or" +
+                        "{$indX == 'bb';$indY == 'cc';} or" +
+                        "{$indX == 'cc';$indY == 'cc';} or" +
+                        "{$indX == 'cc';$indY == 'dd';} or" +
+                        "{$indX == 'aa';$indY == 'cc';} or" +
+                        "{$indX == 'bb';$indY == 'dd';} or" +
+                        "{$indX == 'aa';$indY == 'dd';};" +
+                        "get $x, $y;";
 
                 GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
             }

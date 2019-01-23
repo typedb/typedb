@@ -1,55 +1,82 @@
 define
 
-###################################################
-####################Schema######################
-#################################################
-
-vertex sub entity,
+indexable sub entity,
     has index;
 
-link-from sub role;
-link-to sub role;
-link sub relationship, relates link-from, relates link-to;
-vertex plays link-from, plays link-to;
+traversable sub indexable,
+    plays from,
+    plays to;
 
-reach-from sub role;
-reach-to sub role;
-reachable sub relationship, relates reach-from, relates reach-to;
-vertex plays reach-from, plays reach-to;
+vertex sub traversable;
+node sub traversable;
+
+link sub relationship, relates from, relates to;
+indirect-link sub relationship, relates from, relates to;
+reachable sub relationship, relates from, relates to;
+unreachable sub relationship, relates from, relates to;
 
 index sub attribute, datatype string;
 
-
-####################################################
-##################RULES#############################
-####################################################
-
-rule-1
+reachability-transitivityA
 when {
-(link-from: $x, link-to: $y) isa link;},
+    (from: $x, to: $y) isa link;
+},
 then {
-(reach-from: $x, reach-to: $y) isa reachable;};
+    (from: $x, to: $y) isa reachable;
+};
 
-rule-2
+reachability-transitivityB
 when {
-(link-from: $x, link-to: $z) isa link;
-(reach-from: $z, reach-to: $y) isa reachable;},
+    (from: $x, to: $z) isa link;
+    (from: $z, to: $y) isa reachable;
+},
 then {
-(reach-from: $x, reach-to: $y) isa reachable;};
+    (from: $x, to: $y) isa reachable;
+};
 
-insert
+node-ruleA
+when {
+    (from: $x, to: $y) isa link;
+},
+then {
+    $x isa node;
+};
 
-####################################################
-##################DATA#############################
-####################################################
+node-ruleB
+when {
+    (from: $x, to: $y) isa link;
+},
+then {
+    $y isa node;
+};
 
-$a isa vertex, has index "a";
-$b isa vertex, has index "b";
-$c isa vertex, has index "c";
-$d isa vertex, has index "d";
+node-reachability
+when {
 
-(link-from: $a, link-to: $b) isa link;
-(link-from: $b, link-to: $c) isa link;
-(link-from: $c, link-to: $c) isa link;
-(link-from: $c, link-to: $d) isa link;
+    (from: $x, to: $y) isa link;
+},
+then {
+    $y isa node;
+};
+
+indirect-link-rule
+when {
+    (from: $x, to: $y) isa reachable;
+    not {(from: $x, to: $y) isa link;};
+},
+then {
+    (from: $x, to: $y) isa indirect-link;
+};
+
+unreachability-rule
+when {
+    $x isa vertex;
+    $y isa vertex;
+    #$x isa node;
+    #$y isa node;
+    not {(from: $x, to: $y) isa reachable;};
+},
+then {
+    (from: $x, to: $y) isa unreachable;
+};
 

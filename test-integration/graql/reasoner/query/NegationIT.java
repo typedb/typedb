@@ -19,20 +19,23 @@
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
+import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.property.IsaProperty;
+import grakn.core.graql.reasoner.graph.ReachabilityGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -47,12 +50,6 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static grakn.core.graql.query.Graql.and;
-import static grakn.core.graql.query.Graql.match;
-import static grakn.core.graql.query.Graql.or;
-import static grakn.core.graql.query.Graql.parse;
-import static grakn.core.graql.query.Graql.rel;
-import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -70,6 +67,7 @@ public class NegationIT {
 
     private static SessionImpl negationSession;
     private static SessionImpl recipeSession;
+    private static SessionImpl reachabilitySession;
 
     @BeforeClass
     public static void loadContext(){
@@ -77,6 +75,9 @@ public class NegationIT {
         loadFromFileAndCommit(resourcePath,"negation.gql", negationSession);
         recipeSession = server.sessionWithNewKeyspace();
         loadFromFileAndCommit(resourcePath,"recipeTest.gql", recipeSession);
+        reachabilitySession = server.sessionWithNewKeyspace();
+        ReachabilityGraph reachability = new ReachabilityGraph(reachabilitySession);
+        reachability.load(3);
     }
 
     @AfterClass
@@ -471,28 +472,30 @@ public class NegationIT {
         try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
             Set<ConceptMap> allRecipes = tx.stream(Graql.<GetQuery>parse("match $r isa recipe;get;")).collect(Collectors.toSet());
 
-            Set<ConceptMap> recipesWithUnavailableIngredients = tx.stream(
+            List<ConceptMap> recipesWithUnavailableIngredientsExplicit = tx.execute(
                     Graql.<GetQuery>parse("match " +
                             "$r isa recipe;" +
                             "($r, $i) isa requires;" +
                             "not {$i isa available-ingredient;};" +
                             "get $r;"
-                    )).collect(Collectors.toSet());
-            /*
-            List<ConceptMap> recipesWithUnavailableIngredients2 = tx.execute(
+                    ));
+
+            List<ConceptMap> recipesWithUnavailableIngredients = tx.execute(
                     Graql.<GetQuery>parse("match " +
                             "$r isa recipe-with-unavailable-ingredient;" +
                             "get $r;"
                     ));
 
-            List<ConceptMap> recipesWithAllAvailableIngredients = tx.execute(
+            assertCollectionsNonTriviallyEqual(recipesWithUnavailableIngredientsExplicit, recipesWithUnavailableIngredients);
+
+            List<ConceptMap> recipesWithAllIngredientsAvailableSimple = tx.execute(
                     Graql.<GetQuery>parse("match " +
                             "$r isa recipe;" +
-                            "not {$r isa recipe-with-unavailable-ingredient};" +
+                            "not {$r isa recipe-with-unavailable-ingredient;};" +
                             "get $r;"
                     ));
-            */
-            Set<ConceptMap> recipesWithAllIngredientsAvailableExplicit = tx.stream(Graql.<GetQuery>parse("match " +
+
+            List<ConceptMap> recipesWithAllIngredientsAvailableExplicit = tx.execute(Graql.<GetQuery>parse("match " +
                     "$r isa recipe;" +
                     "not {" +
                         "{" +
@@ -506,9 +509,9 @@ public class NegationIT {
                         "};" +
                     "};" +
                     "get $r;"
-            )).collect(Collectors.toSet());
+            ));
 
-            Set<ConceptMap> recipesWithAllIngredientsAvailable = tx.stream(Graql.<GetQuery>parse("match " +
+            List<ConceptMap> recipesWithAllIngredientsAvailable = tx.execute(Graql.<GetQuery>parse("match " +
                     "$r isa recipe;" +
                     "not {" +
                         "{" +
@@ -517,11 +520,70 @@ public class NegationIT {
                         "};" +
                     "};" +
                     "get $r;"
-            )).collect(Collectors.toSet());
+            ));
 
-            assertTrue(!recipesWithAllIngredientsAvailable.isEmpty());
-            assertEquals(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailable);
-            assertEquals(recipesWithAllIngredientsAvailable, Sets.difference(allRecipes, recipesWithUnavailableIngredients));
+            assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailable);
+            assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailableSimple);
+            assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailable, ReasonerUtils.subtract(allRecipes, recipesWithUnavailableIngredients));
+        }
+    }
+
+    @Test
+    public void testSemiPositiveProgram(){
+        try(Transaction tx = reachabilitySession.transaction(Transaction.Type.WRITE)) {
+            ConceptMap firstNeighbour = Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse("match $x has index 'a1';get;")));
+            ConceptId firstNeighbourId = firstNeighbour.get("x").id();
+            List<ConceptMap> indirectLinksWithOrigin = tx.execute(
+                    Graql.<GetQuery>parse("match " +
+                            "(from: $x, to: $y) isa indirect-link;" +
+                            "$x has index 'a';" +
+                            "get;"
+                    ));
+
+            List<ConceptMap> alternativeRepresentation = tx.execute(
+                    Graql.<GetQuery>parse(
+                            "match " +
+                                    "(from: $x, to: $y) isa reachable;" +
+                                    "$x has index 'a';" +
+                                    "not {$y has index 'a1';};" +
+                                    "get;"
+                    ));
+
+            List<ConceptMap> expected = tx.stream(
+                    Graql.<GetQuery>parse(
+                            "match " +
+                                    "(from: $x, to: $y) isa reachable;" +
+                                    "$x has index 'a';" +
+                                    "get;"
+                    )).filter(ans -> !ans.get("y").id().equals(firstNeighbourId))
+                    .collect(toList());
+            assertCollectionsNonTriviallyEqual(alternativeRepresentation, indirectLinksWithOrigin);
+            assertCollectionsNonTriviallyEqual(expected, indirectLinksWithOrigin);
+        }
+    }
+
+    @Test
+    public void testStratifiedProgram(){
+        try(Transaction tx = reachabilitySession.transaction(Transaction.Type.WRITE)) {
+            List<ConceptMap> indirectLinksWithOrigin = tx.execute(
+                    Graql.<GetQuery>parse("match " +
+                            "(from: $x, to: $y) isa unreachable;" +
+                            "$x has index 'a';" +
+                            "get;"
+                    ));
+
+            List<ConceptMap> expected = tx.execute(
+                    Graql.<GetQuery>parse(
+                            "match " +
+                                    "$x has index 'a';" +
+                                    "{$y has index contains 'b';} or " +
+                                    "{$y has index 'aa';} or " +
+                                    "{$y has index 'a';} or " +
+                                    "{$y has index 'cc';} or " +
+                                    "{$y has index 'dd';};" +
+                                    "get;"
+                    ));
+            assertCollectionsNonTriviallyEqual(expected, indirectLinksWithOrigin);
         }
     }
 

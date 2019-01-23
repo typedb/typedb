@@ -69,7 +69,7 @@ public class Negation<T extends Pattern> implements Pattern {
 
     @Override
     public String toString() {
-        return "NOT {" + pattern + ";}";
+        return "not {" + pattern + "};";
     }
 }
 
