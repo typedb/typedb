@@ -1,6 +1,7 @@
 ![GRAKN.AI](https://grakn.ai/assets/img/Grakn%20logo%20-%20transparent.png)
 
 ---
+[![CircleCI](https://circleci.com/gh/graknlabs/grakn/tree/master.svg?style=shield)](https://circleci.com/gh/graknlabs/grakn/tree/master)
 [![GitHub release](https://img.shields.io/github/release/graknlabs/grakn.svg)](https://github.com/graknlabs/grakn/releases/latest)
 [![Javadocs](https://javadoc.io/badge/ai.grakn/grakn.svg)](https://javadoc.io/doc/ai.grakn/grakn)
 [![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
