@@ -86,18 +86,7 @@ load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
 rules_nodejs_dependencies()
 
 # Load NPM dependencies for Node.js programs
-load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories", "npm_install")
-node_repositories(package_json = ["//client-nodejs:package.json"])
-npm_install(
-    name = "nodejs_dependencies",
-    package_json = "//client-nodejs:package.json",
-    data = [
-      "@build_bazel_rules_nodejs//internal/babel_library:package.json",
-      "@build_bazel_rules_nodejs//internal/babel_library:babel.js",
-      "@build_bazel_rules_nodejs//internal/babel_library:yarn.lock",
-    ],
-)
-
+load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
 node_repositories(package_json = ["//workbase:package.json"])
 
 ########################################
