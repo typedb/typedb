@@ -315,8 +315,12 @@ jobs:
           new_workspace=$(sed -e "s/commit = .*# grakn-dependency/commit = '$new_commit' \# grakn-dependency/g" \<<< "$workspace")
           echo "$new_workspace" > WORKSPACE
           git add .
-          # git commit -m "set grakn dependency to latest master commit"
-          CMD_STATUS=$(git commit -m "set grakn dependency to latest master commit")
+          
+          set +e
+          git commit -m "set grakn dependency to latest master commit"
+          CMD_STATUS=$?
+          set -e
+
           echo "$CMD_STATUS"
           git push https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-docs.git development
   approve-release:
