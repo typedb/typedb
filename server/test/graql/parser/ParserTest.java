@@ -192,6 +192,24 @@ public class ParserTest {
     }
 
     @Test
+    public void testPredicateQuery4() {
+        String query = "match\n" +
+                "$x has age $y;\n" +
+                "$y >= $z;\n" +
+                "$z 18 isa age;\n" +
+                "get;";
+        GetQuery parsed = parse(query);
+
+        GetQuery expected = match(
+                var("x").has("age", var("y")),
+                var("y").val(gte(var("z"))),
+                var("z").val(18).isa("age")
+        ).get();
+
+        assertQueryEquals(expected, parsed, query);
+    }
+
+    @Test
     public void whenParsingContainsPredicateWithAVariable_ResultMatchesJavaGraql() {
         String query = "match $x contains $y; get;";
         GetQuery parsed = parse(query);

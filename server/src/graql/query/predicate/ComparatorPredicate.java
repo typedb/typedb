@@ -21,6 +21,7 @@ package grakn.core.graql.query.predicate;
 import grakn.core.graql.concept.AttributeType.DataType;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.util.StringUtil;
@@ -40,7 +41,6 @@ public abstract class ComparatorPredicate implements ValuePredicate {
 
     // Exactly one of these fields will be present
     private final Object value;
-    private final Statement var;
 
     private static final String[] VALUE_PROPERTIES = DataType.SUPPORTED_TYPES.values().stream()
             .map(dataType -> dataType.getVertexProperty()).distinct()
@@ -52,20 +52,12 @@ public abstract class ComparatorPredicate implements ValuePredicate {
     ComparatorPredicate(Object value) {
         if (value == null) {
             throw new NullPointerException("Value is null");
-        }
 
-        if (value instanceof Statement) {
-            this.value = null;
-            this.var = (Statement) value;
+        } else if (value instanceof Integer) {
+            this.value = ((Integer) value).longValue();
+
         } else {
-            // Convert integers to longs for consistency
-            if (value instanceof Integer) {
-                value = ((Integer) value).longValue();
-            }
-            // TODO: why do not convert floats to doubles?
-
             this.value = value;
-            this.var = null;
         }
     }
 
@@ -74,7 +66,6 @@ public abstract class ComparatorPredicate implements ValuePredicate {
      */
     ComparatorPredicate(Statement var) {
         this.value = null;
-        this.var = var;
     }
 
     protected abstract String getSymbol();
@@ -82,7 +73,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
     abstract <V> P<V> gremlinPredicate(V value);
 
     final Optional<Object> persistedValue() {
-        if (value == null) {
+        if (value instanceof Statement) {
             return Optional.empty();
         } else {
             // Convert values to how they are stored in the graph
@@ -98,24 +89,20 @@ public abstract class ComparatorPredicate implements ValuePredicate {
         }
     }
 
-    final Optional<Object> value() {
-        return Optional.ofNullable(value);
+    public final Optional<Object> value() {
+        if (value instanceof Statement) {
+            return Optional.empty();
+        } else {
+            return Optional.of(value);
+        }
     }
 
     public String toString() {
-        // If there is no value, then there must be a var
-        return getSymbol() + " " + value()
-                .map(value -> StringUtil.valueToString(value))
-                .orElseGet(() -> var.getPrintableName());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ComparatorPredicate that = (ComparatorPredicate) o;
-        return persistedValue().equals(that.persistedValue());
+        if (value instanceof Statement) {
+            return getSymbol() + Query.Char.SPACE + ((Statement) value).getPrintableName();
+        } else {
+            return getSymbol() + Query.Char.SPACE + StringUtil.valueToString(value);
+        }
     }
 
     /**
@@ -170,26 +157,25 @@ public abstract class ComparatorPredicate implements ValuePredicate {
     }
 
     @Override
-    public int hashCode() {
-        return persistedValue().hashCode();
-    }
-
-    @Override
     public Optional<P<Object>> getPredicate() {
         return persistedValue().map(value -> gremlinPredicate(value));
     }
 
     @Override
     public Optional<Statement> getInnerVar() {
-        return Optional.ofNullable(var);
+        if (value instanceof Statement) {
+            return Optional.of((Statement) value);
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Override
     public final <S, E> GraphTraversal<S, E> applyPredicate(GraphTraversal<S, E> traversal) {
-        if (var != null) {
+        if (value instanceof Statement) {
             // Compare to another variable
             String thisVar = UUID.randomUUID().toString();
-            Variable otherVar = var.var();
+            Variable otherVar = ((Statement) value).var();
             String otherValue = UUID.randomUUID().toString();
 
             Traversal[] traversals = Stream.of(VALUE_PROPERTIES)
@@ -199,16 +185,27 @@ public abstract class ComparatorPredicate implements ValuePredicate {
             traversal.as(thisVar).select(otherVar.symbol()).or(traversals).select(thisVar);
             return traversal;
 
-        } else if (value != null) {
+        } else {
             // Compare to a given value
             DataType<?> dataType = DataType.SUPPORTED_TYPES.get(value().get().getClass().getTypeName());
             Schema.VertexProperty property = dataType.getVertexProperty();
             traversal.has(property.name(), gremlinPredicate(value));
             return traversal;
 
-        } else {
-            throw new IllegalStateException("Both Value and Variable are null in Predicate: " + getSymbol());
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ComparatorPredicate that = (ComparatorPredicate) o;
+        return persistedValue().equals(that.persistedValue());
+    }
+
+    @Override
+    public int hashCode() {
+        return persistedValue().hashCode();
+    }
 }
