@@ -21,6 +21,7 @@ package grakn.core.graql.internal.reasoner.rule;
 import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
@@ -50,6 +51,7 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -130,16 +132,18 @@ public class RuleUtils {
      * @param rules set of rules of interest forming a rule subgraph
      * @return true if the rule subgraph is stratifiable (doesn't contain cycles with negation)
      */
-    public static boolean subGraphIsStratifiable(Set<Rule> rules, TransactionOLTP tx){
+    public static List<Set<Type>> negativeCycles(Set<Rule> rules, TransactionOLTP tx){
         HashMultimap<Type, Type> typeGraph = typeGraph(rules);
-        return new TarjanSCC<>(typeGraph).getCycles().stream().anyMatch(cycle ->
-                cycle.stream().anyMatch(type ->
-                        type.whenRules()
-                                .anyMatch(rule -> ruleNegativeTypes(rule, tx).stream()
-                                        .anyMatch(negType -> typeGraph.get(type).contains(negType)))
-                )
-        );
+        return new TarjanSCC<>(typeGraph).getCycles().stream()
+                .filter(cycle ->
+                        cycle.stream().anyMatch(type ->
+                                type.whenRules()
+                                        .filter(rule -> ruleNegativeTypes(rule, tx).contains(type))
+                                        .anyMatch(rule -> !Sets.intersection(cycle, rule.thenTypes().collect(toSet())).isEmpty())
+                        )
+                ).collect(toList());
     }
+
     /**
      * @param rules set of rules of interest forming a rule subgraph
      * @return true if the rule subgraph formed from provided rules contains any rule with head satisfying the body pattern

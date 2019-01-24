@@ -52,6 +52,7 @@ import grakn.core.server.session.TransactionOLTP;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -281,8 +282,10 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleStratifiability(TransactionOLTP graph, Set<Rule> rules){
         Set<String> errors = new HashSet<>();
-        if (!RuleUtils.subGraphIsStratifiable(rules, graph)){
-            errors.add(ErrorMessage.VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE.getMessage());
+        List<Set<Type>> negativeCycles = RuleUtils.negativeCycles(rules, graph);
+        if (!negativeCycles.isEmpty()){
+            RuleUtils.negativeCycles(rules, graph);
+            errors.add(ErrorMessage.VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE.getMessage(negativeCycles));
         }
         return errors;
     }
