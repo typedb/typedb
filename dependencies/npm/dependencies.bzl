@@ -22,5 +22,5 @@ def node_dependencies():
     git_repository(
         name = "build_bazel_rules_nodejs",
         remote = "https://github.com/graknlabs/rules_nodejs.git",
-        commit = "5d0c6c78fc62bcffd01297350c694690fca770b8",
+        commit = "ac3f6854365f119130186f971588514ccff503ab",
     )
