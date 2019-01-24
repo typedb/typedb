@@ -61,13 +61,6 @@ public abstract class ComparatorPredicate implements ValuePredicate {
         }
     }
 
-    /**
-     * @param var the variable that this predicate is testing against
-     */
-    ComparatorPredicate(Statement var) {
-        this.value = null;
-    }
-
     protected abstract String getSymbol();
 
     abstract <V> P<V> gremlinPredicate(V value);
