@@ -30,6 +30,7 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
@@ -86,7 +87,7 @@ public class NegationIT {
     }
 
 
-    @Test (expected = IllegalStateException.class)
+    @Test (expected = GraqlQueryException.class)
     public void whenNegatingSinglePattern_exceptionIsThrown () {
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
             String specificValue = "value";
@@ -97,6 +98,27 @@ public class NegationIT {
                             "not {$x has " + attributeTypeLabel + " '" + specificValue + "';};" +
                             "get;"
             ));
+        }
+    }
+
+    //TODO
+    @Ignore
+    @Test (expected = GraqlQueryException.class)
+    public void whenNegationBlockIncorrectlyBound_exceptionIsThrown () {
+        try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
+            Set<ConceptMap> answers = tx.stream(Graql.<GetQuery>parse("match " +
+                    "$r isa entity;" +
+                    "not {" +
+                        "($r, $i);" +
+                        "not {" +
+                            "($i, $j);" +
+                            "not {" +
+                                "$i isa attribute;" +
+                            "};" +
+                        "};" +
+                    "};" +
+                    "get $r;"
+            )).collect(Collectors.toSet());
         }
     }
 
