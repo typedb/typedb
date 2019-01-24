@@ -99,6 +99,8 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Rule validation Errors
 
+    VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE("The rule graph is not stratifiable - it contains cycles with negation \n"),
+
     VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] refers to type [%s] which does not exist in the graph \n"),
 
     VALIDATION_RULE_NEGATIVE_STATEMENTS_UNSUPPORTED_IN_RULES("The rule [%s] contains negative statements which are currently unsupported\n"),

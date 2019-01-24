@@ -18,10 +18,10 @@
 
 package grakn.core.graql.reasoner.reasoning;
 
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.reasoner.graph.DualLinearTransitivityMatrixGraph;
-import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.NguyenGraph;
 import grakn.core.graql.reasoner.graph.PathMatrixGraph;
@@ -33,6 +33,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.util.GraqlTestUtil;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -173,8 +174,9 @@ public class RecursionIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 String queryString = "match ($x, $y) isa N-TC; $y has index 'a'; get $x;";
                 String explicitQuery = "match $x has index 'a2'; get;";
-
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
+                List<ConceptMap> expected = tx.execute(Graql.<GetQuery>parse(explicitQuery), false);
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(expected, answers);
             }
         }
     }
@@ -185,7 +187,7 @@ public class RecursionIT {
             ReachabilityGraph graph = new ReachabilityGraph(session);
             graph.load(5);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                String queryString = "match (reach-from: $x, reach-to: $y) isa reachable; get;";
+                String queryString = "match (from: $x, to: $y) isa reachable; get;";
                 String explicitQuery = "match $x has index $indX;$y has index $indY;" +
                         "{$indX == 'aa';$indY == 'bb';} or" +
                         "{$indX == 'bb';$indY == 'cc';} or" +

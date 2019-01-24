@@ -37,6 +37,7 @@ java_test(
         "//test-integration/graql/reasoner/graph:path-matrix-graph",
         "//test-integration/graql/reasoner/graph:path-tree-graph",
         "//test-integration/graql/reasoner/graph:path-tree-symmetric-graph",
+        "//test-integration/graql/reasoner/graph:reachability-graph",
         "//test-integration/graql/reasoner/graph:tail-recursion-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -113,5 +114,5 @@ checkstyle_test(
         ":type-generation-it",
         ":type-hierarchies-it",
         ":variable-roles-it",
-    ]
+    ],
 )
