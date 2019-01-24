@@ -22,6 +22,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Label;
@@ -284,7 +285,6 @@ class ValidateGlobalRules {
         Set<String> errors = new HashSet<>();
         List<Set<Type>> negativeCycles = RuleUtils.negativeCycles(rules, graph);
         if (!negativeCycles.isEmpty()){
-            RuleUtils.negativeCycles(rules, graph);
             errors.add(ErrorMessage.VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE.getMessage(negativeCycles));
         }
         return errors;
@@ -296,8 +296,9 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated
      * @return Error messages if the rule is not a valid Horn clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
-    static Set<String> validateRuleIsValidHornClause(TransactionOLTP graph, Rule rule){
+    static Set<String> validateRuleIsValidClause(TransactionOLTP graph, Rule rule){
         Set<String> errors = new HashSet<>();
+        CompositeQuery composite = ReasonerQueries.composite(rule.when().getNegationDNF().getPatterns().iterator().next(), graph);
         if (rule.when().getDisjunctiveNormalForm().getPatterns().size() > 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
         }

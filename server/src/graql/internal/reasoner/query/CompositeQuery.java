@@ -19,7 +19,10 @@
 package grakn.core.graql.internal.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
@@ -38,6 +41,7 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
+import graql.exception.GraqlException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -81,8 +85,7 @@ public class CompositeQuery implements ResolvableQuery {
                 .collect(Collectors.toSet());
 
         if (!isNegationSafe()){
-            isNegationSafe();
-            throw new IllegalStateException("Query:\n" + this + "\nis unsafe! Negated pattern variables not bound!");
+            throw GraqlQueryException.unsafeNegationBlock(this);
         }
     }
 
@@ -156,7 +159,13 @@ public class CompositeQuery implements ResolvableQuery {
                 .filter(Pattern::isNegation)
                 .map(Pattern::asNegation)
                 .map(Negation::getPattern)
-                .map(p -> p.getNegationDNF().getPatterns().iterator().next())
+                .map(p -> {
+                    Set<Conjunction<Pattern>> patterns = p.getNegationDNF().getPatterns();
+                    if (p.getNegationDNF().getPatterns().size() != 1){
+                        throw new IllegalArgumentException("Disjunctions are unsupported in negation blocks.");
+                    }
+                    return Iterables.getOnlyElement(patterns);
+                })
                 .collect(Collectors.toSet());
     }
 
@@ -208,8 +217,11 @@ public class CompositeQuery implements ResolvableQuery {
 
     @Override
     public String toString(){
+        String complementString = getComplementQueries().stream()
+                .map(q -> "\nNOT {" + q.toString() + "\n}")
+                .collect(Collectors.joining());
         return getConjunctiveQuery().toString() +
-                (!getComplementQueries().isEmpty()? "\nNOT{\n" + getComplementQueries() + "\n}" : "");
+                (!getComplementQueries().isEmpty()? complementString : "");
     }
 
     @Override

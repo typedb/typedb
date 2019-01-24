@@ -102,7 +102,7 @@ public class Validator {
             Set<String> ontologicalErrors = ValidateGlobalRules.validateRuleOntologically(graph, rule);
             errorsFound.addAll(ontologicalErrors);
             if (ontologicalErrors.isEmpty()) {
-                errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidHornClause(graph, rule));
+                errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidClause(graph, rule));
             }
         }
     }
