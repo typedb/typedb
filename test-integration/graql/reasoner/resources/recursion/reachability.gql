@@ -36,18 +36,10 @@ then {
 
 #node-ruleA
 #when {
-#    (from: $x, to: $y) isa link;
+#    ($x) isa link;
 #},
 #then {
 #    $x isa node;
-#};
-
-#node-ruleB
-#when {
-#    (from: $x, to: $y) isa link;
-#},
-#then {
-#    $y isa node;
 #};
 
 indirect-link-rule

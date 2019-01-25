@@ -73,14 +73,6 @@ public class RuleUtils {
     }
 
     /**
-     * @param graph of interest
-     * @return true if at least one inference rule is present in the graph
-     */
-    public static boolean hasRules(Transaction graph) {
-        return graph.getMetaRule().subs().anyMatch(rule -> !rule.label().equals(Schema.MetaSchema.RULE.getLabel()));
-    }
-
-    /**
      * @param type for which rules containing it in the head are sought
      * @param graph of interest
      * @return rules containing specified type in the head
@@ -93,19 +85,21 @@ public class RuleUtils {
         HashMultimap<Type, Type> graph = HashMultimap.create();
         rules
                 .forEach(rule ->
-                        rule.whenTypes().forEach( whenType ->
-                                rule.thenTypes()
-                                        .forEach(thenType -> graph.put(whenType, thenType))
+                        rule.whenTypes()
+                                .flatMap(Type::subs)
+                                .forEach(whenType ->
+                                        rule.thenTypes()
+                                                .flatMap(Type::sups)
+                                                .forEach(thenType -> graph.put(whenType, thenType))
                         )
                 );
         return graph;
     }
 
     /**
-     *
-     * @param rule
-     * @param tx
-     * @return
+     * @param rule of interest
+     * @param tx transaction of interest
+     * @return set of negated types in the provided rule
      */
     private static Set<Type> ruleNegativeTypes(Rule rule, TransactionOLTP tx){
         CompositeQuery query = ReasonerQueries.composite(Iterables.getOnlyElement(rule.when().getNegationDNF().getPatterns()), tx);
