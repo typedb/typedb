@@ -185,6 +185,7 @@ checkstyle_test(
         ":path-matrix-graph",
         ":path-tree-graph",
         ":path-tree-symmetric-graph",
+        ":reachability-graph",
         ":tail-recursion-graph",
         ":transitivity-chain-graph",
         ":transitivity-matrix-graph",
