@@ -31,6 +31,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
@@ -39,7 +40,9 @@ import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.reasoner.graph.ReachabilityGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
+import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +53,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
@@ -86,18 +90,16 @@ public class NegationIT {
         negationSession.close();
     }
 
+    @org.junit.Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
-    @Test //(expected = GraqlQueryException.class)
+    @Test (expected = GraqlQueryException.class)
     public void whenNegatingSinglePattern_exceptionIsThrown () {
-        try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
-            String specificValue = "value";
-            String attributeTypeLabel = "resource-string";
-
-            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(
-                    "match " +
-                            "not {$x has " + attributeTypeLabel + " '" + specificValue + "';};" +
-                            "get;"
-            ));
+        try(TransactionOLTP tx = negationSession.transaction(Transaction.Type.WRITE)) {
+            Pattern pattern = Graql.parsePattern(
+                        "not {$x has attribute 'value';};"
+            );
+            ReasonerQueries.composite(Iterables.getOnlyElement(pattern.getNegationDNF().getPatterns()), tx);
         }
     }
 
@@ -106,19 +108,20 @@ public class NegationIT {
     @Test (expected = GraqlQueryException.class)
     public void whenNegationBlockIncorrectlyBound_exceptionIsThrown () {
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
-            Set<ConceptMap> answers = tx.stream(Graql.<GetQuery>parse("match " +
-                    "$r isa entity;" +
-                    "not {" +
-                        "($r, $i);" +
-                        "not {" +
-                            "($i, $j);" +
+            Pattern pattern = Graql.parsePattern(
+                    "{" +
+                            "$r isa entity;" +
                             "not {" +
-                                "$i isa attribute;" +
+                                "($r, $i);" +
+                                "not {" +
+                                    "($i, $j);" +
+                                    "not {" +
+                                        "$i isa attribute;" +
+                                    "};" +
+                                "};" +
                             "};" +
-                        "};" +
-                    "};" +
-                    "get $r;"
-            )).collect(Collectors.toSet());
+                            "}"
+            );
         }
     }
 
@@ -598,6 +601,7 @@ public class NegationIT {
                     Graql.<GetQuery>parse(
                             "match " +
                                     "$x has index 'a';" +
+                                    "$y isa vertex;" +
                                     "{$y has index contains 'b';} or " +
                                     "{$y has index 'aa';} or " +
                                     "{$y has index 'a';} or " +

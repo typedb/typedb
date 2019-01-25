@@ -291,7 +291,7 @@ public class GeoInferenceIT {
     }
 
     @Test
-    public void statutestTransitiveQuery_Closure_variableSpecificRoles() {
+    public void testTransitiveQuery_Closure_variableSpecificRoles() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
             Statement rolePattern = var()
                     .rel(var("r1").type("geo-entity"), var("x"))

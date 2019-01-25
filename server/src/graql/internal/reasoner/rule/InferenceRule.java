@@ -30,6 +30,7 @@ import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -209,15 +210,19 @@ public class InferenceRule {
     private InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
         Atom headAtom = head.getAtom();
-        Set<Atomic> bodyAtoms = new HashSet<>(body.getAtoms());
+
+        //we are only rewriting the conjunction atoms (not complement atoms) as
+        //TODO
+        ReasonerQueryImpl bodyConjunction = getBody().asComposite().getConjunctiveQuery();
+        Set<Atomic> bodyConjunctionAtoms = new HashSet<>(bodyConjunction.getAtoms());
 
         //transfer value predicates
-        Set<Variable> bodyVars = body.getVarNames();
+        Set<Variable> bodyVars = bodyConjunction.getVarNames();
         Set<ValuePredicate> vpsToPropagate = parentAtom.getPredicates(ValuePredicate.class)
                 .flatMap(vp -> vp.unify(unifier).stream())
                 .filter(vp -> bodyVars.contains(vp.getVarName()))
                 .collect(toSet());
-        bodyAtoms.addAll(vpsToPropagate);
+        bodyConjunctionAtoms.addAll(vpsToPropagate);
 
         //if head is a resource merge vps into head
         if (headAtom.isResource()) {
@@ -227,7 +232,7 @@ public class InferenceRule {
                 Set<ValuePredicate> innerVps = parentAtom.getInnerPredicates(ValuePredicate.class)
                         .flatMap(vp -> vp.unify(unifier).stream())
                         .collect(toSet());
-                bodyAtoms.addAll(innerVps);
+                bodyConjunctionAtoms.addAll(innerVps);
 
                 headAtom = AttributeAtom.create(
                         resourceHead.getPattern(),
@@ -246,7 +251,7 @@ public class InferenceRule {
                 .collect(toSet());
 
         //set rule body types to sub types of combined query+rule types
-        Set<TypeAtom> ruleTypes = body.getAtoms(TypeAtom.class).filter(t -> !t.isRelation()).collect(toSet());
+        Set<TypeAtom> ruleTypes = bodyConjunction.getAtoms(TypeAtom.class).filter(t -> !t.isRelation()).collect(toSet());
         Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);
         allTypes.stream()
                 .filter(ta -> {
@@ -257,9 +262,9 @@ public class InferenceRule {
                             .filter(t -> ReasonerUtils.supers(t).contains(schemaConcept))
                             .findFirst().orElse(null);
                     return schemaConcept == null || subType == null;
-                }).forEach(t -> bodyAtoms.add(t.copy(body)));
+                }).forEach(t -> bodyConjunctionAtoms.add(t.copy(body)));
 
-        ReasonerQueryImpl rewrittenBodyConj = ReasonerQueries.create(bodyAtoms, tx);
+        ReasonerQueryImpl rewrittenBodyConj = ReasonerQueries.create(bodyConjunctionAtoms, tx);
         ResolvableQuery rewrittenBody = getBody().isComposite() ?
                 ReasonerQueries.composite(rewrittenBodyConj, getBody().asComposite().getComplementQueries(), tx) :
                 rewrittenBodyConj;
