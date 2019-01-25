@@ -70,14 +70,18 @@ public class Negation<T extends Pattern> implements Pattern {
 
     @Override
     public String toString() {
-        return new StringBuilder()
-                .append(Query.Operator.NOT)
-                .append(Query.Char.SPACE)
-                .append(Query.Char.CURLY_OPEN)
-                .append(pattern)
-                .append(Query.Char.CURLY_CLOSE)
-                .append(Query.Char.SEMICOLON)
-                .toString();
+        StringBuilder negation = new StringBuilder();
+        negation.append(Query.Operator.NOT).append(Query.Char.SPACE);
+
+        if (pattern instanceof Conjunction<?>) {
+            negation.append(pattern.toString());
+        } else {
+            negation.append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE);
+            negation.append(pattern.toString());
+            negation.append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE);
+        }
+
+        return negation.toString();
     }
 }
 

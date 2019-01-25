@@ -65,7 +65,7 @@ class RegexPredicate implements ValuePredicate {
 
     @Override
     public String toString() {
-        return Query.Operator.LIKE + " \"" + pattern().replaceAll("/", "\\\\/") + "\"";
+        return Query.Comparator.LIKE + " \"" + pattern().replaceAll("/", "\\\\/") + "\"";
     }
 
     @Override

@@ -36,7 +36,6 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
-import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.predicate.Predicates;
@@ -771,7 +770,7 @@ public class Parser extends GraqlBaseVisitor {
             throw new IllegalArgumentException("Unrecognised Comparable token: " + comparable.getText());
         }
 
-        Query.Operator operator = Query.Operator.of(comparator.getText());
+        Query.Comparator operator = Query.Comparator.of(comparator.getText());
 
 
         switch (Objects.requireNonNull(operator)){

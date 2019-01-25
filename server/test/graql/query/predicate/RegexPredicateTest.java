@@ -65,13 +65,13 @@ public class RegexPredicateTest {
     public void regexPredicateToStringDoesNotEscapeMostThings() {
         RegexPredicate predicate = new RegexPredicate("don't escape these: \\d, \", \n ok");
 
-        assertEquals(Query.Operator.LIKE + " \"don't escape these: \\d, \", \n ok\"", predicate.toString());
+        assertEquals(Query.Comparator.LIKE + " \"don't escape these: \\d, \", \n ok\"", predicate.toString());
     }
 
     @Test
     public void regexPredicateToStringEscapesForwardSlashes() {
         RegexPredicate predicate = new RegexPredicate("escape this: / ok");
 
-        assertEquals(Query.Operator.LIKE + " \"escape this: \\/ ok\"", predicate.toString());
+        assertEquals(Query.Comparator.LIKE + " \"escape this: \\/ ok\"", predicate.toString());
     }
 }
