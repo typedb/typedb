@@ -37,9 +37,9 @@ public class ReasonerQueries {
 
     /**
      *
-     * @param pattern
-     * @param tx
-     * @return
+     * @param pattern conjunctive pattern defining the query
+     * @param tx corresponding transaction
+     * @return a composite reasoner query constructed from provided conjunctive pattern
      */
     public static CompositeQuery composite(Conjunction<Pattern> pattern, TransactionOLTP tx){
         return new CompositeQuery(pattern, tx).inferTypes();
@@ -47,10 +47,10 @@ public class ReasonerQueries {
 
     /**
      *
-     * @param conj
-     * @param comp
-     * @param tx
-     * @return
+     * @param conj conjunctive query corresponding to the +ve part of the composite query
+     * @param comp set of queries corresponding to the -ve part of the composite query
+     * @param tx transaction the query should be defined over
+     * @return corresponding composite query
      */
     public static CompositeQuery composite(ReasonerQueryImpl conj, Set<ResolvableQuery> comp, TransactionOLTP tx){
         return new CompositeQuery(conj, comp, tx).inferTypes();

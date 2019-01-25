@@ -21,19 +21,18 @@ package grakn.core.graql.internal.reasoner.query;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.ResolutionIterator;
 import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.state.CompositeState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Negation;
@@ -41,7 +40,6 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
-import graql.exception.GraqlException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -168,7 +166,7 @@ public class CompositeQuery implements ResolvableQuery {
                 .map(p -> {
                     Set<Conjunction<Pattern>> patterns = p.getNegationDNF().getPatterns();
                     if (p.getNegationDNF().getPatterns().size() != 1){
-                        throw new IllegalArgumentException("Disjunctions are unsupported in negation blocks.");
+                        throw GraqlQueryException.disjunctiveNegationBlock(this);
                     }
                     return Iterables.getOnlyElement(patterns);
                 })

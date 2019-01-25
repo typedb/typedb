@@ -197,6 +197,7 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
+    DISJUNCTIVE_NEGATION_BLOCK("Unsupported disjunction in a negation block in query: [%s]."),
     UNSAFE_NEGATION_BLOCK("Query:[%s] is not negation safe - negated pattern variables are not bound."),
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
     INCOMPLETE_RESOLUTION_PLAN("Addressed query [%s] leads to an incomplete resolution plan."),
