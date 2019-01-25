@@ -40,7 +40,6 @@ import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.reasoner.graph.ReachabilityGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
-import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import java.util.HashSet;
@@ -103,25 +102,21 @@ public class NegationIT {
         }
     }
 
-    //TODO
-    @Ignore
     @Test (expected = GraqlQueryException.class)
-    public void whenNegationBlockIncorrectlyBound_exceptionIsThrown () {
-        try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
+    public void whenNestedNegationBlockIncorrectlyBound_exceptionIsThrown () {
+        try(TransactionOLTP tx = negationSession.transaction(Transaction.Type.WRITE)) {
             Pattern pattern = Graql.parsePattern(
                     "{" +
                             "$r isa entity;" +
                             "not {" +
                                 "($r, $i);" +
                                 "not {" +
-                                    "($i, $j);" +
-                                    "not {" +
-                                        "$i isa attribute;" +
-                                    "};" +
+                                    "($j, $k);" +
                                 "};" +
                             "};" +
-                            "}"
+                            "};"
             );
+            ReasonerQueries.composite(Iterables.getOnlyElement(pattern.getNegationDNF().getPatterns()), tx);
         }
     }
 
