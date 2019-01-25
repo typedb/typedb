@@ -140,7 +140,6 @@ public class InferenceRule {
     /**
      * @return true if head satisfies the pattern specified in the body of the rule
      */
-    //TODO
     boolean headSatisfiesBody(){
         Set<Atomic> atoms = new HashSet<>(getHead().getAtoms());
         Set<Variable> headVars = getHead().getVarNames();
@@ -148,8 +147,7 @@ public class InferenceRule {
                 .filter(t -> !t.isRelation())
                 .filter(t -> !Sets.intersection(t.getVarNames(), headVars).isEmpty())
                 .forEach(atoms::add);
-        //return getBody().isEquivalent(ReasonerQueries.create(atoms, tx));
-        return false;
+        return getBody().isEquivalent(ReasonerQueries.create(atoms, tx));
     }
 
     /**
@@ -211,7 +209,8 @@ public class InferenceRule {
         Atom headAtom = head.getAtom();
 
         //we are only rewriting the conjunction atoms (not complement atoms) as
-        //TODO
+        //the constraints are propagated from the conjunctive part anyway and
+        //all variables in the -ve part not referenced in the +ve part have a different scope
         ReasonerQueryImpl bodyConjunction = getBody().asComposite().getConjunctiveQuery();
         Set<Atomic> bodyConjunctionAtoms = new HashSet<>(bodyConjunction.getAtoms());
 

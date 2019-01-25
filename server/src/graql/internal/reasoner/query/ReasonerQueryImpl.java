@@ -248,11 +248,8 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                         .anyMatch(e -> e.getKey().players().noneMatch(parentTypes::contains)));
     }
 
-    /**
-     * @param q query to be compared with
-     * @return true if two queries are alpha-equivalent
-     */
-    public boolean isEquivalent(ReasonerQueryImpl q) {
+    @Override
+    public boolean isEquivalent(ResolvableQuery q) {
         return ReasonerQueryEquivalence.AlphaEquivalence.equivalent(this, q);
     }
 

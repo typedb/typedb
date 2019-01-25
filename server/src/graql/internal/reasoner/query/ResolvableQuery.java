@@ -67,6 +67,13 @@ public interface ResolvableQuery extends ReasonerQuery {
     ResolvableQuery inferTypes();
 
     /**
+     * @param q query to be compared with
+     * @return true if two queries are alpha-equivalent
+     */
+    @CheckReturnValue
+    boolean isEquivalent(ResolvableQuery q);
+
+    /**
      * @return true if this query requires atom decomposition
      */
     @CheckReturnValue

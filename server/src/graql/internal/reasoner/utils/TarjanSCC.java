@@ -29,8 +29,12 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 /**
+ * Tarjan's Strongly Connected Components algorithm
+ * https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
  *
- * @param <T>
+ * Here used to find cycles in the graph.
+ *
+ * @param <T> type of the graph node
  */
 public  class TarjanSCC<T> {
 

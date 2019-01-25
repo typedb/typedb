@@ -225,6 +225,14 @@ public class CompositeQuery implements ResolvableQuery {
     }
 
     @Override
+    public boolean isEquivalent(ResolvableQuery q) {
+        CompositeQuery that = q.asComposite();
+        return getConjunctiveQuery().isEquivalent(that.getConjunctiveQuery())
+                && getComplementQueries().size() == that.getComplementQueries().size()
+                && getComplementQueries().stream().allMatch(c -> that.getComplementQueries().stream().anyMatch(c::isEquivalent));
+    }
+
+    @Override
     public String toString(){
         String complementString = getComplementQueries().stream()
                 .map(q -> "\nNOT {" + q.toString() + "\n}")

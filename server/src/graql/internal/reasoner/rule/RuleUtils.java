@@ -86,10 +86,9 @@ public class RuleUtils {
         rules
                 .forEach(rule ->
                         rule.whenTypes()
-                                .flatMap(Type::subs)
+                                .filter(whenType -> !Schema.MetaSchema.isMetaLabel(whenType.label()))
                                 .forEach(whenType ->
                                         rule.thenTypes()
-                                                .flatMap(Type::sups)
                                                 .forEach(thenType -> graph.put(whenType, thenType))
                         )
                 );
