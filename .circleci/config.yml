@@ -54,13 +54,6 @@ commands:
           name: Install rpm (for rpmbuild)
           command: sudo apt update && sudo apt install rpm -y
 
-  configure-grabl-to-be-git-user:
-    steps:
-      - run:
-          name: Configure Grabl to be the Github user
-          command: |
-            git config --global user.email "grabl@grakn.ai"
-            git config --global user.name "Grabl"
 jobs:
   tests:
     machine: true
@@ -87,38 +80,62 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - bazel:
-        command: bazel test //client-java/... --test_size_filters=small --test_output=errors
-    - bazel:
-        command: bazel test //client-java/... --test_size_filters=medium,large,enormous --test_output=errors
+      - run: echo disable temporarily
+      # - checkout
+      # - bazel_install
+      # - bazel_add_rbe_credential
+      # - bazel:
+      #     command: bazel test //client-java/... --test_size_filters=small --test_output=errors
+      # - bazel:
+      #     command: bazel test //client-java/... --test_size_filters=medium,large,enormous --test_output=errors
 
   client-nodejs:
     machine: true
     working_directory: ~/grakn
     steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - run: bazel build //:distribution
-    - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
-    - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
-    - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
-    - run: bazel test //client-nodejs:test-integration --test_output=streamed
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - run: bazel build //:distribution
+      - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
+      - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+      - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
+      - run: bazel test //client-nodejs:test-integration --test_output=streamed
 
   common:
     machine: true
     working_directory: ~/grakn
     steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - bazel:
-        command: bazel test //common/... --test_output=errors
+      - run: echo disable temporarily
+      # - checkout
+      # - bazel_install
+      # - bazel_add_rbe_credential
+      # - bazel:
+      #     command: bazel test //common/... --test_output=errors
 
   console:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - run: echo disable temporarily
+      # - checkout
+      # - bazel_install
+      # - bazel_add_rbe_credential
+      # - rpm_install
+      # - bazel:
+      #     command: bazel test //console/... --test_output=errors
+
+  graql:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - bazel:
+          command: bazel test //graql/... --test_output=errors
+
+  server:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -127,46 +144,25 @@ jobs:
       - bazel_add_rbe_credential
       - rpm_install
       - bazel:
-          command: bazel test //console/... --test_output=errors
-
-  graql:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - bazel:
-        command: bazel test //graql/... --test_output=errors
-
-  server:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - rpm_install
-    - bazel:
-        command: bazel test //server/... --test_output=errors
+          command: bazel test //server/... --test_output=errors
 
   workbase:
     machine: true
     working_directory: ~/grakn
     steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - run: bazel test //workbase:tests-unit --test_output=errors
-    - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
-    - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
-    - run: bazel build //:distribution
-    - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
-    - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
-    - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
-    - run: Xvfb :99 &
-    - run: export DISPLAY=:99
-    - run: bazel test //workbase:tests-e2e --test_output=streamed
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - run: bazel test //workbase:tests-unit --test_output=errors
+      - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
+      - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
+      - run: bazel build //:distribution
+      - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
+      - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+      - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
+      - run: Xvfb :99 &
+      - run: export DISPLAY=:99
+      - run: bazel test //workbase:tests-e2e --test_output=streamed
 
   test-integration:
     machine: true
@@ -222,36 +218,38 @@ jobs:
       xcode: "9.0"
     working_directory: ~/grakn
     steps:
-      - checkout
-      - bazel_install_mac
-      - bazel_add_rbe_credential
-      - run: bazel build //:distribution
-      - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
-      - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
-      - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server stop
+      - run: echo disable temporarily
+      # - checkout
+      # - bazel_install_mac
+      # - bazel_add_rbe_credential
+      # - run: bazel build //:distribution
+      # - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
+      # - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+      # - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server stop
   dist-ubuntu:
     machine: true # CircleCI's machine executor is a Ubuntu distribution (either 12.04 or 14.04)
     working_directory: ~/grakn
     steps:
-      - run: sudo apt-get update
-      - run: sudo apt-get install -y software-properties-common
-      - run: sudo add-apt-repository ppa:openjdk-r/ppa
-      - run: sudo apt-get update
-      - run: sudo apt-get install -y sudo curl unzip git python gcc python-dev build-essential openjdk-8-jdk
-      - checkout
-      - bazel_install
-      - bazel_add_rbe_credential
-      - bazel:
-          command: bazel build --jobs 1 //:distribution-deb
-      - run: sudo dpkg -i bazel-bin/distribution-deb.deb
-      - bazel:
-          command: bazel build --jobs 1 //server:distribution-deb
-      - run: sudo dpkg -i bazel-bin/server/distribution-deb.deb
-      - bazel:
-          command: bazel build --jobs 1 //console:distribution-deb
-      - run: sudo dpkg -i bazel-bin/console/distribution-deb.deb
-      - run: nohup grakn server start
-      - run: nohup grakn server stop
+      - run: echo disable temporarily
+      # - run: sudo apt-get update
+      # - run: sudo apt-get install -y software-properties-common
+      # - run: sudo add-apt-repository ppa:openjdk-r/ppa
+      # - run: sudo apt-get update
+      # - run: sudo apt-get install -y sudo curl unzip git python gcc python-dev build-essential openjdk-8-jdk
+      # - checkout
+      # - bazel_install
+      # - bazel_add_rbe_credential
+      # - bazel:
+      #     command: bazel build --jobs 1 //:distribution-deb
+      # - run: sudo dpkg -i bazel-bin/distribution-deb.deb
+      # - bazel:
+      #     command: bazel build --jobs 1 //server:distribution-deb
+      # - run: sudo dpkg -i bazel-bin/server/distribution-deb.deb
+      # - bazel:
+      #     command: bazel build --jobs 1 //console:distribution-deb
+      # - run: sudo dpkg -i bazel-bin/console/distribution-deb.deb
+      # - run: nohup grakn server start
+      # - run: nohup grakn server stop
 
   dist-centos:
     docker:
@@ -299,42 +297,28 @@ jobs:
       - run: nohup grakn server start
       - run: nohup grakn server stop
 
-  update-grakn-dependency-on-docs-dev-to-match-latest-master-commit:
+  docs-update-grakn-dependency-on-dev-branch:
     machine: true
     steps:
-      - configure-grabl-to-be-git-user
+      - checkout
       - run: |
-          # get the last commit on master of grakn
-          # new_commit=$(git ls-remote https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-grakn.git HEAD | awk '{ print $1}')
-          new_commit=$(git ls-remote https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-grakn.git refs/heads/continuous-release-docs | awk '{ print $1}')
-          git clone https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-docs.git
-          cd test-ci-docs
-          git checkout development
-          # update the content of WORKSPACE file to contain the new_commit for grakn dependency
-          workspace=$(cat WORKSPACE)
-          new_workspace=$(sed -e "s/commit = .*# grakn-dependency/commit = '$new_commit' \# grakn-dependency/g" \<<< "$workspace")
-          echo "$new_workspace" > WORKSPACE
-          git add .
-          
-          set +e
-          git commit -m "set grakn dependency to latest master commit"
-          CMD_STATUS=$?
-          set -e
-
-          echo "$CMD_STATUS"
-          git push https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-docs.git development
+          mkdir docs
+          cd docs
+          python ../.circleci/docs-update-grakn-dependency-on-dev-branch.py
   approve-release:
     machine: true
     steps:
       - run: echo approve-release succeeded.
+
   deploy-github:
     machine: true
     working_directory: ~/grakn
     steps:
-      - checkout
-      - bazel_install
-      - bazel_add_rbe_credential
-      - run: bazel run //:deploy-github-zip -- ${GRABL_TOKEN}
+      - run: echo disable temporarily
+      # - checkout
+      # - bazel_install
+      # - bazel_add_rbe_credential
+      # - run: bazel run //:deploy-github-zip -- ${GRABL_TOKEN}
   deploy-maven:
     machine: true
     steps:
@@ -375,67 +359,22 @@ jobs:
     machine: true
     steps:
       - run: echo deploy-workbase-windows succeeded.
-  docs-submit-pr-to-partially-merge-dev-to-a-copy-of-master:
+  docs-auto-merge-to-master:
     machine: true
     steps:
-      - configure-grabl-to-be-git-user
+      - checkout
       - run: |
-          git clone https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-docs.git
-          cd test-ci-docs
-          git checkout master
-          git checkout -b auto-merge-by-grabl
-          # excluding certain files from merge > partial merge.
-          # see: https://github.com/RWTH-EBC/AixLib/wiki/How-to:-Exclude-files-or-folder-from-merge
-          git merge --no-commit --no-ff origin/development ## merge without commiting
-          git reset HEAD -- ./03-client-api/ ## unstage the client files
-          git stash save --keep-index --include-untracked ## discard unstage changes
-          git commit -m "partially merge development to master"
-          git push https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-docs.git auto-merge-by-grabl
-          # using `hub` to make a PR for the partial merge just made
-          # see: https://hub.github.com/hub-pull-request.1.html
-          wget https://github.com/github/hub/releases/download/v2.7.0/hub-linux-amd64-2.7.0.tgz
-          tar -xvzf hub-linux-amd64-2.7.0.tgz
-          GITHUB_TOKEN=$GRABL_TOKEN hub-linux-amd64-2.7.0/bin/hub pull-request -m "Grabl - merging development to auto-merge-by-grabl with the exception of client files
-
-          \## Why is this PR needed?
-          - This PR is submitted automatically by Grabl as a part of the release automation process.
-          - Before we can release the new version of Grakn + Documentation, changes made in the development(staging) branch of this repo need to be moved over to the master(production) branch.
-          - This merge excludes the changes made in the client files, as those changes need to be merged only when a new version of a Grakn Client needs to be released.
-          \## What does the PR do?
-          - Creates the auto-merge-by-grabl off latest master
-          - Merges latest development to auto-merge-by-grabl excluding files at docs/03-client-api
-
-          \# WHAT NEXT?
-          \**Merge PR branch to master\**
-          1. review and approve this PR
-          2. merge this PR
-          2. delete the PR branch
-          \**Submit PR to merge master to development\**
-          2. git pull graknlabs master
-          3. git co development
-          4. git pull graknlabs development
-          5. git checkout -b manual-merge-of-master-to-development
-          6. git merge master
-          7. git push fork-remote manual-merge-of-master-to-development
-          8. create the PR
-          \**Merge new PR branch to development\**
-          9. review and approve the new PR
-          10. merge the new PR"
-          echo "IMPORTANT - A PR was just created by Grabl on the docs repository. Make sure to follow the instructions in the PR's description before continuing this workflow."
-  docs-deploy-to-production:
+          mkdir docs
+          cd docs
+          python ../.circleci/docs-auto-merge-to-master.py
+  deploy-docs-to-production:
     machine: true
     steps:
-      - configure-grabl-to-be-git-user
+      - checkout
       - run: |
-          # --recursive clones web-dev as well as the docs submodule
-          git clone --recursive https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-web-dev.git
-          cd test-ci-web-dev
-          cd test-ci-docs
-          git pull origin master
-          cd ../
-          git add .
-          git commit -m "update test-ci-docs submodule"
-          git push https://grabl:$GRABL_TOKEN@github.com/graknlabs/test-ci-web-dev.git master
+          mkdir docs
+          cd docs
+          python ../.circleci/deploy-docs-to-production.py
 workflows:
   version: 2
   workflow-pr:
@@ -527,7 +466,7 @@ workflows:
               only: master
           requires:
             - distributions
-      - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit:
+      - docs-update-grakn-dependency-on-dev-branch:
           filters:
             branches:
               only: master
@@ -540,29 +479,29 @@ workflows:
             branches:
               only: master
           requires:
-            - update-grakn-dependency-on-docs-dev-to-match-latest-master-commit
+            - docs-update-grakn-dependency-on-dev-branch
       - deploy-github:
           filters:
             branches:
               only: master
           requires:
             - approve-deploy-github
-      - docs-submit-pr-to-partially-merge-dev-to-a-copy-of-master:
+      - docs-auto-merge-to-master:
           filters:
             branches:
               only: master
           requires:
             - deploy-github
-      - is-docs-merged:
+      - approve-deploy-docs:
           filters:
             branches:
               only: master
           type: approval
           requires:
-            - docs-submit-pr-to-partially-merge-dev-to-a-copy-of-master
-      - docs-deploy-to-production:
+            - docs-auto-merge-to-master
+      - deploy-docs-to-production:
           filters:
             branches:
               only: master
           requires:
-            - is-docs-merged
+            - approve-deploy-docs
