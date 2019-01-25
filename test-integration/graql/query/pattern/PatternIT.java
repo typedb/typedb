@@ -23,6 +23,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -41,7 +42,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static grakn.core.graql.query.Graql.and;
-import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.Graql.not;
 import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.var;
@@ -264,7 +264,7 @@ public class PatternIT {
         assertExists(tx, var().isa("movie").has("title", "Godfather"));
         Set<Concept> result1 = tx.stream(Graql.match(
                 var("x").isa("movie").has("title", var("y")),
-                var("y").val(neq("Godfather"))).get("x"))
+                var("y").neqv("Godfather")).get("x"))
                 .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(result1.isEmpty());
 
@@ -283,7 +283,7 @@ public class PatternIT {
         exception.expect(Exception.class);
         Statement var = null;
         //noinspection ConstantConditions,ResultOfMethodCallIgnored
-        neq(var);
+        Predicates.neq(var);
     }
 
     private void assertExceptionThrown(Consumer<String> consumer, String varName) {

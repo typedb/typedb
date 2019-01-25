@@ -30,7 +30,6 @@ import grakn.core.graql.query.pattern.statement.StatementInstance.StatementAttri
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementRelation;
 import grakn.core.graql.query.pattern.statement.StatementType;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.graql.query.predicate.ValuePredicate;
 
 import javax.annotation.CheckReturnValue;
@@ -40,7 +39,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -210,7 +208,7 @@ public class Graql {
 
     @CheckReturnValue
     public static StatementAttribute val(Object value) {
-        return var(new Variable(false)).val(Graql.eq(value));
+        return var(new Variable(false)).eqv(value);
     }
 
     @CheckReturnValue
@@ -276,157 +274,5 @@ public class Graql {
     @CheckReturnValue
     public static Negation<Pattern> not(Pattern pattern) {
         return new Negation<>(pattern);
-    }
-
-    // PREDICATES
-
-    /**
-     * @param value the value
-     * @return a predicate that is true when a value equals the specified value
-     */
-    @CheckReturnValue
-    public static ValuePredicate eq(Object value) {
-        Objects.requireNonNull(value);
-        return Predicates.eq(value);
-    }
-
-    /**
-     * @param varPattern the variable pattern representing a resource
-     * @return a predicate that is true when a value equals the specified value
-     */
-    @CheckReturnValue
-    public static ValuePredicate eq(Statement varPattern) {
-        Objects.requireNonNull(varPattern);
-        return Predicates.eq(varPattern);
-    }
-
-    /**
-     * @param value the value
-     * @return a predicate that is true when a value does not equal the specified value
-     */
-    @CheckReturnValue
-    public static ValuePredicate neq(Object value) {
-        Objects.requireNonNull(value);
-        return Predicates.neq(value);
-    }
-
-    /**
-     * @param varPattern the variable pattern representing a resource
-     * @return a predicate that is true when a value does not equal the specified value
-     */
-    @CheckReturnValue
-    public static ValuePredicate neq(Statement varPattern) {
-        Objects.requireNonNull(varPattern);
-        return Predicates.neq(varPattern);
-    }
-
-    /**
-     * @param value the value
-     * @return a predicate that is true when a value is strictly greater than the specified value
-     */
-    @CheckReturnValue
-    public static ValuePredicate gt(Object value) {
-        Objects.requireNonNull(value);
-        return Predicates.gt(value);
-    }
-
-    /**
-     * @param varPattern the variable pattern representing a resource
-     * @return a predicate that is true when a value is strictly greater than the specified value
-     */
-    @CheckReturnValue
-    public static ValuePredicate gt(Statement varPattern) {
-        Objects.requireNonNull(varPattern);
-        return Predicates.gt(varPattern);
-    }
-
-    /**
-     * @param value the value
-     * @return a predicate that is true when a value is greater or equal to the specified value
-     */
-    @CheckReturnValue
-    public static ValuePredicate gte(Object value) {
-        Objects.requireNonNull(value);
-        return Predicates.gte(value);
-    }
-
-    /**
-     * @param varPattern the variable pattern representing a resource
-     * @return a predicate that is true when a value is greater or equal to the specified value
-     */
-    @CheckReturnValue
-    public static ValuePredicate gte(Statement varPattern) {
-        Objects.requireNonNull(varPattern);
-        return Predicates.gte(varPattern);
-    }
-
-    /**
-     * @param value the value
-     * @return a predicate that is true when a value is strictly less than the specified value
-     */
-    @CheckReturnValue
-    public static ValuePredicate lt(Object value) {
-        Objects.requireNonNull(value);
-        return Predicates.lt(value);
-    }
-
-    /**
-     * @param varPattern the variable pattern representing a resource
-     * @return a predicate that is true when a value is strictly less than the specified value
-     */
-    @CheckReturnValue
-    public static ValuePredicate lt(Statement varPattern) {
-        Objects.requireNonNull(varPattern);
-        return Predicates.lt(varPattern);
-    }
-
-    /**
-     * @param value the value
-     * @return a predicate that is true when a value is less or equal to the specified value
-     */
-    @CheckReturnValue
-    public static ValuePredicate lte(Object value) {
-        Objects.requireNonNull(value);
-        return Predicates.lte(value);
-    }
-
-    /**
-     * @param varPattern the variable pattern representing a resource
-     * @return a predicate that is true when a value is less or equal to the specified value
-     */
-    @CheckReturnValue
-    public static ValuePredicate lte(Statement varPattern) {
-        Objects.requireNonNull(varPattern);
-        return Predicates.lte(varPattern);
-    }
-
-    /**
-     * @param pattern a regex pattern
-     * @return a predicate that returns true when a value matches the given regular expression
-     */
-    @CheckReturnValue
-    public static ValuePredicate like(String pattern) {
-        Objects.requireNonNull(pattern);
-        return Predicates.regex(pattern);
-    }
-
-    /**
-     * @param substring a substring to match
-     * @return a predicate that returns true when a value contains the given substring
-     */
-    @CheckReturnValue
-    public static ValuePredicate contains(String substring) {
-        Objects.requireNonNull(substring);
-        return Predicates.contains(substring);
-    }
-
-    /**
-     * @param varPattern the variable pattern representing a resource
-     * @return a predicate that returns true when a value contains the given substring
-     */
-    @CheckReturnValue
-    public static ValuePredicate contains(Statement varPattern) {
-        Objects.requireNonNull(varPattern);
-        return Predicates.contains(varPattern);
     }
 }

@@ -43,6 +43,7 @@ import grakn.core.graql.query.pattern.property.WhenProperty;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementAttribute;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementRelation;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementThing;
+import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import graql.exception.GraqlException;
 import graql.util.StringUtil;
@@ -384,7 +385,7 @@ public class Statement implements Pattern {
      */
     @CheckReturnValue
     public StatementInstance has(String type, Object value) {
-        return has(type, Graql.eq(value));
+        return has(type, Predicates.eq(value));
     }
 
     /**
@@ -555,19 +556,11 @@ public class Statement implements Pattern {
 
     // ATTRIBUTE STATEMENT PROPERTIES ------------------------------------------
 
-    /**
-     * @param value a value that this variable's value must exactly match
-     * @return this
-     */
     @CheckReturnValue
     public StatementAttribute val(Object value) {
-        return val(Graql.eq(value));
+        return val(Predicates.eq(value));
     }
 
-    /**
-     * @param predicate a atom this variable's value must match
-     * @return this
-     */
     @CheckReturnValue
     public StatementAttribute val(ValuePredicate predicate) {
         return val(new ValueProperty(predicate));
@@ -576,6 +569,81 @@ public class Statement implements Pattern {
     @CheckReturnValue
     public StatementAttribute val(ValueProperty property) {
         return StatementAttribute.create(this, property);
+    }
+
+    @CheckReturnValue
+    public StatementAttribute eqv(Object value) {
+        return val(new ValueProperty(Predicates.eq(value)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute eqv(Statement variable) {
+        return val(new ValueProperty(Predicates.eq(variable)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute neqv(Object value) {
+        return val(new ValueProperty(Predicates.neq(value)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute neqv(Statement variable) {
+        return val(new ValueProperty(Predicates.neq(variable)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute gt(Object value) {
+        return val(new ValueProperty(Predicates.gt(value)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute gt(Statement variable) {
+        return val(new ValueProperty(Predicates.gt(variable)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute gte(Object value) {
+        return val(new ValueProperty(Predicates.gte(value)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute gte(Statement variable) {
+        return val(new ValueProperty(Predicates.gte(variable)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute lt(Object value) {
+        return val(new ValueProperty(Predicates.lt(value)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute lt(Statement variable) {
+        return val(new ValueProperty(Predicates.lt(variable)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute lte(Object value) {
+        return val(new ValueProperty(Predicates.lte(value)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute lte(Statement variable) {
+        return val(new ValueProperty(Predicates.lte(variable)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute contains(String value) {
+        return val(new ValueProperty(Predicates.contains(value)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute contains(Statement variable) {
+        return val(new ValueProperty(Predicates.contains(variable)));
+    }
+
+    @CheckReturnValue
+    public StatementAttribute like(String value) {
+        return val(new ValueProperty(Predicates.regex(value)));
     }
 
     // GENERAL STATEMENT PROPERTIES ============================================

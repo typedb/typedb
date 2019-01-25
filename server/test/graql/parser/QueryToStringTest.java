@@ -24,6 +24,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.predicate.Predicates;
 import org.junit.Test;
 
 import static grakn.core.graql.query.ComputeQuery.Algorithm.CONNECTED_COMPONENT;
@@ -35,14 +36,11 @@ import static grakn.core.graql.query.ComputeQuery.Argument.size;
 import static grakn.core.graql.query.ComputeQuery.Method.CENTRALITY;
 import static grakn.core.graql.query.ComputeQuery.Method.CLUSTER;
 import static grakn.core.graql.query.ComputeQuery.Method.COUNT;
-import static grakn.core.graql.query.Graql.contains;
-import static grakn.core.graql.query.Graql.lte;
-import static grakn.core.graql.query.Graql.match;
-import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.match;
+import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.rel;
 import static grakn.core.graql.query.Graql.type;
-import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 
@@ -60,7 +58,7 @@ public class QueryToStringTest {
                 var().rel("x").rel("y"),
                 or(
                         var("y").isa("person"),
-                        var("y").isa("genre").val(neq("crime"))
+                        var("y").isa("genre").neqv("crime")
                 ),
                 var("y").has("name", var("n"))
         ).get("x", "y");
@@ -70,7 +68,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithResourcesToString() {
-        assertSameStringRepresentation(Graql.match(var("x").has("tmdb-vote-count", lte(400))).get());
+        assertSameStringRepresentation(Graql.match(var("x").has("tmdb-vote-count", Predicates.lte(400))).get());
     }
 
     @Test
@@ -227,7 +225,7 @@ public class QueryToStringTest {
 
     @Test
     public void whenCallingToStringOnAQueryWithAContainsPredicate_ResultIsCorrect() {
-        MatchClause match = match(var("x").val(contains(var("y"))));
+        MatchClause match = match(var("x").contains(var("y")));
 
         assertEquals("match $x contains $y;", match.toString());
     }

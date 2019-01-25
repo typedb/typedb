@@ -31,10 +31,11 @@ import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.server.session.TransactionOLTP;
 import org.hamcrest.Matcher;
 import org.junit.Before;
@@ -59,7 +60,6 @@ import static grakn.core.graql.internal.gremlin.fragment.Fragments.outRelates;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.outSub;
 import static grakn.core.graql.internal.gremlin.fragment.Fragments.value;
 import static grakn.core.graql.query.Graql.and;
-import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.query.Graql.var;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -146,8 +146,8 @@ public class GraqlTraversalTest {
     @Ignore //TODO: No longer applicable. Think of a new test to replace this.
     @Test
     public void valueFilteringIsBetterThanANonFilteringOperation() {
-        GraqlTraversal valueFilterFirst = traversal(value(null, x.var(), gt(1)), inRolePlayer(x.var(), b.var()), outRolePlayer(b.var(), y.var()), outIsa(null, y.var(), z.var()));
-        GraqlTraversal rolePlayerFirst = traversal(outIsa(null, y.var(), z.var()), inRolePlayer(y.var(), b.var()), outRolePlayer(b.var(), x.var()), value(null, x.var(), gt(1)));
+        GraqlTraversal valueFilterFirst = traversal(value(null, x.var(), Predicates.gt(1)), inRolePlayer(x.var(), b.var()), outRolePlayer(b.var(), y.var()), outIsa(null, y.var(), z.var()));
+        GraqlTraversal rolePlayerFirst = traversal(outIsa(null, y.var(), z.var()), inRolePlayer(y.var(), b.var()), outRolePlayer(b.var(), x.var()), value(null, x.var(), Predicates.gt(1)));
 
         assertFaster(valueFilterFirst, rolePlayerFirst);
     }

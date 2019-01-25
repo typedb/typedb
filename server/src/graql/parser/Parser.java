@@ -39,6 +39,7 @@ import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.graql.query.predicate.ValuePredicate;
 import graql.grammar.GraqlBaseVisitor;
 import graql.grammar.GraqlLexer;
@@ -598,7 +599,7 @@ public class Parser extends GraqlBaseVisitor {
             instance = Graql.var();
         }
 
-        instance = instance.val(new ValueProperty(visitOperation(ctx.operation())));
+        instance = instance.val(visitOperation(ctx.operation()));
         if (ctx.ISA_() != null) {
             instance = instance.isa(getIsaProperty(ctx.ISA_(), ctx.type()));
         }
@@ -736,7 +737,7 @@ public class Parser extends GraqlBaseVisitor {
     @Override // TODO: this visitor method should not return a Predicate if we have the right data structure
               //       Graql.eq() should be replaced with an assignment property
     public ValuePredicate visitAssignment(GraqlParser.AssignmentContext ctx) {
-        return Graql.eq(visitLiteral(ctx.literal()));
+        return Predicates.eq(visitLiteral(ctx.literal()));
     }
 
     @Override
@@ -746,14 +747,14 @@ public class Parser extends GraqlBaseVisitor {
 
         } else if (ctx.CONTAINS() != null) {
             if (ctx.containable().STRING_() != null) {
-                return Graql.contains(getString(ctx.containable().STRING_()));
+                return Predicates.contains(getString(ctx.containable().STRING_()));
             } else if (ctx.containable().VAR_() != null) {
-                return Graql.contains(new Statement(getVar(ctx.containable().VAR_())));
+                return Predicates.contains(new Statement(getVar(ctx.containable().VAR_())));
             } else {
                 throw new IllegalArgumentException("Unrecognised CONTAINS Comparison: " + ctx.getText());
             }
         } else if (ctx.LIKE() != null) {
-            return Graql.like(visitRegex(ctx.regex()));
+            return Predicates.regex(visitRegex(ctx.regex()));
         } else {
             throw new IllegalArgumentException("Unrecognised Comparison: " + ctx.getText());
         }
@@ -775,17 +776,17 @@ public class Parser extends GraqlBaseVisitor {
 
         switch (Objects.requireNonNull(operator)){
             case EQV:
-                return literal != null ? Graql.eq(literal) : Graql.eq(variable);
+                return literal != null ? Predicates.eq(literal) : Predicates.eq(variable);
             case NEQV:
-                return literal != null ? Graql.neq(literal) : Graql.neq(variable);
+                return literal != null ? Predicates.neq(literal) : Predicates.neq(variable);
             case GT:
-                return literal != null ? Graql.gt(literal) : Graql.gt(variable);
+                return literal != null ? Predicates.gt(literal) : Predicates.gt(variable);
             case GTE:
-                return literal != null ? Graql.gte(literal) : Graql.gte(variable);
+                return literal != null ? Predicates.gte(literal) : Predicates.gte(variable);
             case LT:
-                return literal != null ? Graql.lt(literal) : Graql.lt(variable);
+                return literal != null ? Predicates.lt(literal) : Predicates.lt(variable);
             case LTE:
-                return literal != null ? Graql.lte(literal) : Graql.lte(variable);
+                return literal != null ? Predicates.lte(literal) : Predicates.lte(variable);
             default:
                 throw new IllegalArgumentException("Unrecognised Comparison Comparator: " + comparator.getText());
         }
