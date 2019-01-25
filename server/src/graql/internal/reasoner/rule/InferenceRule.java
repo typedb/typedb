@@ -206,7 +206,6 @@ public class InferenceRule {
      * @param unifier unifier unifying parent with the rule
      * @return rule with propagated constraints from parent
      */
-    //TODO
     private InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
         Atom headAtom = head.getAtom();
@@ -314,7 +313,6 @@ public class InferenceRule {
         return this;
     }
 
-    //TODO
     private InferenceRule rewriteVariables(Atom parentAtom){
         if (parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion()) {
             ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined(parentAtom));
@@ -330,6 +328,8 @@ public class InferenceRule {
             ResolvableQuery rewrittenBody = getBody().isComposite() ?
                     ReasonerQueries.composite(rewrittenBodyConj, getBody().asComposite().getComplementQueries(), tx) :
                     rewrittenBodyConj;
+
+            //NB we don't have to rewrite complements as we don't allow recursion atm
 
             return new InferenceRule(rewrittenHead, rewrittenBody, rule, tx);
         }

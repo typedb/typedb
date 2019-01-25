@@ -452,6 +452,7 @@ public class RuleTest {
     }
 
     //TODO
+    @Ignore
     @Test
     public void whenAddingARuleWithNestedNegationBlock_Throw() throws InvalidKBException{
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
@@ -473,6 +474,7 @@ public class RuleTest {
     }
 
     //TODO
+    @Ignore
     @Test
     public void whenAddingARuleWithDisjunctiveNegationBlock_Throw() throws InvalidKBException{
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
