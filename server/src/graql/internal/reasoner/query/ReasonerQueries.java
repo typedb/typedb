@@ -46,6 +46,17 @@ public class ReasonerQueries {
     }
 
     /**
+     *
+     * @param conj
+     * @param comp
+     * @param tx
+     * @return
+     */
+    public static CompositeQuery composite(ReasonerQueryImpl conj, Set<ResolvableQuery> comp, TransactionOLTP tx){
+        return new CompositeQuery(conj, comp, tx).inferTypes();
+    }
+
+    /**
      * @param pattern conjunctive pattern defining the query
      * @param tx corresponding transaction
      * @return a resolvable reasoner query constructed from provided conjunctive pattern

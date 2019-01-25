@@ -87,7 +87,7 @@ public class NegationIT {
     }
 
 
-    @Test (expected = GraqlQueryException.class)
+    @Test //(expected = GraqlQueryException.class)
     public void whenNegatingSinglePattern_exceptionIsThrown () {
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
             String specificValue = "value";

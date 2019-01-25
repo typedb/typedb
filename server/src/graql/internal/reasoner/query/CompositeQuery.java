@@ -89,10 +89,15 @@ public class CompositeQuery implements ResolvableQuery {
         }
     }
 
-    private CompositeQuery(ReasonerQueryImpl conj, Set<ResolvableQuery> comp, TransactionOLTP tx) {
+    CompositeQuery(ReasonerQueryImpl conj, Set<ResolvableQuery> comp, TransactionOLTP tx) {
         this.conjunctiveQuery = conj;
         this.complementQueries = comp;
         this.tx = tx;
+    }
+
+    @Override
+    public CompositeQuery asComposite() {
+        return this;
     }
 
     /**
@@ -128,10 +133,11 @@ public class CompositeQuery implements ResolvableQuery {
         //check if p+1 is positive
         if (getComplementQueries().stream().allMatch(ReasonerQuery::isPositive)){
             //simple p boundedness check
-            return !Sets.intersection(
+            Set<Variable> intersection = Sets.intersection(
                     getConjunctiveQuery().getVarNames(),
                     getComplementQueries().stream().flatMap(q -> q.getVarNames().stream()).collect(Collectors.toSet())
-            ).isEmpty();
+            );
+            return !intersection.isEmpty();
         } else {
             Set<CompositeQuery> p1Queries = getComplementQueries().stream().map(q -> (CompositeQuery) q).collect(Collectors.toSet());
             Set<ResolvableQuery> p2Queries = p1Queries.stream().flatMap(q -> q.getComplementQueries().stream()).collect(Collectors.toSet());
@@ -209,6 +215,9 @@ public class CompositeQuery implements ResolvableQuery {
     public boolean isAtomic() {
         return getComplementQueries().isEmpty() && getConjunctiveQuery().isAtomic();
     }
+
+    @Override
+    public boolean isComposite() { return true; }
 
     @Override
     public boolean isPositive(){

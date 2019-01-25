@@ -185,10 +185,12 @@ public class RecursionIT {
     public void testReachability() {
         try (Session session = server.sessionWithNewKeyspace()) {
             ReachabilityGraph graph = new ReachabilityGraph(session);
-            graph.load(5);
+            graph.load(2);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                String queryString = "match (from: $x, to: $y) isa reachable; get;";
-                String explicitQuery = "match $x has index $indX;$y has index $indY;" +
+                String queryString = "match $x isa node; $y isa node;(from: $x, to: $y) isa reachable; get;";
+                String explicitQuery = "match " +
+                        "$x has index $indX;" +
+                        "$y has index $indY;" +
                         "{$indX == 'aa';$indY == 'bb';} or" +
                         "{$indX == 'bb';$indY == 'cc';} or" +
                         "{$indX == 'cc';$indY == 'cc';} or" +
@@ -198,7 +200,9 @@ public class RecursionIT {
                         "{$indX == 'aa';$indY == 'dd';};" +
                         "get $x, $y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> expected = tx.execute(Graql.<GetQuery>parse(explicitQuery), false);
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(expected, answers);
             }
         }
     }

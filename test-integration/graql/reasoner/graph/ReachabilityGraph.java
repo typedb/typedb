@@ -37,15 +37,16 @@ public class ReachabilityGraph {
 
     protected void buildExtensionalDB(int n, Transaction tx) {
         EntityType vertex = tx.getEntityType("vertex");
+        EntityType node = tx.getEntityType("node");
         Role from = tx.getRole("from");
         Role to = tx.getRole("to");
         RelationType link = tx.getRelationshipType("link");
 
         //basic test variant from Green
-        putEntityWithResource(tx, "aa", vertex, key);
-        putEntityWithResource(tx, "bb", vertex, key);
-        putEntityWithResource(tx, "cc", vertex, key);
-        putEntityWithResource(tx, "dd", vertex, key);
+        putEntityWithResource(tx, "aa", node, key);
+        putEntityWithResource(tx, "bb", node, key);
+        putEntityWithResource(tx, "cc", node, key);
+        putEntityWithResource(tx, "dd", node, key);
         link.create().assign(from, getInstance(tx, "aa")).assign(to, getInstance(tx, "bb"));
         link.create().assign(from, getInstance(tx, "bb")).assign(to, getInstance(tx, "cc"));
         link.create().assign(from, getInstance(tx, "cc")).assign(to, getInstance(tx, "cc"));

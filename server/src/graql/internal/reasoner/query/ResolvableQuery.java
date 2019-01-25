@@ -42,6 +42,12 @@ public interface ResolvableQuery extends ReasonerQuery {
     Stream<Atom> selectAtoms();
 
     /**
+     * @return this query in the composite form
+     */
+    @CheckReturnValue
+    CompositeQuery asComposite();
+
+    /**
      * @param sub substitution to be inserted into the query
      * @return corresponding query with additional substitution
      */
@@ -60,6 +66,9 @@ public interface ResolvableQuery extends ReasonerQuery {
     @CheckReturnValue
     ResolvableQuery inferTypes();
 
+    /**
+     * @return true if this query requires atom decomposition
+     */
     @CheckReturnValue
     boolean requiresDecomposition();
 

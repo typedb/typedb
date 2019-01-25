@@ -48,8 +48,10 @@ import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -256,10 +258,14 @@ public class InferenceRule {
                             .findFirst().orElse(null);
                     return schemaConcept == null || subType == null;
                 }).forEach(t -> bodyAtoms.add(t.copy(body)));
+
+        ReasonerQueryImpl rewrittenBodyConj = ReasonerQueries.create(bodyAtoms, tx);
+        ResolvableQuery rewrittenBody = getBody().isComposite() ?
+                ReasonerQueries.composite(rewrittenBodyConj, getBody().asComposite().getComplementQueries(), tx) :
+                rewrittenBodyConj;
         return new InferenceRule(
                 ReasonerQueries.atomic(headAtom),
-                getBody(),
-                //ReasonerQueries.create(bodyAtoms, tx),
+                rewrittenBody,
                 rule,
                 tx
         );
@@ -309,26 +315,18 @@ public class InferenceRule {
             ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined(parentAtom));
 
             //NB: only rewriting atoms from the same type hierarchy
-            /*
-            List<Atom> rewrittenBodyConj = getBody().getConjunctiveQuery().getAtoms(Atom.class)
+            List<Atom> rewrittenBodyConjAtoms = getBody().asComposite().getConjunctiveQuery().getAtoms(Atom.class)
                     .map(at ->
                             ReasonerUtils.areDisjointTypes(at.getSchemaConcept(), head.getAtom().getSchemaConcept(), false) ?
                                     at : at.rewriteToUserDefined(parentAtom)
                     )
                     .collect(Collectors.toList());
-            List<Atom> rewrittenBodyComp = getBody().getComplementQueries().getAtoms(Atom.class)
-                    .map(at ->
-                            ReasonerUtils.areDisjointTypes(at.getSchemaConcept(), head.getAtom().getSchemaConcept(), false) ?
-                                    at : at.rewriteToUserDefined(parentAtom)
-                    )
-                    .collect(Collectors.toList());
-            ReasonerQueryImpl rewrittenBody = ReasonerQueries.composite(bodyRewrites, tx);
+            ReasonerQueryImpl rewrittenBodyConj = ReasonerQueries.create(rewrittenBodyConjAtoms, tx);
+            ResolvableQuery rewrittenBody = getBody().isComposite() ?
+                    ReasonerQueries.composite(rewrittenBodyConj, getBody().asComposite().getComplementQueries(), tx) :
+                    rewrittenBodyConj;
+
             return new InferenceRule(rewrittenHead, rewrittenBody, rule, tx);
-
-            */
-
-            return new InferenceRule(rewrittenHead, getBody(), rule, tx);
-
         }
         return this;
     }

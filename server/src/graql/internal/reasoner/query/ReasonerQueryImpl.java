@@ -130,6 +130,10 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         );
     }
 
+    @Override
+    public CompositeQuery asComposite() {
+        return new CompositeQuery(getPattern(), tx());
+    }
 
     @Override
     public ReasonerQueryImpl withSubstitution(ConceptMap sub){
@@ -444,9 +448,6 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         return getAtoms(Atom.class).filter(Atomic::isSelectable);
     }
 
-    /**
-     * @return true if this query requires atom decomposition
-     */
     @Override
     public boolean requiresDecomposition(){
         return this.selectAtoms().anyMatch(Atom::requiresDecomposition);
