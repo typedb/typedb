@@ -117,12 +117,12 @@ public class QueryExecutor {
             statement.properties().forEach(property -> validateProperty(property, statement));
         }
 
-        if (!infer) {
-            GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
-            return traversal(matchClause.getPatterns().variables(), graqlTraversal);
-        }
-
         try {
+            if (!infer) {
+                GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
+              return traversal(matchClause.getPatterns().variables(), graqlTraversal);
+            }
+
             Iterator<Conjunction<Pattern>> conjIt = matchClause.getPatterns().getNegationDNF().getPatterns().iterator();
             Stream<ConceptMap> answerStream = Stream.empty();
             while (conjIt.hasNext()) {

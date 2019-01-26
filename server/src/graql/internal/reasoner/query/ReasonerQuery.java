@@ -56,6 +56,9 @@ public interface ReasonerQuery{
     @CheckReturnValue
     default boolean isPositive(){ return true;}
 
+    @CheckReturnValue
+    default boolean isComposite(){return false;}
+
     /**
      * @return true if this query is atomic
      */

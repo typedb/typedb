@@ -126,6 +126,20 @@ java_library(
 )
 
 java_library(
+    name = "reachability-graph",
+    srcs = [
+        "ReachabilityGraph.java",
+    ],
+    resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
+    visibility = ["//test-integration:__subpackages__"],
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//server",
+        "//test-integration/util:graql-test-util",
+    ],
+)
+
+java_library(
     name = "tail-recursion-graph",
     srcs = ["TailRecursionGraph.java"],
     resources = ["//test-integration/graql/reasoner/resources/recursion:tail-recursion"],
@@ -160,19 +174,20 @@ java_library(
 )
 
 checkstyle_test(
- name = "checkstyle",
- targets = [
-   ":diagonal-graph",
-   ":dual-linear-transitivity-graph",
-   ":generic-schema-graph",
-   ":geo-graph",
-   ":linear-transitivity-matrix-graph",
-   ":nguyen-graph",
-   ":path-matrix-graph",
-   ":path-tree-graph",
-   ":path-tree-symmetric-graph",
-   ":tail-recursion-graph",
-   ":transitivity-chain-graph",
-   ":transitivity-matrix-graph",
- ],
+    name = "checkstyle",
+    targets = [
+        ":diagonal-graph",
+        ":dual-linear-transitivity-graph",
+        ":generic-schema-graph",
+        ":geo-graph",
+        ":linear-transitivity-matrix-graph",
+        ":nguyen-graph",
+        ":path-matrix-graph",
+        ":path-tree-graph",
+        ":path-tree-symmetric-graph",
+        ":reachability-graph",
+        ":tail-recursion-graph",
+        ":transitivity-chain-graph",
+        ":transitivity-matrix-graph",
+    ],
 )

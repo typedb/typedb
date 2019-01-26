@@ -99,6 +99,8 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Rule validation Errors
 
+    VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE("The rule graph is not stratifiable - it contains following cycles with negation: [%s] \n"),
+
     VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] refers to type [%s] which does not exist in the graph \n"),
 
     VALIDATION_RULE_NEGATIVE_STATEMENTS_UNSUPPORTED_IN_RULES("The rule [%s] contains negative statements which are currently unsupported\n"),
@@ -195,6 +197,8 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
+    DISJUNCTIVE_NEGATION_BLOCK("Unsupported disjunction in a negation block in query: [%s]."),
+    UNSAFE_NEGATION_BLOCK("Query:[%s] is not negation safe - negated pattern variables are not bound."),
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
     INCOMPLETE_RESOLUTION_PLAN("Addressed query [%s] leads to an incomplete resolution plan."),
     ROLE_PATTERN_ABSENT("Addressed relation [%s] is missing a role pattern."),
