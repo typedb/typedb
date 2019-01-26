@@ -79,6 +79,7 @@ public class Negation<T extends Pattern> implements Pattern {
             negation.append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE);
             negation.append(pattern.toString());
             negation.append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE);
+            negation.append(Query.Char.SEMICOLON);
         }
 
         return negation.toString();
