@@ -7,9 +7,9 @@ git_username = "Grabl"
 git_email = "grabl@grakn.ai"
 grabl_credential = "grabl:"+os.environ['GRABL_CREDENTIAL']
 
-docs_url = "github.com/graknlabs/test-ci-docs.git" # TODO: update to real location
+docs_url = "github.com/graknlabs/docs.git"
 docs_dev_branch = "development"
-docs_clone_location = "test-ci-docs" # TODO: update to real location
+docs_clone_location = "docs"
 
 grakn_url = "github.com/graknlabs/grakn.git"
 grakn_master_branch = "refs/heads/master"

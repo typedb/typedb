@@ -316,47 +316,47 @@ workflows:
       - build:
           filters:
             branches:
-              only: docs-update-grakn-dependency-on-dev-branch
+              only: master
       - client-java:
           filters:
             branches:
-              only: docs-update-grakn-dependency-on-dev-branch
+              only: master
       - common:
           filters:
             branches:
-              only: docs-update-grakn-dependency-on-dev-branch
+              only: master
       - console:
           filters:
             branches:
-              only: docs-update-grakn-dependency-on-dev-branch
+              only: master
       - graql:
           filters:
             branches:
-              only: docs-update-grakn-dependency-on-dev-branch
+              only: master
       - server:
           filters:
             branches:
-              only: docs-update-grakn-dependency-on-dev-branch
+              only: master
       - workbase:
           filters:
             branches:
-              only: docs-update-grakn-dependency-on-dev-branch
+              only: master
       - test-integration:
           filters:
             branches:
-              only: docs-update-grakn-dependency-on-dev-branch
+              only: master
       - test-integration-reasoner:
           filters:
             branches:
-              only: docs-update-grakn-dependency-on-dev-branch
+              only: master
       - test-integration-analytics:
           filters:
             branches:
-              only: docs-update-grakn-dependency-on-dev-branch
+              only: master
       - test-end-to-end:
           filters:
             branches:
-              only: docs-update-grakn-dependency-on-dev-branch
+              only: master
       - docs-update-grakn-dependency-on-dev-branch:
           requires:
             - build
@@ -372,7 +372,7 @@ workflows:
             - test-end-to-end
           filters:
             branches:
-              only: docs-update-grakn-dependency-on-dev-branch
+              only: master
 
   build-and-deploy:
     jobs:
