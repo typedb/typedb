@@ -5,7 +5,7 @@ import subprocess as sp
 # TODO: consider not making grakn_master_branch configurable
 git_username = "Grabl"
 git_email = "grabl@grakn.ai"
-grabl_credential = "grabl:"+os.environ['GRABL_TOKEN']
+grabl_credential = "grabl:"+os.environ['GRABL_CREDENTIAL']
 
 docs_url = "github.com/graknlabs/test-ci-docs.git" # TODO: update to real location
 docs_dev_branch = "development"
