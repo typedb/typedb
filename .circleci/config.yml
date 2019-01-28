@@ -376,35 +376,34 @@ jobs:
           cd docs
           python ../.circleci/deploy-docs-to-production.py
 workflows:
-  version: 2
   workflow-pr:
     jobs:
       - tests:
           filters:
             branches:
-              ignore: master
+              ignore: /master|trigger-workflow-deploy/
       - client-java:
           filters:
             branches:
-              ignore: master
+              ignore: /master|trigger-workflow-deploy/
           requires:
             - tests
       - common:
           filters:
             branches:
-              ignore: master
+              ignore: /master|trigger-workflow-deploy/
           requires:
             - tests
       - console:
           filters:
             branches:
-              ignore: master
+              ignore: /master|trigger-workflow-deploy/
           requires:
             - tests
       - distributions:
           filters:
             branches:
-              ignore: master
+              ignore: /master|trigger-workflow-deploy/
           requires:
             - client-java
             - common
@@ -412,13 +411,13 @@ workflows:
       - dist-mac:
           filters:
             branches:
-              ignore: master
+              ignore: /master|trigger-workflow-deploy/
           requires:
             - distributions
       - dist-ubuntu:
           filters:
             branches:
-              ignore: master
+              ignore: /master|trigger-workflow-deploy/
           requires:
             - distributions
 
@@ -473,35 +472,29 @@ workflows:
           requires:
             - dist-ubuntu
             - dist-mac
-      - approve-deploy-github:
-          type: approval
-          filters:
-            branches:
-              only: master
-          requires:
-            - docs-update-grakn-dependency-on-dev-branch
+
+  workflow-deploy:
+    jobs:
       - deploy-github:
           filters:
             branches:
-              only: master
-          requires:
-            - approve-deploy-github
+              only: trigger-workflow-deploy
       - docs-auto-merge-to-master:
           filters:
             branches:
-              only: master
+              only: trigger-workflow-deploy
           requires:
             - deploy-github
       - approve-deploy-docs:
           filters:
             branches:
-              only: master
+              only: trigger-workflow-deploy
           type: approval
           requires:
             - docs-auto-merge-to-master
       - deploy-docs-to-production:
           filters:
             branches:
-              only: master
+              only: trigger-workflow-deploy
           requires:
             - approve-deploy-docs
