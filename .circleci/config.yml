@@ -316,47 +316,47 @@ workflows:
       - build:
           filters:
             branches:
-              only: master
+              only: docs-update-grakn-dependency-on-dev-branch
       - client-java:
           filters:
             branches:
-              only: master
+              only: docs-update-grakn-dependency-on-dev-branch
       - common:
           filters:
             branches:
-              only: master
+              only: docs-update-grakn-dependency-on-dev-branch
       - console:
           filters:
             branches:
-              only: master
+              only: docs-update-grakn-dependency-on-dev-branch
       - graql:
           filters:
             branches:
-              only: master
+              only: docs-update-grakn-dependency-on-dev-branch
       - server:
           filters:
             branches:
-              only: master
+              only: docs-update-grakn-dependency-on-dev-branch
       - workbase:
           filters:
             branches:
-              only: master
+              only: docs-update-grakn-dependency-on-dev-branch
       - test-integration:
           filters:
             branches:
-              only: master
+              only: docs-update-grakn-dependency-on-dev-branch
       - test-integration-reasoner:
           filters:
             branches:
-              only: master
+              only: docs-update-grakn-dependency-on-dev-branch
       - test-integration-analytics:
           filters:
             branches:
-              only: master
+              only: docs-update-grakn-dependency-on-dev-branch
       - test-end-to-end:
           filters:
             branches:
-              only: master
+              only: docs-update-grakn-dependency-on-dev-branch
       - docs-update-grakn-dependency-on-dev-branch:
           requires:
             - build
@@ -372,7 +372,7 @@ workflows:
             - test-end-to-end
           filters:
             branches:
-              only: master
+              only: docs-update-grakn-dependency-on-dev-branch
 
   build-and-deploy:
     jobs:
