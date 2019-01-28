@@ -378,7 +378,7 @@ jobs:
           cd docs
           python ../.circleci/deploy-docs-to-production.py
 workflows:
-  workflow-pr:
+  ci-pull-request:
     jobs:
       - tests:
           filters:
@@ -423,7 +423,7 @@ workflows:
           requires:
             - distributions
 
-  workflow-master:
+  ci-master-branch:
     jobs:
       - tests:
           filters:

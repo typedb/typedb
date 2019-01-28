@@ -34,7 +34,6 @@ if __name__ == '__main__':
         open(os.path.join(docs_clone_location, 'WORKSPACE'), 'w').write(''.join(workspace_content))
         
         # Commit and push the change
-        # TODO: check if contents are changed using simple if checks rather than relying on the error message from git
         sp.check_output(["git", "add", "WORKSPACE"], cwd=docs_clone_location, stderr=sp.STDOUT)
 
         should_commit = sp.check_output(["git", "status"], cwd=docs_clone_location).find('nothing to commit, working tree clean') == -1
