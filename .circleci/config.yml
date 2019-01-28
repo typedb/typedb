@@ -183,6 +183,17 @@ jobs:
       - bazel:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
+  docs-update-grakn-dependency-on-dev-branch:
+    machine: true
+    steps:
+      - checkout
+      - run:
+          name: Make docs (development branch) depend on the latest Grakn (master)
+          command: |
+            mkdir docs
+            cd docs
+            python ../.circleci/docs-update-grakn-dependency-on-dev-branch.py
+
   build-workbase-linux:
       machine: true
       working_directory: ~/grakn
@@ -253,20 +264,115 @@ jobs:
             - ./workbase
 
 workflows:
-  version: 2
-  grakn-core-ci:
+  ci-pull-request:
     jobs:
-      - build
-      - client-java
-      - common
-      - console
-      - graql
-      - server
-      - workbase
-      - test-integration
-      - test-integration-reasoner
-      - test-integration-analytics
-      - test-end-to-end
+      - build:
+          filters:
+            branches:
+              ignore: master
+      - client-java:
+          filters:
+            branches:
+              ignore: master
+      - common:
+          filters:
+            branches:
+              ignore: master
+      - console:
+          filters:
+            branches:
+              ignore: master
+      - graql:
+          filters:
+            branches:
+              ignore: master
+      - server:
+          filters:
+            branches:
+              ignore: master
+      - workbase:
+          filters:
+            branches:
+              ignore: master
+      - test-integration:
+          filters:
+            branches:
+              ignore: master
+      - test-integration-reasoner:
+          filters:
+            branches:
+              ignore: master
+      - test-integration-analytics:
+          filters:
+            branches:
+              ignore: master
+      - test-end-to-end:
+          filters:
+            branches:
+              ignore: master
+
+  ci-master-branch:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: master
+      - client-java:
+          filters:
+            branches:
+              only: master
+      - common:
+          filters:
+            branches:
+              only: master
+      - console:
+          filters:
+            branches:
+              only: master
+      - graql:
+          filters:
+            branches:
+              only: master
+      - server:
+          filters:
+            branches:
+              only: master
+      - workbase:
+          filters:
+            branches:
+              only: master
+      - test-integration:
+          filters:
+            branches:
+              only: master
+      - test-integration-reasoner:
+          filters:
+            branches:
+              only: master
+      - test-integration-analytics:
+          filters:
+            branches:
+              only: master
+      - test-end-to-end:
+          filters:
+            branches:
+              only: master
+      - docs-update-grakn-dependency-on-dev-branch:
+          requires:
+            - build
+            - client-java
+            - common
+            - console
+            - graql
+            - server
+            - workbase
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
+            - test-end-to-end
+          filters:
+            branches:
+              only: master
 
   build-and-deploy:
     jobs:
