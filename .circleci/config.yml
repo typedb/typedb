@@ -301,10 +301,12 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: |
-          mkdir docs
-          cd docs
-          python ../.circleci/docs-update-grakn-dependency-on-dev-branch.py
+      - run:
+          name: Make docs (development branch) depend on the latest Grakn (master)
+          command: |
+            mkdir docs
+            cd docs
+            python ../.circleci/docs-update-grakn-dependency-on-dev-branch.py
   approve-release:
     machine: true
     steps:
