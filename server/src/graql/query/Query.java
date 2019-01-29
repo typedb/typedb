@@ -156,6 +156,7 @@ public interface Query {
         DATA_TYPE("datatype"),
         HAS("has"),
         KEY("key"),
+        VIA("via"),
         ID("id"),
         ABSTRACT("abstract"),
         ISA("isa"),

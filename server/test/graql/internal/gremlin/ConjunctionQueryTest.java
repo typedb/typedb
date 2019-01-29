@@ -138,13 +138,8 @@ public class ConjunctionQueryTest {
     }
 
     @Test
-    public void whenVarDoesNotHaveAValue_DoNotUseResourceIndex() {
-        assertThat(x.val(resourceTypeWithoutSubTypes), not(usesResourceIndex()));
-    }
-
-    @Test
     public void whenVarHasAValuePredicateThatRefersToAVar_DoNotUseResourceIndex() {
-        assertThat(x.eqv(y).isa(resourceTypeWithoutSubTypes), not(usesResourceIndex(x.var(), y.var())));
+        assertThat(x.eq(y).isa(resourceTypeWithoutSubTypes), not(usesResourceIndex(x.var(), y.var())));
     }
 
     private Matcher<Pattern> usesResourceIndex() {

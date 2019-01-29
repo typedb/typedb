@@ -84,7 +84,7 @@ public class NeqPredicate extends Predicate<Variable> {
         return new NeqPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
     public static NeqPredicate create(Variable varName, NeqProperty prop, ReasonerQuery parent) {
-        Statement pattern = new Statement(varName).neq(prop);
+        Statement pattern = new Statement(varName).not(prop);
         return create(pattern, parent);
     }
     public static NeqPredicate create(NeqPredicate a, ReasonerQuery parent) {

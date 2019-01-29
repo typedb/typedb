@@ -23,7 +23,6 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -264,7 +263,7 @@ public class PatternIT {
         assertExists(tx, var().isa("movie").has("title", "Godfather"));
         Set<Concept> result1 = tx.stream(Graql.match(
                 var("x").isa("movie").has("title", var("y")),
-                var("y").neqv("Godfather")).get("x"))
+                var("y").neq("Godfather")).get("x"))
                 .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(result1.isEmpty());
 
@@ -276,14 +275,6 @@ public class PatternIT {
 
         result2.removeAll(result1);
         assertEquals(1, result2.size());
-    }
-
-    @Test
-    public void whenNeqPassedNull_Throw() {
-        exception.expect(Exception.class);
-        Statement var = null;
-        //noinspection ConstantConditions,ResultOfMethodCallIgnored
-        Predicates.neq(var);
     }
 
     private void assertExceptionThrown(Consumer<String> consumer, String varName) {

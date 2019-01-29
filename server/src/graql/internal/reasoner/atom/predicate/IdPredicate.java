@@ -25,10 +25,11 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.property.IdProperty;
+import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
@@ -153,7 +154,13 @@ public class IdPredicate extends Predicate<ConceptId> {
     public ValuePredicate toValuePredicate() {
         Concept concept = tx().getConcept(this.getPredicate());
         Object value = (concept != null && concept.isAttribute()) ? concept.asAttribute().value() : null;
-        return value != null ?
-                ValuePredicate.create(this.getVarName(), Predicates.eq(value), this.getParentQuery()) : null;
+
+        if (value != null) {
+            return ValuePredicate.create(this.getVarName(),
+                                         ValueProperty.Operation.Comparison.of(Query.Comparator.EQV, value),
+                                         this.getParentQuery());
+        } else {
+            return null;
+        }
     }
 }

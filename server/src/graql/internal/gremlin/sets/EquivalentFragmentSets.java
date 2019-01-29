@@ -26,10 +26,10 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
+import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.server.Transaction;
 
 import javax.annotation.Nullable;
@@ -125,7 +125,7 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable represents a resource with value matching a predicate.
      */
-    public static EquivalentFragmentSet value(VarProperty varProperty, Variable resource, ValuePredicate predicate) {
+    public static EquivalentFragmentSet value(VarProperty varProperty, Variable resource, ValueExecutor.Operation<?, ?> predicate) {
         return new ValueFragmentSet(varProperty, resource, predicate);
     }
 

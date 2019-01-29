@@ -35,7 +35,6 @@ import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.predicate.Predicates;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -59,7 +58,10 @@ import static grakn.core.graql.query.ComputeQuery.Argument.size;
 import static grakn.core.graql.query.ComputeQuery.Method.CLUSTER;
 import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.define;
+import static grakn.core.graql.query.Graql.gte;
 import static grakn.core.graql.query.Graql.insert;
+import static grakn.core.graql.query.Graql.lt;
+import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
 import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.parse;
@@ -133,14 +135,14 @@ public class ParserTest {
         GetQuery expected = match(
                 var("x").isa("movie").has("title", var("t")),
                 or(
-                        var("t").eqv("Apocalypse Now"),
+                        var("t").eq("Apocalypse Now"),
                         and(
                                 var("t").lt("Juno"),
                                 var("t").gt("Godfather")
                         ),
-                        var("t").eqv("Spy")
+                        var("t").eq("Spy")
                 ),
-                var("t").neqv("Apocalypse Now")
+                var("t").neq("Apocalypse Now")
         ).get();
 
         assertQueryEquals(expected, parsed, query.replace("'", "\""));
@@ -160,7 +162,7 @@ public class ParserTest {
                         and(
                                 var("t").lte("Juno"),
                                 var("t").gte("Godfather"),
-                                var("t").neqv("Heat")
+                                var("t").neq("Heat")
                         ),
                         var("t").val("The Muppets")
                 )
@@ -218,7 +220,7 @@ public class ParserTest {
     public void testValueEqualsVariableQuery() {
         String query = "match $s1 == $s2; get;";
         GetQuery parsed = parse(query);
-        GetQuery expected = match(var("s1").val(var("s2"))).get();
+        GetQuery expected = match(var("s1").eq(var("s2"))).get();
 
         assertQueryEquals(expected, parsed, query);
     }
@@ -232,7 +234,7 @@ public class ParserTest {
         GetQuery parsed = parse(query);
 
         GetQuery expected = match(
-                var("x").has("release-date", Predicates.gte(var("r"))),
+                var("x").has("release-date", gte(var("r"))),
                 var().has("title", "Spy").has("release-date", var("r"))
         ).get();
 
@@ -246,9 +248,9 @@ public class ParserTest {
 
         GetQuery expected = match(
                 var("x")
-                        .has("release-date", Predicates.lt(LocalDate.of(1986, 3, 3).atStartOfDay()))
+                        .has("release-date", lt(LocalDate.of(1986, 3, 3).atStartOfDay()))
                         .has("tmdb-vote-count", 100)
-                        .has("tmdb-vote-average", Predicates.lte(9.0))
+                        .has("tmdb-vote-average", lte(9.0))
         ).get();
 
         assertQueryEquals(expected, parsed, query);
@@ -303,7 +305,7 @@ public class ParserTest {
     public void testLongComparatorQuery() throws ParseException {
         String query = "match $x isa movie, has tmdb-vote-count <= 400; get;";
         GetQuery parsed = parse(query);
-        GetQuery expected = match(var("x").isa("movie").has("tmdb-vote-count", Predicates.lte(400))).get();
+        GetQuery expected = match(var("x").isa("movie").has("tmdb-vote-count", lte(400))).get();
 
         assertQueryEquals(expected, parsed, query);
     }
@@ -1101,7 +1103,7 @@ public class ParserTest {
 
     @Test
     public void whenValueEqualityToString_CreateValidQueryString() {
-        GetQuery expected = match(var("x").eqv(var("y"))).get();
+        GetQuery expected = match(var("x").eq(var("y"))).get();
         GetQuery parsed = Graql.parse(expected.toString());
         assertEquals(expected, parsed);
     }

@@ -24,7 +24,6 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.MatchClause;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.predicate.Predicates;
 import org.junit.Test;
 
 import static grakn.core.graql.query.ComputeQuery.Algorithm.CONNECTED_COMPONENT;
@@ -37,6 +36,7 @@ import static grakn.core.graql.query.ComputeQuery.Method.CENTRALITY;
 import static grakn.core.graql.query.ComputeQuery.Method.CLUSTER;
 import static grakn.core.graql.query.ComputeQuery.Method.COUNT;
 import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
 import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.rel;
@@ -58,7 +58,7 @@ public class QueryToStringTest {
                 var().rel("x").rel("y"),
                 or(
                         var("y").isa("person"),
-                        var("y").isa("genre").neqv("crime")
+                        var("y").isa("genre").neq("crime")
                 ),
                 var("y").has("name", var("n"))
         ).get("x", "y");
@@ -68,7 +68,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithResourcesToString() {
-        assertSameStringRepresentation(Graql.match(var("x").has("tmdb-vote-count", Predicates.lte(400))).get());
+        assertSameStringRepresentation(Graql.match(var("x").has("tmdb-vote-count", lte(400))).get());
     }
 
     @Test

@@ -24,15 +24,15 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Negation;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.StatementInstance;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementAttribute;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementRelation;
 import grakn.core.graql.query.pattern.statement.StatementType;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.predicate.ValuePredicate;
 
 import javax.annotation.CheckReturnValue;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -53,6 +53,7 @@ public class Graql {
 
     private static final Parser parser = new Parser();
 
+    @CheckReturnValue
     public static Parser parser() {
         return parser;
     }
@@ -154,68 +155,7 @@ public class Graql {
         return new ComputeQuery<>(method);
     }
 
-    // PATTERNS
-
-
-    /**
-     * @return a new statement with an anonymous Variable
-     */
-    @CheckReturnValue
-    public static Statement var() {
-        return var(new Variable());
-    }
-
-    /**
-     * @param name the name of the variable
-     * @return a new statement with a variable of a given name
-     */
-    @CheckReturnValue
-    public static Statement var(String name) {
-        return var(new Variable(name));
-    }
-
-    /**
-     * @param var a variable to create a statement
-     * @return a new statement with a provided variable
-     */
-    @CheckReturnValue
-    public static Statement var(Variable var) {
-        return new Statement(var);
-    }
-
-    /**
-     * @param label the label of a concept
-     * @return a variable pattern that identifies a concept by label
-     */
-    @CheckReturnValue
-    public static StatementType type(String label) {
-        return var(new Variable(false)).type(label);
-    }
-
-    @CheckReturnValue
-    public static StatementRelation rel(String player) {
-        return var(new Variable(false)).rel(player);
-    }
-
-    @CheckReturnValue
-    public static StatementRelation rel(String role, String player) {
-        return var(new Variable(false)).rel(role, player);
-    }
-
-    public static StatementRelation rel(Statement role, Statement player) {
-        return var(new Variable(false)).rel(role, player);
-    }
-
-    @CheckReturnValue
-    public static StatementAttribute val(Object value) {
-        return var(new Variable(false)).eqv(value);
-    }
-
-    @CheckReturnValue
-    public static StatementAttribute val(ValuePredicate predicate) {
-        return var(new Variable(false)).val(new ValueProperty(predicate));
-    }
-
+    // Pattern Builder Methods
 
     /**
      * @param patterns an array of patterns to match
@@ -235,6 +175,7 @@ public class Graql {
         return and(new LinkedHashSet<>(patterns));
     }
 
+    @CheckReturnValue
     public static <T extends Pattern> Conjunction<T> and(Set<T> patterns) {
         return new Conjunction<>(patterns);
     }
@@ -262,17 +203,384 @@ public class Graql {
         return or(new LinkedHashSet<>(patterns));
     }
 
+    @CheckReturnValue
     public static <T extends Pattern> Disjunction<T> or(Set<T> patterns) {
         return new Disjunction<>(patterns);
     }
 
     /**
-     *
      * @param pattern a patterns to a negate
      * @return a pattern that will match when no contained pattern matches
      */
     @CheckReturnValue
     public static Negation<Pattern> not(Pattern pattern) {
         return new Negation<>(pattern);
+    }
+
+    // Statement Builder Methods
+
+    /**
+     * @return a new statement with an anonymous Variable
+     */
+    @CheckReturnValue
+    public static Statement var() {
+        return var(new Variable());
+    }
+
+    /**
+     * @param name the name of the variable
+     * @return a new statement with a variable of a given name
+     */
+    @CheckReturnValue
+    public static Statement var(String name) {
+        return var(new Variable(name));
+    }
+
+    /**
+     * @param var a variable to create a statement
+     * @return a new statement with a provided variable
+     */
+    @CheckReturnValue
+    public static Statement var(Variable var) {
+        return new Statement(var);
+    }
+
+    @CheckReturnValue
+    private static Statement hiddenVar() {
+        return var(new Variable(false));
+    }
+
+    /**
+     * @param label the label of a concept
+     * @return a variable pattern that identifies a concept by label
+     */
+    @CheckReturnValue
+    public static StatementType type(String label) {
+        return hiddenVar().type(label);
+    }
+
+    @CheckReturnValue
+    public static StatementRelation rel(String player) {
+        return hiddenVar().rel(player);
+    }
+
+    @CheckReturnValue
+    public static StatementRelation rel(String role, String player) {
+        return hiddenVar().rel(role, player);
+    }
+
+    @CheckReturnValue
+    public static StatementRelation rel(Statement role, Statement player) {
+        return hiddenVar().rel(role, player);
+    }
+
+    // Attribute Statement Builder Methods
+
+    // Attribute value assignment property
+
+    @CheckReturnValue
+    public static StatementAttribute val(int value) {
+        return hiddenVar().val(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute val(long value) {
+        return hiddenVar().val(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute val(float value) {
+        return hiddenVar().val(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute val(double value) {
+        return hiddenVar().val(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute val(boolean value) {
+        return hiddenVar().val(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute val(String value) {
+        return hiddenVar().val(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute val(LocalDateTime value) {
+        return hiddenVar().val(value);
+    }
+
+    // Attribute value equality property
+
+    @CheckReturnValue
+    public static StatementAttribute eq(int value) {
+        return hiddenVar().eq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute eq(long value) {
+        return hiddenVar().eq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute eq(float value) {
+        return hiddenVar().eq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute eq(double value) {
+        return hiddenVar().eq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute eq(boolean value) {
+        return hiddenVar().eq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute eq(String value) {
+        return hiddenVar().eq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute eq(LocalDateTime value) {
+        return hiddenVar().eq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute eq(Statement variable) {
+        return hiddenVar().eq(variable);
+    }
+
+    // Attribute value inequality property
+
+    @CheckReturnValue
+    public static StatementAttribute neq(int value) {
+        return hiddenVar().neq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute neq(long value) {
+        return hiddenVar().neq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute neq(float value) {
+        return hiddenVar().neq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute neq(double value) {
+        return hiddenVar().neq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute neq(boolean value) {
+        return hiddenVar().neq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute neq(String value) {
+        return hiddenVar().neq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute neq(LocalDateTime value) {
+        return hiddenVar().neq(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute neq(Statement variable) {
+        return hiddenVar().neq(variable);
+    }
+
+    // Attribute value greater-than property
+
+    @CheckReturnValue
+    public static StatementAttribute gt(int value) {
+        return hiddenVar().gt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gt(long value) {
+        return hiddenVar().gt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gt(float value) {
+        return hiddenVar().gt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gt(double value) {
+        return hiddenVar().gt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gt(boolean value) {
+        return hiddenVar().gt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gt(String value) {
+        return hiddenVar().gt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gt(LocalDateTime value) {
+        return hiddenVar().gt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gt(Statement variable) {
+        return hiddenVar().gt(variable);
+    }
+
+    // Attribute value greater-than-or-equals property
+
+    @CheckReturnValue
+    public static StatementAttribute gte(int value) {
+        return hiddenVar().gte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gte(long value) {
+        return hiddenVar().gte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gte(float value) {
+        return hiddenVar().gte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gte(double value) {
+        return hiddenVar().gte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gte(boolean value) {
+        return hiddenVar().gte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gte(String value) {
+        return hiddenVar().gte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gte(LocalDateTime value) {
+        return hiddenVar().gte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute gte(Statement variable) {
+        return hiddenVar().gte(variable);
+    }
+
+    // Attribute value less-than property
+
+    @CheckReturnValue
+    public static StatementAttribute lt(int value) {
+        return hiddenVar().lt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lt(long value) {
+        return hiddenVar().lt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lt(float value) {
+        return hiddenVar().lt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lt(double value) {
+        return hiddenVar().lt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lt(boolean value) {
+        return hiddenVar().lt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lt(String value) {
+        return hiddenVar().lt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lt(LocalDateTime value) {
+        return hiddenVar().lt(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lt(Statement variable) {
+        return hiddenVar().lt(variable);
+    }
+
+    // Attribute value less-than-or-equals property
+
+    @CheckReturnValue
+    public static StatementAttribute lte(int value) {
+        return hiddenVar().lte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lte(long value) {
+        return hiddenVar().lte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lte(float value) {
+        return hiddenVar().lte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lte(double value) {
+        return hiddenVar().lte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lte(boolean value) {
+        return hiddenVar().lte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lte(String value) {
+        return hiddenVar().lte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lte(LocalDateTime value) {
+        return hiddenVar().lte(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute lte(Statement variable) {
+        return hiddenVar().lte(variable);
+    }
+
+    // Attribute value contains (in String) property
+
+    @CheckReturnValue
+    public static StatementAttribute contains(String value) {
+        return hiddenVar().contains(value);
+    }
+
+    @CheckReturnValue
+    public static StatementAttribute contains(Statement variable) {
+        return hiddenVar().contains(variable);
+    }
+
+    // Attribute value regex property
+
+    @CheckReturnValue
+    public static StatementAttribute like(String value) {
+        return hiddenVar().like(value);
     }
 }

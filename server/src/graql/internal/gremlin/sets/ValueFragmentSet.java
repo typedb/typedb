@@ -19,12 +19,12 @@
 package grakn.core.graql.internal.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.predicate.ValuePredicate;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -33,20 +33,20 @@ import java.util.Set;
 class ValueFragmentSet extends EquivalentFragmentSet {
 
     private final Variable var;
-    private final ValuePredicate predicate;
+    private final ValueExecutor.Operation<?, ?> operation;
 
     @Nullable private final VarProperty varProperty;
 
-    ValueFragmentSet(@Nullable VarProperty varProperty, Variable var, ValuePredicate predicate) {
+    ValueFragmentSet(@Nullable VarProperty varProperty, Variable var, ValueExecutor.Operation<?, ?> operation) {
         this.varProperty = varProperty;
         if (var == null) {
             throw new NullPointerException("Null var");
         }
         this.var = var;
-        if (predicate == null) {
-            throw new NullPointerException("Null predicate");
+        if (operation == null) {
+            throw new NullPointerException("Null operation");
         }
-        this.predicate = predicate;
+        this.operation = operation;
     }
 
     Variable var() {
@@ -58,13 +58,13 @@ class ValueFragmentSet extends EquivalentFragmentSet {
         return varProperty;
     }
 
-    ValuePredicate predicate() {
-        return predicate;
+    ValueExecutor.Operation<?, ?> operation() {
+        return operation;
     }
 
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(Fragments.value(varProperty(), var(), predicate()));
+        return ImmutableSet.of(Fragments.value(varProperty(), var(), operation()));
     }
 
     @Override
@@ -76,7 +76,7 @@ class ValueFragmentSet extends EquivalentFragmentSet {
 
         return (Objects.equals(this.varProperty, that.varProperty) &&
                 this.var.equals(that.var()) &&
-                this.predicate.equals(that.predicate()));
+                this.operation.equals(that.operation()));
     }
 
     @Override
@@ -87,7 +87,7 @@ class ValueFragmentSet extends EquivalentFragmentSet {
         h *= 1000003;
         h ^= this.var.hashCode();
         h *= 1000003;
-        h ^= this.predicate.hashCode();
+        h ^= this.operation.hashCode();
         return h;
     }
 }

@@ -36,10 +36,9 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
+import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.predicate.Predicates;
-import grakn.core.graql.query.predicate.ValuePredicate;
 import graql.grammar.GraqlBaseVisitor;
 import graql.grammar.GraqlLexer;
 import graql.grammar.GraqlParser;
@@ -61,7 +60,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -550,7 +548,7 @@ public class Parser extends GraqlBaseVisitor {
             instance = instance.id(visitId(ctx.id()));
 
         } else if (ctx.NEQ() != null) {
-            instance = instance.neq(getVar(ctx.VAR_(1)));
+            instance = instance.not(getVar(ctx.VAR_(1)));
         }
 
         if (ctx.attributes() != null) {
@@ -598,7 +596,7 @@ public class Parser extends GraqlBaseVisitor {
             instance = Graql.var();
         }
 
-        instance = instance.val(visitOperation(ctx.operation()));
+        instance = instance.attribute(new ValueProperty<>(visitOperation(ctx.operation())));
         if (ctx.ISA_() != null) {
             instance = instance.isa(getIsaProperty(ctx.ISA_(), ctx.type()));
         }
@@ -645,7 +643,7 @@ public class Parser extends GraqlBaseVisitor {
                 return new HasAttributeProperty(type, variable);
             }
         } else if (ctx.operation() != null) {
-            Statement value = Graql.var().val(visitOperation(ctx.operation()));
+            Statement value = Graql.var().attribute(new ValueProperty<>(visitOperation(ctx.operation())));
             if (ctx.via() != null) {
                 return new HasAttributeProperty(type, value, Graql.var(getVar(ctx.via().VAR_())));
             } else {
@@ -723,7 +721,7 @@ public class Parser extends GraqlBaseVisitor {
     // ATTRIBUTE OPERATION CONSTRUCTS ==========================================
 
     @Override // TODO: this visitor method should not return a Predicate if we have the right data structure
-    public ValuePredicate visitOperation(GraqlParser.OperationContext ctx) {
+    public ValueProperty.Operation<?> visitOperation(GraqlParser.OperationContext ctx) {
         if (ctx.assignment() != null) {
             return visitAssignment(ctx.assignment());
         } else if (ctx.comparison() != null) {
@@ -735,59 +733,84 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override // TODO: this visitor method should not return a Predicate if we have the right data structure
               //       Graql.eq() should be replaced with an assignment property
-    public ValuePredicate visitAssignment(GraqlParser.AssignmentContext ctx) {
-        return Predicates.eq(visitLiteral(ctx.literal()));
+    public ValueProperty.Operation<?> visitAssignment(GraqlParser.AssignmentContext ctx) {
+        Object value = visitLiteral(ctx.literal());
+
+        if (value instanceof Long) {
+            return new ValueProperty.Operation.Assignment.Number<>((Long) value);
+        } else if (value instanceof Double) {
+            return new ValueProperty.Operation.Assignment.Number<>((Double) value);
+        } else if (value instanceof Boolean) {
+            return new ValueProperty.Operation.Assignment.Boolean((Boolean) value);
+        } else if (value instanceof String) {
+            return new ValueProperty.Operation.Assignment.String((String) value);
+        } else if (value instanceof LocalDateTime) {
+            return new ValueProperty.Operation.Assignment.DateTime((LocalDateTime) value);
+        } else {
+            throw new IllegalArgumentException("Unrecognised Value Assignment: " + ctx.getText());
+        }
     }
 
     @Override
-    public ValuePredicate visitComparison(GraqlParser.ComparisonContext ctx) {
+    public ValueProperty.Operation<?> visitComparison(GraqlParser.ComparisonContext ctx) {
+        String comparatorStr;
+        Object value;
+
         if (ctx.comparator() != null) {
-            return getComparablePredicate(ctx.comparator(), ctx.comparable());
-
+            comparatorStr = ctx.comparator().getText();
         } else if (ctx.CONTAINS() != null) {
-            if (ctx.containable().STRING_() != null) {
-                return Predicates.contains(getString(ctx.containable().STRING_()));
-            } else if (ctx.containable().VAR_() != null) {
-                return Predicates.contains(new Statement(getVar(ctx.containable().VAR_())));
-            } else {
-                throw new IllegalArgumentException("Unrecognised CONTAINS Comparison: " + ctx.getText());
-            }
+            comparatorStr = ctx.CONTAINS().getText();
         } else if (ctx.LIKE() != null) {
-            return Predicates.regex(visitRegex(ctx.regex()));
+            comparatorStr = ctx.LIKE().getText();
         } else {
-            throw new IllegalArgumentException("Unrecognised Comparison: " + ctx.getText());
-        }
-    }
-
-    private ValuePredicate getComparablePredicate(GraqlParser.ComparatorContext comparator, GraqlParser.ComparableContext comparable) {
-        Object literal = null;
-        Statement variable = null;
-        if (comparable.literal() != null) {
-            literal = visitLiteral(comparable.literal());
-        } else if (comparable.VAR_() != null) {
-            variable = new Statement(getVar(comparable.VAR_()));
-        } else {
-            throw new IllegalArgumentException("Unrecognised Comparable token: " + comparable.getText());
+            throw new IllegalArgumentException("Unrecognised Value Comparison: " + ctx.getText());
         }
 
-        Query.Comparator operator = Query.Comparator.of(comparator.getText());
+        Query.Comparator comparator = Query.Comparator.of(comparatorStr);
+        if (comparator == null) {
+            throw new IllegalArgumentException("Unrecognised Value Comparator: " + comparatorStr);
+        }
 
+        if (ctx.comparable() != null) {
+            if (ctx.comparable().literal() != null) {
+                value = visitLiteral(ctx.comparable().literal());
+            } else if (ctx.comparable().VAR_() != null) {
+                value = new Statement(getVar(ctx.comparable().VAR_()));
+            } else {
+                throw new IllegalArgumentException("Unrecognised Comparable value: " + ctx.comparable().getText());
+            }
+        } else if (ctx.containable() != null) {
+            if (ctx.containable().STRING_() != null) {
+                value = getString(ctx.containable().STRING_());
+            } else if (ctx.containable().VAR_() != null) {
+                value = new Statement(getVar(ctx.containable().VAR_()));
+            } else {
+                throw new IllegalArgumentException("Unrecognised Containable value: " + ctx.containable().getText());
+            }
+        } else if (ctx.regex() != null) {
+            value = visitRegex(ctx.regex());
+        } else {
+            throw new IllegalArgumentException("Unrecognised Value Comparison: " + ctx.getText());
+        }
 
-        switch (Objects.requireNonNull(operator)){
-            case EQV:
-                return literal != null ? Predicates.eq(literal) : Predicates.eq(variable);
-            case NEQV:
-                return literal != null ? Predicates.neq(literal) : Predicates.neq(variable);
-            case GT:
-                return literal != null ? Predicates.gt(literal) : Predicates.gt(variable);
-            case GTE:
-                return literal != null ? Predicates.gte(literal) : Predicates.gte(variable);
-            case LT:
-                return literal != null ? Predicates.lt(literal) : Predicates.lt(variable);
-            case LTE:
-                return literal != null ? Predicates.lte(literal) : Predicates.lte(variable);
-            default:
-                throw new IllegalArgumentException("Unrecognised Comparison Comparator: " + comparator.getText());
+        if (value instanceof Integer) {
+            return new ValueProperty.Operation.Comparison.Number<>(comparator, (Integer) value);
+        } else if (value instanceof Long) {
+            return new ValueProperty.Operation.Comparison.Number<>(comparator, (Long) value);
+        } else if (value instanceof Float) {
+            return new ValueProperty.Operation.Comparison.Number<>(comparator, (Float) value);
+        } else if (value instanceof Double) {
+            return new ValueProperty.Operation.Comparison.Number<>(comparator, (Double) value);
+        } else if (value instanceof Boolean) {
+            return new ValueProperty.Operation.Comparison.Boolean(comparator, (Boolean) value);
+        } else if (value instanceof String) {
+            return new ValueProperty.Operation.Comparison.String(comparator, (String) value);
+        } else if (value instanceof LocalDateTime) {
+            return new ValueProperty.Operation.Comparison.DateTime(comparator, (LocalDateTime) value);
+        } else if (value instanceof Statement) {
+            return new ValueProperty.Operation.Comparison.Variable(comparator, (Statement) value);
+        } else {
+            throw new IllegalArgumentException("Unrecognised Value Assignment: " + ctx.getText());
         }
     }
 
@@ -826,7 +849,7 @@ public class Parser extends GraqlBaseVisitor {
             return getInteger(ctx.INTEGER_());
 
         } else if (ctx.REAL_() != null) {
-            return Double.valueOf(ctx.REAL_().getText());
+            return getReal(ctx.REAL_());
 
         } else if (ctx.BOOLEAN_() != null) {
             return getBoolean(ctx.BOOLEAN_());
@@ -853,7 +876,11 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     private long getInteger(TerminalNode integer) {
-        return Long.parseLong(integer.getText());
+        return java.lang.Long.parseLong(integer.getText());
+    }
+
+    private double getReal(TerminalNode real) {
+        return Double.valueOf(real.getText());
     }
 
     private boolean getBoolean(TerminalNode bool) {

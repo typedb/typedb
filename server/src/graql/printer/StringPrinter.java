@@ -28,7 +28,6 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.util.StringUtil;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -65,7 +64,7 @@ class StringPrinter extends Printer<StringBuilder> {
 
         // Display values for resources and ids for everything else
         if (concept.isAttribute()) {
-            output.append(StringUtil.valueToString(concept.asAttribute().value()));
+            output.append(graql.util.StringUtil.valueToString(concept.asAttribute().value()));
         } else if (concept.isSchemaConcept()) {
             SchemaConcept ontoConcept = concept.asSchemaConcept();
             output.append(colorKeyword(Query.Property.TYPE.toString()))
@@ -128,7 +127,7 @@ class StringPrinter extends Printer<StringBuilder> {
         if (concept.isThing() && attributeTypes.length > 0) {
             concept.asThing().attributes(attributeTypes).forEach(resource -> {
                 String attributeType = colorType(resource.type());
-                String value = StringUtil.valueToString(resource.value());
+                String value = graql.util.StringUtil.valueToString(resource.value());
                 output.append(Query.Char.SPACE).append(colorKeyword(Query.Property.HAS.toString())).append(Query.Char.SPACE)
                         .append(attributeType).append(Query.Char.SPACE).append(value);
             });

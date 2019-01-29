@@ -24,6 +24,7 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.property.AbstractProperty;
+import grakn.core.graql.query.pattern.property.AttributeProperties;
 import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
@@ -37,14 +38,11 @@ import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.SubProperty;
 import grakn.core.graql.query.pattern.property.ThenProperty;
 import grakn.core.graql.query.pattern.property.TypeProperty;
-import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.property.WhenProperty;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementAttribute;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementRelation;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementThing;
-import grakn.core.graql.query.predicate.Predicates;
-import grakn.core.graql.query.predicate.ValuePredicate;
 import graql.exception.GraqlException;
 import graql.util.StringUtil;
 import org.slf4j.Logger;
@@ -52,6 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -75,7 +74,7 @@ import static java.util.stream.Collectors.toSet;
  * should be set on the inserted concept. In a DeleteQuery, it describes the
  * properties that should be deleted.
  */
-public class Statement implements Pattern {
+public class Statement implements Pattern, AttributeProperties {
 
     protected final Logger LOG = LoggerFactory.getLogger(Statement.class);
     private final Variable var;
@@ -115,7 +114,7 @@ public class Statement implements Pattern {
                 statementClasses.remove(StatementInstance.class);
                 return create(statementClasses.iterator().next(), var, properties);
             } else {
-                throw new IllegalStateException("Not allowed to mix Properties for different Instance stateents");
+                throw new IllegalStateException("Not allowed to mix Properties for different Instance statements");
             }
         } else if (statementClasses.size() == 1) {
             return create(statementClasses.iterator().next(), var, properties);
@@ -376,54 +375,84 @@ public class Statement implements Pattern {
         return StatementInstance.create(this, property);
     }
 
-    /**
-     * the variable must have a resource of the given type with an exact matching value
-     *
-     * @param type  a resource type in the schema
-     * @param value a value of a resource
-     * @return this
-     */
     @CheckReturnValue
-    public StatementInstance has(String type, Object value) {
-        return has(type, Predicates.eq(value));
+    public StatementInstance has(String type, int value) {
+        return has(type, Graql.val(value));
     }
 
-    /**
-     * the variable must have a resource of the given type that matches the given atom
-     *
-     * @param type      a resource type in the schema
-     * @param predicate a atom on the value of a resource
-     * @return this
-     */
     @CheckReturnValue
-    public StatementInstance has(String type, ValuePredicate predicate) {
-        return has(type, Graql.var().val(predicate));
+    public StatementInstance has(String type, int value, Statement via) {
+        return has(type, Graql.val(value), via);
     }
 
-    /**
-     * the variable must have an Attribute of the given type that matches the given atom
-     *
-     * @param type      a resource type in the schema
-     * @param attribute a variable pattern representing an Attribute
-     * @return this
-     */
     @CheckReturnValue
-    public StatementInstance has(String type, Statement attribute) {
-        return has(new HasAttributeProperty(type, attribute));
+    public StatementInstance has(String type, long value) {
+        return has(type, Graql.val(value));
     }
 
-    /**
-     * the variable must have an Attribute of the given type that matches attribute.
-     * The Relationship associating the two must match relation.
-     *
-     * @param type         a resource type in the ontology
-     * @param attribute    a variable pattern representing an Attribute
-     * @param relationship a variable pattern representing a Relationship
-     * @return this
-     */
     @CheckReturnValue
-    public StatementInstance has(String type, Statement attribute, Statement relationship) {
-        return has(new HasAttributeProperty(type, attribute, relationship));
+    public StatementInstance has(String type, long value, Statement via) {
+        return has(type, Graql.val(value), via);
+    }
+
+    @CheckReturnValue
+    public StatementInstance has(String type, float value) {
+        return has(type, Graql.val(value));
+    }
+
+    @CheckReturnValue
+    public StatementInstance has(String type, float value, Statement via) {
+        return has(type, Graql.val(value), via);
+    }
+
+    @CheckReturnValue
+    public StatementInstance has(String type, double value) {
+        return has(type, Graql.val(value));
+    }
+
+    @CheckReturnValue
+    public StatementInstance has(String type, double value, Statement via) {
+        return has(type, Graql.val(value), via);
+    }
+
+    @CheckReturnValue
+    public StatementInstance has(String type, boolean value) {
+        return has(type, Graql.val(value));
+    }
+
+    @CheckReturnValue
+    public StatementInstance has(String type, boolean value, Statement via) {
+        return has(type, Graql.val(value), via);
+    }
+
+    @CheckReturnValue
+    public StatementInstance has(String type, String value) {
+        return has(type, Graql.val(value));
+    }
+
+    @CheckReturnValue
+    public StatementInstance has(String type, String value, Statement via) {
+        return has(type, Graql.val(value), via);
+    }
+
+    @CheckReturnValue
+    public StatementInstance has(String type, LocalDateTime value) {
+        return has(type, Graql.val(value));
+    }
+
+    @CheckReturnValue
+    public StatementInstance has(String type, LocalDateTime value, Statement via) {
+        return has(type, Graql.val(value), via);
+    }
+
+    @CheckReturnValue
+    public StatementInstance has(String type, Statement variable) {
+        return has(new HasAttributeProperty(type, variable));
+    }
+
+    @CheckReturnValue
+    public StatementInstance has(String type, Statement variable, Statement via) {
+        return has(new HasAttributeProperty(type, variable, via));
     }
 
     @CheckReturnValue
@@ -449,8 +478,8 @@ public class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public StatementThing neq(String var) {
-        return neq(new Variable(var));
+    public StatementThing not(String var) {
+        return not(new Variable(var));
     }
 
     /**
@@ -460,8 +489,8 @@ public class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public StatementThing neq(Variable var) {
-        return neq(new NeqProperty(new Statement(var)));
+    public StatementThing not(Variable var) {
+        return not(new NeqProperty(new Statement(var)));
     }
 
     /**
@@ -471,7 +500,7 @@ public class Statement implements Pattern {
      * @return this
      */
     @CheckReturnValue
-    public StatementThing neq(NeqProperty property) {
+    public StatementThing not(NeqProperty property) {
         return StatementThing.create(this, property);
     }
 
@@ -554,97 +583,12 @@ public class Statement implements Pattern {
         return StatementRelation.create(this, property);
     }
 
-    // ATTRIBUTE STATEMENT PROPERTIES ------------------------------------------
+    // ATTRIBUTE STATEMENT PROPERTIES
 
-    @CheckReturnValue
-    public StatementAttribute val(Object value) {
-        return val(Predicates.eq(value));
+    public StatementInstance.StatementAttribute attribute(VarProperty property) {
+        return StatementInstance.StatementAttribute.create(this, property);
     }
 
-    @CheckReturnValue
-    public StatementAttribute val(ValuePredicate predicate) {
-        return val(new ValueProperty(predicate));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute val(ValueProperty property) {
-        return StatementAttribute.create(this, property);
-    }
-
-    @CheckReturnValue
-    public StatementAttribute eqv(Object value) {
-        return val(new ValueProperty(Predicates.eq(value)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute eqv(Statement variable) {
-        return val(new ValueProperty(Predicates.eq(variable)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute neqv(Object value) {
-        return val(new ValueProperty(Predicates.neq(value)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute neqv(Statement variable) {
-        return val(new ValueProperty(Predicates.neq(variable)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute gt(Object value) {
-        return val(new ValueProperty(Predicates.gt(value)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute gt(Statement variable) {
-        return val(new ValueProperty(Predicates.gt(variable)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute gte(Object value) {
-        return val(new ValueProperty(Predicates.gte(value)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute gte(Statement variable) {
-        return val(new ValueProperty(Predicates.gte(variable)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute lt(Object value) {
-        return val(new ValueProperty(Predicates.lt(value)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute lt(Statement variable) {
-        return val(new ValueProperty(Predicates.lt(variable)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute lte(Object value) {
-        return val(new ValueProperty(Predicates.lte(value)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute lte(Statement variable) {
-        return val(new ValueProperty(Predicates.lte(variable)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute contains(String value) {
-        return val(new ValueProperty(Predicates.contains(value)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute contains(Statement variable) {
-        return val(new ValueProperty(Predicates.contains(variable)));
-    }
-
-    @CheckReturnValue
-    public StatementAttribute like(String value) {
-        return val(new ValueProperty(Predicates.regex(value)));
-    }
 
     // GENERAL STATEMENT PROPERTIES ============================================
 
@@ -775,6 +719,9 @@ public class Statement implements Pattern {
     }
 
     void validateNoConflictOrThrow(VarProperty property) {
+        if (property == null) {
+            throw new NullPointerException("VarProperty is null");
+        }
         if (property.isUnique()) {
             getProperty(property.getClass()).filter(other -> !other.equals(property)).ifPresent(other -> {
                 throw GraqlException.conflictingProperties(this.getPrintableName(), property.toString(), other.toString());

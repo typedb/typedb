@@ -18,9 +18,10 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
+import grakn.core.graql.internal.executor.property.ValueExecutor;
+import grakn.core.graql.internal.executor.property.ValueExecutor.Operation.Comparison;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -28,32 +29,30 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
-
-import static grakn.core.common.util.CommonUtil.optionalToStream;
-import static java.util.stream.Collectors.toSet;
 
 public class ValueFragment extends Fragment {
 
     private final VarProperty varProperty;
     private final Variable start;
-    private final ValuePredicate predicate;
+    private final ValueExecutor.Operation<?, ?> operation;
 
-    ValueFragment(@Nullable VarProperty varProperty, Variable start, ValuePredicate predicate) {
+    ValueFragment(@Nullable VarProperty varProperty, Variable start, ValueExecutor.Operation<?, ?> operation) {
         this.varProperty = varProperty;
         if (start == null) {
             throw new NullPointerException("Null start");
         }
         this.start = start;
-        if (predicate == null) {
-            throw new NullPointerException("Null predicate");
+        if (operation == null) {
+            throw new NullPointerException("Null operation");
         }
-        this.predicate = predicate;
+        this.operation = operation;
     }
 
-    ValuePredicate predicate() {
-        return predicate;
+    private ValueExecutor.Operation<?, ?> predicate() {
+        return operation;
     }
 
     @Nullable
@@ -72,7 +71,7 @@ public class ValueFragment extends Fragment {
             GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars
     ) {
 
-        return predicate().applyPredicate(traversal);
+        return predicate().apply(traversal);
     }
 
     @Override
@@ -82,7 +81,7 @@ public class ValueFragment extends Fragment {
 
     @Override
     public double internalFragmentCost() {
-        if (predicate().isSpecific()) {
+        if (predicate().isValueEquality()) {
             return COST_NODE_INDEX_VALUE;
         } else {
             // Assume approximately half of values will satisfy a filter
@@ -92,12 +91,16 @@ public class ValueFragment extends Fragment {
 
     @Override
     public boolean hasFixedFragmentCost() {
-        return predicate().isSpecific() && dependencies().isEmpty();
+        return predicate().isValueEquality() && dependencies().isEmpty();
     }
 
     @Override
     public Set<Variable> dependencies() {
-        return optionalToStream(predicate().getInnerVar()).map(statement -> statement.var()).collect(toSet());
+        if (operation instanceof Comparison.Variable) {
+            return Collections.singleton(((Comparison.Variable) operation).value().var());
+        } else {
+            return Collections.emptySet();
+        }
     }
 
     @Override
@@ -109,7 +112,7 @@ public class ValueFragment extends Fragment {
 
         return (Objects.equals(this.varProperty, that.varProperty) &&
                 this.start.equals(that.start()) &&
-                this.predicate.equals(that.predicate()));
+                this.operation.equals(that.predicate()));
     }
 
     @Override
@@ -120,7 +123,7 @@ public class ValueFragment extends Fragment {
         h *= 1000003;
         h ^= this.start.hashCode();
         h *= 1000003;
-        h ^= this.predicate.hashCode();
+        h ^= this.operation.hashCode();
         return h;
     }
 }

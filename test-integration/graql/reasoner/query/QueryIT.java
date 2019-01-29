@@ -353,7 +353,7 @@ public class QueryIT {
         return Graql.and(vars);
     }
 
-    private static Concept getConcept(TransactionOLTP tx, String typeLabel, Object val){
+    private static Concept getConcept(TransactionOLTP tx, String typeLabel, String val){
         return tx.stream(Graql.match((Pattern) Graql.var("x").has(typeLabel, val)).get("x"))
                 .map(ans -> ans.get("x")).findAny().get();
     }

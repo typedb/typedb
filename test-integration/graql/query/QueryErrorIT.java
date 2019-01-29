@@ -27,9 +27,9 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -50,7 +50,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.stream.Stream;
 
-import static grakn.core.common.exception.ErrorMessage.INVALID_VALUE;
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static graql.exception.ErrorMessage.NO_PATTERNS;
@@ -180,8 +179,8 @@ public class QueryErrorIT {
     public void testExceptionWhenNullValue() {
         exception.expect(NullPointerException.class);
         //noinspection ResultOfMethodCallIgnored
-        ValuePredicate v = null;
-        Statement s = var("x").val(v);
+        ValueProperty property = null;
+        Statement s = var("x").attribute(property);
     }
 
     @Test
@@ -237,13 +236,6 @@ public class QueryErrorIT {
 
         MatchClause match = Graql.match(var("x").isa("movie"));
         Stream<Concept> concepts = tx.stream(match.get("y")).map(ans -> ans.get("y"));
-    }
-
-    @Test
-    public void whenUsingInvalidResourceValue_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(INVALID_VALUE.getMessage(tx.getClass()));
-        Graql.match(var("x").val(tx));
     }
 
     @Test
