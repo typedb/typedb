@@ -273,7 +273,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
             Operation that = (Operation) o;
             return (comparator().equals(that.comparator()) &&
-                    persistedValue().equals(that.persistedValue()));
+                    value().equals(that.value()));
         }
 
         @Override
@@ -282,7 +282,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
             h *= 1000003;
             h ^= this.comparator().hashCode();
             h *= 1000003;
-            h ^= this.persistedValue().hashCode();
+            h ^= this.value().hashCode();
             return h;
         }
 
@@ -366,6 +366,9 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 } else if (comparison instanceof ValueProperty.Operation.Comparison.DateTime) {
                     return new Comparison.DateTime(comparator, ((ValueProperty.Operation.Comparison.DateTime) comparison).value());
+
+                } else if (comparison instanceof ValueProperty.Operation.Comparison.Variable) {
+                    return new Comparison.Variable(comparator, ((ValueProperty.Operation.Comparison.Variable) comparison).value());
 
                 } else {
                     throw new UnsupportedOperationException("Unsupported Value Comparison: " + comparison.getClass());
