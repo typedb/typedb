@@ -736,8 +736,12 @@ public class Parser extends GraqlBaseVisitor {
     public ValueProperty.Operation<?> visitAssignment(GraqlParser.AssignmentContext ctx) {
         Object value = visitLiteral(ctx.literal());
 
-        if (value instanceof Long) {
+        if (value instanceof Integer) {
+            return new ValueProperty.Operation.Assignment.Number<>((Integer) value);
+        } else if (value instanceof Long) {
             return new ValueProperty.Operation.Assignment.Number<>((Long) value);
+        } else if (value instanceof Float) {
+            return new ValueProperty.Operation.Assignment.Number<>((Float) value);
         } else if (value instanceof Double) {
             return new ValueProperty.Operation.Assignment.Number<>((Double) value);
         } else if (value instanceof Boolean) {
@@ -846,7 +850,11 @@ public class Parser extends GraqlBaseVisitor {
             return getString(ctx.STRING_());
 
         } else if (ctx.INTEGER_() != null) {
-            return getInteger(ctx.INTEGER_());
+            try {
+                return getInteger(ctx.INTEGER_());
+            } catch (NumberFormatException e) {
+                return getLong(ctx.INTEGER_());
+            }
 
         } else if (ctx.REAL_() != null) {
             return getReal(ctx.REAL_());
@@ -875,8 +883,12 @@ public class Parser extends GraqlBaseVisitor {
         return string.getText().substring(1, string.getText().length() - 1);
     }
 
-    private long getInteger(TerminalNode integer) {
-        return java.lang.Long.parseLong(integer.getText());
+    private int getInteger(TerminalNode number) {
+        return Integer.parseInt(number.getText());
+    }
+
+    private long getLong(TerminalNode number) {
+        return Long.parseLong(number.getText());
     }
 
     private double getReal(TerminalNode real) {

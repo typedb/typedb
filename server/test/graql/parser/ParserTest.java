@@ -302,7 +302,7 @@ public class ParserTest {
     }
 
     @Test
-    public void testLongComparatorQuery() throws ParseException {
+    public void testLongComparatorQuery() {
         String query = "match $x isa movie, has tmdb-vote-count <= 400; get;";
         GetQuery parsed = parse(query);
         GetQuery expected = match(var("x").isa("movie").has("tmdb-vote-count", lte(400))).get();
