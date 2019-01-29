@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 
 /**
  * Caches rules applicable to schema concepts and their conversion to InferenceRule object (parsing is expensive when large number of rules present).
- * NB: non-committed rules are alse cached.
+ * NB: non-committed rules are also cached.
  */
 public class RuleCache {
 

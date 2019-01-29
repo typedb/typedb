@@ -21,6 +21,8 @@ package grakn.core.graql.internal.reasoner.rule;
 import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Rule;
@@ -33,8 +35,8 @@ import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.utils.TarjanSCC;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -59,8 +61,8 @@ public class RuleUtils {
      * @param graph of interest
      * @return set of inference rule contained in the graph
      */
-    public static Stream<Rule> getRules(Transaction graph) {
-        return ((TransactionOLTP) graph).ruleCache().getRules();
+    public static Stream<Rule> getRules(TransactionOLTP graph) {
+        return graph.ruleCache().getRules();
     }
 
     /**
@@ -68,11 +70,11 @@ public class RuleUtils {
      * @param graph of interest
      * @return rules containing specified type in the head
      */
-    public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, Transaction graph){
-        return ((TransactionOLTP) graph).ruleCache().getRulesWithType(type, direct);
+    public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, TransactionOLTP graph){
+        return graph.ruleCache().getRulesWithType(type, direct);
     }
 
-    private static HashMultimap<Type,Type> typeGraph(Set<Rule> rules){
+    private static HashMultimap<Type, Type> typeGraph(Set<Rule> rules){
         HashMultimap<Type, Type> graph = HashMultimap.create();
         rules
                 .forEach(rule ->
@@ -104,6 +106,19 @@ public class RuleUtils {
                 .filter(Concept::isType)
                 .map(Concept::asType)
                 .collect(toSet());
+    }
+
+
+    public static Stream<InferenceRule> stratifyRules(Set<InferenceRule> rules){
+        Multimap<Type, InferenceRule> typeMap = HashMultimap.create();
+        rules.forEach(r -> r.getRule().thenTypes().flatMap(Type::sups).forEach(t -> typeMap.put(t, r)));
+        HashMultimap<Type, Type> typeGraph = typeGraph(rules.stream().map(InferenceRule::getRule).collect(toSet()));
+        List<Set<Type>> scc = new TarjanSCC<>(typeGraph).getSCC();
+        return Lists.reverse(scc).stream()
+                .flatMap(strata -> strata.stream()
+                        .flatMap(t -> typeMap.get(t).stream())
+                        .sorted(Comparator.comparing(r -> -r.resolutionPriority()))
+                );
     }
 
     /**

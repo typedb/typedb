@@ -19,23 +19,25 @@
 package grakn.core.server.kb;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -49,11 +51,11 @@ import org.junit.rules.ExpectedException;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class RuleTest {
     @org.junit.Rule
@@ -63,7 +65,7 @@ public class RuleTest {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private Session session;
+    private SessionImpl session;
 
     @Before
     public void setUp(){
@@ -76,7 +78,7 @@ public class RuleTest {
     }
     
     @Test
-    public void whenCreatingRulesWithNullValues_Throw() throws Exception {
+    public void whenCreatingRulesWithNullValues_Throw() throws NullPointerException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             expectedException.expect(NullPointerException.class);
             tx.putRule("A Thing", null, null);
@@ -483,6 +485,47 @@ public class RuleTest {
                     containsString(q.toString()),
                     containsString(r.toString()))
             );
+            tx.commit();
+        }
+    }
+
+    @Test
+    public void whenAddingAddingStratifiableRules_correctStratificationIsProduced(){
+        List<Rule> expected1;
+        List<Rule> expected2;
+        try(TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+            EntityType p = tx.putEntityType("p");
+            EntityType q = tx.putEntityType("q");
+            EntityType r = tx.putEntityType("r");
+            EntityType s = tx.putEntityType("s");
+            EntityType t = tx.putEntityType("t");
+            EntityType u = tx.putEntityType("u");
+
+            Rule Rp1 = tx.putRule("Rp1",
+                    Graql.parsePattern("{$x isa q; not{ $x isa r;};};"),
+                    Graql.parsePattern("$x isa p;"));
+
+            Rule Rp2 = tx.putRule("Rp2",
+                    Graql.parsePattern("{$x isa q; not{ $x isa t;};};"),
+                    Graql.parsePattern("$x isa p;"));
+
+            Rule Rr = tx.putRule("Rr",
+                    Graql.parsePattern("{$x isa s; not{ $x isa t;};};"),
+                    Graql.parsePattern("$x isa r;"));
+
+            Rule Rs = tx.putRule("Rs",
+                    Graql.parsePattern("$x isa u;"),
+                    Graql.parsePattern("$x isa s;"));
+            expected1 = Lists.newArrayList(Rs, Rr, Rp1, Rp2);
+            expected2 = Lists.newArrayList(Rs, Rr, Rp2, Rp1);
+
+            tx.commit();
+        }
+        try(TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+            List<Rule> rules = RuleUtils.stratifyRules(RuleUtils.getRules(tx).map(rule -> new InferenceRule(rule, tx)).collect(Collectors.toSet()))
+                    .map(InferenceRule::getRule).collect(Collectors.toList());
+            assertTrue(rules.equals(expected1) || rules.equals(expected2));
+            expected1.forEach(Concept::delete);
             tx.commit();
         }
     }
