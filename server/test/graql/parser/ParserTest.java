@@ -135,12 +135,12 @@ public class ParserTest {
         GetQuery expected = match(
                 var("x").isa("movie").has("title", var("t")),
                 or(
-                        var("t").eq("Apocalypse Now"),
+                        var("t").val("Apocalypse Now"),
                         and(
                                 var("t").lt("Juno"),
                                 var("t").gt("Godfather")
                         ),
-                        var("t").eq("Spy")
+                        var("t").val("Spy")
                 ),
                 var("t").neq("Apocalypse Now")
         ).get();
