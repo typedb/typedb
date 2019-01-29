@@ -60,8 +60,8 @@ import java.util.UUID;
  */
 public class GraknTestServer extends ExternalResource {
 
-    private final static String SERVER_CONFIG_PATH = "server/conf/grakn.properties";
-    private final static Path CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
+    private String SERVER_CONFIG_PATH;
+    private Path CASSANDRA_CONFIG_PATH;
     private Config serverConfig;
     private Path dataDirTmp;
     private Server graknServer;
@@ -75,7 +75,13 @@ public class GraknTestServer extends ExternalResource {
     private SessionStore sessionStore;
 
     public GraknTestServer() {
+        this(Paths.get("server/conf/grakn.properties"), Paths.get("test-integration/resources/cassandra-embedded.yaml"));
+    }
+
+    public GraknTestServer(Path serverConfig, Path cassandraConfig) {
         System.setProperty("java.security.manager", "nottodaypotato");
+        this.SERVER_CONFIG_PATH = serverConfig.toAbsolutePath().toString();
+        this.CASSANDRA_CONFIG_PATH = cassandraConfig;
     }
 
     @Override
