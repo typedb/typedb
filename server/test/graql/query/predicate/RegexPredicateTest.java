@@ -20,6 +20,7 @@ package grakn.core.graql.query.predicate;
 
 import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.property.ValueProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.junit.Test;
 
@@ -68,7 +69,7 @@ public class RegexPredicateTest {
 
     @Test
     public void regexPredicateToStringDoesNotEscapeMostThings() {
-        ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
+        ValueProperty.Operation.Comparison.String predicate = new ValueProperty.Operation
                 .Comparison.String(Query.Comparator.LIKE, "don't escape these: \\d, \", \n ok");
 
         assertEquals(Query.Comparator.LIKE + " \"don't escape these: \\d, \", \n ok\"", predicate.toString());
@@ -76,7 +77,7 @@ public class RegexPredicateTest {
 
     @Test
     public void regexPredicateToStringEscapesForwardSlashes() {
-        ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
+        ValueProperty.Operation.Comparison.String predicate = new ValueProperty.Operation
                 .Comparison.String(Query.Comparator.LIKE, "escape this: / ok");
 
         assertEquals(Query.Comparator.LIKE + " \"escape this: \\/ ok\"", predicate.toString());

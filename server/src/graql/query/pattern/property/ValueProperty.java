@@ -239,7 +239,7 @@ public class ValueProperty<T> extends VarProperty {
 
                     operation.append(comparator()).append(Query.Char.SPACE);
                     if (comparator().equals(Query.Comparator.LIKE)) {
-                        operation.append(StringUtil.quoteString(value().replaceAll("/", "\\\\/")));
+                        operation.append("\"").append(value().replaceAll("/", "\\\\/")).append("\"");
                     } else {
                         operation.append(StringUtil.quoteString(value()));
                     }
