@@ -240,6 +240,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     private Stream<Pair<InferenceRule, Unifier>> getRuleStream() {
+
+        //TODO stratify rules
         return getAtom().getApplicableRules()
                 .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
                 .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));

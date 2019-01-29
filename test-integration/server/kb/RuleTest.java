@@ -18,6 +18,8 @@
 
 package grakn.core.server.kb;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.EntityType;
@@ -33,6 +35,7 @@ import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -45,7 +48,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
 
@@ -430,7 +436,7 @@ public class RuleTest {
     }
 
     @Test
-    public void whenAddingARuleWithNegationCycle_Throw() throws InvalidKBException{
+    public void whenAddingASimpleRuleWithNegationCycle_Throw() throws InvalidKBException{
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             Pattern when = Graql.parsePattern(
                 "{" +
@@ -441,12 +447,42 @@ public class RuleTest {
             Pattern then = Graql.parsePattern("$x isa someEntity;");
 
             initTx(tx);
-            Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
+            tx.putRule(UUID.randomUUID().toString(), when, then);
             List<Set<Type>> cycles = new ArrayList<>();
             cycles.add(Collections.singleton(tx.getEntityType("someEntity")));
 
             expectedException.expect(InvalidKBException.class);
             expectedException.expectMessage(ErrorMessage.VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE.getMessage(cycles));
+            tx.commit();
+        }
+    }
+
+    @Test
+    public void whenAddingNonStratifiableRules_Throw() throws InvalidKBException{
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            EntityType p = tx.putEntityType("p");
+            EntityType q = tx.putEntityType("q");
+            EntityType r = tx.putEntityType("r");
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x isa p;"),
+                    Graql.parsePattern("$x isa q;"));
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x isa q;"),
+                    Graql.parsePattern("$x isa r;"));
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("{$x isa entity;not{ $x isa r;};};"),
+                    Graql.parsePattern("$x isa p;"));
+
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(allOf(
+                    containsString("The rule graph is not stratifiable"),
+                    containsString(p.toString()),
+                    containsString(q.toString()),
+                    containsString(r.toString()))
+            );
             tx.commit();
         }
     }

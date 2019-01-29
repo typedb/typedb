@@ -33,22 +33,13 @@ import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.utils.TarjanSCC;
-import grakn.core.graql.query.pattern.Negation;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
-
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -86,9 +77,13 @@ public class RuleUtils {
         rules
                 .forEach(rule ->
                         rule.whenTypes()
+                                .flatMap(Type::subs)
+                                .filter(t -> !t.isAbstract())
                                 .filter(whenType -> !Schema.MetaSchema.isMetaLabel(whenType.label()))
                                 .forEach(whenType ->
                                         rule.thenTypes()
+                                                .flatMap(Type::sups)
+                                                .filter(t -> !t.isAbstract())
                                                 .forEach(thenType -> graph.put(whenType, thenType))
                         )
                 );
