@@ -57,20 +57,15 @@ public class RuleCache {
     /**
      * @param type rule head's type
      * @param rule to be appended
-     * @return updated entry value
      */
-    public Set<Rule> updateRules(Type type, Rule rule) {
+    public void updateRules(Type type, Rule rule) {
         Set<Rule> match = ruleMap.get(type);
         if (match.isEmpty()) {
-            Set<Rule> rules = Sets.newHashSet(rule);
             getTypes(type, false).stream()
                     .flatMap(SchemaConcept::thenRules)
                     .forEach(r -> ruleMap.put(type, r));
-            return rules;
         }
         ruleMap.put(type, rule);
-        match.add(rule);
-        return match;
     }
 
     /**
@@ -128,7 +123,7 @@ public class RuleCache {
     /**
      * cleans cache contents
      */
-    public void closeTx() {
+    public void clear() {
         ruleMap.clear();
         ruleConversionMap.clear();
     }

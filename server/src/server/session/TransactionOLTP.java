@@ -795,7 +795,7 @@ public class TransactionOLTP implements Transaction {
             //Ignored for Tinker
         } finally {
             cache().closeTx(closedReason);
-            ruleCache().closeTx();
+            ruleCache().clear();
         }
     }
 
@@ -814,7 +814,6 @@ public class TransactionOLTP implements Transaction {
         if (logsExist) {
             return Optional.of(CommitLog.create(keyspace(), newInstances, newAttributes));
         }
-
 
         return Optional.empty();
     }

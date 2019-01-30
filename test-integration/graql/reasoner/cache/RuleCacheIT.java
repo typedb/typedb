@@ -18,44 +18,32 @@
 
 package grakn.core.graql.reasoner.cache;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.session.cache.RuleCache;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
+import static grakn.core.graql.query.Graql.type;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -93,95 +81,67 @@ public class RuleCacheIT {
         ruleApplicabilitySession.close();
     }
 
-    private static ReasonerAtomicQuery recordQuery;
-    private static ReasonerAtomicQuery retrieveQuery;
-    private static ConceptMap singleAnswer;
-    private static Unifier retrieveToRecordUnifier;
-    private static Unifier recordToRetrieveUnifier;
-    private TransactionOLTP tx;
-
-
-    @Before
-    public void onStartup(){
-        tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
-        String recordPatternString = "{ (someRole: $x, subRole: $y) isa reifiable-relation; };";
-        String retrievePatternString = "{ (someRole: $p1, subRole: $p2) isa reifiable-relation; };";
-        Conjunction<Statement> recordPattern = conjunction(recordPatternString);
-        Conjunction<Statement> retrievePattern = conjunction(retrievePatternString);
-        recordQuery = ReasonerQueries.atomic(recordPattern, tx);
-        retrieveQuery = ReasonerQueries.atomic(retrievePattern, tx);
-        retrieveToRecordUnifier = retrieveQuery.getMultiUnifier(recordQuery).getUnifier();
-        recordToRetrieveUnifier = retrieveToRecordUnifier.inverse();
-
-        Entity entity = tx.getEntityType("anotherNoRoleEntity").instances().findFirst().orElse(null);
-        singleAnswer = new ConceptMap(
-                ImmutableMap.of(
-                        new Variable("x"), entity,
-                        new Variable("y"), entity
-                ));
-    }
-
-    @After
-    public void closeTx() {
-        tx.close();
-    }
-
-
     @Test
     public void whenGettingRulesWithType_correctRulesAreObtained(){
-        RuleCache ruleCache = tx.ruleCache();
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+            RuleCache ruleCache = tx.ruleCache();
 
-        Type reifyingRelation = tx.getType(Label.of("reifying-relation"));
-        Type ternary = tx.getType(Label.of("ternary"));
-        Set<Rule> rulesWithBinary = ruleCache.getRulesWithType(reifyingRelation).collect(toSet());
-        Set<Rule> rulesWithTernary = ruleCache.getRulesWithType(ternary).collect(toSet());
+            Type reifyingRelation = tx.getType(Label.of("reifying-relation"));
+            Type ternary = tx.getType(Label.of("ternary"));
+            Set<Rule> rulesWithBinary = ruleCache.getRulesWithType(reifyingRelation).collect(toSet());
+            Set<Rule> rulesWithTernary = ruleCache.getRulesWithType(ternary).collect(toSet());
 
-        assertEquals(2, rulesWithBinary.size());
-        assertEquals(2, rulesWithTernary.size());
+            assertEquals(2, rulesWithBinary.size());
+            assertEquals(2, rulesWithTernary.size());
 
-        rulesWithBinary.stream()
-                .map(r -> ruleCache.getRule(r, () -> new InferenceRule(r, tx)))
-                .forEach(r -> assertEquals(reifyingRelation, r.getHead().getAtom().getSchemaConcept()));
-        rulesWithTernary.stream()
-                .map(r -> ruleCache.getRule(r, () -> new InferenceRule(r, tx)))
-                .forEach(r -> assertEquals(ternary, r.getHead().getAtom().getSchemaConcept()));
+            rulesWithBinary.stream()
+                    .map(r -> ruleCache.getRule(r, () -> new InferenceRule(r, tx)))
+                    .forEach(r -> assertEquals(reifyingRelation, r.getHead().getAtom().getSchemaConcept()));
+            rulesWithTernary.stream()
+                    .map(r -> ruleCache.getRule(r, () -> new InferenceRule(r, tx)))
+                    .forEach(r -> assertEquals(ternary, r.getHead().getAtom().getSchemaConcept()));
+        }
     }
 
     @Test
     public void whenAddingARule_cacheContainsUpdatedEntry(){
-        Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
-        Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
-        Rule dummyRule = tx.putRule("dummyRule", when, then);
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+            Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
+            Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
+            Rule dummyRule = tx.putRule("dummyRule", when, then);
 
-        Type binary = tx.getType(Label.of("binary"));
-        Set<Rule> cachedRules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
-        assertTrue(cachedRules.contains(dummyRule));
+            Type binary = tx.getType(Label.of("binary"));
+            Set<Rule> cachedRules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
+            assertTrue(cachedRules.contains(dummyRule));
+        }
     }
 
     @Test
     public void whenAddingARuleAfterClosingTx_cacheContainsConsistentEntry(){
-        tx.close();
-        tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
 
-        Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
-        Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
-        Rule dummyRule = tx.putRule("dummyRule", when, then);
+            Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
+            Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
+            Rule dummyRule = tx.putRule("dummyRule", when, then);
 
-        Type binary = tx.getType(Label.of("binary"));
-        Set<Rule> commitedRules = binary.thenRules().collect(Collectors.toSet());
-        Set<Rule> cachedRules = tx.ruleCache().getRulesWithType(binary).collect(toSet());
-        assertEquals(Sets.union(commitedRules, Sets.newHashSet(dummyRule)), cachedRules);
+            Type binary = tx.getType(Label.of("binary"));
+            Set<Rule> commitedRules = binary.thenRules().collect(Collectors.toSet());
+            Set<Rule> cachedRules = tx.ruleCache().getRulesWithType(binary).collect(toSet());
+            assertEquals(Sets.union(commitedRules, Sets.newHashSet(dummyRule)), cachedRules);
+        }
     }
 
-    //TODO: currently we do not acknowledge deletions
-    @Ignore
     @Test
     public void whenDeletingARule_cacheContainsUpdatedEntry(){
-        tx.execute(Graql.<UndefineQuery>parse("undefine $x sub rule label 'rule-0';"));
-
-        Type binary = tx.getType(Label.of("binary"));
-        Set<Rule> rules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
-        assertTrue(rules.isEmpty());
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.undefine(type("rule-0").sub("rule")));
+            tx.commit();
+        }
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+            Type binary = tx.getType(Label.of("binary"));
+            Set<Rule> rules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
+            assertTrue(rules.isEmpty());
+        }
     }
 
 
