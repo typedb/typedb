@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Entity;
@@ -130,8 +131,8 @@ public class RuleCacheIT {
     public void whenGettingRulesWithType_correctRulesAreObtained(){
         RuleCache ruleCache = tx.ruleCache();
 
-        SchemaConcept reifyingRelation = tx.getSchemaConcept(Label.of("reifying-relation"));
-        SchemaConcept ternary = tx.getSchemaConcept(Label.of("ternary"));
+        Type reifyingRelation = tx.getType(Label.of("reifying-relation"));
+        Type ternary = tx.getType(Label.of("ternary"));
         Set<Rule> rulesWithBinary = ruleCache.getRulesWithType(reifyingRelation).collect(toSet());
         Set<Rule> rulesWithTernary = ruleCache.getRulesWithType(ternary).collect(toSet());
 
@@ -152,7 +153,7 @@ public class RuleCacheIT {
         Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
-        SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
+        Type binary = tx.getType(Label.of("binary"));
         Set<Rule> cachedRules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
         assertTrue(cachedRules.contains(dummyRule));
     }
@@ -166,8 +167,7 @@ public class RuleCacheIT {
         Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
-        SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
-
+        Type binary = tx.getType(Label.of("binary"));
         Set<Rule> commitedRules = binary.thenRules().collect(Collectors.toSet());
         Set<Rule> cachedRules = tx.ruleCache().getRulesWithType(binary).collect(toSet());
         assertEquals(Sets.union(commitedRules, Sets.newHashSet(dummyRule)), cachedRules);
@@ -179,7 +179,7 @@ public class RuleCacheIT {
     public void whenDeletingARule_cacheContainsUpdatedEntry(){
         tx.execute(Graql.<UndefineQuery>parse("undefine $x sub rule label 'rule-0';"));
 
-        SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
+        Type binary = tx.getType(Label.of("binary"));
         Set<Rule> rules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
         assertTrue(rules.isEmpty());
     }

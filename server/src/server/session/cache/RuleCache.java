@@ -18,14 +18,14 @@
 
 package grakn.core.server.session.cache;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.session.TransactionOLTP;
-
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
  */
 public class RuleCache {
 
-    private final Map<SchemaConcept, Set<Rule>> ruleMap = new HashMap<>();
+    private final HashMultimap<Type, Rule> ruleMap = HashMultimap.create();
     private final Map<Rule, Object> ruleConversionMap = new HashMap<>();
     private final TransactionOLTP tx;
 
@@ -55,37 +55,43 @@ public class RuleCache {
     }
 
     /**
-     * @param type to be update
+     * @param type rule head's type
      * @param rule to be appended
-     * @return updated entry vlue
+     * @return updated entry value
      */
-    public Set<Rule> updateRules(SchemaConcept type, Rule rule) {
+    public Set<Rule> updateRules(Type type, Rule rule) {
         Set<Rule> match = ruleMap.get(type);
         if (match == null) {
             Set<Rule> rules = Sets.newHashSet(rule);
             getTypes(type, false).stream()
                     .flatMap(SchemaConcept::thenRules)
-                    .forEach(rules::add);
-            ruleMap.put(type, rules);
+                    .forEach(r -> ruleMap.put(type, r));
             return rules;
         }
+        ruleMap.put(type, rule);
         match.add(rule);
         return match;
+    }
+
+    /**
+     *
+     * @param type of interest
+     * @param direct true if type hierarchy shouldn't be included
+     * @return relevant part (direct only or subs) of the type hierarchy of a type
+     */
+    private Set<Type> getTypes(Type type, boolean direct) {
+        Set<Type> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
+        return type.isImplicit() ?
+                types.stream().flatMap(t -> Stream.of(t, tx.getType(Schema.ImplicitType.explicitLabel(t.label())))).collect(Collectors.toSet()) :
+                types;
     }
 
     /**
      * @param type for which rules containing it in the head are sought
      * @return rules containing specified type in the head
      */
-    public Stream<Rule> getRulesWithType(SchemaConcept type) {
+    public Stream<Rule> getRulesWithType(Type type) {
         return getRulesWithType(type, false);
-    }
-
-    private Set<SchemaConcept> getTypes(SchemaConcept type, boolean direct) {
-        Set<SchemaConcept> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
-        return type.isImplicit() ?
-                types.stream().flatMap(t -> Stream.of(t, tx.getSchemaConcept(Schema.ImplicitType.explicitLabel(t.label())))).collect(Collectors.toSet()) :
-                types;
     }
 
     /**
@@ -93,17 +99,15 @@ public class RuleCache {
      * @param direct way of assessing isa edges
      * @return rules containing specified type in the head
      */
-    public Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct) {
+    public Stream<Rule> getRulesWithType(Type type, boolean direct) {
         if (type == null) return getRules();
 
         Set<Rule> match = ruleMap.get(type);
         if (match != null) return match.stream();
 
-        Set<Rule> rules = new HashSet<>();
-        ruleMap.put(type, rules);
         return getTypes(type, direct).stream()
                 .flatMap(SchemaConcept::thenRules)
-                .peek(rules::add);
+                .peek(rule -> ruleMap.put(type, rule));
     }
 
     /**

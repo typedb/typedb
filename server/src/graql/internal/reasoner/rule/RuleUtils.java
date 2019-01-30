@@ -70,7 +70,7 @@ public class RuleUtils {
      * @param graph of interest
      * @return rules containing specified type in the head
      */
-    public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, TransactionOLTP graph){
+    public static Stream<Rule> getRulesWithType(Type type, boolean direct, TransactionOLTP graph){
         return graph.ruleCache().getRulesWithType(type, direct);
     }
 
@@ -90,6 +90,25 @@ public class RuleUtils {
                                                 .getPossibleTypes().stream()
                                                 .flatMap(Type::sups)
                                                 .filter(t -> !t.isAbstract())
+                                                .forEach(thenType -> graph.put(whenType, thenType))
+                                )
+                );
+        return graph;
+    }
+
+    /**
+     * TODO
+     * @param rules
+     * @return
+     */
+    private static HashMultimap<Type,Type> typeGraphFromSimpleRules(Set<Rule> rules){
+        HashMultimap<Type, Type> graph = HashMultimap.create();
+        rules
+                .forEach(rule ->
+                        rule.whenTypes()
+                                .filter(whenType -> !Schema.MetaSchema.isMetaLabel(whenType.label()))
+                                .forEach(whenType ->
+                                        rule.thenTypes()
                                                 .forEach(thenType -> graph.put(whenType, thenType))
                                 )
                 );
@@ -140,8 +159,7 @@ public class RuleUtils {
      * @return true if the rule subgraph is stratifiable (doesn't contain cycles with negation)
      */
     public static List<Set<Type>> negativeCycles(Set<Rule> rules, TransactionOLTP tx){
-        Set<InferenceRule> irs = rules.stream().map(r -> new InferenceRule(r, tx)).collect(toSet());
-        HashMultimap<Type, Type> typeGraph = typeGraph(irs);
+        HashMultimap<Type, Type> typeGraph = typeGraphFromSimpleRules(rules);
         return new TarjanSCC<>(typeGraph).getCycles().stream()
                 .filter(cycle ->
                         cycle.stream().anyMatch(type ->

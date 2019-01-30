@@ -617,6 +617,7 @@ public class TransactionOLTP implements Transaction {
                     .map(type -> this.<SchemaConcept>getSchemaConcept(Label.of(type)))
                     .filter(Objects::nonNull)
                     .filter(Concept::isType)
+                    .map(Concept::asType)
                     .forEach(type -> ruleCache.updateRules(type, rule));
         }
         return rule;
