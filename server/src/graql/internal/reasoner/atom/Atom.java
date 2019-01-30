@@ -341,7 +341,10 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return list of types this atom can take
      */
-    public ImmutableList<SchemaConcept> getPossibleTypes() { return ImmutableList.of(getSchemaConcept());}
+    public ImmutableList<Type> getPossibleTypes() {
+        return (getSchemaConcept() != null && getSchemaConcept().isType())?
+                ImmutableList.of(getSchemaConcept().asType()) :
+                ImmutableList.of();}
 
     /**
      * @param sub partial substitution
