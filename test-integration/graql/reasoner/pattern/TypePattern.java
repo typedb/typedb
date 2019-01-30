@@ -52,14 +52,14 @@ public class TypePattern extends QueryPattern {
                 "{ $x2d isa " + type + "; $x2d contains 'Other'; };",
 
                 //13-14
-                "{ $x3a isa " + anotherType + "; $x3a == '0'; };",
-                "{ $x3b isa " + anotherType + "; $x3b == '1'; };",
+                "{ $x3a isa " + anotherType + "; $x3a == 0; };",
+                "{ $x3b isa " + anotherType + "; $x3b == 1; };",
 
                 //15-18
-                "{ $x4a isa " + anotherType + "; $x4a > '0'; };",
-                "{ $x4b isa " + anotherType + "; $x4b < '1'; };",
-                "{ $x4c isa " + anotherType + "; $x4c >= '0'; };",
-                "{ $x4d isa " + anotherType + "; $x4d <= '1'; };"
+                "{ $x4a isa " + anotherType + "; $x4a > 0; };",
+                "{ $x4b isa " + anotherType + "; $x4b < 1; };",
+                "{ $x4c isa " + anotherType + "; $x4c >= 0; };",
+                "{ $x4d isa " + anotherType + "; $x4d <= 1; };"
 
                 //16-18
                 //TODO

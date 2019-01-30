@@ -242,7 +242,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
             if (this instanceof Comparison.Variable || other instanceof Comparison.Variable) return true;
             //NB this is potentially dangerous e.g. if a user types a long as a char in the query
-            if (!this.value().getClass().equals(other.getClass())) return false;
+            if (!this.value().getClass().equals(other.value().getClass())) return false;
 
             return this.value().equals(other.value()) ?
                     (this.signum() * other.signum() > 0 || this.containsEquality() && other.containsEquality()) :
@@ -252,17 +252,17 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         public boolean subsumes(ValueExecutor.Operation<?, ?> other) {
             if (this.comparator().equals(Query.Comparator.LIKE)) {
                 return isCompatibleWithRegex(other);
-            } else if (!other.comparator().equals(Query.Comparator.LIKE)) {
+            } else if (other.comparator().equals(Query.Comparator.LIKE)) {
                 return false;
             }
 
             if (this instanceof Comparison.Variable || other instanceof Comparison.Variable) return true;
             //NB this is potentially dangerous e.g. if a user types a long as a char in the query
-            if (!this.value().getClass().equals(other.getClass())) return false;
+            if (!this.value().getClass().equals(other.value().getClass())) return false;
 
             return ((P<U>) other.predicate()).test(this.persistedValue()) &&
                     (this.value().equals(other.value()) ?
-                            (this.isValueEquality() || !other.isValueEquality()) :
+                            (this.isValueEquality() || this.isValueEquality()==other.isValueEquality()) :
                             (!this.predicate().test((U) other.persistedValue())));
         }
 
