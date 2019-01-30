@@ -239,16 +239,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     private Stream<Pair<InferenceRule, Unifier>> getRuleStream() {
-        Set<InferenceRule> collect = getAtom().getApplicableRules().collect(Collectors.toSet());
-        Set<InferenceRule> collect1 = RuleUtils
-                .stratifyRules(collect)
-                .collect(Collectors.toSet());
-        if(!collect.equals(collect1)){
-            System.out.println();
-            Set<InferenceRule> collect2 = RuleUtils
-                    .stratifyRules(collect)
-                    .collect(Collectors.toSet());
-        }
         return RuleUtils
                 .stratifyRules(getAtom().getApplicableRules().collect(Collectors.toSet()))
                 .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)));
