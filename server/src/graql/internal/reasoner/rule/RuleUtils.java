@@ -74,20 +74,24 @@ public class RuleUtils {
         return graph.ruleCache().getRulesWithType(type, direct);
     }
 
-    private static HashMultimap<Type, Type> typeGraph(Set<Rule> rules){
+    private static HashMultimap<Type, Type> typeGraph(Set<InferenceRule> rules){
         HashMultimap<Type, Type> graph = HashMultimap.create();
         rules
                 .forEach(rule ->
-                        rule.whenTypes()
+                        rule.getBody()
+                                .getAtoms(Atom.class)
+                                .flatMap(at -> at.getPossibleTypes().stream())
                                 .flatMap(Type::subs)
                                 .filter(t -> !t.isAbstract())
                                 .filter(whenType -> !Schema.MetaSchema.isMetaLabel(whenType.label()))
                                 .forEach(whenType ->
-                                        rule.thenTypes()
+                                        rule.getHead()
+                                                .getAtom()
+                                                .getPossibleTypes().stream()
                                                 .flatMap(Type::sups)
                                                 .filter(t -> !t.isAbstract())
                                                 .forEach(thenType -> graph.put(whenType, thenType))
-                        )
+                                )
                 );
         return graph;
     }
@@ -112,7 +116,7 @@ public class RuleUtils {
     public static Stream<InferenceRule> stratifyRules(Set<InferenceRule> rules){
         Multimap<Type, InferenceRule> typeMap = HashMultimap.create();
         rules.forEach(r -> r.getRule().thenTypes().flatMap(Type::sups).forEach(t -> typeMap.put(t, r)));
-        HashMultimap<Type, Type> typeGraph = typeGraph(rules.stream().map(InferenceRule::getRule).collect(toSet()));
+        HashMultimap<Type, Type> typeGraph = typeGraph(rules);
         List<Set<Type>> scc = new TarjanSCC<>(typeGraph).getSCC();
         return Lists.reverse(scc).stream()
                 .flatMap(strata -> strata.stream()
@@ -126,7 +130,7 @@ public class RuleUtils {
      * @return true if the rule subgraph formed from provided rules contains loops
      */
     public static boolean subGraphIsCyclical(Set<InferenceRule> rules){
-        return !new TarjanSCC<>(typeGraph(rules.stream().map(InferenceRule::getRule).collect(toSet())))
+        return !new TarjanSCC<>(typeGraph(rules))
                 .getCycles().isEmpty();
     }
 
@@ -136,7 +140,8 @@ public class RuleUtils {
      * @return true if the rule subgraph is stratifiable (doesn't contain cycles with negation)
      */
     public static List<Set<Type>> negativeCycles(Set<Rule> rules, TransactionOLTP tx){
-        HashMultimap<Type, Type> typeGraph = typeGraph(rules);
+        Set<InferenceRule> irs = rules.stream().map(r -> new InferenceRule(r, tx)).collect(toSet());
+        HashMultimap<Type, Type> typeGraph = typeGraph(irs);
         return new TarjanSCC<>(typeGraph).getCycles().stream()
                 .filter(cycle ->
                         cycle.stream().anyMatch(type ->
