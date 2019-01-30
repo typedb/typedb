@@ -61,7 +61,7 @@ public class RuleCache {
      */
     public Set<Rule> updateRules(Type type, Rule rule) {
         Set<Rule> match = ruleMap.get(type);
-        if (match == null) {
+        if (match.isEmpty()) {
             Set<Rule> rules = Sets.newHashSet(rule);
             getTypes(type, false).stream()
                     .flatMap(SchemaConcept::thenRules)
@@ -103,7 +103,7 @@ public class RuleCache {
         if (type == null) return getRules();
 
         Set<Rule> match = ruleMap.get(type);
-        if (match != null) return match.stream();
+        if (!match.isEmpty()) return match.stream();
 
         return getTypes(type, direct).stream()
                 .flatMap(SchemaConcept::thenRules)

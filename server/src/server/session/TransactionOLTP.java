@@ -764,6 +764,7 @@ public class TransactionOLTP implements Transaction {
             validateGraph();
             commitTransactionInternal();
             cache().writeToGraphCache(true);
+            //TODO update cache here
         } finally {
             closeTransaction(closeMessage);
         }

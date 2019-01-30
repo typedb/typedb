@@ -120,7 +120,7 @@ public class QueryExecutor {
         try {
             if (!infer) {
                 GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
-              return traversal(matchClause.getPatterns().variables(), graqlTraversal);
+                return traversal(matchClause.getPatterns().variables(), graqlTraversal);
             }
 
             Iterator<Conjunction<Pattern>> conjIt = matchClause.getPatterns().getNegationDNF().getPatterns().iterator();

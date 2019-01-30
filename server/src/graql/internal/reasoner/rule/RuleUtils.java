@@ -26,7 +26,6 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
@@ -57,23 +56,6 @@ import static java.util.stream.Collectors.toSet;
  */
 public class RuleUtils {
 
-    /**
-     * @param graph of interest
-     * @return set of inference rule contained in the graph
-     */
-    public static Stream<Rule> getRules(TransactionOLTP graph) {
-        return graph.ruleCache().getRules();
-    }
-
-    /**
-     * @param type for which rules containing it in the head are sought
-     * @param graph of interest
-     * @return rules containing specified type in the head
-     */
-    public static Stream<Rule> getRulesWithType(Type type, boolean direct, TransactionOLTP graph){
-        return graph.ruleCache().getRulesWithType(type, direct);
-    }
-
     private static HashMultimap<Type, Type> typeGraph(Set<InferenceRule> rules){
         HashMultimap<Type, Type> graph = HashMultimap.create();
         rules
@@ -97,11 +79,10 @@ public class RuleUtils {
     }
 
     /**
-     * TODO
-     * @param rules
-     * @return
+     * @param rules to build the type graph from
+     * @return a type graph from possibly uncommited/invalid rules (no mapping to InferenceRule may exist).
      */
-    private static HashMultimap<Type,Type> typeGraphFromSimpleRules(Set<Rule> rules){
+    private static HashMultimap<Type,Type> typeGraphFromUncommitedRules(Set<Rule> rules){
         HashMultimap<Type, Type> graph = HashMultimap.create();
         rules
                 .forEach(rule ->
@@ -159,7 +140,7 @@ public class RuleUtils {
      * @return true if the rule subgraph is stratifiable (doesn't contain cycles with negation)
      */
     public static List<Set<Type>> negativeCycles(Set<Rule> rules, TransactionOLTP tx){
-        HashMultimap<Type, Type> typeGraph = typeGraphFromSimpleRules(rules);
+        HashMultimap<Type, Type> typeGraph = typeGraphFromUncommitedRules(rules);
         return new TarjanSCC<>(typeGraph).getCycles().stream()
                 .filter(cycle ->
                         cycle.stream().anyMatch(type ->

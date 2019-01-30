@@ -522,7 +522,7 @@ public class RuleTest {
             tx.commit();
         }
         try(TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
-            List<Rule> rules = RuleUtils.stratifyRules(RuleUtils.getRules(tx).map(rule -> new InferenceRule(rule, tx)).collect(Collectors.toSet()))
+            List<Rule> rules = RuleUtils.stratifyRules(tx.ruleCache().getRules().map(rule -> new InferenceRule(rule, tx)).collect(Collectors.toSet()))
                     .map(InferenceRule::getRule).collect(Collectors.toList());
             assertTrue(rules.equals(expected1) || rules.equals(expected2));
             expected1.forEach(Concept::delete);

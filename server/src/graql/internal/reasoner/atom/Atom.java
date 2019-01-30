@@ -221,7 +221,7 @@ public abstract class Atom extends AtomicBase {
                 .map(IsaProperty::isExplicit).orElse(false);
 
         return getPossibleTypes().stream()
-                .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
+                .flatMap(type -> tx().ruleCache().getRulesWithType(type, isDirect))
                 .distinct();
     }
 
