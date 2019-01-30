@@ -63,9 +63,11 @@ public class RuleUtils {
                         rule.getBody()
                                 .getAtoms(Atom.class)
                                 .flatMap(at -> at.getPossibleTypes().stream())
-                                .flatMap(Type::subs)
+                                .flatMap(type -> Stream.concat(
+                                        Stream.of(type),
+                                        type.subs().filter(t -> !Schema.MetaSchema.isMetaLabel(t.label())))
+                                )
                                 .filter(t -> !t.isAbstract())
-                                .filter(whenType -> !Schema.MetaSchema.isMetaLabel(whenType.label()))
                                 .forEach(whenType ->
                                         rule.getHead()
                                                 .getAtom()
@@ -87,9 +89,12 @@ public class RuleUtils {
         rules
                 .forEach(rule ->
                         rule.whenTypes()
-                                .filter(whenType -> !Schema.MetaSchema.isMetaLabel(whenType.label()))
+                                .flatMap(Type::subs)
+                                .filter(t -> !t.isAbstract())
                                 .forEach(whenType ->
                                         rule.thenTypes()
+                                                .flatMap(Type::sups)
+                                                .filter(t -> !t.isAbstract())
                                                 .forEach(thenType -> graph.put(whenType, thenType))
                                 )
                 );
