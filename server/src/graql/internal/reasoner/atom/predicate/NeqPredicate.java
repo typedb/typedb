@@ -26,8 +26,6 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-
-import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
 /**
@@ -35,49 +33,8 @@ import java.util.Set;
  */
 public class NeqPredicate extends Predicate<Variable> {
 
-    private final Variable varName;
-    private final Statement pattern;
-    private final ReasonerQuery parentQuery;
-    private final Variable predicate;
-
-    NeqPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, Variable predicate) {
-        if (varName == null) {
-            throw new NullPointerException("Null varName");
-        }
-        this.varName = varName;
-        if (pattern == null) {
-            throw new NullPointerException("Null pattern");
-        }
-        this.pattern = pattern;
-        if (parentQuery == null) {
-            throw new NullPointerException("Null parentQuery");
-        }
-        this.parentQuery = parentQuery;
-        if (predicate == null) {
-            throw new NullPointerException("Null predicate");
-        }
-        this.predicate = predicate;
-    }
-
-    @CheckReturnValue
-    @Override
-    public Variable getVarName() {
-        return varName;
-    }
-
-    @Override
-    public Statement getPattern() {
-        return pattern;
-    }
-
-    @Override
-    public ReasonerQuery getParentQuery() {
-        return parentQuery;
-    }
-
-    @Override
-    public Variable getPredicate() {
-        return predicate;
+    private NeqPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, Variable predicate) {
+        super(varName, pattern, parentQuery, predicate);
     }
 
     public static NeqPredicate create(Statement pattern, ReasonerQuery parent) {

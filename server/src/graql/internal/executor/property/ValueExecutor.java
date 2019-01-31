@@ -206,25 +206,17 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         }
 
         private boolean isCompatibleWithContains(ValueExecutor.Operation<?, ?> other) {
-            if (!this.comparator().equals(Query.Comparator.CONTAINS)) {
-                return false;
-            }
-
             if (other.comparator().equals(Query.Comparator.CONTAINS)) {
                 return true;
             } else if (!other.comparator().equals(Query.Comparator.EQV)){
                 return false;
             }
 
-            return (this instanceof Comparison.Variable ||
-                    other instanceof Comparison.String && this.predicate().test((U) other.persistedValue()));
+            return (other instanceof Comparison.Variable ||
+                    other.value() instanceof String && this.predicate().test((U) other.value()));
         }
 
         private boolean isCompatibleWithRegex(ValueExecutor.Operation<?, ?> other) {
-            if (!this.comparator().equals(Query.Comparator.LIKE)) {
-                return false;
-            }
-
             if (!other.comparator().equals(Query.Comparator.EQV)) return false;
 
             return (other instanceof Comparison.Variable ||

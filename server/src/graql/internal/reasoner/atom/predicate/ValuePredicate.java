@@ -26,8 +26,6 @@ import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-
-import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -37,52 +35,11 @@ import java.util.stream.Collectors;
 /**
  * Predicate implementation specialising it to be an value predicate. Corresponds to {@link ValueProperty}.
  */
-public class ValuePredicate extends Predicate<ValueProperty.Operation<?>> {
-
-    private final Variable varName;
-    private final Statement pattern;
-    private final ReasonerQuery parentQuery;
-    private final ValueProperty.Operation<?> predicate;
+public class ValuePredicate extends Predicate<ValueProperty.Operation> {
 
     private ValuePredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery,
-                           ValueProperty.Operation<?> operation) {
-        if (varName == null) {
-            throw new NullPointerException("Null varName");
-        }
-        this.varName = varName;
-        if (pattern == null) {
-            throw new NullPointerException("Null pattern");
-        }
-        this.pattern = pattern;
-        if (parentQuery == null) {
-            throw new NullPointerException("Null parentQuery");
-        }
-        this.parentQuery = parentQuery;
-        if (operation == null) {
-            throw new NullPointerException("Null operation");
-        }
-        this.predicate = operation;
-    }
-
-    @CheckReturnValue
-    @Override
-    public Variable getVarName() {
-        return varName;
-    }
-
-    @Override
-    public Statement getPattern() {
-        return pattern;
-    }
-
-    @Override
-    public ReasonerQuery getParentQuery() {
-        return parentQuery;
-    }
-
-    @Override
-    public ValueProperty.Operation<?> getPredicate() {
-        return predicate;
+                           ValueProperty.Operation operation) {
+        super(varName, pattern, parentQuery, operation);
     }
 
     public static ValuePredicate create(Statement pattern, ReasonerQuery parent) {
@@ -95,7 +52,7 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation<?>> {
         return create(pred.getPattern(), parent);
     }
 
-    public static Statement createValueVar(Variable name, ValueProperty.Operation<?> pred) {
+    private static Statement createValueVar(Variable name, ValueProperty.Operation<?> pred) {
         return new Statement(name).operation(pred);
     }
 
@@ -127,15 +84,17 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation<?>> {
     public boolean isAlphaEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        ValuePredicate p2 = (ValuePredicate) obj;
-        return this.getPredicate().getClass().equals(p2.getPredicate().getClass()) &&
-                this.getPredicateValue().equals(p2.getPredicateValue());
+        ValuePredicate that = (ValuePredicate) obj;
+        return this.getPredicate().comparator().equals(that.getPredicate().comparator())
+                && this.getPredicate().value().equals(that.getPredicate().value());
     }
 
     @Override
     public int alphaEquivalenceHashCode() {
-        int hashCode = super.alphaEquivalenceHashCode();
-        hashCode = hashCode * 37 + this.getPredicate().getClass().getName().hashCode();
+        int hashCode = 1;
+        hashCode = hashCode * 37 + this.getPredicate().comparator().hashCode();
+        boolean useValue = ! (ValueExecutor.Operation.of(getPredicate()) instanceof ValueExecutor.Operation.Comparison.Variable);
+        hashCode = hashCode * 37 + (useValue? this.getPredicate().value().hashCode() : 0);
         return hashCode;
     }
 
@@ -161,7 +120,7 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation<?>> {
 
     @Override
     public String getPredicateValue() {
-        return ValueExecutor.Operation.of(getPredicate()).predicate().getValue().toString();
+        return getPattern().toString();
     }
 
     @Override

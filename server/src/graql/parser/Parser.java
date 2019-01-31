@@ -798,7 +798,7 @@ public class Parser extends GraqlBaseVisitor {
         }
 
         if (value instanceof Integer) {
-            return new ValueProperty.Operation.Comparison.Number<>(comparator, (Integer) value);
+            return new ValueProperty.Operation.Comparison.Number<>(comparator, ((Integer) value).longValue());
         } else if (value instanceof Long) {
             return new ValueProperty.Operation.Comparison.Number<>(comparator, (Long) value);
         } else if (value instanceof Float) {

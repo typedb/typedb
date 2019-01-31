@@ -66,6 +66,10 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
             Q equivalentQuery = match.query();
             GraqlTraversal traversal = match.cachedElement();
             MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query, UnifierType.STRUCTURAL);
+            if (multiUnifier.isEmpty()){
+                equivalence.equivalent(query, equivalentQuery);
+                System.out.println();
+            }
             Unifier unifier = multiUnifier.getAny();
             Map<Variable, ConceptId> idTransform = equivalentQuery.idTransform(query, unifier);
 

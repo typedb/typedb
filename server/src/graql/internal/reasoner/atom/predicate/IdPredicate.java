@@ -32,56 +32,13 @@ import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.Transaction;
 
-import javax.annotation.CheckReturnValue;
-
 /**
  * Predicate implementation specialising it to be an id predicate. Corresponds to {@link IdProperty}.
  */
 public class IdPredicate extends Predicate<ConceptId> {
 
-    private final Variable varName;
-    private final Statement pattern;
-    private final ReasonerQuery parentQuery;
-    private final ConceptId predicate;
-
-    IdPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, ConceptId predicate) {
-        if (varName == null) {
-            throw new NullPointerException("Null varName");
-        }
-        this.varName = varName;
-        if (pattern == null) {
-            throw new NullPointerException("Null pattern");
-        }
-        this.pattern = pattern;
-        if (parentQuery == null) {
-            throw new NullPointerException("Null parentQuery");
-        }
-        this.parentQuery = parentQuery;
-        if (predicate == null) {
-            throw new NullPointerException("Null predicate");
-        }
-        this.predicate = predicate;
-    }
-
-    @CheckReturnValue
-    @Override
-    public Variable getVarName() {
-        return varName;
-    }
-
-    @Override
-    public Statement getPattern() {
-        return pattern;
-    }
-
-    @Override
-    public ReasonerQuery getParentQuery() {
-        return parentQuery;
-    }
-
-    @Override
-    public ConceptId getPredicate() {
-        return predicate;
+    private IdPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, ConceptId predicate) {
+        super(varName, pattern, parentQuery, predicate);
     }
 
     public static IdPredicate create(Statement pattern, ReasonerQuery parent) {
@@ -112,6 +69,21 @@ public class IdPredicate extends Predicate<ConceptId> {
         SchemaConcept schemaConcept = graph.getSchemaConcept(label);
         if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label);
         return new Statement(varName).id(schemaConcept.id().getValue());
+    }
+
+    @Override
+    public boolean isAlphaEquivalent(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        Predicate a2 = (Predicate) obj;
+        return this.getPredicateValue().equals(a2.getPredicateValue());
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + this.getPredicateValue().hashCode();
+        return hashCode;
     }
 
     @Override
@@ -146,7 +118,6 @@ public class IdPredicate extends Predicate<ConceptId> {
 
     @Override
     public String getPredicateValue() { return getPredicate().getValue();}
-
 
     /**
      * @return corresponding value predicate if transformation exists (id corresponds to an attribute concept)
