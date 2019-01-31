@@ -107,6 +107,10 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         }
     }
 
+    /**
+     * @param <T> compared type
+     * @param <U> compared persisted type
+     */
     public static abstract class Operation<T, U> {
 
         private final Query.Comparator comparator;
@@ -194,26 +198,20 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         }
 
         private boolean isCompatibleWithNEQ(ValueExecutor.Operation<?, ?> other) {
-            if (!this.comparator().equals(Query.Comparator.NEQV)) {
-                return false;
-            }
-
+            if (!this.comparator().equals(Query.Comparator.NEQV)) return false;
             if (this instanceof Comparison.Variable || other instanceof Comparison.Variable) return true;
 
             //checks for !=/= contradiction
             return (!this.value().equals(other.value()) ||
-                     this.value().equals(other.value()) && !(other.comparator().equals(Query.Comparator.EQV)));
+                    this.value().equals(other.value()) && !(other.comparator().equals(Query.Comparator.EQV)));
         }
 
         private boolean isCompatibleWithContains(ValueExecutor.Operation<?, ?> other) {
-            if (other.comparator().equals(Query.Comparator.CONTAINS)) {
-                return true;
-            } else if (!other.comparator().equals(Query.Comparator.EQV)){
-                return false;
-            }
+            if (other.comparator().equals(Query.Comparator.CONTAINS)) return true;
+            if (!other.comparator().equals(Query.Comparator.EQV)) return false;
 
             return (other instanceof Comparison.Variable ||
-                    other.value() instanceof String && this.predicate().test((U) other.value()));
+                    other.value() instanceof String && this.predicate().test((U) other.persistedValue()));
         }
 
         private boolean isCompatibleWithRegex(ValueExecutor.Operation<?, ?> other) {
@@ -236,9 +234,10 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
             //NB this is potentially dangerous e.g. if a user types a long as a char in the query
             if (!this.value().getClass().equals(other.value().getClass())) return false;
 
-            return this.value().equals(other.value()) ?
-                    (this.signum() * other.signum() > 0 || this.containsEquality() && other.containsEquality()) :
-                    (this.predicate().test((U) other.persistedValue()) || ((P<U>) other.predicate()).test(this.persistedValue()));
+            ValueExecutor.Operation<?, U> that = (ValueExecutor.Operation<?, U>) other;
+            return this.value().equals(that.value()) ?
+                    (this.signum() * that.signum() > 0 || this.containsEquality() && that.containsEquality()) :
+                    (this.predicate().test(that.persistedValue()) || ((that.predicate()).test(this.persistedValue())));
         }
 
         public boolean subsumes(ValueExecutor.Operation<?, ?> other) {
@@ -252,10 +251,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
             //NB this is potentially dangerous e.g. if a user types a long as a char in the query
             if (!this.value().getClass().equals(other.value().getClass())) return false;
 
-            return ((P<U>) other.predicate()).test(this.persistedValue()) &&
-                    (this.value().equals(other.value()) ?
-                            (this.isValueEquality() || this.isValueEquality()==other.isValueEquality()) :
-                            (!this.predicate().test((U) other.persistedValue())));
+            ValueExecutor.Operation<?, U> that = (ValueExecutor.Operation<?, U>) other;
+            return (that.predicate()).test(this.persistedValue()) &&
+                    (this.value().equals(that.value()) ?
+                            (this.isValueEquality() || this.isValueEquality() == that.isValueEquality()) :
+                            (!this.predicate().test(that.persistedValue())));
         }
 
         @Override

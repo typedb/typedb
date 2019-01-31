@@ -737,7 +737,7 @@ public class Parser extends GraqlBaseVisitor {
         Object value = visitLiteral(ctx.literal());
 
         if (value instanceof Integer) {
-            return new ValueProperty.Operation.Assignment.Number<>((Integer) value);
+            return new ValueProperty.Operation.Assignment.Number<>(((Integer) value).longValue());
         } else if (value instanceof Long) {
             return new ValueProperty.Operation.Assignment.Number<>((Long) value);
         } else if (value instanceof Float) {
