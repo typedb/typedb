@@ -731,13 +731,12 @@ public class Parser extends GraqlBaseVisitor {
         }
     }
 
-    @Override // TODO: this visitor method should not return a Predicate if we have the right data structure
-              //       Graql.eq() should be replaced with an assignment property
+    @Override
     public ValueProperty.Operation<?> visitAssignment(GraqlParser.AssignmentContext ctx) {
         Object value = visitLiteral(ctx.literal());
 
         if (value instanceof Integer) {
-            return new ValueProperty.Operation.Assignment.Number<>(((Integer) value).longValue());
+            return new ValueProperty.Operation.Assignment.Number<>(((Integer) value));
         } else if (value instanceof Long) {
             return new ValueProperty.Operation.Assignment.Number<>((Long) value);
         } else if (value instanceof Float) {
@@ -798,7 +797,7 @@ public class Parser extends GraqlBaseVisitor {
         }
 
         if (value instanceof Integer) {
-            return new ValueProperty.Operation.Comparison.Number<>(comparator, ((Integer) value).longValue());
+            return new ValueProperty.Operation.Comparison.Number<>(comparator, ((Integer) value));
         } else if (value instanceof Long) {
             return new ValueProperty.Operation.Comparison.Number<>(comparator, (Long) value);
         } else if (value instanceof Float) {
