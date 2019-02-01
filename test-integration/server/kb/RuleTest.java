@@ -539,8 +539,11 @@ public class RuleTest {
             Pattern then = Graql.parsePattern("$x isa someEntity;");
 
             initTx(tx);
-            tx.putRule(UUID.randomUUID().toString(), when, then);
+            Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
             expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(
+                    ErrorMessage.VALIDATION_RULE_INVALID.getMessage(rule.label(), ErrorMessage.DISJUNCTIVE_NEGATION_BLOCK.getMessage())
+            );
             tx.commit();
         }
     }
