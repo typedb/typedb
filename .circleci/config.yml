@@ -31,22 +31,15 @@ commands:
       - run:
           name: Bazel - Execute
           command: |
-            # # TODO: re-add RBE once it's been fixed
-            # if [[ -f ~/.config/gcloud/application_default_credentials.json ]]; then
-            #     echo "Bazel will be executed with RBE support. This means the build is remotely executed and the cache will be re-used by subsequent CI jobs."
-            #     CMD="<< parameters.command >> --config=rbe"
-            # else
-            #     echo "Bazel will be executed locally (without RBE support)."
-            #     CMD="<< parameters.command >>"
-            # fi
-            # echo "Executing $CMD"
-            # $CMD
-
-            echo "Bazel will be executed locally because there is an issue with the RBE execution. TODO: re-activate RBE once it's been fixed"
-            CMD="<< parameters.command >>"
+            if [[ -f ~/.config/gcloud/application_default_credentials.json ]]; then
+              echo "Bazel will be executed with RBE support. This means the build is remotely executed and the cache will be re-used by subsequent CI jobs."
+              CMD="<< parameters.command >> --config=rbe"
+            else
+              echo "Bazel will be executed locally (without RBE support)."
+              CMD="<< parameters.command >>"
+            fi
             echo "Executing $CMD"
             $CMD
-
 
   rpm_install:
     steps:
