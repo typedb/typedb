@@ -119,3 +119,24 @@ deploy_brew(
     name = "deploy-brew",
     version_file = "//:VERSION"
 )
+
+platform(
+    name = "rbe-platform",
+    constraint_values = [
+        "@bazel_tools//platforms:x86_64",
+        "@bazel_tools//platforms:linux",
+        "@bazel_tools//tools/cpp:clang",
+        "@bazel_toolchains//constraints:xenial",
+        "@bazel_toolchains//constraints/sanitizers:support_msan",
+    ],
+    remote_execution_properties = """
+        properties: {
+          name: "container-image"
+          value:"docker://gcr.io/cloud-marketplace/google/rbe-ubuntu16-04@sha256:87fe00c5c4d0e64ab3830f743e686716f49569dadb49f1b1b09966c1b36e153c"
+        },
+        properties: {
+          name: "dockerNetwork"
+          value: "standard"
+        }
+        """,
+)
