@@ -121,7 +121,7 @@ deploy_brew(
 )
 
 
-# When a Bazel build or test is executed with RBE, it will be executed using the this platform.
+# When a Bazel build or test is executed with RBE, it will be executed using the following platform.
 # The platform is based on the standard rbe_ubuntu1604 from @bazel_toolchains,
 # but with an additional setting dockerNetwork = standard because our tests need network access
 platform(
