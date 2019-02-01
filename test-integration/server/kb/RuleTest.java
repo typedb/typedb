@@ -28,9 +28,9 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.session.SessionImpl;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,7 +45,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
 
@@ -57,7 +59,7 @@ public class RuleTest {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private Session session;
+    private SessionImpl session;
 
     @Before
     public void setUp(){
@@ -441,7 +443,7 @@ public class RuleTest {
             Pattern then = Graql.parsePattern("$x isa someEntity;");
 
             initTx(tx);
-            Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
+            tx.putRule(UUID.randomUUID().toString(), when, then);
             List<Set<Type>> cycles = new ArrayList<>();
             cycles.add(Collections.singleton(tx.getEntityType("someEntity")));
 
@@ -451,8 +453,55 @@ public class RuleTest {
         }
     }
 
-    //TODO
-    @Ignore
+    @Test
+    public void whenAddingNonStratifiableRules_Throw() throws InvalidKBException{
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            EntityType p = tx.putEntityType("p");
+            EntityType q = tx.putEntityType("q");
+            EntityType r = tx.putEntityType("r");
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x isa p;"),
+                    Graql.parsePattern("$x isa q;"));
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x isa q;"),
+                    Graql.parsePattern("$x isa r;"));
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("{$x isa entity;not{ $x isa r;};};"),
+                    Graql.parsePattern("$x isa p;"));
+
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(allOf(
+                    containsString("The rule graph is not stratifiable"),
+                    containsString(p.toString()),
+                    containsString(q.toString()),
+                    containsString(r.toString()))
+            );
+            tx.commit();
+        }
+    }
+
+    @Test
+    public void whenAddingARuleWithMultipleNegationBlocks_Throw() throws InvalidKBException{
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            Pattern when = Graql.parsePattern(
+                    "{" +
+                            "$x isa thing;" +
+                            "not {$x isa relation;};" +
+                            "not {$y isa attribute;};" +
+                            "};");
+            Pattern then = Graql.parsePattern("$x isa someEntity;");
+
+            initTx(tx);
+            Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(ErrorMessage.VALIDATION_RULE_MULTIPLE_NEGATION_BLOCKS.getMessage(rule.label()));
+            tx.commit();
+        }
+    }
+
     @Test
     public void whenAddingARuleWithNestedNegationBlock_Throw() throws InvalidKBException{
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
@@ -469,12 +518,12 @@ public class RuleTest {
 
             initTx(tx);
             Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(ErrorMessage.VALIDATION_RULE_NESTED_NEGATION.getMessage(rule.label()));
             tx.commit();
         }
     }
 
-    //TODO
-    @Ignore
     @Test
     public void whenAddingARuleWithDisjunctiveNegationBlock_Throw() throws InvalidKBException{
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
@@ -490,8 +539,8 @@ public class RuleTest {
             Pattern then = Graql.parsePattern("$x isa someEntity;");
 
             initTx(tx);
-            Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
-
+            tx.putRule(UUID.randomUUID().toString(), when, then);
+            expectedException.expect(InvalidKBException.class);
             tx.commit();
         }
     }

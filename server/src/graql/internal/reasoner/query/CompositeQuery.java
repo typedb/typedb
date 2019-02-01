@@ -166,7 +166,7 @@ public class CompositeQuery implements ResolvableQuery {
                 .map(p -> {
                     Set<Conjunction<Pattern>> patterns = p.getNegationDNF().getPatterns();
                     if (p.getNegationDNF().getPatterns().size() != 1){
-                        throw GraqlQueryException.disjunctiveNegationBlock(this);
+                        throw GraqlQueryException.disjunctiveNegationBlock();
                     }
                     return Iterables.getOnlyElement(patterns);
                 })

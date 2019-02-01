@@ -33,12 +33,13 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.server.Transaction;
@@ -298,8 +299,24 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleIsValidClause(TransactionOLTP graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        CompositeQuery composite = ReasonerQueries.composite(rule.when().getNegationDNF().getPatterns().iterator().next(), graph);
-        if (rule.when().getDisjunctiveNormalForm().getPatterns().size() > 1){
+        Set<Conjunction<Pattern>> patterns = rule.when().getNegationDNF().getPatterns();
+        //Negation block validation, Ensure:
+        //- no nesting
+        //- no disjunctions
+        //- single negation block
+        try{
+            CompositeQuery body = ReasonerQueries.composite(Iterables.getOnlyElement(patterns), graph);
+            Set<ResolvableQuery> complementQueries = body.getComplementQueries();
+            if(complementQueries.size() > 1){
+                errors.add(ErrorMessage.VALIDATION_RULE_MULTIPLE_NEGATION_BLOCKS.getMessage(rule.label()));
+            }
+            if(!body.isPositive() && complementQueries.stream().noneMatch(ReasonerQuery::isPositive)){
+                errors.add(ErrorMessage.VALIDATION_RULE_NESTED_NEGATION.getMessage(rule.label()));
+            }
+        } catch (GraqlQueryException e) {
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID.getMessage(rule.label(), e.getMessage()));
+        }
+        if (patterns.size() > 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
         }
         if (errors.isEmpty()){
