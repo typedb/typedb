@@ -186,7 +186,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public Set<Atom> rewriteToAtoms(){
         return this.getRelationPlayers().stream()
-                .map(rp -> create(relationPattern(getVarName(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
+                .map(rp -> create(relationPattern(getVarName().asUserDefined(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
                 .collect(toSet());
     }
 
@@ -225,7 +225,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(statement -> statement.var())
+                .map(Statement::var)
                 .filter(Variable::isUserDefinedName)
                 .collect(Collectors.toSet());
     }

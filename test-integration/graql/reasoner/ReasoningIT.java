@@ -566,13 +566,31 @@ public class ReasoningIT {
         }
     }
 
+    @Test
+    public void whenAppendingRolePlayers_queryIsRewrittenCorrectly(){
+        try(Session session = server.sessionWithNewKeyspace()) {
+            loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                List<ConceptMap> persistedRelations = tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"),false);
+
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse("match (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;"));
+                assertTrue(!answers.isEmpty());
+                assertEquals(1, answers.size());
+
+                List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse("match (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z); get;"));
+                assertTrue(!answers2.isEmpty());
+                assertEquals(1, answers2.size());
+
+                assertEquals("New relations were created!", persistedRelations, tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"),false));
+            }
+        }
+    }
+
     @Test //when rule are defined to append new RPs no new relation instances should be created
     public void whenAppendingRolePlayers_noNewRelationsAreCreated(){
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                
-                
 
                 List<ConceptMap> persistedRelations = tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"),false);
                 List<ConceptMap> inferredRelations = tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"));
@@ -599,7 +617,7 @@ public class ReasoningIT {
     public void inferrableRelationWithRolePlayersSharingResource(){
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)){
                 
                 String queryString = "match " +
                         "(role1: $x, role2: $y) isa binary-base;" +
