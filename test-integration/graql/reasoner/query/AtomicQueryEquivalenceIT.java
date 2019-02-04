@@ -49,6 +49,7 @@ import java.util.Set;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("CheckReturnValue")
 public class AtomicQueryEquivalenceIT {
@@ -437,7 +438,7 @@ public class AtomicQueryEquivalenceIT {
 
         //check hash additionally if need to be equal
         if (queryExpectation) {
-            assertEquals(a.toString() + " hash=? " + b.toString(), true, equiv.hash(a) == equiv.hash(b));
+            assertTrue(a.toString() + " hash=? " + b.toString(), equiv.hash(a) == equiv.hash(b));
         }
     }
 
@@ -446,7 +447,7 @@ public class AtomicQueryEquivalenceIT {
 
         //check hash additionally if need to be equal
         if (expectation) {
-            assertEquals(a.toString() + " hash=? " + b.toString(), equivalence.hash(a) == equivalence.hash(b), true);
+            assertTrue(a.toString() + " hash=? " + b.toString(), equivalence.hash(a) == equivalence.hash(b));
         }
     }
 

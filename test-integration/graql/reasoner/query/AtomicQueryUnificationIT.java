@@ -60,7 +60,6 @@ import static org.apache.commons.collections.CollectionUtils.isEqualCollection;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-
 @SuppressWarnings("CheckReturnValue")
 public class AtomicQueryUnificationIT {
 
@@ -723,6 +722,7 @@ public class AtomicQueryUnificationIT {
         assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
         if (unifierExists && unifierType != UnifierType.RULE){
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
+
             assertEquals("Unexpected unifier inverse: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
             assertEquals(multiUnifierInverse, multiUnifier.inverse());
         }
@@ -807,7 +807,7 @@ public class AtomicQueryUnificationIT {
 
         //check hash additionally if need to be equal
         if (queryExpectation) {
-            assertEquals(a.toString() + " hash=? " + b.toString(), equiv.hash(a), equiv.hash(b));
+            assertEquals(equiv.name() + " " + a.toString() + " hash=? " + b.toString(), equiv.hash(a), equiv.hash(b));
         }
     }
 
