@@ -574,12 +574,29 @@ public class ReasoningIT {
                 List<ConceptMap> persistedRelations = tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"),false);
 
                 List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse("match (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;"));
-                assertTrue(!answers.isEmpty());
                 assertEquals(1, answers.size());
 
                 List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse("match (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z); get;"));
-                assertTrue(!answers2.isEmpty());
                 assertEquals(1, answers2.size());
+
+                List<ConceptMap> answers3 = tx.execute(Graql.<GetQuery>parse("match " +
+                        "(someRole: $x, inferredRole: $z); " +
+                        "not {(anotherRole: $z);};" +
+                        "get;"));
+
+                assertTrue(answers3.isEmpty());
+
+                List<ConceptMap> answers4 = tx.execute(Graql.<GetQuery>parse("match " +
+                        "$r (someRole: $x, inferredRole: $z); " +
+                        "not {$r (anotherRole: $z);};" +
+                        "get;"));
+                assertEquals(2, answers4.size());
+
+                List<ConceptMap> answers5 = tx.execute(Graql.<GetQuery>parse("match " +
+                        "$r (someRole: $x, inferredRole: $z); " +
+                        "not {$r (yetAnotherRole: $y, andYetAnotherRole: $y);};" +
+                        "get;"));
+                assertEquals(2, answers5.size());
 
                 assertEquals("New relations were created!", persistedRelations, tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"),false));
             }
