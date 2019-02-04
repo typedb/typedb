@@ -80,6 +80,11 @@ public class Validator {
         //Validate Rules
         graknGraph.cache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
 
+        //Validate rule stratification
+        errorsFound.addAll(
+                ValidateGlobalRules.validateRuleStratifiability(graknGraph, graknGraph.cache().getModifiedRules())
+        );
+
         return errorsFound.size() == 0;
     }
 
@@ -97,10 +102,9 @@ public class Validator {
             Set<String> ontologicalErrors = ValidateGlobalRules.validateRuleOntologically(graph, rule);
             errorsFound.addAll(ontologicalErrors);
             if (ontologicalErrors.isEmpty()) {
-                errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidHornClause(graph, rule));
+                errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidClause(graph, rule));
             }
         }
-
     }
 
     /**

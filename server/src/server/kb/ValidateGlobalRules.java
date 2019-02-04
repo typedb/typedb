@@ -22,6 +22,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Label;
@@ -34,6 +35,7 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
@@ -51,6 +53,7 @@ import grakn.core.server.session.TransactionOLTP;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -273,18 +276,29 @@ class ValidateGlobalRules {
         return Optional.empty();
     }
 
+    /**
+     *
+     * @param graph
+     * @param rules
+     */
+    static Set<String> validateRuleStratifiability(TransactionOLTP graph, Set<Rule> rules){
+        Set<String> errors = new HashSet<>();
+        List<Set<Type>> negativeCycles = RuleUtils.negativeCycles(rules, graph);
+        if (!negativeCycles.isEmpty()){
+            errors.add(ErrorMessage.VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE.getMessage(negativeCycles));
+        }
+        return errors;
+    }
+
 
     /**
      * @param graph graph used to ensure the rule is a valid Horn clause
      * @param rule the rule to be validated
      * @return Error messages if the rule is not a valid Horn clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
-    static Set<String> validateRuleIsValidHornClause(TransactionOLTP graph, Rule rule){
+    static Set<String> validateRuleIsValidClause(TransactionOLTP graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        if (rule.when().getNegationDNF().getPatterns().stream().anyMatch(Pattern::isNegation)
-                || rule.then().getNegationDNF().getPatterns().stream().anyMatch(Pattern::isNegation)){
-            errors.add(ErrorMessage.VALIDATION_RULE_NEGATIVE_STATEMENTS_UNSUPPORTED_IN_RULES.getMessage(rule.label()));
-        }
+        CompositeQuery composite = ReasonerQueries.composite(rule.when().getNegationDNF().getPatterns().iterator().next(), graph);
         if (rule.when().getDisjunctiveNormalForm().getPatterns().size() > 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
         }

@@ -51,6 +51,7 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-netty",
         "//dependencies/maven/artifacts/io/netty:netty-all",
     ],
+    resources = ["LICENSE"],
     tags = ["maven_coordinates=grakn.core:client:{pom_version}"],
 )
 

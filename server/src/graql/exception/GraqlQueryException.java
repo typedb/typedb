@@ -29,6 +29,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
@@ -278,6 +279,14 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException getUnifierOfNonAtomicQuery() {
         return new GraqlQueryException("Attempted to obtain unifiers on non-atomic queries.");
+    }
+
+    public static GraqlQueryException unsafeNegationBlock(ResolvableQuery query) {
+        return new GraqlQueryException(ErrorMessage.UNSAFE_NEGATION_BLOCK.getMessage(query));
+    }
+
+    public static GraqlQueryException disjunctiveNegationBlock(ResolvableQuery query) {
+        return new GraqlQueryException(ErrorMessage.DISJUNCTIVE_NEGATION_BLOCK.getMessage(query));
     }
 
     public static GraqlQueryException invalidQueryCacheEntry(ReasonerQuery query, ConceptMap answer) {

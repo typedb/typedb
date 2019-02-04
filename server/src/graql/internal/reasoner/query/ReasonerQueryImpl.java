@@ -130,6 +130,10 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         );
     }
 
+    @Override
+    public CompositeQuery asComposite() {
+        return new CompositeQuery(getPattern(), tx());
+    }
 
     @Override
     public ReasonerQueryImpl withSubstitution(ConceptMap sub){
@@ -162,7 +166,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public String toString(){
-        return "{\n\t" +
+        return "{\n" +
                 getAtoms(Atomic.class).map(Atomic::toString).collect(Collectors.joining(";\n\t")) +
                 "\n}";
     }
@@ -244,11 +248,8 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                         .anyMatch(e -> e.getKey().players().noneMatch(parentTypes::contains)));
     }
 
-    /**
-     * @param q query to be compared with
-     * @return true if two queries are alpha-equivalent
-     */
-    public boolean isEquivalent(ReasonerQueryImpl q) {
+    @Override
+    public boolean isEquivalent(ResolvableQuery q) {
         return ReasonerQueryEquivalence.AlphaEquivalence.equivalent(this, q);
     }
 
@@ -444,9 +445,6 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         return getAtoms(Atom.class).filter(Atomic::isSelectable);
     }
 
-    /**
-     * @return true if this query requires atom decomposition
-     */
     @Override
     public boolean requiresDecomposition(){
         return this.selectAtoms().anyMatch(Atom::requiresDecomposition);

@@ -77,19 +77,6 @@ jobs:
     - bazel:
         command: bazel test //client-java/... --test_size_filters=medium,large,enormous --test_output=errors
 
-  client-nodejs:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - run: bazel build //:distribution
-    - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
-    - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
-    - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
-    - run: bazel test //client-nodejs:test-integration --test_output=streamed
-
   common:
     machine: true
     working_directory: ~/grakn
@@ -131,24 +118,6 @@ jobs:
     - rpm_install
     - bazel:
         command: bazel test //server/... --test_output=errors
-
-  workbase:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - run: bazel test //workbase:tests-unit --test_output=errors
-    - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
-    - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
-    - run: bazel build //:distribution
-    - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
-    - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
-    - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
-    - run: Xvfb :99 &
-    - run: export DISPLAY=:99
-    - run: bazel test //workbase:tests-e2e --test_output=streamed
 
   test-integration:
     machine: true
@@ -196,58 +165,16 @@ jobs:
       - bazel:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
-  build-workbase-linux:
-      machine: true
-      working_directory: ~/grakn
-      steps:
-        - attach_workspace:
-            at: ~/grakn
-        - bazel:
-            command: bazel run @nodejs//:npm install
-        - bazel:
-            command: bazel build //workbase:distribution
-        - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV # TODO: remove 'v' from tag name and use it as Grakn Version to be released
-        # TODO: make a separate rule for building on Linux / use another naming scheme
-        - run: mv ./bazel-genfiles/workbase/grakn-workbase.zip ~/grakn/artifacts/grakn-workbase-${GRAKN_VERSION}-linux.tar.gz
-        - persist_to_workspace:
-            root: ~/grakn
-            paths:
-              - artifacts/*-linux.tar.gz
-
-  build-workbase-mac:
-      macos:
-          xcode: "9.0"
-      working_directory: ~/grakn
-      steps:
-        - attach_workspace:
-            at: ~/grakn
-        - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV # TODO: remove 'v' from tag name and use it as Grakn Version to be released
-        - run: unzip artifacts/grakn-core-${GRAKN_VERSION}.zip
-        - run: cd grakn-core-${GRAKN_VERSION} && nohup ./grakn server start
-        - run: cd grakn-core-${GRAKN_VERSION} && ./graql console -f ./examples/basic-genealogy.gql -k gene
-        - bazel:
-            command: bazel run @nodejs//:npm install
-        - bazel:
-            command: bazel test //workbase:tests-e2e --test_output=errors
-        - bazel:
-            command: bazel build //workbase:distribution
-        - run: mv ./bazel-genfiles/workbase/grakn-workbase.zip ~/grakn/artifacts/grakn-workbase-${GRAKN_VERSION}-mac.zip
-        - persist_to_workspace:
-            root: ~/grakn
-            paths:
-              - artifacts/*-mac.zip
-
-  publish-github-draft:
-    docker:
-      - image: cibuilds/github:0.10
-    working_directory: ~/grakn
+  docs-update-grakn-dependency-on-dev-branch:
+    machine: true
     steps:
-      - attach_workspace:
-          at: ~/grakn
+      - checkout
       - run:
-          name: "Publish Draft Release on GitHub"
+          name: Make docs (development branch) depend on the latest Grakn (master)
           command: |
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete -draft ${CIRCLE_TAG} ./artifacts
+            mkdir docs
+            cd docs
+            python ../.circleci/docs-update-grakn-dependency-on-dev-branch.py
 
   grakn-release-build:
     machine: true
@@ -266,50 +193,110 @@ jobs:
             - ./workbase
 
 workflows:
-  version: 2
-  grakn-core-ci:
+  ci-pull-request:
     jobs:
-      - build
-      - client-java
-      - client-nodejs
-      - common
-      - console
-      - graql
-      - server
-      - workbase
-      - test-integration
-      - test-integration-reasoner
-      - test-integration-analytics
-      - test-end-to-end
+      - build:
+          filters:
+            branches:
+              ignore: master
+      - client-java:
+          filters:
+            branches:
+              ignore: master
+      - common:
+          filters:
+            branches:
+              ignore: master
+      - console:
+          filters:
+            branches:
+              ignore: master
+      - graql:
+          filters:
+            branches:
+              ignore: master
+      - server:
+          filters:
+            branches:
+              ignore: master
+      - test-integration:
+          filters:
+            branches:
+              ignore: master
+      - test-integration-reasoner:
+          filters:
+            branches:
+              ignore: master
+      - test-integration-analytics:
+          filters:
+            branches:
+              ignore: master
+      - test-end-to-end:
+          filters:
+            branches:
+              ignore: master
+
+  ci-master-branch:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: master
+      - client-java:
+          filters:
+            branches:
+              only: master
+      - common:
+          filters:
+            branches:
+              only: master
+      - console:
+          filters:
+            branches:
+              only: master
+      - graql:
+          filters:
+            branches:
+              only: master
+      - server:
+          filters:
+            branches:
+              only: master
+      - test-integration:
+          filters:
+            branches:
+              only: master
+      - test-integration-reasoner:
+          filters:
+            branches:
+              only: master
+      - test-integration-analytics:
+          filters:
+            branches:
+              only: master
+      - test-end-to-end:
+          filters:
+            branches:
+              only: master
+      - docs-update-grakn-dependency-on-dev-branch:
+          requires:
+            - build
+            - client-java
+            - common
+            - console
+            - graql
+            - server
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
+            - test-end-to-end
+          filters:
+            branches:
+              only: master
 
   build-and-deploy:
     jobs:
       - grakn-release-build:
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - build-workbase-mac:
-          requires:
-             - grakn-release-build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - build-workbase-linux:
-          requires:
-             - grakn-release-build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - publish-github-draft:
-          requires:
-            - build-workbase-mac
-            - build-workbase-linux
           filters:
             tags:
               only: /^v.*/

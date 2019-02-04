@@ -47,15 +47,15 @@ rule-2 sub rule,
         $i isa available-ingredient;
     };
 
-#rule-3 sub rule,
-#    when {
-#        $r isa recipe;
-#        ($r, $i) isa requires;
-#        NOT {$i isa available-ingredient;};
-#    },
-#    then {
-#        $r isa recipe-with-unavailable-ingredient;
-#    };
+rule-3 sub rule,
+    when {
+        $r isa recipe;
+        ($r, $i) isa requires;
+        not {$i isa available-ingredient;};
+    },
+    then {
+        $r isa recipe-with-unavailable-ingredient;
+    };
 
 insert
 $n isa allergenic-ingredient, has name 'nuts';

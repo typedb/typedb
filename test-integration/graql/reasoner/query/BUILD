@@ -41,6 +41,7 @@ java_test(
     ],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = [
+        "//test-integration/graql/reasoner/resources/recursion:recursion-schemas",
         "//test-integration/graql/reasoner/stubs:reasoning-stubs",
     ],
     test_class = "grakn.core.graql.reasoner.query.NegationIT",
@@ -49,6 +50,7 @@ java_test(
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
+        "//test-integration/graql/reasoner/graph:reachability-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],
@@ -194,5 +196,5 @@ checkstyle_test(
         ":resolution-plan-it",
         ":semantic-difference-it",
         "//test-integration/graql/reasoner/query:subsumption-it",
-    ]
+    ],
 )

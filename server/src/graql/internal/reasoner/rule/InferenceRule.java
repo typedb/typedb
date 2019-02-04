@@ -18,25 +18,28 @@
 
 package grakn.core.graql.internal.reasoner.rule;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.state.RuleState;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.Graql;
@@ -45,12 +48,11 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
-
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -66,7 +68,7 @@ public class InferenceRule {
 
     private final TransactionOLTP tx;
     private final Rule rule;
-    private final ReasonerQueryImpl body;
+    private final ResolvableQuery body;
     private final ReasonerAtomicQuery head;
 
     private long priority = Long.MAX_VALUE;
@@ -76,11 +78,11 @@ public class InferenceRule {
         this.tx = tx;
         this.rule = rule;
         //TODO simplify once changes propagated to rule objects
-        this.body = ReasonerQueries.create(conjunction(rule.when()), tx);
+        this.body = ReasonerQueries.resolvable(Iterables.getOnlyElement(rule.when().getNegationDNF().getPatterns()), tx);
         this.head = ReasonerQueries.atomic(conjunction(rule.then()), tx);
     }
 
-    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, Rule rule, TransactionOLTP tx){
+    private InferenceRule(ReasonerAtomicQuery head, ResolvableQuery body, Rule rule, TransactionOLTP tx){
         this.tx = tx;
         this.rule = rule;
         this.head = head;
@@ -114,7 +116,7 @@ public class InferenceRule {
     public long resolutionPriority(){
         if (priority == Long.MAX_VALUE) {
             //NB: only checking locally as checking full tree (getDependentRules) is expensive
-            priority = -getBody().selectAtoms().flatMap(Atom::getApplicableRules).count();
+            priority = -getBody().getAtoms(Atom.class).flatMap(Atom::getApplicableRules).count();
         }
         return priority;
     }
@@ -166,7 +168,7 @@ public class InferenceRule {
     /**
      * @return body of the rule of the form head :- body
      */
-    public ReasonerQueryImpl getBody(){ return body;}
+    public ResolvableQuery getBody(){ return body;}
 
     /**
      * @return head of the rule of the form head :- body
@@ -205,15 +207,20 @@ public class InferenceRule {
     private InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
         Atom headAtom = head.getAtom();
-        Set<Atomic> bodyAtoms = new HashSet<>(body.getAtoms());
+
+        //we are only rewriting the conjunction atoms (not complement atoms) as
+        //the constraints are propagated from the conjunctive part anyway and
+        //all variables in the -ve part not referenced in the +ve part have a different scope
+        ReasonerQueryImpl bodyConjunction = getBody().asComposite().getConjunctiveQuery();
+        Set<Atomic> bodyConjunctionAtoms = new HashSet<>(bodyConjunction.getAtoms());
 
         //transfer value predicates
-        Set<Variable> bodyVars = body.getVarNames();
+        Set<Variable> bodyVars = bodyConjunction.getVarNames();
         Set<ValuePredicate> vpsToPropagate = parentAtom.getPredicates(ValuePredicate.class)
                 .flatMap(vp -> vp.unify(unifier).stream())
                 .filter(vp -> bodyVars.contains(vp.getVarName()))
                 .collect(toSet());
-        bodyAtoms.addAll(vpsToPropagate);
+        bodyConjunctionAtoms.addAll(vpsToPropagate);
 
         //if head is a resource merge vps into head
         if (headAtom.isResource()) {
@@ -223,7 +230,7 @@ public class InferenceRule {
                 Set<ValuePredicate> innerVps = parentAtom.getInnerPredicates(ValuePredicate.class)
                         .flatMap(vp -> vp.unify(unifier).stream())
                         .collect(toSet());
-                bodyAtoms.addAll(innerVps);
+                bodyConjunctionAtoms.addAll(innerVps);
 
                 headAtom = AttributeAtom.create(
                         resourceHead.getPattern(),
@@ -242,7 +249,7 @@ public class InferenceRule {
                 .collect(toSet());
 
         //set rule body types to sub types of combined query+rule types
-        Set<TypeAtom> ruleTypes = body.getAtoms(TypeAtom.class).filter(t -> !t.isRelation()).collect(toSet());
+        Set<TypeAtom> ruleTypes = bodyConjunction.getAtoms(TypeAtom.class).filter(t -> !t.isRelation()).collect(toSet());
         Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);
         allTypes.stream()
                 .filter(ta -> {
@@ -253,25 +260,18 @@ public class InferenceRule {
                             .filter(t -> ReasonerUtils.supers(t).contains(schemaConcept))
                             .findFirst().orElse(null);
                     return schemaConcept == null || subType == null;
-                }).forEach(t -> bodyAtoms.add(t.copy(body)));
+                }).forEach(t -> bodyConjunctionAtoms.add(t.copy(body)));
+
+        ReasonerQueryImpl rewrittenBodyConj = ReasonerQueries.create(bodyConjunctionAtoms, tx);
+        ResolvableQuery rewrittenBody = getBody().isComposite() ?
+                ReasonerQueries.composite(rewrittenBodyConj, getBody().asComposite().getComplementQueries(), tx) :
+                rewrittenBodyConj;
         return new InferenceRule(
                 ReasonerQueries.atomic(headAtom),
-                ReasonerQueries.create(bodyAtoms, tx),
+                rewrittenBody,
                 rule,
                 tx
         );
-    }
-
-    private InferenceRule rewriteHeadToRelation(Atom parentAtom){
-        if (parentAtom.isRelation() && getHead().getAtom().isResource()){
-            return new InferenceRule(
-                    ReasonerQueries.atomic(getHead().getAtom().toRelationshipAtom()),
-                    ReasonerQueries.create(getBody().getAtoms(), tx),
-                    rule,
-                    tx
-            );
-        }
-        return this;
     }
 
     /**
@@ -300,19 +300,36 @@ public class InferenceRule {
         return false;
     }
 
+    private InferenceRule rewriteHeadToRelation(Atom parentAtom){
+        if (parentAtom.isRelation() && getHead().getAtom().isResource()){
+            return new InferenceRule(
+                    ReasonerQueries.atomic(getHead().getAtom().toRelationshipAtom()),
+                    getBody(),
+                    rule,
+                    tx
+            );
+        }
+        return this;
+    }
+
     private InferenceRule rewriteVariables(Atom parentAtom){
         if (parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion()) {
             ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined(parentAtom));
-            List<Atom> bodyRewrites = new ArrayList<>();
+
             //NB: only rewriting atoms from the same type hierarchy
-            body.getAtoms(Atom.class)
+            List<Atom> rewrittenBodyConjAtoms = getBody().asComposite().getConjunctiveQuery().getAtoms(Atom.class)
                     .map(at ->
                             ReasonerUtils.areDisjointTypes(at.getSchemaConcept(), head.getAtom().getSchemaConcept(), false) ?
                                     at : at.rewriteToUserDefined(parentAtom)
                     )
-                    .forEach(bodyRewrites::add);
+                    .collect(Collectors.toList());
+            ReasonerQueryImpl rewrittenBodyConj = ReasonerQueries.create(rewrittenBodyConjAtoms, tx);
+            ResolvableQuery rewrittenBody = getBody().isComposite() ?
+                    ReasonerQueries.composite(rewrittenBodyConj, getBody().asComposite().getComplementQueries(), tx) :
+                    rewrittenBodyConj;
 
-            ReasonerQueryImpl rewrittenBody = ReasonerQueries.create(bodyRewrites, tx);
+            //NB we don't have to rewrite complements as we don't allow recursion atm
+
             return new InferenceRule(rewrittenHead, rewrittenBody, rule, tx);
         }
         return this;
@@ -338,6 +355,24 @@ public class InferenceRule {
     }
 
     /**
+     * @param parentAtom atom to unify the rule with
+     * @return corresponding unifier
+     */
+    public MultiUnifier getMultiUnifier(Atom parentAtom) {
+        Atom childAtom = getRuleConclusionAtom();
+        if (parentAtom.getSchemaConcept() != null){
+            return childAtom.getMultiUnifier(parentAtom, UnifierType.RULE);
+        }
+        //case of match all atom (atom without type)
+        else{
+            Atom extendedParent = parentAtom
+                    .addType(childAtom.getSchemaConcept())
+                    .inferTypes();
+            return childAtom.getMultiUnifier(extendedParent, UnifierType.RULE);
+        }
+    }
+
+    /**
      * @param parentAtom atom to which this rule is applied
      * @param ruleUnifier unifier with parent state
      * @param parent parent state
@@ -356,21 +391,4 @@ public class InferenceRule {
         return new RuleState(this.propagateConstraints(parentAtom, ruleUnifierInverse), partialSubPrime, ruleUnifier, parent, visitedSubGoals, cache);
     }
 
-    /**
-     * @param parentAtom atom to unify the rule with
-     * @return corresponding unifier
-     */
-    public MultiUnifier getMultiUnifier(Atom parentAtom) {
-        Atom childAtom = getRuleConclusionAtom();
-        if (parentAtom.getSchemaConcept() != null){
-            return childAtom.getMultiUnifier(parentAtom, UnifierType.RULE);
-        }
-        //case of match all atom (atom without type)
-        else{
-            Atom extendedParent = parentAtom
-                    .addType(childAtom.getSchemaConcept())
-                    .inferTypes();
-            return childAtom.getMultiUnifier(extendedParent, UnifierType.RULE);
-        }
-    }
 }

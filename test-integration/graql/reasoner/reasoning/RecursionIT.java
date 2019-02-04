@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.reasoning;
 
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.reasoner.graph.DualLinearTransitivityMatrixGraph;
@@ -26,11 +27,13 @@ import grakn.core.graql.reasoner.graph.NguyenGraph;
 import grakn.core.graql.reasoner.graph.PathMatrixGraph;
 import grakn.core.graql.reasoner.graph.PathTreeGraph;
 import grakn.core.graql.reasoner.graph.PathTreeSymmetricGraph;
+import grakn.core.graql.reasoner.graph.ReachabilityGraph;
 import grakn.core.graql.reasoner.graph.TailRecursionGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.util.GraqlTestUtil;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -171,8 +174,9 @@ public class RecursionIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 String queryString = "match ($x, $y) isa N-TC; $y has index 'a'; get $x;";
                 String explicitQuery = "match $x has index 'a2'; get;";
-
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
+                List<ConceptMap> expected = tx.execute(Graql.<GetQuery>parse(explicitQuery), false);
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(expected, answers);
             }
         }
     }
@@ -180,19 +184,25 @@ public class RecursionIT {
     @Test
     public void testReachability() {
         try (Session session = server.sessionWithNewKeyspace()) {
-            GraqlTestUtil.loadFromFileAndCommit(resourcePath, "reachability.gql", session);
+            ReachabilityGraph graph = new ReachabilityGraph(session);
+            graph.load(2);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                String queryString = "match (reach-from: $x, reach-to: $y) isa reachable; get;";
-                String explicitQuery = "match $x has index $indX;$y has index $indY;" +
-                        "{$indX == 'a';$indY == 'b';} or" +
-                        "{$indX == 'b';$indY == 'c';} or" +
-                        "{$indX == 'c';$indY == 'c';} or" +
-                        "{$indX == 'c';$indY == 'd';} or" +
-                        "{$indX == 'a';$indY == 'c';} or" +
-                        "{$indX == 'b';$indY == 'd';} or" +
-                        "{$indX == 'a';$indY == 'd';};get $x, $y;";
+                String queryString = "match $x isa node; $y isa node;(from: $x, to: $y) isa reachable; get;";
+                String explicitQuery = "match " +
+                        "$x has index $indX;" +
+                        "$y has index $indY;" +
+                        "{$indX == 'aa';$indY == 'bb';} or" +
+                        "{$indX == 'bb';$indY == 'cc';} or" +
+                        "{$indX == 'cc';$indY == 'cc';} or" +
+                        "{$indX == 'cc';$indY == 'dd';} or" +
+                        "{$indX == 'aa';$indY == 'cc';} or" +
+                        "{$indX == 'bb';$indY == 'dd';} or" +
+                        "{$indX == 'aa';$indY == 'dd';};" +
+                        "get $x, $y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> expected = tx.execute(Graql.<GetQuery>parse(explicitQuery), false);
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(expected, answers);
             }
         }
     }
