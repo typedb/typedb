@@ -611,7 +611,7 @@ public class ReasoningIT {
 
                 List<ConceptMap> persistedRelations = tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"),false);
                 List<ConceptMap> inferredRelations = tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"));
-                assertEquals("New relations were created!", persistedRelations, inferredRelations);
+                assertCollectionsNonTriviallyEqual("New relations were created!", persistedRelations, inferredRelations);
 
                 Set<ConceptMap> variants = Stream.of(
                         Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse("match $r (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;"), false)),
@@ -625,7 +625,12 @@ public class ReasoningIT {
                 assertCollectionsNonTriviallyEqual("Rules are not matched correctly!", variants, inferredRelations);
 
                 List<ConceptMap> derivedRPTriples = tx.execute(Graql.<GetQuery>parse("match (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;"));
-                assertEquals("Rule body is not rewritten correctly!", 2, derivedRPTriples.size());
+                //NB: same answer is obtained from both rules
+                assertEquals("Rule body is not rewritten correctly!", 1, derivedRPTriples.size());
+
+                List<ConceptMap> derivedRelations = tx.execute(Graql.<GetQuery>parse("match $r (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;"));
+                //three symmetric roles hence 3! results
+                assertEquals("Rule body is not rewritten correctly!", 6, derivedRelations.size());
             }
         }
     }
