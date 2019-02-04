@@ -41,10 +41,10 @@ while status == 'no-status':
     status = check_output_discarding_stderr(['curl', GRABL_URL_STATUS])
 
     if status == 'deploy':
-        print("Deployment approved, creating the 'trigger-workflow-deploy' branch "
+        print("Deployment approved, creating the 'trigger-ci-release' branch "
               "in order to trigger the deployment process")
-        subprocess.call(['git', 'branch', 'trigger-workflow-deploy', 'HEAD'])
-        subprocess.call(['git', 'push', 'origin', 'trigger-workflow-deploy:trigger-workflow-deploy'])
+        subprocess.call(['git', 'branch', 'trigger-ci-release', 'HEAD'])
+        subprocess.call(['git', 'push', 'origin', 'trigger-ci-release:trigger-ci-release'])
     elif status == 'do-not-deploy':
         print('Deployment has been manually rejected by an administrator')
         break

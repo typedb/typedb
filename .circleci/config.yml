@@ -307,13 +307,20 @@ jobs:
             mkdir docs
             cd docs
             python ../.circleci/docs-update-grakn-dependency-on-dev-branch.py
+  
   approve-release:
     machine: true
     steps:
       - checkout
       - run: python .circleci/approve-release.py
 
-  deploy-github:
+  release-cleanup:
+    machine: true
+    steps:
+      - checkout
+      - run: git push --delete origin trigger-ci-release
+
+  publish-github-draft:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -321,7 +328,7 @@ jobs:
       # - checkout
       # - bazel_install
       # - bazel_add_rbe_credential
-      # - run: bazel run //:deploy-github-zip -- ${GRABL_TOKEN}
+      # - run: bazel run //:publish-github-draft-zip -- ${GRABL_TOKEN}
   deploy-maven:
     machine: true
     steps:
@@ -378,39 +385,37 @@ jobs:
           mkdir docs
           cd docs
           python ../.circleci/deploy-docs.py
-  deploy-cleanup:
-    machine: true
-    steps:
-      - run: echo deploy-cleanup
+  
+  
 workflows:
   ci-pull-request:
     jobs:
       - tests:
           filters:
             branches:
-              ignore: /master|trigger-workflow-deploy/
+              ignore: /master|trigger-ci-release/
       - client-java:
           filters:
             branches:
-              ignore: /master|trigger-workflow-deploy/
+              ignore: /master|trigger-ci-release/
           requires:
             - tests
       - common:
           filters:
             branches:
-              ignore: /master|trigger-workflow-deploy/
+              ignore: /master|trigger-ci-release/
           requires:
             - tests
       - console:
           filters:
             branches:
-              ignore: /master|trigger-workflow-deploy/
+              ignore: /master|trigger-ci-release/
           requires:
             - tests
       - distributions:
           filters:
             branches:
-              ignore: /master|trigger-workflow-deploy/
+              ignore: /master|trigger-ci-release/
           requires:
             - client-java
             - common
@@ -418,13 +423,13 @@ workflows:
       - dist-mac:
           filters:
             branches:
-              ignore: /master|trigger-workflow-deploy/
+              ignore: /master|trigger-ci-release/
           requires:
             - distributions
       - dist-ubuntu:
           filters:
             branches:
-              ignore: /master|trigger-workflow-deploy/
+              ignore: /master|trigger-ci-release/
           requires:
             - distributions
 
@@ -433,29 +438,29 @@ workflows:
       - tests:
           filters:
             branches:
-              only: integrate-grabl-release-approval-ui
+              only: master
       - client-java:
           filters:
             branches:
-              only: integrate-grabl-release-approval-ui
+              only: master
           requires:
             - tests
       - common:
           filters:
             branches:
-              only: integrate-grabl-release-approval-ui
+              only: master
           requires:
             - tests
       - console:
           filters:
             branches:
-              only: integrate-grabl-release-approval-ui
+              only: master
           requires:
             - tests
       - distributions:
           filters:
             branches:
-              only: integrate-grabl-release-approval-ui
+              only: master
           requires:
             - client-java
             - common
@@ -463,57 +468,57 @@ workflows:
       - dist-mac:
           filters:
             branches:
-              only: integrate-grabl-release-approval-ui
+              only: master
           requires:
             - distributions
       - dist-ubuntu:
           filters:
             branches:
-              only: integrate-grabl-release-approval-ui
+              only: master
           requires:
             - distributions
       - docs-update-grakn-dependency-on-dev-branch:
           filters:
             branches:
-              only: integrate-grabl-release-approval-ui
+              only: master
           requires:
             - dist-ubuntu
             - dist-mac
       - approve-release:
-          filters:
-            branches:
-              only: integrate-grabl-release-approval-ui
           requires:
             - docs-update-grakn-dependency-on-dev-branch
+          filters:
+            branches:
+              only: master
 
   ci-release:
     jobs:
-      - deploy-github:
+      - publish-github-draft:
           filters:
             branches:
-              only: trigger-workflow-deploy
+              only: trigger-ci-release
       - docs-auto-merge-to-master:
           filters:
             branches:
-              only: trigger-workflow-deploy
+              only: trigger-ci-release
           requires:
-            - deploy-github
+            - publish-github-draft
       - approve-deploy-docs:
           filters:
             branches:
-              only: trigger-workflow-deploy
+              only: trigger-ci-release
           type: approval
           requires:
             - docs-auto-merge-to-master
       - deploy-docs:
           filters:
             branches:
-              only: trigger-workflow-deploy
+              only: trigger-ci-release
           requires:
             - approve-deploy-docs
-      - deploy-cleanup:
-          filters:
-            branches:
-              only: trigger-workflow-deploy
+      - release-cleanup:
           requires:
             - deploy-docs
+          filters:
+            branches:
+              only: trigger-ci-release
