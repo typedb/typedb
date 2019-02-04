@@ -310,7 +310,8 @@ jobs:
   approve-release:
     machine: true
     steps:
-      - run: echo approve-release succeeded.
+      - checkout
+      - run: python .circleci/approve-release.py
 
   deploy-github:
     machine: true
@@ -369,14 +370,18 @@ jobs:
           mkdir docs
           cd docs
           python ../.circleci/docs-auto-merge-to-master.py
-  deploy-docs-to-production:
+  deploy-docs:
     machine: true
     steps:
       - checkout
       - run: |
           mkdir docs
           cd docs
-          python ../.circleci/deploy-docs-to-production.py
+          python ../.circleci/deploy-docs.py
+  deploy-cleanup:
+    machine: true
+    steps:
+      - run: echo deploy-cleanup
 workflows:
   ci-pull-request:
     jobs:
@@ -428,29 +433,29 @@ workflows:
       - tests:
           filters:
             branches:
-              only: master
+              only: integrate-grabl-release-approval-ui
       - client-java:
           filters:
             branches:
-              only: master
+              only: integrate-grabl-release-approval-ui
           requires:
             - tests
       - common:
           filters:
             branches:
-              only: master
+              only: integrate-grabl-release-approval-ui
           requires:
             - tests
       - console:
           filters:
             branches:
-              only: master
+              only: integrate-grabl-release-approval-ui
           requires:
             - tests
       - distributions:
           filters:
             branches:
-              only: master
+              only: integrate-grabl-release-approval-ui
           requires:
             - client-java
             - common
@@ -458,24 +463,30 @@ workflows:
       - dist-mac:
           filters:
             branches:
-              only: master
+              only: integrate-grabl-release-approval-ui
           requires:
             - distributions
       - dist-ubuntu:
           filters:
             branches:
-              only: master
+              only: integrate-grabl-release-approval-ui
           requires:
             - distributions
       - docs-update-grakn-dependency-on-dev-branch:
           filters:
             branches:
-              only: master
+              only: integrate-grabl-release-approval-ui
           requires:
             - dist-ubuntu
             - dist-mac
+      - approve-release:
+          filters:
+            branches:
+              only: integrate-grabl-release-approval-ui
+          requires:
+            - docs-update-grakn-dependency-on-dev-branch
 
-  workflow-deploy:
+  ci-release:
     jobs:
       - deploy-github:
           filters:
@@ -494,9 +505,15 @@ workflows:
           type: approval
           requires:
             - docs-auto-merge-to-master
-      - deploy-docs-to-production:
+      - deploy-docs:
           filters:
             branches:
               only: trigger-workflow-deploy
           requires:
             - approve-deploy-docs
+      - deploy-cleanup:
+          filters:
+            branches:
+              only: trigger-workflow-deploy
+          requires:
+            - deploy-docs
