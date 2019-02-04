@@ -170,6 +170,11 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             Tracer tracer = Tracing.currentTracer();
             ScopedSpan s = tracer.startScopedSpanWithParent("Server handle request", context);
             s.tag("childNumber", "1");
+            try {
+                Thread.sleep(2);
+            } catch (InterruptedException e){
+                e.printStackTrace();
+            }
             handleRequest(request);
         }
 
