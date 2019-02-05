@@ -104,7 +104,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return new ReasonerAtomicQuery(
                 getAtoms().stream()
                         .filter(at -> !(at instanceof NeqPredicate))
-                        //.filter(at -> !Sets.intersection(at.getVarNames(), getAtom().getVarNames()).isEmpty())
+                        .filter(at -> !Sets.intersection(at.getVarNames(), getAtom().getVarNames()).isEmpty())
                         .collect(Collectors.toSet()),
                 tx());
     }

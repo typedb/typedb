@@ -74,14 +74,12 @@ public class NeqValuePredicateIT {
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             List<ConceptMap> answersBis = tx.execute(Graql.<GetQuery>parse(queryString2));
 
-
             List<ConceptMap> complement = tx.execute(Graql.<GetQuery>parse(complementQueryString));
             List<ConceptMap> complete = tx.execute(Graql.<GetQuery>parse(completeQueryString));
             List<ConceptMap> expectedAnswers = ReasonerUtils.listDifference(complete, complement);
 
             assertCollectionsNonTriviallyEqual(expectedAnswers, answers);
             assertCollectionsNonTriviallyEqual(expectedAnswers, answersBis);
-
         }
     }
 
@@ -114,8 +112,7 @@ public class NeqValuePredicateIT {
                     "$unwantedType type 'derivable-resource-string';" +
                     "get;";
             GetQuery query = Graql.parse(queryString);
-            List<ConceptMap> execute = tx.execute(query);
-            System.out.println();
+            tx.execute(query);
         }
     }
 }
