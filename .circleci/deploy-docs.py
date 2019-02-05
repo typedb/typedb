@@ -3,7 +3,7 @@ import subprocess as sp
 
 git_username = "Grabl"
 git_email = "grabl@grakn.ai"
-grabl_credential = "grabl:"+os.environ['GRABL_TOKEN']
+grabl_credential = "grabl:"+os.environ['GRABL_CREDENTIAL']
 
 # TODO: consider not making web_dev_master_branch configurable
 web_dev_url = "github.com/graknlabs/test-ci-web-dev.git"

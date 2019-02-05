@@ -4,7 +4,7 @@ import sys
 
 git_username = "Grabl"
 git_email = "grabl@grakn.ai"
-grabl_credential = "grabl:"+os.environ['GRABL_TOKEN']
+grabl_credential = "grabl:"+os.environ['GRABL_CREDENTIAL']
 
 # TODO: consider not making grakn_master_branch configurable
 docs_url = "github.com/graknlabs/test-ci-docs.git"
@@ -55,7 +55,7 @@ if __name__ == '__main__':
             # see: https://hub.github.com/hub-pull-request.1.html
             sp.check_output(["wget", hub_download_url], cwd=docs_clone_location)
             sp.check_output(["tar", "-xvzf", hub_download_location+".tgz"], cwd=docs_clone_location)
-            sp.check_output("GITHUB_TOKEN="+os.environ['GRABL_TOKEN']+" "+hub_download_location+"/bin/hub pull-request -F "+pr_msg_location+" -r " + pr_reviewer, shell=True, cwd=docs_clone_location)
+            sp.check_output("GITHUB_TOKEN="+os.environ['GRABL_CREDENTIAL']+" "+hub_download_location+"/bin/hub pull-request -F "+pr_msg_location+" -r " + pr_reviewer, shell=True, cwd=docs_clone_location)
             print("IMPORTANT - A PR was just created by Grabl on the docs repository. Make sure to follow the instructions in the PR's description before continuing this workflow.")
         else:
             print('There is nothing to update.')
