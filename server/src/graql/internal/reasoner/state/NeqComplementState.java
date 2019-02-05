@@ -72,7 +72,7 @@ public class NeqComplementState extends QueryStateBase {
         this.neqPredicateSub = query.getSubstitution().merge(sub)
                 .project(this.neqPredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
-        this.complementState = query.positive().subGoal(sub, u, this, subGoals, cache);
+        this.complementState = query.neqPositive().subGoal(sub, u, this, subGoals, cache);
     }
 
     @Override

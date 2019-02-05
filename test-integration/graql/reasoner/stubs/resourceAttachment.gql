@@ -24,8 +24,9 @@ relation sub relationship,
     has reattachable-resource-string;
 
 #Resources
-reattachable-resource-string sub attribute, datatype string;
-derived-resource-string sub attribute, datatype string;
+derivable-resource-string sub attribute, datatype string;
+reattachable-resource-string sub derivable-resource-string, datatype string;
+derived-resource-string sub derivable-resource-string, datatype string;
 resource-long sub attribute, datatype long;
 derived-resource-boolean sub attribute, datatype boolean;
 subResource sub reattachable-resource-string;

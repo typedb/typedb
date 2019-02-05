@@ -24,6 +24,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
@@ -99,11 +100,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ReasonerAtomicQuery positive(){
+    public ReasonerAtomicQuery neqPositive(){
         return new ReasonerAtomicQuery(
                 getAtoms().stream()
-                        .filter(at -> !(at instanceof NeqIdPredicate))
-                        .filter(at -> !Sets.intersection(at.getVarNames(), getAtom().getVarNames()).isEmpty())
+                        .filter(at -> !(at instanceof NeqPredicate))
+                        //.filter(at -> !Sets.intersection(at.getVarNames(), getAtom().getVarNames()).isEmpty())
                         .collect(Collectors.toSet()),
                 tx());
     }
@@ -201,7 +202,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
         if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
-        return this.getAtoms(NeqIdPredicate.class).findFirst().isPresent() ?
+        return this.getAtoms(NeqPredicate.class).findFirst().isPresent() ?
                 new NeqComplementState(this, sub, u, parent, subGoals, cache) :
                 new AtomicState(this, sub, u, parent, subGoals, cache);
     }

@@ -65,14 +65,15 @@ public class NeqValuePredicateIT {
                     "get;";
             String queryString2 = "match " +
                     "$x has derived-resource-string $val;" +
-                    "$unwanted 'unattached';" +
+                    "$unwanted == 'unattached';" +
                     "$val !== $unwanted; get;";
 
-            String complementQueryString = "match $x has derived-resource-string $val 'unattached'; get;";
+            String complementQueryString = "match $x has derived-resource-string $val; $val == 'unattached'; get;";
             String completeQueryString = "match $x has derived-resource-string $val; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
             List<ConceptMap> answersBis = tx.execute(Graql.<GetQuery>parse(queryString2));
+
 
             List<ConceptMap> complement = tx.execute(Graql.<GetQuery>parse(complementQueryString));
             List<ConceptMap> complete = tx.execute(Graql.<GetQuery>parse(completeQueryString));
@@ -80,6 +81,7 @@ public class NeqValuePredicateIT {
 
             assertCollectionsNonTriviallyEqual(expectedAnswers, answers);
             assertCollectionsNonTriviallyEqual(expectedAnswers, answersBis);
+
         }
     }
 
@@ -109,7 +111,7 @@ public class NeqValuePredicateIT {
                     "$value isa $type;" +
                     "$unwantedValue isa $type;" +
                     "$type != $unwantedType;" +
-                    "$unwantedType label 'derivable-resource-string';" +
+                    "$unwantedType type 'derivable-resource-string';" +
                     "get;";
             GetQuery query = Graql.parse(queryString);
             List<ConceptMap> execute = tx.execute(query);

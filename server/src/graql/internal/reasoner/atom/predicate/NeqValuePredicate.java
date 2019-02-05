@@ -29,6 +29,8 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.predicate.Predicates;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -46,15 +48,15 @@ public abstract class NeqValuePredicate extends NeqPredicate {
     @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
 
     public static NeqValuePredicate create(Variable varName, Variable var, @Nullable Object value, ReasonerQuery parent){
-        Statement pattern = Graql.var(varName).val(Predicates.neq(value != null ? value : var));
+        Statement pattern = Graql.var(varName).val(Graql.neq(value != null? value : Graql.var(var)));
         return new AutoValue_NeqValuePredicate(varName, var, value, pattern, parent);
     }
 
     public static NeqValuePredicate create(Variable varName, grakn.core.graql.query.predicate.NeqPredicate pred, ReasonerQuery parent) {
         Statement innerVar = pred.getInnerVar().orElse(null);
-        Statement var = innerVar != null? innerVar : Graql.var();
+        Variable var = innerVar != null? innerVar.var() : Graql.var().var().asUserDefined();
         Object value = pred.value().orElse(null);
-        return create(varName, var.var(), value, parent);
+        return create(varName, var, value, parent);
     }
 
     public static NeqValuePredicate create(NeqValuePredicate a, ReasonerQuery parent) {
@@ -72,11 +74,13 @@ public abstract class NeqValuePredicate extends NeqPredicate {
 
     @Override
     public boolean isSatisfied(ConceptMap sub) {
+        Object predicateVal = getPredicates(getPredicate(), ValuePredicate.class)
+                .map(p -> p.getPredicate().equalsValue())
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst().orElse(null);
 
-        ValuePredicate predicate = Iterables.getOnlyElement(getPredicates(getPredicate(), ValuePredicate.class).collect(Collectors.toSet()));
-        Object val = getValue() != null?
-                getValue() :
-                predicate != null? predicate.getPredicate().equalsValue().orElse(null) : null;
+        Object val = getValue() != null? getValue() : predicateVal;
         if (val == null &&
                 (!sub.containsVar(getVarName()) || !sub.containsVar(getPredicate()))) {
             return true;

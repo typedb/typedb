@@ -23,6 +23,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
@@ -126,7 +127,14 @@ public class ReasonerUtils {
         else {
             sourceVars = Stream.of(valueVar);
         }
-        return sourceVars.flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> ValuePredicate.create(valueVariable, vp.predicate(), parent)));
+        return sourceVars
+                .flatMap(v -> v.getProperties(ValueProperty.class)
+                        //.map(vp -> ValuePredicate.create(valueVariable, vp.predicate(), parent))
+                        .map(property -> PropertyExecutor.create(valueVariable, property)
+                                .atomic(parent, valueVar, vars))
+                        .filter(at -> at instanceof ValuePredicate)
+                        .map( at -> (ValuePredicate) at)
+                );
     }
 
     /**
