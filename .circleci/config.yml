@@ -53,10 +53,6 @@ commands:
           command: sudo apt update && sudo apt install rpm -y
 
 jobs:
-  tests:
-    machine: true
-    steps:
-      - run: echo test succeeded.
   build:
     machine: true
     working_directory: ~/grakn
@@ -78,37 +74,34 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - run: echo disable temporarily
-      # - checkout
-      # - bazel_install
-      # - bazel_add_rbe_credential
-      # - bazel:
-      #     command: bazel test //client-java/... --test_size_filters=small --test_output=errors
-      # - bazel:
-      #     command: bazel test //client-java/... --test_size_filters=medium,large,enormous --test_output=errors
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - bazel:
+          command: bazel test //client-java/... --test_size_filters=small --test_output=errors
+      - bazel:
+          command: bazel test //client-java/... --test_size_filters=medium,large,enormous --test_output=errors
 
   common:
     machine: true
     working_directory: ~/grakn
     steps:
-      - run: echo disable temporarily
-      # - checkout
-      # - bazel_install
-      # - bazel_add_rbe_credential
-      # - bazel:
-      #     command: bazel test //common/... --test_output=errors
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - bazel:
+          command: bazel test //common/... --test_output=errors
 
   console:
     machine: true
     working_directory: ~/grakn
     steps:
-      - run: echo disable temporarily
-      # - checkout
-      # - bazel_install
-      # - bazel_add_rbe_credential
-      # - rpm_install
-      # - bazel:
-      #     command: bazel test //console/... --test_output=errors
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - rpm_install
+      - bazel:
+          command: bazel test //console/... --test_output=errors
 
   graql:
     machine: true
@@ -176,47 +169,6 @@ jobs:
           command: bazel build //:distribution
       - bazel:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
-  distributions:
-    machine: true
-    steps:
-      - run: echo distributions succeeded.
-  dist-mac:
-    macos:
-      xcode: "9.0"
-    working_directory: ~/grakn
-    steps:
-      - run: echo disable temporarily
-      # - checkout
-      # - bazel_install_mac
-      # - bazel_add_rbe_credential
-      # - run: bazel build //:distribution
-      # - run: unzip bazel-genfiles/grakn-core-all.zip -d bazel-genfiles/dist/
-      # - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
-      # - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server stop
-  dist-ubuntu:
-    machine: true # CircleCI's machine executor is a Ubuntu distribution (either 12.04 or 14.04)
-    working_directory: ~/grakn
-    steps:
-      - run: echo disable temporarily
-      # - run: sudo apt-get update
-      # - run: sudo apt-get install -y software-properties-common
-      # - run: sudo add-apt-repository ppa:openjdk-r/ppa
-      # - run: sudo apt-get update
-      # - run: sudo apt-get install -y sudo curl unzip git python gcc python-dev build-essential openjdk-8-jdk
-      # - checkout
-      # - bazel_install
-      # - bazel_add_rbe_credential
-      # - bazel:
-      #     command: bazel build --jobs 1 //:distribution-deb
-      # - run: sudo dpkg -i bazel-bin/distribution-deb.deb
-      # - bazel:
-      #     command: bazel build --jobs 1 //server:distribution-deb
-      # - run: sudo dpkg -i bazel-bin/server/distribution-deb.deb
-      # - bazel:
-      #     command: bazel build --jobs 1 //console:distribution-deb
-      # - run: sudo dpkg -i bazel-bin/console/distribution-deb.deb
-      # - run: nohup grakn server start
-      # - run: nohup grakn server stop
 
   docs-update-grakn-dependency-on-dev-branch:
     machine: true
@@ -245,51 +197,11 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - run: echo disable temporarily
-      # - checkout
-      # - bazel_install
-      # - bazel_add_rbe_credential
-      # - run: bazel run //:publish-github-draft-zip -- ${GRABL_TOKEN}
-  deploy-maven:
-    machine: true
-    steps:
-      - run: echo deploy-maven succeeded.
-  deploy-npm:
-    machine: true
-    steps:
-      - run: echo deploy-npm succeeded.
-  deploy-pypi:
-    machine: true
-    steps:
-      - run: echo deploy-pypi succeeded.
-  deploy-deb:
-    machine: true
-    steps:
-      - run: echo deploy-deb succeeded.
-  deploy-rpm:
-    machine: true
-    steps:
-      - run: echo deploy-rpm succeeded.
-  deploy-brew:
-    machine: true
-    steps:
-      - run: echo deploy-brew succeeded.
-  deploy-workbase:
-    machine: true
-    steps:
-      - run: echo deploy-workbase succeeded.
-  deploy-workbase-mac:
-    machine: true
-    steps:
-      - run: echo deploy-workbase-mac succeeded.
-  deploy-workbase-linux:
-    machine: true
-    steps:
-      - run: echo deploy-workbase-linux succeeded.
-  deploy-workbase-windows:
-    machine: true
-    steps:
-      - run: echo deploy-workbase-windows succeeded.
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - run: bazel run //:publish-github-draft-zip -- ${GRABL_TOKEN}
+
   docs-auto-merge-to-master:
     machine: true
     steps:
@@ -298,6 +210,7 @@ jobs:
           mkdir docs
           cd docs
           python ../.circleci/docs-auto-merge-to-master.py
+
   deploy-docs:
     machine: true
     steps:
