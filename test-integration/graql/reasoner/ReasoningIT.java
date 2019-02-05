@@ -571,7 +571,7 @@ public class ReasoningIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                
+
                 List<ConceptMap> persistedRelations = tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"),false);
                 List<ConceptMap> inferredRelations = tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"));
                 assertEquals("New relations were created!", persistedRelations, inferredRelations);
