@@ -98,7 +98,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
         }
     }
 
-    final Optional<Object> value() {
+    public final Optional<Object> value() {
         return Optional.ofNullable(value);
     }
 

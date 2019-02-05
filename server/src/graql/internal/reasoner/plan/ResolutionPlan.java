@@ -25,7 +25,7 @@ import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqIdPredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.query.pattern.statement.Variable;
 
@@ -74,11 +74,11 @@ public final class ResolutionPlan {
      * @return true if the plan is valid with respect to provided query - its resolution doesn't lead to any non-ground neq predicates
      */
     private boolean isNeqGround(){
-        Set<NeqPredicate> nonGroundPredicates = new HashSet<>();
+        Set<NeqIdPredicate> nonGroundPredicates = new HashSet<>();
         Set<Variable> mappedVars = this.query.getAtoms(IdPredicate.class).map(Atomic::getVarName).collect(Collectors.toSet());
         for(Atom atom : this.plan){
             mappedVars.addAll(atom.getVarNames());
-            atom.getPredicates(NeqPredicate.class)
+            atom.getPredicates(NeqIdPredicate.class)
                     .forEach(neq -> {
                         //look for non-local non-ground predicates
                         if (!mappedVars.containsAll(neq.getVarNames())

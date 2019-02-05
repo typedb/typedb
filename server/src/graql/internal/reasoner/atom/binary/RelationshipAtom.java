@@ -51,7 +51,7 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqIdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
@@ -314,8 +314,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                                                 AtomicEquivalence equivalence) {
         Multimap<Role, String> thisIdMap = this.getRoleConceptIdMap();
         Multimap<Role, String> thatIdMap = atom.getRoleConceptIdMap();
-        Multimap<Role, NeqPredicate> thisNeqMap = this.getRoleNeqPredicateMap();
-        Multimap<Role, NeqPredicate> thatNeqMap = atom.getRoleNeqPredicateMap();
+        Multimap<Role, NeqIdPredicate> thisNeqMap = this.getRoleNeqPredicateMap();
+        Multimap<Role, NeqIdPredicate> thatNeqMap = atom.getRoleNeqPredicateMap();
         Multimap<Role, ValuePredicate> thisValueMap = this.getRoleValueMap();
         Multimap<Role, ValuePredicate> thatValueMap = atom.getRoleValueMap();
         return thisIdMap.keySet().equals(thatIdMap.keySet())
@@ -499,9 +499,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Memoized
-    public Multimap<Role, NeqPredicate> getRoleNeqPredicateMap() {
-        ImmutableMultimap.Builder<Role, NeqPredicate> builder = ImmutableMultimap.builder();
-        getRolePredicateMap(NeqPredicate.class)
+    public Multimap<Role, NeqIdPredicate> getRoleNeqPredicateMap() {
+        ImmutableMultimap.Builder<Role, NeqIdPredicate> builder = ImmutableMultimap.builder();
+        getRolePredicateMap(NeqIdPredicate.class)
                 .entries()
                 .forEach(e -> builder.put(e.getKey(), e.getValue()));
         return builder.build();
@@ -947,7 +947,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .filter(list -> {
                     List<RelationProperty.RolePlayer> listChildRps = list.stream().map(Pair::getKey).collect(Collectors.toList());
                     //NB: this preserves cardinality instead of removing all occuring instances which is what we want
-                    return ReasonerUtils.subtract(listChildRps, this.getRelationPlayers()).isEmpty();
+                    return ReasonerUtils.listDifference(listChildRps, this.getRelationPlayers()).isEmpty();
                 })
                 //check all parent rps mapped
                 .filter(list -> {

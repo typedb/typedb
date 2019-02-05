@@ -490,7 +490,7 @@ public class NegationIT {
     @Test
     public void allRecipesContainingAvailableIngredients(){
         try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
-            Set<ConceptMap> allRecipes = tx.stream(Graql.<GetQuery>parse("match $r isa recipe;get;")).collect(Collectors.toSet());
+            List<ConceptMap> allRecipes = tx.stream(Graql.<GetQuery>parse("match $r isa recipe;get;")).collect(Collectors.toList());
 
             List<ConceptMap> recipesWithUnavailableIngredientsExplicit = tx.execute(
                     Graql.<GetQuery>parse("match " +
@@ -544,7 +544,7 @@ public class NegationIT {
 
             assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailable);
             assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailableSimple);
-            assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailable, ReasonerUtils.subtract(allRecipes, recipesWithUnavailableIngredients));
+            assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailable, ReasonerUtils.listDifference(allRecipes, recipesWithUnavailableIngredients));
         }
     }
 

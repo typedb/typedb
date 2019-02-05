@@ -39,7 +39,7 @@ import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqIdPredicate;
 import grakn.core.graql.internal.reasoner.cache.Index;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
@@ -147,7 +147,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public ReasonerQueryImpl positive(){
-        return new ReasonerQueryImpl(getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), tx());
+        return new ReasonerQueryImpl(getAtoms().stream().filter(at -> !(at instanceof NeqIdPredicate)).collect(Collectors.toSet()), tx());
     }
 
     /**
@@ -483,7 +483,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
-        return this.getAtoms(NeqPredicate.class).findFirst().isPresent() ?
+        return this.getAtoms(NeqIdPredicate.class).findFirst().isPresent() ?
                 new NeqComplementState(this, sub, u, parent, subGoals, cache) :
                 new ConjunctiveState(this, sub, u, parent, subGoals, cache);
     }

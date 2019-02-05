@@ -18,48 +18,14 @@
 
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.base.Equivalence;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
-import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.NeqProperty;
-
 import java.util.Set;
 
-/**
- *
- * <p>
- * Predicate implementation specialising it to be an inequality predicate. Corresponds to graql {@link NeqProperty}.
- * </p>
- *
- *
- */
-@AutoValue
 public abstract class NeqPredicate extends Predicate<Variable> {
-
-    @Override public abstract Statement getPattern();
-    @Override public abstract ReasonerQuery getParentQuery();
-    //need to have it explicitly here cause autovalue gets confused with the generic
-    public abstract Variable getPredicate();
-
-    public static NeqPredicate create(Statement pattern, ReasonerQuery parent) {
-        return new AutoValue_NeqPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
-    }
-    public static NeqPredicate create(Variable varName, NeqProperty prop, ReasonerQuery parent) {
-        Statement pattern = new Statement(varName).neq(prop);
-        return create(pattern, parent);
-    }
-    public static NeqPredicate create(NeqPredicate a, ReasonerQuery parent) {
-        return create(a.getPattern(), parent);
-    }
-
-    private static Variable extractPredicate(Statement pattern) {
-        return pattern.getProperties(NeqProperty.class).iterator().next().statement().var();
-    }
 
     private boolean predicateBindingsEquivalent(NeqPredicate that, Equivalence<Atomic> equiv){
         IdPredicate thisPredicate = this.getIdPredicate(this.getVarName());
@@ -106,9 +72,6 @@ public abstract class NeqPredicate extends Predicate<Variable> {
     }
 
     @Override
-    public Atomic copy(ReasonerQuery parent) { return create(this, parent);}
-
-    @Override
     public String toString(){
         IdPredicate idPredicate = this.getIdPredicate(this.getVarName());
         IdPredicate refIdPredicate = this.getIdPredicate(this.getPredicate());
@@ -133,9 +96,5 @@ public abstract class NeqPredicate extends Predicate<Variable> {
      * @param sub substitution to be checked against the predicate
      * @return true if provided subsitution satisfies the predicate
      */
-    public boolean isSatisfied(ConceptMap sub) {
-        return !sub.containsVar(getVarName())
-                || !sub.containsVar(getPredicate())
-                || !sub.get(getVarName()).equals(sub.get(getPredicate()));
-    }
+    public abstract boolean isSatisfied(ConceptMap sub);
 }

@@ -20,17 +20,20 @@ package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqValuePredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 
+import grakn.core.graql.query.predicate.NeqPredicate;
 import java.util.Set;
 
 public class ValueExecutor implements PropertyExecutor.Insertable {
@@ -50,7 +53,12 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        return ValuePredicate.create(var, property.predicate(), parent);
+        HasAttributeProperty has = statement.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
+        Variable var = has != null? has.attribute().var() : statement.var();
+        grakn.core.graql.query.predicate.ValuePredicate predicate = property.predicate();
+        return predicate instanceof NeqPredicate ?
+                NeqValuePredicate.create(var.asUserDefined(), (NeqPredicate) predicate, parent) :
+                ValuePredicate.create(var.asUserDefined(), predicate, parent);
     }
 
     @Override

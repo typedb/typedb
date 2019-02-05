@@ -29,7 +29,7 @@ import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
-import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqIdPredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
@@ -102,7 +102,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ReasonerAtomicQuery positive(){
         return new ReasonerAtomicQuery(
                 getAtoms().stream()
-                        .filter(at -> !(at instanceof NeqPredicate))
+                        .filter(at -> !(at instanceof NeqIdPredicate))
                         .filter(at -> !Sets.intersection(at.getVarNames(), getAtom().getVarNames()).isEmpty())
                         .collect(Collectors.toSet()),
                 tx());
@@ -138,8 +138,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return//check whether propagated answers would be complete
                 !inverse.isEmpty() &&
                         inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()))
-                        && !parent.getAtoms(NeqPredicate.class).findFirst().isPresent()
-                        && !this.getAtoms(NeqPredicate.class).findFirst().isPresent();
+                        && !parent.getAtoms(NeqIdPredicate.class).findFirst().isPresent()
+                        && !this.getAtoms(NeqIdPredicate.class).findFirst().isPresent();
     }
 
     /**
@@ -201,7 +201,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
         if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
-        return this.getAtoms(NeqPredicate.class).findFirst().isPresent() ?
+        return this.getAtoms(NeqIdPredicate.class).findFirst().isPresent() ?
                 new NeqComplementState(this, sub, u, parent, subGoals, cache) :
                 new AtomicState(this, sub, u, parent, subGoals, cache);
     }
