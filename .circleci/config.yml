@@ -29,7 +29,6 @@ commands:
             else
               echo "No RBE credential found. Bazel will be executed locally without RBE support."
             fi
-
   bazel:
     parameters:
       command:
@@ -47,7 +46,6 @@ commands:
             fi
             echo "Executing $CMD"
             $CMD
-
   rpm_install:
     steps:
       - run:
@@ -308,12 +306,11 @@ jobs:
           mkdir docs
           cd docs
           python ../.circleci/deploy-docs.py
-  
-  
+
 workflows:
   ci-pull-request:
     jobs:
-      - tests:
+      - build:
           filters:
             branches:
               ignore: /master|trigger-ci-release/
@@ -321,44 +318,42 @@ workflows:
           filters:
             branches:
               ignore: /master|trigger-ci-release/
-          requires:
-            - tests
       - common:
           filters:
             branches:
               ignore: /master|trigger-ci-release/
-          requires:
-            - tests
       - console:
           filters:
             branches:
               ignore: /master|trigger-ci-release/
-          requires:
-            - tests
-      - distributions:
+      - graql:
           filters:
             branches:
               ignore: /master|trigger-ci-release/
-          requires:
-            - client-java
-            - common
-            - console
-      - dist-mac:
+      - server:
           filters:
             branches:
               ignore: /master|trigger-ci-release/
-          requires:
-            - distributions
-      - dist-ubuntu:
+      - test-integration:
           filters:
             branches:
               ignore: /master|trigger-ci-release/
-          requires:
-            - distributions
+      - test-integration-reasoner:
+          filters:
+            branches:
+              ignore: /master|trigger-ci-release/
+      - test-integration-analytics:
+          filters:
+            branches:
+              ignore: /master|trigger-ci-release/
+      - test-end-to-end:
+          filters:
+            branches:
+              ignore: /master|trigger-ci-release/
 
   ci-master-branch:
     jobs:
-      - tests:
+      - build:
           filters:
             branches:
               only: master
@@ -366,53 +361,59 @@ workflows:
           filters:
             branches:
               only: master
-          requires:
-            - tests
       - common:
           filters:
             branches:
               only: master
-          requires:
-            - tests
       - console:
           filters:
             branches:
               only: master
-          requires:
-            - tests
-      - distributions:
+      - graql:
           filters:
             branches:
               only: master
-          requires:
-            - client-java
-            - common
-            - console
-      - dist-mac:
+      - server:
           filters:
             branches:
               only: master
-          requires:
-            - distributions
-      - dist-ubuntu:
+      - test-integration:
           filters:
             branches:
               only: master
-          requires:
-            - distributions
+      - test-integration-reasoner:
+          filters:
+            branches:
+              only: master
+      - test-integration-analytics:
+          filters:
+            branches:
+              only: master
+      - test-end-to-end:
+          filters:
+            branches:
+              only: master
       - docs-update-grakn-dependency-on-dev-branch:
           filters:
             branches:
               only: master
           requires:
-            - dist-ubuntu
-            - dist-mac
+            - build
+            - client-java
+            - common
+            - console
+            - graql
+            - server
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
+            - test-end-to-end
       - approve-release:
-          requires:
-            - docs-update-grakn-dependency-on-dev-branch
           filters:
             branches:
               only: master
+          requires:
+            - docs-update-grakn-dependency-on-dev-branch
 
   ci-release:
     jobs:
