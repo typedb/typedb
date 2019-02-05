@@ -192,7 +192,7 @@ jobs:
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
-      - run: bazel run //:publish-github-draft-zip -- ${GRABL_TOKEN}
+      - run: bazel run //:publish-github-draft-zip -- ${GRABL_CREDENTIAL}
 
   docs-auto-merge-to-master:
     machine: true
