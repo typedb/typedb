@@ -27,7 +27,9 @@ if __name__ == '__main__':
         sp.check_output(["git", "pull", "origin", web_dev_master_branch], cwd=docs_submodule_location)
         sp.check_output(["git", "add", "."], cwd=web_dev_clone_location)
         
-        should_commit = sp.check_output(["git", "status"], cwd=web_dev_clone_location).find('nothing to commit, working tree clean') == -1
+        # the command returns 1 if there is a staged file. otherwise, it will return 0
+        should_commit = sp.call(["git", "diff", "--staged", "--exit-code"], cwd=web_dev_clone_location) == 1
+        
         if should_commit:
             print('Deploying to production')
             sp.check_output(["git", "commit", "-m", commit_msg], cwd=web_dev_clone_location)
