@@ -215,7 +215,7 @@ jobs:
 workflows:
   # the 'ci' workflow consists of:
   #  - test jobs (executed on pull requests and master)
-  #  - a sync docs jobs (executed on master only)
+  #  - a job which syncs docs to the latest grakn version (executed on master only)
   #  - a release approval prompt (executed on master only)
   ci:
     jobs:
@@ -290,7 +290,8 @@ workflows:
   # the 'ci-release' workflow is triggered by the creation of 'trigger-ci-release' branch in graknlabs/grakn
   # it consists of:
   # - releasing Grakn to Github
-  # - releasing docs: creating a pull request to docs/master and deploying it to Heroku
+  # - prepare docs release by merging docs/development into docs/master
+  # - releasing docs to Heroku
   # - cleaning up the 'trigger-ci-release' branch
   ci-release:
     jobs:
