@@ -213,13 +213,13 @@ jobs:
           python ../.circleci/deploy-docs.py
 
 workflows:
-  # the 'ci' workflow consists of:
-  #  - test jobs (executed on pull requests and master)
-  #  - a job which syncs docs to the latest grakn version (executed on master only)
-  #  - a release approval prompt (executed on master only)
+  # the 'ci' workflow consists of jobs which:
+  #  - executes tests (executed on pull requests and master)
+  #  - syncs docs/development to the latest grakn version (executed on master only)
+  #  - waits for an approval for Grakn to be released (executed on master only)
   ci:
     jobs:
-      # test jobs (executed on pull requests and master)
+      # test jobs
       - build:
           filters:
             branches:
@@ -261,7 +261,7 @@ workflows:
             branches:
               ignore: trigger-ci-release
 
-      # sync docs (executed on master only) #
+      # sync docs/development to the latest grakn version
       - docs-update-grakn-dependency-on-dev-branch:
           filters:
             branches:
@@ -278,7 +278,7 @@ workflows:
             - test-integration-analytics
             - test-end-to-end
 
-      # approve release (executed on master only)
+      # wait for an approval for Grakn to be released
       # triggers 'ci-release' workflow by creating a branch 'trigger-ci-release' in graknlabs/grakn
       - approve-release:
           filters:
@@ -288,14 +288,13 @@ workflows:
             - docs-update-grakn-dependency-on-dev-branch
 
   # the 'ci-release' workflow is triggered by the creation of 'trigger-ci-release' branch in graknlabs/grakn
-  # it consists of:
-  # - releasing Grakn to Github
-  # - prepare docs release by merging docs/development into docs/master
-  # - releasing docs to Heroku
-  # - cleaning up the 'trigger-ci-release' branch
+  # it consists of jobs which:
+  # - publishes Grakn by creating a Github release
+  # - prepares for docs release (by merging docs/development into docs/master)
+  # - deploys docs to Heroku
+  # - cleans up the 'trigger-ci-release' branch which was created by the approve-release job
   ci-release:
     jobs:
-      # release (executed on trigger-ci-release only)
       - publish-github-draft:
           filters:
             branches:
