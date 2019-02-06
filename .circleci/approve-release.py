@@ -21,24 +21,24 @@ def check_output_discarding_stderr(*args, **kwargs):
 
 workflow_id = os.getenv('CIRCLE_WORKFLOW_ID')
 
-GRABL_DATA = {
+grabl_data = {
     'workflow-id': workflow_id,
     'repo': '{}/{}'.format(os.getenv('CIRCLE_PROJECT_USERNAME'), os.getenv('CIRCLE_PROJECT_REPONAME'))
 }
 
 GRABL_HOST = "http://grabl.herokuapp.com"
-GRABL_URL_NEW = '{GRABL_HOST}/release/new'.format(GRABL_HOST=GRABL_HOST)
-GRABL_URL_STATUS = '{GRABL_HOST}/release/{commit}/status'.format(GRABL_HOST=GRABL_HOST, commit=workflow_id)
+grabl_url_new = '{GRABL_HOST}/release/new'.format(GRABL_HOST=GRABL_HOST)
+grabl_url_status = '{GRABL_HOST}/release/{commit}/status'.format(GRABL_HOST=GRABL_HOST, commit=workflow_id)
 
 print('Tests have been ran and everything is in a good, releasable state. It is possible to proceed with the release process')
 _ = check_output_discarding_stderr([
-    'curl', '-X', 'POST', '--data', json.dumps(GRABL_DATA), '-H', 'Content-Type: application/json', GRABL_URL_NEW
+    'curl', '-X', 'POST', '--data', json.dumps(grabl_data), '-H', 'Content-Type: application/json', grabl_url_new
 ])
 
 status = 'no-status'
 
 while status == 'no-status':
-    status = check_output_discarding_stderr(['curl', GRABL_URL_STATUS])
+    status = check_output_discarding_stderr(['curl', grabl_url_status])
 
     if status == 'deploy':
         print("Deployment approved, creating the 'trigger-ci-release' branch "
