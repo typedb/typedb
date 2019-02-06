@@ -6,6 +6,7 @@ import os
 import subprocess
 import json
 import time
+import sys
 
 
 def check_output_discarding_stderr(*args, **kwargs):
@@ -41,15 +42,24 @@ status = 'no-status'
 while status == 'no-status':
     status = check_output_discarding_stderr(['curl', grabl_url_status])
 
+    print("Tests have been ran and everything is in a good, releasable state. 
+            "It is possible to proceed with the release process. Waiting for approval.")
+
     if status == 'deploy':
-        print("Deployment approved, creating the 'trigger-ci-release' branch "
-              "in order to trigger the deployment process")
+        print('Approval received! Initiating the release process. 
+            'Please monitor it at https://circleci.com/gh/' + os.getenv('CIRCLE_PROJECT_USERNAME') + 
+            '/workflows/' + os.getenv('CIRCLE_PROJECT_REPONAME') + '/tree/trigger-ci-release')
         subprocess.call(['git', 'branch', 'trigger-ci-release', 'HEAD'])
         subprocess.call(['git', 'push', 'origin', 'trigger-ci-release:trigger-ci-release'])
     elif status == 'do-not-deploy':
-        print('Deployment has been manually rejected by an administrator')
+        print("This version won't be released as it has been marked 'do-not-deploy' by an administrator")
         break
     elif status == 'timeout':
-        print('Deployment rejected via timeout')
+        print("This version won't be released as the approval has timed out.")
         break
+
+    # print '...' to provide a visual indication that it's waiting for an input
+    sys.stdout.write('.')
+    sys.stdout.flush()
+
     time.sleep(1)
