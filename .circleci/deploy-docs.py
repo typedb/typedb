@@ -24,7 +24,7 @@ if __name__ == '__main__':
         sp.check_output(["git", "clone", "--recursive", "https://"+grabl_credential+"@"+web_dev_url, web_dev_clone_location], stderr=sp.STDOUT) # redirect stderr to silence the output from git
         
         print('Updating submodule at "' + docs_submodule_location + '"')
-        sp.check_output(["git", "pull", "origin", web_dev_master_branch], cwd=docs_submodule_location) # TODO: replace origin
+        sp.check_output(["git", "pull", "origin", web_dev_master_branch], cwd=docs_submodule_location)
         sp.check_output(["git", "add", "."], cwd=web_dev_clone_location)
         
         should_commit = sp.check_output(["git", "status"], cwd=web_dev_clone_location).find('nothing to commit, working tree clean') == -1
