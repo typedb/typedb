@@ -31,7 +31,7 @@ GRABL_HOST = "http://grabl.herokuapp.com"
 grabl_url_new = '{GRABL_HOST}/release/new'.format(GRABL_HOST=GRABL_HOST)
 grabl_url_status = '{GRABL_HOST}/release/{commit}/status'.format(GRABL_HOST=GRABL_HOST, commit=workflow_id)
 
-print('Tests have been ran and everything is in a good, releasable state. It is possible to proceed with the release process')
+print('Tests have been ran and everything is in a good, releasable state. It is possible to proceed with the release process.')
 _ = check_output_discarding_stderr([
     'curl', '-X', 'POST', '--data', json.dumps(grabl_data), '-H', 'Content-Type: application/json', grabl_url_new
 ])
