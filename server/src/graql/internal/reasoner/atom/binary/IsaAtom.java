@@ -149,8 +149,8 @@ public abstract class IsaAtom extends IsaAtomBase {
         return this;
     }
 
-    private ImmutableList<SchemaConcept> inferPossibleTypes(ConceptMap sub){
-        if (getSchemaConcept() != null) return ImmutableList.of(this.getSchemaConcept());
+    private ImmutableList<Type> inferPossibleTypes(ConceptMap sub){
+        if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept().asType());
         if (sub.containsVar(getPredicateVariable())) return ImmutableList.of(sub.get(getPredicateVariable()).asType());
 
         //determine compatible types from played roles
@@ -188,7 +188,7 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     @Override
-    public ImmutableList<SchemaConcept> getPossibleTypes() { return inferPossibleTypes(new ConceptMap()); }
+    public ImmutableList<Type> getPossibleTypes() { return inferPossibleTypes(new ConceptMap()); }
 
     @Override
     public List<Atom> atomOptions(ConceptMap sub) {

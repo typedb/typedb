@@ -376,7 +376,7 @@ public class GeoInferenceIT {
         }
     }
 
-    private Concept getConcept(Transaction graph, String typeName, Object val){
+    private Concept getConcept(Transaction graph, String typeName, String val){
         return graph.stream(Graql.match((Pattern) var("x").has(typeName, val)).get("x"))
                 .map(ans -> ans.get("x")).findAny().orElse(null);
     }

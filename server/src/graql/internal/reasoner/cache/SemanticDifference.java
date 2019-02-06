@@ -20,13 +20,14 @@ package grakn.core.graql.internal.reasoner.cache;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.pattern.statement.Variable;
 
@@ -107,9 +108,11 @@ public class SemanticDifference {
             Type type = vd.type();
             Role role = vd.role();
             Set<ValuePredicate> vps = vd.valuePredicates();
-            return (type == null || type.subs().anyMatch(t -> t.equals(concept.asThing().type())))
-                    && (role == null || role.subs().anyMatch(r -> r.equals(concept.asRole())))
-                    && (vps.isEmpty() || vps.stream().allMatch(vp -> vp.getPredicate().getPredicate().get().test(concept.asAttribute().value())));
+            return (type == null || type.subs().anyMatch(t -> t.equals(concept.asThing().type()))) &&
+                    (role == null || role.subs().anyMatch(r -> r.equals(concept.asRole()))) &&
+                    (vps.isEmpty() || vps.stream().allMatch(
+                            vp -> ValueExecutor.Operation.of(vp.getPredicate()).test(concept.asAttribute().value())
+                    ));
         });
     }
 

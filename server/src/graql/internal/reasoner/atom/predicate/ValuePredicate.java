@@ -18,16 +18,14 @@
 
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
-import com.google.auto.value.AutoValue;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.ValueProperty;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -35,43 +33,36 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- *
- * <p>
  * Predicate implementation specialising it to be an value predicate. Corresponds to {@link ValueProperty}.
- * </p>
- *
- *
  */
-@AutoValue
-public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.predicate.ValuePredicate> {
+public class ValuePredicate extends Predicate<ValueProperty.Operation> {
 
-    @Override public abstract Statement getPattern();
-    @Override public abstract ReasonerQuery getParentQuery();
-
-    //need to have it explicitly here cause autovalue gets confused with the generic
-    public abstract grakn.core.graql.query.predicate.ValuePredicate getPredicate();
+    private ValuePredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery,
+                           ValueProperty.Operation operation) {
+        super(varName, pattern, parentQuery, operation);
+    }
 
     public static ValuePredicate create(Statement pattern, ReasonerQuery parent) {
-        return new AutoValue_ValuePredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
+        return new ValuePredicate(pattern.var(), pattern, parent, getOperation(pattern));
     }
-    public static ValuePredicate create(Variable varName, grakn.core.graql.query.predicate.ValuePredicate pred, ReasonerQuery parent) {
-        return create(createValueVar(varName, pred), parent);
+    public static ValuePredicate create(Variable varName, ValueProperty.Operation<?> operation, ReasonerQuery parent) {
+        return create(createValueVar(varName, operation), parent);
     }
     private static ValuePredicate create(ValuePredicate pred, ReasonerQuery parent) {
         return create(pred.getPattern(), parent);
     }
 
-    public static Statement createValueVar(Variable name, grakn.core.graql.query.predicate.ValuePredicate pred) {
-        return new Statement(name).val(pred);
+    private static Statement createValueVar(Variable name, ValueProperty.Operation<?> pred) {
+        return new Statement(name).operation(pred);
     }
 
-    private static grakn.core.graql.query.predicate.ValuePredicate extractPredicate(Statement pattern) {
+    private static ValueProperty.Operation<?> getOperation(Statement pattern) {
         Iterator<ValueProperty> properties = pattern.getProperties(ValueProperty.class).iterator();
         ValueProperty property = properties.next();
         if (properties.hasNext()) {
             throw GraqlQueryException.valuePredicateAtomWithMultiplePredicates();
         }
-        return property.predicate();
+        return property.operation();
     }
 
     @Override
@@ -93,15 +84,17 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.pr
     public boolean isAlphaEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        ValuePredicate p2 = (ValuePredicate) obj;
-        return this.getPredicate().getClass().equals(p2.getPredicate().getClass()) &&
-                this.getPredicateValue().equals(p2.getPredicateValue());
+        ValuePredicate that = (ValuePredicate) obj;
+        return this.getPredicate().comparator().equals(that.getPredicate().comparator())
+                && this.getPredicate().value().equals(that.getPredicate().value());
     }
 
     @Override
     public int alphaEquivalenceHashCode() {
-        int hashCode = super.alphaEquivalenceHashCode();
-        hashCode = hashCode * 37 + this.getPredicate().getClass().getName().hashCode();
+        int hashCode = 1;
+        hashCode = hashCode * 37 + this.getPredicate().comparator().hashCode();
+        boolean useValue = ! (ValueExecutor.Operation.of(getPredicate()) instanceof ValueExecutor.Operation.Comparison.Variable);
+        hashCode = hashCode * 37 + (useValue? this.getPredicate().value().hashCode() : 0);
         return hashCode;
     }
 
@@ -111,7 +104,8 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.pr
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         ValuePredicate that = (ValuePredicate) obj;
-        return this.getPredicate().isCompatibleWith(that.getPredicate());
+        return ValueExecutor.Operation.of(this.getPredicate())
+                .isCompatible(ValueExecutor.Operation.of(that.getPredicate()));
     }
 
     @Override
@@ -120,19 +114,21 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.pr
         if (atomic == null || this.getClass() != atomic.getClass()) return false;
         if (atomic == this) return true;
         ValuePredicate that = (ValuePredicate) atomic;
-        return this.getPredicate().subsumes(that.getPredicate());
+        return ValueExecutor.Operation.of(this.getPredicate())
+                .subsumes(ValueExecutor.Operation.of(that.getPredicate()));
     }
 
     @Override
     public String getPredicateValue() {
-        return getPredicate().getPredicate().map(P::getValue).map(Object::toString).orElse("");
+        return getPattern().toString();
     }
 
     @Override
     public Set<Variable> getVarNames(){
         Set<Variable> vars = super.getVarNames();
-        Statement innerVar = getPredicate().getInnerVar().orElse(null);
-        if(innerVar != null && innerVar.var().isUserDefinedName()) vars.add(innerVar.var());
+        if (getPredicate() instanceof ValueProperty.Operation.Comparison.Variable) {
+            vars.add(((ValueProperty.Operation.Comparison.Variable) getPredicate()).value().var());
+        }
         return vars;
     }
 }

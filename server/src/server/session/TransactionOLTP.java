@@ -617,6 +617,7 @@ public class TransactionOLTP implements Transaction {
                     .map(type -> this.<SchemaConcept>getSchemaConcept(Label.of(type)))
                     .filter(Objects::nonNull)
                     .filter(Concept::isType)
+                    .map(Concept::asType)
                     .forEach(type -> ruleCache.updateRules(type, rule));
         }
         return rule;
@@ -763,6 +764,7 @@ public class TransactionOLTP implements Transaction {
             validateGraph();
             commitTransactionInternal();
             cache().writeToGraphCache(true);
+            //TODO update cache here
         } finally {
             closeTransaction(closeMessage);
         }
@@ -793,7 +795,7 @@ public class TransactionOLTP implements Transaction {
             //Ignored for Tinker
         } finally {
             cache().closeTx(closedReason);
-            ruleCache().closeTx();
+            ruleCache().clear();
         }
     }
 
@@ -812,7 +814,6 @@ public class TransactionOLTP implements Transaction {
         if (logsExist) {
             return Optional.of(CommitLog.create(keyspace(), newInstances, newAttributes));
         }
-
 
         return Optional.empty();
     }

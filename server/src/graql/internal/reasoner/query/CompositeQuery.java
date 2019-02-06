@@ -112,7 +112,7 @@ public class CompositeQuery implements ResolvableQuery {
      *
      * Where the sets of variables:
      * V = {x1, ..., xn}
-     * Vp = {xi, ..., xj
+     * Vp = {xi, ..., xj}
      * Vn = {xk, ..., xm}
      * Vr = {xk', ..., xm'}
      *
@@ -123,37 +123,29 @@ public class CompositeQuery implements ResolvableQuery {
      * Vr e Vn
      *
      * This procedure can follow recursively for multiple nested negation blocks.
-     * Then, for the negation to be safe, we require the variables of the head of the rules to be bound.
-     * NB: as Vr is a subset of Vn, we do only require a subset of variables in the negation block to be bound.
+     * Then, for the negation to be safe, we require:
+     *
+     * - the set of variables Vr to be non-empty
+     *
+     * NB: We do not require the negation blocks to be ground with respect to the positive part as we can rewrite the
+     * negation blocks in terms of a ground relation defined via rule. i.e.:
+     *
+     * Q(x) :- T(x), (x, y), NOT{ (y, z) }
+     *
+     * can be rewritten as:
+     *
+     * Q(x) :- T(x), (x, y), NOT{ ?(y) }
+     * ?(y) :- (y, z)
      *
      * @return true if this composite query is safe to resolve
      */
     private boolean isNegationSafe(){
-        if (isPositive()) return true;
-        //check if p+1 is positive
-        if (getComplementQueries().stream().allMatch(ReasonerQuery::isPositive)){
-            //simple p boundedness check
-            Set<Variable> intersection = Sets.intersection(
-                    getConjunctiveQuery().getVarNames(),
-                    getComplementQueries().stream().flatMap(q -> q.getVarNames().stream()).collect(Collectors.toSet())
-            );
-            return !intersection.isEmpty();
-        } else {
-            Set<CompositeQuery> p1Queries = getComplementQueries().stream().map(q -> (CompositeQuery) q).collect(Collectors.toSet());
-            Set<ResolvableQuery> p2Queries = p1Queries.stream().flatMap(q -> q.getComplementQueries().stream()).collect(Collectors.toSet());
-            //check if p+2 composite
-            if (p2Queries.stream().noneMatch(ReasonerQuery::isPositive)){
-                //do complex check
-                Set<Variable> p0bindings = this.bindingVariables();
-                Set<Set<Variable>> p1PositiveBindings = p1Queries.stream().map(p1q -> p1q.getConjunctiveQuery().getVarNames()).collect(Collectors.toSet());
-                Set<Set<Variable>> p2PositiveBindings = p2Queries.stream().map(q -> (CompositeQuery) q).map(p2q -> p2q.getConjunctiveQuery().getVarNames()).collect(Collectors.toSet());
-                if( !p1PositiveBindings.stream().allMatch(p1 -> p1.containsAll(p0bindings))
-                    || !p2PositiveBindings.stream().allMatch(p2 -> p1PositiveBindings.stream().allMatch(p1 -> p1.containsAll(p2)))){
-                    return false;
-                }
-            }
-            return p1Queries.stream().allMatch(CompositeQuery::isNegationSafe);
-        }
+        if (this.isPositive()) return true;
+        if (bindingVariables().isEmpty()) return false;
+        //check nested blocks
+        return getComplementQueries().stream()
+                .map(ResolvableQuery::asComposite)
+                .allMatch(CompositeQuery::isNegationSafe);
     }
 
     private Set<Variable> bindingVariables(){

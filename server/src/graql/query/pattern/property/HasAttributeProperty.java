@@ -78,21 +78,21 @@ public class HasAttributeProperty extends VarProperty {
 
     @Override
     public String property() {
-        Stream.Builder<String> repr = Stream.builder();
+        Stream.Builder<String> property = Stream.builder();
 
-        repr.add(type);
+        property.add(type);
 
         if (attribute().var().isUserDefinedName()) {
-            repr.add(attribute().var().toString());
+            property.add(attribute().var().toString());
         } else {
-            attribute().getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.predicate().toString()));
+            attribute().getProperties(ValueProperty.class).forEach(prop -> property.add(prop.operation().toString()));
         }
 
         if (hasReifiedRelationship()) {
-            repr.add("via").add(relationship().getPrintableName());
+            property.add(Query.Property.VIA.toString()).add(relationship().getPrintableName());
         }
 
-        return repr.build().collect(joining(" "));
+        return property.build().collect(joining(Query.Char.SPACE.toString()));
     }
 
     @Override

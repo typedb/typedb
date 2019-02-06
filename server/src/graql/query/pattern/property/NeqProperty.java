@@ -47,7 +47,7 @@ public class NeqProperty extends VarProperty {
 
     @Override
     public String keyword() {
-        return Query.Operator.NEQ.toString();
+        return Query.Comparator.NEQ.toString();
     }
 
     @Override
