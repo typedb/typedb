@@ -41,7 +41,7 @@ if __name__ == '__main__':
         sp.check_output(["git", "stash", "save", "--keep-index", "--include-untracked"], cwd=docs_clone_location) # discard unstaged changes
 
         # the command returns 1 if there is a staged file. otherwise, it will return 0
-        should_commit = sp.call(["git", "diff", "--staged", "--exit-code"], cwd=web_dev_clone_location) == 1
+        should_commit = sp.call(["git", "diff", "--staged", "--exit-code"], cwd=docs_clone_location) == 1
 
         if should_commit:
             sp.check_output(["git", "commit", "-m", commit_msg], cwd=docs_clone_location)
