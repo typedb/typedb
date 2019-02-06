@@ -77,8 +77,6 @@ public class QueryIT {
         }
     }
 
-    //TODO go over stratification with type hierarchies
-    @Ignore
     @Test
     public void testQueryReiterationCondition_CyclicalRuleGraphWithTypeHierarchiesInBodies(){
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
@@ -109,15 +107,13 @@ public class QueryIT {
                 String patternString = "{ ($x, $y) isa inferred; };";
                 ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
                 assertTrue(RuleUtils.subGraphIsCyclical(
-                        RuleUtils.getRules(tx).map(r -> new InferenceRule(r, tx)).collect(toSet()))
+                        tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet()))
                 );
                 assertTrue(query.requiresReiteration());
             }
         }
     }
 
-    //TODO go over stratification with type hierarchies
-    @Ignore
     @Test
     public void testQueryReiterationCondition_CyclicalRuleGraphWithTypeHierarchiesInHead(){
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
@@ -140,7 +136,7 @@ public class QueryIT {
                 String patternString = "{ $x isa baseEntity;};";
                 ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
                 assertTrue(RuleUtils.subGraphIsCyclical(
-                        RuleUtils.getRules(tx).map(r -> new InferenceRule(r, tx)).collect(toSet()))
+                        tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet()))
                 );
                 assertTrue(query.requiresReiteration());
             }

@@ -23,16 +23,15 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.internal.reasoner.state.AnswerState;
 import grakn.core.graql.internal.reasoner.state.AtomicState;
 import grakn.core.graql.internal.reasoner.state.AtomicStateProducer;
@@ -40,15 +39,15 @@ import grakn.core.graql.internal.reasoner.state.CacheCompletionState;
 import grakn.core.graql.internal.reasoner.state.NeqComplementState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.server.session.TransactionOLTP;
-
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -240,8 +239,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     private Stream<Pair<InferenceRule, Unifier>> getRuleStream() {
-        return getAtom().getApplicableRules()
-                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
-                .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));
+        return RuleUtils
+                .stratifyRules(getAtom().getApplicableRules().collect(Collectors.toSet()))
+                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)));
     }
 }
