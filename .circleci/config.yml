@@ -167,7 +167,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Make docs (development branch) depend on the latest Grakn (master)
+          name: Sync docs/development to the latest Grakn version
           command: |
             mkdir docs
             cd docs
@@ -198,19 +198,23 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: |
-          mkdir docs
-          cd docs
-          python ../.circleci/docs-auto-merge-to-master.py
+      - run:
+          name: Merge all the updates from docs/development into docs/master
+          command: |
+            mkdir docs
+            cd docs
+            python ../.circleci/docs-auto-merge-to-master.py
 
   deploy-docs:
     machine: true
     steps:
       - checkout
-      - run: |
-          mkdir docs
-          cd docs
-          python ../.circleci/deploy-docs.py
+      - run:
+          name: Deploy docs by updating the docs submodule in web-dev
+          command: |
+            mkdir docs
+            cd docs
+            python ../.circleci/deploy-docs.py
 
 workflows:
   # the 'ci' workflow consists of jobs which:
@@ -290,8 +294,8 @@ workflows:
   # the 'ci-release' workflow is triggered by the creation of 'trigger-ci-release' branch in graknlabs/grakn
   # it consists of jobs which:
   # - publishes Grakn by creating a Github release
-  # - prepares for docs release (by merging docs/development into docs/master)
-  # - deploys docs to Heroku
+  # - merge all the updates from docs/development into docs/master
+  # - deploy docs by updating the docs submodule in web-dev
   # - cleans up the 'trigger-ci-release' branch which was created by the approve-release job
   ci-release:
     jobs:
