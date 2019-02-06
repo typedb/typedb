@@ -788,7 +788,7 @@ public class AtomicRuleApplicabilityIT {
         return roleMap;
     }
 
-    private Concept getConcept(TransactionOLTP tx, String typeName, Object val){
+    private Concept getConcept(TransactionOLTP tx, String typeName, String val){
         return tx.stream(Graql.match((Pattern) var("x").has(typeName, val)).get("x"))
                 .map(ans -> ans.get("x")).findAny().orElse(null);
     }

@@ -32,24 +32,6 @@ import static graql.util.StringUtil.escapeLabelOrId;
 public class StringUtil {
 
     /**
-     * @param value a value in the graph
-     * @return the string representation of the value (using quotes if it is already a string)
-     */
-    public static String valueToString(Object value) {
-        if (value instanceof String) {
-            return graql.util.StringUtil.quoteString((String) value);
-        } else if (value instanceof Double) {
-            DecimalFormat df = new DecimalFormat("#", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-            df.setMinimumFractionDigits(1);
-            df.setMaximumFractionDigits(12);
-            df.setMinimumIntegerDigits(1);
-            return df.format(value);
-        } else {
-            return value.toString();
-        }
-    }
-
-    /**
      * @param id an ID of a concept
      * @return
      * The id of the concept correctly escaped in graql.

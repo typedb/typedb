@@ -41,7 +41,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static grakn.core.graql.query.Graql.and;
-import static grakn.core.graql.query.Graql.neq;
 import static grakn.core.graql.query.Graql.not;
 import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.var;
@@ -264,7 +263,7 @@ public class PatternIT {
         assertExists(tx, var().isa("movie").has("title", "Godfather"));
         Set<Concept> result1 = tx.stream(Graql.match(
                 var("x").isa("movie").has("title", var("y")),
-                var("y").val(neq("Godfather"))).get("x"))
+                var("y").neq("Godfather")).get("x"))
                 .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(result1.isEmpty());
 
@@ -276,14 +275,6 @@ public class PatternIT {
 
         result2.removeAll(result1);
         assertEquals(1, result2.size());
-    }
-
-    @Test
-    public void whenNeqPassedNull_Throw() {
-        exception.expect(Exception.class);
-        Statement var = null;
-        //noinspection ConstantConditions,ResultOfMethodCallIgnored
-        neq(var);
     }
 
     private void assertExceptionThrown(Consumer<String> consumer, String varName) {

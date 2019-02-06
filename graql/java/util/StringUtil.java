@@ -21,9 +21,12 @@ package graql.util;
 import graql.grammar.GraqlLexer;
 import org.apache.commons.lang.StringEscapeUtils;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 public class StringUtil {
@@ -83,5 +86,23 @@ public class StringUtil {
         }
 
         return Collections.unmodifiableSet(keywords);
+    }
+
+    /**
+     * @param value a value in the graph
+     * @return the string representation of the value (using quotes if it is already a string)
+     */
+    public static String valueToString(Object value) {
+        if (value instanceof String) {
+            return quoteString((String) value);
+        } else if (value instanceof Double) {
+            DecimalFormat df = new DecimalFormat("#", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+            df.setMinimumFractionDigits(1);
+            df.setMaximumFractionDigits(12);
+            df.setMinimumIntegerDigits(1);
+            return df.format(value);
+        } else {
+            return value.toString();
+        }
     }
 }

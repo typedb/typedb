@@ -15,49 +15,56 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.concept.Rule;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.graql.query.pattern.property.ValueProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import java.util.Set;
+import javax.annotation.CheckReturnValue;
 
 /**
- *
- * <p>
  * {@link AtomicBase} extension serving as base class for predicate implementations.
- * </p>
  *
  * @param <T> the type of the predicate on a concept
- *
- *
  */
 public abstract class Predicate<T> extends AtomicBase {
 
-    public abstract T getPredicate();
+    private final Variable varName;
+    private final Statement pattern;
+    private final ReasonerQuery parentQuery;
+    private final T predicate;
+
+    public Predicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, T predicate) {
+        this.varName = varName;
+        this.pattern = pattern;
+        this.parentQuery = parentQuery;
+        this.predicate = predicate;
+    }
+
+    public Variable getVarName() {
+        return varName;
+    }
+    public Statement getPattern() {
+        return pattern;
+    }
+    public ReasonerQuery getParentQuery() {
+        return parentQuery;
+    }
+    public T getPredicate() { return predicate; }
     public abstract String getPredicateValue();
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
         return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.then(), rule.label()));
-    }
-    
-    @Override
-    public boolean isAlphaEquivalent(Object obj){
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        Predicate a2 = (Predicate) obj;
-        return this.getPredicateValue().equals(a2.getPredicateValue());
-    }
-
-    @Override
-    public int alphaEquivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getPredicateValue().hashCode();
-        return hashCode;
     }
 
     @Override
