@@ -32,6 +32,7 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
@@ -287,7 +288,6 @@ class ValidateGlobalRules {
         return errors;
     }
 
-
     /**
      * @param graph graph used to ensure the rule is a valid Horn clause
      * @param rule the rule to be validated
@@ -295,10 +295,14 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleIsValidClause(TransactionOLTP graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        //TODO negation block validation
-        if (rule.when().getDisjunctiveNormalForm().getPatterns().size() > 1){
+        Set<Conjunction<Pattern>> patterns = rule.when().getNegationDNF().getPatterns();
+        if (patterns.size() > 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
         }
+        else {
+            errors.addAll(CompositeQuery.validateAsRuleBody(Iterables.getOnlyElement(patterns), rule, graph));
+        }
+
         if (errors.isEmpty()){
             errors.addAll(validateRuleHead(graph, rule));
         }

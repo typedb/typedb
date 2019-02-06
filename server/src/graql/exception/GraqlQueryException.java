@@ -285,8 +285,8 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.UNSAFE_NEGATION_BLOCK.getMessage(query));
     }
 
-    public static GraqlQueryException disjunctiveNegationBlock(ResolvableQuery query) {
-        return new GraqlQueryException(ErrorMessage.DISJUNCTIVE_NEGATION_BLOCK.getMessage(query));
+    public static GraqlQueryException disjunctiveNegationBlock() {
+        return new GraqlQueryException(ErrorMessage.DISJUNCTIVE_NEGATION_BLOCK.getMessage());
     }
 
     public static GraqlQueryException invalidQueryCacheEntry(ReasonerQuery query, ConceptMap answer) {

@@ -201,7 +201,7 @@ public class RuleTest {
     }
 
     @Test
-    public void whenAddingRuleWithIllegalAtomicInHead_ResourceWithBoundVariablePredicate_DoNotThrow(){
+    public void whenAddingRuleWithLegalAtomicInHead_ResourceWithBoundVariablePredicate_DoNotThrow(){
         validateLegalHead(
                 Graql.parsePattern("$x has res1 $r;"),
                 Graql.parsePattern("$x has res2 $r;")
@@ -530,8 +530,25 @@ public class RuleTest {
         }
     }
 
-    //TODO
-    @Ignore
+    @Test
+    public void whenAddingARuleWithMultipleNegationBlocks_Throw() throws InvalidKBException {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            Pattern when = Graql.parsePattern(
+                    "{" +
+                            "$x isa thing;" +
+                            "not {$x isa relation;};" +
+                            "not {$y isa attribute;};" +
+                            "};");
+            Pattern then = Graql.parsePattern("$x isa someEntity;");
+
+            initTx(tx);
+            Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(ErrorMessage.VALIDATION_RULE_MULTIPLE_NEGATION_BLOCKS.getMessage(rule.label()));
+            tx.commit();
+        }
+    }
+
     @Test
     public void whenAddingARuleWithNestedNegationBlock_Throw() throws InvalidKBException{
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
@@ -548,12 +565,12 @@ public class RuleTest {
 
             initTx(tx);
             Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(ErrorMessage.VALIDATION_RULE_NESTED_NEGATION.getMessage(rule.label()));
             tx.commit();
         }
     }
 
-    //TODO
-    @Ignore
     @Test
     public void whenAddingARuleWithDisjunctiveNegationBlock_Throw() throws InvalidKBException{
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
@@ -570,7 +587,10 @@ public class RuleTest {
 
             initTx(tx);
             Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
-
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(
+                    ErrorMessage.VALIDATION_RULE_INVALID.getMessage(rule.label(), ErrorMessage.DISJUNCTIVE_NEGATION_BLOCK.getMessage())
+            );
             tx.commit();
         }
     }

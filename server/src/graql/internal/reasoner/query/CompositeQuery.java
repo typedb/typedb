@@ -21,7 +21,9 @@ package grakn.core.graql.internal.reasoner.query;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.ResolutionIterator;
@@ -158,11 +160,37 @@ public class CompositeQuery implements ResolvableQuery {
                 .map(p -> {
                     Set<Conjunction<Pattern>> patterns = p.getNegationDNF().getPatterns();
                     if (p.getNegationDNF().getPatterns().size() != 1){
-                        throw GraqlQueryException.disjunctiveNegationBlock(this);
+                        throw GraqlQueryException.disjunctiveNegationBlock();
                     }
                     return Iterables.getOnlyElement(patterns);
                 })
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Validate as rule body, Ensure:
+     * - no negation nesting
+     * - no disjunctions
+     * - at most single negation block
+     * @param graph transaction to be validated against
+     * @param pattern pattern to be validated
+     * @return set of error messages applicable
+     */
+    public static Set<String> validateAsRuleBody(Conjunction<Pattern> pattern, Rule rule, TransactionOLTP graph){
+        Set<String> errors = new HashSet<>();
+        try{
+            CompositeQuery body = ReasonerQueries.composite(pattern, graph);
+            Set<ResolvableQuery> complementQueries = body.getComplementQueries();
+            if(complementQueries.size() > 1){
+                errors.add(ErrorMessage.VALIDATION_RULE_MULTIPLE_NEGATION_BLOCKS.getMessage(rule.label()));
+            }
+            if(!body.isPositive() && complementQueries.stream().noneMatch(ReasonerQuery::isPositive)){
+                errors.add(ErrorMessage.VALIDATION_RULE_NESTED_NEGATION.getMessage(rule.label()));
+            }
+        } catch (GraqlQueryException e) {
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID.getMessage(rule.label(), e.getMessage()));
+        }
+        return errors;
     }
 
     @Override
