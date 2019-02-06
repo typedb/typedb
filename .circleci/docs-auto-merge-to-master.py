@@ -6,14 +6,8 @@ git_username = "Grabl"
 git_email = "grabl@grakn.ai"
 grabl_credential = "grabl:"+os.environ['GRABL_CREDENTIAL']
 
-# TODO: consider not making grakn_master_branch configurable
 docs_url = "github.com/graknlabs/test-ci-docs.git"
-docs_dev_branch = "development"
 docs_clone_location = "test-ci-docs"
-
-# TODO: consider not making grakn_master_branch configurable
-grakn_url = "github.com/graknlabs/test-ci-grakn.git"
-grakn_master_branch = "refs/heads/master"
 
 hub_download_url = "https://github.com/github/hub/releases/download/v2.7.0/hub-linux-amd64-2.7.0.tgz"
 hub_download_location = "hub-linux-amd64-2.7.0"
@@ -46,7 +40,9 @@ if __name__ == '__main__':
         sp.check_output(["git", "reset", "HEAD", "--", "./03-client-api/"], cwd=docs_clone_location) # unstage the client files
         sp.check_output(["git", "stash", "save", "--keep-index", "--include-untracked"], cwd=docs_clone_location) # discard unstaged changes
 
-        should_commit = sp.check_output(["git", "status"], cwd=docs_clone_location).find('nothing to commit, working tree clean') == -1
+        # the command returns 1 if there is a staged file. otherwise, it will return 0
+        should_commit = sp.call(["git", "diff", "--staged", "--exit-code"], cwd=web_dev_clone_location) == 1
+
         if should_commit:
             sp.check_output(["git", "commit", "-m", commit_msg], cwd=docs_clone_location)
             sp.check_output(["git", "push", "https://"+grabl_credential+"@"+docs_url, pr_branch_name], cwd=docs_clone_location)
