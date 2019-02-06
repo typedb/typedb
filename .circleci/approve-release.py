@@ -32,7 +32,8 @@ GRABL_HOST = "http://grabl.herokuapp.com"
 grabl_url_new = '{GRABL_HOST}/release/new'.format(GRABL_HOST=GRABL_HOST)
 grabl_url_status = '{GRABL_HOST}/release/{commit}/status'.format(GRABL_HOST=GRABL_HOST, commit=workflow_id)
 
-print('Tests have been ran and everything is in a good, releasable state. It is possible to proceed with the release process.')
+print("Tests have been ran and everything is in a good, releasable state. "
+    "It is possible to proceed with the release process. Waiting for approval.")
 _ = check_output_discarding_stderr([
     'curl', '-X', 'POST', '--data', json.dumps(grabl_data), '-H', 'Content-Type: application/json', grabl_url_new
 ])
@@ -42,11 +43,8 @@ status = 'no-status'
 while status == 'no-status':
     status = check_output_discarding_stderr(['curl', grabl_url_status])
 
-    print("Tests have been ran and everything is in a good, releasable state. 
-            "It is possible to proceed with the release process. Waiting for approval.")
-
     if status == 'deploy':
-        print('Approval received! Initiating the release process. 
+        print('Approval received! Initiating the release process. '
             'Please monitor it at https://circleci.com/gh/' + os.getenv('CIRCLE_PROJECT_USERNAME') + 
             '/workflows/' + os.getenv('CIRCLE_PROJECT_REPONAME') + '/tree/trigger-ci-release')
         subprocess.call(['git', 'branch', 'trigger-ci-release', 'HEAD'])
