@@ -376,32 +376,12 @@ public class Statement implements Pattern, AttributeProperties {
     }
 
     @CheckReturnValue
-    public StatementInstance has(String type, int value) {
-        return has(type, Graql.val(value));
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, int value, Statement via) {
-        return has(type, Graql.val(value), via);
-    }
-
-    @CheckReturnValue
     public StatementInstance has(String type, long value) {
         return has(type, Graql.val(value));
     }
 
     @CheckReturnValue
     public StatementInstance has(String type, long value, Statement via) {
-        return has(type, Graql.val(value), via);
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, float value) {
-        return has(type, Graql.val(value));
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, float value, Statement via) {
         return has(type, Graql.val(value), via);
     }
 

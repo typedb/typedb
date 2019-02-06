@@ -279,17 +279,7 @@ public class Graql {
     // Attribute value assignment property
 
     @CheckReturnValue
-    public static StatementAttribute val(int value) {
-        return hiddenVar().val(value);
-    }
-
-    @CheckReturnValue
     public static StatementAttribute val(long value) {
-        return hiddenVar().val(value);
-    }
-
-    @CheckReturnValue
-    public static StatementAttribute val(float value) {
         return hiddenVar().val(value);
     }
 
@@ -316,17 +306,7 @@ public class Graql {
     // Attribute value equality property
 
     @CheckReturnValue
-    public static StatementAttribute eq(int value) {
-        return hiddenVar().eq(value);
-    }
-
-    @CheckReturnValue
     public static StatementAttribute eq(long value) {
-        return hiddenVar().eq(value);
-    }
-
-    @CheckReturnValue
-    public static StatementAttribute eq(float value) {
         return hiddenVar().eq(value);
     }
 
@@ -358,17 +338,7 @@ public class Graql {
     // Attribute value inequality property
 
     @CheckReturnValue
-    public static StatementAttribute neq(int value) {
-        return hiddenVar().neq(value);
-    }
-
-    @CheckReturnValue
     public static StatementAttribute neq(long value) {
-        return hiddenVar().neq(value);
-    }
-
-    @CheckReturnValue
-    public static StatementAttribute neq(float value) {
         return hiddenVar().neq(value);
     }
 
@@ -400,17 +370,7 @@ public class Graql {
     // Attribute value greater-than property
 
     @CheckReturnValue
-    public static StatementAttribute gt(int value) {
-        return hiddenVar().gt(value);
-    }
-
-    @CheckReturnValue
     public static StatementAttribute gt(long value) {
-        return hiddenVar().gt(value);
-    }
-
-    @CheckReturnValue
-    public static StatementAttribute gt(float value) {
         return hiddenVar().gt(value);
     }
 
@@ -442,17 +402,7 @@ public class Graql {
     // Attribute value greater-than-or-equals property
 
     @CheckReturnValue
-    public static StatementAttribute gte(int value) {
-        return hiddenVar().gte(value);
-    }
-
-    @CheckReturnValue
     public static StatementAttribute gte(long value) {
-        return hiddenVar().gte(value);
-    }
-
-    @CheckReturnValue
-    public static StatementAttribute gte(float value) {
         return hiddenVar().gte(value);
     }
 
@@ -484,17 +434,7 @@ public class Graql {
     // Attribute value less-than property
 
     @CheckReturnValue
-    public static StatementAttribute lt(int value) {
-        return hiddenVar().lt(value);
-    }
-
-    @CheckReturnValue
     public static StatementAttribute lt(long value) {
-        return hiddenVar().lt(value);
-    }
-
-    @CheckReturnValue
-    public static StatementAttribute lt(float value) {
         return hiddenVar().lt(value);
     }
 
@@ -526,17 +466,7 @@ public class Graql {
     // Attribute value less-than-or-equals property
 
     @CheckReturnValue
-    public static StatementAttribute lte(int value) {
-        return hiddenVar().lte(value);
-    }
-
-    @CheckReturnValue
     public static StatementAttribute lte(long value) {
-        return hiddenVar().lte(value);
-    }
-
-    @CheckReturnValue
-    public static StatementAttribute lte(float value) {
         return hiddenVar().lte(value);
     }
 

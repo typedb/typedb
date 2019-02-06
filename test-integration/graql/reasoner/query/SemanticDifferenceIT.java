@@ -287,7 +287,7 @@ public class SemanticDifferenceIT {
     @Test
     public void whenChildSpecialisesValuePredicateOnType_valuesAreFilteredCorrectly2(){
         try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            String parentPattern = patternise("$x >0 isa resource-long;");
+            String parentPattern = patternise("$x > 0 isa resource-long;");
             final long value = 1;
             String childPattern = patternise("$x == " + value + " isa resource-long;");
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);

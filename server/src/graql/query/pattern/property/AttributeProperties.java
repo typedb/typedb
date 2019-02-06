@@ -41,18 +41,11 @@ public interface AttributeProperties {
     // Attribute value assignment property
 
     @CheckReturnValue
-    default StatementAttribute val(int value) {
-        return operation(new Assignment.Number<>(value));
-    }
-
     default StatementAttribute val(long value) {
         return operation(new Assignment.Number<>(value));
     }
 
-    default StatementAttribute val(float value) {
-        return operation(new Assignment.Number<>(value));
-    }
-
+    @CheckReturnValue
     default StatementAttribute val(double value) {
         return operation(new Assignment.Number<>(value));
     }
@@ -75,17 +68,7 @@ public interface AttributeProperties {
     // Attribute value equality property
 
     @CheckReturnValue
-    default StatementAttribute eq(int value) {
-        return eq(Comparison.Number::new, value);
-    }
-
-    @CheckReturnValue
     default StatementAttribute eq(long value) {
-        return eq(Comparison.Number::new, value);
-    }
-
-    @CheckReturnValue
-    default StatementAttribute eq(float value) {
         return eq(Comparison.Number::new, value);
     }
 
@@ -122,17 +105,7 @@ public interface AttributeProperties {
     // Attribute value inequality property
 
     @CheckReturnValue
-    default StatementAttribute neq(int value) {
-        return neq(Comparison.Number::new, value);
-    }
-
-    @CheckReturnValue
     default StatementAttribute neq(long value) {
-        return neq(Comparison.Number::new, value);
-    }
-
-    @CheckReturnValue
-    default StatementAttribute neq(float value) {
         return neq(Comparison.Number::new, value);
     }
 
@@ -170,17 +143,7 @@ public interface AttributeProperties {
     // Attribute value greater-than property
 
     @CheckReturnValue
-    default StatementAttribute gt(int value) {
-        return gt(Comparison.Number::new, value);
-    }
-
-    @CheckReturnValue
     default StatementAttribute gt(long value) {
-        return gt(Comparison.Number::new, value);
-    }
-
-    @CheckReturnValue
-    default StatementAttribute gt(float value) {
         return gt(Comparison.Number::new, value);
     }
 
@@ -219,17 +182,7 @@ public interface AttributeProperties {
     // Attribute value greater-than-or-equals property
 
     @CheckReturnValue
-    default StatementAttribute gte(int value) {
-        return gte(Comparison.Number::new, value);
-    }
-
-    @CheckReturnValue
     default StatementAttribute gte(long value) {
-        return gte(Comparison.Number::new, value);
-    }
-
-    @CheckReturnValue
-    default StatementAttribute gte(float value) {
         return gte(Comparison.Number::new, value);
     }
 
@@ -266,17 +219,7 @@ public interface AttributeProperties {
     // Attribute value less-than property
 
     @CheckReturnValue
-    default StatementAttribute lt(int value) {
-        return lt(Comparison.Number::new, value);
-    }
-
-    @CheckReturnValue
     default StatementAttribute lt(long value) {
-        return lt(Comparison.Number::new, value);
-    }
-
-    @CheckReturnValue
-    default StatementAttribute lt(float value) {
         return lt(Comparison.Number::new, value);
     }
 
@@ -313,17 +256,7 @@ public interface AttributeProperties {
     // Attribute value less-than-or-equals property
 
     @CheckReturnValue
-    default StatementAttribute lte(int value) {
-        return lte(Comparison.Number::new, value);
-    }
-
-    @CheckReturnValue
     default StatementAttribute lte(long value) {
-        return lte(Comparison.Number::new, value);
-    }
-
-    @CheckReturnValue
-    default StatementAttribute lte(float value) {
         return lte(Comparison.Number::new, value);
     }
 

@@ -150,7 +150,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
             //       AttributeType.DataType.getPersistedValue with generics
         }
 
-        public abstract P<U> predicate();
+        protected abstract P<U> predicate();
 
         public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
             // Compare to a given value
@@ -232,10 +232,10 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
             if (this instanceof Comparison.Variable || other instanceof Comparison.Variable) return true;
             //NB this is potentially dangerous e.g. if a user types a long as a char in the query
-            if (!this.value().getClass().equals(other.value().getClass())) return false;
+            if (!this.persistedValue().getClass().equals(other.persistedValue().getClass())) return false;
 
             ValueExecutor.Operation<?, U> that = (ValueExecutor.Operation<?, U>) other;
-            return this.value().equals(that.value()) ?
+            return this.persistedValue().equals(that.persistedValue()) ?
                     (this.signum() * that.signum() > 0 || this.containsEquality() && that.containsEquality()) :
                     (this.predicate().test(that.persistedValue()) || ((that.predicate()).test(this.persistedValue())));
         }
@@ -249,11 +249,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
             if (this instanceof Comparison.Variable || other instanceof Comparison.Variable) return true;
             //NB this is potentially dangerous e.g. if a user types a long as a char in the query
-            if (!this.value().getClass().equals(other.value().getClass())) return false;
+            if (!this.persistedValue().getClass().equals(other.persistedValue().getClass())) return false;
 
             ValueExecutor.Operation<?, U> that = (ValueExecutor.Operation<?, U>) other;
             return (that.predicate()).test(this.persistedValue()) &&
-                    (this.value().equals(that.value()) ?
+                    (this.persistedValue().equals(that.persistedValue()) ?
                             (this.isValueEquality() || this.isValueEquality() == that.isValueEquality()) :
                             (!this.predicate().test(that.persistedValue())));
         }
@@ -303,11 +303,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
             }
 
             @Override
-            public P<U> predicate() {
+            protected P<U> predicate() {
                 return P.eq(persistedValue());
             }
 
-            static class Number<N extends java.lang.Number> extends Assignment<N, N> {
+            static class Number<N extends java.lang.Number> extends Assignment<N, java.lang.Number> {
 
                 Number(N value) {
                     super(value);
@@ -388,7 +388,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
             }
 
             @Override
-            public P<U> predicate() {
+            protected P<U> predicate() {
                 Function<U, P<U>> predicate = PREDICATES_COMPARABLE.get(comparator());
 
                 if (predicate != null) {
@@ -438,7 +438,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 }
 
                 @Override
-                public P<java.lang.String> predicate() {
+                protected P<java.lang.String> predicate() {
                     Function<java.lang.String, P<java.lang.String>> predicate = PREDICATES_STRING.get(comparator());
 
                     if (predicate != null) {
@@ -479,7 +479,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 }
 
                 @Override
-                public P<java.lang.String> predicate() {
+                protected P<java.lang.String> predicate() {
                     Function<java.lang.String, P<java.lang.String>> predicate = PREDICATES_VAR.get(comparator());
 
                     if (predicate != null) {

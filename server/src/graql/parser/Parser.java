@@ -849,11 +849,7 @@ public class Parser extends GraqlBaseVisitor {
             return getString(ctx.STRING_());
 
         } else if (ctx.INTEGER_() != null) {
-            try {
-                return getInteger(ctx.INTEGER_());
-            } catch (NumberFormatException e) {
-                return getLong(ctx.INTEGER_());
-            }
+            return getInteger(ctx.INTEGER_());
 
         } else if (ctx.REAL_() != null) {
             return getReal(ctx.REAL_());
@@ -882,11 +878,7 @@ public class Parser extends GraqlBaseVisitor {
         return string.getText().substring(1, string.getText().length() - 1);
     }
 
-    private int getInteger(TerminalNode number) {
-        return Integer.parseInt(number.getText());
-    }
-
-    private long getLong(TerminalNode number) {
+    private long getInteger(TerminalNode number) {
         return Long.parseLong(number.getText());
     }
 

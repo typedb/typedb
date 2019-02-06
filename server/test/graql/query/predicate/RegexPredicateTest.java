@@ -32,8 +32,8 @@ public class RegexPredicateTest {
 
     @Test
     public void regexPredicateInterpretsCharacterClassesCorrectly() {
-        P<String> predicate = new ValueExecutor.Operation
-                .Comparison.String(Query.Comparator.LIKE, "\\d").predicate();
+        ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
+                .Comparison.String(Query.Comparator.LIKE, "\\d");
 
         assertTrue(predicate.test("0"));
         assertTrue(predicate.test("1"));
@@ -42,8 +42,8 @@ public class RegexPredicateTest {
 
     @Test
     public void regexPredicateInterpretsQuotesCorrectly() {
-        P<String> predicate = new ValueExecutor.Operation
-                .Comparison.String(Query.Comparator.LIKE, "\"").predicate();
+        ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
+                .Comparison.String(Query.Comparator.LIKE, "\"");
 
         assertTrue(predicate.test("\""));
         assertFalse(predicate.test("\\\""));
@@ -51,8 +51,8 @@ public class RegexPredicateTest {
 
     @Test
     public void regexPredicateInterpretsBackslashesCorrectly() {
-        P<String> predicate = new ValueExecutor.Operation
-                .Comparison.String(Query.Comparator.LIKE, "\\\\").predicate();
+        ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
+                .Comparison.String(Query.Comparator.LIKE, "\\\\");
 
         assertTrue(predicate.test("\\"));
         assertFalse(predicate.test("\\\\"));
@@ -60,8 +60,8 @@ public class RegexPredicateTest {
 
     @Test
     public void regexPredicateInterpretsNewlineCorrectly() {
-        P<String> predicate = new ValueExecutor.Operation
-                .Comparison.String(Query.Comparator.LIKE, "\\n").predicate();
+        ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
+                .Comparison.String(Query.Comparator.LIKE, "\\n");
 
         assertTrue(predicate.test("\n"));
         assertFalse(predicate.test("\\n"));
