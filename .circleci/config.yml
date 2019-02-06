@@ -213,91 +213,48 @@ jobs:
           python ../.circleci/deploy-docs.py
 
 workflows:
-  ci-pull-request:
+  ci:
     jobs:
       - build:
           filters:
             branches:
-              ignore: /master|trigger-ci-release/
+              ignore: trigger-ci-release
       - client-java:
           filters:
             branches:
-              ignore: /master|trigger-ci-release/
+              ignore: trigger-ci-release
       - common:
           filters:
             branches:
-              ignore: /master|trigger-ci-release/
+              ignore: trigger-ci-release
       - console:
           filters:
             branches:
-              ignore: /master|trigger-ci-release/
+              ignore: trigger-ci-release
       - graql:
           filters:
             branches:
-              ignore: /master|trigger-ci-release/
+              ignore: trigger-ci-release
       - server:
           filters:
             branches:
-              ignore: /master|trigger-ci-release/
+              ignore: trigger-ci-release
       - test-integration:
           filters:
             branches:
-              ignore: /master|trigger-ci-release/
+              ignore: trigger-ci-release
       - test-integration-reasoner:
           filters:
             branches:
-              ignore: /master|trigger-ci-release/
+              ignore: trigger-ci-release
       - test-integration-analytics:
           filters:
             branches:
-              ignore: /master|trigger-ci-release/
+              ignore: trigger-ci-release
       - test-end-to-end:
           filters:
             branches:
-              ignore: /master|trigger-ci-release/
-
-  ci-master-branch:
-    jobs:
-      - build:
-          filters:
-            branches:
-              only: master
-      - client-java:
-          filters:
-            branches:
-              only: master
-      - common:
-          filters:
-            branches:
-              only: master
-      - console:
-          filters:
-            branches:
-              only: master
-      - graql:
-          filters:
-            branches:
-              only: master
-      - server:
-          filters:
-            branches:
-              only: master
-      - test-integration:
-          filters:
-            branches:
-              only: master
-      - test-integration-reasoner:
-          filters:
-            branches:
-              only: master
-      - test-integration-analytics:
-          filters:
-            branches:
-              only: master
-      - test-end-to-end:
-          filters:
-            branches:
-              only: master
+              ignore: trigger-ci-release
       - docs-update-grakn-dependency-on-dev-branch:
           filters:
             branches:
