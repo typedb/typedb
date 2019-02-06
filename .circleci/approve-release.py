@@ -5,6 +5,7 @@ from __future__ import print_function
 import os
 import subprocess
 import json
+import time
 
 
 def check_output_discarding_stderr(*args, **kwargs):
@@ -51,3 +52,4 @@ while status == 'no-status':
     elif status == 'timeout':
         print('Deployment rejected via timeout')
         break
+    time.sleep(1)
