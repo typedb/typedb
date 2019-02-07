@@ -194,28 +194,6 @@ jobs:
       - bazel_add_rbe_credential
       - run: bazel run //:deploy-github-zip -- ${GRABL_CREDENTIAL}
 
-  docs-auto-merge-to-master:
-    machine: true
-    steps:
-      - checkout
-      - run:
-          name: Merge all the updates from docs/development into docs/master
-          command: |
-            mkdir docs
-            cd docs
-            python ../.circleci/docs-auto-merge-to-master.py
-
-  deploy-docs:
-    machine: true
-    steps:
-      - checkout
-      - run:
-          name: Deploy docs by updating the docs submodule in web-dev
-          command: |
-            mkdir docs
-            cd docs
-            python ../.circleci/deploy-docs.py
-
 workflows:
   # the 'ci' workflow consists of jobs which:
   #  - executes tests (executed on pull requests and master)
@@ -294,8 +272,6 @@ workflows:
   # the 'ci-release' workflow is triggered by the creation of 'trigger-ci-release' branch in graknlabs/grakn
   # it consists of jobs which:
   # - publishes Grakn by creating a Github release
-  # - merge all the updates from docs/development into docs/master
-  # - deploy docs by updating the docs submodule in web-dev
   # - cleans up the 'trigger-ci-release' branch which was created by the approve-release job
   ci-release:
     jobs:
@@ -303,28 +279,9 @@ workflows:
           filters:
             branches:
               only: trigger-ci-release
-      - docs-auto-merge-to-master:
-          filters:
-            branches:
-              only: trigger-ci-release
-          requires:
-            - publish-github-draft
-      - approve-deploy-docs:
-          filters:
-            branches:
-              only: trigger-ci-release
-          type: approval
-          requires:
-            - docs-auto-merge-to-master
-      - deploy-docs:
-          filters:
-            branches:
-              only: trigger-ci-release
-          requires:
-            - approve-deploy-docs
       - release-cleanup:
           requires:
-            - deploy-docs
+            - publish-github-draft
           filters:
             branches:
               only: trigger-ci-release
