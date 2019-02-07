@@ -37,6 +37,23 @@ then {
     $r(inferredRole: $z) isa relation;
 };
 
+defineAppendAsAnotherRelation sub rule,
+when {
+    (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z) isa relation;
+},
+then {
+    (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation;
+};
+
+defineAppendAsAnotherRelationConj sub rule,
+when {
+    (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;
+    $y has resource 'value';
+},
+then {
+    (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation;
+};
+
 degenerateRole sub rule,
 when {
     $r(someRole: $x, anotherRole: $y) isa relation;
@@ -60,23 +77,6 @@ when {
 },
 then {
     $r (anotherRole: $y) isa relation;
-};
-
-defineAppendAsAnotherRelation sub rule,
-when {
-    (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z) isa relation;
-},
-then {
-    (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation;
-};
-
-defineAppendAsAnotherRelationConj sub rule,
-when {
-    (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;
-    $y has resource 'value';
-},
-then {
-    (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation;
 };
 
 insert

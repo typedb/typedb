@@ -566,17 +566,52 @@ public class ReasoningIT {
         }
     }
 
+    @Test
+    public void whenAppendingRolePlayers_queryIsRewrittenCorrectly(){
+        try(Session session = server.sessionWithNewKeyspace()) {
+            loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                List<ConceptMap> persistedRelations = tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"),false);
+
+                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse("match (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;"));
+                assertEquals(1, answers.size());
+
+                List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse("match (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z); get;"));
+                assertEquals(1, answers2.size());
+
+                List<ConceptMap> answers3 = tx.execute(Graql.<GetQuery>parse("match " +
+                        "(someRole: $x, inferredRole: $z); " +
+                        "not {(anotherRole: $z);};" +
+                        "get;"));
+
+                assertTrue(answers3.isEmpty());
+
+                List<ConceptMap> answers4 = tx.execute(Graql.<GetQuery>parse("match " +
+                        "$r (someRole: $x, inferredRole: $z); " +
+                        "not {$r (anotherRole: $z);};" +
+                        "get;"));
+                assertEquals(2, answers4.size());
+
+                List<ConceptMap> answers5 = tx.execute(Graql.<GetQuery>parse("match " +
+                        "$r (someRole: $x, inferredRole: $z); " +
+                        "not {$r (yetAnotherRole: $y, andYetAnotherRole: $y);};" +
+                        "get;"));
+                assertEquals(2, answers5.size());
+
+                assertEquals("New relations were created!", persistedRelations, tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"),false));
+            }
+        }
+    }
+
     @Test //when rule are defined to append new RPs no new relation instances should be created
     public void whenAppendingRolePlayers_noNewRelationsAreCreated(){
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                
-                
 
                 List<ConceptMap> persistedRelations = tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"),false);
                 List<ConceptMap> inferredRelations = tx.execute(Graql.<GetQuery>parse("match $r isa relation; get;"));
-                assertEquals("New relations were created!", persistedRelations, inferredRelations);
+                assertCollectionsNonTriviallyEqual("New relations were created!", persistedRelations, inferredRelations);
 
                 Set<ConceptMap> variants = Stream.of(
                         Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse("match $r (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;"), false)),
@@ -590,7 +625,12 @@ public class ReasoningIT {
                 assertCollectionsNonTriviallyEqual("Rules are not matched correctly!", variants, inferredRelations);
 
                 List<ConceptMap> derivedRPTriples = tx.execute(Graql.<GetQuery>parse("match (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;"));
-                assertEquals("Rule body is not rewritten correctly!", 2, derivedRPTriples.size());
+                //NB: same answer is obtained from both rules
+                assertEquals("Rule body is not rewritten correctly!", 1, derivedRPTriples.size());
+
+                List<ConceptMap> derivedRelations = tx.execute(Graql.<GetQuery>parse("match $r (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;"));
+                //three symmetric roles hence 3! results
+                assertEquals("Rule body is not rewritten correctly!", 6, derivedRelations.size());
             }
         }
     }
@@ -599,7 +639,7 @@ public class ReasoningIT {
     public void inferrableRelationWithRolePlayersSharingResource(){
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)){
                 
                 String queryString = "match " +
                         "(role1: $x, role2: $y) isa binary-base;" +
