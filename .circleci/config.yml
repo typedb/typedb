@@ -55,7 +55,7 @@ jobs:
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
-      - run: python ./check-for-missing-checkstyle-rule.py
+      - run: python dependencies/tools/checkstyle/test-coverage.py
       - rpm_install
       - bazel:
           command: bazel build //...
