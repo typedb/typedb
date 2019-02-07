@@ -64,7 +64,6 @@ import java.util.List;
 import java.util.Set;
 
 import static grakn.core.graql.internal.Schema.MetaSchema.ENTITY;
-import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
@@ -251,7 +250,7 @@ public class InsertQueryIT {
     public void testErrorWhenInsertWithPredicate() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("predicate");
-        tx.execute(Graql.insert(var().id("123").val(gt(3))));
+        tx.execute(Graql.insert(var().id("123").gt(3)));
     }
 
     @Test

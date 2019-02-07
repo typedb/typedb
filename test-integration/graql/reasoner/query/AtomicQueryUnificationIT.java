@@ -807,7 +807,7 @@ public class AtomicQueryUnificationIT {
 
         //check hash additionally if need to be equal
         if (queryExpectation) {
-            assertEquals(equiv.name() + " " + a.toString() + " hash=? " + b.toString(), equiv.hash(a), equiv.hash(b));
+            assertEquals(equiv.name() + ": " + a.toString() + " hash=? " + b.toString(), equiv.hash(a), equiv.hash(b));
         }
     }
 

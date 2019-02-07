@@ -58,7 +58,10 @@ public class RelationProperty extends VarProperty {
     }
 
     public String property() {
-        return "(" + relationPlayers().stream().map(Object::toString).collect(joining(", ")) + ")";
+        return Query.Char.PARAN_OPEN +
+                relationPlayers().stream().map(Object::toString)
+                .collect(joining(Query.Char.COMMA_SPACE.toString())) +
+                Query.Char.PARAN_CLOSE;
     }
 
     @Override

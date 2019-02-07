@@ -438,7 +438,7 @@ public class AtomicQueryEquivalenceIT {
 
         //check hash additionally if need to be equal
         if (queryExpectation) {
-            assertTrue(a.toString() + " hash=? " + b.toString(), equiv.hash(a) == equiv.hash(b));
+            assertTrue(equiv.name() + ": " + a.toString() + " hash=? " + b.toString(), equiv.hash(a) == equiv.hash(b));
         }
     }
 
@@ -447,7 +447,7 @@ public class AtomicQueryEquivalenceIT {
 
         //check hash additionally if need to be equal
         if (expectation) {
-            assertTrue(a.toString() + " hash=? " + b.toString(), equivalence.hash(a) == equivalence.hash(b));
+            assertTrue(equivalence.name() + ": " + a.toString() + " hash=? " + b.toString(), equivalence.hash(a) == equivalence.hash(b));
         }
     }
 

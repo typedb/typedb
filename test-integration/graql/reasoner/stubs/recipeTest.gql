@@ -1,16 +1,23 @@
 define
 
 named-entity sub entity,
+    abstract,
     has name;
+
+ingredientBase sub named-entity,
+    abstract,
+    plays contained-ingredient,
+    plays required-ingredient;
+
+recipeBase sub named-entity,
+    abstract,
+    plays requiring-recipe;
 
 pantry sub entity,
     plays containing-pantry;
-recipe sub named-entity,
-    plays requiring-recipe;
-ingredient sub named-entity,
-    plays contained-ingredient,
-    plays required-ingredient;
-allergenic-ingredient sub ingredient;
+recipe sub recipeBase;
+ingredient sub ingredientBase;
+allergenic-ingredient sub ingredientBase;
 
 requires sub relationship,
     relates required-ingredient,
@@ -23,9 +30,9 @@ containes sub relationship,
 name sub attribute, datatype string;
 
 
-available-ingredient-occuring-in-recipe sub ingredient;
-available-ingredient sub ingredient;
-recipe-with-unavailable-ingredient sub recipe;
+available-ingredient-occuring-in-recipe sub ingredientBase;
+available-ingredient sub ingredientBase;
+recipe-with-unavailable-ingredient sub recipeBase;
 
 rule-1 sub rule,
     when {

@@ -34,6 +34,7 @@ import grakn.core.graql.internal.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.internal.gremlin.fragment.InSubFragment;
 import grakn.core.graql.internal.gremlin.fragment.LabelFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutRolePlayerFragment;
+import grakn.core.graql.internal.gremlin.fragment.ValueFragment;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.gremlin.spanningtree.Arborescence;
 import grakn.core.graql.internal.gremlin.spanningtree.ChuLiuEdmonds;
@@ -44,11 +45,10 @@ import grakn.core.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.TypeProperty;
-import grakn.core.graql.query.pattern.property.ValueProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -426,7 +426,7 @@ public class GreedyTraversalPlan {
         other.getDependants().add(fragment);
 
         // check whether it's value fragment
-        if (fragment.varProperty() instanceof ValueProperty) {
+        if (fragment instanceof ValueFragment) {
             // as value fragment is not symmetric, we need to add it again
             other.getFragmentsWithDependency().add(fragment);
             start.getDependants().add(fragment);

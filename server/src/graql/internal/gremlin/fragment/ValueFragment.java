@@ -18,30 +18,60 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
+import grakn.core.graql.internal.executor.property.ValueExecutor;
+import grakn.core.graql.internal.executor.property.ValueExecutor.Operation.Comparison;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.predicate.ValuePredicate;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 
-import static grakn.core.common.util.CommonUtil.optionalToStream;
-import static java.util.stream.Collectors.toSet;
+public class ValueFragment extends Fragment {
 
-@AutoValue
-abstract class ValueFragment extends Fragment {
+    private final VarProperty varProperty;
+    private final Variable start;
+    private final ValueExecutor.Operation<?, ?> operation;
 
-    abstract ValuePredicate predicate();
+    ValueFragment(@Nullable VarProperty varProperty, Variable start, ValueExecutor.Operation<?, ?> operation) {
+        this.varProperty = varProperty;
+        if (start == null) {
+            throw new NullPointerException("Null start");
+        }
+        this.start = start;
+        if (operation == null) {
+            throw new NullPointerException("Null operation");
+        }
+        this.operation = operation;
+    }
+
+    private ValueExecutor.Operation<?, ?> predicate() {
+        return operation;
+    }
+
+    @Nullable
+    @Override
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    @Override
+    public Variable start() {
+        return start;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars
+    ) {
 
-        return predicate().applyPredicate(traversal);
+        return predicate().apply(traversal);
     }
 
     @Override
@@ -51,7 +81,7 @@ abstract class ValueFragment extends Fragment {
 
     @Override
     public double internalFragmentCost() {
-        if (predicate().isSpecific()) {
+        if (predicate().isValueEquality()) {
             return COST_NODE_INDEX_VALUE;
         } else {
             // Assume approximately half of values will satisfy a filter
@@ -61,11 +91,39 @@ abstract class ValueFragment extends Fragment {
 
     @Override
     public boolean hasFixedFragmentCost() {
-        return predicate().isSpecific() && dependencies().isEmpty();
+        return predicate().isValueEquality() && dependencies().isEmpty();
     }
 
     @Override
     public Set<Variable> dependencies() {
-        return optionalToStream(predicate().getInnerVar()).map(statement -> statement.var()).collect(toSet());
+        if (operation instanceof Comparison.Variable) {
+            return Collections.singleton(((Comparison.Variable) operation).value().var());
+        } else {
+            return Collections.emptySet();
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ValueFragment that = (ValueFragment) o;
+
+        return (Objects.equals(this.varProperty, that.varProperty) &&
+                this.start.equals(that.start()) &&
+                this.operation.equals(that.predicate()));
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.operation.hashCode();
+        return h;
     }
 }

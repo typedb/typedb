@@ -158,6 +158,9 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
             //Clear internal caching
             txCacheClear();
+
+            //clear rule cache
+            vertex().tx().ruleCache().clear();
         } else {
             throw TransactionException.cannotBeDeleted(this);
         }

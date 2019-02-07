@@ -95,18 +95,7 @@ public interface Query {
     enum Operator {
         AND("and"),
         OR("or"),
-        NOT("not"),
-        EQ("="),
-        NEQ("!="),
-        EQV("=="),
-        NEQV("!=="),
-        GT(">"),
-        GTE(">="),
-        LT("<"),
-        LTE("<="),
-        CONTAINS("contains"), // TODO: remove duplicate in ComputeQuery.Param
-        LIKE("like");
-
+        NOT("not");
 
         private final String operator;
 
@@ -129,10 +118,45 @@ public interface Query {
         }
     }
 
+    enum Comparator {
+        EQ("="),
+        NEQ("!="),
+        EQV("=="),
+        NEQV("!=="),
+        GT(">"),
+        GTE(">="),
+        LT("<"),
+        LTE("<="),
+        CONTAINS("contains"), // TODO: remove duplicate in ComputeQuery.Param
+        LIKE("like");
+
+
+        private final String comparator;
+
+        Comparator(String comparator) {
+            this.comparator = comparator;
+        }
+
+        @Override
+        public String toString() {
+            return this.comparator;
+        }
+
+        public static Comparator of(String value) {
+            for (Comparator c : values()) {
+                if (c.comparator.equals(value)) {
+                    return c;
+                }
+            }
+            return null;
+        }
+    }
+
     enum Property {
         DATA_TYPE("datatype"),
         HAS("has"),
         KEY("key"),
+        VIA("via"),
         ID("id"),
         ABSTRACT("abstract"),
         ISA("isa"),

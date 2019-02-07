@@ -49,6 +49,7 @@ java_test(
     test_class = "grakn.core.server.kb.RuleTest",
     deps = [
         "//common",
+        "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/rule:grakn-test-server",

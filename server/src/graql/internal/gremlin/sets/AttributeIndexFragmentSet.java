@@ -25,13 +25,11 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
-import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.predicate.ValuePredicate;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -109,22 +107,18 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
         // Add a new fragment set to replace the old ones
         Variable attribute = valueSet.var();
 
-        Optional<Object> maybeValue = valueSet.predicate().equalsValue();
-        assert maybeValue.isPresent() : "This is filtered to only ones with equalValues in equalValueFragments method";
+        if (!valueSet.operation().isValueEquality()) {
+            throw new IllegalStateException("This optimisation should contain equalValues in equalValueFragments method");
+        }
 
-        Object value = maybeValue.get();
-
+        Object value = valueSet.operation().value();
         AttributeIndexFragmentSet indexFragmentSet = AttributeIndexFragmentSet.of(attribute, label, value);
-
         fragmentSets.add(indexFragmentSet);
     }
 
     private static Stream<ValueFragmentSet> equalsValueFragments(Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(ValueFragmentSet.class, fragmentSets)
-                .filter(valueFragmentSet -> {
-                    ValuePredicate predicate = valueFragmentSet.predicate();
-                    return predicate.equalsValue().isPresent() && !predicate.getInnerVar().isPresent();
-                });
+                .filter(valueFragmentSet -> valueFragmentSet.operation().isValueEquality());
     }
 
 }

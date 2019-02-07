@@ -126,7 +126,7 @@ public class ReasonerUtils {
         else {
             sourceVars = Stream.of(valueVar);
         }
-        return sourceVars.flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> ValuePredicate.create(valueVariable, vp.predicate(), parent)));
+        return sourceVars.flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> ValuePredicate.create(valueVariable, vp.operation(), parent)));
     }
 
     /**
