@@ -47,8 +47,8 @@ while status == 'no-status':
         print('Approval received! Initiating the release process. '
             'Please monitor it at https://circleci.com/gh/' + os.getenv('CIRCLE_PROJECT_USERNAME') + 
             '/workflows/' + os.getenv('CIRCLE_PROJECT_REPONAME') + '/tree/trigger-ci-release')
-        subprocess.call(['git', 'branch', 'trigger-ci-release', 'HEAD'])
-        subprocess.call(['git', 'push', 'origin', 'trigger-ci-release:trigger-ci-release'])
+        subprocess.check_output(['git', 'branch', 'trigger-ci-release', 'HEAD'])
+        subprocess.check_output(['git', 'push', 'origin', 'trigger-ci-release:trigger-ci-release'])
     elif status == 'do-not-deploy':
         print("This version won't be released as it has been marked 'do-not-deploy' by an administrator")
         break
