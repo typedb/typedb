@@ -23,7 +23,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.internal.executor.property.PropertyExecutor;
+import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
@@ -111,30 +111,55 @@ public class ReasonerUtils {
     }
 
     /**
+     * Finds a value predicate within a possible chain with a specified starting variable
+     * @param var starting variable
+     * @param otherStatements statement context
+     * @return corresponding value predicate or null if not found
+     */
+    public static grakn.core.graql.query.predicate.ValuePredicate findPredicateValue(Variable var, Set<Statement> otherStatements){
+        Variable[] searchVar = {null};
+        grakn.core.graql.query.predicate.ValuePredicate[] predicate = {null};
+        otherStatements.stream()
+                .filter(s -> s.var().equals(var))
+                .forEach(s ->
+                        s.getProperties(ValueProperty.class)
+                                .forEach(vp -> {
+                                    if (vp.predicate().getInnerVar().isPresent()){
+                                        if (searchVar[0] != null) throw new IllegalStateException("bla");
+                                        else searchVar[0] = vp.predicate().getInnerVar().get().var();
+                                    } else {
+                                        if (predicate[0] != null) throw new IllegalStateException("bla");
+                                        else predicate[0] = vp.predicate();
+                                    }
+                                })
+                );
+        return predicate[0] != null?
+                predicate[0] :
+                (searchVar[0] != null? findPredicateValue(searchVar[0], otherStatements) : null);
+    }
+
+    /**
      * looks for appropriate var properties with a specified name among the vars and maps them to ValuePredicates,
      * covers both the case when variable is and isn't user defined
      * @param valueVariable variable name of interest
-     * @param valueVar {@link Statement} to look for in case the variable name is not user defined
-     * @param vars VarAdmins to look for properties
+     * @param statement {@link Statement} to look for in case the variable name is not user defined
+     * @param fullContext VarAdmins to look for properties
      * @param parent reasoner query the mapped predicate should belong to
      * @return stream of mapped ValuePredicates
      */
-    public static Stream<ValuePredicate> getValuePredicates(Variable valueVariable, Statement valueVar, Set<Statement> vars, ReasonerQuery parent){
-        Stream<Statement> sourceVars;
-        if (valueVar.var().isUserDefinedName()) {
-            sourceVars = vars.stream().filter(v -> v.var().equals(valueVariable));
-        }
-        else {
-            sourceVars = Stream.of(valueVar);
-        }
-        return sourceVars
+    public static Stream<ValuePredicate> getValuePredicates(Variable valueVariable, Statement statement, Set<Statement> fullContext, ReasonerQuery parent){
+        Stream<Statement> context = statement.var().isUserDefinedName()?
+                fullContext.stream().filter(v -> v.var().equals(valueVariable)) :
+                Stream.of(statement);
+        Set<ValuePredicate> vps = context
                 .flatMap(v -> v.getProperties(ValueProperty.class)
                         //.map(vp -> ValuePredicate.create(valueVariable, vp.predicate(), parent))
-                        .map(property -> PropertyExecutor.create(valueVariable, property)
-                                .atomic(parent, valueVar, vars))
-                        .filter(at -> at instanceof ValuePredicate)
-                        .map( at -> (ValuePredicate) at)
-                );
+                        .map(property -> AtomicFactory.createValuePredicate(property, statement, fullContext, false, parent))
+                        .filter(ValuePredicate.class::isInstance)
+                        .map(ValuePredicate.class::cast)
+                )
+                .collect(toSet());
+        return vps.stream();
     }
 
     /**

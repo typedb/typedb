@@ -88,8 +88,9 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
         //NB: HasAttributeProperty always has (type) label specified
         Variable varName = var.asUserDefined();
 
-        Variable relationVariable = property.relationship().var();
+        //NB: we always make the attribute variable explicit
         Variable attributeVariable = property.attribute().var().asUserDefined();
+        Variable relationVariable = property.relationship().var();
         Variable predicateVariable = new Variable();
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements, parent).collect(Collectors.toSet());
 

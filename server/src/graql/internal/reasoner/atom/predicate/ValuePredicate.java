@@ -23,6 +23,7 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.ValueProperty;
@@ -54,15 +55,13 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.pr
     public static ValuePredicate create(Statement pattern, ReasonerQuery parent) {
         return new AutoValue_ValuePredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
+
     public static ValuePredicate create(Variable varName, grakn.core.graql.query.predicate.ValuePredicate pred, ReasonerQuery parent) {
-        return create(createValueVar(varName, pred), parent);
-    }
-    private static ValuePredicate create(ValuePredicate pred, ReasonerQuery parent) {
-        return create(pred.getPattern(), parent);
+        return create(Graql.var(varName).val(pred), parent);
     }
 
-    public static Statement createValueVar(Variable name, grakn.core.graql.query.predicate.ValuePredicate pred) {
-        return new Statement(name).val(pred);
+    private static ValuePredicate create(ValuePredicate pred, ReasonerQuery parent) {
+        return create(pred.getPattern(), parent);
     }
 
     private static grakn.core.graql.query.predicate.ValuePredicate extractPredicate(Statement pattern) {

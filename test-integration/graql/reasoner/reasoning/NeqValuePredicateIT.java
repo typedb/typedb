@@ -19,14 +19,24 @@
 
 package grakn.core.graql.reasoner.reasoning;
 
+import com.google.common.collect.Iterables;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
+import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -35,6 +45,7 @@ import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotEquals;
 
 public class NeqValuePredicateIT {
@@ -54,6 +65,28 @@ public class NeqValuePredicateIT {
     @AfterClass
     public static void closeSession(){
         attributeAttachmentSession.close();
+    }
+
+    @Test
+    public void whenParsingNeqValueVPS_equivalentPatternsMakeEquivalentQueries() {
+        try(TransactionOLTP tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+            Conjunction<Pattern> neqOutsideAttribute = Iterables.getOnlyElement(
+                    Graql.parsePattern("{$x has derived-resource-string $val;$val !== 'unattached';};").getNegationDNF().getPatterns()
+            );
+            Conjunction<Pattern> neqInAttribute = Iterables.getOnlyElement(
+                    Graql.parsePattern("{$x has derived-resource-string !== 'unattached';};").getNegationDNF().getPatterns()
+            );
+            Conjunction<Pattern> indirectOutsideNeq = Iterables.getOnlyElement(Graql.parsePattern("{" +
+                    "$x has derived-resource-string $val;" +
+                    "$unwanted == 'unattached';" +
+                    "$val !== $unwanted;" +
+                    "};").getNegationDNF().getPatterns());
+            ResolvableQuery outsideAttribute = ReasonerQueries.resolvable(neqOutsideAttribute, tx);
+            ResolvableQuery insideAttribute = ReasonerQueries.resolvable(neqInAttribute, tx);
+            ResolvableQuery indirectOutside = ReasonerQueries.resolvable(indirectOutsideNeq, tx);
+            assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(outsideAttribute, insideAttribute));
+            assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(insideAttribute, indirectOutside));
+        }
     }
 
     @Test
@@ -84,11 +117,25 @@ public class NeqValuePredicateIT {
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void derivingResources_requireValuesToBeDifferent() {
+    public void derivingResources_requireResourceValuesToBeDifferent() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
             String queryString = "match " +
                     "$x has derived-resource-string $val;" +
                     "$y has reattachable-resource-string $anotherVal;" +
+                    "$val !== $anotherVal;" +
+                    "get;";
+            tx.stream(Graql.<GetQuery>parse(queryString))
+                    .map(ans -> new Pair<>(ans.get("val").asAttribute().value(), ans.get("anotherVal").asAttribute().value()))
+                    .forEach(p -> assertNotEquals(p.getKey(), p.getValue()));
+        }
+    }
+
+    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    public void derivingResources_requireInstanceValuesToBeDifferent() {
+        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+            String queryString = "match " +
+                    "$val isa derived-resource-string;" +
+                    "$anotherVal isa reattachable-resource-string;" +
                     "$val !== $anotherVal;" +
                     "get;";
 

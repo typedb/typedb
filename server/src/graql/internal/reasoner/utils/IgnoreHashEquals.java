@@ -27,13 +27,8 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 /**
- *
- * <p>
  * Annotation for ignoring a property in equals/hash auto-value generation.
  * NB: It has to be defined in the most specialised class.
- * </p>
- *
- * @author Robert Eggar
  *
  */
 @Retention(SOURCE)

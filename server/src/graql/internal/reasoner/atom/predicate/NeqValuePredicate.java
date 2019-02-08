@@ -19,7 +19,6 @@
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.Iterables;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
@@ -28,10 +27,7 @@ import grakn.core.graql.internal.reasoner.utils.IgnoreHashEquals;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.predicate.Predicates;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -47,15 +43,16 @@ public abstract class NeqValuePredicate extends NeqPredicate {
     @Override @IgnoreHashEquals public abstract Statement getPattern();
     @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
 
-    public static NeqValuePredicate create(Variable varName, Variable var, @Nullable Object value, ReasonerQuery parent){
-        Statement pattern = Graql.var(varName).val(Graql.neq(value != null? value : Graql.var(var)));
-        return new AutoValue_NeqValuePredicate(varName, var, value, pattern, parent);
+    public static NeqValuePredicate create(Variable varName, @Nullable Variable var, @Nullable Object value, ReasonerQuery parent){
+        Variable predicateVar = var != null? var : Graql.var().var().asUserDefined();
+        Statement pattern = Graql.var(varName).val(Graql.neq(value != null? value : Graql.var(predicateVar)));
+        return new AutoValue_NeqValuePredicate(varName, predicateVar, value, pattern, parent);
     }
 
-    public static NeqValuePredicate create(Variable varName, grakn.core.graql.query.predicate.NeqPredicate pred, ReasonerQuery parent) {
+    public static NeqValuePredicate create(Variable varName, grakn.core.graql.query.predicate.ValuePredicate pred, ReasonerQuery parent) {
         Statement innerVar = pred.getInnerVar().orElse(null);
         Variable var = innerVar != null? innerVar.var() : Graql.var().var().asUserDefined();
-        Object value = pred.value().orElse(null);
+        Object value = pred.equalsValue().orElse(null);
         return create(varName, var, value, parent);
     }
 

@@ -98,6 +98,7 @@ public abstract class ComparatorPredicate implements ValuePredicate {
         }
     }
 
+    @Override
     public final Optional<Object> value() {
         return Optional.ofNullable(value);
     }

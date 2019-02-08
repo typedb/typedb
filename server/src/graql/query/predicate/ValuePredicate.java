@@ -61,6 +61,9 @@ public interface ValuePredicate {
         return Optional.empty();
     }
 
+
+    default Optional<Object> value(){ return Optional.empty();}
+
     /**
      * @return the gremlin predicate object this ValuePredicate wraps
      */

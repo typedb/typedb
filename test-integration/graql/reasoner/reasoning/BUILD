@@ -22,6 +22,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.NeqValuePredicateIT",
     deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
         "//server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
