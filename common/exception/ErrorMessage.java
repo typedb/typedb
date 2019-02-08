@@ -77,7 +77,7 @@ public enum ErrorMessage {
     LABEL_TAKEN("The label [%s] has already been used"),
     BACKGROUND_TASK_UNHANDLED_EXCEPTION("An exception has occurred during the execution of a background task [%s]. Skipping..."),
     INVALID_KEYSPACE_NAME("Keyspace name is invalid: [%s]. Keyspace name cannot start with a number, " +
-                                  "and can only contain maximum 48 characters of lower case, alphanumeric and underscore characters."),
+            "and can only contain maximum 48 characters of lower case, alphanumeric and underscore characters."),
     FILE_WRITE_EXCEPTION("Failed to write to file: %s"),
 
     //--------------------------------------------- Validation Errors
@@ -90,7 +90,7 @@ public enum ErrorMessage {
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relationship Type. \n"),
     VALIDATION_RELATION_TYPE("Relationship Type [%s] does not have one or more roles \n"),
 
-    VALIDATION_NOT_EXACTLY_ONE_KEY("Thing [%s] does not have exactly one key of type [%s] \n"),
+    VALIDATION_NOT_EXACTLY_ONE_KEY("Thing [%s] does not have exactly one key of type [%s]. The instance either has no key assigned to it or it has more than one. \n"),
 
     VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role [%s] which is connected to Relationship Type [%s] " +
             "does not have a %s Role Type which is connected to the %s Relationship Type [%s] \n"),
@@ -99,21 +99,17 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Rule validation Errors
 
-    VALIDATION_RULE_INVALID("The rule [%s] is not a valid rule: [%s]\n"),
-
-    VALIDATION_RULE_NESTED_NEGATION("The rule [%s] contains a nested negation block\n"),
-
-    VALIDATION_RULE_MULTIPLE_NEGATION_BLOCKS("The rule [%s] contains multiple negation blocks\n"),
-
-    VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE("The rule graph is not stratifiable - it contains following cycles with negation: [%s]\n"),
+    VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE("The rule graph is not stratifiable - it contains following cycles with negation: [%s] \n"),
 
     VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] refers to type [%s] which does not exist in the graph \n"),
 
-    VALIDATION_RULE_DISJUNCTION_IN_BODY("The rule [%s] does not form a valid clause, as it contains a disjunction in the body\n"),
+    VALIDATION_RULE_NEGATIVE_STATEMENTS_UNSUPPORTED_IN_RULES("The rule [%s] contains negative statements which are currently unsupported\n"),
 
-    VALIDATION_RULE_DISJUNCTION_IN_HEAD("The rule [%s] does not form a valid clause, as it contains a disjunction in the head\n"),
+    VALIDATION_RULE_DISJUNCTION_IN_BODY("The rule [%s] does not form a valid Horn clause, as it contains a disjunction in the body\n"),
 
-    VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] does not form a valid clause, as it contains a multi-atom head\n"),
+    VALIDATION_RULE_DISJUNCTION_IN_HEAD("The rule [%s] does not form a valid Horn clause, as it contains a disjunction in the head\n"),
+
+    VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] does not form a valid Horn clause, as it contains a multi-atom head\n"),
 
 
     VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("Atomic [%s] is not allowed to form a rule head of rule [%s]\n"),
@@ -201,7 +197,7 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
-    DISJUNCTIVE_NEGATION_BLOCK("Unsupported disjunction in a negation block."),
+    DISJUNCTIVE_NEGATION_BLOCK("Unsupported disjunction in a negation block in query: [%s]."),
     UNSAFE_NEGATION_BLOCK("Query:[%s] is not negation safe - negated pattern variables are not bound."),
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
     INCOMPLETE_RESOLUTION_PLAN("Addressed query [%s] leads to an incomplete resolution plan."),
@@ -225,7 +221,7 @@ public enum ErrorMessage {
     INVALID_COMPUTE_METHOD_ALGORITHM("Invalid algorithm for 'compute [%s]'. The accepted algorithm(s) are: [%s]."),
 
     INVALID_COMPUTE_ARGUMENT("Invalid argument(s) 'compute [%s] using [%s]'. The accepted argument(s) are: [%s]."),
-    
+
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
     K_SMALLER_THAN_TWO("k can't be smaller than 2."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
