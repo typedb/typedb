@@ -34,12 +34,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- *
- * <p>
  * Base {@link Atomic} implementation providing basic functionalities.
- * </p>
- *
- *
  */
 public abstract class AtomicBase implements Atomic {
 

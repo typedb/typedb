@@ -22,18 +22,31 @@ import com.google.common.base.Equivalence;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import java.util.Set;
 
 public abstract class NeqPredicate extends Predicate<Variable> {
+
+    NeqPredicate(Variable varName, Variable predicateVar, Statement pattern, ReasonerQuery parentQuery) {
+        super(varName, pattern, predicateVar, parentQuery);
+    }
 
     private boolean predicateBindingsEquivalent(NeqPredicate that, Equivalence<Atomic> equiv){
         IdPredicate thisPredicate = this.getIdPredicate(this.getVarName());
         IdPredicate thatPredicate = that.getIdPredicate(that.getVarName());
         IdPredicate thisRefPredicate = this.getIdPredicate(this.getPredicate());
         IdPredicate thatRefPredicate = that.getIdPredicate(that.getPredicate());
-        return ( (thisPredicate == null) ? (thisPredicate == thatPredicate) : equiv.equivalent(thisPredicate, thatPredicate) )
-                && ( (thisRefPredicate == null) ? (thisRefPredicate == thatRefPredicate) : equiv.equivalent(thisRefPredicate, thatRefPredicate) );
+        return (
+                (thisPredicate == null) ?
+                thisPredicate == thatPredicate :
+                equiv.equivalent(thisPredicate, thatPredicate)
+        ) && (
+                (thisRefPredicate == null) ?
+                (thisRefPredicate == thatRefPredicate) :
+                equiv.equivalent(thisRefPredicate, thatRefPredicate)
+        );
     }
 
     private int bindingHash(AtomicEquivalence equiv){

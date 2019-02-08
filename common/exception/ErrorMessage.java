@@ -99,17 +99,21 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Rule validation Errors
 
-    VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE("The rule graph is not stratifiable - it contains following cycles with negation: [%s] \n"),
+    VALIDATION_RULE_INVALID("The rule [%s] is not a valid rule: [%s]\n"),
+
+    VALIDATION_RULE_NESTED_NEGATION("The rule [%s] contains a nested negation block\n"),
+
+    VALIDATION_RULE_MULTIPLE_NEGATION_BLOCKS("The rule [%s] contains multiple negation blocks\n"),
+
+    VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE("The rule graph is not stratifiable - it contains following cycles with negation: [%s]\n"),
 
     VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] refers to type [%s] which does not exist in the graph \n"),
 
-    VALIDATION_RULE_NEGATIVE_STATEMENTS_UNSUPPORTED_IN_RULES("The rule [%s] contains negative statements which are currently unsupported\n"),
+    VALIDATION_RULE_DISJUNCTION_IN_BODY("The rule [%s] does not form a valid clause, as it contains a disjunction in the body\n"),
 
-    VALIDATION_RULE_DISJUNCTION_IN_BODY("The rule [%s] does not form a valid Horn clause, as it contains a disjunction in the body\n"),
+    VALIDATION_RULE_DISJUNCTION_IN_HEAD("The rule [%s] does not form a valid clause, as it contains a disjunction in the head\n"),
 
-    VALIDATION_RULE_DISJUNCTION_IN_HEAD("The rule [%s] does not form a valid Horn clause, as it contains a disjunction in the head\n"),
-
-    VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] does not form a valid Horn clause, as it contains a multi-atom head\n"),
+    VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] does not form a valid clause, as it contains a multi-atom head\n"),
 
 
     VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("Atomic [%s] is not allowed to form a rule head of rule [%s]\n"),
@@ -197,7 +201,7 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
-    DISJUNCTIVE_NEGATION_BLOCK("Unsupported disjunction in a negation block in query: [%s]."),
+    DISJUNCTIVE_NEGATION_BLOCK("Unsupported disjunction in a negation block."),
     UNSAFE_NEGATION_BLOCK("Query:[%s] is not negation safe - negated pattern variables are not bound."),
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
     INCOMPLETE_RESOLUTION_PLAN("Addressed query [%s] leads to an incomplete resolution plan."),

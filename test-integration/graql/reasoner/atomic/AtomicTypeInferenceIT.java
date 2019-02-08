@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.atomic;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.answer.ConceptMap;
@@ -113,9 +114,9 @@ public class AtomicTypeInferenceIT {
         String patternString3 = "{ $x isa twoRoleEntity; ($x, $y); };";
         String subbedPatternString3 = "{ $x id '" + conceptId(tx, "twoRoleEntity") + "';($x, $y); };";
 
-        List<SchemaConcept> possibleTypes = Lists.newArrayList(
-                tx.getSchemaConcept(Label.of("anotherTwoRoleBinary")),
-                tx.getSchemaConcept(Label.of("threeRoleBinary"))
+        List<Type> possibleTypes = Lists.newArrayList(
+                tx.getType(Label.of("anotherTwoRoleBinary")),
+                tx.getType(Label.of("threeRoleBinary"))
         );
 
         typeInference(allRelations(tx), patternString, subbedPatternString, tx);
@@ -146,12 +147,12 @@ public class AtomicTypeInferenceIT {
                 "$x id '" + conceptId(tx, "yetAnotherSingleRoleEntity") + "';" +
                 "$y id '" + conceptId(tx, "anotherTwoRoleEntity") +"';};";
 
-        List<SchemaConcept> possibleTypes = Lists.newArrayList(
-                tx.getSchemaConcept(Label.of("anotherTwoRoleBinary")),
-                tx.getSchemaConcept(Label.of("threeRoleBinary"))
+        List<Type> possibleTypes = Lists.newArrayList(
+                tx.getType(Label.of("anotherTwoRoleBinary")),
+                tx.getType(Label.of("threeRoleBinary"))
         );
 
-        List<SchemaConcept> possibleTypes2 = Collections.singletonList(tx.getSchemaConcept(Label.of("twoRoleBinary")));
+        List<Type> possibleTypes2 = Collections.singletonList(tx.getType(Label.of("twoRoleBinary")));
 
         typeInference(possibleTypes, patternString, subbedPatternString, tx);
         typeInference(possibleTypes, patternString2, subbedPatternString2, tx);
@@ -166,10 +167,10 @@ public class AtomicTypeInferenceIT {
         String patternString2 = "{ (role2: $x, $y); };";
         String patternString3 = "{ (role3: $x, $y); };";
 
-        List<SchemaConcept> possibleTypes = Collections.singletonList(tx.getSchemaConcept(Label.of("twoRoleBinary")));
-        List<SchemaConcept> possibleTypes2 = Lists.newArrayList(
-                tx.getSchemaConcept(Label.of("anotherTwoRoleBinary")),
-                tx.getSchemaConcept(Label.of("threeRoleBinary"))
+        List<Type> possibleTypes = Collections.singletonList(tx.getSchemaConcept(Label.of("twoRoleBinary")));
+        List<Type> possibleTypes2 = Lists.newArrayList(
+                tx.getType(Label.of("anotherTwoRoleBinary")),
+                tx.getType(Label.of("threeRoleBinary"))
         );
 
         typeInference(possibleTypes, patternString, tx);
@@ -203,9 +204,9 @@ public class AtomicTypeInferenceIT {
         String subbedPatternString3 = "{(role1: $x, $y);" +
                 "$y id '" + conceptId(tx, "anotherTwoRoleEntity") + "';};";
 
-        List<SchemaConcept> possibleTypes = Lists.newArrayList(
-                tx.getSchemaConcept(Label.of("anotherTwoRoleBinary")),
-                tx.getSchemaConcept(Label.of("threeRoleBinary"))
+        List<Type> possibleTypes = Lists.newArrayList(
+                tx.getType(Label.of("anotherTwoRoleBinary")),
+                tx.getType(Label.of("threeRoleBinary"))
         );
 
         typeInference(possibleTypes, patternString, subbedPatternString, tx);
@@ -258,9 +259,9 @@ public class AtomicTypeInferenceIT {
                 "$x id '" + conceptId(tx, "singleRoleEntity") + "';" +
                 "$y id '" + conceptId(tx, "anotherTwoRoleEntity") +"';};";
 
-        List<SchemaConcept> possibleTypes = Lists.newArrayList(
-                tx.getSchemaConcept(Label.of("anotherTwoRoleBinary")),
-                tx.getSchemaConcept(Label.of("threeRoleBinary"))
+        List<Type> possibleTypes = Lists.newArrayList(
+                tx.getType(Label.of("anotherTwoRoleBinary")),
+                tx.getType(Label.of("threeRoleBinary"))
         );
         typeInference(possibleTypes, patternString, subbedPatternString, tx);
         tx.close();
@@ -284,9 +285,9 @@ public class AtomicTypeInferenceIT {
 
         typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, subbedPatternString, tx);
 
-        List<SchemaConcept> possibleTypes = Lists.newArrayList(
-                tx.getSchemaConcept(Label.of("anotherTwoRoleBinary")),
-                tx.getSchemaConcept(Label.of("threeRoleBinary"))
+        List<Type> possibleTypes = Lists.newArrayList(
+                tx.getType(Label.of("anotherTwoRoleBinary")),
+                tx.getType(Label.of("threeRoleBinary"))
         );
         typeInference(possibleTypes, patternString2, subbedPatternString2, tx);
         tx.close();
@@ -356,15 +357,15 @@ public class AtomicTypeInferenceIT {
         assertEquals(midAtom.getPossibleTypes(), YZatom.getPossibleTypes());
 
         //differently prioritised options arise from using neighbour information
-        List<SchemaConcept> firstTypeOption = Lists.newArrayList(
-                tx.getSchemaConcept(Label.of("twoRoleBinary")),
-                tx.getSchemaConcept(Label.of("anotherTwoRoleBinary")),
-                tx.getSchemaConcept(Label.of("threeRoleBinary"))
+        List<Type> firstTypeOption = Lists.newArrayList(
+                tx.getType(Label.of("twoRoleBinary")),
+                tx.getType(Label.of("anotherTwoRoleBinary")),
+                tx.getType(Label.of("threeRoleBinary"))
         );
-        List<SchemaConcept> secondTypeOption = Lists.newArrayList(
-                tx.getSchemaConcept(Label.of("anotherTwoRoleBinary")),
-                tx.getSchemaConcept(Label.of("twoRoleBinary")),
-                tx.getSchemaConcept(Label.of("threeRoleBinary"))
+        List<Type> secondTypeOption = Lists.newArrayList(
+                tx.getType(Label.of("anotherTwoRoleBinary")),
+                tx.getType(Label.of("twoRoleBinary")),
+                tx.getType(Label.of("threeRoleBinary"))
         );
         typeInference(secondTypeOption, XYatom.getCombinedPattern().toString(), tx);
         typeInference(firstTypeOption, YZatom.getCombinedPattern().toString(), tx);
@@ -372,10 +373,10 @@ public class AtomicTypeInferenceIT {
         tx.close();
     }
 
-    private void typeInference(List<SchemaConcept> possibleTypes, String pattern, TransactionOLTP tx){
+    private void typeInference(List<Type> possibleTypes, String pattern, TransactionOLTP tx){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, tx), tx);
         Atom atom = query.getAtom();
-        List<SchemaConcept> relationshipTypes = atom.getPossibleTypes();
+        List<Type> relationshipTypes = atom.getPossibleTypes();
 
         if (possibleTypes.size() == 1){
             assertEquals(possibleTypes, relationshipTypes);
@@ -388,14 +389,14 @@ public class AtomicTypeInferenceIT {
         typeInferenceQueries(possibleTypes, pattern, tx);
     }
 
-    private void typeInference(List<SchemaConcept> possibleTypes, String pattern, String subbedPattern, TransactionOLTP tx){
+    private void typeInference(List<Type> possibleTypes, String pattern, String subbedPattern, TransactionOLTP tx){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, tx), tx);
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(conjunction(subbedPattern, tx), tx);
         Atom atom = query.getAtom();
         Atom subbedAtom = subbedQuery.getAtom();
 
-        List<SchemaConcept> relationshipTypes = atom.getPossibleTypes();
-        List<SchemaConcept> subbedRelationshipTypes = subbedAtom.getPossibleTypes();
+        List<Type> relationshipTypes = atom.getPossibleTypes();
+        List<Type> subbedRelationshipTypes = subbedAtom.getPossibleTypes();
         if (possibleTypes.size() == 1){
             assertEquals(possibleTypes, relationshipTypes);
             assertEquals(relationshipTypes, subbedRelationshipTypes);
@@ -413,14 +414,14 @@ public class AtomicTypeInferenceIT {
         typeInferenceQueries(possibleTypes, subbedPattern, tx);
     }
 
-    private void typeInferenceQueries(List<SchemaConcept> possibleTypes, String pattern, TransactionOLTP tx) {
+    private void typeInferenceQueries(List<Type> possibleTypes, String pattern, TransactionOLTP tx) {
         List<ConceptMap> typedAnswers = typedAnswers(possibleTypes, pattern, tx);
         List<ConceptMap> unTypedAnswers = tx.execute(Graql.match(Graql.parsePattern(pattern)).get());
         assertEquals(typedAnswers.size(), unTypedAnswers.size());
         GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
     }
 
-    private List<ConceptMap> typedAnswers(List<SchemaConcept> possibleTypes, String pattern, TransactionOLTP tx){
+    private List<ConceptMap> typedAnswers(List<Type> possibleTypes, String pattern, TransactionOLTP tx){
         List<ConceptMap> answers = new ArrayList<>();
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, tx), tx);
         for(SchemaConcept type : possibleTypes){
@@ -430,7 +431,7 @@ public class AtomicTypeInferenceIT {
         return answers;
     }
 
-    private List<SchemaConcept> allRelations(TransactionOLTP tx){
+    private List<Type> allRelations(TransactionOLTP tx){
         RelationType metaType = tx.getRelationshipType(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
         return metaType.subs().filter(t -> !t.equals(metaType)).collect(Collectors.toList());
     }

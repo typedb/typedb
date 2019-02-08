@@ -8,7 +8,6 @@ commands:
             curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-linux-x86_64.sh
             chmod +x bazel-0.20.0-installer-linux-x86_64.sh
             sudo ./bazel-0.20.0-installer-linux-x86_64.sh
-
   bazel_add_rbe_credential:
     steps:
       - run:
@@ -22,7 +21,6 @@ commands:
             else
               echo "No RBE credential found. Bazel will be executed locally without RBE support."
             fi
-
   bazel:
     parameters:
       command:
@@ -40,7 +38,6 @@ commands:
             fi
             echo "Executing $CMD"
             $CMD
-
   rpm_install:
     steps:
       - run:
@@ -55,7 +52,7 @@ jobs:
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
-      - run: python ./check-for-missing-checkstyle-rule.py
+      - run: python ./dependencies/tools/checkstyle/test-coverage.py
       - rpm_install
       - bazel:
           command: bazel build //...
@@ -69,23 +66,23 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - bazel:
-        command: bazel test //client-java/... --test_size_filters=small --test_output=errors
-    - bazel:
-        command: bazel test //client-java/... --test_size_filters=medium,large,enormous --test_output=errors
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - bazel:
+          command: bazel test //client-java/... --test_size_filters=small --test_output=errors
+      - bazel:
+          command: bazel test //client-java/... --test_size_filters=medium,large,enormous --test_output=errors
 
   common:
     machine: true
     working_directory: ~/grakn
     steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - bazel:
-        command: bazel test //common/... --test_output=errors
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - bazel:
+          command: bazel test //common/... --test_output=errors
 
   console:
     machine: true
@@ -102,22 +99,22 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - bazel:
-        command: bazel test //graql/... --test_output=errors
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - bazel:
+          command: bazel test //graql/... --test_output=errors
 
   server:
     machine: true
     working_directory: ~/grakn
     steps:
-    - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - rpm_install
-    - bazel:
-        command: bazel test //server/... --test_output=errors
+      - checkout
+      - bazel_install
+      - bazel_add_rbe_credential
+      - rpm_install
+      - bazel:
+          command: bazel test //server/... --test_output=errors
 
   test-integration:
     machine: true
@@ -170,115 +167,87 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Make docs (development branch) depend on the latest Grakn (master)
+          name: Sync docs/development to the latest Grakn version
           command: |
             mkdir docs
             cd docs
             python ../.circleci/docs-update-grakn-dependency-on-dev-branch.py
+  
+  approve-release:
+    machine: true
+    steps:
+      - checkout
+      - run: python .circleci/approve-release.py
 
-  grakn-release-build:
+  release-cleanup:
+    machine: true
+    steps:
+      - checkout
+      - run: git push --delete origin trigger-ci-release
+
+  publish-github-draft:
     machine: true
     working_directory: ~/grakn
     steps:
       - checkout
       - bazel_install
-      - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV # TODO: remove 'v' from tag name and use it as Grakn Version to be released
-      - run: mvn --batch-mode install -T 2.5C -DskipTests=true
-      - run: mkdir ~/grakn/artifacts
-      - run: mv grakn-dist/target/grakn-core-${GRAKN_VERSION}.zip ~/grakn/artifacts
-      - persist_to_workspace: # TODO: share Grakn with other jobs by putting it in the workspace
-          root: ~/grakn
-          paths:
-            - ./artifacts
-            - ./workbase
+      - bazel_add_rbe_credential
+      - run: bazel run //:deploy-github-zip -- ${GRABL_CREDENTIAL}
 
 workflows:
-  ci-pull-request:
+  # the 'ci' workflow consists of jobs which:
+  #  - executes tests (executed on pull requests and master)
+  #  - syncs docs/development to the latest grakn version (executed on master only)
+  #  - waits for an approval for Grakn to be released (executed on master only)
+  ci:
     jobs:
+      # test jobs
       - build:
           filters:
             branches:
-              ignore: master
+              ignore: trigger-ci-release
       - client-java:
           filters:
             branches:
-              ignore: master
+              ignore: trigger-ci-release
       - common:
           filters:
             branches:
-              ignore: master
+              ignore: trigger-ci-release
       - console:
           filters:
             branches:
-              ignore: master
+              ignore: trigger-ci-release
       - graql:
           filters:
             branches:
-              ignore: master
+              ignore: trigger-ci-release
       - server:
           filters:
             branches:
-              ignore: master
+              ignore: trigger-ci-release
       - test-integration:
           filters:
             branches:
-              ignore: master
+              ignore: trigger-ci-release
       - test-integration-reasoner:
           filters:
             branches:
-              ignore: master
+              ignore: trigger-ci-release
       - test-integration-analytics:
           filters:
             branches:
-              ignore: master
+              ignore: trigger-ci-release
       - test-end-to-end:
           filters:
             branches:
-              ignore: master
+              ignore: trigger-ci-release
 
-  ci-master-branch:
-    jobs:
-      - build:
-          filters:
-            branches:
-              only: master
-      - client-java:
-          filters:
-            branches:
-              only: master
-      - common:
-          filters:
-            branches:
-              only: master
-      - console:
-          filters:
-            branches:
-              only: master
-      - graql:
-          filters:
-            branches:
-              only: master
-      - server:
-          filters:
-            branches:
-              only: master
-      - test-integration:
-          filters:
-            branches:
-              only: master
-      - test-integration-reasoner:
-          filters:
-            branches:
-              only: master
-      - test-integration-analytics:
-          filters:
-            branches:
-              only: master
-      - test-end-to-end:
-          filters:
-            branches:
-              only: master
+      # sync docs/development to the latest grakn version
       - docs-update-grakn-dependency-on-dev-branch:
+          filters:
+            branches:
+              only: master
           requires:
             - build
             - client-java
@@ -290,15 +259,29 @@ workflows:
             - test-integration-reasoner
             - test-integration-analytics
             - test-end-to-end
+
+      # wait for an approval for Grakn to be released
+      # triggers 'ci-release' workflow by creating a branch 'trigger-ci-release' in graknlabs/grakn
+      - approve-release:
           filters:
             branches:
               only: master
+          requires:
+            - docs-update-grakn-dependency-on-dev-branch
 
-  build-and-deploy:
+  # the 'ci-release' workflow is triggered by the creation of 'trigger-ci-release' branch in graknlabs/grakn
+  # it consists of jobs which:
+  # - publishes Grakn by creating a Github release
+  # - cleans up the 'trigger-ci-release' branch which was created by the approve-release job
+  ci-release:
     jobs:
-      - grakn-release-build:
+      - publish-github-draft:
           filters:
-            tags:
-              only: /^v.*/
             branches:
-              ignore: /.*/
+              only: trigger-ci-release
+      - release-cleanup:
+          requires:
+            - publish-github-draft
+          filters:
+            branches:
+              only: trigger-ci-release

@@ -34,13 +34,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- *
- * <p>
  * Class defining the resolution plan for a given {@link ReasonerQueryImpl} at an atom level.
  * The plan is constructed  using the {@link GraqlTraversal} with the aid of {@link GraqlTraversalPlanner}.
- * </p>
- *
- *
  */
 public final class ResolutionPlan {
 

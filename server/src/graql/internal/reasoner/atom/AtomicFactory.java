@@ -18,23 +18,22 @@
 
 package grakn.core.graql.internal.reasoner.atom;
 
-import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqValuePredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.predicate.NeqPredicate;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.findPredicateValue;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.findValuePropertyOp;
 
 /**
  * Factory class for creating {@link Atomic} objects.
@@ -78,32 +77,31 @@ public class AtomicFactory {
                                               boolean allowNeq, boolean attributeCheck, ReasonerQuery parent) {
         HasAttributeProperty has = statement.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
         Variable var = has != null? has.attribute().var() : statement.var();
-        grakn.core.graql.query.predicate.ValuePredicate directPredicate = property.predicate();
-        boolean hasPredicateVar = property.predicate().getInnerVar().isPresent();
-        Variable predicateVar = hasPredicateVar? property.predicate().getInnerVar().get().var() : null;
+        ValueProperty.Operation directOperation = property.operation();
+        Variable predicateVar = directOperation.innerStatement() != null? directOperation.innerStatement().var() : null;
 
-        boolean buildNeq = directPredicate instanceof NeqPredicate;
+        boolean buildNeq = directOperation.comparator().equals(Query.Comparator.NEQV);
         boolean partOfAttribute = otherStatements.stream()
                 .flatMap(s -> s.getProperties(HasAttributeProperty.class))
                 .anyMatch(p -> p.attribute().var().equals(var));
         boolean hasParentVp =
                 otherStatements.stream()
                         .flatMap(s -> s.getProperties(ValueProperty.class))
-                        .map(vp -> vp.predicate().getInnerVar())
-                        .flatMap(CommonUtil::optionalToStream)
+                        .map(vp -> vp.operation().innerStatement())
+                        .filter(Objects::nonNull)
                         .map(Statement::var)
                         .anyMatch(pVar -> pVar.equals(var));
         if (hasParentVp) return null;
         if (attributeCheck && (partOfAttribute && !buildNeq)) return null;
 
-        grakn.core.graql.query.predicate.ValuePredicate indirectPredicate = findPredicateValue(predicateVar, otherStatements);
-        grakn.core.graql.query.predicate.ValuePredicate predicate = indirectPredicate != null? indirectPredicate : directPredicate;
-        Object value = predicate.value().orElse(null);
+        ValueProperty.Operation indirectOperation = findValuePropertyOp(predicateVar, otherStatements);
+        ValueProperty.Operation operation = indirectOperation != null? indirectOperation : directOperation;
+        Object value = operation.innerStatement() == null? operation.value() : null;
         return buildNeq?
                 (allowNeq?
                         NeqValuePredicate.create(var.asUserDefined(), predicateVar, value, parent) :
                         ValuePredicate.neq(var.asUserDefined(), predicateVar, value, parent)) :
-                ValuePredicate.create(var.asUserDefined(), predicate, parent);
+                ValuePredicate.create(var.asUserDefined(), operation, parent);
     }
 }
 

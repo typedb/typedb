@@ -31,6 +31,7 @@ import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.internal.reasoner.state.AnswerState;
 import grakn.core.graql.internal.reasoner.state.AtomicState;
 import grakn.core.graql.internal.reasoner.state.AtomicStateProducer;
@@ -47,7 +48,6 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.server.session.TransactionOLTP;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -229,8 +229,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     private Stream<Pair<InferenceRule, Unifier>> getRuleStream() {
-        return getAtom().getApplicableRules()
-                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
-                .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));
+        return RuleUtils
+                .stratifyRules(getAtom().getApplicableRules().collect(Collectors.toSet()))
+                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)));
     }
 }

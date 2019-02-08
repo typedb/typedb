@@ -135,7 +135,7 @@ public abstract class Atom extends AtomicBase {
      * @return true if this atom is bounded - via substitution/specific resource or schema
      */
     public boolean isBounded() {
-        return isResource() && ((AttributeAtom) this).isSpecific()
+        return isResource() && ((AttributeAtom) this).isValueEquality()
                 || this instanceof OntologicalAtom
                 || isGround();
     }
@@ -222,7 +222,7 @@ public abstract class Atom extends AtomicBase {
                 .map(IsaProperty::isExplicit).orElse(false);
 
         return getPossibleTypes().stream()
-                .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
+                .flatMap(type -> tx().ruleCache().getRulesWithType(type, isDirect))
                 .distinct();
     }
 
@@ -342,7 +342,10 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return list of types this atom can take
      */
-    public ImmutableList<SchemaConcept> getPossibleTypes() { return ImmutableList.of(getSchemaConcept());}
+    public ImmutableList<Type> getPossibleTypes() {
+        return (getSchemaConcept() != null && getSchemaConcept().isType())?
+                ImmutableList.of(getSchemaConcept().asType()) :
+                ImmutableList.of();}
 
     /**
      * @param sub partial substitution

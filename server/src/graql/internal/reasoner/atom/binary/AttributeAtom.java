@@ -44,6 +44,7 @@ import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
@@ -106,7 +107,7 @@ public abstract class AttributeAtom extends Binary{
                 this.getPredicateVariable(),
                 this.getTypeId(),
                 this.getMultiPredicate().stream()
-                        .filter(at -> !(at.getPredicate() instanceof grakn.core.graql.query.predicate.NeqPredicate))
+                        .filter(at -> !(at.getPredicate().comparator().equals(Query.Comparator.NEQV)))
                         .collect(Collectors.toSet()),
                 this.getParentQuery());
     }
@@ -215,7 +216,7 @@ public abstract class AttributeAtom extends Binary{
     @Override
     public boolean isSelectable(){ return true;}
 
-    public boolean isSpecific(){ return getMultiPredicate().stream().anyMatch(p -> p.getPredicate().isSpecific());}
+    public boolean isValueEquality(){ return getMultiPredicate().stream().anyMatch(p -> p.getPredicate().isValueEquality());}
 
     @Override
     public boolean requiresMaterialisation(){ return true;}
@@ -236,7 +237,7 @@ public abstract class AttributeAtom extends Binary{
         }
 
         getMultiPredicate().stream()
-                .filter(p -> !p.getPredicate().isSpecific())
+                .filter(p -> !p.getPredicate().isValueEquality())
                 .forEach( p ->
                         errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_NONSPECIFIC_PREDICATE.getMessage(rule.then(), rule.label()))
                 );
@@ -346,8 +347,8 @@ public abstract class AttributeAtom extends Binary{
 
         //if the attribute already exists, only attach a new link to the owner, otherwise create a new attribute
         Attribute attribute;
-        if(this.isSpecific()){
-            Object value = Iterables.getOnlyElement(getMultiPredicate()).getPredicate().equalsValue().orElse(null);
+        if(this.isValueEquality()){
+            Object value = Iterables.getOnlyElement(getMultiPredicate()).getPredicate().value();
             Attribute existingAttribute = attributeType.attribute(value);
             attribute = existingAttribute == null? attributeType.putAttributeInferred(value) : existingAttribute;
         } else {

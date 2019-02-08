@@ -21,9 +21,6 @@ package grakn.core.server.kb;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.query.CompositeQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relation;
@@ -34,11 +31,13 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.query.CompositeQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.server.Transaction;
@@ -49,7 +48,6 @@ import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.session.TransactionOLTP;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -290,7 +288,6 @@ class ValidateGlobalRules {
         return errors;
     }
 
-
     /**
      * @param graph graph used to ensure the rule is a valid Horn clause
      * @param rule the rule to be validated
@@ -298,10 +295,14 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRuleIsValidClause(TransactionOLTP graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        CompositeQuery composite = ReasonerQueries.composite(rule.when().getNegationDNF().getPatterns().iterator().next(), graph);
-        if (rule.when().getDisjunctiveNormalForm().getPatterns().size() > 1){
+        Set<Conjunction<Pattern>> patterns = rule.when().getNegationDNF().getPatterns();
+        if (patterns.size() > 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
         }
+        else {
+            errors.addAll(CompositeQuery.validateAsRuleBody(Iterables.getOnlyElement(patterns), rule, graph));
+        }
+
         if (errors.isEmpty()){
             errors.addAll(validateRuleHead(graph, rule));
         }

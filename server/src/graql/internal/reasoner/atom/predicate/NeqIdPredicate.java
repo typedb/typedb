@@ -18,14 +18,14 @@
 
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
-import com.google.auto.value.AutoValue;
+import com.google.common.collect.Iterables;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.internal.reasoner.utils.IgnoreHashEquals;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -35,31 +35,27 @@ import grakn.core.graql.query.pattern.statement.Variable;
  *
  *
  */
-@AutoValue
-public abstract class NeqIdPredicate extends NeqPredicate {
 
-    @Override @IgnoreHashEquals public abstract Statement getPattern();
-    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
-    //need to have it explicitly here cause autovalue gets confused with the generic
-    public abstract Variable getPredicate();
+public class NeqIdPredicate extends NeqPredicate {
+
+    private NeqIdPredicate(Variable varName, Variable predicateVar, Statement pattern, ReasonerQuery parentQuery) {
+        super(varName, predicateVar, pattern, parentQuery);
+    }
 
     public static NeqIdPredicate create(Statement pattern, ReasonerQuery parent) {
-        return new AutoValue_NeqIdPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
+        return new NeqIdPredicate(pattern.var(), extractPredicateVariable(pattern), pattern, parent);
     }
     public static NeqIdPredicate create(Variable varName, NeqProperty prop, ReasonerQuery parent) {
-        Statement pattern = new Statement(varName).neq(prop);
+        Statement pattern = new Statement(varName).not(prop);
         return create(pattern, parent);
     }
-    public static NeqIdPredicate create(NeqIdPredicate a, ReasonerQuery parent) {
-        return create(a.getPattern(), parent);
-    }
 
-    private static Variable extractPredicate(Statement pattern) {
-        return pattern.getProperties(NeqProperty.class).iterator().next().statement().var();
+    private static Variable extractPredicateVariable(Statement pattern) {
+        return Iterables.getOnlyElement(pattern.getProperties(NeqProperty.class).collect(Collectors.toSet())).statement().var();
     }
 
     @Override
-    public Atomic copy(ReasonerQuery parent) { return create(this, parent);}
+    public Atomic copy(ReasonerQuery parent) { return create(this.getPattern(), parent);}
 
     @Override
     public String toString(){

@@ -179,12 +179,12 @@ public class AtomicRuleApplicabilityIT {
         Atom relation2 = ReasonerQueries.create(conjunction(relationString2, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
         Atom relation3 = ReasonerQueries.create(conjunction(relationString3, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
         Atom relation4 = ReasonerQueries.create(conjunction(relationString4, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
-        Set<InferenceRule> rules = RuleUtils.getRules(tx).map(r -> new InferenceRule(r, tx)).collect(Collectors.toSet());
+        Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(Collectors.toSet());
 
         assertEquals(rules.stream().filter(r -> r.getRule().label().equals(Label.of("attributed-relation-long-rule"))).collect(Collectors.toSet()), relation.getApplicableRules().collect(toSet()));
         assertEquals(rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(toSet()), relation2.getApplicableRules().collect(toSet()));
         assertEquals(rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(toSet()), relation3.getApplicableRules().collect(toSet()));
-        assertEquals(RuleUtils.getRules(tx).count() - 1, relation4.getApplicableRules().count());
+        assertEquals(tx.ruleCache().getRules().count() - 1, relation4.getApplicableRules().count());
         tx.close();
     }
 
@@ -217,7 +217,7 @@ public class AtomicRuleApplicabilityIT {
         Atom relation2 = ReasonerQueries.create(conjunction(relationString2, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
         Atom relation3 = ReasonerQueries.create(conjunction(relationString3, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
 
-        Set<InferenceRule> rules = RuleUtils.getRules(tx).map(r -> new InferenceRule(r, tx)).collect(Collectors.toSet());
+        Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(Collectors.toSet());
 
         assertEquals(
                 rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(Collectors.toSet()),
@@ -313,7 +313,7 @@ public class AtomicRuleApplicabilityIT {
         Atom type4 = ReasonerQueries.atomic(conjunction(typeString4, tx), tx).getAtom();
         Atom type5 = ReasonerQueries.atomic(conjunction(typeString5, tx), tx).getAtom();
 
-        List<InferenceRule> rules = RuleUtils.getRules(tx).map(r -> new InferenceRule(r, tx)).collect(Collectors.toList());
+        List<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(Collectors.toList());
         assertEquals(2, type.getApplicableRules().count());
         assertEquals(1, type2.getApplicableRules().count());
         assertEquals(3, type3.getApplicableRules().count());
@@ -328,7 +328,7 @@ public class AtomicRuleApplicabilityIT {
         String relationString = "{ ($x, $y); };";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         assertEquals(
-                RuleUtils.getRules(tx).count(),
+                tx.ruleCache().getRules().count(),
                 relation.getApplicableRules().count()
         );
         tx.close();
@@ -344,9 +344,9 @@ public class AtomicRuleApplicabilityIT {
         Atom type2 = ReasonerQueries.atomic(conjunction(typeString2, tx), tx).getAtom();
         Atom type3 = ReasonerQueries.create(conjunction(typeString3, tx), tx).getAtoms(IsaAtom.class).filter(at -> at.getSchemaConcept() == null).findFirst().orElse(null);
 
-        assertEquals(RuleUtils.getRules(tx).count(), type.getApplicableRules().count());
+        assertEquals(tx.ruleCache().getRules().count(), type.getApplicableRules().count());
         assertThat(type2.getApplicableRules().collect(toSet()), empty());
-        assertEquals(RuleUtils.getRules(tx).filter(r -> r.thenTypes().allMatch(Concept::isRelationshipType)).count(), type3.getApplicableRules().count());
+        assertEquals(tx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isRelationshipType)).count(), type3.getApplicableRules().count());
         tx.close();
     }
 
@@ -359,7 +359,7 @@ public class AtomicRuleApplicabilityIT {
         Atom type2 = ReasonerQueries.create(conjunction(typeString2, tx), tx).getAtoms(IsaAtom.class).findFirst().orElse(null);
         assertThat(type.getApplicableRules().collect(toSet()), empty());
         assertEquals(
-                RuleUtils.getRules(tx).filter(r -> r.thenTypes().anyMatch(c -> c.label().equals(Label.of("binary")))).count(),
+                tx.ruleCache().getRules().filter(r -> r.thenTypes().anyMatch(c -> c.label().equals(Label.of("binary")))).count(),
                 type2.getApplicableRules().count()
         );
         tx.close();
@@ -371,7 +371,7 @@ public class AtomicRuleApplicabilityIT {
         String relationString = "{ $x isa $type; };";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         assertEquals(
-                RuleUtils.getRules(tx).count(),
+                tx.ruleCache().getRules().count(),
                 relation.getApplicableRules().count()
         );
         tx.close();
@@ -418,10 +418,10 @@ public class AtomicRuleApplicabilityIT {
         Atom relation3 = ReasonerQueries.create(conjunction(relationString3, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
 
         assertEquals(7, relation.getApplicableRules().count());
-        assertEquals(RuleUtils.getRules(tx).filter(r -> r.thenTypes().allMatch(Concept::isRelationshipType)).count(), relation2.getApplicableRules().count());
+        assertEquals(tx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isRelationshipType)).count(), relation2.getApplicableRules().count());
 
         //TODO not filtered correctly
-        //assertEquals(RuleUtils.getRules(tx).filter(r -> r.thenTypes().allMatch(Concept::isAttributeType)).count(), relation3.getApplicableRules().count());
+        //assertEquals(tx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isAttributeType)).count(), relation3.getApplicableRules().count());
         tx.close();
     }
 
@@ -794,7 +794,7 @@ public class AtomicRuleApplicabilityIT {
         return roleMap;
     }
 
-    private Concept getConcept(TransactionOLTP tx, String typeName, Object val){
+    private Concept getConcept(TransactionOLTP tx, String typeName, String val){
         return tx.stream(Graql.match((Pattern) var("x").has(typeName, val)).get("x"))
                 .map(ans -> ans.get("x")).findAny().orElse(null);
     }

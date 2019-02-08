@@ -116,26 +116,27 @@ public class ReasonerUtils {
      * @param otherStatements statement context
      * @return corresponding value predicate or null if not found
      */
-    public static grakn.core.graql.query.predicate.ValuePredicate findPredicateValue(Variable var, Set<Statement> otherStatements){
+    public static ValueProperty.Operation findValuePropertyOp(Variable var, Set<Statement> otherStatements){
         Variable[] searchVar = {null};
-        grakn.core.graql.query.predicate.ValuePredicate[] predicate = {null};
+        ValueProperty.Operation[] predicate = {null};
         otherStatements.stream()
                 .filter(s -> s.var().equals(var))
                 .forEach(s ->
                         s.getProperties(ValueProperty.class)
                                 .forEach(vp -> {
-                                    if (vp.predicate().getInnerVar().isPresent()){
+                                    Statement innerStatement = vp.operation().innerStatement();
+                                    if (innerStatement != null){
                                         if (searchVar[0] != null) throw new IllegalStateException("bla");
-                                        else searchVar[0] = vp.predicate().getInnerVar().get().var();
+                                        else searchVar[0] = innerStatement.var();
                                     } else {
                                         if (predicate[0] != null) throw new IllegalStateException("bla");
-                                        else predicate[0] = vp.predicate();
+                                        else predicate[0] = vp.operation();
                                     }
                                 })
                 );
         return predicate[0] != null?
                 predicate[0] :
-                (searchVar[0] != null? findPredicateValue(searchVar[0], otherStatements) : null);
+                (searchVar[0] != null? findValuePropertyOp(searchVar[0], otherStatements) : null);
     }
 
     /**
@@ -153,7 +154,6 @@ public class ReasonerUtils {
                 Stream.of(statement);
         Set<ValuePredicate> vps = context
                 .flatMap(v -> v.getProperties(ValueProperty.class)
-                        //.map(vp -> ValuePredicate.create(valueVariable, vp.predicate(), parent))
                         .map(property -> AtomicFactory.createValuePredicate(property, statement, fullContext, false, false, parent))
                         .filter(ValuePredicate.class::isInstance)
                         .map(ValuePredicate.class::cast)

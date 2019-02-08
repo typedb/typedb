@@ -109,9 +109,9 @@ public class NegationIT {
                     "{" +
                             "$r isa entity;" +
                             "not {" +
-                                "($r, $i);" +
+                                "($r2, $i);" +
                                 "not {" +
-                                    "($j, $k);" +
+                                    "$i isa entity;" +
                                 "};" +
                             "};" +
                             "};"
@@ -483,7 +483,7 @@ public class NegationIT {
                     "get $r;"
             )).collect(Collectors.toSet());
 
-            assertEquals(recipesWithoutAllergenIngredients, Sets.difference(allRecipes, recipesContainingAllergens));
+            assertEquals(Sets.difference(allRecipes, recipesContainingAllergens), recipesWithoutAllergenIngredients);
         }
     }
 
