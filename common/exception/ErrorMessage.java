@@ -72,7 +72,7 @@ public enum ErrorMessage {
     INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
     RESERVED_WORD("The word [%s] is reserved internally and cannot be used"),
     INVALID_PROPERTY_USE("The concept [%s] cannot contain vertex property [%s]"),
-    UNKNOWN_CONCEPT("Uknown concept type [%s]"),
+    UNKNOWN_CONCEPT("Unknown concept type [%s]"),
     INVALID_IMPLICIT_TYPE("Label [%s] is not an implicit label"),
     LABEL_TAKEN("The label [%s] has already been used"),
     BACKGROUND_TASK_UNHANDLED_EXCEPTION("An exception has occurred during the execution of a background task [%s]. Skipping..."),
