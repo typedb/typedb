@@ -63,11 +63,19 @@ public class AtomicFactory {
                                         .atomic(parent, statement, pattern.statements()))
                                 .filter(Objects::nonNull))
                 ).forEach(atoms::add);
-        return atoms.stream();
+
+        //remove duplicates
+        return atoms.stream()
+                .filter(at -> atoms.stream()
+                        .filter(Atom.class::isInstance)
+                        .map(Atom.class::cast)
+                        .flatMap(Atom::getInnerPredicates)
+                        .noneMatch(at::equals)
+                );
     }
 
     public static Atomic createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
-                                              boolean attributeCheck, ReasonerQuery parent) {
+                                              boolean allowNeq, boolean attributeCheck, ReasonerQuery parent) {
         HasAttributeProperty has = statement.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
         Variable var = has != null? has.attribute().var() : statement.var();
         grakn.core.graql.query.predicate.ValuePredicate directPredicate = property.predicate();
@@ -92,7 +100,9 @@ public class AtomicFactory {
         grakn.core.graql.query.predicate.ValuePredicate predicate = indirectPredicate != null? indirectPredicate : directPredicate;
         Object value = predicate.value().orElse(null);
         return buildNeq?
-                NeqValuePredicate.create(var.asUserDefined(), predicateVar, value, parent) :
+                (allowNeq?
+                        NeqValuePredicate.create(var.asUserDefined(), predicateVar, value, parent) :
+                        ValuePredicate.neq(var.asUserDefined(), predicateVar, value, parent)) :
                 ValuePredicate.create(var.asUserDefined(), predicate, parent);
     }
 }

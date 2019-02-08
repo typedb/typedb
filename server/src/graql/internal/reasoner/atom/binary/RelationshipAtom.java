@@ -30,11 +30,6 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -49,15 +44,20 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.internal.reasoner.atom.predicate.NeqIdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
+import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
@@ -73,8 +73,6 @@ import grakn.core.graql.query.pattern.statement.StatementInstance;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.RelationshipTypeImpl;
-
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -90,6 +88,7 @@ import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.bottom;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.compatibleRelationTypesWithRoles;
@@ -225,7 +224,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(statement -> statement.var())
+                .map(Statement::var)
                 .filter(Variable::isUserDefinedName)
                 .collect(Collectors.toSet());
     }
@@ -314,8 +313,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                                                 AtomicEquivalence equivalence) {
         Multimap<Role, String> thisIdMap = this.getRoleConceptIdMap();
         Multimap<Role, String> thatIdMap = atom.getRoleConceptIdMap();
-        Multimap<Role, NeqIdPredicate> thisNeqMap = this.getRoleNeqPredicateMap();
-        Multimap<Role, NeqIdPredicate> thatNeqMap = atom.getRoleNeqPredicateMap();
+        Multimap<Role, NeqPredicate> thisNeqMap = this.getRoleNeqPredicateMap();
+        Multimap<Role, NeqPredicate> thatNeqMap = atom.getRoleNeqPredicateMap();
         Multimap<Role, ValuePredicate> thisValueMap = this.getRoleValueMap();
         Multimap<Role, ValuePredicate> thatValueMap = atom.getRoleValueMap();
         return thisIdMap.keySet().equals(thatIdMap.keySet())
@@ -499,9 +498,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Memoized
-    public Multimap<Role, NeqIdPredicate> getRoleNeqPredicateMap() {
-        ImmutableMultimap.Builder<Role, NeqIdPredicate> builder = ImmutableMultimap.builder();
-        getRolePredicateMap(NeqIdPredicate.class)
+    public Multimap<Role, NeqPredicate> getRoleNeqPredicateMap() {
+        ImmutableMultimap.Builder<Role, NeqPredicate> builder = ImmutableMultimap.builder();
+        getRolePredicateMap(NeqPredicate.class)
                 .entries()
                 .forEach(e -> builder.put(e.getKey(), e.getValue()));
         return builder.build();
@@ -705,7 +704,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .flatMap(CommonUtil::optionalToStream)
                 .filter(p -> p.var().isUserDefinedName())
                 .filter(p -> !p.getType().isPresent())
-                .map(statement -> statement.var())
+                .map(Statement::var)
                 .collect(Collectors.toSet());
     }
 

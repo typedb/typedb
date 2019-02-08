@@ -43,6 +43,9 @@ import java.util.stream.Stream;
  */
 public abstract class AtomicBase implements Atomic {
 
+    @Override
+    public Atomic neqPositive() { return this; }
+
     @Override public void checkValid(){}
 
     @Override

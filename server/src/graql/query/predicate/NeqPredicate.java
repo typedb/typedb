@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.predicate;
 
-import grakn.core.graql.query.pattern.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 public class NeqPredicate extends ComparatorPredicate {
@@ -27,8 +26,6 @@ public class NeqPredicate extends ComparatorPredicate {
      * @param value the value that this predicate is testing against
      */
     NeqPredicate(Object value) { super(value);}
-
-    NeqPredicate(Variable var) { super(var);}
 
     @Override
     protected String getSymbol() {

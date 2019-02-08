@@ -23,14 +23,11 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
-import grakn.core.graql.internal.reasoner.atom.predicate.NeqIdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
@@ -41,13 +38,14 @@ import grakn.core.graql.internal.reasoner.state.CacheCompletionState;
 import grakn.core.graql.internal.reasoner.state.NeqComplementState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.server.session.TransactionOLTP;
-
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -100,16 +98,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ReasonerAtomicQuery neqPositive(){
-        return new ReasonerAtomicQuery(
-                getAtoms().stream()
-                        .filter(at -> !(at instanceof NeqPredicate))
-                        .filter(at -> !Sets.intersection(at.getVarNames(), getAtom().getVarNames()).isEmpty())
-                        .collect(Collectors.toSet()),
-                tx());
-    }
-
-    @Override
     public String toString(){
         return getAtoms(Atom.class).map(Atomic::toString).collect(Collectors.joining(", "));
     }
@@ -139,8 +127,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return//check whether propagated answers would be complete
                 !inverse.isEmpty() &&
                         inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()))
-                        && !parent.getAtoms(NeqIdPredicate.class).findFirst().isPresent()
-                        && !this.getAtoms(NeqIdPredicate.class).findFirst().isPresent();
+                        && !parent.getAtoms(NeqPredicate.class).findFirst().isPresent()
+                        && !this.getAtoms(NeqPredicate.class).findFirst().isPresent();
     }
 
     /**
@@ -202,9 +190,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
         if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
-        return this.getAtoms(NeqPredicate.class).findFirst().isPresent() ?
-                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
-                new AtomicState(this, sub, u, parent, subGoals, cache);
+        return isNeqPositive()?
+                new AtomicState(this, sub, u, parent, subGoals, cache) :
+                new NeqComplementState(this, sub, u, parent, subGoals, cache);
     }
 
     @Override

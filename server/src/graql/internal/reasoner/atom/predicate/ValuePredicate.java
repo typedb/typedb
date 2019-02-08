@@ -27,6 +27,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.graql.query.pattern.property.ValueProperty;
+import javax.annotation.Nullable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Collection;
@@ -58,6 +59,12 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.pr
 
     public static ValuePredicate create(Variable varName, grakn.core.graql.query.predicate.ValuePredicate pred, ReasonerQuery parent) {
         return create(Graql.var(varName).val(pred), parent);
+    }
+
+    public static ValuePredicate neq(Variable varName, @Nullable Variable var, @Nullable Object value, ReasonerQuery parent){
+        Variable predicateVar = var != null? var : Graql.var().var().asUserDefined();
+        grakn.core.graql.query.predicate.ValuePredicate neq = Graql.neq(value != null ? value : Graql.var(predicateVar));
+        return create(varName, neq, parent);
     }
 
     private static ValuePredicate create(ValuePredicate pred, ReasonerQuery parent) {

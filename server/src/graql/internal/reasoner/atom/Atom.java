@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
@@ -101,8 +102,8 @@ public abstract class Atom extends AtomicBase {
         return//check whether propagated answers would be complete
                 !inverse.isEmpty() &&
                         inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()))
-                        && !parent.getPredicates(NeqIdPredicate.class).findFirst().isPresent()
-                        && !this.getPredicates(NeqIdPredicate.class).findFirst().isPresent();
+                        && !parent.getPredicates(NeqPredicate.class).findFirst().isPresent()
+                        && !this.getPredicates(NeqPredicate.class).findFirst().isPresent();
     }
 
     /**

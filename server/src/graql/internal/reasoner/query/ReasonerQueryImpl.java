@@ -23,7 +23,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
@@ -40,7 +42,6 @@ import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.internal.reasoner.atom.predicate.NeqIdPredicate;
 import grakn.core.graql.internal.reasoner.cache.Index;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
@@ -148,7 +149,25 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public ReasonerQueryImpl neqPositive(){
-        return new ReasonerQueryImpl(getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), tx());
+        return ReasonerQueries.create(
+                getAtoms().stream()
+                        .map(Atomic::neqPositive)
+                        .filter(at -> !(at instanceof NeqPredicate))
+                        .collect(Collectors.toSet()),
+                tx());
+    }
+
+    /**
+     * @return true if the query doesn't contain any NeqPredicates
+     */
+    boolean isNeqPositive(){
+        return Stream.concat(
+                getAtoms(Predicate.class),
+                getAtoms(AttributeAtom.class).flatMap(at -> at.getMultiPredicate().stream())
+        )
+                .noneMatch(p ->
+                        p instanceof NeqPredicate
+                        || p.getPredicate() instanceof grakn.core.graql.query.predicate.NeqPredicate);
     }
 
     /**
@@ -484,9 +503,9 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
-        return this.getAtoms(NeqPredicate.class).findFirst().isPresent() ?
-                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
-                new ConjunctiveState(this, sub, u, parent, subGoals, cache);
+        return isNeqPositive() ?
+                new ConjunctiveState(this, sub, u, parent, subGoals, cache) :
+                new NeqComplementState(this, sub, u, parent, subGoals, cache);
     }
 
     /**

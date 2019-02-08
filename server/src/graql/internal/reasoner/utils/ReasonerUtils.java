@@ -154,7 +154,7 @@ public class ReasonerUtils {
         Set<ValuePredicate> vps = context
                 .flatMap(v -> v.getProperties(ValueProperty.class)
                         //.map(vp -> ValuePredicate.create(valueVariable, vp.predicate(), parent))
-                        .map(property -> AtomicFactory.createValuePredicate(property, statement, fullContext, false, parent))
+                        .map(property -> AtomicFactory.createValuePredicate(property, statement, fullContext, false, false, parent))
                         .filter(ValuePredicate.class::isInstance)
                         .map(ValuePredicate.class::cast)
                 )

@@ -56,7 +56,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        return AtomicFactory.createValuePredicate(property, statement, otherStatements, true, parent);
+        return AtomicFactory.createValuePredicate(property, statement, otherStatements, true, true, parent);
     }
 
     @Override
