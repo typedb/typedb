@@ -93,53 +93,90 @@ public class NeqValuePredicateIT {
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireNotHavingSpecificValue() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            String queryString = "match " +
+            String neqVariant = "match " +
                     "$x has derived-resource-string $val;$val !== 'unattached';" +
                     "get;";
-            String queryString2 = "match " +
+            String neqVariant2 = "match " +
                     "$x has derived-resource-string $val;" +
                     "$unwanted == 'unattached';" +
                     "$val !== $unwanted; get;";
+            String negatedVariant = "match " +
+                    "$x has derived-resource-string $val;" +
+                    "not {$val == 'unattached';};" +
+                    "get;";
+            String negatedVariant2 = "match " +
+                    "$x has derived-resource-string $val;" +
+                    "not {$val == $unwanted;$unwanted == 'unattached';};" +
+                    "get;";
+            String negatedComplement = "match " +
+                    "$x has derived-resource-string $val;" +
+                    "not {$val !== 'unattached';};" +
+                    "get;";
 
             String complementQueryString = "match $x has derived-resource-string $val; $val == 'unattached'; get;";
             String completeQueryString = "match $x has derived-resource-string $val; get;";
 
-            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
-            List<ConceptMap> answersBis = tx.execute(Graql.<GetQuery>parse(queryString2));
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(neqVariant));
+            List<ConceptMap> answersBis = tx.execute(Graql.<GetQuery>parse(neqVariant2));
+            List<ConceptMap> negationAnswers = tx.execute(Graql.<GetQuery>parse(negatedVariant));
+            List<ConceptMap> negationAnswersBis = tx.execute(Graql.<GetQuery>parse(negatedVariant2));
+            List<ConceptMap> negationComplement = tx.execute(Graql.<GetQuery>parse(negatedComplement));
 
             List<ConceptMap> complement = tx.execute(Graql.<GetQuery>parse(complementQueryString));
             List<ConceptMap> complete = tx.execute(Graql.<GetQuery>parse(completeQueryString));
             List<ConceptMap> expectedAnswers = ReasonerUtils.listDifference(complete, complement);
 
             assertCollectionsNonTriviallyEqual(expectedAnswers, answers);
+            assertCollectionsNonTriviallyEqual(answers, negationAnswers);
+            assertCollectionsNonTriviallyEqual(complement, negationComplement);
             assertCollectionsNonTriviallyEqual(expectedAnswers, answersBis);
+            assertCollectionsNonTriviallyEqual(answersBis, negationAnswersBis);
         }
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireResourceValuesToBeDifferent() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            String queryString = "match " +
+            String neqVersion = "match " +
                     "$x has derived-resource-string $val;" +
                     "$y has reattachable-resource-string $anotherVal;" +
                     "$val !== $anotherVal;" +
                     "get;";
-            tx.stream(Graql.<GetQuery>parse(queryString))
+            String negationVersion = "match " +
+                    "$x has derived-resource-string $val;" +
+                    "$y has reattachable-resource-string $anotherVal;" +
+                    "not {$val == $anotherVal;};" +
+                    "get;";
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(neqVersion));
+            answers.stream()
                     .map(ans -> new Pair<>(ans.get("val").asAttribute().value(), ans.get("anotherVal").asAttribute().value()))
                     .forEach(p -> assertNotEquals(p.getKey(), p.getValue()));
+            List<ConceptMap> negationAnswers = tx.execute(Graql.<GetQuery>parse(negationVersion));
+            assertCollectionsNonTriviallyEqual(answers, negationAnswers);
+
         }
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireInstanceValuesToBeDifferent() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            String queryString = "match " +
+            String neqVersion = "match " +
                     "$val isa derived-resource-string;" +
                     "$anotherVal isa reattachable-resource-string;" +
                     "$val !== $anotherVal;" +
                     "get;";
+            String negationVersion = "match " +
+                    "$val isa derived-resource-string;" +
+                    "$anotherVal isa reattachable-resource-string;" +
+                    "not {$val == $anotherVal;};" +
+                    "get;";
 
-            tx.stream(Graql.<GetQuery>parse(queryString)).forEach(ans -> assertNotEquals(ans.get("val"), ans.get("anotherVal")));
+            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(neqVersion));
+            answers.stream()
+                    .map(ans -> new Pair<>(ans.get("val").asAttribute().value(), ans.get("anotherVal").asAttribute().value()))
+                    .forEach(p -> assertNotEquals(p.getKey(), p.getValue()));
+            List<ConceptMap> negationAnswers = tx.execute(Graql.<GetQuery>parse(negationVersion));
+            assertCollectionsNonTriviallyEqual(answers, negationAnswers);
         }
     }
 
