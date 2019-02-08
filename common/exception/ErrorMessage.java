@@ -77,7 +77,7 @@ public enum ErrorMessage {
     LABEL_TAKEN("The label [%s] has already been used"),
     BACKGROUND_TASK_UNHANDLED_EXCEPTION("An exception has occurred during the execution of a background task [%s]. Skipping..."),
     INVALID_KEYSPACE_NAME("Keyspace name is invalid: [%s]. Keyspace name cannot start with a number, " +
-                                  "and can only contain maximum 48 characters of lower case, alphanumeric and underscore characters."),
+            "and can only contain maximum 48 characters of lower case, alphanumeric and underscore characters."),
     FILE_WRITE_EXCEPTION("Failed to write to file: %s"),
 
     //--------------------------------------------- Validation Errors
@@ -225,7 +225,7 @@ public enum ErrorMessage {
     INVALID_COMPUTE_METHOD_ALGORITHM("Invalid algorithm for 'compute [%s]'. The accepted algorithm(s) are: [%s]."),
 
     INVALID_COMPUTE_ARGUMENT("Invalid argument(s) 'compute [%s] using [%s]'. The accepted argument(s) are: [%s]."),
-    
+
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
     K_SMALLER_THAN_TWO("k can't be smaller than 2."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
