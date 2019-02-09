@@ -134,7 +134,7 @@ public class SubExecutor implements PropertyExecutor.Definable {
             SchemaConcept actualSuperConcept = concept.sup();
 
             if (!concept.isDeleted() && expectedSuperConcept.equals(actualSuperConcept)) {
-                concept.delete();
+                executor.toDelete(concept);
             }
         }
     }

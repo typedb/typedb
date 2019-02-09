@@ -97,7 +97,7 @@ public interface RelationType extends Type {
     //------------------------------------- Other ----------------------------------
 
     /**
-     * Unrelated a Role from this {@link RelationType}
+     * Unrelates a Role from this {@link RelationType}
      *
      * @param role The Role to unrelate from the {@link RelationType}.
      * @return The {@link RelationType} itself.
