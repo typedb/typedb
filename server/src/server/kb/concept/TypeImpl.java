@@ -309,12 +309,16 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             Label relationLabel = relationSchema.getLabel(attributeToRemove.label());
             RelationshipTypeImpl relation = vertex().tx().getSchemaConcept(relationLabel);
             if (relation.instancesDirect().iterator().hasNext()) {
-                if (isKey) throw TransactionException.illegalUnkey(this, attributeToRemove);
-                else throw TransactionException.illegalUnhas(this, attributeToRemove);
+                if (isKey) throw TransactionException.illegalUnkeyWithInstance(this, attributeToRemove);
+                else throw TransactionException.illegalUnhasWithInstance(this, attributeToRemove);
             }
 
             Label ownerLabel = ownerSchema.getLabel(attributeToRemove.label());
             Role ownerRole = vertex().tx().getSchemaConcept(ownerLabel);
+            if (!directPlays().keySet().contains(ownerRole)) {
+                if (isKey) throw TransactionException.illegalUnkeyInherited(this, attributeToRemove);
+                else throw TransactionException.illegalUnhasInherited(this, attributeToRemove);
+            }
 
             // TODO: Undefining schema structures that don't exist should throw an exception (issue #4878)
             if (ownerRole != null) {

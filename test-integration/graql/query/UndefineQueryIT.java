@@ -384,6 +384,26 @@ public class UndefineQueryIT {
     }
 
     @Test
+    public void whenUndefiningATypeAndTheirInheritedAttribute_Throw() {
+        tx.execute(Graql.define(
+                type("registration").sub("attribute").datatype(Query.DataType.STRING),
+                type("company").sub("entity").has("registration"),
+                type("sub-company").sub("company")
+        ));
+        tx.commit();
+        tx = session.transaction(Transaction.Type.WRITE);
+        assertNotNull(tx.getType(Label.of("company")));
+        assertNotNull(tx.getType(Label.of("sub-company")));
+        assertNotNull(tx.getType(Label.of("registration")));
+
+        exception.expect(TransactionException.class);
+        exception.expectMessage(allOf(containsString("Failed to: undefine"),
+                                      containsString("company"),
+                                      containsString("registration")));
+        tx.execute(Graql.undefine(type("sub-company").has("registration")));
+    }
+
+    @Test
     public void whenUndefiningATypeWithInstances_Throw() {
         assertExists(tx, x.type("movie").sub("entity"));
         assertExists(tx, x.isa("movie"));
