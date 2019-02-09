@@ -528,7 +528,7 @@ public class EntityTypeIT {
     }
 
     @Test
-    public void whenRemovingKeysFromAType_EnsureKeysAreRemovedButAttributesAreNot(){
+    public void whenRemovingKeysFromAType_EnsureKeysAreRemovedt(){
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
         AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.DataType.INTEGER);
         AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.DataType.INTEGER);
@@ -537,15 +537,26 @@ public class EntityTypeIT {
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
         assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
 
-        //Nothing changes
-        person.unhas(id);
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
-        assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
-
         //Key is removed
         person.unkey(id);
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
         assertThat(person.keys().collect(toSet()), empty());
+    }
+
+    @Test
+    public void whenRemovingKeyAsHas_Throw(){
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.DataType.INTEGER);
+        AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.DataType.INTEGER);
+        EntityType person = tx.putEntityType("person").has(name).has(age).key(id);
+
+        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
+        assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
+
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.illegalUnhasNotExist(
+                person.label().getValue(), id.label().getValue(), false).getMessage());
+        person.unhas(id);
     }
 
     @Test

@@ -119,31 +119,24 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when there exists and instance of {@code type} KEY {@code attributeType} upon unlinking the AttributeType from the Type
+     * Thrown when there exists and instance of {@code type} HAS {@code attributeType} upon unlinking the AttributeType from the Type
      */
-    public static TransactionException illegalUnkeyWithInstance(Type type, AttributeType attributeType) {
-        return create(ErrorMessage.ILLEGAL_TYPE_UNKEY_ATTRIBUTE_WITH_INSTANCE.getMessage(type.label(), attributeType.label()));
+    public static TransactionException illegalUnhasWithInstance(String type, String attributeType, boolean isKey) {
+        return create(ErrorMessage.ILLEGAL_TYPE_UNHAS_ATTRIBUTE_WITH_INSTANCE.getMessage(type, isKey ? "key" : "has", attributeType));
     }
 
     /**
      * Thrown when there exists and instance of {@code type} HAS {@code attributeType} upon unlinking the AttributeType from the Type
      */
-    public static TransactionException illegalUnhasWithInstance(Type type, AttributeType attributeType) {
-        return create(ErrorMessage.ILLEGAL_TYPE_UNHAS_ATTRIBUTE_WITH_INSTANCE.getMessage(type.label(), attributeType.label()));
-    }
-
-    /**
-     * Thrown when there exists and instance of {@code type} KEY {@code attributeType} upon unlinking the AttributeType from the Type
-     */
-    public static TransactionException illegalUnkeyInherited(Type type, AttributeType attributeType) {
-        return create(ErrorMessage.ILLEGAL_TYPE_UNKEY_ATTRIBUTE_INHERITED.getMessage(type.label(), attributeType.label()));
+    public static TransactionException illegalUnhasInherited(String type, String attributeType, boolean isKey) {
+        return create(ErrorMessage.ILLEGAL_TYPE_UNHAS_ATTRIBUTE_INHERITED.getMessage(type, isKey ? "key" : "has", attributeType));
     }
 
     /**
      * Thrown when there exists and instance of {@code type} HAS {@code attributeType} upon unlinking the AttributeType from the Type
      */
-    public static TransactionException illegalUnhasInherited(Type type, AttributeType attributeType) {
-        return create(ErrorMessage.ILLEGAL_TYPE_UNHAS_ATTRIBUTE_INHERITED.getMessage(type.label(), attributeType.label()));
+    public static TransactionException illegalUnhasNotExist(String type, String attributeType, boolean isKey) {
+        return create(ErrorMessage.ILLEGAL_TYPE_UNHAS_ATTRIBUTE_NOT_EXIST.getMessage(type, isKey ? "key" : "has", attributeType));
     }
 
     /**

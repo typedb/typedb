@@ -377,9 +377,8 @@ public class UndefineQueryIT {
         assertTrue(tx.getType(Label.of("company")).instances().iterator().hasNext());
 
         exception.expect(TransactionException.class);
-        exception.expectMessage(allOf(containsString("Failed to: undefine"),
-                                      containsString("company"),
-                                      containsString("registration")));
+        exception.expectMessage(TransactionException.illegalUnhasWithInstance(
+                "company", "registration", false).getMessage());
         tx.execute(Graql.undefine(type("company").has("registration")));
     }
 
@@ -397,9 +396,8 @@ public class UndefineQueryIT {
         assertNotNull(tx.getType(Label.of("registration")));
 
         exception.expect(TransactionException.class);
-        exception.expectMessage(allOf(containsString("Failed to: undefine"),
-                                      containsString("company"),
-                                      containsString("registration")));
+        exception.expectMessage(TransactionException.illegalUnhasInherited(
+                "company", "registration", false).getMessage());
         tx.execute(Graql.undefine(type("sub-company").has("registration")));
     }
 

@@ -309,33 +309,31 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             Label relationLabel = relationSchema.getLabel(attributeToRemove.label());
             RelationshipTypeImpl relation = vertex().tx().getSchemaConcept(relationLabel);
             if (attributeToRemove.instances().flatMap(Attribute::owners).anyMatch(thing -> thing.type().equals(this))) {
-                if (isKey) throw TransactionException.illegalUnkeyWithInstance(this, attributeToRemove);
-                else throw TransactionException.illegalUnhasWithInstance(this, attributeToRemove);
+                throw TransactionException.illegalUnhasWithInstance(this.label().getValue(), attributeToRemove.label().getValue(), isKey);
             }
 
             Label ownerLabel = ownerSchema.getLabel(attributeToRemove.label());
             Role ownerRole = vertex().tx().getSchemaConcept(ownerLabel);
-            if (!directPlays().keySet().contains(ownerRole)) {
-                if (isKey) throw TransactionException.illegalUnkeyInherited(this, attributeToRemove);
-                else throw TransactionException.illegalUnhasInherited(this, attributeToRemove);
+
+            if (ownerRole == null) {
+                throw TransactionException.illegalUnhasNotExist(this.label().getValue(), attributeToRemove.label().getValue(), isKey);
+            } else if (!directPlays().keySet().contains(ownerRole)) {
+                throw TransactionException.illegalUnhasInherited(this.label().getValue(), attributeToRemove.label().getValue(), isKey);
             }
 
-            // TODO: Undefining schema structures that don't exist should throw an exception (issue #4878)
-            if (ownerRole != null) {
-                unplay(ownerRole);
+            unplay(ownerRole);
 
-                // If there are no other Types that own this Attribute, remove the entire implicit relationship
-                if (!ownerRole.players().iterator().hasNext()) {
-                    Label valueLabel = valueSchema.getLabel(attributeToRemove.label());
-                    Role valueRole = vertex().tx().getSchemaConcept(valueLabel);
-                    attributeToRemove.unplay(valueRole);
+            // If there are no other Types that own this Attribute, remove the entire implicit relationship
+            if (!ownerRole.players().iterator().hasNext()) {
+                Label valueLabel = valueSchema.getLabel(attributeToRemove.label());
+                Role valueRole = vertex().tx().getSchemaConcept(valueLabel);
+                attributeToRemove.unplay(valueRole);
 
-                    relation.unrelate(ownerRole);
-                    relation.unrelate(valueRole);
-                    ownerRole.delete();
-                    valueRole.delete();
-                    relation.delete();
-                }
+                relation.unrelate(ownerRole);
+                relation.unrelate(valueRole);
+                ownerRole.delete();
+                valueRole.delete();
+                relation.delete();
             }
         }
 
