@@ -299,7 +299,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @param isKey             a boolean to determine whether the AttributeType to be removed is a KEY to the owning Type
      * @return the {@link Type} itself
      */
-    private T unlinkAttribute(AttributeType attributeToRemove, boolean isKey) {
+    private T unlinkAttribute(AttributeType<?> attributeToRemove, boolean isKey) {
         Stream<AttributeType> attributeTypes = isKey ? keys() : attributes();
         Schema.ImplicitType ownerSchema = isKey ? Schema.ImplicitType.KEY_OWNER : Schema.ImplicitType.HAS_OWNER;
         Schema.ImplicitType valueSchema = isKey ? Schema.ImplicitType.KEY_VALUE : Schema.ImplicitType.HAS_VALUE;
@@ -308,7 +308,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         if (attributeTypes.anyMatch(a -> a.equals(attributeToRemove))) {
             Label relationLabel = relationSchema.getLabel(attributeToRemove.label());
             RelationshipTypeImpl relation = vertex().tx().getSchemaConcept(relationLabel);
-            if (relation.instancesDirect().iterator().hasNext()) {
+            if (attributeToRemove.instances().flatMap(Attribute::owners).anyMatch(thing -> thing.type().equals(this))) {
                 if (isKey) throw TransactionException.illegalUnkeyWithInstance(this, attributeToRemove);
                 else throw TransactionException.illegalUnhasWithInstance(this, attributeToRemove);
             }
