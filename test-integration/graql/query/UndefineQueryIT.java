@@ -397,7 +397,7 @@ public class UndefineQueryIT {
 
         exception.expect(TransactionException.class);
         exception.expectMessage(TransactionException.illegalUnhasInherited(
-                "company", "registration", false).getMessage());
+                "sub-company", "registration", false).getMessage());
         tx.execute(Graql.undefine(type("sub-company").has("registration")));
     }
 
