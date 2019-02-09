@@ -290,12 +290,12 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     @Override
     public T unhas(AttributeType attributeType){
-        return deleteAttribute(Schema.ImplicitType.HAS_OWNER, attributes(), attributeType);
+        return unlinkAttribute(attributeType, false);
     }
 
     @Override
     public T unkey(AttributeType attributeType){
-        return deleteAttribute(Schema.ImplicitType.KEY_OWNER, keys(), attributeType);
+        return unlinkAttribute(attributeType, true);
     }
 
 
@@ -304,16 +304,35 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * The link to {@link AttributeType} is removed if <code>attributeToRemove</code> is in the candidate list
      * <code>attributeTypes</code>
      *
-     * @param implicitType the {@link Schema.ImplicitType} which specifies which implicit {@link Role} should be removed
-     * @param attributeTypes The list of candidate which potentially contains the {@link AttributeType} to remove
      * @param attributeToRemove the {@link AttributeType} to remove
+     * @param isKey a boolean to determine whether the AttributeType to be removed is a KEY to the owning Type
      * @return the {@link Type} itself
      */
-    private T deleteAttribute(Schema.ImplicitType implicitType,  Stream<AttributeType> attributeTypes, AttributeType attributeToRemove){
+    private T unlinkAttribute(AttributeType attributeToRemove, boolean isKey){
+        Stream<AttributeType> attributeTypes = isKey ? keys() : attributes();
+        Schema.ImplicitType ownerSchema = isKey ? Schema.ImplicitType.KEY_OWNER : Schema.ImplicitType.HAS_OWNER;
+        Schema.ImplicitType valueSchema = isKey ? Schema.ImplicitType.KEY_VALUE : Schema.ImplicitType.HAS_VALUE;
+        Schema.ImplicitType relationSchema = isKey ? Schema.ImplicitType.KEY : Schema.ImplicitType.HAS;
+
         if(attributeTypes.anyMatch(a ->  a.equals(attributeToRemove))){
-            Label label = implicitType.getLabel(attributeToRemove.label());
-            Role role = vertex().tx().getSchemaConcept(label);
-            if(role != null) unplay(role);
+            Label ownerLabel = ownerSchema.getLabel(attributeToRemove.label());
+            Role ownerRole = vertex().tx().getSchemaConcept(ownerLabel);
+            unplay(ownerRole);
+
+            // If there are no other Types that own this Attribute, remove the entire implicit relationship
+            if (!ownerRole.players().iterator().hasNext()) {
+                Label valueLabel = valueSchema.getLabel(attributeToRemove.label());
+                Role valueRole = vertex().tx().getSchemaConcept(valueLabel);
+                attributeToRemove.unplay(valueRole);
+
+                Label relationLabel = relationSchema.getLabel(attributeToRemove.label());
+                RelationshipTypeImpl relation = vertex().tx().getSchemaConcept(relationLabel);
+                relation.unrelate(ownerRole);
+                relation.unrelate(valueRole);
+                ownerRole.delete();
+                valueRole.delete();
+                relation.delete();
+            }
         }
 
         return getThis();
