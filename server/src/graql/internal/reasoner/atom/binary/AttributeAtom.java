@@ -152,7 +152,6 @@ public abstract class AttributeAtom extends Binary{
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getSchemaConcept().label() + " " +
                 multiPredicateString +
-                //getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""))  +
                 (getRelationVariable().isUserDefinedName()? "(" + getRelationVariable() + ")" : "");
     }
 
