@@ -306,6 +306,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Schema.ImplicitType relationSchema = isKey ? Schema.ImplicitType.KEY : Schema.ImplicitType.HAS;
 
         if (attributeTypes.anyMatch(a -> a.equals(attributeToRemove))) {
+            Label relationLabel = relationSchema.getLabel(attributeToRemove.label());
+            RelationshipTypeImpl relation = vertex().tx().getSchemaConcept(relationLabel);
+            if (relation.instancesDirect().iterator().hasNext()) {
+                if (isKey) throw TransactionException.illegalUnkey(this, attributeToRemove);
+                else throw TransactionException.illegalUnhas(this, attributeToRemove);
+            }
+
             Label ownerLabel = ownerSchema.getLabel(attributeToRemove.label());
             Role ownerRole = vertex().tx().getSchemaConcept(ownerLabel);
 
@@ -319,8 +326,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                     Role valueRole = vertex().tx().getSchemaConcept(valueLabel);
                     attributeToRemove.unplay(valueRole);
 
-                    Label relationLabel = relationSchema.getLabel(attributeToRemove.label());
-                    RelationshipTypeImpl relation = vertex().tx().getSchemaConcept(relationLabel);
                     relation.unrelate(ownerRole);
                     relation.unrelate(valueRole);
                     ownerRole.delete();
@@ -414,17 +419,17 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     @Override
     public T has(AttributeType attributeType) {
-        checkAttributeAttachmentLegal(Schema.ImplicitType.KEY_OWNER, attributeType);
+        checkLinkAttributeIsLegal(Schema.ImplicitType.KEY_OWNER, attributeType);
         return has(attributeType, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_VALUE, Schema.ImplicitType.HAS_OWNER, false);
     }
 
     @Override
     public T key(AttributeType attributeType) {
-        checkAttributeAttachmentLegal(Schema.ImplicitType.HAS_OWNER, attributeType);
+        checkLinkAttributeIsLegal(Schema.ImplicitType.HAS_OWNER, attributeType);
         return has(attributeType, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_VALUE, Schema.ImplicitType.KEY_OWNER, true);
     }
 
-    private void checkAttributeAttachmentLegal(Schema.ImplicitType implicitType, AttributeType attributeType) {
+    private void checkLinkAttributeIsLegal(Schema.ImplicitType implicitType, AttributeType attributeType) {
         checkSchemaMutationAllowed();
         checkIfHasTargetMeta(attributeType);
         checkNonOverlapOfImplicitRelations(implicitType, attributeType);

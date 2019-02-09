@@ -63,6 +63,8 @@ public enum ErrorMessage {
     TXS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
     CANNOT_BE_KEY_AND_ATTRIBUTE("The Type [%s] cannot have the Attribute Type [%s] as a key and as an attribute"),
+    ILLEGAL_TYPE_UNKEY_ATTRIBUTE("Failed to: undefine [%s] key [%s]. There exists instance of this pattern"),
+    ILLEGAL_TYPE_UNHAS_ATTRIBUTE("Failed to: undefine [%s] has [%s]. There exists instance of this pattern"),
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),

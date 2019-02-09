@@ -65,6 +65,8 @@ import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("Duplicates")
 public class UndefineQueryIT {
+    // TODO: This test class should be cleaned up.
+    //       Either use a shared dataset across all test, or make all tests independent.
 
     private static final Statement THING = type(Schema.MetaSchema.THING.getLabel().getValue());
     private static final Statement ENTITY = type(Schema.MetaSchema.ENTITY.getLabel().getValue());
@@ -290,11 +292,6 @@ public class UndefineQueryIT {
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
         assertNotNull(tx.getType(Label.of("employment")));
-        Type type = tx.getType(Label.of("employment"));
-        System.out.println("============> employment : " + type.id().getValue());
-        Role role = tx.getRole("employee");
-        System.out.println("============> employee   : " + role.id().getValue());
-
 
         UndefineQuery undefineQuery = Graql.undefine(
                 type("employment").sub("relationship").relates("employee"),
@@ -362,6 +359,28 @@ public class UndefineQueryIT {
         assertNull(tx.getAttributeType("pokedex-no"));
         assertNull(tx.getRole("ancestor"));
         assertNull(tx.getRole("descendant"));
+    }
+
+    @Test
+    public void undefineTypeAndTheirAttributeWhenThereIsAnInstanceOfThem_Throw() {
+        tx.execute(Graql.define(
+                type("registration").sub("attribute").datatype(Query.DataType.STRING),
+                type("company").sub("entity").has("registration")
+        ));
+        tx.execute(Graql.insert(
+                var("x").isa("company").has("registration", "12345")
+        ));
+        tx.commit();
+        tx = session.transaction(Transaction.Type.WRITE);
+        assertNotNull(tx.getType(Label.of("company")));
+        assertNotNull(tx.getType(Label.of("registration")));
+        assertTrue(tx.getType(Label.of("company")).instances().iterator().hasNext());
+
+        exception.expect(TransactionException.class);
+        exception.expectMessage(allOf(containsString("Failed to: undefine"),
+                                      containsString("company"),
+                                      containsString("registration")));
+        tx.execute(Graql.undefine(type("company").has("registration")));
     }
 
     @Test
