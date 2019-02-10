@@ -23,7 +23,6 @@ import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty.Operation.Assignment;
 import grakn.core.graql.query.pattern.property.ValueProperty.Operation.Comparison;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.statement.StatementInstance.StatementAttribute;
 
 import javax.annotation.CheckReturnValue;
 import java.time.LocalDateTime;

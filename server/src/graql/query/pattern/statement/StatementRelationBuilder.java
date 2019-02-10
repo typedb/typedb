@@ -33,7 +33,7 @@ interface StatementRelationBuilder {
      * @return this
      */
     @CheckReturnValue
-    default StatementInstance.StatementRelation rel(String player) {
+    default StatementRelation rel(String player) {
         return rel(Graql.var(player));
     }
 
@@ -44,7 +44,7 @@ interface StatementRelationBuilder {
      * @return this
      */
     @CheckReturnValue
-    default StatementInstance.StatementRelation rel(Statement player) {
+    default StatementRelation rel(Statement player) {
         return statementRelation(new RelationProperty.RolePlayer(null, player));
     }
 
@@ -56,7 +56,7 @@ interface StatementRelationBuilder {
      * @return this
      */
     @CheckReturnValue
-    default StatementInstance.StatementRelation rel(String role, String player) {
+    default StatementRelation rel(String role, String player) {
         return rel(Graql.type(role), Graql.var(player));
     }
 
@@ -68,7 +68,7 @@ interface StatementRelationBuilder {
      * @return this
      */
     @CheckReturnValue
-    default StatementInstance.StatementRelation rel(Statement role, String player) {
+    default StatementRelation rel(Statement role, String player) {
         return rel(role, Graql.var(player));
     }
 
@@ -80,7 +80,7 @@ interface StatementRelationBuilder {
      * @return this
      */
     @CheckReturnValue
-    default StatementInstance.StatementRelation rel(String role, Statement player) {
+    default StatementRelation rel(String role, Statement player) {
         return rel(Graql.type(role), player);
     }
 
@@ -92,20 +92,20 @@ interface StatementRelationBuilder {
      * @return this
      */
     @CheckReturnValue
-    default StatementInstance.StatementRelation rel(Statement role, Statement player) {
+    default StatementRelation rel(Statement role, Statement player) {
         return statementRelation(new RelationProperty.RolePlayer(role, player));
     }
 
     @CheckReturnValue
-    default StatementInstance.StatementRelation rel(RelationProperty property) {
+    default StatementRelation rel(RelationProperty property) {
         return statementRelation(property);
     }
 
     @Deprecated         // This method should not be used publicly
     @CheckReturnValue   // TODO: will be made "private" once we upgrade to Java 9
-    StatementInstance.StatementRelation statementRelation(RelationProperty.RolePlayer rolePlayer);
+    StatementRelation statementRelation(RelationProperty.RolePlayer rolePlayer);
 
     @Deprecated         // This method should not be used publicly
     @CheckReturnValue   // TODO: will be made "private" once we upgrade to Java 9
-    StatementInstance.StatementRelation statementRelation(VarProperty property);
+    StatementRelation statementRelation(VarProperty property);
 }

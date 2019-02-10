@@ -22,23 +22,15 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.property.HasAttributeProperty;
-import grakn.core.graql.query.pattern.property.IdProperty;
-import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.TypeProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.statement.StatementInstance.StatementAttribute;
-import grakn.core.graql.query.pattern.statement.StatementInstance.StatementRelation;
-import grakn.core.graql.query.pattern.statement.StatementInstance.StatementThing;
 import graql.exception.GraqlException;
 import graql.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckReturnValue;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -146,23 +138,23 @@ public class Statement implements Pattern,
     }
 
     @Override
-    public StatementInstance.StatementThing statementThing(VarProperty property) {
-        return StatementInstance.StatementThing.create(this, property);
+    public StatementThing statementThing(VarProperty property) {
+        return StatementThing.create(this, property);
     }
 
     @Override
-    public StatementInstance.StatementRelation statementRelation(RelationProperty.RolePlayer rolePlayer) {
-        return StatementInstance.StatementRelation.create(this, rolePlayer);
+    public StatementRelation statementRelation(RelationProperty.RolePlayer rolePlayer) {
+        return StatementRelation.create(this, rolePlayer);
     }
 
     @Override
-    public StatementInstance.StatementRelation statementRelation(VarProperty property) {
-        return StatementInstance.StatementRelation.create(this, property);
+    public StatementRelation statementRelation(VarProperty property) {
+        return StatementRelation.create(this, property);
     }
 
     @Override
-    public StatementInstance.StatementAttribute statementAttribute(VarProperty property) {
-        return StatementInstance.StatementAttribute.create(this, property);
+    public StatementAttribute statementAttribute(VarProperty property) {
+        return StatementAttribute.create(this, property);
     }
 
     /**

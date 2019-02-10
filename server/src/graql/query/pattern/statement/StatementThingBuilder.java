@@ -31,7 +31,7 @@ interface StatementThingBuilder {
      * @return this
      */
     @CheckReturnValue
-    default StatementInstance.StatementThing id(String id) {
+    default StatementThing id(String id) {
         return statementThing(new IdProperty(id));
     }
 
@@ -42,7 +42,7 @@ interface StatementThingBuilder {
      * @return this
      */
     @CheckReturnValue
-    default StatementInstance.StatementThing not(String var) {
+    default StatementThing not(String var) {
         return not(new Variable(var));
     }
 
@@ -53,7 +53,7 @@ interface StatementThingBuilder {
      * @return this
      */
     @CheckReturnValue
-    default StatementInstance.StatementThing not(Variable var) {
+    default StatementThing not(Variable var) {
         return not(new NeqProperty(new Statement(var)));
     }
 
@@ -64,11 +64,11 @@ interface StatementThingBuilder {
      * @return this
      */
     @CheckReturnValue
-    default StatementInstance.StatementThing not(NeqProperty property) {
+    default StatementThing not(NeqProperty property) {
         return statementThing(property);
     }
 
     @Deprecated         // This method should not be used publicly
     @CheckReturnValue   // TODO: will be made "private" once we upgrade to Java 9
-    StatementInstance.StatementThing statementThing(VarProperty property);
+    StatementThing statementThing(VarProperty property);
 }
