@@ -162,7 +162,7 @@ jobs:
       - bazel:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
-  docs-update-grakn-dependency-on-dev-branch:
+  grakn-docs-update:
     machine: true
     steps:
       - checkout
@@ -171,7 +171,7 @@ jobs:
           command: |
             mkdir docs
             cd docs
-            python ../.circleci/docs-update-grakn-dependency-on-dev-branch.py
+            python ../.circleci/grakn-docs-update.py
   
   approve-release:
     machine: true
@@ -244,7 +244,7 @@ workflows:
               ignore: trigger-ci-release
 
       # sync docs/development to the latest grakn version
-      - docs-update-grakn-dependency-on-dev-branch:
+      - grakn-docs-update:
           filters:
             branches:
               only: master
@@ -267,7 +267,7 @@ workflows:
             branches:
               only: master
           requires:
-            - docs-update-grakn-dependency-on-dev-branch
+            - grakn-docs-update
 
   # the 'ci-release' workflow is triggered by the creation of 'trigger-ci-release' branch in graknlabs/grakn
   # it consists of jobs which:

@@ -51,7 +51,7 @@ public class AttributeDeduplicator {
      * @param keyspaceIndexPair the pair containing information about the attribute keyspace and index
      */
     public static void deduplicate(SessionStore txFactory, KeyspaceIndexPair keyspaceIndexPair) {
-        try (TransactionOLTP tx = txFactory.tx(keyspaceIndexPair.keyspace(), Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = txFactory.transaction(keyspaceIndexPair.keyspace(), Transaction.Type.WRITE)) {
             GraphTraversalSource tinker = tx.getTinkerTraversal();
             GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceIndexPair.index());
             Vertex mergeTargetV = duplicates.next();

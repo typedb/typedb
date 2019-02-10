@@ -38,6 +38,7 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
+import grakn.core.server.Transaction.Type;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.TransactionOLTP;
@@ -243,7 +244,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(
                     Keyspace.of(request.getKeyspace()),
-                    grakn.core.server.Transaction.Type.of(request.getType().getNumber())
+                    Type.of(request.getType().getNumber())
             );
 
             tx = requestOpener.open(args);
