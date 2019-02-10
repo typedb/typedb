@@ -70,6 +70,7 @@ import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
 import grakn.core.graql.query.pattern.statement.StatementInstance;
+import grakn.core.graql.query.pattern.statement.StatementThing;
 import grakn.core.graql.query.pattern.statement.Variable;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.RelationshipTypeImpl;
@@ -1074,7 +1075,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
         Statement relVar = getPattern().getProperty(IsaProperty.class)
                 .map(prop -> new Statement(getVarName()).isa(prop.type()))
-                .orElse(new StatementInstance.StatementThing(getVarName()));
+                .orElse(new StatementThing(getVarName()));
 
         for (RelationProperty.RolePlayer rp: getRelationPlayers()) {
             Statement rolePattern = rp.getRole().orElse(null);
@@ -1100,7 +1101,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Override
     public RelationshipAtom rewriteWithRelationVariable(){
-        StatementInstance newVar = new StatementInstance.StatementThing(new Variable().asUserDefined());
+        StatementInstance newVar = new StatementThing(new Variable().asUserDefined());
         Statement relVar = getPattern().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.type()))
                 .orElse(newVar);

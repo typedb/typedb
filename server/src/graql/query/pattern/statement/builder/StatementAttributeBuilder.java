@@ -16,27 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.pattern.property;
+package grakn.core.graql.query.pattern.statement.builder;
 
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty.Operation.Assignment;
 import grakn.core.graql.query.pattern.property.ValueProperty.Operation.Comparison;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.StatementInstance.StatementAttribute;
+import grakn.core.graql.query.pattern.statement.StatementAttribute;
 
 import javax.annotation.CheckReturnValue;
 import java.time.LocalDateTime;
 import java.util.function.BiFunction;
 
-public interface AttributeProperties {
-
-    @CheckReturnValue // TODO: make this "private" once we upgrade to Java 9
-    StatementAttribute attribute(VarProperty property);
-
-    @CheckReturnValue
-    default StatementAttribute operation(ValueProperty.Operation<?> operation) {
-        return attribute(new ValueProperty<>(operation));
-    }
+public interface StatementAttributeBuilder extends StatementInstanceBuilder {
 
     // Attribute value assignment property
 
@@ -139,7 +133,6 @@ public interface AttributeProperties {
         return operation(constructor.apply(Query.Comparator.NEQV, value));
     }
 
-
     // Attribute value greater-than property
 
     @CheckReturnValue
@@ -176,8 +169,6 @@ public interface AttributeProperties {
     default <T> StatementAttribute gt(BiFunction<Query.Comparator, T, Comparison<T>> constructor, T value) {
         return operation(constructor.apply(Query.Comparator.GT, value));
     }
-
-
 
     // Attribute value greater-than-or-equals property
 
@@ -313,4 +304,15 @@ public interface AttributeProperties {
     default StatementAttribute like(String value) {
         return operation(new Comparison.String(Query.Comparator.LIKE, value));
     }
+
+    // Attribute Statement builder methods
+
+    @CheckReturnValue
+    default StatementAttribute operation(ValueProperty.Operation<?> operation) {
+        return statementAttribute(new ValueProperty<>(operation));
+    }
+
+    @Deprecated         // This method should not be used publicly
+    @CheckReturnValue   // TODO: will be made "private" once we upgrade to Java 9
+    StatementAttribute statementAttribute(VarProperty property);
 }

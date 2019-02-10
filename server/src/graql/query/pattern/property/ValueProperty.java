@@ -20,7 +20,7 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.StatementInstance;
+import grakn.core.graql.query.pattern.statement.StatementAttribute;
 import graql.util.StringUtil;
 
 import java.time.LocalDateTime;
@@ -77,7 +77,7 @@ public class ValueProperty<T> extends VarProperty {
 
     @Override
     public Class statementClass() {
-        return StatementInstance.StatementAttribute.class;
+        return StatementAttribute.class;
     }
 
     @Override

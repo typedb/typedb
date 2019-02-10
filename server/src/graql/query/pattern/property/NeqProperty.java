@@ -20,7 +20,7 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.StatementInstance;
+import grakn.core.graql.query.pattern.statement.StatementThing;
 
 import java.util.stream.Stream;
 
@@ -67,7 +67,7 @@ public class NeqProperty extends VarProperty {
 
     @Override
     public Class statementClass() {
-        return StatementInstance.StatementThing.class;
+        return StatementThing.class;
     }
 
     @Override

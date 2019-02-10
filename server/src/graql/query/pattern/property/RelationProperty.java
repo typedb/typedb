@@ -20,7 +20,7 @@ package grakn.core.graql.query.pattern.property;
 
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.StatementInstance;
+import grakn.core.graql.query.pattern.statement.StatementRelation;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -92,7 +92,7 @@ public class RelationProperty extends VarProperty {
 
     @Override
     public Class statementClass() {
-        return StatementInstance.StatementRelation.class;
+        return StatementRelation.class;
     }
 
     @Override

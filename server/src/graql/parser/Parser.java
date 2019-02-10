@@ -596,7 +596,7 @@ public class Parser extends GraqlBaseVisitor {
             instance = Graql.var();
         }
 
-        instance = instance.attribute(new ValueProperty<>(visitOperation(ctx.operation())));
+        instance = instance.statementAttribute(new ValueProperty<>(visitOperation(ctx.operation())));
         if (ctx.ISA_() != null) {
             instance = instance.isa(getIsaProperty(ctx.ISA_(), ctx.type()));
         }
@@ -643,7 +643,7 @@ public class Parser extends GraqlBaseVisitor {
                 return new HasAttributeProperty(type, variable);
             }
         } else if (ctx.operation() != null) {
-            Statement value = Graql.var().attribute(new ValueProperty<>(visitOperation(ctx.operation())));
+            Statement value = Graql.var().statementAttribute(new ValueProperty<>(visitOperation(ctx.operation())));
             if (ctx.via() != null) {
                 return new HasAttributeProperty(type, value, Graql.var(getVar(ctx.via().VAR_())));
             } else {
