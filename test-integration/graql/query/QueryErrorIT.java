@@ -180,7 +180,7 @@ public class QueryErrorIT {
         exception.expect(NullPointerException.class);
         //noinspection ResultOfMethodCallIgnored
         ValueProperty property = null;
-        Statement s = var("x").attribute(property);
+        Statement s = var("x").statementAttribute(property);
     }
 
     @Test

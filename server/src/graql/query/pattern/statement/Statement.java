@@ -19,27 +19,16 @@
 package grakn.core.graql.query.pattern.statement;
 
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.property.AbstractProperty;
-import grakn.core.graql.query.pattern.property.AttributeProperties;
-import grakn.core.graql.query.pattern.property.DataTypeProperty;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
-import grakn.core.graql.query.pattern.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
-import grakn.core.graql.query.pattern.property.PlaysProperty;
-import grakn.core.graql.query.pattern.property.RegexProperty;
-import grakn.core.graql.query.pattern.property.RelatesProperty;
 import grakn.core.graql.query.pattern.property.RelationProperty;
-import grakn.core.graql.query.pattern.property.SubProperty;
-import grakn.core.graql.query.pattern.property.ThenProperty;
 import grakn.core.graql.query.pattern.property.TypeProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.property.WhenProperty;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementAttribute;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementRelation;
 import grakn.core.graql.query.pattern.statement.StatementInstance.StatementThing;
@@ -49,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -74,7 +62,11 @@ import static java.util.stream.Collectors.toSet;
  * should be set on the inserted concept. In a DeleteQuery, it describes the
  * properties that should be deleted.
  */
-public class Statement implements Pattern, AttributeProperties {
+public class Statement implements Pattern,
+                                  StatementTypeBuilder,
+                                  StatementThingBuilder,
+                                  StatementRelationBuilder,
+                                  StatementAttributeBuilder {
 
     protected final Logger LOG = LoggerFactory.getLogger(Statement.class);
     private final Variable var;
@@ -144,201 +136,9 @@ public class Statement implements Pattern, AttributeProperties {
 
     // TYPE STATEMENT PROPERTIES ===============================================
 
-    /**
-     * @param name a string that this variable's label must match
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType type(String name) {
-        return StatementType.create(this, new TypeProperty(name));
-    }
-
-    /**
-     * set this concept type variable as abstract, meaning it cannot have direct instances
-     *
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType isAbstract() {
-        return StatementType.create(this, AbstractProperty.get());
-    }
-
-    /**
-     * @param type a concept type id that this variable must be a kind of
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType sub(String type) {
-        return sub(Graql.type(type));
-    }
-
-    /**
-     * @param type a concept type that this variable must be a kind of
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType sub(Statement type) {
-        return sub(new SubProperty(type));
-    }
-
-    /**
-     * @param type a concept type id that this variable must be a kind of, without looking at parent types
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType subX(String type) {
-        return subX(Graql.type(type));
-    }
-
-    /**
-     * @param type a concept type that this variable must be a kind of, without looking at parent type
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType subX(Statement type) {
-        return sub(new SubProperty(type, true));
-    }
-
-    @CheckReturnValue
-    public StatementType sub(SubProperty property) {
+    @Override
+    public StatementType statementType(VarProperty property) {
         return StatementType.create(this, property);
-    }
-
-    /**
-     * @param type a resource type that this type variable can be one-to-one related to
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType key(String type) {
-        return key(Graql.var().type(type));
-    }
-
-    /**
-     * @param type a resource type that this type variable can be one-to-one related to
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType key(Statement type) {
-        return StatementType.create(this, new HasAttributeTypeProperty(type, true));
-    }
-
-    /**
-     * @param type a resource type that this type variable can be related to
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType has(String type) {
-        return has(Graql.type(type));
-    }
-
-    /**
-     * @param type a resource type that this type variable can be related to
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType has(Statement type) {
-        return StatementType.create(this, new HasAttributeTypeProperty(type, false));
-    }
-
-    /**
-     * @param type a Role id that this concept type variable must play
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType plays(String type) {
-        return plays(Graql.type(type));
-    }
-
-    /**
-     * @param type a Role that this concept type variable must play
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType plays(Statement type) {
-        return StatementType.create(this, new PlaysProperty(type, false));
-    }
-
-    /**
-     * @param type a Role id that this relation type variable must have
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType relates(String type) {
-        return relates(type, null);
-    }
-
-    /**
-     * @param type a Role that this relation type variable must have
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType relates(Statement type) {
-        return relates(type, null);
-    }
-
-    /**
-     * @param roleType a Role id that this relation type variable must have
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType relates(String roleType, @Nullable String superRoleType) {
-        return relates(Graql.type(roleType), superRoleType == null ? null : Graql.type(superRoleType));
-    }
-
-    /**
-     * @param roleType a Role that this relation type variable must have
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType relates(Statement roleType, @Nullable Statement superRoleType) {
-        return StatementType.create(this, new RelatesProperty(roleType, superRoleType));
-    }
-
-    /**
-     * @param datatype the datatype to set for this resource type variable
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType datatype(String datatype) {
-        return datatype(Query.DataType.of(datatype));
-    }
-
-    /**
-     * @param datatype the datatype to set for this resource type variable
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType datatype(Query.DataType datatype) {
-        return StatementType.create(this, new DataTypeProperty(datatype));
-    }
-
-    /**
-     * Specify the regular expression instances of this resource type must match
-     *
-     * @param regex the regex to set for this resource type variable
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementType regex(String regex) {
-        return StatementType.create(this, new RegexProperty(regex));
-    }
-
-    /**
-     * @param when the left-hand side of this rule
-     * @return this
-     */
-    @CheckReturnValue // TODO: make when() method take a more strict sub type of pattern
-    public StatementType when(Pattern when) {
-        return StatementType.create(this, new WhenProperty(when));
-    }
-
-    /**
-     * @param then the right-hand side of this rule
-     * @return this
-     */
-    @CheckReturnValue // TODO: make then() method take a more strict sub type of pattern
-    public StatementType then(Pattern then) {
-        return StatementType.create(this, new ThenProperty(then));
     }
 
     // INSTANCE STATEMENT PROPERTIES ===========================================
@@ -574,7 +374,8 @@ public class Statement implements Pattern, AttributeProperties {
 
     // ATTRIBUTE STATEMENT PROPERTIES
 
-    public StatementInstance.StatementAttribute attribute(VarProperty property) {
+    @Override
+    public StatementInstance.StatementAttribute statementAttribute(VarProperty property) {
         return StatementInstance.StatementAttribute.create(this, property);
     }
 
