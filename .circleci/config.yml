@@ -183,7 +183,7 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: git push --delete origin trigger-ci-release
+      - run: git push --delete origin grakn-core-release-branch
 
   publish-github-draft:
     machine: true
@@ -199,49 +199,49 @@ workflows:
   #  - executes tests (executed on pull requests and master)
   #  - syncs docs/development to the latest grakn version (executed on master only)
   #  - waits for an approval for Grakn to be released (executed on master only)
-  ci:
+  grakn-core:
     jobs:
       # test jobs
       - build:
           filters:
             branches:
-              ignore: trigger-ci-release
+              ignore: grakn-core-release-branch
       - client-java:
           filters:
             branches:
-              ignore: trigger-ci-release
+              ignore: grakn-core-release-branch
       - common:
           filters:
             branches:
-              ignore: trigger-ci-release
+              ignore: grakn-core-release-branch
       - console:
           filters:
             branches:
-              ignore: trigger-ci-release
+              ignore: grakn-core-release-branch
       - graql:
           filters:
             branches:
-              ignore: trigger-ci-release
+              ignore: grakn-core-release-branch
       - server:
           filters:
             branches:
-              ignore: trigger-ci-release
+              ignore: grakn-core-release-branch
       - test-integration:
           filters:
             branches:
-              ignore: trigger-ci-release
+              ignore: grakn-core-release-branch
       - test-integration-reasoner:
           filters:
             branches:
-              ignore: trigger-ci-release
+              ignore: grakn-core-release-branch
       - test-integration-analytics:
           filters:
             branches:
-              ignore: trigger-ci-release
+              ignore: grakn-core-release-branch
       - test-end-to-end:
           filters:
             branches:
-              ignore: trigger-ci-release
+              ignore: grakn-core-release-branch
 
       # sync docs/development to the latest grakn version
       - grakn-docs-update:
@@ -261,7 +261,7 @@ workflows:
             - test-end-to-end
 
       # wait for an approval for Grakn to be released
-      # triggers 'ci-release' workflow by creating a branch 'trigger-ci-release' in graknlabs/grakn
+      # triggers 'ci-release' workflow by creating a branch 'grakn-core-release-branch' in graknlabs/grakn
       - approve-release:
           filters:
             branches:
@@ -269,19 +269,19 @@ workflows:
           requires:
             - grakn-docs-update
 
-  # the 'ci-release' workflow is triggered by the creation of 'trigger-ci-release' branch in graknlabs/grakn
+  # the 'ci-release' workflow is triggered by the creation of 'grakn-core-release-branch' branch in graknlabs/grakn
   # it consists of jobs which:
   # - publishes Grakn by creating a Github release
-  # - cleans up the 'trigger-ci-release' branch which was created by the approve-release job
-  ci-release:
+  # - cleans up the 'grakn-core-release-branch' branch which was created by the approve-release job
+  grakn-core-release:
     jobs:
       - publish-github-draft:
           filters:
             branches:
-              only: trigger-ci-release
+              only: grakn-core-release-branch
       - release-cleanup:
           requires:
             - publish-github-draft
           filters:
             branches:
-              only: trigger-ci-release
+              only: grakn-core-release-branch
