@@ -64,6 +64,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public class Statement implements Pattern,
                                   StatementTypeBuilder,
+                                  StatementInstanceBuilder,
                                   StatementThingBuilder,
                                   StatementRelationBuilder,
                                   StatementAttributeBuilder {
@@ -143,109 +144,8 @@ public class Statement implements Pattern,
 
     // INSTANCE STATEMENT PROPERTIES ===========================================
 
-    /**
-     * @param type a concept type id that the variable must be of this type directly or indirectly
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementInstance isa(String type) {
-        return isa(Graql.type(type));
-    }
-
-    /**
-     * @param type a concept type that this variable must be an instance of directly or indirectly
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementInstance isa(Statement type) {
-        return isa(new IsaProperty(type));
-    }
-
-    /**
-     * @param type a concept type id that the variable must be of this type directly
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementInstance isaX(String type) {
-        return isaX(Graql.type(type));
-    }
-
-    /**
-     * @param type a concept type that this variable must be an instance of directly
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementInstance isaX(Statement type) {
-        return isa(new IsaProperty(type, true));
-    }
-
-    @CheckReturnValue
-    public StatementInstance isa(IsaProperty property) {
-        return StatementInstance.create(this, property);
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, long value) {
-        return has(type, Graql.val(value));
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, long value, Statement via) {
-        return has(type, Graql.val(value), via);
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, double value) {
-        return has(type, Graql.val(value));
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, double value, Statement via) {
-        return has(type, Graql.val(value), via);
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, boolean value) {
-        return has(type, Graql.val(value));
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, boolean value, Statement via) {
-        return has(type, Graql.val(value), via);
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, String value) {
-        return has(type, Graql.val(value));
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, String value, Statement via) {
-        return has(type, Graql.val(value), via);
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, LocalDateTime value) {
-        return has(type, Graql.val(value));
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, LocalDateTime value, Statement via) {
-        return has(type, Graql.val(value), via);
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, Statement variable) {
-        return has(new HasAttributeProperty(type, variable));
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(String type, Statement variable, Statement via) {
-        return has(new HasAttributeProperty(type, variable, via));
-    }
-
-    @CheckReturnValue
-    public StatementInstance has(HasAttributeProperty property) {
+    @Override
+    public StatementInstance statementInstance(VarProperty property) {
         return StatementInstance.create(this, property);
     }
 

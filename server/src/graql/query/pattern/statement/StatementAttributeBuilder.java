@@ -31,7 +31,8 @@ import java.util.function.BiFunction;
 
 interface StatementAttributeBuilder {
 
-    @CheckReturnValue // TODO: make this "private" once we upgrade to Java 9
+    @Deprecated         // This method should not be used publicly
+    @CheckReturnValue   // TODO: will be made "private" once we upgrade to Java 9
     StatementAttribute statementAttribute(VarProperty property);
 
     @CheckReturnValue
