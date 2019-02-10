@@ -135,115 +135,35 @@ public class Statement implements Pattern,
         }
     }
 
-    // TYPE STATEMENT PROPERTIES ===============================================
-
     @Override
     public StatementType statementType(VarProperty property) {
         return StatementType.create(this, property);
     }
-
-    // INSTANCE STATEMENT PROPERTIES ===========================================
 
     @Override
     public StatementInstance statementInstance(VarProperty property) {
         return StatementInstance.create(this, property);
     }
 
-    // THING STATEMENT PROPERTIES ----------------------------------------------
-
     @Override
     public StatementInstance.StatementThing statementThing(VarProperty property) {
         return StatementInstance.StatementThing.create(this, property);
     }
 
-    // RELATION STATEMENT PROPERTIES --------------------------------------------
-
-    /**
-     * the variable must be a relation with the given roleplayer
-     *
-     * @param player a variable representing a roleplayer
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementRelation rel(String player) {
-        return rel(Graql.var(player));
+    @Override
+    public StatementInstance.StatementRelation statementRelation(RelationProperty.RolePlayer rolePlayer) {
+        return StatementInstance.StatementRelation.create(this, rolePlayer);
     }
 
-    /**
-     * the variable must be a relation with the given roleplayer
-     *
-     * @param player a variable pattern representing a roleplayer
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementRelation rel(Statement player) {
-        return StatementRelation.create(this,
-                                        new RelationProperty.RolePlayer(null, player));
+    @Override
+    public StatementInstance.StatementRelation statementRelation(VarProperty property) {
+        return StatementInstance.StatementRelation.create(this, property);
     }
-
-    /**
-     * the variable must be a relation with the given roleplayer playing the given Role
-     *
-     * @param role       a Role in the schema
-     * @param player a variable representing a roleplayer
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementRelation rel(String role, String player) {
-        return rel(Graql.type(role), Graql.var(player));
-    }
-
-    /**
-     * the variable must be a relation with the given roleplayer playing the given Role
-     *
-     * @param role       a variable pattern representing a Role
-     * @param player a variable representing a roleplayer
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementRelation rel(Statement role, String player) {
-        return rel(role, Graql.var(player));
-    }
-
-    /**
-     * the variable must be a relation with the given roleplayer playing the given Role
-     *
-     * @param role       a Role in the schema
-     * @param player a variable pattern representing a roleplayer
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementRelation rel(String role, Statement player) {
-        return rel(Graql.type(role), player);
-    }
-
-    /**
-     * the variable must be a relation with the given roleplayer playing the given Role
-     *
-     * @param role       a variable pattern representing a Role
-     * @param player a variable pattern representing a roleplayer
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementRelation rel(Statement role, Statement player) {
-        return StatementRelation.create(this,
-                                        new RelationProperty.RolePlayer(role, player));
-    }
-
-    @CheckReturnValue
-    public StatementRelation rel(RelationProperty property) {
-        return StatementRelation.create(this, property);
-    }
-
-    // ATTRIBUTE STATEMENT PROPERTIES
 
     @Override
     public StatementInstance.StatementAttribute statementAttribute(VarProperty property) {
         return StatementInstance.StatementAttribute.create(this, property);
     }
-
-
-    // GENERAL STATEMENT PROPERTIES ============================================
 
     /**
      * @return the variable name of this variable
