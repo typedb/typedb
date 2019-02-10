@@ -31,15 +31,6 @@ import java.util.function.BiFunction;
 
 interface StatementAttributeBuilder {
 
-    @Deprecated         // This method should not be used publicly
-    @CheckReturnValue   // TODO: will be made "private" once we upgrade to Java 9
-    StatementAttribute statementAttribute(VarProperty property);
-
-    @CheckReturnValue
-    default StatementAttribute operation(ValueProperty.Operation<?> operation) {
-        return statementAttribute(new ValueProperty<>(operation));
-    }
-
     // Attribute value assignment property
 
     @CheckReturnValue
@@ -141,7 +132,6 @@ interface StatementAttributeBuilder {
         return operation(constructor.apply(Query.Comparator.NEQV, value));
     }
 
-
     // Attribute value greater-than property
 
     @CheckReturnValue
@@ -178,8 +168,6 @@ interface StatementAttributeBuilder {
     default <T> StatementAttribute gt(BiFunction<Query.Comparator, T, Comparison<T>> constructor, T value) {
         return operation(constructor.apply(Query.Comparator.GT, value));
     }
-
-
 
     // Attribute value greater-than-or-equals property
 
@@ -315,4 +303,15 @@ interface StatementAttributeBuilder {
     default StatementAttribute like(String value) {
         return operation(new Comparison.String(Query.Comparator.LIKE, value));
     }
+
+    // Attribute Statement builder methods
+
+    @CheckReturnValue
+    default StatementAttribute operation(ValueProperty.Operation<?> operation) {
+        return statementAttribute(new ValueProperty<>(operation));
+    }
+
+    @Deprecated         // This method should not be used publicly
+    @CheckReturnValue   // TODO: will be made "private" once we upgrade to Java 9
+    StatementAttribute statementAttribute(VarProperty property);
 }

@@ -28,9 +28,6 @@ import java.time.LocalDateTime;
 
 interface StatementInstanceBuilder {
 
-    @Deprecated         // This method should not be used publicly
-    @CheckReturnValue   // TODO: will be made "private" once we upgrade to Java 9
-    StatementInstance statementInstance(VarProperty property);
     /**
      * @param type a concept type id that the variable must be of this type directly or indirectly
      * @return this
@@ -136,4 +133,8 @@ interface StatementInstanceBuilder {
     default StatementInstance has(HasAttributeProperty property) {
         return statementInstance(property);
     }
+
+    @Deprecated         // This method should not be used publicly
+    @CheckReturnValue   // TODO: will be made "private" once we upgrade to Java 9
+    StatementInstance statementInstance(VarProperty property);
 }

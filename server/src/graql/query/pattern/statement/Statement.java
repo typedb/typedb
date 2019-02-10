@@ -151,46 +151,9 @@ public class Statement implements Pattern,
 
     // THING STATEMENT PROPERTIES ----------------------------------------------
 
-    /**
-     * @param id a ConceptId that this variable's ID must match
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementThing id(String id) {
-        return StatementThing.create(this, new IdProperty(id));
-    }
-
-    /**
-     * Specify that the variable is different to another variable
-     *
-     * @param var the variable that this variable should not be equal to
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementThing not(String var) {
-        return not(new Variable(var));
-    }
-
-    /**
-     * Specify that the variable is different to another variable
-     *
-     * @param var the variable pattern that this variable should not be equal to
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementThing not(Variable var) {
-        return not(new NeqProperty(new Statement(var)));
-    }
-
-    /**
-     * Specify that the variable is different to another variable
-     *
-     * @param property the NEQ property containing variable pattern that this variable should not be equal to
-     * @return this
-     */
-    @CheckReturnValue
-    public StatementThing not(NeqProperty property) {
-        return StatementThing.create(this, property);
+    @Override
+    public StatementInstance.StatementThing statementThing(VarProperty property) {
+        return StatementInstance.StatementThing.create(this, property);
     }
 
     // RELATION STATEMENT PROPERTIES --------------------------------------------

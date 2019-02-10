@@ -41,10 +41,6 @@ import javax.annotation.Nullable;
  */
 interface StatementTypeBuilder {
 
-    @Deprecated         // This method should not be used publicly
-    @CheckReturnValue   // TODO: will be made "private" once we upgrade to Java 9
-    StatementType statementType(VarProperty property);
-    
     /**
      * @param name a string that this variable's label must match
      * @return this
@@ -241,4 +237,8 @@ interface StatementTypeBuilder {
     default StatementType then(Pattern then) {
         return statementType(new ThenProperty(then));
     }
+
+    @Deprecated         // This method should not be used publicly
+    @CheckReturnValue   // TODO: will be made "private" once we upgrade to Java 9
+    StatementType statementType(VarProperty property);
 }
