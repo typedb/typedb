@@ -51,7 +51,7 @@ public class SessionStore {
     }
 
 
-    public TransactionOLTP tx(Keyspace keyspace, Transaction.Type type) {
+    public TransactionOLTP transaction(Keyspace keyspace, Transaction.Type type) {
         if (!keyspaceStore.containsKeyspace(keyspace)) {
             initialiseNewKeyspace(keyspace);
         }

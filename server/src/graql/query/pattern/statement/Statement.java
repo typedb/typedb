@@ -299,6 +299,15 @@ public class Statement implements Pattern, AttributeProperties {
      * @return this
      */
     @CheckReturnValue
+    public StatementType datatype(String datatype) {
+        return datatype(Query.DataType.of(datatype));
+    }
+
+    /**
+     * @param datatype the datatype to set for this resource type variable
+     * @return this
+     */
+    @CheckReturnValue
     public StatementType datatype(Query.DataType datatype) {
         return StatementType.create(this, new DataTypeProperty(datatype));
     }

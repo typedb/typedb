@@ -63,6 +63,7 @@ import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.keyspace.Keyspace;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -145,8 +146,8 @@ public final class GraknClient {
         }
 
         @Override // TODO: remove this method once we no longer implement grakn.core.server.Session
-        public grakn.core.server.keyspace.Keyspace keyspace() {
-            return grakn.core.server.keyspace.Keyspace.of(keyspace);
+        public Keyspace keyspace() {
+            return Keyspace.of(keyspace);
         }
     }
 
