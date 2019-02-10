@@ -16,15 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.pattern.statement;
+package grakn.core.graql.query.pattern.statement.builder;
 
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.property.RelationProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.StatementRelation;
 
 import javax.annotation.CheckReturnValue;
 
-interface StatementRelationBuilder {
+public interface StatementRelationBuilder extends StatementInstanceBuilder {
 
     /**
      * the variable must be a relation with the given roleplayer

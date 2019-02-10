@@ -16,17 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.pattern.statement;
+package grakn.core.graql.query.pattern.statement.builder;
 
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.property.HasAttributeProperty;
 import grakn.core.graql.query.pattern.property.IsaProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.StatementInstance;
 
 import javax.annotation.CheckReturnValue;
 import java.time.LocalDateTime;
 
-interface StatementInstanceBuilder {
+public interface StatementInstanceBuilder {
 
     /**
      * @param type a concept type id that the variable must be of this type directly or indirectly

@@ -16,15 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.pattern.statement;
+package grakn.core.graql.query.pattern.statement.builder;
 
 import grakn.core.graql.query.pattern.property.IdProperty;
 import grakn.core.graql.query.pattern.property.NeqProperty;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.StatementThing;
+import grakn.core.graql.query.pattern.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 
-interface StatementThingBuilder {
+public interface StatementThingBuilder extends StatementInstanceBuilder {
 
     /**
      * @param id a ConceptId that this variable's ID must match

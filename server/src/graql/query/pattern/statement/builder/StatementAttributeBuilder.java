@@ -16,19 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.pattern.statement;
+package grakn.core.graql.query.pattern.statement.builder;
 
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.property.ValueProperty;
 import grakn.core.graql.query.pattern.property.ValueProperty.Operation.Assignment;
 import grakn.core.graql.query.pattern.property.ValueProperty.Operation.Comparison;
 import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.pattern.statement.StatementAttribute;
 
 import javax.annotation.CheckReturnValue;
 import java.time.LocalDateTime;
 import java.util.function.BiFunction;
 
-interface StatementAttributeBuilder {
+public interface StatementAttributeBuilder extends StatementInstanceBuilder {
 
     // Attribute value assignment property
 
