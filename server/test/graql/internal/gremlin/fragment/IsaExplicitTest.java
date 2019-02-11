@@ -18,11 +18,11 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.MatchClause;
-import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.query.GraqlInsert;
+import grakn.core.graql.query.query.MatchClause;
+import grakn.core.graql.query.statement.Statement;
 import org.junit.Test;
 
 import static grakn.core.graql.query.Graql.var;
@@ -38,7 +38,7 @@ public class IsaExplicitTest {
 
     @Test
     public void testInsertSyntax() {
-        InsertQuery insertQuery;
+        GraqlInsert insertQuery;
 
         insertQuery = Graql.insert(x.isaX(thingy));
         assertEquals("insert $x isa! thingy;", insertQuery.toString());
@@ -52,7 +52,7 @@ public class IsaExplicitTest {
     @Test
     public void testMatchSyntax() {
         MatchClause matchQuery;
-        GetQuery getQuery;
+        GraqlGet getQuery;
 
         matchQuery = Graql.match(x.isaX(thingy1));
         assertEquals("match $x isa! thingy1;", matchQuery.toString());

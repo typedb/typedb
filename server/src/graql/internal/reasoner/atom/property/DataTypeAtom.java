@@ -23,9 +23,9 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.DataTypeProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
+import grakn.core.graql.query.property.DataTypeProperty;
 
 /**
  * Atomic corresponding to DataTypeProperty.

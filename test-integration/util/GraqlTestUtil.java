@@ -23,7 +23,7 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.MatchClause;
+import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;

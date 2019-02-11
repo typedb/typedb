@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.unifier;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;

@@ -25,11 +25,11 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.property.IdProperty;
-import grakn.core.graql.query.pattern.property.ValueProperty;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import graql.util.Token;
+import grakn.core.graql.query.property.IdProperty;
+import grakn.core.graql.query.property.ValueProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.Transaction;
 
 /**
@@ -128,7 +128,7 @@ public class IdPredicate extends Predicate<ConceptId> {
 
         if (value != null) {
             return ValuePredicate.create(this.getVarName(),
-                                         ValueProperty.Operation.Comparison.of(Query.Comparator.EQV, value),
+                                         ValueProperty.Operation.Comparison.of(Token.Comparator.EQV, value),
                                          this.getParentQuery());
         } else {
             return null;

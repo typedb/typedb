@@ -19,9 +19,8 @@
 package grakn.core.graql.query.predicate;
 
 import grakn.core.graql.internal.executor.property.ValueExecutor;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.property.ValueProperty;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
+import graql.util.Token;
+import grakn.core.graql.query.property.ValueProperty;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -33,7 +32,7 @@ public class RegexPredicateTest {
     @Test
     public void regexPredicateInterpretsCharacterClassesCorrectly() {
         ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
-                .Comparison.String(Query.Comparator.LIKE, "\\d");
+                .Comparison.String(Token.Comparator.LIKE, "\\d");
 
         assertTrue(predicate.test("0"));
         assertTrue(predicate.test("1"));
@@ -43,7 +42,7 @@ public class RegexPredicateTest {
     @Test
     public void regexPredicateInterpretsQuotesCorrectly() {
         ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
-                .Comparison.String(Query.Comparator.LIKE, "\"");
+                .Comparison.String(Token.Comparator.LIKE, "\"");
 
         assertTrue(predicate.test("\""));
         assertFalse(predicate.test("\\\""));
@@ -52,7 +51,7 @@ public class RegexPredicateTest {
     @Test
     public void regexPredicateInterpretsBackslashesCorrectly() {
         ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
-                .Comparison.String(Query.Comparator.LIKE, "\\\\");
+                .Comparison.String(Token.Comparator.LIKE, "\\\\");
 
         assertTrue(predicate.test("\\"));
         assertFalse(predicate.test("\\\\"));
@@ -61,7 +60,7 @@ public class RegexPredicateTest {
     @Test
     public void regexPredicateInterpretsNewlineCorrectly() {
         ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
-                .Comparison.String(Query.Comparator.LIKE, "\\n");
+                .Comparison.String(Token.Comparator.LIKE, "\\n");
 
         assertTrue(predicate.test("\n"));
         assertFalse(predicate.test("\\n"));
@@ -70,16 +69,16 @@ public class RegexPredicateTest {
     @Test
     public void regexPredicateToStringDoesNotEscapeMostThings() {
         ValueProperty.Operation.Comparison.String predicate = new ValueProperty.Operation
-                .Comparison.String(Query.Comparator.LIKE, "don't escape these: \\d, \", \n ok");
+                .Comparison.String(Token.Comparator.LIKE, "don't escape these: \\d, \", \n ok");
 
-        assertEquals(Query.Comparator.LIKE + " \"don't escape these: \\d, \", \n ok\"", predicate.toString());
+        assertEquals(Token.Comparator.LIKE + " \"don't escape these: \\d, \", \n ok\"", predicate.toString());
     }
 
     @Test
     public void regexPredicateToStringEscapesForwardSlashes() {
         ValueProperty.Operation.Comparison.String predicate = new ValueProperty.Operation
-                .Comparison.String(Query.Comparator.LIKE, "escape this: / ok");
+                .Comparison.String(Token.Comparator.LIKE, "escape this: / ok");
 
-        assertEquals(Query.Comparator.LIKE + " \"escape this: \\/ ok\"", predicate.toString());
+        assertEquals(Token.Comparator.LIKE + " \"escape this: \\/ ok\"", predicate.toString());
     }
 }

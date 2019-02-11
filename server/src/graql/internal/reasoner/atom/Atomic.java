@@ -21,8 +21,8 @@ package grakn.core.graql.internal.reasoner.atom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.HashSet;

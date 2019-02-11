@@ -23,10 +23,10 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.SubProperty;
-import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
+import grakn.core.graql.query.property.SubProperty;
+import grakn.core.graql.query.property.VarProperty;
 
 import java.util.stream.Collectors;
 

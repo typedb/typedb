@@ -1,9 +1,9 @@
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
-    name = "analytics-it",
-    test_class = "grakn.core.graql.analytics.ComputeQueryIT",
-    srcs = ["ComputeQueryIT.java"],
+    name = "graql-compute-it",
+    test_class = "grakn.core.graql.analytics.GraqlComputeIT",
+    srcs = ["GraqlComputeIT.java"],
     deps = [
         "//server",
         "//test-integration/rule:grakn-test-server",
@@ -104,7 +104,7 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":analytics-it",
+        ":graql-compute-it",
         ":connected-component-it",
         ":coreness-it",
         ":count-it",

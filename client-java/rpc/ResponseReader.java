@@ -31,7 +31,7 @@ import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.protocol.AnswerProto;
 
 import java.text.NumberFormat;

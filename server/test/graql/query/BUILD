@@ -31,9 +31,9 @@ java_test(
 )
 
 java_test(
-    name = "delete-query-test",
-    test_class = "grakn.core.graql.query.DeleteQueryTest",
-    srcs = ["DeleteQueryTest.java"],
+    name = "graql-delete-test",
+    test_class = "grakn.core.graql.query.GraqlDeleteTest",
+    srcs = ["GraqlDeleteTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//server"],
@@ -41,9 +41,9 @@ java_test(
 )
 
 java_test(
-    name = "insert-query-test",
-    test_class = "grakn.core.graql.query.InsertQueryTest",
-    srcs = ["InsertQueryTest.java"],
+    name = "graql-insert-test",
+    test_class = "grakn.core.graql.query.GraqlInsertTest",
+    srcs = ["GraqlInsertTest.java"],
     deps = [
         "//server",
         "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -56,7 +56,7 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":concept-map-test",
-        ":delete-query-test",
-        ":insert-query-test"
+        ":graql-delete-test",
+        ":graql-insert-test"
     ]
 )

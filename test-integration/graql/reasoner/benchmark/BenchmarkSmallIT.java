@@ -24,10 +24,10 @@ import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.graql.reasoner.graph.DiagonalGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.PathTreeGraph;
@@ -207,10 +207,10 @@ public class BenchmarkSmallIT {
         
 
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
-        GetQuery query = Graql.parse(queryString);
+        GraqlGet query = Graql.parse(queryString);
 
         String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
-        GetQuery query2 = Graql.parse(queryString2);
+        GraqlGet query2 = Graql.parse(queryString2);
 
         assertEquals(executeQuery(query, tx, "full").size(), answers);
         assertEquals(executeQuery(query2, tx, "With specific resource").size(), N);
@@ -261,16 +261,16 @@ public class BenchmarkSmallIT {
 
         //full result
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
-        GetQuery query = Graql.parse(queryString);
+        GraqlGet query = Graql.parse(queryString);
 
         //with specific resource
         String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
-        GetQuery query2 = Graql.parse(queryString2);
+        GraqlGet query2 = Graql.parse(queryString2);
 
         //with substitution
-        Concept id = tx.execute(Graql.<GetQuery>parse("match $x has index 'a'; get;")).iterator().next().get("x");
+        Concept id = tx.execute(Graql.<GraqlGet>parse("match $x has index 'a'; get;")).iterator().next().get("x");
         String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.id().getValue() + "'; get;";
-        GetQuery query3 = Graql.parse(queryString3);
+        GraqlGet query3 = Graql.parse(queryString3);
 
         executeQuery(query, tx, "full");
         executeQuery(query2, tx, "With specific resource");
@@ -319,7 +319,7 @@ public class BenchmarkSmallIT {
         Transaction tx = session.transaction(Transaction.Type.WRITE);
         
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
-        GetQuery query = Graql.parse(queryString);
+        GraqlGet query = Graql.parse(queryString);
 
         executeQuery(query, tx, "full");
 //        executeQuery(query.match().limit(limit).get(), "limit " + limit); // TODO: uncomment
@@ -386,10 +386,10 @@ public class BenchmarkSmallIT {
     }
 
     private List<ConceptMap> executeQuery(String queryString, Transaction transaction, String msg){
-        return executeQuery(Graql.<GetQuery>parse(queryString), transaction, msg);
+        return executeQuery(Graql.<GraqlGet>parse(queryString), transaction, msg);
     }
 
-    private List<ConceptMap> executeQuery(GetQuery query, Transaction transaction, String msg){
+    private List<ConceptMap> executeQuery(GraqlGet query, Transaction transaction, String msg){
         final long startTime = System.currentTimeMillis();
         List<ConceptMap> results = transaction.execute(query);
         final long answerTime = System.currentTimeMillis() - startTime;

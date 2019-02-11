@@ -23,7 +23,8 @@ java_test(
     test_class = "grakn.core.server.AttributeDeduplicatorIT",
     srcs = ["AttributeDeduplicatorIT.java"],
     deps = [
-        "//server",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
     size = "large"
