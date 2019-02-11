@@ -59,15 +59,15 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
 
     public final static Collection<Method> METHODS_ACCEPTED = ImmutableList.copyOf(Method.values());
 
-    public final static Map<Method, Collection<Condition>> CONDITIONS_REQUIRED = conditionsRequired();
-    public final static Map<Method, Collection<Condition>> CONDITIONS_OPTIONAL = conditionsOptional();
-    public final static Map<Method, Collection<Condition>> CONDITIONS_ACCEPTED = conditionsAccepted();
+    public final static Map<Method, Collection<Token.Compute.Condition>> CONDITIONS_REQUIRED = conditionsRequired();
+    public final static Map<Method, Collection<Token.Compute.Condition>> CONDITIONS_OPTIONAL = conditionsOptional();
+    public final static Map<Method, Collection<Token.Compute.Condition>> CONDITIONS_ACCEPTED = conditionsAccepted();
 
-    public final static Map<Method, Algorithm> ALGORITHMS_DEFAULT = algorithmsDefault();
-    public final static Map<Method, Collection<Algorithm>> ALGORITHMS_ACCEPTED = algorithmsAccepted();
+    public final static Map<Method, Token.Compute.Algorithm> ALGORITHMS_DEFAULT = algorithmsDefault();
+    public final static Map<Method, Collection<Token.Compute.Algorithm>> ALGORITHMS_ACCEPTED = algorithmsAccepted();
 
-    public final static Map<Method, Map<Algorithm, Collection<Param>>> ARGUMENTS_ACCEPTED = argumentsAccepted();
-    public final static Map<Method, Map<Algorithm, Map<Param, Object>>> ARGUMENTS_DEFAULT = argumentsDefault();
+    public final static Map<Method, Map<Token.Compute.Algorithm, Collection<Token.Compute.Param>>> ARGUMENTS_ACCEPTED = argumentsAccepted();
+    public final static Map<Method, Map<Token.Compute.Algorithm, Map<Token.Compute.Param, Object>>> ARGUMENTS_DEFAULT = argumentsDefault();
 
     public final static Map<Method, Boolean> INCLUDE_ATTRIBUTES_DEFAULT = includeAttributesDefault();
 
@@ -79,10 +79,10 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
     private ConceptId toID = null;
     private Set<String> ofTypes = null;
     private Set<String> inTypes = null;
-    private Algorithm algorithm = null;
+    private Token.Compute.Algorithm algorithm = null;
     private Arguments arguments = null; // But arguments will also be set when where() is called for cluster/centrality
 
-    private final Map<Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
+    private final Map<Token.Compute.Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
     public GraqlCompute(Method<T> method) {
         this(method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
@@ -93,45 +93,45 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         this.includeAttributes = includeAttributes;
     }
 
-    private static Map<Method, Collection<Condition>> conditionsRequired() {
-        Map<Method, Collection<Condition>> required = new HashMap<>();
-        required.put(Method.MIN, ImmutableSet.of(Condition.OF));
-        required.put(Method.MAX, ImmutableSet.of(Condition.OF));
-        required.put(Method.MEDIAN, ImmutableSet.of(Condition.OF));
-        required.put(Method.MEAN, ImmutableSet.of(Condition.OF));
-        required.put(Method.STD, ImmutableSet.of(Condition.OF));
-        required.put(Method.SUM, ImmutableSet.of(Condition.OF));
-        required.put(Method.PATH, ImmutableSet.of(Condition.FROM, Condition.TO));
-        required.put(Method.CENTRALITY, ImmutableSet.of(Condition.USING));
+    private static Map<Method, Collection<Token.Compute.Condition>> conditionsRequired() {
+        Map<Method, Collection<Token.Compute.Condition>> required = new HashMap<>();
+        required.put(Method.MIN, ImmutableSet.of(Token.Compute.Condition.OF));
+        required.put(Method.MAX, ImmutableSet.of(Token.Compute.Condition.OF));
+        required.put(Method.MEDIAN, ImmutableSet.of(Token.Compute.Condition.OF));
+        required.put(Method.MEAN, ImmutableSet.of(Token.Compute.Condition.OF));
+        required.put(Method.STD, ImmutableSet.of(Token.Compute.Condition.OF));
+        required.put(Method.SUM, ImmutableSet.of(Token.Compute.Condition.OF));
+        required.put(Method.PATH, ImmutableSet.of(Token.Compute.Condition.FROM, Token.Compute.Condition.TO));
+        required.put(Method.CENTRALITY, ImmutableSet.of(Token.Compute.Condition.USING));
         ;
-        required.put(Method.CLUSTER, ImmutableSet.of(Condition.USING));
+        required.put(Method.CLUSTER, ImmutableSet.of(Token.Compute.Condition.USING));
 
         return ImmutableMap.copyOf(required);
     }
 
-    private static Map<Method, Collection<Condition>> conditionsOptional() {
-        Map<Method, Collection<Condition>> optional = new HashMap<>();
-        optional.put(Method.COUNT, ImmutableSet.of(Condition.IN));
-        optional.put(Method.MIN, ImmutableSet.of(Condition.IN));
-        optional.put(Method.MAX, ImmutableSet.of(Condition.IN));
-        optional.put(Method.MEDIAN, ImmutableSet.of(Condition.IN));
-        optional.put(Method.MEAN, ImmutableSet.of(Condition.IN));
-        optional.put(Method.STD, ImmutableSet.of(Condition.IN));
-        optional.put(Method.SUM, ImmutableSet.of(Condition.IN));
-        optional.put(Method.PATH, ImmutableSet.of(Condition.IN));
-        optional.put(Method.CENTRALITY, ImmutableSet.of(Condition.OF, Condition.IN, Condition.WHERE));
-        optional.put(Method.CLUSTER, ImmutableSet.of(Condition.IN, Condition.WHERE));
+    private static Map<Method, Collection<Token.Compute.Condition>> conditionsOptional() {
+        Map<Method, Collection<Token.Compute.Condition>> optional = new HashMap<>();
+        optional.put(Method.COUNT, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Method.MIN, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Method.MAX, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Method.MEDIAN, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Method.MEAN, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Method.STD, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Method.SUM, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Method.PATH, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Method.CENTRALITY, ImmutableSet.of(Token.Compute.Condition.OF, Token.Compute.Condition.IN, Token.Compute.Condition.WHERE));
+        optional.put(Method.CLUSTER, ImmutableSet.of(Token.Compute.Condition.IN, Token.Compute.Condition.WHERE));
 
         return ImmutableMap.copyOf(optional);
     }
 
-    private static Map<Method, Collection<Condition>> conditionsAccepted() {
-        Map<Method, Collection<Condition>> accepted = new HashMap<>();
+    private static Map<Method, Collection<Token.Compute.Condition>> conditionsAccepted() {
+        Map<Method, Collection<Token.Compute.Condition>> accepted = new HashMap<>();
 
-        for (Map.Entry<Method, Collection<Condition>> entry : CONDITIONS_REQUIRED.entrySet()) {
+        for (Map.Entry<Method, Collection<Token.Compute.Condition>> entry : CONDITIONS_REQUIRED.entrySet()) {
             accepted.put(entry.getKey(), new HashSet<>(entry.getValue()));
         }
-        for (Map.Entry<Method, Collection<Condition>> entry : CONDITIONS_OPTIONAL.entrySet()) {
+        for (Map.Entry<Method, Collection<Token.Compute.Condition>> entry : CONDITIONS_OPTIONAL.entrySet()) {
             if (accepted.containsKey(entry.getKey())) accepted.get(entry.getKey()).addAll(entry.getValue());
             else accepted.put(entry.getKey(), entry.getValue());
         }
@@ -139,40 +139,40 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         return ImmutableMap.copyOf(accepted);
     }
 
-    private static Map<Method, Collection<Algorithm>> algorithmsAccepted() {
-        Map<Method, Collection<Algorithm>> accepted = new HashMap<>();
+    private static Map<Method, Collection<Token.Compute.Algorithm>> algorithmsAccepted() {
+        Map<Method, Collection<Token.Compute.Algorithm>> accepted = new HashMap<>();
 
-        accepted.put(Method.CENTRALITY, ImmutableSet.of(Algorithm.DEGREE, Algorithm.K_CORE));
-        accepted.put(Method.CLUSTER, ImmutableSet.of(Algorithm.CONNECTED_COMPONENT, Algorithm.K_CORE));
+        accepted.put(Method.CENTRALITY, ImmutableSet.of(Token.Compute.Algorithm.DEGREE, Token.Compute.Algorithm.K_CORE));
+        accepted.put(Method.CLUSTER, ImmutableSet.of(Token.Compute.Algorithm.CONNECTED_COMPONENT, Token.Compute.Algorithm.K_CORE));
 
         return ImmutableMap.copyOf(accepted);
     }
 
-    private static Map<Method, Map<Algorithm, Collection<Param>>> argumentsAccepted() {
-        Map<Method, Map<Algorithm, Collection<Param>>> accepted = new HashMap<>();
+    private static Map<Method, Map<Token.Compute.Algorithm, Collection<Token.Compute.Param>>> argumentsAccepted() {
+        Map<Method, Map<Token.Compute.Algorithm, Collection<Token.Compute.Param>>> accepted = new HashMap<>();
 
-        accepted.put(Method.CENTRALITY, ImmutableMap.of(Algorithm.K_CORE, ImmutableSet.of(Param.MIN_K)));
+        accepted.put(Method.CENTRALITY, ImmutableMap.of(Token.Compute.Algorithm.K_CORE, ImmutableSet.of(Token.Compute.Param.MIN_K)));
         accepted.put(Method.CLUSTER, ImmutableMap.of(
-                Algorithm.K_CORE, ImmutableSet.of(Param.K),
-                Algorithm.CONNECTED_COMPONENT, ImmutableSet.of(Param.SIZE, Param.CONTAINS)
+                Token.Compute.Algorithm.K_CORE, ImmutableSet.of(Token.Compute.Param.K),
+                Token.Compute.Algorithm.CONNECTED_COMPONENT, ImmutableSet.of(Token.Compute.Param.SIZE, Token.Compute.Param.CONTAINS)
         ));
 
         return ImmutableMap.copyOf(accepted);
     }
 
-    private static Map<Method, Map<Algorithm, Map<Param, Object>>> argumentsDefault() {
-        Map<Method, Map<Algorithm, Map<Param, Object>>> defaults = new HashMap<>();
+    private static Map<Method, Map<Token.Compute.Algorithm, Map<Token.Compute.Param, Object>>> argumentsDefault() {
+        Map<Method, Map<Token.Compute.Algorithm, Map<Token.Compute.Param, Object>>> defaults = new HashMap<>();
 
-        defaults.put(Method.CENTRALITY, ImmutableMap.of(Algorithm.K_CORE, ImmutableMap.of(Param.MIN_K, Argument.DEFAULT_MIN_K)));
-        defaults.put(Method.CLUSTER, ImmutableMap.of(Algorithm.K_CORE, ImmutableMap.of(Param.K, Argument.DEFAULT_K)));
+        defaults.put(Method.CENTRALITY, ImmutableMap.of(Token.Compute.Algorithm.K_CORE, ImmutableMap.of(Token.Compute.Param.MIN_K, Argument.DEFAULT_MIN_K)));
+        defaults.put(Method.CLUSTER, ImmutableMap.of(Token.Compute.Algorithm.K_CORE, ImmutableMap.of(Token.Compute.Param.K, Argument.DEFAULT_K)));
 
         return ImmutableMap.copyOf(defaults);
     }
 
-    private static Map<Method, Algorithm> algorithmsDefault() {
-        Map<Method, Algorithm> methodAlgorithm = new HashMap<>();
-        methodAlgorithm.put(Method.CENTRALITY, Algorithm.DEGREE);
-        methodAlgorithm.put(Method.CLUSTER, Algorithm.CONNECTED_COMPONENT);
+    private static Map<Method, Token.Compute.Algorithm> algorithmsDefault() {
+        Map<Method, Token.Compute.Algorithm> methodAlgorithm = new HashMap<>();
+        methodAlgorithm.put(Method.CENTRALITY, Token.Compute.Algorithm.DEGREE);
+        methodAlgorithm.put(Method.CLUSTER, Token.Compute.Algorithm.CONNECTED_COMPONENT);
 
         return ImmutableMap.copyOf(methodAlgorithm);
     }
@@ -193,14 +193,14 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         return ImmutableMap.copyOf(map);
     }
 
-    private Map<Condition, Supplier<Optional<?>>> setConditionsMap() {
-        Map<Condition, Supplier<Optional<?>>> conditions = new HashMap<>();
-        conditions.put(Condition.FROM, this::from);
-        conditions.put(Condition.TO, this::to);
-        conditions.put(Condition.OF, this::of);
-        conditions.put(Condition.IN, this::in);
-        conditions.put(Condition.USING, this::using);
-        conditions.put(Condition.WHERE, this::where);
+    private Map<Token.Compute.Condition, Supplier<Optional<?>>> setConditionsMap() {
+        Map<Token.Compute.Condition, Supplier<Optional<?>>> conditions = new HashMap<>();
+        conditions.put(Token.Compute.Condition.FROM, this::from);
+        conditions.put(Token.Compute.Condition.TO, this::to);
+        conditions.put(Token.Compute.Condition.OF, this::of);
+        conditions.put(Token.Compute.Condition.IN, this::in);
+        conditions.put(Token.Compute.Condition.USING, this::using);
+        conditions.put(Token.Compute.Condition.WHERE, this::where);
 
         return conditions;
     }
@@ -267,13 +267,13 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         return Optional.of(this.inTypes);
     }
 
-    public final GraqlCompute<T> using(Algorithm algorithm) {
+    public final GraqlCompute<T> using(Token.Compute.Algorithm algorithm) {
         this.algorithm = algorithm;
         return this;
     }
 
     @CheckReturnValue
-    public final Optional<Algorithm> using() {
+    public final Optional<Token.Compute.Algorithm> using() {
         if (ALGORITHMS_DEFAULT.containsKey(method) && algorithm == null) {
             return Optional.of(ALGORITHMS_DEFAULT.get(method));
         }
@@ -319,14 +319,14 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
     @CheckReturnValue
     public Optional<GraqlQueryException> getException() {
         // Check that all required conditions for the current query method are provided
-        for (Condition condition : CONDITIONS_REQUIRED.getOrDefault(this.method(), Collections.emptyList())) {
+        for (Token.Compute.Condition condition : CONDITIONS_REQUIRED.getOrDefault(this.method(), Collections.emptyList())) {
             if (!this.conditionsMap.get(condition).get().isPresent()) {
                 return Optional.of(GraqlQueryException.invalidComputeQuery_missingCondition(this.method()));
             }
         }
 
         // Check that all the provided conditions are accepted for the current query method
-        for (Condition condition : this.conditionsMap.keySet().stream()
+        for (Token.Compute.Condition condition : this.conditionsMap.keySet().stream()
                 .filter(con -> this.conditionsMap.get(con).get().isPresent())
                 .collect(Collectors.toSet())) {
             if (!CONDITIONS_ACCEPTED.get(this.method()).contains(condition)) {
@@ -341,7 +341,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
 
         // Check that the provided arguments are accepted for the current query method and algorithm
         if (this.where().isPresent()) {
-            for (Param param : this.where().get().getParameters()) {
+            for (Token.Compute.Param param : this.where().get().getParameters()) {
                 if (!ARGUMENTS_ACCEPTED.get(this.method()).get(this.using().get()).contains(param)) {
                     return Optional.of(GraqlQueryException.invalidComputeQuery_invalidArgument(this.method(), this.using().get()));
                 }
@@ -369,8 +369,8 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         // Because, we want to know the user provided conditions, rather than the default conditions from the getters.
         // The exception is for arguments. It needs to be set internally for the query object to have default argument
         // values. However, we can query for .getParameters() to get user provided argument parameters.
-        if (fromID != null) conditionsList.add(str(Condition.FROM, Token.Char.SPACE, Token.Char.QUOTE, fromID, Token.Char.QUOTE));
-        if (toID != null) conditionsList.add(str(Condition.TO, Token.Char.SPACE, Token.Char.QUOTE, toID, Token.Char.QUOTE));
+        if (fromID != null) conditionsList.add(str(Token.Compute.Condition.FROM, Token.Char.SPACE, Token.Char.QUOTE, fromID, Token.Char.QUOTE));
+        if (toID != null) conditionsList.add(str(Token.Compute.Condition.TO, Token.Char.SPACE, Token.Char.QUOTE, toID, Token.Char.QUOTE));
         if (ofTypes != null) conditionsList.add(ofSyntax());
         if (inTypes != null) conditionsList.add(inSyntax());
         if (algorithm != null) conditionsList.add(algorithmSyntax());
@@ -380,13 +380,13 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
     }
 
     private String ofSyntax() {
-        if (ofTypes != null) return str(Condition.OF, Token.Char.SPACE, typesSyntax(ofTypes));
+        if (ofTypes != null) return str(Token.Compute.Condition.OF, Token.Char.SPACE, typesSyntax(ofTypes));
 
         return "";
     }
 
     private String inSyntax() {
-        if (inTypes != null) return str(Condition.IN, Token.Char.SPACE, typesSyntax(inTypes));
+        if (inTypes != null) return str(Token.Compute.Condition.IN, Token.Char.SPACE, typesSyntax(inTypes));
 
         return "";
     }
@@ -410,7 +410,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
     }
 
     private String algorithmSyntax() {
-        if (algorithm != null) return str(Condition.USING, Token.Char.SPACE, algorithm);
+        if (algorithm != null) return str(Token.Compute.Condition.USING, Token.Char.SPACE, algorithm);
 
         return "";
     }
@@ -421,12 +421,12 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         List<String> argumentsList = new ArrayList<>();
         StringBuilder argumentsString = new StringBuilder();
 
-        for (Param param : arguments.getParameters()) {
+        for (Token.Compute.Param param : arguments.getParameters()) {
             argumentsList.add(str(param, Token.Comparator.EQ, arguments.getArgument(param).get()));
         }
 
         if (!argumentsList.isEmpty()) {
-            argumentsString.append(str(Condition.WHERE, Token.Char.SPACE));
+            argumentsString.append(str(Token.Compute.Condition.WHERE, Token.Char.SPACE));
             if (argumentsList.size() == 1) argumentsString.append(argumentsList.get(0));
             else {
                 argumentsString.append(Token.Char.SQUARE_OPEN);
@@ -473,97 +473,6 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         result = 31 * result + Objects.hashCode(includeAttributes);
 
         return result;
-    }
-
-    /**
-     * Graql Compute conditions keyword
-     */
-    public enum Condition {
-        FROM("from"),
-        TO("to"),
-        OF("of"),
-        IN("in"),
-        USING("using"),
-        WHERE("where");
-
-        private final String condition;
-
-        Condition(String algorithm) {
-            this.condition = algorithm;
-        }
-
-        @Override
-        public String toString() {
-            return this.condition;
-        }
-
-        public static Condition of(String value) {
-            for (Condition c : Condition.values()) {
-                if (c.condition.equals(value)) {
-                    return c;
-                }
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Graql Compute algorithm names
-     */
-    public enum Algorithm {
-        DEGREE("degree"),
-        K_CORE("k-core"),
-        CONNECTED_COMPONENT("connected-component");
-
-        private final String algorithm;
-
-        Algorithm(String algorithm) {
-            this.algorithm = algorithm;
-        }
-
-        @Override
-        public String toString() {
-            return this.algorithm;
-        }
-
-        public static Algorithm of(String value) {
-            for (Algorithm a : Algorithm.values()) {
-                if (a.algorithm.equals(value)) {
-                    return a;
-                }
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Graql Compute parameter names
-     */
-    public enum Param {
-        MIN_K("min-k"),
-        K("k"),
-        CONTAINS("contains"),
-        SIZE("size");
-
-        private final String param;
-
-        Param(String param) {
-            this.param = param;
-        }
-
-        @Override
-        public String toString() {
-            return this.param;
-        }
-
-        public static Param of(String value) {
-            for (Param p : Param.values()) {
-                if (p.param.equals(value)) {
-                    return p;
-                }
-            }
-            return null;
-        }
     }
 
     /**
@@ -638,15 +547,15 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         public final static long DEFAULT_MIN_K = 2L;
         public final static long DEFAULT_K = 2L;
 
-        private Param param;
+        private Token.Compute.Param param;
         private T arg;
 
-        private Argument(Param param, T arg) {
+        private Argument(Token.Compute.Param param, T arg) {
             this.param = param;
             this.arg = arg;
         }
 
-        public final Param type() {
+        public final Token.Compute.Param type() {
             return this.param;
         }
 
@@ -655,19 +564,19 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         }
 
         public static Argument<Long> min_k(long minK) {
-            return new Argument<>(Param.MIN_K, minK);
+            return new Argument<>(Token.Compute.Param.MIN_K, minK);
         }
 
         public static Argument<Long> k(long k) {
-            return new Argument<>(Param.K, k);
+            return new Argument<>(Token.Compute.Param.K, k);
         }
 
         public static Argument<Long> size(long size) {
-            return new Argument<>(Param.SIZE, size);
+            return new Argument<>(Token.Compute.Param.SIZE, size);
         }
 
         public static Argument<ConceptId> contains(ConceptId conceptId) {
-            return new Argument<>(Param.CONTAINS, conceptId);
+            return new Argument<>(Token.Compute.Param.CONTAINS, conceptId);
         }
 
         @Override
@@ -695,16 +604,16 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
      */
     public class Arguments {
 
-        private LinkedHashMap<Param, Argument> argumentsOrdered = new LinkedHashMap<>();
+        private LinkedHashMap<Token.Compute.Param, Argument> argumentsOrdered = new LinkedHashMap<>();
 
-        private final Map<Param, Supplier<Optional<?>>> argumentsMap = setArgumentsMap();
+        private final Map<Token.Compute.Param, Supplier<Optional<?>>> argumentsMap = setArgumentsMap();
 
-        private Map<Param, Supplier<Optional<?>>> setArgumentsMap() {
-            Map<Param, Supplier<Optional<?>>> arguments = new HashMap<>();
-            arguments.put(Param.MIN_K, this::minK);
-            arguments.put(Param.K, this::k);
-            arguments.put(Param.SIZE, this::size);
-            arguments.put(Param.CONTAINS, this::contains);
+        private Map<Token.Compute.Param, Supplier<Optional<?>>> setArgumentsMap() {
+            Map<Token.Compute.Param, Supplier<Optional<?>>> arguments = new HashMap<>();
+            arguments.put(Token.Compute.Param.MIN_K, this::minK);
+            arguments.put(Token.Compute.Param.K, this::k);
+            arguments.put(Token.Compute.Param.SIZE, this::size);
+            arguments.put(Token.Compute.Param.CONTAINS, this::contains);
 
             return arguments;
         }
@@ -715,46 +624,46 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         }
 
         @CheckReturnValue
-        public Optional<?> getArgument(Param param) {
+        public Optional<?> getArgument(Token.Compute.Param param) {
             return argumentsMap.get(param).get();
         }
 
         @CheckReturnValue
-        public Collection<Param> getParameters() {
+        public Collection<Token.Compute.Param> getParameters() {
             return argumentsOrdered.keySet();
         }
 
         @CheckReturnValue
         public Optional<Long> minK() {
-            Object defaultArg = getDefaultArgument(Param.MIN_K);
+            Object defaultArg = getDefaultArgument(Token.Compute.Param.MIN_K);
             if (defaultArg != null) return Optional.of((Long) defaultArg);
 
-            return Optional.ofNullable((Long) getArgumentValue(Param.MIN_K));
+            return Optional.ofNullable((Long) getArgumentValue(Token.Compute.Param.MIN_K));
         }
 
         @CheckReturnValue
         public Optional<Long> k() {
-            Object defaultArg = getDefaultArgument(Param.K);
+            Object defaultArg = getDefaultArgument(Token.Compute.Param.K);
             if (defaultArg != null) return Optional.of((Long) defaultArg);
 
-            return Optional.ofNullable((Long) getArgumentValue(Param.K));
+            return Optional.ofNullable((Long) getArgumentValue(Token.Compute.Param.K));
         }
 
         @CheckReturnValue
         public Optional<Long> size() {
-            return Optional.ofNullable((Long) getArgumentValue(Param.SIZE));
+            return Optional.ofNullable((Long) getArgumentValue(Token.Compute.Param.SIZE));
         }
 
         @CheckReturnValue
         public Optional<ConceptId> contains() {
-            return Optional.ofNullable((ConceptId) getArgumentValue(Param.CONTAINS));
+            return Optional.ofNullable((ConceptId) getArgumentValue(Token.Compute.Param.CONTAINS));
         }
 
-        private Object getArgumentValue(Param param) {
+        private Object getArgumentValue(Token.Compute.Param param) {
             return argumentsOrdered.get(param) != null ? argumentsOrdered.get(param).get() : null;
         }
 
-        private Object getDefaultArgument(Param param) {
+        private Object getDefaultArgument(Token.Compute.Param param) {
             if (ARGUMENTS_DEFAULT.containsKey(method) &&
                     ARGUMENTS_DEFAULT.get(method).containsKey(algorithm) &&
                     ARGUMENTS_DEFAULT.get(method).get(algorithm).containsKey(param) &&

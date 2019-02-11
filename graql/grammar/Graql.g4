@@ -30,7 +30,8 @@ eof_pattern_list    :   pattern*    EOF ;
 
 query               :   query_define    |   query_undefine                      // define / undefine types from schema
                     |   query_insert    |   query_delete                        // insert / delete data from graph
-                    |   query_get       |   query_aggregate |   query_group     // read data from graph (OLTP)
+                    |   query_get       |   query_get_aggregate                 // read data from graph (OLTP)
+                    |   query_get_group |   query_get_group_agg
                     |   query_compute   ;                                       // compute analytics over graph (OLAP)
 
 query_define        :   DEFINE      statement_type+ ;
@@ -43,10 +44,13 @@ query_delete        :   MATCH       pattern+    DELETE  variables   modifier* ; 
 query_get           :   MATCH       pattern+    GET     variables   modifier* ; // GET QUERY followed by group fn, and
                                                                                 // optionally, an aggregate fn
 
-query_aggregate     :   query_get   function_aggregate  ;
-query_group         :   query_get   function_group      function_aggregate? ;
-
 query_compute       :   COMPUTE     compute_method      compute_conditions? ';';// TODO: embbed ';' into subrule
+
+// GET QUERY ANSWER GROUP AND AGGREGATE FUNCTIONS ==============================
+
+query_get_aggregate :   query_get   function_aggregate  ;
+query_get_group     :   query_get   function_group      ;
+query_get_group_agg :   query_get   function_group      function_aggregate ;
 
 // DELETE AND GET QUERY MODIFIERS ==============================================
 

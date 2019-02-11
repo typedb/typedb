@@ -163,7 +163,7 @@ public class GraknClientTest {
 
         try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             verify(server.requestListener()).onNext(any()); // The open request
-            answers = tx.stream(Graql.<GraqlGet>parse(queryString)).limit(numAnswers).collect(toList());
+            answers = tx.stream(Graql.parse(queryString).asGet()).limit(numAnswers).collect(toList());
         }
 
         assertEquals(10, answers.size());

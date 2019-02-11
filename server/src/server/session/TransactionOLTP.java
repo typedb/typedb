@@ -38,12 +38,10 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.QueryExecutor;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
-import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.query.GraqlUndefine;
@@ -228,26 +226,24 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public Stream<Value> stream(GraqlAggregate query, boolean infer) {
+    public Stream<Value> stream(GraqlGet.Aggregate query, boolean infer) {
         return executor(infer).aggregate(query);
     }
 
     @Override
-    public Stream<AnswerGroup<ConceptMap>> stream(GraqlGroup query, boolean infer) {
-        return executor(infer).group(query);
+    public Stream<AnswerGroup<ConceptMap>> stream(GraqlGet.Group query, boolean infer) {
+        return executor(infer).get(query);
     }
 
     @Override
-    public Stream<AnswerGroup<Value>> stream(GraqlGroup.Aggregate query, boolean infer) {
-        return executor(infer).group(query);
+    public Stream<AnswerGroup<Value>> stream(GraqlGet.Group.Aggregate query, boolean infer) {
+        return executor(infer).get(query);
     }
 
     @Override
     public <T extends Answer> Stream<T> stream(GraqlCompute<T> query, boolean infer) {
         return executor(infer).compute(query);
     }
-
-
 
     public RuleCache ruleCache() { return ruleCache;}
 

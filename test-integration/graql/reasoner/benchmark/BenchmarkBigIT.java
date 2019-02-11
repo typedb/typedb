@@ -70,7 +70,7 @@ public class BenchmarkBigIT {
             InputStream inputStream = new FileInputStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE);
-            tx.execute(Graql.<GraqlQuery>parse(s));
+            tx.execute(Graql.parse(s).asDefine());
             tx.commit();
         } catch (Exception e){
             System.err.println(e);
@@ -349,8 +349,8 @@ public class BenchmarkBigIT {
 
         try (GraknClient.Session session = new GraknClient(server.grpcUri().toString()).session(keyspace)) {
             try(GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
-                ConceptId firstId = Iterables.getOnlyElement(tx.execute(Graql.<GraqlGet>parse("match $x has index 'first';get;"))).get("x").id();
-                ConceptId lastId = Iterables.getOnlyElement(tx.execute(Graql.<GraqlGet>parse("match $x has index '" + N + "';get;"))).get("x").id();
+                ConceptId firstId = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x has index 'first';get;").asGet())).get("x").id();
+                ConceptId lastId = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x has index '" + N + "';get;").asGet())).get("x").id();
                 String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
                 String queryString = "match " + queryPattern + " get;";
                 String subbedQueryString = "match " +
@@ -375,7 +375,7 @@ public class BenchmarkBigIT {
 
     private List<ConceptMap> executeQuery(String queryString, GraknClient.Transaction transaction, String msg){
         final long startTime = System.currentTimeMillis();
-        List<ConceptMap> results = transaction.execute(Graql.<GraqlGet>parse(queryString));
+        List<ConceptMap> results = transaction.execute(Graql.parse(queryString).asGet());
         final long answerTime = System.currentTimeMillis() - startTime;
         System.out.println(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

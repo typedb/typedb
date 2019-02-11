@@ -36,13 +36,11 @@ import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.query.GraqlUndefine;
@@ -255,8 +253,8 @@ public class QueryExecutor {
         return match(query.match()).map(result -> result.project(query.vars())).distinct();
     }
 
-    public Stream<Value> aggregate(GraqlAggregate query) {
-        Stream<ConceptMap> answers = get(query.getQuery());
+    public Stream<Value> aggregate(GraqlGet.Aggregate query) {
+        Stream<ConceptMap> answers = get(query.query());
         switch (query.method()) {
             case COUNT:
                 return AggregateExecutor.count(answers).stream();
@@ -277,25 +275,25 @@ public class QueryExecutor {
         }
     }
 
-    public Stream<AnswerGroup<ConceptMap>> group(GraqlGroup query) {
-        return group(get(query.getQuery()), query.var(),
+    public Stream<AnswerGroup<ConceptMap>> get(GraqlGet.Group query) {
+        return get(get(query.query()), query.var(),
                      answers -> answers.collect(Collectors.toList())
         ).stream();
     }
 
-    public Stream<AnswerGroup<Value>> group(GraqlGroup.Aggregate query) {
-        return group(get(query.getQuery()), query.var(),
-                     answers -> AggregateExecutor.aggregate(answers, query.aggregateMethod(), query.aggregateVar())
+    public Stream<AnswerGroup<Value>> get(GraqlGet.Group.Aggregate query) {
+        return get(get(query.group().query()), query.group().var(),
+                     answers -> AggregateExecutor.aggregate(answers, query.method(), query.var())
         ).stream();
     }
 
-    private static <T extends Answer> List<AnswerGroup<T>> group(Stream<ConceptMap> answers, Variable var,
-                                                                 Function<Stream<ConceptMap>, List<T>> function) {
-        Collector<ConceptMap, ?, List<T>> applyInnerAggregate =
-                collectingAndThen(toList(), list -> function.apply(list.stream()));
+    private static <T extends Answer> List<AnswerGroup<T>> get(Stream<ConceptMap> answers, Variable groupVar,
+                                                               Function<Stream<ConceptMap>, List<T>> aggregate) {
+        Collector<ConceptMap, ?, List<T>> groupAggregate =
+                collectingAndThen(toList(), list -> aggregate.apply(list.stream()));
 
         List<AnswerGroup<T>> answerGroups = new ArrayList<>();
-        answers.collect(groupingBy(answer -> answer.get(var), applyInnerAggregate))
+        answers.collect(groupingBy(answer -> answer.get(groupVar), groupAggregate))
                 .forEach((key, values) -> answerGroups.add(new AnswerGroup<>(key, values)));
 
         return answerGroups;

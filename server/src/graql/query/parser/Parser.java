@@ -27,12 +27,10 @@ import grakn.core.graql.query.property.HasAttributeProperty;
 import grakn.core.graql.query.property.IsaProperty;
 import grakn.core.graql.query.property.RelationProperty;
 import grakn.core.graql.query.property.ValueProperty;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
-import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.query.GraqlUndefine;
@@ -194,11 +192,14 @@ public class Parser extends GraqlBaseVisitor {
         } else if (ctx.query_get() != null) {
             return visitQuery_get(ctx.query_get());
 
-        } else if (ctx.query_aggregate() != null) {
-            return visitQuery_aggregate(ctx.query_aggregate());
+        } else if (ctx.query_get_aggregate() != null) {
+            return visitQuery_get_aggregate(ctx.query_get_aggregate());
 
-        } else if (ctx.query_group() != null) {
-            return visitQuery_group(ctx.query_group());
+        } else if (ctx.query_get_group() != null) {
+            return visitQuery_get_group(ctx.query_get_group());
+
+        } else if (ctx.query_get_group_agg() != null) {
+            return visitQuery_get_group_agg(ctx.query_get_group_agg());
 
         } else if (ctx.query_compute() != null) {
             return visitQuery_compute(ctx.query_compute());
@@ -268,27 +269,28 @@ public class Parser extends GraqlBaseVisitor {
      * @return An AggregateQuery object
      */
     @Override
-    public GraqlAggregate visitQuery_aggregate(GraqlParser.Query_aggregateContext ctx) {
+    public GraqlGet.Aggregate visitQuery_get_aggregate(GraqlParser.Query_get_aggregateContext ctx) {
         GraqlParser.Function_aggregateContext function = ctx.function_aggregate();
-        GraqlAggregate.Method method = GraqlAggregate.Method.of(function.function_method().getText());
-        Variable variable = function.VAR_() != null ? getVar(function.VAR_()) : null;
 
-        return new GraqlAggregate(visitQuery_get(ctx.query_get()), method, variable);
+        return new GraqlGet.Aggregate(visitQuery_get(ctx.query_get()),
+                                      Token.Statistics.Method.of(function.function_method().getText()),
+                                      function.VAR_() != null ? getVar(function.VAR_()) : null);
     }
 
     @Override
-    public GraqlGroup visitQuery_group(GraqlParser.Query_groupContext ctx) {
+    public GraqlGet.Group visitQuery_get_group(GraqlParser.Query_get_groupContext ctx) {
+        Variable var = getVar(ctx.function_group().VAR_());
+        return visitQuery_get(ctx.query_get()).group(var);
+    }
+
+    @Override
+    public GraqlGet.Group.Aggregate visitQuery_get_group_agg(GraqlParser.Query_get_group_aggContext ctx) {
         Variable var = getVar(ctx.function_group().VAR_());
         GraqlParser.Function_aggregateContext function = ctx.function_aggregate();
 
-        if (function == null) {
-            return visitQuery_get(ctx.query_get()).group(var);
-        } else {
-            GraqlAggregate.Method aggregateMethod = GraqlAggregate.Method.of(function.function_method().getText());
-            Variable aggregateVar = function.VAR_() != null ? getVar(function.VAR_()) : null;
-
-            return new GraqlGroup.Aggregate(visitQuery_get(ctx.query_get()).group(var), aggregateMethod, aggregateVar);
-        }
+        return new GraqlGet.Group.Aggregate(visitQuery_get(ctx.query_get()).group(var),
+                                            Token.Statistics.Method.of(function.function_method().getText()),
+                                            function.VAR_() != null ? getVar(function.VAR_()) : null);
     }
 
     // DELETE AND GET QUERY MODIFIERS ==========================================
@@ -323,7 +325,7 @@ public class Parser extends GraqlBaseVisitor {
                 query.in(visitLabels(conditionCtx.labels()));
 
             } else if (conditionCtx.USING() != null) {
-                query.using(GraqlCompute.Algorithm.of(conditionCtx.compute_algorithm().getText()));
+                query.using(Token.Compute.Algorithm.of(conditionCtx.compute_algorithm().getText()));
 
             } else if (conditionCtx.WHERE() != null) {
                 query.where(visitCompute_args(conditionCtx.compute_args()));

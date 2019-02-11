@@ -114,14 +114,14 @@ public class NeqValuePredicateIT {
             String complementQueryString = "match $x has derived-resource-string $val; $val == 'unattached'; get;";
             String completeQueryString = "match $x has derived-resource-string $val; get;";
 
-            List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(neqVariant));
-            List<ConceptMap> answersBis = tx.execute(Graql.<GraqlGet>parse(neqVariant2));
-            List<ConceptMap> negationAnswers = tx.execute(Graql.<GraqlGet>parse(negatedVariant));
-            List<ConceptMap> negationAnswersBis = tx.execute(Graql.<GraqlGet>parse(negatedVariant2));
-            List<ConceptMap> negationComplement = tx.execute(Graql.<GraqlGet>parse(negatedComplement));
+            List<ConceptMap> answers = tx.execute(Graql.parse(neqVariant).asGet());
+            List<ConceptMap> answersBis = tx.execute(Graql.parse(neqVariant2).asGet());
+            List<ConceptMap> negationAnswers = tx.execute(Graql.parse(negatedVariant).asGet());
+            List<ConceptMap> negationAnswersBis = tx.execute(Graql.parse(negatedVariant2).asGet());
+            List<ConceptMap> negationComplement = tx.execute(Graql.parse(negatedComplement).asGet());
 
-            List<ConceptMap> complement = tx.execute(Graql.<GraqlGet>parse(complementQueryString));
-            List<ConceptMap> complete = tx.execute(Graql.<GraqlGet>parse(completeQueryString));
+            List<ConceptMap> complement = tx.execute(Graql.parse(complementQueryString).asGet());
+            List<ConceptMap> complete = tx.execute(Graql.parse(completeQueryString).asGet());
             List<ConceptMap> expectedAnswers = ReasonerUtils.listDifference(complete, complement);
 
             assertCollectionsNonTriviallyEqual(expectedAnswers, answers);
@@ -145,11 +145,11 @@ public class NeqValuePredicateIT {
                     "$y has reattachable-resource-string $anotherVal;" +
                     "not {$val == $anotherVal;};" +
                     "get;";
-            List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(neqVersion));
+            List<ConceptMap> answers = tx.execute(Graql.parse(neqVersion).asGet());
             answers.stream()
                     .map(ans -> new Pair<>(ans.get("val").asAttribute().value(), ans.get("anotherVal").asAttribute().value()))
                     .forEach(p -> assertNotEquals(p.getKey(), p.getValue()));
-            List<ConceptMap> negationAnswers = tx.execute(Graql.<GraqlGet>parse(negationVersion));
+            List<ConceptMap> negationAnswers = tx.execute(Graql.parse(negationVersion).asGet());
             assertCollectionsNonTriviallyEqual(answers, negationAnswers);
 
         }
@@ -169,11 +169,11 @@ public class NeqValuePredicateIT {
                     "not {$val == $anotherVal;};" +
                     "get;";
 
-            List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(neqVersion));
+            List<ConceptMap> answers = tx.execute(Graql.parse(neqVersion).asGet());
             answers.stream()
                     .map(ans -> new Pair<>(ans.get("val").asAttribute().value(), ans.get("anotherVal").asAttribute().value()))
                     .forEach(p -> assertNotEquals(p.getKey(), p.getValue()));
-            List<ConceptMap> negationAnswers = tx.execute(Graql.<GraqlGet>parse(negationVersion));
+            List<ConceptMap> negationAnswers = tx.execute(Graql.parse(negationVersion).asGet());
             assertCollectionsNonTriviallyEqual(answers, negationAnswers);
         }
     }
@@ -193,7 +193,7 @@ public class NeqValuePredicateIT {
                     "$type != $unwantedType;" +
                     "$unwantedType type 'derivable-resource-string';" +
                     "get;";
-            GraqlGet query = Graql.parse(queryString);
+            GraqlGet query = Graql.parse(queryString).asGet();
             tx.execute(query);
         }
     }

@@ -118,7 +118,7 @@ public class GraknQuickstart {
 
     // Read the person using a READ only transaction
     Grakn.Transaction readTransaction = session.transaction(GraknTxType.READ);
-    GetQuery query = Graql.match(var("p").isa("person")).limit(10).get();
+    GraqlGet query = Graql.match(var("p").isa("person")).limit(10).get();
     Stream<ConceptMap> answers = query.withTx(readTransaction).stream();
     answers.forEach(answer -> System.out.println(answer.get("p").id()));
 

@@ -44,12 +44,10 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
-import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.query.GraqlUndefine;
@@ -400,19 +398,19 @@ public final class GraknClient {
         }
 
         @Override
-        public Stream<Value> stream(GraqlAggregate query, boolean infer) {
+        public Stream<Value> stream(GraqlGet.Aggregate query, boolean infer) {
             Iterable<Value> iterable = () -> rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
         @Override
-        public Stream<AnswerGroup<ConceptMap>> stream(GraqlGroup query, boolean infer) {
+        public Stream<AnswerGroup<ConceptMap>> stream(GraqlGet.Group query, boolean infer) {
             Iterable<AnswerGroup<ConceptMap>> iterable = () -> rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
         @Override
-        public Stream<AnswerGroup<Value>> stream(GraqlGroup.Aggregate query, boolean infer) {
+        public Stream<AnswerGroup<Value>> stream(GraqlGet.Group.Aggregate query, boolean infer) {
             Iterable<AnswerGroup<Value>> iterable = () -> rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }

@@ -91,7 +91,7 @@
 //        ConceptMap answer3 = new ConceptMapImpl(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
 //        ConceptMap answer4 = new ConceptMapImpl(ImmutableMap.of(var("x"), polibuda, var("y"), europe));
 //
-//        List<ConceptMap> answers = itx.execute(Graql.<GetQuery>parse(queryString));
+//        List<ConceptMap> answers = itx.execute(Graql.parse(queryString).asGet());
 //        testExplanation(answers);
 //
 //        ConceptMap queryAnswer1 = findAnswer(answer1, answers);
@@ -133,7 +133,7 @@
 //        ConceptMap answer1 = new ConceptMapImpl(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
 //        ConceptMap answer2 = new ConceptMapImpl(ImmutableMap.of(var("x"), uw, var("y"), poland));
 //
-//        List<ConceptMap> answers = itx.execute(Graql.<GetQuery>parse(queryString));
+//        List<ConceptMap> answers = itx.execute(Graql.parse(queryString).asGet());
 //        testExplanation(answers);
 //
 //        ConceptMap queryAnswer1 = findAnswer(answer1, answers);
@@ -294,7 +294,7 @@
 //                "limit " + limit + ";"+
 //                "get;";
 //
-//        List<ConceptMap> answers = itx.execute(Graql.<GetQuery>parse(queryString));
+//        List<ConceptMap> answers = itx.execute(Graql.parse(queryString).asGet());
 //
 //        assertEquals(answers.size(), limit);
 //        answers.forEach(answer -> {
@@ -305,7 +305,7 @@
 //                    "$y id '" + answer.get("y").id().getValue() + "';" +
 //                    "(cousin: $x, cousin: $y) isa cousins;" +
 //                    "limit 1; get;";
-//            ConceptMap specificAnswer = Iterables.getOnlyElement(itx.execute(Graql.<GetQuery>parse(specificQuery)));
+//            ConceptMap specificAnswer = Iterables.getOnlyElement(itx.execute(Graql.parse(specificQuery).asGet()));
 //            assertEquals(answer, specificAnswer);
 //            testExplanation(specificAnswer);
 //        });

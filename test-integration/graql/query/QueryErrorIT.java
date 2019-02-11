@@ -224,11 +224,11 @@ public class QueryErrorIT {
     public void testAdditionalSemicolon() {
         exception.expect(GraqlException.class);
         exception.expectMessage(allOf(containsString("plays product-type")));
-        tx.execute(Graql.<GraqlDefine>parse(
+        tx.execute(Graql.parse(
                 "define " +
                         "tag-group sub role; product-type sub role; " +
                         "category sub entity, plays tag-group; plays product-type;"
-        ));
+        ).asDefine());
     }
 
     @Test

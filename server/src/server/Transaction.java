@@ -34,12 +34,10 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
-import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.query.GraqlUndefine;
@@ -163,51 +161,51 @@ public interface Transaction extends AutoCloseable {
 
     // Aggregate Query
 
-    default List<Value> execute(GraqlAggregate query) {
+    default List<Value> execute(GraqlGet.Aggregate query) {
         return execute(query, true);
     }
 
-    default List<Value> execute(GraqlAggregate query, boolean infer) {
+    default List<Value> execute(GraqlGet.Aggregate query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<Value> stream(GraqlAggregate query) {
+    default Stream<Value> stream(GraqlGet.Aggregate query) {
         return stream(query, true);
     }
 
-    Stream<Value> stream(GraqlAggregate query, boolean infer);
+    Stream<Value> stream(GraqlGet.Aggregate query, boolean infer);
 
     // Group Query
 
-    default List<AnswerGroup<ConceptMap>> execute(GraqlGroup query) {
+    default List<AnswerGroup<ConceptMap>> execute(GraqlGet.Group query) {
         return execute(query, true);
     }
 
-    default List<AnswerGroup<ConceptMap>> execute(GraqlGroup query, boolean infer) {
+    default List<AnswerGroup<ConceptMap>> execute(GraqlGet.Group query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<AnswerGroup<ConceptMap>> stream(GraqlGroup query) {
+    default Stream<AnswerGroup<ConceptMap>> stream(GraqlGet.Group query) {
         return stream(query, true);
     }
 
-    Stream<AnswerGroup<ConceptMap>> stream(GraqlGroup query, boolean infer);
+    Stream<AnswerGroup<ConceptMap>> stream(GraqlGet.Group query, boolean infer);
 
     // Group Aggregate Query
 
-    default List<AnswerGroup<Value>> execute(GraqlGroup.Aggregate query) {
+    default List<AnswerGroup<Value>> execute(GraqlGet.Group.Aggregate query) {
         return execute(query, true);
     }
 
-    default List<AnswerGroup<Value>> execute(GraqlGroup.Aggregate query, boolean infer) {
+    default List<AnswerGroup<Value>> execute(GraqlGet.Group.Aggregate query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<AnswerGroup<Value>> stream(GraqlGroup.Aggregate query) {
+    default Stream<AnswerGroup<Value>> stream(GraqlGet.Group.Aggregate query) {
         return stream(query, true);
     }
 
-    Stream<AnswerGroup<Value>> stream(GraqlGroup.Aggregate query, boolean infer);
+    Stream<AnswerGroup<Value>> stream(GraqlGet.Group.Aggregate query, boolean infer);
 
     // Compute Query
 
@@ -255,14 +253,14 @@ public interface Transaction extends AutoCloseable {
         } else if (query instanceof GraqlGet) {
             return stream((GraqlGet) query, infer);
 
-        } else if (query instanceof GraqlAggregate) {
-            return stream((GraqlAggregate) query, infer);
+        } else if (query instanceof GraqlGet.Aggregate) {
+            return stream((GraqlGet.Aggregate) query, infer);
 
-        } else if (query instanceof GraqlGroup.Aggregate) {
-            return stream((GraqlGroup.Aggregate) query, infer);
+        } else if (query instanceof GraqlGet.Group.Aggregate) {
+            return stream((GraqlGet.Group.Aggregate) query, infer);
 
-        } else if (query instanceof GraqlGroup) {
-            return stream((GraqlGroup) query, infer);
+        } else if (query instanceof GraqlGet.Group) {
+            return stream((GraqlGet.Group) query, infer);
 
         } else if (query instanceof GraqlCompute<?>) {
             return stream((GraqlCompute<?>) query, infer);

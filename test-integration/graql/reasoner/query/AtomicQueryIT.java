@@ -116,7 +116,7 @@ public class AtomicQueryIT {
     public void testWhenMaterialising_MaterialisedInformationIsPresentInGraph() {
         TransactionOLTP tx = geoGraphSession.transaction(Transaction.Type.WRITE);
                 String explicitGetQueryStr = "match (geo-entity: $x, entity-location: $y) isa is-located-in;$x has name 'Warsaw';$y has name 'Poland'; get;";
-        GraqlGet explicitGetQuery = Graql.parse(explicitGetQueryStr);
+        GraqlGet explicitGetQuery = Graql.parse(explicitGetQueryStr).asGet();
         assertFalse(tx.stream(explicitGetQuery,false).iterator().hasNext());
 
         String patternString = "{ (geo-entity: $x, entity-location: $y) isa is-located-in; };";
@@ -147,9 +147,9 @@ public class AtomicQueryIT {
     @Test
     public void testWhenMaterialisingResources_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
         TransactionOLTP tx = materialisationTestSession.transaction(Transaction.Type.WRITE);
-                Concept firstEntity = Iterables.getOnlyElement(tx.execute(Graql.<GraqlGet>parse("match $x isa entity1; get;"), false)).get("x");
-        Concept secondEntity = Iterables.getOnlyElement(tx.execute(Graql.<GraqlGet>parse("match $x isa entity2; get;"), false)).get("x");
-        Concept resource = Iterables.getOnlyElement(tx.execute(Graql.<GraqlGet>parse("match $x isa resource; get;"), false)).get("x");
+                Concept firstEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa entity1; get;").asGet(), false)).get("x");
+        Concept secondEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa entity2; get;").asGet(), false)).get("x");
+        Concept resource = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa resource; get;").asGet(), false)).get("x");
 
         ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction("{ $x has resource $r;$r == 'inferred';$x id " + firstEntity.id().getValue() + "; };"), tx);
         String reuseResourcePatternString =
@@ -165,25 +165,25 @@ public class AtomicQueryIT {
 
         reuseResourceQuery.materialise(new ConceptMap()).collect(Collectors.toList());
         assertEquals(Iterables.getOnlyElement(
-                tx.execute(Graql.<GraqlGet>parse("match" +
+                tx.execute(Graql.parse("match" +
                                            "$x has resource $r via $rel;" +
                                            "$x id " + secondEntity.id().getValue() + ";" +
                                            "$r id " + resource.id().getValue() + ";" +
-                                           "get;"), false)).get("rel").asRelation().isInferred(), true);
+                                           "get;").asGet(), false)).get("rel").asRelation().isInferred(), true);
         assertEquals(Iterables.getOnlyElement(
-                tx.execute(Graql.<GraqlGet>parse("match" +
+                tx.execute(Graql.parse("match" +
                                            "$x has resource $r via $rel;" +
                                            "$x id " + firstEntity.id().getValue() + ";" +
                                            "$r id " + resource.id().getValue() + ";" +
-                                           "get;"), false)).get("rel").asRelation().isInferred(), false);
+                                           "get;").asGet(), false)).get("rel").asRelation().isInferred(), false);
         tx.close();
     }
 
     @Test
     public void testWhenMaterialisingRelations_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
         TransactionOLTP tx = materialisationTestSession.transaction(Transaction.Type.WRITE);
-                Concept firstEntity = Iterables.getOnlyElement(tx.execute(Graql.<GraqlGet>parse("match $x isa entity1; get;"), false)).get("x");
-        Concept secondEntity = Iterables.getOnlyElement(tx.execute(Graql.<GraqlGet>parse("match $x isa entity2; get;"), false)).get("x");
+                Concept firstEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa entity1; get;").asGet(), false)).get("x");
+        Concept secondEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa entity2; get;").asGet(), false)).get("x");
 
         ReasonerAtomicQuery relationQuery = ReasonerQueries.atomic(conjunction(
                 "{" +
@@ -217,8 +217,8 @@ public class AtomicQueryIT {
         String childString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
         String parentString = "match ($x, $y) isa is-located-in; get;";
 
-                GraqlGet childQuery = Graql.parse(childString);
-        GraqlGet parentQuery = Graql.parse(parentString);
+                GraqlGet childQuery = Graql.parse(childString).asGet();
+        GraqlGet parentQuery = Graql.parse(parentString).asGet();
         Set<ConceptMap> answers = tx.stream(childQuery, false).collect(toSet());
         Set<ConceptMap> fullAnswers = tx.stream(parentQuery, false).collect(toSet());
         Atom childAtom = ReasonerQueries.atomic(conjunction(childQuery.match().getPatterns()), tx).getAtom();

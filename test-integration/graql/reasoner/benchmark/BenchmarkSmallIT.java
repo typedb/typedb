@@ -173,7 +173,7 @@ public class BenchmarkSmallIT {
         String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
         Transaction tx = session.transaction(Transaction.Type.WRITE);
         executeQuery(queryString, tx, "full");
-        // executeQuery(Graql.<GetQuery>parse(queryString).match().limit(limit).get(), "limit " + limit); // TODO: uncomment
+        // executeQuery(Graql.parse(queryString).asGet().match().limit(limit).get(), "limit " + limit); // TODO: uncomment
         tx.close();
         session.close();
     }
@@ -207,10 +207,10 @@ public class BenchmarkSmallIT {
         
 
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
-        GraqlGet query = Graql.parse(queryString);
+        GraqlGet query = Graql.parse(queryString).asGet();
 
         String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
-        GraqlGet query2 = Graql.parse(queryString2);
+        GraqlGet query2 = Graql.parse(queryString2).asGet();
 
         assertEquals(executeQuery(query, tx, "full").size(), answers);
         assertEquals(executeQuery(query2, tx, "With specific resource").size(), N);
@@ -261,16 +261,16 @@ public class BenchmarkSmallIT {
 
         //full result
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
-        GraqlGet query = Graql.parse(queryString);
+        GraqlGet query = Graql.parse(queryString).asGet();
 
         //with specific resource
         String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
-        GraqlGet query2 = Graql.parse(queryString2);
+        GraqlGet query2 = Graql.parse(queryString2).asGet();
 
         //with substitution
-        Concept id = tx.execute(Graql.<GraqlGet>parse("match $x has index 'a'; get;")).iterator().next().get("x");
+        Concept id = tx.execute(Graql.parse("match $x has index 'a'; get;").asGet()).iterator().next().get("x");
         String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.id().getValue() + "'; get;";
-        GraqlGet query3 = Graql.parse(queryString3);
+        GraqlGet query3 = Graql.parse(queryString3).asGet();
 
         executeQuery(query, tx, "full");
         executeQuery(query2, tx, "With specific resource");
@@ -319,7 +319,7 @@ public class BenchmarkSmallIT {
         Transaction tx = session.transaction(Transaction.Type.WRITE);
         
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
-        GraqlGet query = Graql.parse(queryString);
+        GraqlGet query = Graql.parse(queryString).asGet();
 
         executeQuery(query, tx, "full");
 //        executeQuery(query.match().limit(limit).get(), "limit " + limit); // TODO: uncomment
@@ -386,7 +386,7 @@ public class BenchmarkSmallIT {
     }
 
     private List<ConceptMap> executeQuery(String queryString, Transaction transaction, String msg){
-        return executeQuery(Graql.<GraqlGet>parse(queryString), transaction, msg);
+        return executeQuery(Graql.parse(queryString).asGet(), transaction, msg);
     }
 
     private List<ConceptMap> executeQuery(GraqlGet query, Transaction transaction, String msg){

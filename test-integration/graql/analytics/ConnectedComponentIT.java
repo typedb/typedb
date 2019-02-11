@@ -46,7 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.query.GraqlCompute.Algorithm.CONNECTED_COMPONENT;
+import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static grakn.core.graql.query.query.GraqlCompute.Argument.contains;
 import static grakn.core.graql.query.query.GraqlCompute.Argument.size;
 import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;

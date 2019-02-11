@@ -241,4 +241,131 @@ public class Token {
             return null;
         }
     }
+
+    public static class Statistics {
+
+        public enum Method {
+            COUNT("count"),
+            MAX("max"),
+            MEAN("mean"),
+            MEDIAN("median"),
+            MIN("min"),
+            STD("std"),
+            SUM("sum");
+
+            private final String method;
+
+            Method(String method) {
+                this.method = method;
+            }
+
+            @Override
+            public String toString() {
+                return this.method;
+            }
+
+            public static Method of(String value) {
+                for (Method m : Method.values()) {
+                    if (m.method.equals(value)) {
+                        return m;
+                    }
+                }
+                return null;
+            }
+        }
+    }
+
+    public static class Compute {
+
+        /**
+         * Graql Compute conditions keyword
+         */
+        public enum Condition {
+            FROM("from"),
+            TO("to"),
+            OF("of"),
+            IN("in"),
+            USING("using"),
+            WHERE("where");
+
+            private final String condition;
+
+            Condition(String algorithm) {
+                this.condition = algorithm;
+            }
+
+            @Override
+            public String toString() {
+                return this.condition;
+            }
+
+            public static Condition of(String value) {
+                for (Condition c : Condition.values()) {
+                    if (c.condition.equals(value)) {
+                        return c;
+                    }
+                }
+                return null;
+            }
+        }
+
+        /**
+         * Graql Compute algorithm names
+         */
+        public enum Algorithm {
+            DEGREE("degree"),
+            K_CORE("k-core"),
+            CONNECTED_COMPONENT("connected-component");
+
+            private final String algorithm;
+
+            Algorithm(String algorithm) {
+                this.algorithm = algorithm;
+            }
+
+            @Override
+            public String toString() {
+                return this.algorithm;
+            }
+
+            public static Algorithm of(String value) {
+                for (Algorithm a : Algorithm.values()) {
+                    if (a.algorithm.equals(value)) {
+                        return a;
+                    }
+                }
+                return null;
+            }
+        }
+
+        /**
+         * Graql Compute parameter names
+         */
+        public enum Param {
+            MIN_K("min-k"),
+            K("k"),
+            CONTAINS("contains"),
+            SIZE("size");
+
+            private final String param;
+
+            Param(String param) {
+                this.param = param;
+            }
+
+            @Override
+            public String toString() {
+                return this.param;
+            }
+
+            public static Param of(String value) {
+                for (Param p : Param.values()) {
+                    if (p.param.equals(value)) {
+                        return p;
+                    }
+                }
+                return null;
+            }
+        }
+    }
 }
