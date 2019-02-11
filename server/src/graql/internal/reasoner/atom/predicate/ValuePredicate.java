@@ -24,7 +24,7 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.query.Graql;
-import graql.util.Token;
+import graql.lang.util.Token;
 import javax.annotation.Nullable;
 import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.statement.Statement;

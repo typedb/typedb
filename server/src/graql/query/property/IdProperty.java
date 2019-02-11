@@ -18,8 +18,8 @@
 
 package grakn.core.graql.query.property;
 
-import graql.util.Token;
 import grakn.core.graql.query.statement.StatementThing;
+import graql.lang.util.Token;
 
 /**
  * Represents the {@code id} property on a Concept.

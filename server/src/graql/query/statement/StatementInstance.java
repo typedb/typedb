@@ -18,13 +18,13 @@
 
 package grakn.core.graql.query.statement;
 
-import graql.util.Token;
 import grakn.core.graql.query.property.HasAttributeProperty;
 import grakn.core.graql.query.property.IsaProperty;
 import grakn.core.graql.query.property.RelationProperty;
 import grakn.core.graql.query.property.TypeProperty;
 import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.property.VarProperty;
+import graql.lang.util.Token;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;

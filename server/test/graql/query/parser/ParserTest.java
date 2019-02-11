@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.parser;
+package grakn.core.graql.query.parser;
 
 import com.google.common.base.Strings;
-import grakn.core.graql.exception.GraqlSyntaxException;
+import graql.lang.exception.GraqlException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlCompute;
@@ -30,7 +30,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.GraqlQuery;
-import graql.util.Token;
+import graql.lang.util.Token;
 import grakn.core.graql.query.query.GraqlUndefine;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.property.DataTypeProperty;
@@ -859,7 +859,7 @@ public class ParserTest {
 
     @Test
     public void whenParseIncorrectSyntax_ThrowGraqlSyntaxExceptionWithHelpfulError() {
-        exception.expect(GraqlSyntaxException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage(allOf(
                 containsString("syntax error"), containsString("line 1"),
                 containsString("\nmatch $x isa "),
@@ -871,7 +871,7 @@ public class ParserTest {
 
     @Test
     public void whenParseIncorrectSyntax_ErrorMessageShouldRetainWhitespace() {
-        exception.expect(GraqlSyntaxException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage(not(containsString("match$xisa")));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa ");
@@ -879,7 +879,7 @@ public class ParserTest {
 
     @Test
     public void testSyntaxErrorPointer() {
-        exception.expect(GraqlSyntaxException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage(allOf(
                 containsString("\nmatch $x is"),
                 containsString("\n         ^")
@@ -1020,7 +1020,7 @@ public class ParserTest {
     public void whenParsingAListOfQueriesWithASyntaxError_ReportError() {
         String queryText = "define person sub entity has name;"; // note no semicolon
 
-        exception.expect(GraqlSyntaxException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage("define person sub entity has name;"); // Message should refer to line
 
         //noinspection ResultOfMethodCallIgnored
@@ -1033,7 +1033,7 @@ public class ParserTest {
     }
 
     @SuppressWarnings("CheckReturnValue")
-    @Test(expected = GraqlSyntaxException.class)
+    @Test(expected = GraqlException.class)
     public void whenParsingMultipleQueriesLikeOne_Throw() {
         //noinspection ResultOfMethodCallIgnored
         parse("insert $x isa movie; insert $y isa movie");
@@ -1041,21 +1041,21 @@ public class ParserTest {
 
     @Test
     public void testMissingColon() {
-        exception.expect(GraqlSyntaxException.class);
+        exception.expect(GraqlException.class);
         //noinspection ResultOfMethodCallIgnored
         parse("match (actor $x, $y) isa has-cast; get;");
     }
 
     @Test
     public void testMissingComma() {
-        exception.expect(GraqlSyntaxException.class);
+        exception.expect(GraqlException.class);
         //noinspection ResultOfMethodCallIgnored
         parse("match ($x $y) isa has-cast; get;");
     }
 
     @Test
     public void testLimitMistake() {
-        exception.expect(GraqlSyntaxException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage("limit1");
         //noinspection ResultOfMethodCallIgnored
         parse("match ($x, $y); limit1;");
@@ -1063,14 +1063,14 @@ public class ParserTest {
 
     @Test
     public void whenParsingAggregateWithWrongVariableArgumentNumber_Throw() {
-        exception.expect(GraqlSyntaxException.class);
+        exception.expect(GraqlException.class);
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; get; group;");
     }
 
     @Test
     public void whenParsingAggregateWithWrongName_Throw() {
-        exception.expect(GraqlSyntaxException.class);
+        exception.expect(GraqlException.class);
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; get; hello $x;");
     }

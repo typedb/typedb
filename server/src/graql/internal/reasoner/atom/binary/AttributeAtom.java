@@ -54,7 +54,7 @@ import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.concept.AttributeTypeImpl;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.RelationshipImpl;
-import graql.util.Token;
+import graql.lang.util.Token;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;

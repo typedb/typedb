@@ -19,7 +19,7 @@
 package grakn.core.graql.query.query;
 
 import grakn.core.graql.query.statement.Statement;
-import graql.util.Token;
+import graql.lang.util.Token;
 
 import java.util.List;
 

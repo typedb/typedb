@@ -34,7 +34,7 @@ import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.statement.Variable;
-import graql.exception.GraqlException;
+import graql.lang.exception.GraqlException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;

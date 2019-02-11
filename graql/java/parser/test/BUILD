@@ -20,7 +20,7 @@ load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
     name = "gremlin-visitor-test",
-    test_class = "graql.parser.test.GremlinVisitorTest",
+    test_class = "graql.lang.parser.test.GremlinVisitorTest",
     srcs = ["GremlinVisitorTest.java"],
     deps = [
         "//graql/java/parser:parser",

@@ -28,10 +28,9 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlSyntaxException;
-import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
@@ -488,7 +487,7 @@ public class GraknClientTest {
             exception = error(Status.INTERNAL, e);
         } else if (e instanceof PropertyNotUniqueException) {
             exception = error(Status.ALREADY_EXISTS, e);
-        } else if (e instanceof TransactionException || e instanceof GraqlQueryException || e instanceof GraqlSyntaxException || e instanceof InvalidKBException) {
+        } else if (e instanceof TransactionException || e instanceof GraqlQueryException || e instanceof InvalidKBException) {
             exception = error(Status.INVALID_ARGUMENT, e);
         } else {
             exception = error(Status.UNKNOWN, e);

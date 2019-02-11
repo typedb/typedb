@@ -25,9 +25,9 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.property.ValueExecutor;
+import grakn.core.graql.printer.StringPrinter;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.graql.query.property.VarProperty;
-import grakn.core.graql.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -236,7 +236,7 @@ public class Fragments {
 
     static String displayOptionalTypeLabels(String name, @Nullable Set<Label> typeLabels) {
         if (typeLabels != null) {
-            return " " + name + ":" + typeLabels.stream().map(StringUtil::typeLabelToString).collect(joining(","));
+            return " " + name + ":" + typeLabels.stream().map(StringPrinter::label).collect(joining(","));
         } else {
             return "";
         }

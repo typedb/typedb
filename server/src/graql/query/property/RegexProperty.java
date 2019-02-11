@@ -18,9 +18,9 @@
 
 package grakn.core.graql.query.property;
 
-import graql.util.Token;
 import grakn.core.graql.query.statement.StatementType;
-import graql.util.StringUtil;
+import graql.lang.util.StringUtil;
+import graql.lang.util.Token;
 
 /**
  * Represents the {@code regex} property on a AttributeType. This property can be queried and inserted.

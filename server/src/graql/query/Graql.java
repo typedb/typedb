@@ -19,7 +19,7 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.Answer;
-import grakn.core.graql.parser.Parser;
+import grakn.core.graql.query.parser.Parser;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Negation;

@@ -22,9 +22,9 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.statement.Variable;
-import grakn.core.graql.util.PrimitiveNumberComparator;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.stream.Stream;
@@ -189,6 +189,21 @@ public class AggregateExecutor {
             } else {
                 return maxHeap.peek();
             }
+        }
+    }
+
+    /**
+     * A Comparator class to compare the 2 numbers only if they have the same primitive type.
+     */
+    public static class PrimitiveNumberComparator implements Comparator<Number> {
+
+        @Override
+        public int compare(Number a, Number b) {
+            if (((Object) a).getClass().equals(((Object) b).getClass()) && a instanceof Comparable) {
+                return ((Comparable) a).compareTo(b);
+            }
+
+            throw new RuntimeException("Invalid attempt to compare non-comparable primitive type of Numbers in Aggregate function");
         }
     }
 }

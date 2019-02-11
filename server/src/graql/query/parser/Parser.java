@@ -16,34 +16,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.parser;
+package grakn.core.graql.query.parser;
 
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlSyntaxException;
-import grakn.core.graql.query.query.GraqlAggregate;
-import grakn.core.graql.query.query.GraqlCompute;
-import grakn.core.graql.query.query.GraqlDefine;
-import grakn.core.graql.query.query.GraqlDelete;
-import grakn.core.graql.query.query.GraqlGet;
+import graql.lang.exception.GraqlException;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.query.GraqlGroup;
-import grakn.core.graql.query.query.GraqlInsert;
-import grakn.core.graql.query.query.GraqlQuery;
-import graql.util.Token;
-import grakn.core.graql.query.query.GraqlUndefine;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.property.HasAttributeProperty;
 import grakn.core.graql.query.property.IsaProperty;
 import grakn.core.graql.query.property.RelationProperty;
 import grakn.core.graql.query.property.ValueProperty;
+import grakn.core.graql.query.query.GraqlAggregate;
+import grakn.core.graql.query.query.GraqlCompute;
+import grakn.core.graql.query.query.GraqlDefine;
+import grakn.core.graql.query.query.GraqlDelete;
+import grakn.core.graql.query.query.GraqlGet;
+import grakn.core.graql.query.query.GraqlGroup;
+import grakn.core.graql.query.query.GraqlInsert;
+import grakn.core.graql.query.query.GraqlQuery;
+import grakn.core.graql.query.query.GraqlUndefine;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import graql.grammar.GraqlBaseVisitor;
 import graql.grammar.GraqlLexer;
 import graql.grammar.GraqlParser;
-import graql.parser.ErrorListener;
-import graql.util.StringUtil;
+import graql.lang.parser.ErrorListener;
+import graql.lang.util.StringUtil;
+import graql.lang.util.Token;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -116,7 +116,7 @@ public class Parser extends GraqlBaseVisitor {
             parser.getInterpreter().setPredictionMode(PredictionMode.LL_EXACT_AMBIG_DETECTION);
             parserMethod.apply(parser);
 
-            throw GraqlSyntaxException.create(errorListener.toString());
+            throw GraqlException.create(errorListener.toString());
         }
 
         return visitor.apply(queryContext);

@@ -18,13 +18,13 @@
 
 package grakn.core.graql.query.statement.builder;
 
-import graql.util.Token;
 import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.property.ValueProperty.Operation.Assignment;
 import grakn.core.graql.query.property.ValueProperty.Operation.Comparison;
 import grakn.core.graql.query.property.VarProperty;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.StatementAttribute;
+import graql.lang.util.Token;
 
 import javax.annotation.CheckReturnValue;
 import java.time.LocalDateTime;
