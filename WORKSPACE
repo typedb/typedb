@@ -82,10 +82,6 @@ com_github_grpc_grpc_bazel_grpc_deps()
 load("@stackb_rules_proto//java:deps.bzl", "java_grpc_compile")
 java_grpc_compile()
 
-# Load GRPC Python dependencies
-load("@stackb_rules_proto//python:deps.bzl", "python_grpc_compile")
-python_grpc_compile()
-
 
 ########################################
 #     Load Deployment Dependencies     #
