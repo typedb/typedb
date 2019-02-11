@@ -22,8 +22,8 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Query;
+import grakn.core.graql.query.GraqlInsert;
+import grakn.core.graql.query.Token;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.deduplicator.AttributeDeduplicator;
 import grakn.core.server.deduplicator.KeyspaceIndexPair;
@@ -68,7 +68,7 @@ public class AttributeDeduplicatorIT {
 
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Query.DataType.STRING)));
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Token.DataType.STRING)));
             tx.commit();
         }
 
@@ -98,7 +98,7 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
+                    type(ownedAttributeLabel).sub("attribute").datatype(Token.DataType.STRING),
                     type("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
@@ -143,8 +143,8 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
-                    type(ownerLabel).sub("attribute").datatype(Query.DataType.STRING).has(ownedAttributeLabel)
+                    type(ownedAttributeLabel).sub("attribute").datatype(Token.DataType.STRING),
+                    type(ownerLabel).sub("attribute").datatype(Token.DataType.STRING).has(ownedAttributeLabel)
             ));
             tx.commit();
         }
@@ -187,16 +187,16 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
+                    type(ownedAttributeLabel).sub("attribute").datatype(Token.DataType.STRING),
                     type("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
         }
 
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.<InsertQuery>parse("insert $owned \"" + ownedAttributeValue + "\"isa owned-attribute; $owner1 isa owner, has owned-attribute $owned; $owner2 isa owner, has owned-attribute $owned;"));
-            tx.execute(Graql.<InsertQuery>parse("insert $owned \"" + ownedAttributeValue + "\" isa owned-attribute; $owner1 isa owner, has owned-attribute $owned; $owner2 isa owner, has owned-attribute $owned;"));
-            tx.execute(Graql.<InsertQuery>parse("insert $owned \"" + ownedAttributeValue + "\" isa owned-attribute; $owner1 isa owner, has owned-attribute $owned;"));
+            tx.execute(Graql.<GraqlInsert>parse("insert $owned \"" + ownedAttributeValue + "\"isa owned-attribute; $owner1 isa owner, has owned-attribute $owned; $owner2 isa owner, has owned-attribute $owned;"));
+            tx.execute(Graql.<GraqlInsert>parse("insert $owned \"" + ownedAttributeValue + "\" isa owned-attribute; $owner1 isa owner, has owned-attribute $owned; $owner2 isa owner, has owned-attribute $owned;"));
+            tx.execute(Graql.<GraqlInsert>parse("insert $owned \"" + ownedAttributeValue + "\" isa owned-attribute; $owner1 isa owner, has owned-attribute $owned;"));
             tx.commit();
         }
 
@@ -229,7 +229,7 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").datatype(Query.DataType.STRING),
+                    type(ownedAttributeLabel).sub("attribute").datatype(Token.DataType.STRING),
                     type("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
@@ -237,9 +237,9 @@ public class AttributeDeduplicatorIT {
 
         // use the 'via' feature when inserting to force reification
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.<InsertQuery>parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;"));
-            tx.execute(Graql.<InsertQuery>parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;"));
-            tx.execute(Graql.<InsertQuery>parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;"));
+            tx.execute(Graql.<GraqlInsert>parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;"));
+            tx.execute(Graql.<GraqlInsert>parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;"));
+            tx.execute(Graql.<GraqlInsert>parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;"));
             tx.commit();
         }
 
@@ -275,7 +275,7 @@ public class AttributeDeduplicatorIT {
             tx.execute(Graql.define(
                     type("owner").sub("relationship").relates("entity-role-player").relates("attribute-role-player"),
                     type("owned-entity").sub("entity").plays("entity-role-player"),
-                    type(ownedAttributeLabel).sub("attribute").plays("attribute-role-player").datatype(Query.DataType.STRING)
+                    type(ownedAttributeLabel).sub("attribute").plays("attribute-role-player").datatype(Token.DataType.STRING)
             ));
             tx.commit();
         }

@@ -31,13 +31,13 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.Query;
+import grakn.core.graql.query.Token;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.ValueProperty;
-import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
+import grakn.core.graql.query.property.IsaProperty;
+import grakn.core.graql.query.property.ValueProperty;
+import grakn.core.graql.query.property.VarProperty;
 import grakn.core.server.exception.InvalidKBException;
 
 import javax.annotation.Nullable;
@@ -276,14 +276,14 @@ public class ConceptBuilder {
         }
     }
 
-    private static final BuilderParam<Type> TYPE = BuilderParam.of(Query.Property.ISA);
-    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(Query.Property.SUB);
-    private static final BuilderParam<Label> LABEL = BuilderParam.of(Query.Property.TYPE);
-    private static final BuilderParam<ConceptId> ID = BuilderParam.of(Query.Property.ID);
-    private static final BuilderParam<Object> VALUE = BuilderParam.of(Query.Property.VALUE);
-    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(Query.Property.DATA_TYPE);
-    private static final BuilderParam<Pattern> WHEN = BuilderParam.of(Query.Property.WHEN);
-    private static final BuilderParam<Pattern> THEN = BuilderParam.of(Query.Property.THEN);
+    private static final BuilderParam<Type> TYPE = BuilderParam.of(Token.Property.ISA);
+    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(Token.Property.SUB);
+    private static final BuilderParam<Label> LABEL = BuilderParam.of(Token.Property.TYPE);
+    private static final BuilderParam<ConceptId> ID = BuilderParam.of(Token.Property.ID);
+    private static final BuilderParam<Object> VALUE = BuilderParam.of(Token.Property.VALUE);
+    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(Token.Property.DATA_TYPE);
+    private static final BuilderParam<Pattern> WHEN = BuilderParam.of(Token.Property.WHEN);
+    private static final BuilderParam<Pattern> THEN = BuilderParam.of(Token.Property.THEN);
     private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role"); // TODO: replace this with a value registered in an enum
     private static final BuilderParam<Unit> IS_RULE = BuilderParam.of("rule"); // TODO: replace this with a value registered in an enum
 

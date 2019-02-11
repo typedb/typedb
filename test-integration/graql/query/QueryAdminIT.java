@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -100,13 +100,13 @@ public class QueryAdminIT {
 
     @Test
     public void testInsertQueryMatchPatternEmpty() {
-        InsertQuery query = Graql.insert(var().id("123").isa("movie"));
+        GraqlInsert query = Graql.insert(var().id("123").isa("movie"));
         assertNull(query.match());
     }
 
     @Test
     public void testInsertQueryWithMatch() {
-        InsertQuery query = Graql.match(var("x").isa("movie")).insert(var().id("123").isa("movie"));
+        GraqlInsert query = Graql.match(var("x").isa("movie")).insert(var().id("123").isa("movie"));
         assertEquals("match $x isa movie;", query.match().toString());
 
         query = Graql.match(var("x").isaX("movie")).insert(var().id("123").isa("movie"));
@@ -115,14 +115,14 @@ public class QueryAdminIT {
 
     @Test
     public void testInsertQueryGetVars() {
-        InsertQuery query = Graql.insert(var().id("123").isa("movie"), var().id("123").val("Hi"));
+        GraqlInsert query = Graql.insert(var().id("123").isa("movie"), var().id("123").val("Hi"));
         // Should not merge variables
         assertEquals(2, query.statements().size());
     }
 
     @Test
     public void testDeleteQueryPattern() {
-        DeleteQuery query = Graql.match(var("x").isa("movie")).delete("x");
+        GraqlDelete query = Graql.match(var("x").isa("movie")).delete("x");
         assertEquals("match $x isa movie;", query.match().toString());
 
         query = Graql.match(var("x").isaX("movie")).delete("x");

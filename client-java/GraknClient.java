@@ -44,16 +44,15 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.AggregateQuery;
-import grakn.core.graql.query.ComputeQuery;
-import grakn.core.graql.query.DefineQuery;
-import grakn.core.graql.query.DeleteQuery;
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.GroupAggregateQuery;
-import grakn.core.graql.query.GroupQuery;
-import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.UndefineQuery;
+import grakn.core.graql.query.GraqlAggregate;
+import grakn.core.graql.query.GraqlCompute;
+import grakn.core.graql.query.GraqlDefine;
+import grakn.core.graql.query.GraqlDelete;
+import grakn.core.graql.query.GraqlGet;
+import grakn.core.graql.query.GraqlGroup;
+import grakn.core.graql.query.GraqlInsert;
+import grakn.core.graql.query.GraqlQuery;
+import grakn.core.graql.query.GraqlUndefine;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
@@ -200,40 +199,40 @@ public final class GraknClient {
         }
 
         @Override
-        public Stream<ConceptMap> stream(DefineQuery query) {
+        public Stream<ConceptMap> stream(GraqlDefine query) {
             Iterable<ConceptMap> iterable = () -> this.rpcIterator(query);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
         @Override
-        public Stream<ConceptMap> stream(UndefineQuery query) {
+        public Stream<ConceptMap> stream(GraqlUndefine query) {
             Iterable<ConceptMap> iterable = () -> this.rpcIterator(query);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
         @Override
-        public Stream<ConceptMap> stream(InsertQuery query, boolean infer) {
+        public Stream<ConceptMap> stream(GraqlInsert query, boolean infer) {
             Iterable<ConceptMap> iterable = () -> this.rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
         @Override
-        public Stream<ConceptSet> stream(DeleteQuery query, boolean infer) {
+        public Stream<ConceptSet> stream(GraqlDelete query, boolean infer) {
             Iterable<ConceptSet> iterable = () -> this.rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
         @Override
-        public Stream<ConceptMap> stream(GetQuery query, boolean infer) {
+        public Stream<ConceptMap> stream(GraqlGet query, boolean infer) {
             Iterable<ConceptMap> iterable = () -> this.rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
-        private Iterator rpcIterator(Query query) {
+        private Iterator rpcIterator(GraqlQuery query) {
             return rpcIterator(query, true);
         }
 
-        private Iterator rpcIterator(Query query, boolean infer) {
+        private Iterator rpcIterator(GraqlQuery query, boolean infer) {
             transceiver.send(RequestBuilder.Transaction.query(query.toString(), infer));
             SessionProto.Transaction.Res txResponse = responseOrThrow();
             int iteratorId = txResponse.getQueryIter().getId();
@@ -401,25 +400,25 @@ public final class GraknClient {
         }
 
         @Override
-        public Stream<Value> stream(AggregateQuery query, boolean infer) {
+        public Stream<Value> stream(GraqlAggregate query, boolean infer) {
             Iterable<Value> iterable = () -> rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
         @Override
-        public Stream<AnswerGroup<ConceptMap>> stream(GroupQuery query, boolean infer) {
+        public Stream<AnswerGroup<ConceptMap>> stream(GraqlGroup query, boolean infer) {
             Iterable<AnswerGroup<ConceptMap>> iterable = () -> rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
         @Override
-        public Stream<AnswerGroup<Value>> stream(GroupAggregateQuery query, boolean infer) {
+        public Stream<AnswerGroup<Value>> stream(GraqlGroup.Aggregate query, boolean infer) {
             Iterable<AnswerGroup<Value>> iterable = () -> rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
         @Override
-        public <T extends Answer> Stream<T> stream(ComputeQuery<T> query, boolean infer) {
+        public <T extends Answer> Stream<T> stream(GraqlCompute<T> query, boolean infer) {
             Iterable<T> iterable = () -> rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }

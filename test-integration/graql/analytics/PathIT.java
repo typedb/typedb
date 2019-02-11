@@ -48,7 +48,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.graql.internal.analytics.Utility.getResourceEdgeId;
-import static grakn.core.graql.query.ComputeQuery.Method.PATH;
+import static grakn.core.graql.query.GraqlCompute.Method.PATH;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")

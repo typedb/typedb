@@ -21,9 +21,9 @@ package grakn.core.graql.query.pattern;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.Token;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Iterator;
@@ -89,24 +89,24 @@ public class Disjunction<T extends Pattern> implements Pattern {
         Iterator<T> patternIter = patterns.iterator();
         while (patternIter.hasNext()) {
             Pattern pattern = patternIter.next();
-            disjunction.append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE);
+            disjunction.append(Token.Char.CURLY_OPEN).append(Token.Char.SPACE);
 
             if (pattern instanceof Conjunction<?>) {
                 disjunction.append(((Conjunction<? extends Pattern>) pattern).getPatterns().stream()
                                            .map(Object::toString)
-                                           .collect(Collectors.joining(Query.Char.SPACE.toString())));
+                                           .collect(Collectors.joining(Token.Char.SPACE.toString())));
             } else {
                 disjunction.append(pattern.toString());
             }
 
-            disjunction.append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE);
+            disjunction.append(Token.Char.SPACE).append(Token.Char.CURLY_CLOSE);
 
             if (patternIter.hasNext()) {
-                disjunction.append(Query.Char.SPACE).append(Query.Operator.OR).append(Query.Char.SPACE);
+                disjunction.append(Token.Char.SPACE).append(Token.Operator.OR).append(Token.Char.SPACE);
             }
         }
 
-        disjunction.append(Query.Char.SEMICOLON);
+        disjunction.append(Token.Char.SEMICOLON);
 
         return disjunction.toString();
     }

@@ -20,9 +20,9 @@ package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.Token;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.HashSet;
@@ -108,9 +108,9 @@ public class Conjunction<T extends Pattern> implements Pattern {
     public String toString() {
         StringBuilder pattern = new StringBuilder();
 
-        pattern.append(Query.Char.CURLY_OPEN).append(Query.Char.SPACE);
-        pattern.append(patterns.stream().map(Objects::toString).collect(Collectors.joining(Query.Char.SPACE.toString())));
-        pattern.append(Query.Char.SPACE).append(Query.Char.CURLY_CLOSE).append(Query.Char.SEMICOLON);
+        pattern.append(Token.Char.CURLY_OPEN).append(Token.Char.SPACE);
+        pattern.append(patterns.stream().map(Objects::toString).collect(Collectors.joining(Token.Char.SPACE.toString())));
+        pattern.append(Token.Char.SPACE).append(Token.Char.CURLY_CLOSE).append(Token.Char.SEMICOLON);
 
         return pattern.toString();
     }

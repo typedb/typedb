@@ -22,7 +22,7 @@ package grakn.core.deduplicator;
 import grakn.core.client.GraknClient;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Query;
+import grakn.core.graql.query.Token;
 import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -117,7 +117,7 @@ public class AttributeDeduplicatorE2E {
     private void defineParentChildSchema(GraknClient.Session session) {
         try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             List<ConceptMap> answer = tx.execute(Graql.define(
-                    type("name").sub("attribute").datatype(Query.DataType.STRING),
+                    type("name").sub("attribute").datatype(Token.DataType.STRING),
                     type("parent").sub("role"),
                     type("child").sub("role"),
                     type("person").sub("entity").has("name").plays("parent").plays("child"),

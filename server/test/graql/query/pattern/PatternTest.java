@@ -20,7 +20,7 @@ package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.statement.Statement;
 import org.junit.Test;
 
 import java.util.HashSet;

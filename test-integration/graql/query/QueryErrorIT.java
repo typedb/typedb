@@ -27,9 +27,9 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.property.ValueProperty;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.property.ValueProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -180,7 +180,7 @@ public class QueryErrorIT {
         exception.expect(NullPointerException.class);
         //noinspection ResultOfMethodCallIgnored
         ValueProperty property = null;
-        Statement s = var("x").statementAttribute(property);
+        Statement s = var("x").attribute(property);
     }
 
     @Test
@@ -190,7 +190,7 @@ public class QueryErrorIT {
         try (Transaction newTx = newSession.transaction(Transaction.Type.WRITE)) {
             newTx.execute(Graql.define(
                     type("person").sub("entity"),
-                    type("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Query.DataType.STRING)
+                    type("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Token.DataType.STRING)
             ));
 
             exception.expect(TransactionException.class);
@@ -222,7 +222,7 @@ public class QueryErrorIT {
     public void testAdditionalSemicolon() {
         exception.expect(GraqlSyntaxException.class);
         exception.expectMessage(allOf(containsString("plays product-type")));
-        tx.execute(Graql.<DefineQuery>parse(
+        tx.execute(Graql.<GraqlDefine>parse(
                 "define " +
                         "tag-group sub role; product-type sub role; " +
                         "category sub entity, plays tag-group; plays product-type;"

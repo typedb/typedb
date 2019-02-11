@@ -42,9 +42,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.ComputeQuery.Algorithm.K_CORE;
-import static grakn.core.graql.query.ComputeQuery.Argument.k;
-import static grakn.core.graql.query.ComputeQuery.Method.CLUSTER;
+import static grakn.core.graql.query.GraqlCompute.Algorithm.K_CORE;
+import static grakn.core.graql.query.GraqlCompute.Argument.k;
+import static grakn.core.graql.query.GraqlCompute.Method.CLUSTER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

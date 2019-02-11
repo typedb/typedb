@@ -33,7 +33,7 @@ java_test(
 java_test(
     name = "delete-query-test",
     test_class = "grakn.core.graql.query.DeleteQueryTest",
-    srcs = ["DeleteQueryTest.java"],
+    srcs = ["GraqlDeleteTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//server"],
@@ -43,7 +43,7 @@ java_test(
 java_test(
     name = "insert-query-test",
     test_class = "grakn.core.graql.query.InsertQueryTest",
-    srcs = ["InsertQueryTest.java"],
+    srcs = ["GraqlInsertTest.java"],
     deps = [
         "//server",
         "//dependencies/maven/artifacts/com/google/guava:guava",

@@ -23,9 +23,9 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.pattern.property.NeqProperty;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.property.NeqProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import java.util.Set;
 
 /**

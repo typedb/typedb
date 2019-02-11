@@ -24,7 +24,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.rule.GraknTestServer;

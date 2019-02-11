@@ -54,12 +54,12 @@ import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.GraqlGet;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 
 import javax.annotation.Nullable;
@@ -299,7 +299,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
 
-    public GetQuery getQuery() {
+    public GraqlGet getQuery() {
         return Graql.match(getPattern()).get();
     }
 

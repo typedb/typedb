@@ -20,8 +20,8 @@ package grakn.core.graql.query;
 
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import graql.exception.GraqlException;
 
 import javax.annotation.CheckReturnValue;
@@ -66,8 +66,8 @@ public class MatchClause {
      * Construct a get query with all all variables mentioned in the query
      */
     @CheckReturnValue
-    public GetQuery get() {
-        return new GetQuery(this);
+    public GraqlGet get() {
+        return new GraqlGet(this);
     }
 
     /**
@@ -75,7 +75,7 @@ public class MatchClause {
      * @return a Get Query that selects the given variables
      */
     @CheckReturnValue
-    public GetQuery get(String var, String... vars) {
+    public GraqlGet get(String var, String... vars) {
         LinkedHashSet<Variable> varSet = Stream
                 .concat(Stream.of(var), Stream.of(vars))
                 .map(Variable::new)
@@ -88,7 +88,7 @@ public class MatchClause {
      * @return a Get Query that selects the given variables
      */
     @CheckReturnValue
-    public GetQuery get(Variable var, Variable... vars) {
+    public GraqlGet get(Variable var, Variable... vars) {
         LinkedHashSet<Variable> varSet = new LinkedHashSet<>();
         varSet.add(var);
         varSet.addAll(Arrays.asList(vars));
@@ -100,7 +100,7 @@ public class MatchClause {
      * @return a Get Query that selects the given variables
      */
     @CheckReturnValue
-    public GetQuery get(List<Variable> vars) {
+    public GraqlGet get(List<Variable> vars) {
         return get(new LinkedHashSet<>(vars));
     }
 
@@ -109,8 +109,8 @@ public class MatchClause {
      * @return a Get Query that selects the given variables
      */
     @CheckReturnValue
-    public GetQuery get(LinkedHashSet<Variable> vars) {
-        return new GetQuery(this, vars);
+    public GraqlGet get(LinkedHashSet<Variable> vars) {
+        return new GraqlGet(this, vars);
     }
 
     /**
@@ -118,7 +118,7 @@ public class MatchClause {
      * @return an insert query that will insert the given variables for each result of this match clause
      */
     @CheckReturnValue
-    public final InsertQuery insert(Statement... vars) {
+    public final GraqlInsert insert(Statement... vars) {
         return insert(Arrays.asList(vars));
     }
 
@@ -127,17 +127,17 @@ public class MatchClause {
      * @return an insert query that will insert the given variables for each result of this match clause
      */
     @CheckReturnValue
-    public final InsertQuery insert(Collection<? extends Statement> vars) {
+    public final GraqlInsert insert(Collection<? extends Statement> vars) {
         MatchClause match = this;
-        return new InsertQuery(match, Collections.unmodifiableList(new ArrayList<>(vars)));
+        return new GraqlInsert(match, Collections.unmodifiableList(new ArrayList<>(vars)));
     }
 
     /**
      * Construct a delete query with all all variables mentioned in the query
      */
     @CheckReturnValue
-    public DeleteQuery delete() {
-        return new DeleteQuery(this);
+    public GraqlDelete delete() {
+        return new GraqlDelete(this);
     }
 
     /**
@@ -145,7 +145,7 @@ public class MatchClause {
      * @return a delete query that will delete the given variables for each result of this match clause
      */
     @CheckReturnValue
-    public final DeleteQuery delete(String var, String... vars) {
+    public final GraqlDelete delete(String var, String... vars) {
         LinkedHashSet<Variable> varSet = Stream
                 .concat(Stream.of(var), Stream.of(vars))
                 .map(Variable::new)
@@ -158,7 +158,7 @@ public class MatchClause {
      * @return a delete query that will delete the given variables for each result of this match clause
      */
     @CheckReturnValue
-    public final DeleteQuery delete(Variable var, Variable... vars) {
+    public final GraqlDelete delete(Variable var, Variable... vars) {
         LinkedHashSet<Variable> varSet = new LinkedHashSet<>();
         varSet.add(var);
         varSet.addAll(Arrays.asList(vars));
@@ -170,8 +170,8 @@ public class MatchClause {
      * @return a delete query that will delete the given variables for each result of this match clause
      */
     @CheckReturnValue
-    public final DeleteQuery delete(List<Variable> vars) {
-        return new DeleteQuery(this, new LinkedHashSet<>(vars));
+    public final GraqlDelete delete(List<Variable> vars) {
+        return new GraqlDelete(this, new LinkedHashSet<>(vars));
     }
 
     /**
@@ -179,21 +179,21 @@ public class MatchClause {
      * @return a delete query that will delete the given variables for each result of this match clause
      */
     @CheckReturnValue
-    public final DeleteQuery delete(LinkedHashSet<Variable> vars) {
-        return new DeleteQuery(this, vars);
+    public final GraqlDelete delete(LinkedHashSet<Variable> vars) {
+        return new GraqlDelete(this, vars);
     }
 
     @Override
     public final String toString() {
         StringBuilder query = new StringBuilder();
 
-        query.append(Query.Command.MATCH);
-        if (pattern.getPatterns().size()>1) query.append(Query.Char.NEW_LINE);
-        else query.append(Query.Char.SPACE);
+        query.append(Token.Command.MATCH);
+        if (pattern.getPatterns().size()>1) query.append(Token.Char.NEW_LINE);
+        else query.append(Token.Char.SPACE);
 
         query.append(pattern.getPatterns().stream()
                              .map(Object::toString)
-                             .collect(Collectors.joining(Query.Char.NEW_LINE.toString())));
+                             .collect(Collectors.joining(Token.Char.NEW_LINE.toString())));
 
         return query.toString();
     }

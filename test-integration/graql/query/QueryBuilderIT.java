@@ -20,7 +20,7 @@ package grakn.core.graql.query;
 
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.statement.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -75,7 +75,7 @@ public class QueryBuilderIT {
     @Test
     public void whenBuildingInsertQueryWithGraphLast_ItExecutes() {
         assertNotExists(tx, var().has("title", "a-movie"));
-        InsertQuery query = Graql.insert(var().has("title", "a-movie").isa("movie"));
+        GraqlInsert query = Graql.insert(var().has("title", "a-movie").isa("movie"));
         tx.execute(query);
         assertExists(tx, var().has("title", "a-movie"));
     }
@@ -87,7 +87,7 @@ public class QueryBuilderIT {
 
         assertExists(tx, var().has("title", "123"));
 
-        DeleteQuery query = Graql.match(x.has("title", "123")).delete(x.var());
+        GraqlDelete query = Graql.match(x.has("title", "123")).delete(x.var());
         tx.execute(query);
 
         assertNotExists(tx, var().has("title", "123"));
@@ -97,7 +97,7 @@ public class QueryBuilderIT {
     public void whenBuildingUndefineQueryWithGraphLast_ItExecutes() {
         tx.execute(Graql.define(type("yes").sub("entity")));
 
-        UndefineQuery query = Graql.undefine(type("yes").sub("entity"));
+        GraqlUndefine query = Graql.undefine(type("yes").sub("entity"));
         tx.execute(query);
         assertNotExists(tx, type("yes").sub("entity"));
     }
@@ -105,7 +105,7 @@ public class QueryBuilderIT {
     @Test
     public void whenBuildingMatchInsertQueryWithGraphLast_ItExecutes() {
         assertNotExists(tx, var().has("title", "a-movie"));
-        InsertQuery query =
+        GraqlInsert query =
                 Graql.match(x.type("movie"))
                         .insert(var().has("title", "a-movie").isa("movie"));
         tx.execute(query);

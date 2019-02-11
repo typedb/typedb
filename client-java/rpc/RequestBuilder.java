@@ -23,7 +23,7 @@ import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.query.Query;
+import grakn.core.graql.query.GraqlQuery;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
@@ -60,11 +60,11 @@ public class RequestBuilder {
                     .build();
         }
 
-        public static SessionProto.Transaction.Req query(Query query) {
+        public static SessionProto.Transaction.Req query(GraqlQuery query) {
             return query(query.toString(), true);
         }
 
-        public static SessionProto.Transaction.Req query(Query query, boolean infer) {
+        public static SessionProto.Transaction.Req query(GraqlQuery query, boolean infer) {
             return query(query.toString(), infer);
         }
 

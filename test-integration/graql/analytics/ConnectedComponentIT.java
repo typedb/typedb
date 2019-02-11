@@ -25,7 +25,6 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -47,11 +46,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.ComputeQuery.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.query.ComputeQuery.Argument.contains;
-import static grakn.core.graql.query.ComputeQuery.Argument.size;
-import static grakn.core.graql.query.ComputeQuery.Method.CLUSTER;
-import static grakn.core.graql.query.ComputeQuery.Method.COUNT;
+import static grakn.core.graql.query.GraqlCompute.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.query.GraqlCompute.Argument.contains;
+import static grakn.core.graql.query.GraqlCompute.Argument.size;
+import static grakn.core.graql.query.GraqlCompute.Method.CLUSTER;
+import static grakn.core.graql.query.GraqlCompute.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

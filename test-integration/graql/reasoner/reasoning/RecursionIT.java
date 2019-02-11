@@ -19,7 +19,7 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.GraqlGet;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.reasoner.graph.DualLinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
@@ -58,8 +58,8 @@ public class RecursionIT {
                         "{$ind == 'j';} or {$ind == 's';} or {$ind == 'v';}; get $y;";
 
                 GraqlTestUtil.assertCollectionsNonTriviallyEqual(
-                        tx.execute(Graql.<GetQuery>parse(explicitQuery), false),
-                        tx.execute(Graql.<GetQuery>parse(queryString))
+                        tx.execute(Graql.<GraqlGet>parse(explicitQuery), false),
+                        tx.execute(Graql.<GraqlGet>parse(queryString))
                 );
             }
         }
@@ -80,13 +80,13 @@ public class RecursionIT {
                 String explicitQuery = "match $Y isa person, has name $name;" +
                         "{$name == 'aaa';} or {$name == 'aab';} or {$name == 'aaaa';};get $Y, $name;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(query)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery), false), tx.execute(Graql.<GraqlGet>parse(query)));
 
                 String noRoleQuery = "match ($X, $Y) isa Ancestor;$X has name 'aa'; get $Y;";
                 String explicitQuery2 = "match $Y isa person, has name $name;" +
                         "{$name == 'a';} or {$name == 'aaa';} or {$name == 'aab';} or {$name == 'aaaa';};get $Y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery2), false), tx.execute(Graql.<GetQuery>parse(noRoleQuery)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery2), false), tx.execute(Graql.<GraqlGet>parse(noRoleQuery)));
 
                 String closure = "match (ancestor: $X, descendant: $Y) isa Ancestor; get;";
                 String explicitClosure = "match $Y isa person, has name $nameY; $X isa person, has name $nameX;" +
@@ -96,7 +96,7 @@ public class RecursionIT {
                         "{$nameX == 'aa';$nameY == 'aab';} or {$nameX == 'aa';$nameY == 'aaaa';} or " +
                         "{$nameX == 'aaa';$nameY == 'aaaa';} or {$nameX == 'c';$nameY == 'ca';}; get $X, $Y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitClosure), false), tx.execute(Graql.<GetQuery>parse(closure)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitClosure), false), tx.execute(Graql.<GraqlGet>parse(closure)));
 
                 String noRoleClosure = "match ($X, $Y) isa Ancestor; get;";
                 String explicitNoRoleClosure = "match $Y isa person, has name $nameY; $X isa person, has name $nameX;" +
@@ -117,7 +117,7 @@ public class RecursionIT {
                         +
                         "{$nameX == 'c';$nameY == 'ca';} or " +
                         "{$nameY == 'c';$nameX == 'ca';}; get $X, $Y;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitNoRoleClosure), false), tx.execute(Graql.<GetQuery>parse(noRoleClosure)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitNoRoleClosure), false), tx.execute(Graql.<GraqlGet>parse(noRoleClosure)));
             }
         }
     }
@@ -132,18 +132,18 @@ public class RecursionIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 String ancestorVariant = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; $Y has name $name; get $Y;";
                 String explicitAncestorQuery = "match $Y has name $name;{$name == 'd';} or {$name == 'g';}; get $Y;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitAncestorQuery), false), tx.execute(Graql.<GetQuery>parse(ancestorVariant)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitAncestorQuery), false), tx.execute(Graql.<GraqlGet>parse(ancestorVariant)));
 
                 String noRoleAncestorQuery = "match ($X, $Y) isa Ancestor-friend;$X has name 'a'; get $Y;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitAncestorQuery), false), tx.execute(Graql.<GetQuery>parse(noRoleAncestorQuery)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitAncestorQuery), false), tx.execute(Graql.<GraqlGet>parse(noRoleAncestorQuery)));
 
                 String ancestorFriendVariant = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$Y has name 'd'; get $X;";
                 String explicitAncestorFriendQuery = "match $X has name $name;" +
                         "{$name == 'a';} or {$name == 'b';} or {$name == 'c';}; get $X;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitAncestorFriendQuery), false), tx.execute(Graql.<GetQuery>parse(ancestorFriendVariant)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitAncestorFriendQuery), false), tx.execute(Graql.<GraqlGet>parse(ancestorFriendVariant)));
 
                 String noRoleAncestorFriendQuery = "match ($X, $Y) isa Ancestor-friend;$Y has name 'd'; get $X;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitAncestorFriendQuery), false), tx.execute(Graql.<GetQuery>parse(noRoleAncestorFriendQuery)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitAncestorFriendQuery), false), tx.execute(Graql.<GraqlGet>parse(noRoleAncestorFriendQuery)));
             }
         }
     }
@@ -159,7 +159,7 @@ public class RecursionIT {
                 String queryString = "match ($x, $y) isa SameGen; $x has name 'a'; get $y;";
                 String explicitQuery = "match $y has name $name;{$name == 'f';} or {$name == 'a';};get $y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery), false), tx.execute(Graql.<GraqlGet>parse(queryString)));
             }
         }
     }
@@ -174,8 +174,8 @@ public class RecursionIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 String queryString = "match ($x, $y) isa N-TC; $y has index 'a'; get $x;";
                 String explicitQuery = "match $x has index 'a2'; get;";
-                List<ConceptMap> expected = tx.execute(Graql.<GetQuery>parse(explicitQuery), false);
-                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+                List<ConceptMap> expected = tx.execute(Graql.<GraqlGet>parse(explicitQuery), false);
+                List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString));
                 GraqlTestUtil.assertCollectionsNonTriviallyEqual(expected, answers);
             }
         }
@@ -200,8 +200,8 @@ public class RecursionIT {
                         "{$indX == 'aa';$indY == 'dd';};" +
                         "get $x, $y;";
 
-                List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
-                List<ConceptMap> expected = tx.execute(Graql.<GetQuery>parse(explicitQuery), false);
+                List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString));
+                List<ConceptMap> expected = tx.execute(Graql.<GraqlGet>parse(explicitQuery), false);
                 GraqlTestUtil.assertCollectionsNonTriviallyEqual(expected, answers);
             }
         }
@@ -216,7 +216,7 @@ public class RecursionIT {
                 String explicitQuery = "match $y has index $indY;" +
                         "{$indY == 'a';} or {$indY == 'b';} or {$indY == 'c';} or {$indY == 'd';};get $y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery), false), tx.execute(Graql.<GraqlGet>parse(queryString)));
             }
         }
     }
@@ -233,7 +233,7 @@ public class RecursionIT {
                 String explicitQuery = "match $y has name $name;" +
                         "{$name == 'ann';} or {$name == 'bill';} or {$name == 'peter';};get $y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery), false), tx.execute(Graql.<GraqlGet>parse(queryString)));
             }
         }
     }
@@ -250,7 +250,7 @@ public class RecursionIT {
                 String explicitQuery = "match $y isa person, has name $name;" +
                         "{$name == 'b';} or {$name == 'c';} or {$name == 'd';};get $y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(specificQuery)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery), false), tx.execute(Graql.<GraqlGet>parse(specificQuery)));
 
                 String generalQuery = "match (RSG-from: $x, RSG-to: $y) isa RevSG; get;";
                 String generalExplicitQuery = "match $x has name $nameX;$y has name $nameY;" +
@@ -261,7 +261,7 @@ public class RecursionIT {
                         "{$nameX == 'i';$nameY == 'f';} or {$nameX == 'j';$nameY == 'f';} or" +
                         "{$nameX == 'f';$nameY == 'k';};get $x, $y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(generalExplicitQuery), false), tx.execute(Graql.<GetQuery>parse(generalQuery)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(generalExplicitQuery), false), tx.execute(Graql.<GraqlGet>parse(generalQuery)));
             }
         }
     }
@@ -279,7 +279,7 @@ public class RecursionIT {
                 String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x has index 'a0'; get $y;";
                 String explicitQuery = "match { $y isa a-entity; } or { $y isa end; }; get;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery), false), tx.execute(Graql.<GraqlGet>parse(queryString)));
             }
         }
     }
@@ -298,7 +298,7 @@ public class RecursionIT {
                 String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a0'; get $y;";
                 String explicitQuery = "match $y isa b-entity; get;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery), false), tx.execute(Graql.<GraqlGet>parse(queryString)));
             }
         }
     }
@@ -334,7 +334,7 @@ public class RecursionIT {
                 String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; get $y;";
                 String explicitQuery = "match $y isa a-entity; get;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery), false), tx.execute(Graql.<GraqlGet>parse(queryString)));
             }
         }
     }
@@ -353,7 +353,7 @@ public class RecursionIT {
                 String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a'; get $y;";
                 String explicitQuery = "match $y isa a-entity; get;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery), false), tx.execute(Graql.<GraqlGet>parse(queryString)));
             }
         }
     }
@@ -369,7 +369,7 @@ public class RecursionIT {
                 String queryString = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
                 String explicitQuery = "match {$y isa vertex;} or {$y isa start-vertex;}; get;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(queryString)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery), false), tx.execute(Graql.<GraqlGet>parse(queryString)));
             }
         }
     }
@@ -389,10 +389,10 @@ public class RecursionIT {
                         "$x has index 'a0';" +
                         "get $y;";
                 String explicitQuery = "match $y isa vertex; get;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(query)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery), false), tx.execute(Graql.<GraqlGet>parse(query)));
 
                 String noRoleQuery = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitQuery), false), tx.execute(Graql.<GetQuery>parse(noRoleQuery)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitQuery), false), tx.execute(Graql.<GraqlGet>parse(noRoleQuery)));
             }
         }
     }
@@ -408,12 +408,12 @@ public class RecursionIT {
                 String query = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; get $y;";
                 String explicit = "match $y isa vertex; get;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicit), false), tx.execute(Graql.<GetQuery>parse(query)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicit), false), tx.execute(Graql.<GraqlGet>parse(query)));
 
                 String noRoleQuery = "match ($x, $y) isa path;$x has index 'a0'; $y has index $ind;get $y, $ind;";
                 String explicitWithIndices = "match $y isa vertex;$y has index $ind; get;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GetQuery>parse(explicitWithIndices), false), tx.execute(Graql.<GetQuery>parse(noRoleQuery)));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.<GraqlGet>parse(explicitWithIndices), false), tx.execute(Graql.<GraqlGet>parse(noRoleQuery)));
             }
         }
     }

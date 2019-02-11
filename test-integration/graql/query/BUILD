@@ -21,7 +21,7 @@ load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 java_test(
     name = "aggregate-query-it",
     test_class = "grakn.core.graql.query.AggregateQueryIT",
-    srcs = ["AggregateQueryIT.java"],
+    srcs = ["GraqlAggregateIT.java"],
     deps = [
         "//common:common",
         "//graql/java:graql",
@@ -35,7 +35,7 @@ java_test(
 java_test(
     name = "define-query-it",
     test_class = "grakn.core.graql.query.DefineQueryIT",
-    srcs = ["DefineQueryIT.java"],
+    srcs = ["GraqlDefineIT.java"],
     deps = [
         "//common",
         "//server",
@@ -51,7 +51,7 @@ java_test(
 java_test(
     name = "delete-query-it",
     test_class = "grakn.core.graql.query.DeleteQueryIT",
-    srcs = ["DeleteQueryIT.java"],
+    srcs = ["GraqlDeleteIT.java"],
     deps = [
         "//common:common",
         "//graql/java:graql",
@@ -66,7 +66,7 @@ java_test(
 java_test(
     name = "insert-query-it",
     test_class = "grakn.core.graql.query.InsertQueryIT",
-    srcs = ["InsertQueryIT.java"],
+    srcs = ["GraqlInsertIT.java"],
     deps = [
         "//common:common",
         "//graql/java:graql",
@@ -85,7 +85,7 @@ java_test(
 java_test(
     name = "undefine-query-it",
     test_class = "grakn.core.graql.query.UndefineQueryIT",
-    srcs = ["UndefineQueryIT.java"],
+    srcs = ["GraqlUndefineIT.java"],
     deps = [
         "//server",
         "//test-integration/graql/graph:movie-graph",

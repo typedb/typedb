@@ -25,11 +25,9 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.pattern.property.ValueProperty;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import java.util.Set;
-import javax.annotation.CheckReturnValue;
 
 /**
  * {@link AtomicBase} extension serving as base class for predicate implementations.

@@ -34,16 +34,15 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.AggregateQuery;
-import grakn.core.graql.query.ComputeQuery;
-import grakn.core.graql.query.DefineQuery;
-import grakn.core.graql.query.DeleteQuery;
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.GroupAggregateQuery;
-import grakn.core.graql.query.GroupQuery;
-import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.UndefineQuery;
+import grakn.core.graql.query.GraqlAggregate;
+import grakn.core.graql.query.GraqlCompute;
+import grakn.core.graql.query.GraqlDefine;
+import grakn.core.graql.query.GraqlDelete;
+import grakn.core.graql.query.GraqlGet;
+import grakn.core.graql.query.GraqlGroup;
+import grakn.core.graql.query.GraqlInsert;
+import grakn.core.graql.query.GraqlQuery;
+import grakn.core.graql.query.GraqlUndefine;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
@@ -100,173 +99,173 @@ public interface Transaction extends AutoCloseable {
 
     // Define Query
 
-    default List<ConceptMap> execute(DefineQuery query) {
+    default List<ConceptMap> execute(GraqlDefine query) {
         return stream(query).collect(Collectors.toList());
     }
 
-    Stream<ConceptMap> stream(DefineQuery query);
+    Stream<ConceptMap> stream(GraqlDefine query);
 
     // Undefine Query
 
-    default List<ConceptMap> execute(UndefineQuery query) {
+    default List<ConceptMap> execute(GraqlUndefine query) {
         return stream(query).collect(Collectors.toList());
     }
 
-    Stream<ConceptMap> stream(UndefineQuery query);
+    Stream<ConceptMap> stream(GraqlUndefine query);
 
     // Insert Query
 
-    default List<ConceptMap> execute(InsertQuery query) {
+    default List<ConceptMap> execute(GraqlInsert query) {
         return execute(query, true);
     }
 
-    default List<ConceptMap> execute(InsertQuery query, boolean infer) {
+    default List<ConceptMap> execute(GraqlInsert query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<ConceptMap> stream(InsertQuery query) {
+    default Stream<ConceptMap> stream(GraqlInsert query) {
         return stream(query, true);
     }
 
-    Stream<ConceptMap> stream(InsertQuery query, boolean infer);
+    Stream<ConceptMap> stream(GraqlInsert query, boolean infer);
 
     // Delete Query
 
-    default List<ConceptSet> execute(DeleteQuery query) {
+    default List<ConceptSet> execute(GraqlDelete query) {
         return execute(query, true);
     }
 
-    default List<ConceptSet> execute(DeleteQuery query, boolean infer) {
+    default List<ConceptSet> execute(GraqlDelete query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<ConceptSet> stream(DeleteQuery query) {
+    default Stream<ConceptSet> stream(GraqlDelete query) {
         return stream(query, true);
     }
 
-    Stream<ConceptSet> stream(DeleteQuery query, boolean infer);
+    Stream<ConceptSet> stream(GraqlDelete query, boolean infer);
 
     // Get Query
 
-    default List<ConceptMap> execute(GetQuery query) {
+    default List<ConceptMap> execute(GraqlGet query) {
         return execute(query, true);
     }
 
-    default List<ConceptMap> execute(GetQuery query, boolean infer) {
+    default List<ConceptMap> execute(GraqlGet query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<ConceptMap> stream(GetQuery query) {
+    default Stream<ConceptMap> stream(GraqlGet query) {
         return stream(query, true);
     }
 
-    Stream<ConceptMap> stream(GetQuery query, boolean infer);
+    Stream<ConceptMap> stream(GraqlGet query, boolean infer);
 
     // Aggregate Query
 
-    default List<Value> execute(AggregateQuery query) {
+    default List<Value> execute(GraqlAggregate query) {
         return execute(query, true);
     }
 
-    default List<Value> execute(AggregateQuery query, boolean infer) {
+    default List<Value> execute(GraqlAggregate query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<Value> stream(AggregateQuery query) {
+    default Stream<Value> stream(GraqlAggregate query) {
         return stream(query, true);
     }
 
-    Stream<Value> stream(AggregateQuery query, boolean infer);
+    Stream<Value> stream(GraqlAggregate query, boolean infer);
 
     // Group Query
 
-    default List<AnswerGroup<ConceptMap>> execute(GroupQuery query) {
+    default List<AnswerGroup<ConceptMap>> execute(GraqlGroup query) {
         return execute(query, true);
     }
 
-    default List<AnswerGroup<ConceptMap>> execute(GroupQuery query, boolean infer) {
+    default List<AnswerGroup<ConceptMap>> execute(GraqlGroup query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<AnswerGroup<ConceptMap>> stream(GroupQuery query) {
+    default Stream<AnswerGroup<ConceptMap>> stream(GraqlGroup query) {
         return stream(query, true);
     }
 
-    Stream<AnswerGroup<ConceptMap>> stream(GroupQuery query, boolean infer);
+    Stream<AnswerGroup<ConceptMap>> stream(GraqlGroup query, boolean infer);
 
     // Group Aggregate Query
 
-    default List<AnswerGroup<Value>> execute(GroupAggregateQuery query) {
+    default List<AnswerGroup<Value>> execute(GraqlGroup.Aggregate query) {
         return execute(query, true);
     }
 
-    default List<AnswerGroup<Value>> execute(GroupAggregateQuery query, boolean infer) {
+    default List<AnswerGroup<Value>> execute(GraqlGroup.Aggregate query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<AnswerGroup<Value>> stream(GroupAggregateQuery query) {
+    default Stream<AnswerGroup<Value>> stream(GraqlGroup.Aggregate query) {
         return stream(query, true);
     }
 
-    Stream<AnswerGroup<Value>> stream(GroupAggregateQuery query, boolean infer);
+    Stream<AnswerGroup<Value>> stream(GraqlGroup.Aggregate query, boolean infer);
 
     // Compute Query
 
-    default <T extends Answer> List<T> execute(ComputeQuery<T> query) {
+    default <T extends Answer> List<T> execute(GraqlCompute<T> query) {
         return execute(query, true);
     }
 
-    default <T extends Answer> List<T> execute(ComputeQuery<T> query, boolean infer) {
+    default <T extends Answer> List<T> execute(GraqlCompute<T> query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default <T extends Answer> Stream<T> stream(ComputeQuery<T> query) {
+    default <T extends Answer> Stream<T> stream(GraqlCompute<T> query) {
         return stream(query, true);
     }
 
-    <T extends Answer> Stream<T> stream(ComputeQuery<T> query, boolean infer);
+    <T extends Answer> Stream<T> stream(GraqlCompute<T> query, boolean infer);
 
     // Generic Query
 
-    default List<? extends Answer> execute(Query query) {
+    default List<? extends Answer> execute(GraqlQuery query) {
         return execute(query, true);
     }
 
-    default List<? extends Answer> execute(Query query, boolean infer) {
+    default List<? extends Answer> execute(GraqlQuery query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<? extends Answer> stream(Query query) {
+    default Stream<? extends Answer> stream(GraqlQuery query) {
         return stream(query, true);
     }
 
-    default Stream<? extends Answer> stream(Query query, boolean infer) {
-        if (query instanceof DefineQuery) {
-            return stream((DefineQuery) query);
+    default Stream<? extends Answer> stream(GraqlQuery query, boolean infer) {
+        if (query instanceof GraqlDefine) {
+            return stream((GraqlDefine) query);
 
-        } else if (query instanceof UndefineQuery) {
-            return stream((UndefineQuery) query);
+        } else if (query instanceof GraqlUndefine) {
+            return stream((GraqlUndefine) query);
 
-        } else if (query instanceof InsertQuery) {
-            return stream((InsertQuery) query, infer);
+        } else if (query instanceof GraqlInsert) {
+            return stream((GraqlInsert) query, infer);
 
-        } else if (query instanceof DeleteQuery) {
-            return stream((DeleteQuery) query, infer);
+        } else if (query instanceof GraqlDelete) {
+            return stream((GraqlDelete) query, infer);
 
-        } else if (query instanceof GetQuery) {
-            return stream((GetQuery) query, infer);
+        } else if (query instanceof GraqlGet) {
+            return stream((GraqlGet) query, infer);
 
-        } else if (query instanceof AggregateQuery) {
-            return stream((AggregateQuery) query, infer);
+        } else if (query instanceof GraqlAggregate) {
+            return stream((GraqlAggregate) query, infer);
 
-        } else if (query instanceof GroupAggregateQuery) {
-            return stream((GroupAggregateQuery) query, infer);
+        } else if (query instanceof GraqlGroup.Aggregate) {
+            return stream((GraqlGroup.Aggregate) query, infer);
 
-        } else if (query instanceof GroupQuery) {
-            return stream((GroupQuery) query, infer);
+        } else if (query instanceof GraqlGroup) {
+            return stream((GraqlGroup) query, infer);
 
-        } else if (query instanceof ComputeQuery<?>) {
-            return stream((ComputeQuery<?>) query, infer);
+        } else if (query instanceof GraqlCompute<?>) {
+            return stream((GraqlCompute<?>) query, infer);
 
         } else {
             throw new IllegalArgumentException("Unrecognised Query object");

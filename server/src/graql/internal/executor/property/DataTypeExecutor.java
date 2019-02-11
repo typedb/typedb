@@ -26,11 +26,11 @@ import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.property.DataTypeAtom;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.property.DataTypeProperty;
-import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.Token;
+import grakn.core.graql.query.property.DataTypeProperty;
+import grakn.core.graql.query.property.VarProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 
 import java.util.Collections;
 import java.util.Set;
@@ -40,7 +40,7 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
     private final Variable var;
     private final DataTypeProperty property;
     private final AttributeType.DataType dataType;
-    private static final ImmutableMap<Query.DataType, AttributeType.DataType<?>> DATA_TYPES = dataTypes();
+    private static final ImmutableMap<Token.DataType, AttributeType.DataType<?>> DATA_TYPES = dataTypes();
 
     DataTypeExecutor(Variable var, DataTypeProperty property) {
         if (var == null) {
@@ -59,13 +59,13 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
         this.dataType = DATA_TYPES.get(property.dataType());
     }
 
-    private static ImmutableMap<Query.DataType, AttributeType.DataType<?>> dataTypes() {
-        ImmutableMap.Builder<Query.DataType, AttributeType.DataType<?>> dataTypes = new ImmutableMap.Builder<>();
-        dataTypes.put(Query.DataType.BOOLEAN, AttributeType.DataType.BOOLEAN);
-        dataTypes.put(Query.DataType.DATE, AttributeType.DataType.DATE);
-        dataTypes.put(Query.DataType.DOUBLE, AttributeType.DataType.DOUBLE);
-        dataTypes.put(Query.DataType.LONG, AttributeType.DataType.LONG);
-        dataTypes.put(Query.DataType.STRING, AttributeType.DataType.STRING);
+    private static ImmutableMap<Token.DataType, AttributeType.DataType<?>> dataTypes() {
+        ImmutableMap.Builder<Token.DataType, AttributeType.DataType<?>> dataTypes = new ImmutableMap.Builder<>();
+        dataTypes.put(Token.DataType.BOOLEAN, AttributeType.DataType.BOOLEAN);
+        dataTypes.put(Token.DataType.DATE, AttributeType.DataType.DATE);
+        dataTypes.put(Token.DataType.DOUBLE, AttributeType.DataType.DOUBLE);
+        dataTypes.put(Token.DataType.LONG, AttributeType.DataType.LONG);
+        dataTypes.put(Token.DataType.STRING, AttributeType.DataType.STRING);
 
         return dataTypes.build();
     }

@@ -22,9 +22,9 @@ import com.google.auto.value.AutoValue;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.RegexProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
+import grakn.core.graql.query.property.RegexProperty;
 
 /**
  * Atomic corresponding to {@link RegexProperty}.

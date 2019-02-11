@@ -38,16 +38,15 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.QueryExecutor;
-import grakn.core.graql.query.AggregateQuery;
-import grakn.core.graql.query.ComputeQuery;
-import grakn.core.graql.query.DefineQuery;
-import grakn.core.graql.query.DeleteQuery;
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.GroupAggregateQuery;
-import grakn.core.graql.query.GroupQuery;
-import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.GraqlAggregate;
+import grakn.core.graql.query.GraqlCompute;
+import grakn.core.graql.query.GraqlDefine;
+import grakn.core.graql.query.GraqlDelete;
+import grakn.core.graql.query.GraqlGet;
+import grakn.core.graql.query.GraqlGroup;
+import grakn.core.graql.query.GraqlInsert;
 import grakn.core.graql.query.MatchClause;
-import grakn.core.graql.query.UndefineQuery;
+import grakn.core.graql.query.GraqlUndefine;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -204,47 +203,47 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public Stream<ConceptMap> stream(DefineQuery query) {
+    public Stream<ConceptMap> stream(GraqlDefine query) {
         return Stream.of(executor().define(query));
     }
 
     @Override
-    public Stream<ConceptMap> stream(UndefineQuery query) {
+    public Stream<ConceptMap> stream(GraqlUndefine query) {
         return Stream.of(executor().undefine(query));
     }
 
     @Override
-    public Stream<ConceptMap> stream(InsertQuery query, boolean infer) {
+    public Stream<ConceptMap> stream(GraqlInsert query, boolean infer) {
         return executor().insert(query);
     }
 
     @Override
-    public Stream<ConceptSet> stream(DeleteQuery query, boolean infer) {
+    public Stream<ConceptSet> stream(GraqlDelete query, boolean infer) {
         return Stream.of(executor(infer).delete(query));
     }
 
     @Override
-    public Stream<ConceptMap> stream(GetQuery query, boolean infer) {
+    public Stream<ConceptMap> stream(GraqlGet query, boolean infer) {
         return executor(infer).get(query);
     }
 
     @Override
-    public Stream<Value> stream(AggregateQuery query, boolean infer) {
+    public Stream<Value> stream(GraqlAggregate query, boolean infer) {
         return executor(infer).aggregate(query);
     }
 
     @Override
-    public Stream<AnswerGroup<ConceptMap>> stream(GroupQuery query, boolean infer) {
+    public Stream<AnswerGroup<ConceptMap>> stream(GraqlGroup query, boolean infer) {
         return executor(infer).group(query);
     }
 
     @Override
-    public Stream<AnswerGroup<Value>> stream(GroupAggregateQuery query, boolean infer) {
+    public Stream<AnswerGroup<Value>> stream(GraqlGroup.Aggregate query, boolean infer) {
         return executor(infer).group(query);
     }
 
     @Override
-    public <T extends Answer> Stream<T> stream(ComputeQuery<T> query, boolean infer) {
+    public <T extends Answer> Stream<T> stream(GraqlCompute<T> query, boolean infer) {
         return executor(infer).compute(query);
     }
 
