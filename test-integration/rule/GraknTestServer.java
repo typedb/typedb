@@ -59,8 +59,8 @@ import java.util.UUID;
  * It allows all the integration tests to run concurrently on the same machine.
  */
 public class GraknTestServer extends ExternalResource {
-    private static final Path SERVER_CONFIG =  Paths.get("server/conf/grakn.properties");
-    private static final Path CASSANDRA_CONFIG = Paths.get("test-integration/resources/cassandra-embedded.yaml");
+    private static final Path SERVER_CONFIG_PATH =  Paths.get("server/conf/grakn.properties");
+    private static final Path CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
 
     private final Path serverConfigPath;
     private final Path cassandraConfigPath;
@@ -77,7 +77,7 @@ public class GraknTestServer extends ExternalResource {
     private SessionStore sessionStore;
 
     public GraknTestServer() {
-        this(SERVER_CONFIG, CASSANDRA_CONFIG);
+        this(SERVER_CONFIG_PATH, CASSANDRA_CONFIG_PATH);
     }
 
     public GraknTestServer(Path serverConfigPath, Path cassandraConfigPath) {
