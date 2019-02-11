@@ -325,7 +325,7 @@ public class Parser extends GraqlBaseVisitor {
                 query.in(visitLabels(conditionCtx.labels()));
 
             } else if (conditionCtx.USING() != null) {
-                query.using(GraqlCompute.Algorithm.of(conditionCtx.compute_algorithm().getText()));
+                query.using(Token.Compute.Algorithm.of(conditionCtx.compute_algorithm().getText()));
 
             } else if (conditionCtx.WHERE() != null) {
                 query.where(visitCompute_args(conditionCtx.compute_args()));

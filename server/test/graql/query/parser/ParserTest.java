@@ -48,8 +48,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static grakn.core.graql.query.query.GraqlCompute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.query.query.GraqlCompute.Algorithm.K_CORE;
+import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
+import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
 import static grakn.core.graql.query.query.GraqlCompute.Argument.k;
 import static grakn.core.graql.query.query.GraqlCompute.Argument.size;
 import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;

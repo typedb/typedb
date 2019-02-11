@@ -33,6 +33,7 @@ import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
+import graql.lang.util.Token;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
@@ -341,7 +342,7 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(INVALID_COMPUTE_METHOD_ALGORITHM.getMessage(method, ALGORITHMS_ACCEPTED.get(method)));
     }
 
-    public static GraqlQueryException invalidComputeQuery_invalidArgument(GraqlCompute.Method method, GraqlCompute.Algorithm algorithm) {
+    public static GraqlQueryException invalidComputeQuery_invalidArgument(GraqlCompute.Method method, Token.Compute.Algorithm algorithm) {
         return new GraqlQueryException(INVALID_COMPUTE_ARGUMENT.getMessage(method, algorithm, ARGUMENTS_ACCEPTED.get(method).get(algorithm)));
     }
 }

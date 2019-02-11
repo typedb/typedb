@@ -27,9 +27,9 @@ import grakn.core.graql.query.query.GraqlQuery;
 import graql.lang.util.Token;
 import org.junit.Test;
 
-import static grakn.core.graql.query.query.GraqlCompute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.query.query.GraqlCompute.Algorithm.DEGREE;
-import static grakn.core.graql.query.query.GraqlCompute.Algorithm.K_CORE;
+import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
+import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
+import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
 import static grakn.core.graql.query.query.GraqlCompute.Argument.k;
 import static grakn.core.graql.query.query.GraqlCompute.Argument.min_k;
 import static grakn.core.graql.query.query.GraqlCompute.Argument.size;

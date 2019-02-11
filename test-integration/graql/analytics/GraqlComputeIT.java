@@ -33,7 +33,6 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.query.GraqlCompute;
-import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.Graql;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
@@ -56,8 +55,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.query.GraqlCompute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.query.query.GraqlCompute.Algorithm.DEGREE;
+import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
+import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
 import static grakn.core.graql.query.query.GraqlCompute.Argument.contains;
 import static grakn.core.graql.query.query.GraqlCompute.Method.CENTRALITY;
 import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;

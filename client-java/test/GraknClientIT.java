@@ -76,9 +76,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.query.GraqlCompute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.query.query.GraqlCompute.Algorithm.DEGREE;
-import static grakn.core.graql.query.query.GraqlCompute.Algorithm.K_CORE;
+import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
+import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
+import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
 import static grakn.core.graql.query.query.GraqlCompute.Method.CENTRALITY;
 import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;
 import static grakn.core.graql.query.query.GraqlCompute.Method.COUNT;
