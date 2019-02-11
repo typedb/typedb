@@ -28,7 +28,7 @@ import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.statement.Statement;
 
 import grakn.core.graql.query.statement.Variable;
-import graql.util.Token;
+import graql.lang.util.Token;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
