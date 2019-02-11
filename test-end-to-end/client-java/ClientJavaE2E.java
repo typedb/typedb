@@ -3,7 +3,6 @@ package grakn.core.client;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.Value;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
@@ -224,7 +223,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - match aggregate...");
-            GraqlAggregate aggregateQuery = Graql.match(var("p").isa("lion")).get().count();
+            GraqlGet.GraqlAggregate aggregateQuery = Graql.match(var("p").isa("lion")).get().count();
             LOG.info("clientJavaE2E() - '" + aggregateQuery + "'");
             int aggregateCount = tx.execute(aggregateQuery).get(0).number().intValue();
             assertThat(aggregateCount, equalTo(lionNames().length));

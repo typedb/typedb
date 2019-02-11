@@ -48,7 +48,6 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.printer.Printer;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
@@ -783,35 +782,35 @@ public class GraknClientIT {
             person.create().has(name.create("Alice")).has(age.create(20));
             person.create().has(name.create("Bob")).has(age.create(22));
 
-            GraqlAggregate nullQuery =
+            GraqlGet.GraqlAggregate nullQuery =
                     Graql.match(var("x").isa("person").has("rating", var("y"))).get().sum("y");
             assertTrue(tx.execute(nullQuery).isEmpty());
 
-            GraqlAggregate countQuery =
+            GraqlGet.GraqlAggregate countQuery =
                     Graql.match(var("x").isa("person").has("age", var("y"))).get("y").count();
             assertEquals(2L, tx.execute(countQuery).get(0).number().longValue());
 
-            GraqlAggregate sumAgeQuery =
+            GraqlGet.GraqlAggregate sumAgeQuery =
                     Graql.match(var("x").isa("person").has("age", var("y"))).get().sum("y");
             assertEquals(42, tx.execute(sumAgeQuery).get(0).number().intValue());
 
-            GraqlAggregate minAgeQuery =
+            GraqlGet.GraqlAggregate minAgeQuery =
                     Graql.match(var("x").isa("person").has("age", var("y"))).get().min("y");
             assertEquals(20, tx.execute(minAgeQuery).get(0).number().intValue());
 
-            GraqlAggregate maxAgeQuery =
+            GraqlGet.GraqlAggregate maxAgeQuery =
                     Graql.match(var("x").isa("person").has("age", var("y"))).get().max("y");
             assertEquals(22, tx.execute(maxAgeQuery).get(0).number().intValue());
 
-            GraqlAggregate meanAgeQuery =
+            GraqlGet.GraqlAggregate meanAgeQuery =
                     Graql.match(var("x").isa("person").has("age", var("y"))).get().mean("y");
             assertEquals(21.0d, tx.execute(meanAgeQuery).get(0).number().doubleValue(), 0.01d);
 
-            GraqlAggregate medianAgeQuery =
+            GraqlGet.GraqlAggregate medianAgeQuery =
                     Graql.match(var("x").isa("person").has("age", var("y"))).get().median("y");
             assertEquals(21.0d, tx.execute(medianAgeQuery).get(0).number().doubleValue(), 0.01d);
 
-            GraqlAggregate stdAgeQuery =
+            GraqlGet.GraqlAggregate stdAgeQuery =
                     Graql.match(var("x").isa("person").has("age", var("y"))).get().std("y");
             int n = 2;
             double mean = (20 + 22) / n;

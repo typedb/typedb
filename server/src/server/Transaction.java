@@ -34,7 +34,6 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
@@ -163,19 +162,19 @@ public interface Transaction extends AutoCloseable {
 
     // Aggregate Query
 
-    default List<Value> execute(GraqlAggregate query) {
+    default List<Value> execute(GraqlGet.GraqlAggregate query) {
         return execute(query, true);
     }
 
-    default List<Value> execute(GraqlAggregate query, boolean infer) {
+    default List<Value> execute(GraqlGet.GraqlAggregate query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<Value> stream(GraqlAggregate query) {
+    default Stream<Value> stream(GraqlGet.GraqlAggregate query) {
         return stream(query, true);
     }
 
-    Stream<Value> stream(GraqlAggregate query, boolean infer);
+    Stream<Value> stream(GraqlGet.GraqlAggregate query, boolean infer);
 
     // Group Query
 
@@ -255,8 +254,8 @@ public interface Transaction extends AutoCloseable {
         } else if (query instanceof GraqlGet) {
             return stream((GraqlGet) query, infer);
 
-        } else if (query instanceof GraqlAggregate) {
-            return stream((GraqlAggregate) query, infer);
+        } else if (query instanceof GraqlGet.GraqlAggregate) {
+            return stream((GraqlGet.GraqlAggregate) query, infer);
 
         } else if (query instanceof GraqlGroup.Aggregate) {
             return stream((GraqlGroup.Aggregate) query, infer);

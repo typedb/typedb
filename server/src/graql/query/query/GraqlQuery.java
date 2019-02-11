@@ -67,9 +67,9 @@ public abstract class GraqlQuery {
         }
     }
 
-    public GraqlAggregate asGraqlGetAggregate() {
+    public GraqlGet.GraqlAggregate asGraqlGetAggregate() {
         if (this instanceof GraqlGet) {
-            return (GraqlAggregate) this;
+            return (GraqlGet.GraqlAggregate) this;
         } else {
             throw GraqlException.create("This is not a GraqlGet.Aggregate query");
         }

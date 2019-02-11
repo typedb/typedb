@@ -38,7 +38,6 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.QueryExecutor;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
@@ -228,7 +227,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public Stream<Value> stream(GraqlAggregate query, boolean infer) {
+    public Stream<Value> stream(GraqlGet.GraqlAggregate query, boolean infer) {
         return executor(infer).aggregate(query);
     }
 

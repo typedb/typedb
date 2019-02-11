@@ -36,7 +36,6 @@ import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
@@ -255,8 +254,8 @@ public class QueryExecutor {
         return match(query.match()).map(result -> result.project(query.vars())).distinct();
     }
 
-    public Stream<Value> aggregate(GraqlAggregate query) {
-        Stream<ConceptMap> answers = get(query.getQuery());
+    public Stream<Value> aggregate(GraqlGet.GraqlAggregate query) {
+        Stream<ConceptMap> answers = get(query.graqlGet());
         switch (query.method()) {
             case COUNT:
                 return AggregateExecutor.count(answers).stream();

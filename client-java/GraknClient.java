@@ -44,7 +44,6 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
@@ -400,7 +399,7 @@ public final class GraknClient {
         }
 
         @Override
-        public Stream<Value> stream(GraqlAggregate query, boolean infer) {
+        public Stream<Value> stream(GraqlGet.GraqlAggregate query, boolean infer) {
             Iterable<Value> iterable = () -> rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }

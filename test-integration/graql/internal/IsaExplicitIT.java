@@ -32,9 +32,9 @@ import grakn.core.graql.internal.gremlin.fragment.NeqFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutIsaFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutSubFragment;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -92,8 +92,8 @@ public class IsaExplicitIT {
     @Test
     public void whenInsertIsaExplicit_InsertsADirectInstanceOfAType() {
         tx.execute(Graql.insert(var("x").isaX("superType1")));
-        assertEquals(1, tx.execute(Graql.<GraqlAggregate>parse("match $z isa! superType1; get; count;")).get(0).number().intValue());
-        assertEquals(2, tx.execute(Graql.<GraqlAggregate>parse("match $z isa superType1; get; count;")).get(0).number().intValue());
+        assertEquals(1, tx.execute(Graql.<GraqlGet.GraqlAggregate>parse("match $z isa! superType1; get; count;")).get(0).number().intValue());
+        assertEquals(2, tx.execute(Graql.<GraqlGet.GraqlAggregate>parse("match $z isa superType1; get; count;")).get(0).number().intValue());
 
     }
 

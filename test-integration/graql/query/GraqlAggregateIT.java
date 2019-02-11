@@ -24,7 +24,7 @@ import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.graql.query.query.GraqlAggregate;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
@@ -182,7 +182,7 @@ public class GraqlAggregateIT {
 
     @Test
     public void testSumInt() {
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
                 .sum("y");
 
         assertEquals(1940, tx.execute(query).get(0).number().intValue());
@@ -190,7 +190,7 @@ public class GraqlAggregateIT {
 
     @Test
     public void testSumDouble() {
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average")).get()
                 .sum("y");
 
         assertEquals(27.7d, tx.execute(query).get(0).number().doubleValue(), 0.01d);
@@ -198,7 +198,7 @@ public class GraqlAggregateIT {
 
     @Test
     public void testSumFilteredAnswers() {
-        GraqlAggregate query = Graql
+        GraqlGet.GraqlAggregate query = Graql
                 .match(var("x").isa("movie")
                                .has("tmdb-vote-count", var("y"))
                                .has("tmdb-vote-average", var("z")))
@@ -211,7 +211,7 @@ public class GraqlAggregateIT {
     @Test
     public void testSumNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
                 .sum("y");
 
         assertTrue(tx.execute(query).isEmpty());
@@ -219,7 +219,7 @@ public class GraqlAggregateIT {
 
     @Test
     public void testMaxInt() {
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
                 .max("y");
 
         assertEquals(1000, tx.execute(query).get(0).number().intValue());
@@ -227,7 +227,7 @@ public class GraqlAggregateIT {
 
     @Test
     public void testMaxDouble() {
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average")).get()
                 .max("y");
 
         assertEquals(8.6d, tx.execute(query).get(0).number().doubleValue(), 0.01d);
@@ -236,7 +236,7 @@ public class GraqlAggregateIT {
     @Test
     public void testMaxNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
                 .max("y");
 
         assertTrue(tx.execute(query).isEmpty());
@@ -244,7 +244,7 @@ public class GraqlAggregateIT {
 
     @Test
     public void testMinInt() {
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
                 .min("y");
 
         assertEquals(5, tx.execute(query).get(0).number().intValue());
@@ -253,7 +253,7 @@ public class GraqlAggregateIT {
     @Test
     public void testMinNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
                 .min("y");
 
         assertTrue(tx.execute(query).isEmpty());
@@ -261,7 +261,7 @@ public class GraqlAggregateIT {
 
     @Test
     public void testMean() {
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average")).get()
                 .mean("y");
 
         //noinspection OptionalGetWithoutIsPresent
@@ -271,7 +271,7 @@ public class GraqlAggregateIT {
     @Test
     public void testMeanNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
                 .mean("y");
 
         assertTrue(tx.execute(query).isEmpty());
@@ -279,7 +279,7 @@ public class GraqlAggregateIT {
 
     @Test
     public void testMedianInt() {
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
                 .median("y");
 
         assertEquals(400, tx.execute(query).get(0).number().intValue());
@@ -287,7 +287,7 @@ public class GraqlAggregateIT {
 
     @Test
     public void testMedianDouble() {
-        GraqlAggregate query = Graql.match(
+        GraqlGet.GraqlAggregate query = Graql.match(
                 var("x").isa("movie"),
                 var().rel("x").rel("y"),
                 var("y").isa("tmdb-vote-average")
@@ -300,7 +300,7 @@ public class GraqlAggregateIT {
     @Test
     public void testMedianNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
                 .median("y");
 
         assertTrue(tx.execute(query).isEmpty());
@@ -308,7 +308,7 @@ public class GraqlAggregateIT {
 
     @Test
     public void testStdDouble1() {
-        GraqlAggregate query = Graql.match(var("x").isa("movie").has("tmdb-vote-count", var("y"))).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie").has("tmdb-vote-count", var("y"))).get()
                 .std("y");
 
         double mean = (1000d + 100d + 400d + 435d + 5d) / 5d;
@@ -321,7 +321,7 @@ public class GraqlAggregateIT {
 
     @Test
     public void testStdDouble2() {
-        GraqlAggregate query = Graql.match(var("x").isa("movie").has("tmdb-vote-average", var("y"))).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie").has("tmdb-vote-average", var("y"))).get()
                 .std("y");
 
         double mean = (8.6d + 8.4d + 7.6d + 3.1d) / 4d;
@@ -335,7 +335,7 @@ public class GraqlAggregateIT {
     @Test
     public void testStdNull() {
         tx.putAttributeType("random", AttributeType.DataType.INTEGER);
-        GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
+        GraqlGet.GraqlAggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
                 .std("y");
 
         assertTrue(tx.execute(query).isEmpty());

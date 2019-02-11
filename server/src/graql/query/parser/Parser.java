@@ -27,7 +27,6 @@ import grakn.core.graql.query.property.HasAttributeProperty;
 import grakn.core.graql.query.property.IsaProperty;
 import grakn.core.graql.query.property.RelationProperty;
 import grakn.core.graql.query.property.ValueProperty;
-import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
@@ -271,12 +270,12 @@ public class Parser extends GraqlBaseVisitor {
      * @return An AggregateQuery object
      */
     @Override
-    public GraqlAggregate visitQuery_get_aggregate(GraqlParser.Query_get_aggregateContext ctx) {
+    public GraqlGet.GraqlAggregate visitQuery_get_aggregate(GraqlParser.Query_get_aggregateContext ctx) {
         GraqlParser.Function_aggregateContext function = ctx.function_aggregate();
 
-        return new GraqlAggregate(visitQuery_get(ctx.query_get()),
-                                  Token.Statistics.Method.of(function.function_method().getText()),
-                                  function.VAR_() != null ? getVar(function.VAR_()) : null);
+        return new GraqlGet.GraqlAggregate(visitQuery_get(ctx.query_get()),
+                                           Token.Statistics.Method.of(function.function_method().getText()),
+                                           function.VAR_() != null ? getVar(function.VAR_()) : null);
     }
 
     @Override
