@@ -181,7 +181,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public String toString(){
-        return "{\n" +
+        return "{\n\t" +
                 getAtoms(Atomic.class).map(Atomic::toString).collect(Collectors.joining(";\n\t")) +
                 "\n}";
     }
