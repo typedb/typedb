@@ -28,7 +28,7 @@ import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
-import graql.util.Token;
+import graql.lang.util.Token;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
@@ -46,7 +46,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static graql.util.StringUtil.escapeLabelOrId;
+import static graql.lang.util.StringUtil.escapeLabelOrId;
 import static java.util.stream.Collectors.joining;
 
 

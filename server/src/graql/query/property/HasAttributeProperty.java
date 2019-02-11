@@ -19,10 +19,10 @@
 package grakn.core.graql.query.property;
 
 import grakn.core.graql.query.Graql;
-import graql.util.Token;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.StatementInstance;
 import grakn.core.graql.query.statement.Variable;
+import graql.lang.util.Token;
 
 import java.util.stream.Stream;
 

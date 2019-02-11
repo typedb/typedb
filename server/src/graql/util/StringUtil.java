@@ -20,11 +20,7 @@ package grakn.core.graql.util;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
-
-import static graql.util.StringUtil.escapeLabelOrId;
+import static graql.lang.util.StringUtil.escapeLabelOrId;
 
 /**
  * Some helper methods in dealing with strings in the context of Graql.

@@ -20,9 +20,9 @@ package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.Graql;
-import graql.util.Token;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
+import graql.lang.util.Token;
 
 import javax.annotation.CheckReturnValue;
 import java.util.HashSet;

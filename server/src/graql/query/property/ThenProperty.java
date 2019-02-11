@@ -18,10 +18,10 @@
 
 package grakn.core.graql.query.property;
 
-import graql.util.Token;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.statement.StatementType;
+import graql.lang.util.Token;
 
 import static java.util.stream.Collectors.joining;
 

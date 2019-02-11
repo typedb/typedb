@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.exception;
+package graql.lang.exception;
 
 
 public class GraqlException extends RuntimeException {
@@ -30,11 +30,11 @@ public class GraqlException extends RuntimeException {
     }
 
     public static GraqlException conflictingProperties(String statement, String property, String other) {
-        return new GraqlException(ErrorMessage.CONFLICTING_PROPERTIES.getMessage(statement, property, other));
+        return new GraqlException(graql.lang.exception.ErrorMessage.CONFLICTING_PROPERTIES.getMessage(statement, property, other));
     }
 
     public static GraqlException varNotInQuery(String var) {
-        return new GraqlException(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(var));
+        return new GraqlException(graql.lang.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(var));
     }
 
     public static GraqlException noPatterns() {

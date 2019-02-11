@@ -31,7 +31,7 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
-import graql.util.Token;
+import graql.lang.util.Token;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;

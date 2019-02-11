@@ -25,7 +25,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import graql.util.Token;
+import graql.lang.util.Token;
 import grakn.core.graql.query.property.IdProperty;
 import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.statement.Statement;

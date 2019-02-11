@@ -24,7 +24,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.query.GraqlQuery;
-import graql.util.Token;
+import graql.lang.util.Token;
 import org.junit.Test;
 
 import static grakn.core.graql.query.query.GraqlCompute.Algorithm.CONNECTED_COMPONENT;

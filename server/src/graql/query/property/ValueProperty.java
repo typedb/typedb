@@ -18,10 +18,10 @@
 
 package grakn.core.graql.query.property;
 
-import graql.util.Token;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.StatementAttribute;
-import graql.util.StringUtil;
+import graql.lang.util.StringUtil;
+import graql.lang.util.Token;
 
 import java.time.LocalDateTime;
 import java.util.stream.Stream;

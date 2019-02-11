@@ -19,7 +19,6 @@
 package grakn.core.graql.query.statement.builder;
 
 import grakn.core.graql.query.Graql;
-import graql.util.Token;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.property.AbstractProperty;
 import grakn.core.graql.query.property.DataTypeProperty;
@@ -34,6 +33,7 @@ import grakn.core.graql.query.property.VarProperty;
 import grakn.core.graql.query.property.WhenProperty;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.StatementType;
+import graql.lang.util.Token;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

@@ -28,7 +28,7 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.Transaction;
-import graql.exception.GraqlException;
+import graql.lang.exception.GraqlException;
 
 import java.util.Collection;
 import java.util.HashSet;

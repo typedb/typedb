@@ -39,8 +39,8 @@ import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
-import graql.exception.GraqlException;
-import graql.util.Token;
+import graql.lang.exception.GraqlException;
+import graql.lang.util.Token;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -55,7 +55,7 @@ import java.util.stream.Stream;
 
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
-import static graql.exception.ErrorMessage.NO_PATTERNS;
+import static graql.lang.exception.ErrorMessage.NO_PATTERNS;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -235,7 +235,7 @@ public class QueryErrorIT {
     @Test
     public void testGetNonExistentVariable() {
         exception.expect(GraqlException.class);
-        exception.expectMessage(graql.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(new Variable("y")));
+        exception.expectMessage(graql.lang.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(new Variable("y")));
 
         MatchClause match = Graql.match(var("x").isa("movie"));
         Stream<Concept> concepts = tx.stream(match.get("y")).map(ans -> ans.get("y"));

@@ -20,8 +20,8 @@ package grakn.core.graql.query.query;
 
 import grakn.core.graql.query.query.builder.AggregateBuilder;
 import grakn.core.graql.query.statement.Variable;
-import graql.exception.GraqlException;
-import graql.util.Token;
+import graql.lang.exception.GraqlException;
+import graql.lang.util.Token;
 
 import javax.annotation.CheckReturnValue;
 import java.util.LinkedHashSet;

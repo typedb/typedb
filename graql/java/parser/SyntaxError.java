@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.parser;
+package graql.lang.parser;
 
-import graql.exception.ErrorMessage;
+import graql.lang.exception.ErrorMessage;
 import org.apache.commons.lang.StringUtils;
 
 public class SyntaxError {

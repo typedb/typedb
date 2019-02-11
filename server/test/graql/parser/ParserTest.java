@@ -30,7 +30,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.GraqlQuery;
-import graql.util.Token;
+import graql.lang.util.Token;
 import grakn.core.graql.query.query.GraqlUndefine;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.property.DataTypeProperty;

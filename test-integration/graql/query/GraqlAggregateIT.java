@@ -30,7 +30,7 @@ import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import graql.exception.GraqlException;
+import graql.lang.exception.GraqlException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -45,7 +45,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static grakn.core.graql.query.Graql.var;
-import static graql.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
+import static graql.lang.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;

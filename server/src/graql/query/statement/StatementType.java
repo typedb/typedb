@@ -18,9 +18,9 @@
 
 package grakn.core.graql.query.statement;
 
-import graql.util.Token;
 import grakn.core.graql.query.property.TypeProperty;
 import grakn.core.graql.query.property.VarProperty;
+import graql.lang.util.Token;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;

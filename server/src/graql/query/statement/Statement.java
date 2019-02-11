@@ -30,8 +30,8 @@ import grakn.core.graql.query.statement.builder.StatementInstanceBuilder;
 import grakn.core.graql.query.statement.builder.StatementRelationBuilder;
 import grakn.core.graql.query.statement.builder.StatementThingBuilder;
 import grakn.core.graql.query.statement.builder.StatementTypeBuilder;
-import graql.exception.GraqlException;
-import graql.util.StringUtil;
+import graql.lang.exception.GraqlException;
+import graql.lang.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

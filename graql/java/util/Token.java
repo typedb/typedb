@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.util;
+package graql.lang.util;
 
 public class Token {
 
