@@ -18,8 +18,6 @@
 
 workspace(name = "grakn_core")
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
 
 ####################
 # Load Build Tools #
@@ -73,20 +71,12 @@ java_grpc_compile()
 #     Load Deployment Dependencies     #
 ########################################
 
-git_repository(
-    name="graknlabs_bazel_distribution",
-    remote="https://github.com/graknlabs/bazel-distribution",
-    commit="796cea2531404509a3298af65ab562b1929c3eb6"
-)
+load("//dependencies/distribution:dependencies.bzl", "distribution_dependencies")
+distribution_dependencies()
 
 load("@graknlabs_bazel_distribution//github:dependencies.bzl", "github_dependencies_for_deployment")
 github_dependencies_for_deployment()
 
-git_repository(
-    name="com_github_google_bazel_common",
-    remote="https://github.com/graknlabs/bazel-common",
-    commit="550f0490798a4e4b6c5ff8cac3b6f5c2a5e81e21",
-)
-
 load("@com_github_google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
 google_common_workspace_rules()
+

@@ -17,7 +17,9 @@
 #
 
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file", "http_jar", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file", "http_jar")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
 
 def tools_dependencies():
     http_file(
@@ -66,6 +68,12 @@ def tools_dependencies():
         name = "bazel_deps",
         sha256 = "43278a0042e253384543c4700021504019c1f51f3673907a1b25bb1045461c0c",
         urls = ["https://github.com/graknlabs/bazel-deps/releases/download/v0.2/grakn-bazel-deps-v0.2.jar"],
+    )
+
+    git_repository(
+        name="com_github_google_bazel_common",
+        remote="https://github.com/graknlabs/bazel-common",
+        commit="550f0490798a4e4b6c5ff8cac3b6f5c2a5e81e21",
     )
 
     http_archive(
