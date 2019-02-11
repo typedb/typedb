@@ -71,7 +71,7 @@ java_grpc_compile()
 
 
 ########################################
-#     Load Deployment Dependencies     #
+#    Load Distribution Dependencies    #
 ########################################
 
 load("//dependencies/distribution:dependencies.bzl", "distribution_dependencies")
