@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query.statement;
 
-import grakn.core.graql.query.Token;
+import graql.util.Token;
 import grakn.core.graql.query.property.TypeProperty;
 import grakn.core.graql.query.property.VarProperty;
 

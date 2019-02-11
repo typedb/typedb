@@ -38,6 +38,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.exception.GraqlException;
+import graql.util.Token;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

@@ -5,9 +5,10 @@ java_test(
     test_class = "grakn.core.client.ClientJavaE2E",
     srcs = ["ClientJavaE2E.java", "ClientJavaE2EConstants.java"],
     deps = [
-        "//client-java",
-        "//server",
-        "//common",
+        "//client-java:client-java",
+        "//common:common",
+        "//graql/java:graql",
+        "//server:server",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",

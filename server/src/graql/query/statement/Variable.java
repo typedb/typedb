@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query.statement;
 
-import grakn.core.graql.query.Token;
+import graql.util.Token;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;

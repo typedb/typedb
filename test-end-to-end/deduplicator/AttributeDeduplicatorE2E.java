@@ -22,7 +22,7 @@ package grakn.core.deduplicator;
 import grakn.core.client.GraknClient;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Token;
+import graql.util.Token;
 import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;

@@ -28,6 +28,7 @@ import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
+import graql.util.Token;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;

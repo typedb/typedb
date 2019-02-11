@@ -45,6 +45,7 @@ import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.exception.GraqlException;
+import graql.util.Token;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;

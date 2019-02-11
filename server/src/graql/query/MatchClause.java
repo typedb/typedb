@@ -23,6 +23,7 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import graql.exception.GraqlException;
+import graql.util.Token;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;

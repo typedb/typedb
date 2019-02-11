@@ -28,7 +28,7 @@ import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.Token;
+import graql.util.Token;
 import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.property.VarProperty;
 import grakn.core.graql.query.statement.Statement;

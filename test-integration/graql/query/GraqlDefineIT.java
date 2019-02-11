@@ -37,6 +37,7 @@ import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.util.Token;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;

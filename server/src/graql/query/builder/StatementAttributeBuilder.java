@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query.builder;
 
-import grakn.core.graql.query.Token;
+import graql.util.Token;
 import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.property.ValueProperty.Operation.Assignment;
 import grakn.core.graql.query.property.ValueProperty.Operation.Comparison;

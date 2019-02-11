@@ -20,6 +20,7 @@ package grakn.core.graql.query;
 
 import grakn.core.graql.query.builder.AggregateBuilder;
 import grakn.core.graql.query.statement.Variable;
+import graql.util.Token;
 
 public class GraqlGroup extends GraqlQuery implements AggregateBuilder<GraqlGroup.Aggregate> {
 

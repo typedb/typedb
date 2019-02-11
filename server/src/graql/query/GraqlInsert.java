@@ -20,6 +20,7 @@ package grakn.core.graql.query;
 
 import grakn.core.graql.query.statement.Statement;
 import graql.exception.GraqlException;
+import graql.util.Token;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

@@ -19,7 +19,7 @@
 package grakn.core.graql.query.builder;
 
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Token;
+import graql.util.Token;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.property.AbstractProperty;
 import grakn.core.graql.query.property.DataTypeProperty;

@@ -10,7 +10,7 @@ import grakn.core.graql.query.GraqlDelete;
 import grakn.core.graql.query.GraqlGet;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.GraqlInsert;
-import grakn.core.graql.query.Token;
+import graql.util.Token;
 import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;

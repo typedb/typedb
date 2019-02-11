@@ -19,6 +19,7 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.query.statement.Variable;
+import graql.util.Token;
 
 public class GraqlAggregate extends GraqlQuery {
 

@@ -21,7 +21,7 @@ package grakn.core.graql.query.pattern;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Token;
+import graql.util.Token;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 

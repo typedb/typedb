@@ -27,7 +27,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.Token;
+import graql.util.Token;
 
 import java.util.Collection;
 import java.util.LinkedList;

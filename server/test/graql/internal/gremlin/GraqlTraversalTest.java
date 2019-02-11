@@ -30,7 +30,7 @@ import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Token;
+import graql.util.Token;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.property.IdProperty;

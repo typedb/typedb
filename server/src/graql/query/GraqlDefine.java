@@ -19,6 +19,7 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.query.statement.Statement;
+import graql.util.Token;
 
 import java.util.List;
 
