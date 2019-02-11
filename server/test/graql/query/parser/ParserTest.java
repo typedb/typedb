@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.parser;
+package grakn.core.graql.query.parser;
 
 import com.google.common.base.Strings;
 import grakn.core.graql.exception.GraqlSyntaxException;

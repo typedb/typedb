@@ -20,7 +20,7 @@ load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
     name = "parser-test",
-    test_class = "grakn.core.graql.parser.ParserTest",
+    test_class = "grakn.core.graql.query.parser.ParserTest",
     srcs = ["ParserTest.java"],
     deps = [
         "//common:common",
@@ -34,7 +34,7 @@ java_test(
 
 java_test(
     name = "query-to-string-test",
-    test_class = "grakn.core.graql.parser.QueryToStringTest",
+    test_class = "grakn.core.graql.query.parser.QueryToStringTest",
     srcs = ["QueryToStringTest.java"],
     deps = [
         "//graql/java:graql",
