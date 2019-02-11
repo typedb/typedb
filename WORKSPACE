@@ -54,21 +54,6 @@ load("//dependencies/maven:dependencies.bzl", maven_dependencies_for_build = "ma
 maven_dependencies_for_build()
 
 
-######################################
-# Load Node.js dependencies from NPM #
-######################################
-
-# Load Node.js depdendencies for Bazel
-load("//dependencies/npm:dependencies.bzl", "node_dependencies")
-node_dependencies()
-
-load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
-rules_nodejs_dependencies()
-
-# Load NPM dependencies for Node.js programs
-load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
-node_repositories(package_json = ["//workbase:package.json"])
-
 ########################################
 # Load compiler dependencies for ANTLR #
 ########################################
@@ -100,10 +85,6 @@ java_grpc_compile()
 # Load GRPC Python dependencies
 load("@stackb_rules_proto//python:deps.bzl", "python_grpc_compile")
 python_grpc_compile()
-
-# Load GRPC Node.js dependencies
-load("@stackb_rules_proto//node:deps.bzl", "node_grpc_compile")
-node_grpc_compile()
 
 
 ########################################
