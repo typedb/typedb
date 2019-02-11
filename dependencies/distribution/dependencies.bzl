@@ -16,4 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-exports_files(["requirements.txt"])
+
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+
+def distribution_dependencies():
+    git_repository(
+        name="graknlabs_bazel_distribution",
+        remote="https://github.com/graknlabs/bazel-distribution",
+        commit="796cea2531404509a3298af65ab562b1929c3eb6"
+    )
