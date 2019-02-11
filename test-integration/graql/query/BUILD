@@ -161,11 +161,11 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":aggregate-query-it",
-        ":define-query-it",
-        ":delete-query-it",
-        ":insert-query-it",
-        ":undefine-query-it",
+        ":graql-aggregate-it",
+        ":graql-define-it",
+        ":graql-delete-it",
+        ":graql-insert-it",
+        ":graql-undefine-it",
         ":query-builder-it",
         ":query-admin-it",
         ":query-error-it",
