@@ -59,9 +59,11 @@ import java.util.UUID;
  * It allows all the integration tests to run concurrently on the same machine.
  */
 public class GraknTestServer extends ExternalResource {
+    private static final Path SERVER_CONFIG_PATH =  Paths.get("server/conf/grakn.properties");
+    private static final Path CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
 
-    private final static String SERVER_CONFIG_PATH = "server/conf/grakn.properties";
-    private final static Path CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
+    private final Path serverConfigPath;
+    private final Path cassandraConfigPath;
     private Config serverConfig;
     private Path dataDirTmp;
     private Server graknServer;
@@ -75,7 +77,13 @@ public class GraknTestServer extends ExternalResource {
     private SessionStore sessionStore;
 
     public GraknTestServer() {
+        this(SERVER_CONFIG_PATH, CASSANDRA_CONFIG_PATH);
+    }
+
+    public GraknTestServer(Path serverConfigPath, Path cassandraConfigPath) {
         System.setProperty("java.security.manager", "nottodaypotato");
+        this.serverConfigPath = serverConfigPath;
+        this.cassandraConfigPath = cassandraConfigPath;
     }
 
     @Override
@@ -140,7 +148,7 @@ public class GraknTestServer extends ExternalResource {
     }
 
     private File buildCassandraConfigWithRandomPorts() throws IOException {
-        byte[] bytes = Files.readAllBytes(CASSANDRA_CONFIG_PATH);
+        byte[] bytes = Files.readAllBytes(cassandraConfigPath);
         String configString = new String(bytes, StandardCharsets.UTF_8);
 
         configString = configString + "\nstorage_port: " + storagePort;
@@ -164,7 +172,7 @@ public class GraknTestServer extends ExternalResource {
 
     //Server helpers
     private Config createTestConfig(String dataDir) throws FileNotFoundException {
-        InputStream testConfig = new FileInputStream(SERVER_CONFIG_PATH);
+        InputStream testConfig = new FileInputStream(serverConfigPath.toFile());
 
         Config config = Config.read(testConfig);
         config.setConfigProperty(ConfigKey.DATA_DIR, dataDir);
