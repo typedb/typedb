@@ -55,26 +55,6 @@ maven_dependencies_for_build()
 
 
 ######################################
-# Load Python dependencies from PyPI #
-######################################
-
-# Load Python depdendencies for Bazel
-load("//dependencies/pip:dependencies.bzl", "python_dependencies",)
-python_dependencies()
-
-load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip_import")
-pip_repositories()
-
-# Load PyPI dependencies for Python programs
-pip_import(
-    name = "pypi_dependencies",
-    requirements = "//dependencies/pip:requirements.txt",
-)
-load("@pypi_dependencies//:requirements.bzl", "pip_install")
-pip_install()
-
-
-######################################
 # Load Node.js dependencies from NPM #
 ######################################
 
@@ -138,14 +118,6 @@ git_repository(
 
 load("@graknlabs_bazel_distribution//github:dependencies.bzl", "github_dependencies_for_deployment")
 github_dependencies_for_deployment()
-
-pip_import(
-    name = "pypi_deployment_dependencies",
-    requirements = "@graknlabs_bazel_distribution//pip:requirements.txt",
-)
-load("@pypi_deployment_dependencies//:requirements.bzl", "pip_install")
-pip_install()
-
 
 git_repository(
     name="com_github_google_bazel_common",
