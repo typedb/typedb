@@ -661,7 +661,8 @@ public class ParserTest {
         GraqlGet.Aggregate parsed = parse(query).asGetAggregate();
         GraqlGet.Aggregate expected = match(var("x").isa("movie")).get().count();
 
-        assertQueryEquals(expected, parsed, query);
+        assertEquals(expected, parsed);
+        assertEquals(expected, parse(parsed.toString()));
     }
 
     @Test
