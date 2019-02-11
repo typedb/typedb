@@ -23,6 +23,8 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
@@ -37,14 +39,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.util.StringUtil.idToString;
-import static grakn.core.graql.util.StringUtil.typeLabelToString;
+import static graql.lang.util.StringUtil.escapeLabelOrId;
 
 /**
  * Default printer that prints results in Graql syntax
  *
  */
-class StringPrinter extends Printer<StringBuilder> {
+public class StringPrinter extends Printer<StringBuilder> {
 
     private final AttributeType[] attributeTypes;
     private final boolean colorize;
@@ -52,6 +53,28 @@ class StringPrinter extends Printer<StringBuilder> {
     StringPrinter(boolean colorize, AttributeType... attributeTypes) {
         this.colorize = colorize;
         this.attributeTypes = attributeTypes;
+    }
+
+    /**
+     * @param id an ID of a concept
+     * @return
+     * The id of the concept correctly escaped in graql.
+     * If the ID doesn't begin with a number and is only comprised of alphanumeric characters, underscores and dashes,
+     * then it will be returned as-is, otherwise it will be quoted and escaped.
+     */
+    public static String conceptId(ConceptId id) {
+        return escapeLabelOrId(id.getValue());
+    }
+
+    /**
+     * @param label a label of a type
+     * @return
+     * The label of the type correctly escaped in graql.
+     * If the label doesn't begin with a number and is only comprised of alphanumeric characters, underscores and dashes,
+     * then it will be returned as-is, otherwise it will be quoted and escaped.
+     */
+    public static String label(Label label) {
+        return escapeLabelOrId(label.getValue());
     }
 
     @Override
@@ -83,7 +106,7 @@ class StringPrinter extends Printer<StringBuilder> {
         } else {
             output.append(colorKeyword(Token.Property.ID.toString()))
                     .append(Token.Char.SPACE)
-                    .append(idToString(concept.id()));
+                    .append(conceptId(concept.id()));
         }
 
         if (concept.isRelationship()) {
@@ -95,7 +118,7 @@ class StringPrinter extends Printer<StringBuilder> {
                 for (Thing thing : things) {
                     rolePlayerList.add(
                             colorType(role) + Token.Char.COLON + Token.Char.SPACE +
-                                    Token.Property.ID + Token.Char.SPACE + idToString(thing.id()));
+                                    Token.Property.ID + Token.Char.SPACE + conceptId(thing.id()));
                 }
             }
 
@@ -228,9 +251,9 @@ class StringPrinter extends Printer<StringBuilder> {
      */
     private String colorType(SchemaConcept schemaConcept) {
         if(colorize) {
-            return ANSI.color(typeLabelToString(schemaConcept.label()), ANSI.PURPLE);
+            return ANSI.color(label(schemaConcept.label()), ANSI.PURPLE);
         } else {
-            return typeLabelToString(schemaConcept.label());
+            return label(schemaConcept.label());
         }
     }
 

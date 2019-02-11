@@ -33,7 +33,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Map;
 
-import static grakn.core.graql.util.StringUtil.idToString;
+import static grakn.core.graql.printer.StringPrinter.conceptId;
 
 @AutoValue
 abstract class IdFragment extends Fragment {
@@ -75,7 +75,7 @@ abstract class IdFragment extends Fragment {
 
     @Override
     public String name() {
-        return "[id:" + idToString(id()) + "]";
+        return "[id:" + conceptId(id()) + "]";
     }
 
     @Override

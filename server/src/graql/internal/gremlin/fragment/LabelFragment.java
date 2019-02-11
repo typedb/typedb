@@ -23,8 +23,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.printer.StringPrinter;
 import grakn.core.graql.query.statement.Variable;
-import grakn.core.graql.util.StringUtil;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -66,7 +66,7 @@ public abstract class LabelFragment extends Fragment {
 
     @Override
     public String name() {
-        return "[label:" + labels().stream().map(StringUtil::typeLabelToString).collect(joining(",")) + "]";
+        return "[label:" + labels().stream().map(StringPrinter::label).collect(joining(",")) + "]";
     }
 
     @Override
