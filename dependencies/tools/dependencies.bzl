@@ -17,10 +17,9 @@
 #
 
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file", "http_jar")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file", "http_jar", "http_archive")
 
 def tools_dependencies():
-
     http_file(
         name = "buildifier",
         executable = True,
@@ -67,4 +66,14 @@ def tools_dependencies():
         name = "bazel_deps",
         sha256 = "43278a0042e253384543c4700021504019c1f51f3673907a1b25bb1045461c0c",
         urls = ["https://github.com/graknlabs/bazel-deps/releases/download/v0.2/grakn-bazel-deps-v0.2.jar"],
+    )
+
+    http_archive(
+      name = "bazel_toolchains",
+      sha256 = "07a81ee03f5feae354c9f98c884e8e886914856fb2b6a63cba4619ef10aaaf0b",
+      strip_prefix = "bazel-toolchains-31b5dc8c4e9c7fd3f5f4d04c6714f2ce87b126c1",
+      urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/31b5dc8c4e9c7fd3f5f4d04c6714f2ce87b126c1.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/archive/31b5dc8c4e9c7fd3f5f4d04c6714f2ce87b126c1.tar.gz",
+      ],
     )
