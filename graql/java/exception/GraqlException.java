@@ -29,6 +29,14 @@ public class GraqlException extends RuntimeException {
         super(error, e);
     }
 
+    public String getName() {
+        return this.getClass().getName();
+    }
+
+    public static GraqlException create(String error){
+        return new GraqlException(error);
+    }
+
     public static GraqlException conflictingProperties(String statement, String property, String other) {
         return new GraqlException(graql.lang.exception.ErrorMessage.CONFLICTING_PROPERTIES.getMessage(statement, property, other));
     }
@@ -39,9 +47,5 @@ public class GraqlException extends RuntimeException {
 
     public static GraqlException noPatterns() {
         return new GraqlException(ErrorMessage.NO_PATTERNS.getMessage());
-    }
-
-    public String getName() {
-        return this.getClass().getName();
     }
 }

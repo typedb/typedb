@@ -30,7 +30,7 @@ import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlSyntaxException;
+import graql.lang.exception.GraqlException;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
@@ -389,7 +389,7 @@ public class ResponseBuilder {
             } else if (e instanceof PropertyNotUniqueException) {
                 return exception(Status.ALREADY_EXISTS, message);
             } else if (e instanceof TransactionException | e instanceof GraqlQueryException |
-                    e instanceof GraqlSyntaxException | e instanceof InvalidKBException) {
+                    e instanceof GraqlException | e instanceof InvalidKBException) {
                 return exception(Status.INVALID_ARGUMENT, message);
             }
         } else if (e instanceof StatusRuntimeException) {

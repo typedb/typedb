@@ -24,7 +24,6 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.property.ValueProperty;
@@ -223,7 +222,7 @@ public class QueryErrorIT {
 
     @Test
     public void testAdditionalSemicolon() {
-        exception.expect(GraqlSyntaxException.class);
+        exception.expect(GraqlException.class);
         exception.expectMessage(allOf(containsString("plays product-type")));
         tx.execute(Graql.<GraqlDefine>parse(
                 "define " +

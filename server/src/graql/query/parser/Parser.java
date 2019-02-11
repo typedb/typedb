@@ -20,7 +20,7 @@ package grakn.core.graql.query.parser;
 
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlSyntaxException;
+import graql.lang.exception.GraqlException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.property.HasAttributeProperty;
@@ -116,7 +116,7 @@ public class Parser extends GraqlBaseVisitor {
             parser.getInterpreter().setPredictionMode(PredictionMode.LL_EXACT_AMBIG_DETECTION);
             parserMethod.apply(parser);
 
-            throw GraqlSyntaxException.create(errorListener.toString());
+            throw GraqlException.create(errorListener.toString());
         }
 
         return visitor.apply(queryContext);
