@@ -27,7 +27,7 @@ import graql.lang.exception.GraqlException;
  */
 public abstract class GraqlQuery {
 
-    public GraqlDefine asGraqlDefine() {
+    public GraqlDefine asDefine() {
         if (this instanceof GraqlDefine) {
             return (GraqlDefine) this;
         } else {
@@ -35,7 +35,7 @@ public abstract class GraqlQuery {
         }
     }
 
-    public GraqlUndefine asGraqlUndefine() {
+    public GraqlUndefine asUndefine() {
         if (this instanceof GraqlUndefine) {
             return (GraqlUndefine) this;
         } else {
@@ -43,7 +43,7 @@ public abstract class GraqlQuery {
         }
     }
 
-    public GraqlInsert asGraqlInsert() {
+    public GraqlInsert asInsert() {
         if (this instanceof GraqlInsert) {
             return (GraqlInsert) this;
         } else {
@@ -51,7 +51,7 @@ public abstract class GraqlQuery {
         }
     }
 
-    public GraqlDelete asGraqlDelete() {
+    public GraqlDelete asDelete() {
         if (this instanceof GraqlDelete) {
             return (GraqlDelete) this;
         } else {
@@ -59,7 +59,7 @@ public abstract class GraqlQuery {
         }
     }
 
-    public GraqlGet asGraqlGet() {
+    public GraqlGet asGet() {
         if (this instanceof GraqlGet) {
             return (GraqlGet) this;
         } else {
@@ -67,15 +67,15 @@ public abstract class GraqlQuery {
         }
     }
 
-    public GraqlGet.Aggregate asGraqlGetAggregate() {
-        if (this instanceof GraqlGet) {
+    public GraqlGet.Aggregate asGetAggregate() {
+        if (this instanceof GraqlGet.Aggregate) {
             return (GraqlGet.Aggregate) this;
         } else {
             throw GraqlException.create("This is not a GraqlGet.Aggregate query");
         }
     }
 
-    public GraqlGet.Group asGraqlGetGroup() {
+    public GraqlGet.Group asGetGroup() {
         if (this instanceof GraqlGet.Group) {
             return (GraqlGet.Group) this;
         } else {
@@ -83,15 +83,15 @@ public abstract class GraqlQuery {
         }
     }
 
-    public GraqlGet.Group.Aggregate asGraqlGetGroupAggregate() {
-        if (this instanceof GraqlGet.Group) {
+    public GraqlGet.Group.Aggregate asGetGroupAggregate() {
+        if (this instanceof GraqlGet.Group.Aggregate) {
             return (GraqlGet.Group.Aggregate) this;
         } else {
             throw GraqlException.create("This is not a GraqlGet.Group.Aggregate query");
         }
     }
 
-    public GraqlCompute<?> asGraqlCompute() {
+    public GraqlCompute<?> asCompute() {
         if (this instanceof GraqlCompute<?>) {
             return (GraqlCompute<?>) this;
         } else {

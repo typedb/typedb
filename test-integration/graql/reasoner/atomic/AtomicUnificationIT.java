@@ -134,7 +134,7 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_RelationWithMetaRolesAndIds(){
-        Concept instance = tx.execute(Graql.<GraqlGet>parse("match $x isa subRoleEntity; get;")).iterator().next().get("x");
+        Concept instance = tx.execute(Graql.parse("match $x isa subRoleEntity; get;").asGet()).iterator().next().get("x");
         String relation = "{ (role: $x, role: $y) isa binary; $y id '" + instance.id().getValue() + "'; };";
         String relation2 = "{ (role: $z, role: $v) isa binary; $z id '" + instance.id().getValue() + "'; };";
         String relation3 = "{ (role: $z, role: $v) isa binary; $v id '" + instance.id().getValue() + "'; };";

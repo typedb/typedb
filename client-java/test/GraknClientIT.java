@@ -258,11 +258,11 @@ public class GraknClientIT {
                 "get;";
 
         try (GraknClient.Transaction tx = reasonerRemoteSession.transaction(Transaction.Type.READ)) {
-            remoteAnswers = tx.execute(Graql.<GraqlGet>parse(queryString));
+            remoteAnswers = tx.execute(Graql.parse(queryString).asGet());
         }
 
         try (Transaction tx = reasonerLocalSession.transaction(Transaction.Type.READ)) {
-            localAnswers = tx.execute(Graql.<GraqlGet>parse(queryString));
+            localAnswers = tx.execute(Graql.parse(queryString).asGet());
         }
 
         assertEquals(remoteAnswers.size(), limit);
@@ -277,7 +277,7 @@ public class GraknClientIT {
 
             ConceptMap specificAnswer;
             try (GraknClient.Transaction tx = reasonerRemoteSession.transaction(Transaction.Type.READ)) {
-                specificAnswer = Iterables.getOnlyElement(tx.execute(Graql.<GraqlGet>parse(specificQuery)));
+                specificAnswer = Iterables.getOnlyElement(tx.execute(Graql.parse(specificQuery).asGet()));
             }
             assertEquals(answer, specificAnswer);
             testExplanation(specificAnswer);

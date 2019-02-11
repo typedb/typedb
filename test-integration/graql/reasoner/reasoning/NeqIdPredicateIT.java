@@ -49,8 +49,8 @@ public class NeqIdPredicateIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                                 String queryString = "match (related-state: $s) isa holds; get;";
 
-                List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString));
-                List<ConceptMap> exact = tx.execute(Graql.<GraqlGet>parse("match $s isa state, has name 's2'; get;"));
+                List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
+                List<ConceptMap> exact = tx.execute(Graql.parse("match $s isa state, has name 's2'; get;").asGet());
                 assertCollectionsNonTriviallyEqual(exact, answers);
             }
         }
@@ -66,7 +66,7 @@ public class NeqIdPredicateIT {
                         "$x != $y;";
                 String queryString = baseQueryString + "$y has name 'c'; get;";
 
-                List<ConceptMap> baseAnswers = tx.execute(Graql.<GraqlGet>parse(baseQueryString + "get;"));
+                List<ConceptMap> baseAnswers = tx.execute(Graql.parse(baseQueryString + "get;").asGet());
                 assertEquals(6, baseAnswers.size());
                 baseAnswers.forEach(ans -> {
                     assertEquals(2, ans.size());
@@ -78,8 +78,8 @@ public class NeqIdPredicateIT {
                         "$y has name 'c';" +
                         "{$x has name 'a';} or {$x has name 'b';}; get;";
 
-                List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString));
-                List<ConceptMap> answers2 = tx.execute(Graql.<GraqlGet>parse(explicitString));
+                List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
+                List<ConceptMap> answers2 = tx.execute(Graql.parse(explicitString).asGet());
                 assertCollectionsNonTriviallyEqual(answers, answers2);
             }
         }
@@ -105,7 +105,7 @@ public class NeqIdPredicateIT {
                         "(role1: $x, role2: $z) isa binary-base;" +
                         "$y != $z;";
 
-                List<ConceptMap> baseAnswers = tx.execute(Graql.<GraqlGet>parse(baseQueryString + "get;"));
+                List<ConceptMap> baseAnswers = tx.execute(Graql.parse(baseQueryString + "get;").asGet());
                 assertEquals(18, baseAnswers.size());
                 baseAnswers.forEach(ans -> {
                     assertEquals(3, ans.size());
@@ -122,8 +122,8 @@ public class NeqIdPredicateIT {
                         "{$y has name 'c';$z has name 'a';} or " +
                         "{$y has name 'c';$z has name 'b';};";
 
-                List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString + "get;"));
-                List<ConceptMap> answers2 = tx.execute(Graql.<GraqlGet>parse(explicitString + "get;"), false);
+                List<ConceptMap> answers = tx.execute(Graql.parse(queryString + "get;").asGet());
+                List<ConceptMap> answers2 = tx.execute(Graql.parse(explicitString + "get;").asGet(), false);
                 assertTrue(baseAnswers.containsAll(answers));
                 assertCollectionsNonTriviallyEqual(answers, answers2);
             }
@@ -150,7 +150,7 @@ public class NeqIdPredicateIT {
                         "(role1: $y, role2: $z) isa binary-base;" +
                         "$x != $z;";
 
-                List<ConceptMap> baseAnswers = tx.execute(Graql.<GraqlGet>parse(baseQueryString + "get;"));
+                List<ConceptMap> baseAnswers = tx.execute(Graql.parse(baseQueryString + "get;").asGet());
                 assertEquals(18, baseAnswers.size());
                 baseAnswers.forEach(ans -> {
                     assertEquals(3, ans.size());
@@ -168,8 +168,8 @@ public class NeqIdPredicateIT {
                         "{$y has name 'c';$z has name 'c';} or " +
                         "{$y has name 'c';$z has name 'b';};";
 
-                List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString + "get;"));
-                List<ConceptMap> answers2 = tx.execute(Graql.<GraqlGet>parse(explicitString + "get;"), false);
+                List<ConceptMap> answers = tx.execute(Graql.parse(queryString + "get;").asGet());
+                List<ConceptMap> answers2 = tx.execute(Graql.parse(explicitString + "get;").asGet(), false);
                 assertCollectionsNonTriviallyEqual(answers, answers2);
             }
         }
@@ -203,7 +203,7 @@ public class NeqIdPredicateIT {
                         "$y1 != $z1;" +
                         "$y2 != $z2;";
 
-                List<ConceptMap> baseAnswers = tx.execute(Graql.<GraqlGet>parse(baseQueryString + "get;"));
+                List<ConceptMap> baseAnswers = tx.execute(Graql.parse(baseQueryString + "get;").asGet());
                 assertEquals(108, baseAnswers.size());
                 baseAnswers.forEach(ans -> {
                     assertEquals(5, ans.size());
@@ -213,7 +213,7 @@ public class NeqIdPredicateIT {
 
                 String queryString = baseQueryString + "$x has name 'a';";
 
-                List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString + "get;"));
+                List<ConceptMap> answers = tx.execute(Graql.parse(queryString + "get;").asGet());
                 assertEquals(36, answers.size());
                 answers.forEach(ans -> {
                     assertEquals(5, ans.size());
@@ -246,7 +246,7 @@ public class NeqIdPredicateIT {
                         "(role1: $x, role2: $z1) isa binary-base;" +
                         "(role1: $y, role2: $z2) isa binary-base;";
 
-                List<ConceptMap> baseAnswers = tx.execute(Graql.<GraqlGet>parse(baseQueryString + "get;"));
+                List<ConceptMap> baseAnswers = tx.execute(Graql.parse(baseQueryString + "get;").asGet());
                 assertEquals(36, baseAnswers.size());
                 baseAnswers.forEach(ans -> {
                     assertEquals(4, ans.size());
@@ -256,7 +256,7 @@ public class NeqIdPredicateIT {
 
                 String queryString = baseQueryString + "$x has name 'a';";
 
-                List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString + "get;"));
+                List<ConceptMap> answers = tx.execute(Graql.parse(queryString + "get;").asGet());
                 assertEquals(12, answers.size());
                 answers.forEach(ans -> {
                     assertEquals(4, ans.size());

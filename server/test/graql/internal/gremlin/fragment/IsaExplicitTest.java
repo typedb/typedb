@@ -43,7 +43,7 @@ public class IsaExplicitTest {
         insertQuery = Graql.insert(x.isaX(thingy));
         assertEquals("insert $x isa! thingy;", insertQuery.toString());
 
-        insertQuery = Graql.parse("insert $x isa! thingy;");
+        insertQuery = Graql.parse("insert $x isa! thingy;").asInsert();
         assertEquals(Graql.insert(x.isaX(thingy)), insertQuery);
     }
 
@@ -60,10 +60,10 @@ public class IsaExplicitTest {
         matchQuery = Graql.match(x.isaX(y));
         assertEquals("match $x isa! $y;", matchQuery.toString());
 
-        getQuery = Graql.parse("match $x isa! thingy1; get;");
+        getQuery = Graql.parse("match $x isa! thingy1; get;").asGet();
         assertEquals(Graql.match(x.isaX(thingy1)), getQuery.match());
 
-        getQuery = Graql.parse("match $x isa! $y; get;");
+        getQuery = Graql.parse("match $x isa! $y; get;").asGet();
         assertEquals(Graql.match(x.isaX(y)), getQuery.match());
     }
 }

@@ -74,8 +74,8 @@ public class VariableRolesIT {
                     "$r1 label 'role1';" +
                     "get $a, $b, $r2;";
 
-            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
-            List<ConceptMap> equivalentAnswers = tx.execute(Graql.<GetQuery>parse(equivalentQueryString));
+            List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
+            List<ConceptMap> equivalentAnswers = tx.execute(Graql.parse(equivalentQueryString).asGet());
             assertEquals(18, answers.size());
             assertTrue(CollectionUtils.isEqualCollection(answers, equivalentAnswers));
 
@@ -90,12 +90,12 @@ public class VariableRolesIT {
                     "$r1 type 'role' ;" +
                     "get $a, $b, $r2;";
 
-            GraqlGet query2 = Graql.<GraqlGet>parse(queryString2);
+            GraqlGet query2 = Graql.parse(queryString2).asGet();
             //System.out.println(query2);
             //List<ConceptMap> answers2 = tx.execute(query2);
             //System.out.println();
 
-            GraqlGet equivQuery2 = Graql.<GraqlGet>parse(equivalentQueryString2);
+            GraqlGet equivQuery2 = Graql.parse(equivalentQueryString2).asGet();
             System.out.println(equivQuery2);
             List<ConceptMap> equivalentAnswers2 = tx.execute(equivQuery2);
             System.out.println();
@@ -115,8 +115,8 @@ public class VariableRolesIT {
                     "(role1: $a, role2: $b) isa binary-base;" +
                     "get;";
 
-            List<ConceptMap> answers3 = tx.execute(Graql.<GetQuery>parse(queryString3));
-            List<ConceptMap> equivalentAnswers3 = tx.execute(Graql.<GetQuery>parse(equivalentQueryString3));
+            List<ConceptMap> answers3 = tx.execute(Graql.parse(queryString3).asGet());
+            List<ConceptMap> equivalentAnswers3 = tx.execute(Graql.parse(equivalentQueryString3).asGet());
             assertEquals(9, answers3.size());
             assertCollectionsNonTriviallyEqual(answers3, equivalentAnswers3);
 
@@ -125,7 +125,7 @@ public class VariableRolesIT {
                     "($r1: $a, $r2: $b) isa binary-base;" +
                     "get;";
 
-            List<ConceptMap> answers4 = tx.execute(Graql.<GetQuery>parse(queryString4));
+            List<ConceptMap> answers4 = tx.execute(Graql.parse(queryString4).asGet());
             assertEquals(63, answers4.size());
             */
         }

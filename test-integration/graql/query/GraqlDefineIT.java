@@ -460,7 +460,7 @@ public class GraqlDefineIT {
     @Test
     public void whenCallingToStringOfDefineQuery_ReturnCorrectRepresentation() {
         String queryString = "define my-entity sub entity;";
-        GraqlDefine defineQuery = parse(queryString);
+        GraqlDefine defineQuery = Graql.parse(queryString).asDefine();
         assertEquals(queryString, defineQuery.toString());
     }
 
