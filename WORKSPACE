@@ -24,9 +24,6 @@ workspace(name = "grakn_core")
 ####################
 
 # Load additional build tools, such bazel-deps and unused-deps
-load("//dependencies/tools:bazel/dependencies.bzl", "tools_bazel_dependencies")
-tools_bazel_dependencies()
-
 load("//dependencies/tools:dependencies.bzl", "tools_dependencies")
 tools_dependencies()
 
