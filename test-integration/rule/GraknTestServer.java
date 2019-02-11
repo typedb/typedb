@@ -59,8 +59,10 @@ import java.util.UUID;
  * It allows all the integration tests to run concurrently on the same machine.
  */
 public class GraknTestServer extends ExternalResource {
+    private static final Path SERVER_CONFIG =  Paths.get("server/conf/grakn.properties");
+    private static final Path CASSANDRA_CONFIG = Paths.get("test-integration/resources/cassandra-embedded.yaml");
 
-    private final String serverConfigPath;
+    private final Path serverConfigPath;
     private final Path cassandraConfigPath;
     private Config serverConfig;
     private Path dataDirTmp;
@@ -75,13 +77,13 @@ public class GraknTestServer extends ExternalResource {
     private SessionStore sessionStore;
 
     public GraknTestServer() {
-        this("server/conf/grakn.properties", "test-integration/resources/cassandra-embedded.yaml");
+        this(SERVER_CONFIG, CASSANDRA_CONFIG);
     }
 
-    public GraknTestServer(String serverConfigPath, String cassandraConfigPath) {
+    public GraknTestServer(Path serverConfigPath, Path cassandraConfigPath) {
         System.setProperty("java.security.manager", "nottodaypotato");
         this.serverConfigPath = serverConfigPath;
-        this.cassandraConfigPath = Paths.get(cassandraConfigPath);
+        this.cassandraConfigPath = cassandraConfigPath;
     }
 
     @Override
@@ -170,7 +172,7 @@ public class GraknTestServer extends ExternalResource {
 
     //Server helpers
     private Config createTestConfig(String dataDir) throws FileNotFoundException {
-        InputStream testConfig = new FileInputStream(serverConfigPath);
+        InputStream testConfig = new FileInputStream(serverConfigPath.toFile());
 
         Config config = Config.read(testConfig);
         config.setConfigProperty(ConfigKey.DATA_DIR, dataDir);
