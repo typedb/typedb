@@ -1,13 +1,28 @@
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
-    name = "neq-predicate-it",
+    name = "neq-idpredicate-it",
     size = "medium",
-    srcs = ["NeqPredicateIT.java"],
+    srcs = ["NeqIdPredicateIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.graql.reasoner.reasoning.NeqPredicateIT",
+    test_class = "grakn.core.graql.reasoner.reasoning.NeqIdPredicateIT",
     deps = [
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+    ],
+)
+
+java_test(
+    name = "neq-valuepredicate-it",
+    size = "medium",
+    srcs = ["NeqValuePredicateIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
+    test_class = "grakn.core.graql.reasoner.reasoning.NeqValuePredicateIT",
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
         "//server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -109,7 +124,8 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":attribute-attachment-it",
-        ":neq-predicate-it",
+        ":neq-idpredicate-it",
+        ":neq-valuepredicate-it",
         ":recursion-it",
         ":type-generation-it",
         ":type-hierarchies-it",

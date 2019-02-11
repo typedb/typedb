@@ -25,6 +25,7 @@ import graql.util.StringUtil;
 
 import java.time.LocalDateTime;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * Represents the {@code value} property on an attribute.
@@ -68,11 +69,7 @@ public class ValueProperty<T> extends VarProperty {
 
     @Override
     public Stream<Statement> statements() {
-        if (operation instanceof Operation.Comparison.Variable) {
-            return Stream.of(((Operation.Comparison.Variable) operation).value());
-        } else {
-            return Stream.empty();
-        }
+        return operation.innerStatement() != null? Stream.of(operation.innerStatement()) : Stream.empty();
     }
 
     @Override
@@ -119,8 +116,13 @@ public class ValueProperty<T> extends VarProperty {
         }
 
         public boolean isValueEquality() {
-            return comparator.equals(Token.Comparator.EQV) && !(this instanceof Comparison.Variable);
+            return comparator.equals(Token.Comparator.EQV) && !hasVariable();
         }
+
+        public boolean hasVariable(){ return innerStatement() != null;}
+
+        @Nullable
+        public Statement innerStatement(){ return null;}
 
         @Override
         public String toString() {
@@ -208,6 +210,8 @@ public class ValueProperty<T> extends VarProperty {
                     return new ValueProperty.Operation.Comparison.String(comparator, (java.lang.String) value);
                 } else if (value instanceof LocalDateTime) {
                     return new ValueProperty.Operation.Comparison.DateTime(comparator, (LocalDateTime) value);
+                } else if (value instanceof Statement) {
+                    return new ValueProperty.Operation.Comparison.Variable(comparator, (Statement) value);
                 } else {
                     throw new UnsupportedOperationException("Unsupported Value Comparison for class: " + value.getClass());
                 }
@@ -264,6 +268,9 @@ public class ValueProperty<T> extends VarProperty {
                 public java.lang.String toString() {
                     return comparator().toString() + Token.Char.SPACE + value().getPrintableName();
                 }
+
+                @Override
+                public Statement innerStatement(){ return value();}
             }
         }
     }

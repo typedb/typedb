@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-public class NeqPredicateIT {
+public class NeqIdPredicateIT {
 
     private static String resourcePath = "test-integration/graql/reasoner/stubs/";
 

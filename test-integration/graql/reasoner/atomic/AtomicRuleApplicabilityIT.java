@@ -218,9 +218,15 @@ public class AtomicRuleApplicabilityIT {
 
         Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(Collectors.toSet());
 
-        assertEquals(rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(Collectors.toSet()), relation.getApplicableRules().collect(Collectors.toSet()));
-        assertEquals(rules.stream().filter(r -> r.getRule().label().equals(Label.of("attributed-relation-string-rule"))).collect(Collectors.toSet()), relation2.getApplicableRules().collect(Collectors.toSet()));
-        assertEquals(rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(Collectors.toSet()), relation3.getApplicableRules().collect(Collectors.toSet()));
+        assertEquals(
+                rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(Collectors.toSet()),
+                relation.getApplicableRules().collect(Collectors.toSet()));
+        assertEquals(
+                rules.stream().filter(r -> r.getRule().label().equals(Label.of("attributed-relation-string-rule"))).collect(Collectors.toSet()),
+                relation2.getApplicableRules().collect(Collectors.toSet()));
+        assertEquals(
+                rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(Collectors.toSet()),
+                relation3.getApplicableRules().collect(Collectors.toSet()));
         tx.close();
     }
 

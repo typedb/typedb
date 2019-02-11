@@ -23,33 +23,14 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.property.NeqProperty;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import java.util.Set;
 
-/**
- * Predicate implementation specialising it to be an inequality predicate. Corresponds to graql {@link NeqProperty}.
- */
-public class NeqPredicate extends Predicate<Variable> {
+public abstract class NeqPredicate extends Predicate<Variable> {
 
-    private NeqPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, Variable predicate) {
-        super(varName, pattern, parentQuery, predicate);
-    }
-
-    public static NeqPredicate create(Statement pattern, ReasonerQuery parent) {
-        return new NeqPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
-    }
-    public static NeqPredicate create(Variable varName, NeqProperty prop, ReasonerQuery parent) {
-        Statement pattern = new Statement(varName).not(prop);
-        return create(pattern, parent);
-    }
-    public static NeqPredicate create(NeqPredicate a, ReasonerQuery parent) {
-        return create(a.getPattern(), parent);
-    }
-
-    private static Variable extractPredicate(Statement pattern) {
-        return pattern.getProperties(NeqProperty.class).iterator().next().statement().var();
+    NeqPredicate(Variable varName, Variable predicateVar, Statement pattern, ReasonerQuery parentQuery) {
+        super(varName, pattern, predicateVar, parentQuery);
     }
 
     private boolean predicateBindingsEquivalent(NeqPredicate that, Equivalence<Atomic> equiv){
@@ -104,9 +85,6 @@ public class NeqPredicate extends Predicate<Variable> {
     }
 
     @Override
-    public Atomic copy(ReasonerQuery parent) { return create(this, parent);}
-
-    @Override
     public String toString(){
         IdPredicate idPredicate = this.getIdPredicate(this.getVarName());
         IdPredicate refIdPredicate = this.getIdPredicate(this.getPredicate());
@@ -131,9 +109,5 @@ public class NeqPredicate extends Predicate<Variable> {
      * @param sub substitution to be checked against the predicate
      * @return true if provided subsitution satisfies the predicate
      */
-    public boolean isSatisfied(ConceptMap sub) {
-        return !sub.containsVar(getVarName())
-                || !sub.containsVar(getPredicate())
-                || !sub.get(getVarName()).equals(sub.get(getPredicate()));
-    }
+    public abstract boolean isSatisfied(ConceptMap sub);
 }

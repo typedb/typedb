@@ -23,6 +23,9 @@ import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
+import grakn.core.graql.query.Graql;
+import graql.util.Token;
+import javax.annotation.Nullable;
 import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
@@ -39,21 +42,21 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
 
     private ValuePredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery,
                            ValueProperty.Operation operation) {
-        super(varName, pattern, parentQuery, operation);
+        super(varName, pattern, operation, parentQuery);
     }
 
     public static ValuePredicate create(Statement pattern, ReasonerQuery parent) {
         return new ValuePredicate(pattern.var(), pattern, parent, getOperation(pattern));
     }
-    public static ValuePredicate create(Variable varName, ValueProperty.Operation<?> operation, ReasonerQuery parent) {
-        return create(createValueVar(varName, operation), parent);
-    }
-    private static ValuePredicate create(ValuePredicate pred, ReasonerQuery parent) {
-        return create(pred.getPattern(), parent);
+
+    public static ValuePredicate create(Variable varName, ValueProperty.Operation operation, ReasonerQuery parent) {
+        return create(new Statement(varName).operation(operation), parent);
     }
 
-    private static Statement createValueVar(Variable name, ValueProperty.Operation<?> pred) {
-        return new Statement(name).operation(pred);
+    public static ValuePredicate neq(Variable varName, @Nullable Variable var, @Nullable Object value, ReasonerQuery parent){
+        Variable predicateVar = var != null? var : Graql.var().var().asUserDefined();
+        ValueProperty.Operation.Comparison<?> op = ValueProperty.Operation.Comparison.of(Token.Comparator.NEQV, value != null ? value : Graql.var(predicateVar));
+        return create(varName, op, parent);
     }
 
     private static ValueProperty.Operation<?> getOperation(Statement pattern) {
@@ -67,7 +70,7 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
 
     @Override
     public Atomic copy(ReasonerQuery parent) {
-        return create(this, parent);
+        return create(this.getVarName(), this.getPredicate(), parent);
     }
 
     @Override

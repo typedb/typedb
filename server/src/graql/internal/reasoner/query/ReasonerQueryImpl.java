@@ -22,9 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -33,8 +30,10 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.ResolutionIterator;
 import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;
 import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
+import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -52,6 +51,8 @@ import grakn.core.graql.internal.reasoner.state.CumulativeState;
 import grakn.core.graql.internal.reasoner.state.NeqComplementState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.query.GraqlGet;
@@ -61,8 +62,7 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
-
-import javax.annotation.Nullable;
+import graql.util.Token;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -74,6 +74,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -146,8 +147,22 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     @Override
-    public ReasonerQueryImpl positive(){
-        return new ReasonerQueryImpl(getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), tx());
+    public ReasonerQueryImpl neqPositive(){
+        return ReasonerQueries.create(
+                getAtoms().stream()
+                        .map(Atomic::neqPositive)
+                        .filter(at -> !(at instanceof NeqPredicate))
+                        .collect(Collectors.toSet()),
+                tx());
+    }
+
+    /**
+     * @return true if the query doesn't contain any NeqPredicates
+     */
+    boolean isNeqPositive(){
+        return !getAtoms(NeqPredicate.class).findFirst().isPresent()
+                && getAtoms(AttributeAtom.class).flatMap(at -> at.getMultiPredicate().stream())
+                .noneMatch(p -> p.getPredicate().comparator().equals(Token.Comparator.NEQV));
     }
 
     /**
@@ -166,7 +181,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public String toString(){
-        return "{\n" +
+        return "{\n\t" +
                 getAtoms(Atomic.class).map(Atomic::toString).collect(Collectors.joining(";\n\t")) +
                 "\n}";
     }
@@ -483,9 +498,9 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
-        return this.getAtoms(NeqPredicate.class).findFirst().isPresent() ?
-                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
-                new ConjunctiveState(this, sub, u, parent, subGoals, cache);
+        return isNeqPositive() ?
+                new ConjunctiveState(this, sub, u, parent, subGoals, cache) :
+                new NeqComplementState(this, sub, u, parent, subGoals, cache);
     }
 
     /**

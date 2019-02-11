@@ -41,7 +41,7 @@ public abstract class Predicate<T> extends AtomicBase {
     private final ReasonerQuery parentQuery;
     private final T predicate;
 
-    public Predicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, T predicate) {
+    public Predicate(Variable varName, Statement pattern, T predicate, ReasonerQuery parentQuery) {
         this.varName = varName;
         this.pattern = pattern;
         this.parentQuery = parentQuery;

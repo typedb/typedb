@@ -21,6 +21,7 @@ package grakn.core.graql.internal.reasoner.atom.binary;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.concept.ConceptId;
@@ -30,7 +31,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqIdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
@@ -183,7 +184,7 @@ public abstract class Binary extends Atom {
             throw GraqlQueryException.unificationAtomIncompatibility();
         }
 
-        boolean inferTypes = unifierType == UnifierType.RULE;
+        boolean inferTypes = unifierType.inferTypes();
         Variable childVarName = this.getVarName();
         Variable parentVarName = parentAtom.getVarName();
         Variable childPredicateVarName = this.getPredicateVariable();

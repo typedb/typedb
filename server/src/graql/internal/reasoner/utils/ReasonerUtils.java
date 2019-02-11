@@ -23,6 +23,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
@@ -110,23 +111,55 @@ public class ReasonerUtils {
     }
 
     /**
+     * Finds a value predicate within a possible chain with a specified starting variable
+     * @param var starting variable
+     * @param otherStatements statement context
+     * @return corresponding value predicate or null if not found
+     */
+    public static ValueProperty.Operation findValuePropertyOp(Variable var, Set<Statement> otherStatements){
+        Variable[] searchVar = {null};
+        ValueProperty.Operation[] predicate = {null};
+        otherStatements.stream()
+                .filter(s -> s.var().equals(var))
+                .forEach(s ->
+                        s.getProperties(ValueProperty.class)
+                                .forEach(vp -> {
+                                    Statement innerStatement = vp.operation().innerStatement();
+                                    if (innerStatement != null){
+                                        if (searchVar[0] != null) throw new IllegalStateException("bla");
+                                        else searchVar[0] = innerStatement.var();
+                                    } else {
+                                        if (predicate[0] != null) throw new IllegalStateException("bla");
+                                        else predicate[0] = vp.operation();
+                                    }
+                                })
+                );
+        return predicate[0] != null?
+                predicate[0] :
+                (searchVar[0] != null? findValuePropertyOp(searchVar[0], otherStatements) : null);
+    }
+
+    /**
      * looks for appropriate var properties with a specified name among the vars and maps them to ValuePredicates,
      * covers both the case when variable is and isn't user defined
      * @param valueVariable variable name of interest
-     * @param valueVar {@link Statement} to look for in case the variable name is not user defined
-     * @param vars VarAdmins to look for properties
+     * @param statement {@link Statement} to look for in case the variable name is not user defined
+     * @param fullContext VarAdmins to look for properties
      * @param parent reasoner query the mapped predicate should belong to
      * @return stream of mapped ValuePredicates
      */
-    public static Stream<ValuePredicate> getValuePredicates(Variable valueVariable, Statement valueVar, Set<Statement> vars, ReasonerQuery parent){
-        Stream<Statement> sourceVars;
-        if (valueVar.var().isUserDefinedName()) {
-            sourceVars = vars.stream().filter(v -> v.var().equals(valueVariable));
-        }
-        else {
-            sourceVars = Stream.of(valueVar);
-        }
-        return sourceVars.flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> ValuePredicate.create(valueVariable, vp.operation(), parent)));
+    public static Stream<ValuePredicate> getValuePredicates(Variable valueVariable, Statement statement, Set<Statement> fullContext, ReasonerQuery parent){
+        Stream<Statement> context = statement.var().isUserDefinedName()?
+                fullContext.stream().filter(v -> v.var().equals(valueVariable)) :
+                Stream.of(statement);
+        Set<ValuePredicate> vps = context
+                .flatMap(v -> v.getProperties(ValueProperty.class)
+                        .map(property -> AtomicFactory.createValuePredicate(property, statement, fullContext, false, false, parent))
+                        .filter(ValuePredicate.class::isInstance)
+                        .map(ValuePredicate.class::cast)
+                )
+                .collect(toSet());
+        return vps.stream();
     }
 
     /**
@@ -362,7 +395,7 @@ public class ReasonerUtils {
      * @return new Collection containing a minus a - b.
      * The cardinality of each element e in the returned Collection will be the cardinality of e in a minus the cardinality of e in b, or zero, whichever is greater.
      */
-    public static <T> Collection<T> subtract(Collection<T> a, Collection<T> b){
+    public static <T> List<T> listDifference(List<T> a, List<T> b){
         ArrayList<T> list = new ArrayList<>(a);
         b.forEach(list::remove);
         return list;

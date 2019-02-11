@@ -19,15 +19,15 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import graql.util.Token;
 import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.property.VarProperty;
@@ -67,7 +67,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        return ValuePredicate.create(var, property.operation(), parent);
+        return AtomicFactory.createValuePredicate(property, statement, otherStatements, true, true, parent);
     }
 
     @Override
@@ -456,8 +456,8 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 private static final Map<Token.Comparator, Function<java.lang.String, P<java.lang.String>>> PREDICATES_VAR = varPredicates();
                 private static final java.lang.String[] VALUE_PROPERTIES = AttributeType.DataType.SUPPORTED_TYPES.values().stream()
-                        .map(dataType -> dataType.getVertexProperty()).distinct()
-                        .map(vertexProperty -> vertexProperty.name()).toArray(java.lang.String[]::new);
+                        .map(AttributeType.DataType::getVertexProperty).distinct()
+                        .map(Enum::name).toArray(java.lang.String[]::new);
 
                 Variable(Token.Comparator comparator, Statement value) {
                     super(comparator, value);

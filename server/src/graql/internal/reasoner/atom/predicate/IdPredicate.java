@@ -38,7 +38,7 @@ import grakn.core.server.Transaction;
 public class IdPredicate extends Predicate<ConceptId> {
 
     private IdPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, ConceptId predicate) {
-        super(varName, pattern, parentQuery, predicate);
+        super(varName, pattern, predicate, parentQuery);
     }
 
     public static IdPredicate create(Statement pattern, ReasonerQuery parent) {

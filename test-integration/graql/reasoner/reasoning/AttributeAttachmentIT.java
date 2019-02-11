@@ -130,15 +130,18 @@ public class AttributeAttachmentIT {
             List<ConceptMap> concepts = tx.execute(Graql.<GraqlGet>parse("match $x isa genericEntity; get;"));
             List<ConceptMap> subResources = tx.execute(Graql.<GraqlGet>parse(
                     "match $x isa genericEntity, has subResource $res; get;"));
+            List<ConceptMap> derivedResources = tx.execute(Graql.<GraqlGet>parse(
+                    "match $x isa genericEntity, has derived-resource-string $res; get;"));
 
             String queryString = "match " +
                     "$rel($role:$x) isa @has-reattachable-resource-string; " +
                     "$x isa genericEntity; " +
                     "get;";
+
             List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString));
-            //base resource yield 3 roles: metarole, base attribute rule, specific role
-            //subresources yield 4 roles: all the above + specialised role
-            assertEquals(concepts.size() * 3 + subResources.size() * 4, answers.size());
+            //base resources yield 4 roles: metarole, base attribute role, super role, specific role
+            //subresources yield 5 roles: all the above + specialised role
+            assertEquals(concepts.size() * 4 + subResources.size() * 5, answers.size());
             answers.forEach(ans -> assertEquals(3, ans.size()));
         }
     }

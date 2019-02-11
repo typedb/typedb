@@ -22,10 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Concept;
@@ -37,11 +33,15 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
+import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
@@ -54,7 +54,7 @@ import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.concept.AttributeTypeImpl;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.RelationshipImpl;
-
+import graql.util.Token;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -99,6 +99,20 @@ public abstract class AttributeAtom extends Binary{
     public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
 
     @Override
+    public Atomic neqPositive(){
+        return create(
+                this.getPattern(),
+                this.getAttributeVariable(),
+                this.getRelationVariable(),
+                this.getPredicateVariable(),
+                this.getTypeId(),
+                this.getMultiPredicate().stream()
+                        .filter(at -> !(at.getPredicate().comparator().equals(Token.Comparator.NEQV)))
+                        .collect(Collectors.toSet()),
+                this.getParentQuery());
+    }
+
+    @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
 
     @Override
@@ -138,7 +152,6 @@ public abstract class AttributeAtom extends Binary{
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getSchemaConcept().label() + " " +
                 multiPredicateString +
-                getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""))  +
                 (getRelationVariable().isUserDefinedName()? "(" + getRelationVariable() + ")" : "");
     }
 

@@ -98,16 +98,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ReasonerAtomicQuery positive(){
-        return new ReasonerAtomicQuery(
-                getAtoms().stream()
-                        .filter(at -> !(at instanceof NeqPredicate))
-                        .filter(at -> !Sets.intersection(at.getVarNames(), getAtom().getVarNames()).isEmpty())
-                        .collect(Collectors.toSet()),
-                tx());
-    }
-
-    @Override
     public String toString(){
         return getAtoms(Atom.class).map(Atomic::toString).collect(Collectors.joining(", "));
     }
@@ -200,9 +190,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
         if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
-        return this.getAtoms(NeqPredicate.class).findFirst().isPresent() ?
-                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
-                new AtomicState(this, sub, u, parent, subGoals, cache);
+        return isNeqPositive()?
+                new AtomicState(this, sub, u, parent, subGoals, cache) :
+                new NeqComplementState(this, sub, u, parent, subGoals, cache);
     }
 
     @Override

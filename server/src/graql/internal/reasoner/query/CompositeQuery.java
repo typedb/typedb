@@ -208,8 +208,11 @@ public class CompositeQuery implements ResolvableQuery {
     }
 
     @Override
-    public ResolvableQuery positive() {
-        return new CompositeQuery(getConjunctiveQuery().positive(), getComplementQueries(), tx());
+    public ResolvableQuery neqPositive() {
+        return new CompositeQuery(
+                getConjunctiveQuery().neqPositive(),
+                getComplementQueries(),
+                tx());
     }
 
     public ReasonerQueryImpl getConjunctiveQuery() {
