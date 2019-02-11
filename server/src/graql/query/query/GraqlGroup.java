@@ -48,7 +48,7 @@ public class GraqlGroup extends GraqlQuery implements AggregateBuilder<GraqlGrou
     }
 
     @Override
-    public Aggregate aggregate(GraqlAggregate.Method method, Variable var) {
+    public Aggregate aggregate(Token.Statistics.Method method, Variable var) {
         return new GraqlGroup.Aggregate(this, method, var);
     }
 
@@ -84,30 +84,39 @@ public class GraqlGroup extends GraqlQuery implements AggregateBuilder<GraqlGrou
         return h;
     }
 
-    public static class Aggregate extends GraqlGroup {
+    public static class Aggregate extends GraqlQuery {
 
-        private final GraqlAggregate.Method method;
+        private final GraqlGroup graqlGroup;
+        private final Token.Statistics.Method method;
         private final Variable aggregateVar;
 
-        public Aggregate(GraqlGroup groupQuery, GraqlAggregate.Method aggregateMethod, Variable aggregateVar) {
-            super(groupQuery.getQuery(), groupQuery.var());
+        public Aggregate(GraqlGroup graqlGroup, Token.Statistics.Method aggregateMethod, Variable aggregateVar) {
+
+            if (graqlGroup == null) {
+                throw new NullPointerException("GraqlGet.Group is null");
+            }
+            this.graqlGroup = graqlGroup;
 
             if (aggregateMethod == null) {
                 throw new NullPointerException("Method is null");
             }
             this.method = aggregateMethod;
 
-            if (aggregateVar == null && !method.equals(GraqlAggregate.Method.COUNT)) {
+            if (aggregateVar == null && !method.equals(Token.Statistics.Method.COUNT)) {
                 throw new NullPointerException("Variable is null");
-            } else if (aggregateVar != null && method.equals(GraqlAggregate.Method.COUNT)) {
+            } else if (aggregateVar != null && method.equals(Token.Statistics.Method.COUNT)) {
                 throw new IllegalArgumentException("Aggregate COUNT does not accept a Variable");
-            } else if (aggregateVar != null && !groupQuery.getQuery().vars().contains(aggregateVar)) {
+            } else if (aggregateVar != null && !graqlGroup.getQuery().vars().contains(aggregateVar)) {
                 throw new IllegalArgumentException("Aggregate variable should be contained in GET query");
             }
             this.aggregateVar = aggregateVar;
         }
 
-        public GraqlAggregate.Method aggregateMethod() {
+        public GraqlGroup graqlGroup() {
+            return graqlGroup;
+        }
+
+        public Token.Statistics.Method aggregateMethod() {
             return method;
         }
 
@@ -119,9 +128,9 @@ public class GraqlGroup extends GraqlQuery implements AggregateBuilder<GraqlGrou
         public final String toString() {
             StringBuilder query = new StringBuilder();
 
-            query.append(getQuery()).append(Token.Char.SPACE)
+            query.append(graqlGroup().getQuery()).append(Token.Char.SPACE)
                     .append(Token.Command.GROUP).append(Token.Char.SPACE)
-                    .append(var()).append(Token.Char.SEMICOLON).append(Token.Char.SPACE)
+                    .append(graqlGroup().var()).append(Token.Char.SEMICOLON).append(Token.Char.SPACE)
                     .append(method);
 
             if (aggregateVar != null) query.append(Token.Char.SPACE).append(aggregateVar);
@@ -137,8 +146,7 @@ public class GraqlGroup extends GraqlQuery implements AggregateBuilder<GraqlGrou
 
             Aggregate that = (Aggregate) o;
 
-            return (this.getQuery().equals(that.getQuery()) &&
-                    this.var().equals(that.var()) &&
+            return (this.graqlGroup().equals(that.graqlGroup()) &&
                     this.aggregateMethod().equals(that.aggregateMethod()) &&
                     this.aggregateVar() == null ?
                         that.aggregateVar() == null :
@@ -149,9 +157,7 @@ public class GraqlGroup extends GraqlQuery implements AggregateBuilder<GraqlGrou
         public int hashCode() {
             int h = 1;
             h *= 1000003;
-            h ^= this.getQuery().hashCode();
-            h *= 1000003;
-            h ^= this.var().hashCode();
+            h ^= this.graqlGroup().hashCode();
             h *= 1000003;
             h ^= this.aggregateMethod().hashCode();
             h *= 1000003;

@@ -18,9 +18,87 @@
 
 package grakn.core.graql.query.query;
 
+import graql.lang.exception.GraqlException;
+
 /**
  * A Graql query of any kind. May read and write to the graph.
+ *
+ * TODO: this class should return more informative exception messages
  */
 public abstract class GraqlQuery {
 
+    public GraqlDefine asGraqlDefine() {
+        if (this instanceof GraqlDefine) {
+            return (GraqlDefine) this;
+        } else {
+            throw GraqlException.create("This is not a GraqlDefine query");
+        }
+    }
+
+    public GraqlUndefine asGraqlUndefine() {
+        if (this instanceof GraqlUndefine) {
+            return (GraqlUndefine) this;
+        } else {
+            throw GraqlException.create("This is not a GraqlUndefine query");
+        }
+    }
+
+    public GraqlInsert asGraqlInsert() {
+        if (this instanceof GraqlInsert) {
+            return (GraqlInsert) this;
+        } else {
+            throw GraqlException.create("This is not a GraqlInsert query");
+        }
+    }
+
+    public GraqlDelete asGraqlDelete() {
+        if (this instanceof GraqlDelete) {
+            return (GraqlDelete) this;
+        } else {
+            throw GraqlException.create("This is not a GraqlDelete query");
+        }
+    }
+
+    public GraqlGet asGraqlGet() {
+        if (this instanceof GraqlGet) {
+            return (GraqlGet) this;
+        } else {
+            throw GraqlException.create("This is not a GraqlGet query");
+        }
+    }
+
+    public GraqlAggregate asGraqlGetAggregate() {
+        if (this instanceof GraqlGet) {
+            return (GraqlAggregate) this;
+        } else {
+            throw GraqlException.create("This is not a GraqlGet.Aggregate query");
+        }
+    }
+
+    public GraqlGroup asGraqlGetGroup() {
+        if (this instanceof GraqlGroup) {
+            return (GraqlGroup) this;
+        } else {
+            throw GraqlException.create("This is not a GraqlGet.Group query");
+        }
+    }
+
+    public GraqlGroup.Aggregate asGraqlGetGroupAggregate() {
+        if (this instanceof GraqlGroup) {
+            return (GraqlGroup.Aggregate) this;
+        } else {
+            throw GraqlException.create("This is not a GraqlGet.Group.Aggregate query");
+        }
+    }
+
+    public GraqlCompute<?> asGraqlCompute() {
+        if (this instanceof GraqlCompute<?>) {
+            return (GraqlCompute<?>) this;
+        } else {
+            throw GraqlException.create("This is not a GraqlCompute query");
+        }
+    }
+
+    @Override
+    public abstract String toString();
 }

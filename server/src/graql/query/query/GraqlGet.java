@@ -60,7 +60,7 @@ public class GraqlGet extends GraqlQuery implements AggregateBuilder<GraqlAggreg
     }
 
     @Override
-    public GraqlAggregate aggregate(GraqlAggregate.Method method, Variable var) {
+    public GraqlAggregate aggregate(Token.Statistics.Method method, Variable var) {
         return new GraqlAggregate(this, method, var);
     }
 

@@ -234,20 +234,18 @@ public class TransactionOLTP implements Transaction {
 
     @Override
     public Stream<AnswerGroup<ConceptMap>> stream(GraqlGroup query, boolean infer) {
-        return executor(infer).group(query);
+        return executor(infer).get(query);
     }
 
     @Override
     public Stream<AnswerGroup<Value>> stream(GraqlGroup.Aggregate query, boolean infer) {
-        return executor(infer).group(query);
+        return executor(infer).get(query);
     }
 
     @Override
     public <T extends Answer> Stream<T> stream(GraqlCompute<T> query, boolean infer) {
         return executor(infer).compute(query);
     }
-
-
 
     public RuleCache ruleCache() { return ruleCache;}
 

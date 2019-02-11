@@ -24,40 +24,10 @@ import graql.lang.util.Token;
 public class GraqlAggregate extends GraqlQuery {
 
     private final GraqlGet getQuery;
-    private final Method method;
+    private final Token.Statistics.Method method;
     private final Variable var;
 
-    public enum Method {
-        COUNT("count"),
-        MAX("max"),
-        MEAN("mean"),
-        MEDIAN("median"),
-        MIN("min"),
-        STD("std"),
-        SUM("sum");
-
-        private final String method;
-
-        Method(String method) {
-            this.method = method;
-        }
-
-        @Override
-        public String toString() {
-            return this.method;
-        }
-
-        public static Method of(String value) {
-            for (Method m : Method.values()) {
-                if (m.method.equals(value)) {
-                    return m;
-                }
-            }
-            return null;
-        }
-    }
-
-    public GraqlAggregate(GraqlGet getQuery, Method method, Variable var) {
+    public GraqlAggregate(GraqlGet getQuery, Token.Statistics.Method method, Variable var) {
         if (getQuery == null) {
             throw new NullPointerException("GetQuery is null");
         }
@@ -68,9 +38,9 @@ public class GraqlAggregate extends GraqlQuery {
         }
         this.method = method;
 
-        if (var == null && !method.equals(Method.COUNT)) {
+        if (var == null && !method.equals(Token.Statistics.Method.COUNT)) {
             throw new NullPointerException("Variable is null");
-        } else if (var != null && method.equals(Method.COUNT)) {
+        } else if (var != null && method.equals(Token.Statistics.Method.COUNT)) {
             throw new IllegalArgumentException("Aggregate COUNT does not accept a Variable");
         } else if (var != null && !getQuery.vars().contains(var)) {
             throw new IllegalArgumentException("Aggregate variable should be contained in GET query");
@@ -83,7 +53,7 @@ public class GraqlAggregate extends GraqlQuery {
         return getQuery;
     }
 
-    public Method method() {
+    public Token.Statistics.Method method() {
         return method;
     }
 

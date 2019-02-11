@@ -241,4 +241,37 @@ public class Token {
             return null;
         }
     }
+
+    public static class Statistics {
+
+        public enum Method {
+            COUNT("count"),
+            MAX("max"),
+            MEAN("mean"),
+            MEDIAN("median"),
+            MIN("min"),
+            STD("std"),
+            SUM("sum");
+
+            private final String method;
+
+            Method(String method) {
+                this.method = method;
+            }
+
+            @Override
+            public String toString() {
+                return this.method;
+            }
+
+            public static Method of(String value) {
+                for (Method m : Method.values()) {
+                    if (m.method.equals(value)) {
+                        return m;
+                    }
+                }
+                return null;
+            }
+        }
+    }
 }

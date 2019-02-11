@@ -277,25 +277,25 @@ public class QueryExecutor {
         }
     }
 
-    public Stream<AnswerGroup<ConceptMap>> group(GraqlGroup query) {
-        return group(get(query.getQuery()), query.var(),
+    public Stream<AnswerGroup<ConceptMap>> get(GraqlGroup query) {
+        return get(get(query.getQuery()), query.var(),
                      answers -> answers.collect(Collectors.toList())
         ).stream();
     }
 
-    public Stream<AnswerGroup<Value>> group(GraqlGroup.Aggregate query) {
-        return group(get(query.getQuery()), query.var(),
+    public Stream<AnswerGroup<Value>> get(GraqlGroup.Aggregate query) {
+        return get(get(query.graqlGroup().getQuery()), query.graqlGroup().var(),
                      answers -> AggregateExecutor.aggregate(answers, query.aggregateMethod(), query.aggregateVar())
         ).stream();
     }
 
-    private static <T extends Answer> List<AnswerGroup<T>> group(Stream<ConceptMap> answers, Variable var,
-                                                                 Function<Stream<ConceptMap>, List<T>> function) {
-        Collector<ConceptMap, ?, List<T>> applyInnerAggregate =
-                collectingAndThen(toList(), list -> function.apply(list.stream()));
+    private static <T extends Answer> List<AnswerGroup<T>> get(Stream<ConceptMap> answers, Variable groupVar,
+                                                               Function<Stream<ConceptMap>, List<T>> aggregate) {
+        Collector<ConceptMap, ?, List<T>> groupAggregate =
+                collectingAndThen(toList(), list -> aggregate.apply(list.stream()));
 
         List<AnswerGroup<T>> answerGroups = new ArrayList<>();
-        answers.collect(groupingBy(answer -> answer.get(var), applyInnerAggregate))
+        answers.collect(groupingBy(answer -> answer.get(groupVar), groupAggregate))
                 .forEach((key, values) -> answerGroups.add(new AnswerGroup<>(key, values)));
 
         return answerGroups;
