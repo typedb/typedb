@@ -60,7 +60,7 @@ public class GraqlGet extends GraqlQuery implements AggregateBuilder<GraqlAggreg
 
     @Override
     public GraqlAggregate aggregate(GraqlAggregate.Method method, Variable var) {
-        return new GraqlAggregate(this, method, null);
+        return new GraqlAggregate(this, method, var);
     }
 
     public GraqlGroup group(String var) {
