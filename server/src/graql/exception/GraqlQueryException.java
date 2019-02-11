@@ -30,7 +30,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
-import grakn.core.graql.query.GraqlCompute;
+import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 
@@ -49,11 +49,11 @@ import static grakn.core.common.exception.ErrorMessage.MISSING_COMPUTE_CONDITION
 import static grakn.core.common.exception.ErrorMessage.NEGATIVE_OFFSET;
 import static grakn.core.common.exception.ErrorMessage.NON_POSITIVE_LIMIT;
 import static grakn.core.common.exception.ErrorMessage.UNEXPECTED_RESULT;
-import static grakn.core.graql.query.GraqlCompute.ALGORITHMS_ACCEPTED;
-import static grakn.core.graql.query.GraqlCompute.ARGUMENTS_ACCEPTED;
-import static grakn.core.graql.query.GraqlCompute.CONDITIONS_ACCEPTED;
-import static grakn.core.graql.query.GraqlCompute.CONDITIONS_REQUIRED;
-import static grakn.core.graql.query.GraqlCompute.METHODS_ACCEPTED;
+import static grakn.core.graql.query.query.GraqlCompute.ALGORITHMS_ACCEPTED;
+import static grakn.core.graql.query.query.GraqlCompute.ARGUMENTS_ACCEPTED;
+import static grakn.core.graql.query.query.GraqlCompute.CONDITIONS_ACCEPTED;
+import static grakn.core.graql.query.query.GraqlCompute.CONDITIONS_REQUIRED;
+import static grakn.core.graql.query.query.GraqlCompute.METHODS_ACCEPTED;
 
 /**
  * Graql Query Exception

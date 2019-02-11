@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query;
+package grakn.core.graql.query.query;
 
 /**
  * A Graql query of any kind. May read and write to the graph.

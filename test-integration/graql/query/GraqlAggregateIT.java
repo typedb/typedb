@@ -24,6 +24,8 @@ import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.graph.MovieGraph;
+import grakn.core.graql.query.query.GraqlAggregate;
+import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;

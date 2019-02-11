@@ -20,7 +20,7 @@ package grakn.core.graql.internal.executor;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
-import grakn.core.graql.query.GraqlAggregate;
+import grakn.core.graql.query.query.GraqlAggregate;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.graql.util.PrimitiveNumberComparator;
 

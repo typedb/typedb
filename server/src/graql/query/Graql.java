@@ -24,6 +24,12 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Negation;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.query.GraqlCompute;
+import grakn.core.graql.query.query.GraqlDefine;
+import grakn.core.graql.query.query.GraqlInsert;
+import grakn.core.graql.query.query.GraqlQuery;
+import grakn.core.graql.query.query.GraqlUndefine;
+import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.StatementAttribute;
 import grakn.core.graql.query.statement.StatementRelation;
@@ -42,7 +48,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.GraqlCompute.Method;
+import static grakn.core.graql.query.query.GraqlCompute.Method;
 
 /**
  * Main class containing static methods for creating Graql queries.

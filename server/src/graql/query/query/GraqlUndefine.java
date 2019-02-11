@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query;
+package grakn.core.graql.query.query;
 
 import grakn.core.graql.query.statement.Statement;
 import graql.util.Token;
@@ -33,7 +33,7 @@ public class GraqlUndefine extends GraqlQuery {
 
     private final List<? extends Statement> statements;
 
-    GraqlUndefine(List<? extends Statement> statements) {
+    public GraqlUndefine(List<? extends Statement> statements) {
         if (statements == null) {
             throw new NullPointerException("Null statements");
         } else if (statements.isEmpty()) {

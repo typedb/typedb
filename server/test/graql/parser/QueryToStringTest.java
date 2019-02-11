@@ -18,24 +18,24 @@
 
 package grakn.core.graql.parser;
 
-import grakn.core.graql.query.GraqlCompute;
-import grakn.core.graql.query.GraqlGet;
+import grakn.core.graql.query.query.GraqlCompute;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.GraqlInsert;
-import grakn.core.graql.query.MatchClause;
-import grakn.core.graql.query.GraqlQuery;
+import grakn.core.graql.query.query.GraqlInsert;
+import grakn.core.graql.query.query.MatchClause;
+import grakn.core.graql.query.query.GraqlQuery;
 import graql.util.Token;
 import org.junit.Test;
 
-import static grakn.core.graql.query.GraqlCompute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.query.GraqlCompute.Algorithm.DEGREE;
-import static grakn.core.graql.query.GraqlCompute.Algorithm.K_CORE;
-import static grakn.core.graql.query.GraqlCompute.Argument.k;
-import static grakn.core.graql.query.GraqlCompute.Argument.min_k;
-import static grakn.core.graql.query.GraqlCompute.Argument.size;
-import static grakn.core.graql.query.GraqlCompute.Method.CENTRALITY;
-import static grakn.core.graql.query.GraqlCompute.Method.CLUSTER;
-import static grakn.core.graql.query.GraqlCompute.Method.COUNT;
+import static grakn.core.graql.query.query.GraqlCompute.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.query.query.GraqlCompute.Algorithm.DEGREE;
+import static grakn.core.graql.query.query.GraqlCompute.Algorithm.K_CORE;
+import static grakn.core.graql.query.query.GraqlCompute.Argument.k;
+import static grakn.core.graql.query.query.GraqlCompute.Argument.min_k;
+import static grakn.core.graql.query.query.GraqlCompute.Argument.size;
+import static grakn.core.graql.query.query.GraqlCompute.Method.CENTRALITY;
+import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;
+import static grakn.core.graql.query.query.GraqlCompute.Method.COUNT;
 import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;

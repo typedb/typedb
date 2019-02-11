@@ -19,6 +19,8 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.Sets;
+import grakn.core.graql.query.query.GraqlDelete;
+import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.statement.Variable;
 import org.junit.Test;
 

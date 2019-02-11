@@ -24,7 +24,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.console.exception.GraknConsoleException;
 import grakn.core.graql.printer.Printer;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.GraqlQuery;
+import grakn.core.graql.query.query.GraqlQuery;
 import jline.console.ConsoleReader;
 import jline.console.history.FileHistory;
 

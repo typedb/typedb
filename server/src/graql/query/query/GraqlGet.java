@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query;
+package grakn.core.graql.query.query;
 
-import grakn.core.graql.query.builder.AggregateBuilder;
+import grakn.core.graql.query.query.builder.AggregateBuilder;
 import grakn.core.graql.query.statement.Variable;
 import graql.exception.GraqlException;
 import graql.util.Token;

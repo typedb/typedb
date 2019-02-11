@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.builder;
+package grakn.core.graql.query.query.builder;
 
-import grakn.core.graql.query.GraqlAggregate;
-import grakn.core.graql.query.GraqlQuery;
+import grakn.core.graql.query.query.GraqlAggregate;
+import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.statement.Variable;
 
 public interface AggregateBuilder<T extends GraqlQuery> {

@@ -37,6 +37,7 @@ import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.property.IsaProperty;
+import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;

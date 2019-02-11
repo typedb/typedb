@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.builder;
+package grakn.core.graql.query.statement.builder;
 
 import graql.util.Token;
 import grakn.core.graql.query.property.ValueProperty;

@@ -28,6 +28,8 @@ import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.property.ValueProperty;
+import grakn.core.graql.query.query.GraqlDefine;
+import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
