@@ -5,8 +5,9 @@ java_test(
     test_class = "grakn.core.graql.internal.gremlin.GraqlTraversalTest",
     srcs = ["GraqlTraversalTest.java", "GraqlMatchers.java"],
     deps = [
-        "//server",
-        "//common",
+        "//common:common",
+        "//graql/java:graql",
+        "//server:server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",

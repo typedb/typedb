@@ -19,9 +19,9 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.statement.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -90,12 +90,12 @@ public class VariableRolesIT {
                     "$r1 type 'role' ;" +
                     "get $a, $b, $r2;";
 
-            GetQuery query2 = Graql.<GetQuery>parse(queryString2);
+            GraqlGet query2 = Graql.<GraqlGet>parse(queryString2);
             //System.out.println(query2);
             //List<ConceptMap> answers2 = tx.execute(query2);
             //System.out.println();
 
-            GetQuery equivQuery2 = Graql.<GetQuery>parse(equivalentQueryString2);
+            GraqlGet equivQuery2 = Graql.<GraqlGet>parse(equivalentQueryString2);
             System.out.println(equivQuery2);
             List<ConceptMap> equivalentAnswers2 = tx.execute(equivQuery2);
             System.out.println();

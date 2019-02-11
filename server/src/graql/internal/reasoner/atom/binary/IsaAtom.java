@@ -35,10 +35,10 @@ import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.property.IsaProperty;
+import grakn.core.graql.query.property.VarProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 
 import javax.annotation.Nullable;

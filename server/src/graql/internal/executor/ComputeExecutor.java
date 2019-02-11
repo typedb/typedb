@@ -63,7 +63,7 @@ import grakn.core.graql.internal.analytics.StatisticsMapReduce;
 import grakn.core.graql.internal.analytics.StdMapReduce;
 import grakn.core.graql.internal.analytics.SumMapReduce;
 import grakn.core.graql.internal.analytics.Utility;
-import grakn.core.graql.query.ComputeQuery;
+import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.session.TransactionOLTP;
@@ -88,19 +88,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.ComputeQuery.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.query.ComputeQuery.Algorithm.DEGREE;
-import static grakn.core.graql.query.ComputeQuery.Algorithm.K_CORE;
-import static grakn.core.graql.query.ComputeQuery.Method.CENTRALITY;
-import static grakn.core.graql.query.ComputeQuery.Method.CLUSTER;
-import static grakn.core.graql.query.ComputeQuery.Method.COUNT;
-import static grakn.core.graql.query.ComputeQuery.Method.MAX;
-import static grakn.core.graql.query.ComputeQuery.Method.MEAN;
-import static grakn.core.graql.query.ComputeQuery.Method.MEDIAN;
-import static grakn.core.graql.query.ComputeQuery.Method.MIN;
-import static grakn.core.graql.query.ComputeQuery.Method.PATH;
-import static grakn.core.graql.query.ComputeQuery.Method.STD;
-import static grakn.core.graql.query.ComputeQuery.Method.SUM;
+import static grakn.core.graql.query.query.GraqlCompute.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.query.query.GraqlCompute.Algorithm.DEGREE;
+import static grakn.core.graql.query.query.GraqlCompute.Algorithm.K_CORE;
+import static grakn.core.graql.query.query.GraqlCompute.Method.CENTRALITY;
+import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;
+import static grakn.core.graql.query.query.GraqlCompute.Method.COUNT;
+import static grakn.core.graql.query.query.GraqlCompute.Method.MAX;
+import static grakn.core.graql.query.query.GraqlCompute.Method.MEAN;
+import static grakn.core.graql.query.query.GraqlCompute.Method.MEDIAN;
+import static grakn.core.graql.query.query.GraqlCompute.Method.MIN;
+import static grakn.core.graql.query.query.GraqlCompute.Method.PATH;
+import static grakn.core.graql.query.query.GraqlCompute.Method.STD;
+import static grakn.core.graql.query.query.GraqlCompute.Method.SUM;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -108,18 +108,18 @@ import static java.util.stream.Collectors.toSet;
  */
 class ComputeExecutor<T extends Answer> {
 
-    private final ComputeQuery<T> query;
+    private final GraqlCompute<T> query;
 
     private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutor.class);
     private final TransactionOLTP tx;
 
-    public ComputeExecutor(TransactionOLTP tx, ComputeQuery<T> query) {
+    public ComputeExecutor(TransactionOLTP tx, GraqlCompute<T> query) {
         this.tx = tx;
         this.query = query;
     }
 
     public Stream<T> stream() {
-        ComputeQuery.Method<?> method = query.method();
+        GraqlCompute.Method<?> method = query.method();
         if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
             return (Stream<T>) runComputeMinMaxMedianOrSum();
         } else if (method.equals(MEAN)) {
@@ -260,7 +260,7 @@ class ComputeExecutor<T extends Answer> {
      * @param targetDataType representing the data type of the target attribute types
      * @return an object which is a subclass of VertexProgram
      */
-    private VertexProgram initStatisticsVertexProgram(ComputeQuery query, Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
+    private VertexProgram initStatisticsVertexProgram(GraqlCompute query, Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
         if (query.method().equals(MEDIAN)) return new MedianVertexProgram(targetTypes, targetDataType);
         else return new DegreeStatisticsVertexProgram(targetTypes);
     }
@@ -273,7 +273,7 @@ class ComputeExecutor<T extends Answer> {
      * @return an object which is a subclass of StatisticsMapReduce
      */
     private StatisticsMapReduce<?> initStatisticsMapReduce(Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
-        ComputeQuery.Method<?> method = query.method();
+        GraqlCompute.Method<?> method = query.method();
         if (method.equals(MIN)) {
             return new MinMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MAX)) {

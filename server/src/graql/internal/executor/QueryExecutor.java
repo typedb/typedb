@@ -36,25 +36,24 @@ import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
-import grakn.core.graql.query.AggregateQuery;
-import grakn.core.graql.query.ComputeQuery;
-import grakn.core.graql.query.DefineQuery;
-import grakn.core.graql.query.DeleteQuery;
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.query.GraqlAggregate;
+import grakn.core.graql.query.query.GraqlCompute;
+import grakn.core.graql.query.query.GraqlDefine;
+import grakn.core.graql.query.query.GraqlDelete;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.GroupAggregateQuery;
-import grakn.core.graql.query.GroupQuery;
-import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.MatchClause;
-import grakn.core.graql.query.UndefineQuery;
+import grakn.core.graql.query.query.GraqlGroup;
+import grakn.core.graql.query.query.GraqlInsert;
+import grakn.core.graql.query.query.MatchClause;
+import grakn.core.graql.query.query.GraqlUndefine;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.property.HasAttributeProperty;
-import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.RelationProperty;
-import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.property.HasAttributeProperty;
+import grakn.core.graql.query.property.IsaProperty;
+import grakn.core.graql.query.property.RelationProperty;
+import grakn.core.graql.query.property.VarProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -175,7 +174,7 @@ public class QueryExecutor {
         return map;
     }
 
-    public ConceptMap define(DefineQuery query) {
+    public ConceptMap define(GraqlDefine query) {
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         List<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
@@ -190,7 +189,7 @@ public class QueryExecutor {
         return WriteExecutor.create(transaction, executors.build()).write(new ConceptMap());
     }
 
-    public ConceptMap undefine(UndefineQuery query) {
+    public ConceptMap undefine(GraqlUndefine query) {
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         ImmutableList<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
@@ -204,7 +203,7 @@ public class QueryExecutor {
         return WriteExecutor.create(transaction, executors.build()).write(new ConceptMap());
     }
 
-    public Stream<ConceptMap> insert(InsertQuery query) {
+    public Stream<ConceptMap> insert(GraqlInsert query) {
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
                 .collect(toImmutableList());
@@ -233,7 +232,7 @@ public class QueryExecutor {
         }
     }
 
-    public ConceptSet delete(DeleteQuery query) {
+    public ConceptSet delete(GraqlDelete query) {
         Stream<ConceptMap> answers = transaction.stream(query.match(), infer)
                 .map(result -> result.project(query.vars()))
                 .distinct();
@@ -252,11 +251,11 @@ public class QueryExecutor {
         return new ConceptSet(conceptsToDelete.stream().map(Concept::id).collect(toSet()));
     }
 
-    public Stream<ConceptMap> get(GetQuery query) {
+    public Stream<ConceptMap> get(GraqlGet query) {
         return match(query.match()).map(result -> result.project(query.vars())).distinct();
     }
 
-    public Stream<Value> aggregate(AggregateQuery query) {
+    public Stream<Value> aggregate(GraqlAggregate query) {
         Stream<ConceptMap> answers = get(query.getQuery());
         switch (query.method()) {
             case COUNT:
@@ -278,13 +277,13 @@ public class QueryExecutor {
         }
     }
 
-    public Stream<AnswerGroup<ConceptMap>> group(GroupQuery query) {
+    public Stream<AnswerGroup<ConceptMap>> group(GraqlGroup query) {
         return group(get(query.getQuery()), query.var(),
                      answers -> answers.collect(Collectors.toList())
         ).stream();
     }
 
-    public Stream<AnswerGroup<Value>> group(GroupAggregateQuery query) {
+    public Stream<AnswerGroup<Value>> group(GraqlGroup.Aggregate query) {
         return group(get(query.getQuery()), query.var(),
                      answers -> AggregateExecutor.aggregate(answers, query.aggregateMethod(), query.aggregateVar())
         ).stream();
@@ -302,7 +301,7 @@ public class QueryExecutor {
         return answerGroups;
     }
 
-    public <T extends Answer> Stream<T> compute(ComputeQuery<T> query) {
+    public <T extends Answer> Stream<T> compute(GraqlCompute<T> query) {
         Optional<GraqlQueryException> exception = query.getException();
         if (exception.isPresent()) throw exception.get();
 

@@ -65,12 +65,13 @@ import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.RelationProperty;
-import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.StatementInstance;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.property.IsaProperty;
+import grakn.core.graql.query.property.RelationProperty;
+import grakn.core.graql.query.property.VarProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.StatementInstance;
+import grakn.core.graql.query.statement.StatementThing;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.RelationshipTypeImpl;
 import java.util.ArrayList;
@@ -1073,7 +1074,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
         Statement relVar = getPattern().getProperty(IsaProperty.class)
                 .map(prop -> new Statement(getVarName()).isa(prop.type()))
-                .orElse(new StatementInstance.StatementThing(getVarName()));
+                .orElse(new StatementThing(getVarName()));
 
         for (RelationProperty.RolePlayer rp: getRelationPlayers()) {
             Statement rolePattern = rp.getRole().orElse(null);
@@ -1099,7 +1100,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Override
     public RelationshipAtom rewriteWithRelationVariable(){
-        StatementInstance newVar = new StatementInstance.StatementThing(new Variable().asUserDefined());
+        StatementInstance newVar = new StatementThing(new Variable().asUserDefined());
         Statement relVar = getPattern().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.type()))
                 .orElse(newVar);

@@ -29,10 +29,10 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSyntaxException;
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
@@ -147,7 +147,7 @@ public class GraknClientTest {
                 .setQueryIter(SessionProto.Transaction.Query.Iter.newBuilder().setId(ITERATOR))
                 .build();
 
-        GetQuery query = match(var("x").sub("thing")).get();
+        GraqlGet query = match(var("x").sub("thing")).get();
         String queryString = query.toString();
         ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
         SessionProto.Transaction.Res iteratorNext = SessionProto.Transaction.Res.newBuilder()
@@ -164,7 +164,7 @@ public class GraknClientTest {
 
         try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             verify(server.requestListener()).onNext(any()); // The open request
-            answers = tx.stream(Graql.<GetQuery>parse(queryString)).limit(numAnswers).collect(toList());
+            answers = tx.stream(Graql.<GraqlGet>parse(queryString)).limit(numAnswers).collect(toList());
         }
 
         assertEquals(10, answers.size());
@@ -223,7 +223,7 @@ public class GraknClientTest {
     @SuppressWarnings("CheckReturnValue")
     @Test
     public void whenAnErrorOccurs_TheTxCloses() {
-        GetQuery query = match(var("x").isa("thing")).get();
+        GraqlGet query = match(var("x").isa("thing")).get();
 
         SessionProto.Transaction.Req execQueryRequest = RequestBuilder.Transaction.query(query);
         GraknException expectedException = GraqlQueryException.create("well something went wrong.");
@@ -244,7 +244,7 @@ public class GraknClientTest {
     @SuppressWarnings("CheckReturnValue")
     @Test
     public void whenAnErrorOccurs_AllFutureActionsThrow() {
-        GetQuery query = match(var("x").isa("thing")).get();
+        GraqlGet query = match(var("x").isa("thing")).get();
 
         SessionProto.Transaction.Req execQueryRequest = RequestBuilder.Transaction.query(query);
         GraknException expectedException = GraqlQueryException.create("well something went wrong.");

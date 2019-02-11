@@ -36,11 +36,11 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -134,7 +134,7 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_RelationWithMetaRolesAndIds(){
-        Concept instance = tx.execute(Graql.<GetQuery>parse("match $x isa subRoleEntity; get;")).iterator().next().get("x");
+        Concept instance = tx.execute(Graql.<GraqlGet>parse("match $x isa subRoleEntity; get;")).iterator().next().get("x");
         String relation = "{ (role: $x, role: $y) isa binary; $y id '" + instance.id().getValue() + "'; };";
         String relation2 = "{ (role: $z, role: $v) isa binary; $z id '" + instance.id().getValue() + "'; };";
         String relation3 = "{ (role: $z, role: $v) isa binary; $v id '" + instance.id().getValue() + "'; };";

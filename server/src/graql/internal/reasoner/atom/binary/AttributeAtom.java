@@ -44,17 +44,17 @@ import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.property.HasAttributeProperty;
-import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
+import grakn.core.graql.query.property.HasAttributeProperty;
+import grakn.core.graql.query.property.VarProperty;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.concept.AttributeTypeImpl;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.RelationshipImpl;
+import graql.util.Token;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -107,7 +107,7 @@ public abstract class AttributeAtom extends Binary{
                 this.getPredicateVariable(),
                 this.getTypeId(),
                 this.getMultiPredicate().stream()
-                        .filter(at -> !(at.getPredicate().comparator().equals(Query.Comparator.NEQV)))
+                        .filter(at -> !(at.getPredicate().comparator().equals(Token.Comparator.NEQV)))
                         .collect(Collectors.toSet()),
                 this.getParentQuery());
     }

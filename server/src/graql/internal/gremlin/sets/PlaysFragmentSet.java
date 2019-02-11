@@ -23,8 +23,8 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
-import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.statement.Variable;
+import grakn.core.graql.query.property.VarProperty;
 
 import java.util.Set;
 

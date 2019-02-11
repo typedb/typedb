@@ -22,12 +22,13 @@ import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqValuePredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.property.HasAttributeProperty;
-import grakn.core.graql.query.pattern.property.ValueProperty;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.property.HasAttributeProperty;
+import grakn.core.graql.query.property.ValueProperty;
+import grakn.core.graql.query.statement.Statement;
+
+import grakn.core.graql.query.statement.Variable;
+import graql.util.Token;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -80,7 +81,7 @@ public class AtomicFactory {
         ValueProperty.Operation directOperation = property.operation();
         Variable predicateVar = directOperation.innerStatement() != null? directOperation.innerStatement().var() : null;
 
-        boolean buildNeq = directOperation.comparator().equals(Query.Comparator.NEQV);
+        boolean buildNeq = directOperation.comparator().equals(Token.Comparator.NEQV);
         boolean partOfAttribute = otherStatements.stream()
                 .flatMap(s -> s.getProperties(HasAttributeProperty.class))
                 .anyMatch(p -> p.attribute().var().equals(var));

@@ -20,10 +20,10 @@ package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -79,9 +79,9 @@ public class AttributeAttachmentIT {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
             String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; get;";
-            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+            List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString));
             String queryString2 = "match $x isa reattachable-resource-string; get;";
-            List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
+            List<ConceptMap> answers2 = tx.execute(Graql.<GraqlGet>parse(queryString2));
 
             assertEquals(tx.getEntityType("genericEntity").instances().count(), answers.size());
             assertEquals(1, answers2.size());
@@ -94,7 +94,7 @@ public class AttributeAttachmentIT {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
             String queryString = "match $x isa genericEntity;($x, $y); get;";
-            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+            List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString));
 
             assertEquals(3, answers.size());
             assertEquals(2, answers.stream().filter(answer -> answer.get("y").isAttribute()).count());
@@ -106,16 +106,16 @@ public class AttributeAttachmentIT {
     public void reusingAttributes_usingExistingAttributeToDefineSubAttribute() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
                         String queryString = "match $x isa genericEntity, has subResource $y; get;";
-            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+            List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString));
             assertEquals(tx.getEntityType("genericEntity").instances().count(), answers.size());
 
             String queryString2 = "match $x isa subResource; get;";
-            List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
+            List<ConceptMap> answers2 = tx.execute(Graql.<GraqlGet>parse(queryString2));
             assertEquals(1, answers2.size());
             assertTrue(answers2.iterator().next().get("x").isAttribute());
 
             String queryString3 = "match $x isa reattachable-resource-string; $y isa subResource;get;";
-            List<ConceptMap> answers3 = tx.execute(Graql.<GetQuery>parse(queryString3));
+            List<ConceptMap> answers3 = tx.execute(Graql.<GraqlGet>parse(queryString3));
             assertEquals(1, answers3.size());
 
             assertTrue(answers3.iterator().next().get("x").isAttribute());
@@ -127,17 +127,18 @@ public class AttributeAttachmentIT {
     public void whenReasoningWithAttributesInRelationForm_ResultsAreComplete() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
-            List<ConceptMap> concepts = tx.execute(Graql.<GetQuery>parse("match $x isa genericEntity; get;"));
-            List<ConceptMap> subResources = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> concepts = tx.execute(Graql.<GraqlGet>parse("match $x isa genericEntity; get;"));
+            List<ConceptMap> subResources = tx.execute(Graql.<GraqlGet>parse(
                     "match $x isa genericEntity, has subResource $res; get;"));
-            List<ConceptMap> derivedResources = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> derivedResources = tx.execute(Graql.<GraqlGet>parse(
                     "match $x isa genericEntity, has derived-resource-string $res; get;"));
 
             String queryString = "match " +
                     "$rel($role:$x) isa @has-reattachable-resource-string; " +
                     "$x isa genericEntity; " +
                     "get;";
-            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+
+            List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString));
             //base resources yield 4 roles: metarole, base attribute role, super role, specific role
             //subresources yield 5 roles: all the above + specialised role
             assertEquals(concepts.size() * 4 + subResources.size() * 5, answers.size());
@@ -166,7 +167,7 @@ public class AttributeAttachmentIT {
             Statement value = type(HAS_VALUE.getLabel("reattachable-resource-string").getValue());
             Statement hasRes = type(HAS.getLabel("reattachable-resource-string").getValue());
 
-            GetQuery query = Graql.match(
+            GraqlGet query = Graql.match(
                     var().rel(owner, "x").rel(value, "y").isa(hasRes),
                     var("a").has("reattachable-resource-string", var("b"))  // This pattern is added only to encourage reasoning to activate
             ).get();
@@ -186,7 +187,7 @@ public class AttributeAttachmentIT {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
             String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; $z isa relation; get;";
-            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+            List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString));
             assertEquals(2, answers.size());
             answers.forEach(ans ->
                     {
@@ -197,7 +198,7 @@ public class AttributeAttachmentIT {
             );
 
             String queryString2 = "match $x isa relation, has reattachable-resource-string $y; get;";
-            List<ConceptMap> answers2 = tx.execute(Graql.<GetQuery>parse(queryString2));
+            List<ConceptMap> answers2 = tx.execute(Graql.<GraqlGet>parse(queryString2));
             assertEquals(1, answers2.size());
             answers2.forEach(ans ->
                     {
@@ -213,7 +214,7 @@ public class AttributeAttachmentIT {
     public void reusingAttributes_derivingAttributeFromOtherAttributeWithConditionalValue() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
                         String queryString = "match $x has derived-resource-boolean $r; get;";
-            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+            List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString));
             assertEquals(1, answers.size());
         }
     }
@@ -224,8 +225,8 @@ public class AttributeAttachmentIT {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
                         String queryString = "match $x has derived-resource-string 'value'; get;";
             String queryString2 = "match $x has derived-resource-string $r; get;";
-            GetQuery query = Graql.parse(queryString);
-            GetQuery query2 = Graql.parse(queryString2);
+            GraqlGet query = Graql.parse(queryString);
+            GraqlGet query2 = Graql.parse(queryString2);
             List<ConceptMap> answers = tx.execute(query);
             List<ConceptMap> answers2 = tx.execute(query2);
             List<ConceptMap> requeriedAnswers = tx.execute(query);
@@ -241,7 +242,7 @@ public class AttributeAttachmentIT {
     public void reusingAttributes_attachingStrayAttributeToEntityDoesntThrowErrors() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
                         String queryString = "match $x isa yetAnotherEntity, has derived-resource-string 'unattached'; get;";
-            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(queryString));
+            List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(queryString));
             assertEquals(2, answers.size());
         }
     }

@@ -33,10 +33,10 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
+import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.reasoner.graph.ReachabilityGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -126,7 +126,7 @@ public class NegationIT {
             String unwantedLabel = "anotherType";
             EntityType unwantedType = tx.getEntityType(unwantedLabel);
 
-            List<ConceptMap> answersWithoutSpecificRoleplayerType = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> answersWithoutSpecificRoleplayerType = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "(someRole: $x, otherRole: $y) isa binary;" +
                             "not {$q isa " + unwantedLabel + ";};" +
@@ -135,7 +135,7 @@ public class NegationIT {
                             "get;"
             ));
             
-            List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> fullAnswers = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "(someRole: $x, otherRole: $y) isa binary;" +
                             "(someRole: $y, otherRole: $q) isa binary;" +
@@ -158,7 +158,7 @@ public class NegationIT {
             String unwantedLabel = "anotherType";
             String connection = "binary";
 
-            List<ConceptMap> answersWithoutSpecificConnection = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> answersWithoutSpecificConnection = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "(someRole: $x, otherRole: $y) isa binary;" +
                             "$q isa " + unwantedLabel + ";" +
@@ -167,7 +167,7 @@ public class NegationIT {
                             "get;"
             ));
 
-            List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> fullAnswers = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "(someRole: $x, otherRole: $y) isa binary;" +
                             "$q isa " + unwantedLabel + ";" +
@@ -197,7 +197,7 @@ public class NegationIT {
             String unwantedLabel = "anotherType";
             String connection = "derived-binary";
 
-            List<ConceptMap> answersWithoutSpecificConnection = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> answersWithoutSpecificConnection = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "(someRole: $x, otherRole: $y) isa binary;" +
                             "$q isa " + unwantedLabel + ";" +
@@ -207,7 +207,7 @@ public class NegationIT {
             ));
 
 
-            List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> fullAnswers = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "$q isa " + unwantedLabel + ";" +
                             "(someRole: $x, otherRole: $y) isa binary;" +
@@ -237,14 +237,14 @@ public class NegationIT {
     public void entitiesWithoutSpecificAttributeValue(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
             String specificStringValue = "value";
-            List<ConceptMap> answersWithoutSpecificStringValue = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> answersWithoutSpecificStringValue = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "$x isa entity;" +
                             "not {$x has attribute '" + specificStringValue + "';};" +
                             "get;"
             ));
 
-            List<ConceptMap> expectedAnswers = tx.stream(Graql.<GetQuery>parse("match $x isa entity;get;"))
+            List<ConceptMap> expectedAnswers = tx.stream(Graql.<GraqlGet>parse("match $x isa entity;get;"))
                     .filter(ans -> ans.get("x").asThing().attributes().noneMatch(a -> a.value().equals(specificStringValue))).collect(toList());
 
             assertCollectionsEqual(
@@ -259,14 +259,14 @@ public class NegationIT {
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
             String specificStringValue = "unattached";
 
-            List<ConceptMap> answersWithoutSpecificStringValue = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> answersWithoutSpecificStringValue = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "$x has attribute $r;" +
                             "not {$r == '" + specificStringValue + "';};" +
                             "get;"
             ));
 
-            List<ConceptMap> expectedAnswers = tx.stream(Graql.<GetQuery>parse("match $x has attribute $r;get;"))
+            List<ConceptMap> expectedAnswers = tx.stream(Graql.<GraqlGet>parse("match $x has attribute $r;get;"))
                     .filter(ans -> !ans.get("r").asAttribute().value().equals(specificStringValue)).collect(toList());
 
             assertCollectionsNonTriviallyEqual(
@@ -290,7 +290,7 @@ public class NegationIT {
                     Graql.not(hasPattern)
             );
             List<ConceptMap> answersWithoutSpecificStringValue = tx.execute(Graql.match(pattern).get());
-            List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse("match $x has attribute $r;get;"));
+            List<ConceptMap> fullAnswers = tx.execute(Graql.<GraqlGet>parse("match $x has attribute $r;get;"));
 
             //TODO
             assertCollectionsNonTriviallyEqual(
@@ -306,14 +306,14 @@ public class NegationIT {
             String specificTypeLabel = "anotherType";
             EntityType specificType = tx.getEntityType(specificTypeLabel);
 
-            List<ConceptMap> answersWithoutSpecificType = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> answersWithoutSpecificType = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "$x has attribute $r;" +
                             "not {$x isa " + specificTypeLabel + ";};" +
                             "get;"
             ));
 
-            List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse("match $x has attribute $r;get;"));
+            List<ConceptMap> fullAnswers = tx.execute(Graql.<GraqlGet>parse("match $x has attribute $r;get;"));
 
             assertCollectionsNonTriviallyEqual(
                     fullAnswers.stream()
@@ -327,8 +327,8 @@ public class NegationIT {
     public void entitiesNotHavingRolePlayersInRelations(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
             String connection = "relationship";
-            List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse("match $x has attribute $r;get;"));
-            List<ConceptMap> answersNotPlayingInRelation = tx.execute(Graql.<GetQuery>parse("match " +
+            List<ConceptMap> fullAnswers = tx.execute(Graql.<GraqlGet>parse("match $x has attribute $r;get;"));
+            List<ConceptMap> answersNotPlayingInRelation = tx.execute(Graql.<GraqlGet>parse("match " +
                     "$x has attribute $r;"+
                     "not {($x) isa relationship;};" +
                     "get;"
@@ -354,7 +354,7 @@ public class NegationIT {
             String specificTypeLabel = "someType";
             String anotherSpecificValue = "attached";
 
-            List<ConceptMap> answersWithoutSpecifcTypeAndValue = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> answersWithoutSpecifcTypeAndValue = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "$x has attribute $r;" +
                             "not {" +
@@ -365,7 +365,7 @@ public class NegationIT {
                             "get;"
             ));
 
-            List<ConceptMap> equivalentAnswers = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> equivalentAnswers = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "$x has attribute $r; " +
                             "not {" +
@@ -389,9 +389,9 @@ public class NegationIT {
             String specificTypeLabel = "anotherType";
             EntityType specificType = tx.getEntityType(specificTypeLabel);
 
-            List<ConceptMap> fullAnswers = tx.execute(Graql.<GetQuery>parse("match $x has attribute $r;get;"));
+            List<ConceptMap> fullAnswers = tx.execute(Graql.<GraqlGet>parse("match $x has attribute $r;get;"));
 
-            List<ConceptMap> answersWithoutSpecifcTypeAndValue = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> answersWithoutSpecifcTypeAndValue = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "$x has attribute $r;" +
                             "not {$x isa " + specificTypeLabel + ";};" +
@@ -412,14 +412,14 @@ public class NegationIT {
     @Test
     public void whenNegatingGroundTransitiveRelation_queryTerminates(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
-            Concept start = tx.execute(Graql.<GetQuery>parse(
+            Concept start = tx.execute(Graql.<GraqlGet>parse(
                     "match $x isa someType, has resource-string 'value'; get;"
             )).iterator().next().get("x");
-            Concept end = tx.execute(Graql.<GetQuery>parse(
+            Concept end = tx.execute(Graql.<GraqlGet>parse(
                     "match $x isa someType, has resource-string 'someString'; get;"
             )).iterator().next().get("x");
 
-            List<ConceptMap> answers = tx.execute(Graql.<GetQuery>parse(
+            List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "not {($x, $y) isa derived-binary;};" +
                             "$x id '" + start.id().getValue() + "';" +
@@ -434,14 +434,14 @@ public class NegationIT {
     public void doubleNegation_recipesContainingAllergens(){
         try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
             Set<ConceptMap> recipesContainingAllergens = tx.stream(
-                    Graql.<GetQuery>parse("match " +
+                    Graql.<GraqlGet>parse("match " +
                             "$r isa recipe;" +
                             "($r, $i) isa requires;" +
                             "$i isa allergenic-ingredient;" +
                             "get $r;"
                     )).collect(Collectors.toSet());
 
-            Set<ConceptMap> doubleNegationEquivalent = tx.stream(Graql.<GetQuery>parse("match " +
+            Set<ConceptMap> doubleNegationEquivalent = tx.stream(Graql.<GraqlGet>parse("match " +
                     "$r isa recipe;" +
                     "not {" +
                         "not {" +
@@ -462,16 +462,16 @@ public class NegationIT {
     @Test
     public void negatedConjunction_allRecipesThatDoNotContainAllergens(){
         try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
-            Set<ConceptMap> allRecipes = tx.stream(Graql.<GetQuery>parse("match $r isa recipe;get;")).collect(Collectors.toSet());
+            Set<ConceptMap> allRecipes = tx.stream(Graql.<GraqlGet>parse("match $r isa recipe;get;")).collect(Collectors.toSet());
             Set<ConceptMap> recipesContainingAllergens = tx.stream(
-                    Graql.<GetQuery>parse("match " +
+                    Graql.<GraqlGet>parse("match " +
                             "$r isa recipe;" +
                             "($r, $i) isa requires;" +
                             "$i isa allergenic-ingredient;" +
                             "get $r;"
                     )).collect(Collectors.toSet());
 
-            Set<ConceptMap> recipesWithoutAllergenIngredients = tx.stream(Graql.<GetQuery>parse("match " +
+            Set<ConceptMap> recipesWithoutAllergenIngredients = tx.stream(Graql.<GraqlGet>parse("match " +
                     "$r isa recipe;" +
                     "not {" +
                     "{" +
@@ -490,10 +490,10 @@ public class NegationIT {
     @Test
     public void allRecipesContainingAvailableIngredients(){
         try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> allRecipes = tx.stream(Graql.<GetQuery>parse("match $r isa recipe;get;")).collect(Collectors.toList());
+            List<ConceptMap> allRecipes = tx.stream(Graql.<GraqlGet>parse("match $r isa recipe;get;")).collect(Collectors.toList());
 
             List<ConceptMap> recipesWithUnavailableIngredientsExplicit = tx.execute(
-                    Graql.<GetQuery>parse("match " +
+                    Graql.<GraqlGet>parse("match " +
                             "$r isa recipe;" +
                             "($r, $i) isa requires;" +
                             "not {$i isa available-ingredient;};" +
@@ -501,7 +501,7 @@ public class NegationIT {
                     ));
 
             List<ConceptMap> recipesWithUnavailableIngredients = tx.execute(
-                    Graql.<GetQuery>parse("match " +
+                    Graql.<GraqlGet>parse("match " +
                             "$r isa recipe-with-unavailable-ingredient;" +
                             "get $r;"
                     ));
@@ -509,13 +509,13 @@ public class NegationIT {
             assertCollectionsNonTriviallyEqual(recipesWithUnavailableIngredientsExplicit, recipesWithUnavailableIngredients);
 
             List<ConceptMap> recipesWithAllIngredientsAvailableSimple = tx.execute(
-                    Graql.<GetQuery>parse("match " +
+                    Graql.<GraqlGet>parse("match " +
                             "$r isa recipe;" +
                             "not {$r isa recipe-with-unavailable-ingredient;};" +
                             "get $r;"
                     ));
 
-            List<ConceptMap> recipesWithAllIngredientsAvailableExplicit = tx.execute(Graql.<GetQuery>parse("match " +
+            List<ConceptMap> recipesWithAllIngredientsAvailableExplicit = tx.execute(Graql.<GraqlGet>parse("match " +
                     "$r isa recipe;" +
                     "not {" +
                         "{" +
@@ -531,7 +531,7 @@ public class NegationIT {
                     "get $r;"
             ));
 
-            List<ConceptMap> recipesWithAllIngredientsAvailable = tx.execute(Graql.<GetQuery>parse("match " +
+            List<ConceptMap> recipesWithAllIngredientsAvailable = tx.execute(Graql.<GraqlGet>parse("match " +
                     "$r isa recipe;" +
                     "not {" +
                         "{" +
@@ -551,17 +551,17 @@ public class NegationIT {
     @Test
     public void testSemiPositiveProgram(){
         try(Transaction tx = reachabilitySession.transaction(Transaction.Type.WRITE)) {
-            ConceptMap firstNeighbour = Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse("match $x has index 'a1';get;")));
+            ConceptMap firstNeighbour = Iterables.getOnlyElement(tx.execute(Graql.<GraqlGet>parse("match $x has index 'a1';get;")));
             ConceptId firstNeighbourId = firstNeighbour.get("x").id();
             List<ConceptMap> indirectLinksWithOrigin = tx.execute(
-                    Graql.<GetQuery>parse("match " +
+                    Graql.<GraqlGet>parse("match " +
                             "(from: $x, to: $y) isa indirect-link;" +
                             "$x has index 'a';" +
                             "get;"
                     ));
 
             List<ConceptMap> alternativeRepresentation = tx.execute(
-                    Graql.<GetQuery>parse(
+                    Graql.<GraqlGet>parse(
                             "match " +
                                     "(from: $x, to: $y) isa reachable;" +
                                     "$x has index 'a';" +
@@ -570,7 +570,7 @@ public class NegationIT {
                     ));
 
             List<ConceptMap> expected = tx.stream(
-                    Graql.<GetQuery>parse(
+                    Graql.<GraqlGet>parse(
                             "match " +
                                     "(from: $x, to: $y) isa reachable;" +
                                     "$x has index 'a';" +
@@ -586,14 +586,14 @@ public class NegationIT {
     public void testStratifiedProgram(){
         try(Transaction tx = reachabilitySession.transaction(Transaction.Type.WRITE)) {
             List<ConceptMap> indirectLinksWithOrigin = tx.execute(
-                    Graql.<GetQuery>parse("match " +
+                    Graql.<GraqlGet>parse("match " +
                             "(from: $x, to: $y) isa unreachable;" +
                             "$x has index 'a';" +
                             "get;"
                     ));
 
             List<ConceptMap> expected = tx.execute(
-                    Graql.<GetQuery>parse(
+                    Graql.<GraqlGet>parse(
                             "match " +
                                     "$x has index 'a';" +
                                     "$y isa vertex;" +

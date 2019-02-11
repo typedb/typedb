@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.gremlin;
 
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
-import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.property.VarProperty;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

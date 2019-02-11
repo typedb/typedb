@@ -55,14 +55,14 @@ import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Query;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
+import graql.util.Token;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -162,7 +162,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     boolean isNeqPositive(){
         return !getAtoms(NeqPredicate.class).findFirst().isPresent()
                 && getAtoms(AttributeAtom.class).flatMap(at -> at.getMultiPredicate().stream())
-                .noneMatch(p -> p.getPredicate().comparator().equals(Query.Comparator.NEQV));
+                .noneMatch(p -> p.getPredicate().comparator().equals(Token.Comparator.NEQV));
     }
 
     /**
@@ -314,7 +314,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
 
-    public GetQuery getQuery() {
+    public GraqlGet getQuery() {
         return Graql.match(getPattern()).get();
     }
 

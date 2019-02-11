@@ -35,7 +35,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.property.VarProperty;
 import grakn.core.server.session.TransactionOLTP;
 
 import javax.annotation.Nullable;

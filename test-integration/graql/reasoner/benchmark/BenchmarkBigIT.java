@@ -27,13 +27,13 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.Query;
+import grakn.core.graql.query.query.GraqlInsert;
+import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import org.junit.Before;
@@ -70,7 +70,7 @@ public class BenchmarkBigIT {
             InputStream inputStream = new FileInputStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE);
-            tx.execute(Graql.<Query>parse(s));
+            tx.execute(Graql.<GraqlQuery>parse(s));
             tx.commit();
         } catch (Exception e){
             System.err.println(e);
@@ -81,7 +81,7 @@ public class BenchmarkBigIT {
     private void loadEntities(String entityLabel, int N, GraknClient.Session session){
         try(GraknClient.Transaction transaction = session.transaction(Transaction.Type.WRITE)){
             for(int i = 0 ; i < N ;i++){
-                InsertQuery entityInsert = Graql.insert(new Statement(new Variable().asUserDefined()).isa(entityLabel));
+                GraqlInsert entityInsert = Graql.insert(new Statement(new Variable().asUserDefined()).isa(entityLabel));
                 transaction.execute(entityInsert);
             }
             transaction.commit();
@@ -349,8 +349,8 @@ public class BenchmarkBigIT {
 
         try (GraknClient.Session session = new GraknClient(server.grpcUri().toString()).session(keyspace)) {
             try(GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
-                ConceptId firstId = Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse("match $x has index 'first';get;"))).get("x").id();
-                ConceptId lastId = Iterables.getOnlyElement(tx.execute(Graql.<GetQuery>parse("match $x has index '" + N + "';get;"))).get("x").id();
+                ConceptId firstId = Iterables.getOnlyElement(tx.execute(Graql.<GraqlGet>parse("match $x has index 'first';get;"))).get("x").id();
+                ConceptId lastId = Iterables.getOnlyElement(tx.execute(Graql.<GraqlGet>parse("match $x has index '" + N + "';get;"))).get("x").id();
                 String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
                 String queryString = "match " + queryPattern + " get;";
                 String subbedQueryString = "match " +
@@ -375,7 +375,7 @@ public class BenchmarkBigIT {
 
     private List<ConceptMap> executeQuery(String queryString, GraknClient.Transaction transaction, String msg){
         final long startTime = System.currentTimeMillis();
-        List<ConceptMap> results = transaction.execute(Graql.<GetQuery>parse(queryString));
+        List<ConceptMap> results = transaction.execute(Graql.<GraqlGet>parse(queryString));
         final long answerTime = System.currentTimeMillis() - startTime;
         System.out.println(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

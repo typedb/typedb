@@ -12,7 +12,9 @@ java_test(
     test_class = "grakn.core.graql.query.predicate.RegexPredicateTest",
     srcs = ["RegexPredicateTest.java"],
     deps = [
+        "//graql/java:graql",
+        "//server:server",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//server"],
+    ],
     size = "small"
 )

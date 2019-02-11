@@ -18,8 +18,8 @@
 
 package grakn.core.graql.query.pattern;
 
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.LinkedHashSet;

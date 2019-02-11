@@ -24,12 +24,17 @@ import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
 import grakn.core.graql.query.pattern.Negation;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.StatementInstance;
-import grakn.core.graql.query.pattern.statement.StatementInstance.StatementAttribute;
-import grakn.core.graql.query.pattern.statement.StatementInstance.StatementRelation;
-import grakn.core.graql.query.pattern.statement.StatementType;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.query.GraqlCompute;
+import grakn.core.graql.query.query.GraqlDefine;
+import grakn.core.graql.query.query.GraqlInsert;
+import grakn.core.graql.query.query.GraqlQuery;
+import grakn.core.graql.query.query.GraqlUndefine;
+import grakn.core.graql.query.query.MatchClause;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.StatementAttribute;
+import grakn.core.graql.query.statement.StatementRelation;
+import grakn.core.graql.query.statement.StatementType;
+import grakn.core.graql.query.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.time.LocalDateTime;
@@ -43,7 +48,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.ComputeQuery.Method;
+import static grakn.core.graql.query.query.GraqlCompute.Method;
 
 /**
  * Main class containing static methods for creating Graql queries.
@@ -59,12 +64,12 @@ public class Graql {
     }
 
     @CheckReturnValue
-    public static <T extends Query> T parse(String queryString) {
+    public static <T extends GraqlQuery> T parse(String queryString) {
         return parser.parseQueryEOF(queryString);
     }
 
     @CheckReturnValue
-    public static <T extends Query> Stream<T> parseList(String queryString) {
+    public static <T extends GraqlQuery> Stream<T> parseList(String queryString) {
         return parser.parseQueryListEOF(queryString);
     }
 
@@ -101,7 +106,7 @@ public class Graql {
      * @return an insert query that will insert the given variable patterns into the graph
      */
     @CheckReturnValue
-    public static InsertQuery insert(Statement... statements) {
+    public static GraqlInsert insert(Statement... statements) {
         return insert(Arrays.asList(statements));
     }
 
@@ -110,8 +115,8 @@ public class Graql {
      * @return an insert query that will insert the given variable patterns into the graph
      */
     @CheckReturnValue
-    public static InsertQuery insert(Collection<? extends Statement> statements) {
-        return new InsertQuery(null, Collections.unmodifiableList(new ArrayList<>(statements)));
+    public static GraqlInsert insert(Collection<? extends Statement> statements) {
+        return new GraqlInsert(null, Collections.unmodifiableList(new ArrayList<>(statements)));
     }
 
     /**
@@ -119,7 +124,7 @@ public class Graql {
      * @return a define query that will apply the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public static DefineQuery define(Statement... statements) {
+    public static GraqlDefine define(Statement... statements) {
         return define(Arrays.asList(statements));
     }
 
@@ -128,8 +133,8 @@ public class Graql {
      * @return a define query that will apply the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public static DefineQuery define(Collection<? extends Statement> statements) {
-        return new DefineQuery(Collections.unmodifiableList(new ArrayList<>(statements)));
+    public static GraqlDefine define(Collection<? extends Statement> statements) {
+        return new GraqlDefine(Collections.unmodifiableList(new ArrayList<>(statements)));
     }
 
     /**
@@ -137,7 +142,7 @@ public class Graql {
      * @return an undefine query that will remove the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public static UndefineQuery undefine(Statement... statements) {
+    public static GraqlUndefine undefine(Statement... statements) {
         return undefine(Arrays.asList(statements));
     }
 
@@ -146,13 +151,13 @@ public class Graql {
      * @return an undefine query that will remove the changes described in the {@code patterns}
      */
     @CheckReturnValue
-    public static UndefineQuery undefine(Collection<? extends Statement> statements) {
-        return new UndefineQuery(Collections.unmodifiableList(new ArrayList<>(statements)));
+    public static GraqlUndefine undefine(Collection<? extends Statement> statements) {
+        return new GraqlUndefine(Collections.unmodifiableList(new ArrayList<>(statements)));
     }
 
     @CheckReturnValue
-    public static <T extends Answer> ComputeQuery<T> compute(Method<T> method) {
-        return new ComputeQuery<>(method);
+    public static <T extends Answer> GraqlCompute<T> compute(Method<T> method) {
+        return new GraqlCompute<>(method);
     }
 
     // Pattern Builder Methods

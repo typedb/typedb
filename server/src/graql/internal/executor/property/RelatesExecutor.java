@@ -28,10 +28,10 @@ import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.RelatesAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.query.pattern.property.RelatesProperty;
-import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.property.RelatesProperty;
+import grakn.core.graql.query.property.VarProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 
 import java.util.Collections;
 import java.util.HashSet;

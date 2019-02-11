@@ -33,11 +33,12 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Query;
+import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
+import grakn.core.server.Transaction.Type;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.TransactionOLTP;
@@ -243,7 +244,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(
                     Keyspace.of(request.getKeyspace()),
-                    grakn.core.server.Transaction.Type.of(request.getType().getNumber())
+                    Type.of(request.getType().getNumber())
             );
 
             tx = requestOpener.open(args);
@@ -260,7 +261,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void query(SessionProto.Transaction.Query.Req request) {
-            Query query = Graql.parse(request.getQuery());
+            GraqlQuery query = Graql.parse(request.getQuery());
 
             Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
             Transaction.Res response = ResponseBuilder.Transaction.queryIterator(iterators.add(responseStream.iterator()));

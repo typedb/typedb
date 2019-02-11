@@ -19,9 +19,9 @@
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
-    name = "aggregate-query-it",
-    test_class = "grakn.core.graql.query.AggregateQueryIT",
-    srcs = ["AggregateQueryIT.java"],
+    name = "graql-aggregate-it",
+    test_class = "grakn.core.graql.query.GraqlAggregateIT",
+    srcs = ["GraqlAggregateIT.java"],
     deps = [
         "//common:common",
         "//graql/java:graql",
@@ -33,12 +33,13 @@ java_test(
 )
 
 java_test(
-    name = "define-query-it",
-    test_class = "grakn.core.graql.query.DefineQueryIT",
-    srcs = ["DefineQueryIT.java"],
+    name = "graql-define-it",
+    test_class = "grakn.core.graql.query.GraqlDefineIT",
+    srcs = ["GraqlDefineIT.java"],
     deps = [
-        "//common",
-        "//server",
+        "//common:common",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -49,9 +50,9 @@ java_test(
 )
 
 java_test(
-    name = "delete-query-it",
-    test_class = "grakn.core.graql.query.DeleteQueryIT",
-    srcs = ["DeleteQueryIT.java"],
+    name = "graql-delete-it",
+    test_class = "grakn.core.graql.query.GraqlDeleteIT",
+    srcs = ["GraqlDeleteIT.java"],
     deps = [
         "//common:common",
         "//graql/java:graql",
@@ -64,9 +65,9 @@ java_test(
 )
 
 java_test(
-    name = "insert-query-it",
-    test_class = "grakn.core.graql.query.InsertQueryIT",
-    srcs = ["InsertQueryIT.java"],
+    name = "graql-insert-it",
+    test_class = "grakn.core.graql.query.GraqlInsertIT",
+    srcs = ["GraqlInsertIT.java"],
     deps = [
         "//common:common",
         "//graql/java:graql",
@@ -83,11 +84,12 @@ java_test(
 )
 
 java_test(
-    name = "undefine-query-it",
-    test_class = "grakn.core.graql.query.UndefineQueryIT",
-    srcs = ["UndefineQueryIT.java"],
+    name = "graql-undefine-it",
+    test_class = "grakn.core.graql.query.GraqlUndefineIT",
+    srcs = ["GraqlUndefineIT.java"],
     deps = [
-        "//server",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -161,11 +163,11 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":aggregate-query-it",
-        ":define-query-it",
-        ":delete-query-it",
-        ":insert-query-it",
-        ":undefine-query-it",
+        ":graql-aggregate-it",
+        ":graql-define-it",
+        ":graql-delete-it",
+        ":graql-insert-it",
+        ":graql-undefine-it",
         ":query-builder-it",
         ":query-admin-it",
         ":query-error-it",

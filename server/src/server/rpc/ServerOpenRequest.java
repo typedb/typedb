@@ -29,17 +29,17 @@ import grakn.core.server.session.TransactionOLTP;
  */
 public class ServerOpenRequest implements OpenRequest {
 
-    private final SessionStore txFactory;
+    private final SessionStore sessionStore;
 
-    public ServerOpenRequest(SessionStore txFactory) {
-        this.txFactory = txFactory;
+    public ServerOpenRequest(SessionStore sessionStore) {
+        this.sessionStore = sessionStore;
     }
 
     @Override
     public TransactionOLTP open(OpenRequest.Arguments args) {
         Keyspace keyspace = args.getKeyspace();
         Transaction.Type txType = args.getTxType();
-        return txFactory.tx(keyspace, txType);
+        return sessionStore.transaction(keyspace, txType);
     }
 
     /**

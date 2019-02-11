@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.UnmodifiableIterator;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Variable;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;

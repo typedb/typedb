@@ -36,11 +36,11 @@ import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -425,7 +425,7 @@ public class AtomicTypeInferenceIT {
         List<ConceptMap> answers = new ArrayList<>();
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, tx), tx);
         for(SchemaConcept type : possibleTypes){
-            GetQuery typedQuery = Graql.match(ReasonerQueries.atomic(query.getAtom().addType(type)).getPattern()).get();
+            GraqlGet typedQuery = Graql.match(ReasonerQueries.atomic(query.getAtom().addType(type)).getPattern()).get();
             tx.stream(typedQuery).filter(ans -> !answers.contains(ans)).forEach(answers::add);
         }
         return answers;

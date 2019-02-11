@@ -24,11 +24,11 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.ValueProperty;
+import graql.util.Token;
 import javax.annotation.Nullable;
+import grakn.core.graql.query.property.ValueProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -55,7 +55,7 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
 
     public static ValuePredicate neq(Variable varName, @Nullable Variable var, @Nullable Object value, ReasonerQuery parent){
         Variable predicateVar = var != null? var : Graql.var().var().asUserDefined();
-        ValueProperty.Operation.Comparison<?> op = ValueProperty.Operation.Comparison.of(Query.Comparator.NEQV, value != null ? value : Graql.var(predicateVar));
+        ValueProperty.Operation.Comparison<?> op = ValueProperty.Operation.Comparison.of(Token.Comparator.NEQV, value != null ? value : Graql.var(predicateVar));
         return create(varName, op, parent);
     }
 

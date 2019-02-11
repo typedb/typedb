@@ -20,8 +20,8 @@ package grakn.core.graql.internal.executor;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
-import grakn.core.graql.query.AggregateQuery;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.query.GraqlAggregate;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.graql.util.PrimitiveNumberComparator;
 
 import java.util.Collections;
@@ -40,7 +40,7 @@ public class AggregateExecutor {
         else throw new RuntimeException("Invalid attempt to compare non-Numbers in Max Aggregate function");
     }
 
-    public static List<Value> aggregate(Stream<ConceptMap> answers, AggregateQuery.Method method, Variable var) {
+    public static List<Value> aggregate(Stream<ConceptMap> answers, GraqlAggregate.Method method, Variable var) {
         switch (method) {
             case COUNT:
                 return count(answers);

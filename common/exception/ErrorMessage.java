@@ -63,6 +63,9 @@ public enum ErrorMessage {
     TXS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
     CANNOT_BE_KEY_AND_ATTRIBUTE("The Type [%s] cannot have the Attribute Type [%s] as a key and as an attribute"),
+    ILLEGAL_TYPE_UNHAS_ATTRIBUTE_WITH_INSTANCE("Failed to: undefine [%s] [%s] [%s]. There exists instance of this pattern."),
+    ILLEGAL_TYPE_UNHAS_ATTRIBUTE_INHERITED("Failed to: undefine [%s] [%s] [%s]. Attribute property is inherited from a super type."),
+    ILLEGAL_TYPE_UNHAS_ATTRIBUTE_NOT_EXIST("Failed to: undefine [%s] [%s] [%s]. Attribute property does not exist."),
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
@@ -72,12 +75,12 @@ public enum ErrorMessage {
     INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
     RESERVED_WORD("The word [%s] is reserved internally and cannot be used"),
     INVALID_PROPERTY_USE("The concept [%s] cannot contain vertex property [%s]"),
-    UNKNOWN_CONCEPT("Uknown concept type [%s]"),
+    UNKNOWN_CONCEPT("Unknown concept type [%s]"),
     INVALID_IMPLICIT_TYPE("Label [%s] is not an implicit label"),
     LABEL_TAKEN("The label [%s] has already been used"),
     BACKGROUND_TASK_UNHANDLED_EXCEPTION("An exception has occurred during the execution of a background task [%s]. Skipping..."),
     INVALID_KEYSPACE_NAME("Keyspace name is invalid: [%s]. Keyspace name cannot start with a number, " +
-                                  "and can only contain maximum 48 characters of lower case, alphanumeric and underscore characters."),
+            "and can only contain maximum 48 characters of lower case, alphanumeric and underscore characters."),
     FILE_WRITE_EXCEPTION("Failed to write to file: %s"),
 
     //--------------------------------------------- Validation Errors
@@ -90,7 +93,7 @@ public enum ErrorMessage {
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relationship Type. \n"),
     VALIDATION_RELATION_TYPE("Relationship Type [%s] does not have one or more roles \n"),
 
-    VALIDATION_NOT_EXACTLY_ONE_KEY("Thing [%s] does not have exactly one key of type [%s] \n"),
+    VALIDATION_NOT_EXACTLY_ONE_KEY("Thing [%s] does not have exactly one key of type [%s]. It either has no keys assigned to it, or it has more than one. \n"),
 
     VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role [%s] which is connected to Relationship Type [%s] " +
             "does not have a %s Role Type which is connected to the %s Relationship Type [%s] \n"),
@@ -225,7 +228,7 @@ public enum ErrorMessage {
     INVALID_COMPUTE_METHOD_ALGORITHM("Invalid algorithm for 'compute [%s]'. The accepted algorithm(s) are: [%s]."),
 
     INVALID_COMPUTE_ARGUMENT("Invalid argument(s) 'compute [%s] using [%s]'. The accepted argument(s) are: [%s]."),
-    
+
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
     K_SMALLER_THAN_TWO("k can't be smaller than 2."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),

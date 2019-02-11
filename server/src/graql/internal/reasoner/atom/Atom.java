@@ -44,12 +44,11 @@ import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.query.pattern.property.IsaProperty;
-import grakn.core.graql.query.pattern.property.VarProperty;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.property.IsaProperty;
+import grakn.core.graql.query.property.VarProperty;
+import grakn.core.graql.query.statement.Variable;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;

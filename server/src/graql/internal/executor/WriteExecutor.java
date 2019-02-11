@@ -33,9 +33,9 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.property.PropertyExecutor.Writer;
 import grakn.core.graql.internal.util.Partition;
-import grakn.core.graql.query.pattern.statement.Statement;
-import grakn.core.graql.query.pattern.statement.Variable;
-import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
+import grakn.core.graql.query.property.VarProperty;
 import grakn.core.server.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +45,7 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -65,6 +66,9 @@ public class WriteExecutor {
 
     // A mutable map associating each `Var` to the `Concept` in the graph it refers to.
     private final Map<Variable, Concept> concepts = new HashMap<>();
+
+    // A set of concepts to be deleted at the end of a write exeuction
+    private final Set<Concept> conceptsToDelete = new HashSet<>();
 
     // A mutable map of concepts "under construction" that require more information before they can be built
     private final Map<Variable, ConceptBuilder> conceptBuilders = new HashMap<>();
@@ -226,6 +230,10 @@ public class WriteExecutor {
             writer.execute(this);
         }
 
+        for (Concept concept : conceptsToDelete) {
+            concept.delete();
+        }
+
         conceptBuilders.forEach((var, builder) -> buildConcept(var, builder));
 
         ImmutableMap.Builder<Variable, Concept> allConcepts = ImmutableMap.<Variable, Concept>builder().putAll(concepts);
@@ -237,6 +245,10 @@ public class WriteExecutor {
 
         Map<Variable, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Variable::isUserDefinedName);
         return new ConceptMap(namedConcepts);
+    }
+
+    public void toDelete(Concept concept) {
+        conceptsToDelete.add(concept);
     }
 
     private Concept buildConcept(Variable var, ConceptBuilder builder) {

@@ -24,7 +24,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.graql.query.pattern.statement.Variable;
+import grakn.core.graql.query.statement.Variable;
 
 import java.util.Collection;
 import java.util.HashSet;
