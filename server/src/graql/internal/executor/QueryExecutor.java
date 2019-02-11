@@ -41,7 +41,6 @@ import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.query.GraqlUndefine;
@@ -254,8 +253,8 @@ public class QueryExecutor {
         return match(query.match()).map(result -> result.project(query.vars())).distinct();
     }
 
-    public Stream<Value> aggregate(GraqlGet.GraqlAggregate query) {
-        Stream<ConceptMap> answers = get(query.graqlGet());
+    public Stream<Value> aggregate(GraqlGet.Aggregate query) {
+        Stream<ConceptMap> answers = get(query.query());
         switch (query.method()) {
             case COUNT:
                 return AggregateExecutor.count(answers).stream();
@@ -276,15 +275,15 @@ public class QueryExecutor {
         }
     }
 
-    public Stream<AnswerGroup<ConceptMap>> get(GraqlGroup query) {
-        return get(get(query.getQuery()), query.var(),
+    public Stream<AnswerGroup<ConceptMap>> get(GraqlGet.Group query) {
+        return get(get(query.query()), query.var(),
                      answers -> answers.collect(Collectors.toList())
         ).stream();
     }
 
-    public Stream<AnswerGroup<Value>> get(GraqlGroup.Aggregate query) {
-        return get(get(query.graqlGroup().getQuery()), query.graqlGroup().var(),
-                     answers -> AggregateExecutor.aggregate(answers, query.aggregateMethod(), query.aggregateVar())
+    public Stream<AnswerGroup<Value>> get(GraqlGet.Group.Aggregate query) {
+        return get(get(query.group().query()), query.group().var(),
+                     answers -> AggregateExecutor.aggregate(answers, query.method(), query.var())
         ).stream();
     }
 

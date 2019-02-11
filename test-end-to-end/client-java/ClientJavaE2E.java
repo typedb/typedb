@@ -223,7 +223,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - match aggregate...");
-            GraqlGet.GraqlAggregate aggregateQuery = Graql.match(var("p").isa("lion")).get().count();
+            GraqlGet.Aggregate aggregateQuery = Graql.match(var("p").isa("lion")).get().count();
             LOG.info("clientJavaE2E() - '" + aggregateQuery + "'");
             int aggregateCount = tx.execute(aggregateQuery).get(0).number().intValue();
             assertThat(aggregateCount, equalTo(lionNames().length));

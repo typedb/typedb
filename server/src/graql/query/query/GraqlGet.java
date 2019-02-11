@@ -34,7 +34,7 @@ import static java.util.stream.Collectors.joining;
  * pattern-matching query. The patterns are described in a declarative fashion, then the query will traverse
  * the knowledge base in an efficient fashion to find any matching answers.
  */
-public class GraqlGet extends GraqlQuery implements AggregateBuilder<GraqlGet.GraqlAggregate> {
+public class GraqlGet extends GraqlQuery implements AggregateBuilder<GraqlGet.Aggregate> {
 
     private final LinkedHashSet<Variable> vars;
     private final MatchClause match;
@@ -60,16 +60,16 @@ public class GraqlGet extends GraqlQuery implements AggregateBuilder<GraqlGet.Gr
     }
 
     @Override
-    public GraqlAggregate aggregate(Token.Statistics.Method method, Variable var) {
-        return new GraqlAggregate(this, method, var);
+    public Aggregate aggregate(Token.Statistics.Method method, Variable var) {
+        return new Aggregate(this, method, var);
     }
 
-    public GraqlGroup group(String var) {
+    public Group group(String var) {
         return group(new Variable(var));
     }
 
-    public GraqlGroup group(Variable var) {
-        return new GraqlGroup(this, var);
+    public Group group(Variable var) {
+        return new Group(this, var);
     }
 
     @CheckReturnValue // TODO: Return LinkedHashSet
@@ -134,17 +134,17 @@ public class GraqlGet extends GraqlQuery implements AggregateBuilder<GraqlGet.Gr
         return h;
     }
 
-    public static class GraqlAggregate extends GraqlQuery {
+    public static class Aggregate extends GraqlQuery {
 
-        private final GraqlGet getQuery;
+        private final GraqlGet query;
         private final Token.Statistics.Method method;
         private final Variable var;
 
-        public GraqlAggregate(GraqlGet getQuery, Token.Statistics.Method method, Variable var) {
-            if (getQuery == null) {
+        public Aggregate(GraqlGet query, Token.Statistics.Method method, Variable var) {
+            if (query == null) {
                 throw new NullPointerException("GetQuery is null");
             }
-            this.getQuery = getQuery;
+            this.query = query;
 
             if (method == null) {
                 throw new NullPointerException("Method is null");
@@ -155,15 +155,15 @@ public class GraqlGet extends GraqlQuery implements AggregateBuilder<GraqlGet.Gr
                 throw new NullPointerException("Variable is null");
             } else if (var != null && method.equals(Token.Statistics.Method.COUNT)) {
                 throw new IllegalArgumentException("Aggregate COUNT does not accept a Variable");
-            } else if (var != null && !getQuery.vars().contains(var)) {
+            } else if (var != null && !query.vars().contains(var)) {
                 throw new IllegalArgumentException("Aggregate variable should be contained in GET query");
             }
 
             this.var = var;
         }
 
-        public GraqlGet graqlGet() {
-            return getQuery;
+        public GraqlGet query() {
+            return query;
         }
 
         public Token.Statistics.Method method() {
@@ -178,7 +178,7 @@ public class GraqlGet extends GraqlQuery implements AggregateBuilder<GraqlGet.Gr
         public final String toString() {
             StringBuilder query = new StringBuilder();
 
-            query.append(graqlGet()).append(Token.Char.SPACE).append(method);
+            query.append(query()).append(Token.Char.SPACE).append(method);
 
             if (var != null) query.append(Token.Char.SPACE).append(var);
             query.append(Token.Char.SEMICOLON);
@@ -191,9 +191,9 @@ public class GraqlGet extends GraqlQuery implements AggregateBuilder<GraqlGet.Gr
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            GraqlAggregate that = (GraqlAggregate) o;
+            Aggregate that = (Aggregate) o;
 
-            return (this.getQuery.equals(that.graqlGet()) &&
+            return (this.query.equals(that.query()) &&
                     this.method.equals(that.method()) &&
                     this.var == null ?
                         that.var() == null :
@@ -204,7 +204,7 @@ public class GraqlGet extends GraqlQuery implements AggregateBuilder<GraqlGet.Gr
         public int hashCode() {
             int h = 1;
             h *= 1000003;
-            h ^= this.getQuery.hashCode();
+            h ^= this.query.hashCode();
             h *= 1000003;
             h ^= this.method.hashCode();
             h *= 1000003;
@@ -212,5 +212,150 @@ public class GraqlGet extends GraqlQuery implements AggregateBuilder<GraqlGet.Gr
             return h;
         }
 
+    }
+
+    public static class Group extends GraqlQuery implements AggregateBuilder<GraqlGet.Group.Aggregate> {
+
+        private final GraqlGet query;
+        private final Variable var;
+
+        public Group(GraqlGet query, Variable var) {
+            if (query == null) {
+                throw new NullPointerException("GetQuery is null");
+            }
+            this.query = query;
+
+            if (var == null) {
+                throw new NullPointerException("Variable is null");
+            }
+            this.var = var;
+        }
+
+        public GraqlGet query() {
+            return query;
+        }
+
+        public Variable var() {
+            return var;
+        }
+
+        @Override
+        public Aggregate aggregate(Token.Statistics.Method method, Variable var) {
+            return new Aggregate(this, method, var);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder query = new StringBuilder();
+
+            query.append(query()).append(Token.Char.SPACE)
+                    .append(Token.Command.GROUP).append(Token.Char.SPACE)
+                    .append(var).append(Token.Char.SEMICOLON);
+
+            return query.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Group that = (Group) o;
+
+            return (this.query.equals(that.query()) &&
+                    this.var.equals(that.var()));
+        }
+
+        @Override
+        public int hashCode() {
+            int h = 1;
+            h *= 1000003;
+            h ^= this.query.hashCode();
+            h *= 1000003;
+            h ^= this.var.hashCode();
+            return h;
+        }
+
+        public static class Aggregate extends GraqlQuery {
+
+            private final GraqlGet.Group group;
+            private final Token.Statistics.Method method;
+            private final Variable var;
+
+            public Aggregate(GraqlGet.Group group, Token.Statistics.Method method, Variable var) {
+
+                if (group == null) {
+                    throw new NullPointerException("GraqlGet.Group is null");
+                }
+                this.group = group;
+
+                if (method == null) {
+                    throw new NullPointerException("Method is null");
+                }
+                this.method = method;
+
+                if (var == null && !this.method.equals(Token.Statistics.Method.COUNT)) {
+                    throw new NullPointerException("Variable is null");
+                } else if (var != null && this.method.equals(Token.Statistics.Method.COUNT)) {
+                    throw new IllegalArgumentException("Aggregate COUNT does not accept a Variable");
+                } else if (var != null && !group.query().vars().contains(var)) {
+                    throw new IllegalArgumentException("Aggregate variable should be contained in GET query");
+                }
+                this.var = var;
+            }
+
+            public GraqlGet.Group group() {
+                return group;
+            }
+
+            public Token.Statistics.Method method() {
+                return method;
+            }
+
+            public Variable var() {
+                return var;
+            }
+
+            @Override
+            public final String toString() {
+                StringBuilder query = new StringBuilder();
+
+                query.append(group().query()).append(Token.Char.SPACE)
+                        .append(Token.Command.GROUP).append(Token.Char.SPACE)
+                        .append(group().var()).append(Token.Char.SEMICOLON).append(Token.Char.SPACE)
+                        .append(method);
+
+                if (var != null) query.append(Token.Char.SPACE).append(var);
+                query.append(Token.Char.SEMICOLON);
+
+                return query.toString();
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+
+                Aggregate that = (Aggregate) o;
+
+                return (this.group().equals(that.group()) &&
+                        this.method().equals(that.method()) &&
+                        this.var() == null ?
+                            that.var() == null :
+                            this.var().equals(that.var()));
+            }
+
+            @Override
+            public int hashCode() {
+                int h = 1;
+                h *= 1000003;
+                h ^= this.group.hashCode();
+                h *= 1000003;
+                h ^= this.method.hashCode();
+                h *= 1000003;
+                h ^= this.var.hashCode();
+                return h;
+            }
+        }
     }
 }

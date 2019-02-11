@@ -67,25 +67,25 @@ public abstract class GraqlQuery {
         }
     }
 
-    public GraqlGet.GraqlAggregate asGraqlGetAggregate() {
+    public GraqlGet.Aggregate asGraqlGetAggregate() {
         if (this instanceof GraqlGet) {
-            return (GraqlGet.GraqlAggregate) this;
+            return (GraqlGet.Aggregate) this;
         } else {
             throw GraqlException.create("This is not a GraqlGet.Aggregate query");
         }
     }
 
-    public GraqlGroup asGraqlGetGroup() {
-        if (this instanceof GraqlGroup) {
-            return (GraqlGroup) this;
+    public GraqlGet.Group asGraqlGetGroup() {
+        if (this instanceof GraqlGet.Group) {
+            return (GraqlGet.Group) this;
         } else {
             throw GraqlException.create("This is not a GraqlGet.Group query");
         }
     }
 
-    public GraqlGroup.Aggregate asGraqlGetGroupAggregate() {
-        if (this instanceof GraqlGroup) {
-            return (GraqlGroup.Aggregate) this;
+    public GraqlGet.Group.Aggregate asGraqlGetGroupAggregate() {
+        if (this instanceof GraqlGet.Group) {
+            return (GraqlGet.Group.Aggregate) this;
         } else {
             throw GraqlException.create("This is not a GraqlGet.Group.Aggregate query");
         }

@@ -31,7 +31,6 @@ import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
-import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.query.GraqlUndefine;
@@ -270,28 +269,28 @@ public class Parser extends GraqlBaseVisitor {
      * @return An AggregateQuery object
      */
     @Override
-    public GraqlGet.GraqlAggregate visitQuery_get_aggregate(GraqlParser.Query_get_aggregateContext ctx) {
+    public GraqlGet.Aggregate visitQuery_get_aggregate(GraqlParser.Query_get_aggregateContext ctx) {
         GraqlParser.Function_aggregateContext function = ctx.function_aggregate();
 
-        return new GraqlGet.GraqlAggregate(visitQuery_get(ctx.query_get()),
-                                           Token.Statistics.Method.of(function.function_method().getText()),
-                                           function.VAR_() != null ? getVar(function.VAR_()) : null);
+        return new GraqlGet.Aggregate(visitQuery_get(ctx.query_get()),
+                                      Token.Statistics.Method.of(function.function_method().getText()),
+                                      function.VAR_() != null ? getVar(function.VAR_()) : null);
     }
 
     @Override
-    public GraqlGroup visitQuery_get_group(GraqlParser.Query_get_groupContext ctx) {
+    public GraqlGet.Group visitQuery_get_group(GraqlParser.Query_get_groupContext ctx) {
         Variable var = getVar(ctx.function_group().VAR_());
         return visitQuery_get(ctx.query_get()).group(var);
     }
 
     @Override
-    public GraqlGroup.Aggregate visitQuery_get_group_agg(GraqlParser.Query_get_group_aggContext ctx) {
+    public GraqlGet.Group.Aggregate visitQuery_get_group_agg(GraqlParser.Query_get_group_aggContext ctx) {
         Variable var = getVar(ctx.function_group().VAR_());
         GraqlParser.Function_aggregateContext function = ctx.function_aggregate();
 
-        return new GraqlGroup.Aggregate(visitQuery_get(ctx.query_get()).group(var),
-                                        Token.Statistics.Method.of(function.function_method().getText()),
-                                        function.VAR_() != null ? getVar(function.VAR_()) : null);
+        return new GraqlGet.Group.Aggregate(visitQuery_get(ctx.query_get()).group(var),
+                                            Token.Statistics.Method.of(function.function_method().getText()),
+                                            function.VAR_() != null ? getVar(function.VAR_()) : null);
     }
 
     // DELETE AND GET QUERY MODIFIERS ==========================================

@@ -26,7 +26,6 @@ import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.GraqlQuery;
 import graql.lang.util.Token;
@@ -402,8 +401,8 @@ public class ParserTest {
     @Test
     public void testAggregateCountQuery() {
         String query = "match ($x, $y) isa friendship; get $x, $y; count;";
-        GraqlGet.GraqlAggregate parsed = parse(query);
-        GraqlGet.GraqlAggregate expected = match(rel("x").rel("y").isa("friendship")).get("x", "y").count();
+        GraqlGet.Aggregate parsed = parse(query);
+        GraqlGet.Aggregate expected = match(rel("x").rel("y").isa("friendship")).get("x", "y").count();
 
         assertQueryEquals(expected, parsed, query);
     }
@@ -411,8 +410,8 @@ public class ParserTest {
     @Test
     public void testAggregateGroupCountQuery() {
         String query = "match ($x, $y) isa friendship; get $x, $y; group $x; count;";
-        GraqlGroup.Aggregate parsed = parse(query);
-        GraqlGroup.Aggregate expected = match(rel("x").rel("y").isa("friendship")).get("x", "y").group("x").count();
+        GraqlGet.Group.Aggregate parsed = parse(query);
+        GraqlGet.Group.Aggregate expected = match(rel("x").rel("y").isa("friendship")).get("x", "y").group("x").count();
 
         assertQueryEquals(expected, parsed, query);
     }
@@ -423,8 +422,8 @@ public class ParserTest {
                 "($x, $y) isa friendship;\n" +
                 "$y has age $z;\n" +
                 "get; group $x; max $z;";
-        GraqlGroup.Aggregate parsed = parse(query);
-        GraqlGroup.Aggregate expected = match(
+        GraqlGet.Group.Aggregate parsed = parse(query);
+        GraqlGet.Group.Aggregate expected = match(
                 rel("x").rel("y").isa("friendship"),
                 var("y").has("age", var("z"))
         ).get().group("x").max("z");
@@ -435,8 +434,8 @@ public class ParserTest {
     @Test
     public void whenComparingCountQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
         String query = "match $x isa movie, has title \"Godfather\"; get; count;";
-        GraqlGet.GraqlAggregate parsed = parse(query);
-        GraqlGet.GraqlAggregate expected = match(var("x").isa("movie").has("title", "Godfather")).get().count();
+        GraqlGet.Aggregate parsed = parse(query);
+        GraqlGet.Aggregate expected = match(var("x").isa("movie").has("title", "Godfather")).get().count();
 
         assertQueryEquals(expected, parsed, query);
     }
@@ -658,9 +657,9 @@ public class ParserTest {
 
     @Test
     public void whenParsingQueryWithComments_TheyAreIgnored() {
-        GraqlGet.GraqlAggregate expected = match(var("x").isa("movie")).get().count();
+        GraqlGet.Aggregate expected = match(var("x").isa("movie")).get().count();
         String query = "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; get; count;";
-        GraqlGet.GraqlAggregate parsed = parse(query);
+        GraqlGet.Aggregate parsed = parse(query);
 
         assertEquals(expected, parsed);
         assertEquals(expected, parse(parsed.toString()));
@@ -712,8 +711,8 @@ public class ParserTest {
     @Test
     public void testParseAggregateGroup() {
         String query = "match $x isa movie; get; group $x;";
-        GraqlGroup parsed = parse(query);
-        GraqlGroup expected = match(var("x").isa("movie")).get().group("x");
+        GraqlGet.Group parsed = parse(query);
+        GraqlGet.Group expected = match(var("x").isa("movie")).get().group("x");
 
         assertQueryEquals(expected, parsed, query);
     }
@@ -721,8 +720,8 @@ public class ParserTest {
     @Test
     public void testParseAggregateGroupCount() {
         String query = "match $x isa movie; get; group $x; count;";
-        GraqlGroup.Aggregate parsed = parse(query);
-        GraqlGroup.Aggregate expected = match(var("x").isa("movie")).get().group("x").count();
+        GraqlGet.Group.Aggregate parsed = parse(query);
+        GraqlGet.Group.Aggregate expected = match(var("x").isa("movie")).get().group("x").count();
 
         assertQueryEquals(expected, parsed, query);
     }
@@ -730,8 +729,8 @@ public class ParserTest {
     @Test
     public void testParseAggregateStd() {
         String query = "match $x isa movie; get; std $x;";
-        GraqlGet.GraqlAggregate parsed = parse(query);
-        GraqlGet.GraqlAggregate expected = match(var("x").isa("movie")).get().std("x");
+        GraqlGet.Aggregate parsed = parse(query);
+        GraqlGet.Aggregate expected = match(var("x").isa("movie")).get().std("x");
 
         assertQueryEquals(expected, parsed, query);
     }

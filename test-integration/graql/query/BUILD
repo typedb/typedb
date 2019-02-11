@@ -19,9 +19,9 @@
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
-    name = "graql-aggregate-it",
-    test_class = "grakn.core.graql.query.GraqlAggregateIT",
-    srcs = ["GraqlAggregateIT.java"],
+    name = "graql-get-it",
+    test_class = "grakn.core.graql.query.GraqlGetIT",
+    srcs = ["GraqlGetIT.java"],
     deps = [
         "//common:common",
         "//graql/java:graql",
@@ -163,7 +163,7 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graql-aggregate-it",
+        ":graql-get-it",
         ":graql-define-it",
         ":graql-delete-it",
         ":graql-insert-it",

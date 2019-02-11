@@ -42,7 +42,6 @@ import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
-import grakn.core.graql.query.query.GraqlGroup;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.query.GraqlUndefine;
@@ -227,17 +226,17 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public Stream<Value> stream(GraqlGet.GraqlAggregate query, boolean infer) {
+    public Stream<Value> stream(GraqlGet.Aggregate query, boolean infer) {
         return executor(infer).aggregate(query);
     }
 
     @Override
-    public Stream<AnswerGroup<ConceptMap>> stream(GraqlGroup query, boolean infer) {
+    public Stream<AnswerGroup<ConceptMap>> stream(GraqlGet.Group query, boolean infer) {
         return executor(infer).get(query);
     }
 
     @Override
-    public Stream<AnswerGroup<Value>> stream(GraqlGroup.Aggregate query, boolean infer) {
+    public Stream<AnswerGroup<Value>> stream(GraqlGet.Group.Aggregate query, boolean infer) {
         return executor(infer).get(query);
     }
 
