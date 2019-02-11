@@ -45,13 +45,15 @@ http_archive(
 load("//dependencies/tools:dependencies.bzl", "tools_dependencies")
 tools_dependencies()
 
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_dependencies")
+checkstyle_dependencies()
 
 #####################################
 # Load Java dependencies from Maven #
 #####################################
 
-load("//dependencies/maven:dependencies.bzl", maven_dependencies_for_build = "maven_dependencies")
-maven_dependencies_for_build()
+load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
+maven_dependencies()
 
 
 ########################################
@@ -104,6 +106,3 @@ git_repository(
 
 load("@com_github_google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
 google_common_workspace_rules()
-
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_dependencies")
-checkstyle_dependencies()
