@@ -280,8 +280,8 @@ public abstract class Fragment {
 
     @Override
     public final String toString() {
-        String str = start() + name();
-        if (end() != null) str += end().toString();
+        String str = start().symbol() + name();
+        if (end() != null) str += end().symbol();
 
         return str;
     }
