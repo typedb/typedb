@@ -27,6 +27,7 @@ import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -49,7 +50,7 @@ import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
-import static graql.lang.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
+import static graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -303,7 +304,7 @@ public class GraqlDeleteIT {
     @Test
     public void whenDeletingAVariableNotInTheQuery_Throw() {
         exception.expect(GraqlException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y.var()));
+        exception.expectMessage(VARIABLE_OUT_OF_SCOPE.getMessage(y.var()));
         tx.execute(Graql.match(x.isa("movie")).delete(y.var()));
     }
 
@@ -321,4 +322,10 @@ public class GraqlDeleteIT {
         tx.execute(Graql.match(var()).delete((String) null));
     }
 
+    @Test
+    public void whenSortVarIsNotInQuery_Throw() {
+        exception.expect(GraqlException.class);
+        exception.expectMessage(VARIABLE_OUT_OF_SCOPE.getMessage(new Variable("z")));
+        tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).get().sort("z"));
+    }
 }

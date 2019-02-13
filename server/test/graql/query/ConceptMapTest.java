@@ -51,7 +51,7 @@ public class ConceptMapTest {
         Variable varNotInAnswer = new Variable("y");
 
         exception.expect(GraqlException.class);
-        exception.expectMessage(GraqlException.varNotInQuery(varNotInAnswer.toString()).getMessage());
+        exception.expectMessage(GraqlException.variableOutOfScope(varNotInAnswer.toString()).getMessage());
 
         answer.get(varNotInAnswer);
     }

@@ -42,7 +42,7 @@ public class GraqlDelete extends GraqlQuery implements Filterable {
 
     private final MatchClause match;
     private final LinkedHashSet<Variable> vars;
-    private final Filterable.Sorting order;
+    private final Filterable.Sorting sorting;
     private final long offset;
     private final long limit;
 
@@ -54,22 +54,26 @@ public class GraqlDelete extends GraqlQuery implements Filterable {
         this(match, vars, null, -1, -1);
     }
 
-    public GraqlDelete(MatchClause match, LinkedHashSet<Variable> vars, Filterable.Sorting order, long offset, long limit) {
+    public GraqlDelete(MatchClause match, LinkedHashSet<Variable> vars, Filterable.Sorting sorting, long offset, long limit) {
         if (match == null) {
             throw new NullPointerException("Null match");
         }
         this.match = match;
+
         if (vars == null) {
             throw new NullPointerException("Null vars");
         }
         for (Variable var : vars) {
             if (!match.getSelectedNames().contains(var)) {
-                throw GraqlException.varNotInQuery(var.toString());
+                throw GraqlException.variableOutOfScope(var.toString());
             }
         }
         this.vars = vars;
 
-        this.order = order;
+        if (sorting != null && !vars().contains(sorting.var())) {
+            throw GraqlException.variableOutOfScope(sorting.var().toString());
+        }
+        this.sorting = sorting;
         this.offset = offset;
         this.limit = limit;
     }
@@ -87,7 +91,7 @@ public class GraqlDelete extends GraqlQuery implements Filterable {
 
     @Override
     public Optional<Sorting> sort() {
-        return Optional.ofNullable(order);
+        return Optional.ofNullable(sorting);
     }
 
     @Override
@@ -185,8 +189,8 @@ public class GraqlDelete extends GraqlQuery implements Filterable {
 
     public class Sorted extends GraqlDelete implements Filterable.Sorted<GraqlDelete.Offsetted, GraqlDelete.Limited> {
 
-        Sorted(GraqlDelete graqlDelete, Filterable.Sorting order) {
-            super(graqlDelete.match, graqlDelete.vars, order, graqlDelete.offset, graqlDelete.limit);
+        Sorted(GraqlDelete graqlDelete, Filterable.Sorting sorting) {
+            super(graqlDelete.match, graqlDelete.vars, sorting, graqlDelete.offset, graqlDelete.limit);
         }
 
         @Override
@@ -203,7 +207,7 @@ public class GraqlDelete extends GraqlQuery implements Filterable {
     public class Offsetted extends GraqlDelete implements Filterable.Offsetted<GraqlDelete.Limited> {
 
         Offsetted(GraqlDelete graqlDelete, long offset) {
-            super(graqlDelete.match, graqlDelete.vars, graqlDelete.order, offset, graqlDelete.limit);
+            super(graqlDelete.match, graqlDelete.vars, graqlDelete.sorting, offset, graqlDelete.limit);
         }
 
         @Override
@@ -215,7 +219,7 @@ public class GraqlDelete extends GraqlQuery implements Filterable {
     public class Limited extends GraqlDelete implements Filterable.Limited {
 
         Limited(GraqlDelete graqlDelete, long limit) {
-            super(graqlDelete.match, graqlDelete.vars, graqlDelete.order, graqlDelete.offset, limit);
+            super(graqlDelete.match, graqlDelete.vars, graqlDelete.sorting, graqlDelete.offset, limit);
         }
     }
 }

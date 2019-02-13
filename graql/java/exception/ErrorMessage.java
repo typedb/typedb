@@ -22,7 +22,7 @@ public enum ErrorMessage {
     SYNTAX_ERROR_NO_POINTER("syntax error at line %s:\n%s"),
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
     CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'"),
-    VARIABLE_NOT_IN_QUERY("the variable %s is not in the query"),
+    VARIABLE_OUT_OF_SCOPE("the variable %s is out of scope of the query"),
     NO_PATTERNS("no patterns have been provided. at least one pattern must be provided");
 
     private final String message;

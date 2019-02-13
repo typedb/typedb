@@ -24,8 +24,6 @@ import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.graql.printer.Printer;
-import grakn.core.graql.printer.StringPrinter;
 import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
@@ -46,7 +44,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static grakn.core.graql.query.Graql.var;
-import static graql.lang.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
+import static graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;
@@ -423,7 +421,14 @@ public class GraqlGetIT {
     @Test
     public void whenGroupVarIsNotInQuery_Throw() {
         exception.expect(GraqlException.class);
-        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(new Variable("z")));
+        exception.expectMessage(VARIABLE_OUT_OF_SCOPE.getMessage(new Variable("z")));
         tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).get().group("z").count());
+    }
+
+    @Test
+    public void whenSortVarIsNotInQuery_Throw() {
+        exception.expect(GraqlException.class);
+        exception.expectMessage(VARIABLE_OUT_OF_SCOPE.getMessage(new Variable("z")));
+        tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).get().sort("z"));
     }
 }
