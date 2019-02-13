@@ -216,7 +216,7 @@ public class ReasoningIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 
                 
-                String queryString = "match $x isa relation1; get; limit 10:";
+                String queryString = "match $x isa relation1; get; limit 10;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
                 assertEquals(10, answers.size());
                 assertEquals(tx.execute(Graql.parse(queryString).asGet(), false).size(), answers.size());
