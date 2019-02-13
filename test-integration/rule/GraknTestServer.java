@@ -206,7 +206,7 @@ public class GraknTestServer extends ExternalResource {
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
 
-        return ServerFactory.createServer(id, serverConfig, serverRPC,
+        return ServerFactory.createServer(id, serverRPC,
                                           lockManager, attributeDeduplicatorDaemon, keyspaceStore);
     }
 

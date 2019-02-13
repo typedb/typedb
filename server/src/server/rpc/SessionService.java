@@ -41,6 +41,7 @@ import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.Transaction.Type;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -95,6 +96,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         @Nullable
         private TransactionOLTP tx = null;
+        private SessionImpl session = null;
 
         private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
             this.responseSender = responseSender;
@@ -208,6 +210,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         public void close(@Nullable Throwable error) {
             submit(() -> {
+                if(session != null){
+                    session.close();
+                }
                 if (tx != null) {
                     tx.close();
                 }
@@ -242,12 +247,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
 
-            ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(
-                    Keyspace.of(request.getKeyspace()),
-                    Type.of(request.getType().getNumber())
-            );
-
-            tx = requestOpener.open(args);
+            session = requestOpener.open(request);
+            tx = session.transaction(Type.of(request.getType().getNumber()));
             Transaction.Res response = ResponseBuilder.Transaction.open();
             onNextResponse(response);
         }

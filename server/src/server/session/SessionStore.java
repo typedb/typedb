@@ -30,8 +30,9 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
 /**
- * Grakn Server's internal {@link Transaction} Factory
- * This internal factory is used to produce {@link Transaction}s.
+ * Grakn Server's internal {@link SessionImpl} Factory
+ * All components should use this factory so that every time a session to a new keyspace gets created
+ * it is possible to also update the Keyspace Store (which tracks all existing keyspaces).
  */
 public class SessionStore {
     private final Config config;
@@ -49,15 +50,6 @@ public class SessionStore {
     }
 
 
-    public TransactionOLTP transaction(Keyspace keyspace, Transaction.Type type) {
-        if (!keyspaceStore.containsKeyspace(keyspace)) {
-            initialiseNewKeyspace(keyspace);
-        }
-
-        return session(keyspace).transaction(type);
-    }
-
-
     /**
      * Retrieves the {@link Session} needed to open the {@link Transaction}.
      * This will open a new one {@link Session} if it hasn't been opened before
@@ -65,7 +57,10 @@ public class SessionStore {
      * @param keyspace The {@link Keyspace} of the {@link Session} to retrieve
      * @return a new or existing {@link Session} connecting to the provided {@link Keyspace}
      */
-    private SessionImpl session(Keyspace keyspace) {
+    public SessionImpl session(Keyspace keyspace) {
+        if (!keyspaceStore.containsKeyspace(keyspace)) {
+            initialiseNewKeyspace(keyspace);
+        }
         return SessionImpl.create(keyspace, config);
     }
 
@@ -80,9 +75,11 @@ public class SessionStore {
         lock.lock();
         try {
             // Create new empty keyspace in db
-            session(keyspace).transaction(Transaction.Type.WRITE).close();
+            SessionImpl session = session(keyspace);
+            session.transaction(Transaction.Type.WRITE).close();
             // Add current keyspace to list of available Grakn keyspaces
             keyspaceStore.addKeyspace(keyspace);
+            session.close();
         } finally {
             lock.unlock();
         }
@@ -90,10 +87,6 @@ public class SessionStore {
 
     private static String getLockingKey(Keyspace keyspace) {
         return "/creating-new-keyspace-lock/" + keyspace.getName();
-    }
-
-    public Config config() {
-        return config;
     }
 
 }
