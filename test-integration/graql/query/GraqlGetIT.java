@@ -24,6 +24,8 @@ import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.graph.MovieGraph;
+import grakn.core.graql.printer.Printer;
+import grakn.core.graql.printer.StringPrinter;
 import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
@@ -50,6 +52,7 @@ import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("Duplicates")
 public class GraqlGetIT {
 
     @Rule
@@ -80,6 +83,62 @@ public class GraqlGetIT {
     public static void closeSession() {
         session.close();
     }
+
+
+    @Test
+    public void testGetSort() {
+        List<ConceptMap> answers = tx.execute(
+                Graql.match(var("x").isa("person").has("name", var("y")))
+                        .get().sort("y")
+        );
+
+        assertEquals("Al Pacino", answers.get(0).get("y").asAttribute().value());
+        assertEquals("Bette Midler", answers.get(1).get("y").asAttribute().value());
+        assertEquals("Jude Law", answers.get(2).get("y").asAttribute().value());
+        assertEquals("Kermit The Frog", answers.get(3).get("y").asAttribute().value());
+    }
+
+    @Test
+    public void testGetSortAscLimit() {
+        List<ConceptMap> answers = tx.execute(
+                Graql.match(var("x").isa("person").has("name", var("y")))
+                        .get().sort("y", "asc").limit(3)
+        );
+
+        assertEquals(3, answers.size());
+        assertEquals("Al Pacino", answers.get(0).get("y").asAttribute().value());
+        assertEquals("Bette Midler", answers.get(1).get("y").asAttribute().value());
+        assertEquals("Jude Law", answers.get(2).get("y").asAttribute().value());
+    }
+
+    @Test
+    public void testGetSortDesc() {
+        List<ConceptMap> answers = tx.execute(
+                Graql.match(var("x").isa("person").has("name", var("y")))
+                        .get().sort("y", "desc")
+        );
+
+        assertEquals(10, answers.size());
+        assertEquals("Sarah Jessica Parker", answers.get(0).get("y").asAttribute().value());
+        assertEquals("Robert de Niro", answers.get(1).get("y").asAttribute().value());
+        assertEquals("Miss Piggy", answers.get(2).get("y").asAttribute().value());
+        assertEquals("Miranda Heart", answers.get(3).get("y").asAttribute().value());
+    }
+
+    @Test
+    public void testGetSortDescOffsetLimit() {
+        List<ConceptMap> answers = tx.execute(
+                Graql.match(var("x").isa("person").has("name", var("y")))
+                        .get().sort("y", "desc").offset(3).limit(4)
+        );
+
+        assertEquals(4, answers.size());
+        assertEquals("Miranda Heart", answers.get(0).get("y").asAttribute().value());
+        assertEquals("Martin Sheen", answers.get(1).get("y").asAttribute().value());
+        assertEquals("Marlon Brando", answers.get(2).get("y").asAttribute().value());
+        assertEquals("Kermit The Frog", answers.get(3).get("y").asAttribute().value());
+    }
+
 
     @Test
     public void testCount() {

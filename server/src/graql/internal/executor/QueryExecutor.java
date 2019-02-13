@@ -267,7 +267,7 @@ public class QueryExecutor {
             answers = answers.skip(query.offset().get());
         }
         if (query.limit().isPresent()) {
-            answers = answers.limit(query.offset().get());
+            answers = answers.limit(query.limit().get());
         }
 
         return answers;

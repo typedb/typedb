@@ -102,7 +102,7 @@ public class GraqlGet extends GraqlQuery implements Filterable, AggregateBuilder
 
     @Override
     public Optional<Long> offset() {
-        return this.offset < 0 ? Optional.empty() : Optional.of(this.offset);
+        return offset < 0 ? Optional.empty() : Optional.of(offset);
     }
 
     @Override
