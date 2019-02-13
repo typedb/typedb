@@ -209,7 +209,6 @@ public class ReasoningIT {
         }
     }
 
-    @Ignore // TODO: un-ignore once we re-enable query limits
     @Test //Expected result: The query should return 10 unique matches (no duplicates).
     public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
         try(Session session = server.sessionWithNewKeyspace()) {
@@ -217,7 +216,7 @@ public class ReasoningIT {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 
                 
-                String queryString = "match $x isa relation1; get;"; // TODO: put back limit 10
+                String queryString = "match $x isa relation1; get; limit 10:";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
                 assertEquals(10, answers.size());
                 assertEquals(tx.execute(Graql.parse(queryString).asGet(), false).size(), answers.size());
@@ -381,7 +380,7 @@ public class ReasoningIT {
             loadFromFileAndCommit(resourcePath, "testSet23.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 
-                String queryString = "match (friend1:$x1, friend2:$x2) isa knows-trans; get;"; // TODO: put back limit 60
+                String queryString = "match (friend1:$x1, friend2:$x2) isa knows-trans; get; limit 60;";
                 List<ConceptMap> oldAnswers = tx.execute(Graql.parse(queryString).asGet());
                 for (int i = 0; i < 5; i++) {
                     List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -462,7 +461,7 @@ public class ReasoningIT {
                         "(role1: $x, role2: $y);" +
                         "(role1: $y, role2: $z);" +
                         "(role3: $z, role4: $w) isa relation3;" +
-                        "get;"; // TODO: put back limit 3
+                        "get; limit 3;";
 
                 assertEquals(3, tx.execute(Graql.parse(queryWithTypes).asGet()).size());
 

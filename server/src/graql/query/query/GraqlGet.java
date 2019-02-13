@@ -136,8 +136,9 @@ public class GraqlGet extends GraqlQuery implements Filterable, AggregateBuilder
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        if (!getClass().isAssignableFrom(o.getClass()) &&
-                !o.getClass().isAssignableFrom(getClass())) return false;
+        if (!getClass().isAssignableFrom(o.getClass()) && !o.getClass().isAssignableFrom(getClass())) {
+            return false;
+        }
 
         GraqlGet that = (GraqlGet) o;
 

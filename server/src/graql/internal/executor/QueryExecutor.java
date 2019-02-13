@@ -252,7 +252,7 @@ public class QueryExecutor {
         return new ConceptSet(conceptsToDelete.stream().map(Concept::id).collect(toSet()));
     }
 
-    @SuppressWarnings("unchecked") // All attribute value are comparable
+    @SuppressWarnings("unchecked") // All attribute values are comparable data types
     public Stream<ConceptMap> get(GraqlGet query) {
         Stream<ConceptMap> answers = match(query.match()).map(result -> result.project(query.vars())).distinct();
 

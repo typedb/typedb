@@ -125,8 +125,9 @@ public class GraqlDelete extends GraqlQuery implements Filterable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        if (!getClass().isAssignableFrom(o.getClass()) &&
-                !o.getClass().isAssignableFrom(getClass())) return false;
+        if (!getClass().isAssignableFrom(o.getClass()) && !o.getClass().isAssignableFrom(getClass())) {
+            return false;
+        }
 
         GraqlDelete that = (GraqlDelete) o;
 

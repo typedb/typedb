@@ -360,12 +360,12 @@ public class GeoInferenceIT {
         }
     }
 
-    @Test @Ignore // TODO: enable once we re-implement query limits
+    @Test
     public void testLazy() {
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
             
-            String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; limit 1; get;";
-            String queryString2 = "match (geo-entity: $x, entity-location: $y) isa is-located-in; limit 22; get;";
+            String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get; limit 1;";
+            String queryString2 = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get; limit 22;";
             String queryString3 = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());

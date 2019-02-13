@@ -264,23 +264,19 @@ public class BenchmarkBigIT {
                 ConceptId entityId = tx.getEntityType("a-entity").instances().findFirst().get().id();
                 String queryPattern = "(P-from: $x, P-to: $y) isa P;";
                 String queryString = "match " + queryPattern + " get;";
-                String subbedQueryString = "match " +
-                        queryPattern +
+                String subbedQueryString = "match " + queryPattern +
                         " $x id '" + entityId.getValue() + "';" +
                         " get;";
-                String subbedQueryString2 = "match " +
-                        queryPattern +
+                String subbedQueryString2 = "match " + queryPattern +
                         " $y id '" + entityId.getValue() + "';" +
                         " get;";
-                String limitedQueryString = "match " +
-                        queryPattern +
-                        " limit " + limit + ";" +
-                        " get;";
+                String limitedQueryString = "match " + queryPattern +
+                        " get; limit " + limit + ";";
 
                 executeQuery(queryString, tx, "full");
                 executeQuery(subbedQueryString, tx, "first argument bound");
                 executeQuery(subbedQueryString2, tx, "second argument bound");
-                //executeQuery(limitedQueryString, tx, "limit " + limit); // TODO: re-enable after implementing limits
+                executeQuery(limitedQueryString, tx, "limit " + limit);
             }
         }
     }
@@ -318,15 +314,13 @@ public class BenchmarkBigIT {
                         queryPattern +
                         " $y id '" + entityId.getValue() + "';" +
                         " get;";
-                String limitedQueryString = "match " +
-                        queryPattern +
-                        " limit " + limit + ";" +
-                        " get;";
+                String limitedQueryString = "match " + queryPattern +
+                        " get; limit " + limit + ";";
 
                 executeQuery(queryString, tx, "full");
                 executeQuery(subbedQueryString, tx, "first argument bound");
                 executeQuery(subbedQueryString2, tx, "second argument bound");
-                //executeQuery(limitedQueryString, tx, "limit " + limit); // TODO: re-enable after implementing limits
+                executeQuery(limitedQueryString, tx, "limit " + limit);
             }
         }
     }
@@ -353,22 +347,18 @@ public class BenchmarkBigIT {
                 ConceptId lastId = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x has index '" + N + "';get;").asGet())).get("x").id();
                 String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
                 String queryString = "match " + queryPattern + " get;";
-                String subbedQueryString = "match " +
-                        queryPattern +
+                String subbedQueryString = "match " + queryPattern +
                         "$x id '" + firstId.getValue() + "';" +
                         "get;";
-                String subbedQueryString2 = "match " +
-                        queryPattern +
+                String subbedQueryString2 = "match " + queryPattern +
                         "$y id '" + lastId.getValue() + "';" +
                         "get;";
-                String limitedQueryString = "match " +
-                        queryPattern +
-                        "limit 1;" +
-                        "get;";
+                String limitedQueryString = "match " + queryPattern +
+                        "get; limit 1;";
                 assertEquals(1, executeQuery(queryString, tx, "full").size());
                 assertEquals(1, executeQuery(subbedQueryString, tx, "first argument bound").size());
                 assertEquals(1, executeQuery(subbedQueryString2, tx, "second argument bound").size());
-                // assertEquals(1, executeQuery(limitedQueryString, tx, "limit ").size()); // TODO: uncomment
+                 assertEquals(1, executeQuery(limitedQueryString, tx, "limit ").size());
             }
         }
     }
