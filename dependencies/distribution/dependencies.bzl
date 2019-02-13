@@ -24,5 +24,5 @@ def distribution_dependencies():
     git_repository(
         name="graknlabs_bazel_distribution",
         remote="https://github.com/graknlabs/bazel-distribution",
-        commit="796cea2531404509a3298af65ab562b1929c3eb6"
+        commit="3bb446c7545058c083c0acac91439f5944177559"
     )
