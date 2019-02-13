@@ -23,8 +23,8 @@ import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.SessionProto;
@@ -45,9 +45,9 @@ public class RequestBuilder {
      */
     public static class Transaction {
 
-        public static SessionProto.Transaction.Req open(grakn.core.server.keyspace.Keyspace keyspace, grakn.core.server.Transaction.Type txType) {
+        public static SessionProto.Transaction.Req open(String sessionId, grakn.core.server.Transaction.Type txType) {
             SessionProto.Transaction.Open.Req openRequest = SessionProto.Transaction.Open.Req.newBuilder()
-                    .setKeyspace(keyspace.getName())
+                    .setSessionId(sessionId)
                     .setType(SessionProto.Transaction.Type.valueOf(txType.getId()))
                     .build();
 

@@ -33,14 +33,13 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.Transaction.Type;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import io.grpc.Status;
@@ -50,8 +49,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -63,19 +64,36 @@ import java.util.stream.Stream;
 
 
 /**
- *  Grakn RPC Session Service
+ * Grakn RPC Session Service
  */
 public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private final OpenRequest requestOpener;
+    private final Map<String, SessionImpl> openSessions;
     private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
 
     public SessionService(OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
         this.requestOpener = requestOpener;
         this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
+        this.openSessions = new HashMap<>();
     }
 
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
-        return TransactionListener.create(responseSender, requestOpener, attributeDeduplicatorDaemon);
+        return new TransactionListener(responseSender, attributeDeduplicatorDaemon, openSessions);
+    }
+
+    @Override
+    public void open(SessionProto.OpenSessionReq request, StreamObserver<SessionProto.OpenSessionRes> responseObserver) {
+        String keyspace = request.getKeyspace();
+        SessionImpl session = requestOpener.open(request);
+        String sessionId = keyspace + UUID.randomUUID().toString();
+        openSessions.put(sessionId, session);
+        responseObserver.onNext(SessionProto.OpenSessionRes.newBuilder().setSessionId(sessionId).build());
+    }
+
+    @Override
+    public void close(SessionProto.CloseSessionReq request, StreamObserver<SessionProto.CloseSessionRes> responseObserver) {
+        openSessions.remove(request.getSessionId());
+        responseObserver.onNext(SessionProto.CloseSessionRes.newBuilder().build());
     }
 
 
@@ -88,28 +106,23 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final StreamObserver<Transaction.Res> responseSender;
         private final AtomicBoolean terminated = new AtomicBoolean(false);
         private final ExecutorService threadExecutor;
-        private final OpenRequest requestOpener;
         private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
+        private final Map<String, SessionImpl> openSessions;
         private final Iterators iterators = Iterators.create();
 
         private TraceContext receivedTraceContext;
 
         @Nullable
         private TransactionOLTP tx = null;
-        private SessionImpl session = null;
 
-        private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
+        public TransactionListener(StreamObserver<Transaction.Res> responseSender, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, Map<String, SessionImpl> openSessions) {
             this.responseSender = responseSender;
-            this.threadExecutor = threadExecutor;
-            this.requestOpener = requestOpener;
+            ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
+            this.threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
             this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
+            this.openSessions = openSessions;
         }
 
-        public static TransactionListener create(StreamObserver<Transaction.Res> responseSender, OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
-            ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
-            ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
-            return new TransactionListener(responseSender, threadExecutor, requestOpener, attributeDeduplicatorDaemon);
-        }
 
         private static <T> T nonNull(@Nullable T item) {
             if (item == null) {
@@ -210,9 +223,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         public void close(@Nullable Throwable error) {
             submit(() -> {
-                if(session != null){
-                    session.close();
-                }
                 if (tx != null) {
                     tx.close();
                 }
@@ -247,8 +257,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
 
-            session = requestOpener.open(request);
-            tx = session.transaction(Type.of(request.getType().getNumber()));
+            tx = openSessions.get(request.getSessionId()).transaction(Type.of(request.getType().getNumber()));
             Transaction.Res response = ResponseBuilder.Transaction.open();
             onNextResponse(response);
         }
