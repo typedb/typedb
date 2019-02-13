@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query.query;
 
-import grakn.core.graql.query.query.builder.AggregateBuilder;
+import grakn.core.graql.query.query.builder.Aggregatable;
 import grakn.core.graql.query.query.builder.Filterable;
 import grakn.core.graql.query.statement.Variable;
 import graql.lang.exception.GraqlException;
@@ -35,7 +35,7 @@ import static java.util.stream.Collectors.joining;
  * pattern-matching query. The patterns are described in a declarative fashion, then the query will traverse
  * the knowledge base in an efficient fashion to find any matching answers.
  */
-public class GraqlGet extends GraqlQuery implements Filterable, AggregateBuilder<GraqlGet.Aggregate> {
+public class GraqlGet extends GraqlQuery implements Filterable, Aggregatable<GraqlGet.Aggregate> {
 
     private final LinkedHashSet<Variable> vars;
     private final MatchClause match;
@@ -314,7 +314,7 @@ public class GraqlGet extends GraqlQuery implements Filterable, AggregateBuilder
 
     }
 
-    public static class Group extends GraqlQuery implements AggregateBuilder<GraqlGet.Group.Aggregate> {
+    public static class Group extends GraqlQuery implements Aggregatable<Group.Aggregate> {
 
         private final GraqlGet query;
         private final Variable var;
