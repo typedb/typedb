@@ -63,7 +63,7 @@ public class AttributeDeduplicatorDaemon {
 
     private ExecutorService executorServiceForDaemon = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("attribute-deduplicator-daemon-%d").build());
 
-    private SessionStore txFactory;
+    private SessionStore sessionStore;
     private RocksDbQueue queue;
 
     private boolean stopDaemon = false;
@@ -71,13 +71,13 @@ public class AttributeDeduplicatorDaemon {
     /**
      * Instantiates {@link AttributeDeduplicatorDaemon}
      * @param config a reference to an instance of {@link Config} which is initialised from a grakn.properties.
-     * @param txFactory an {@link SessionStore} instance which provides access to write into the database
+     * @param sessionStore an {@link SessionStore} instance which provides access to write into the database
      */
-    public AttributeDeduplicatorDaemon(Config config, SessionStore txFactory) {
+    public AttributeDeduplicatorDaemon(Config config, SessionStore sessionStore) {
         Path dataDir = Paths.get(config.getProperty(ConfigKey.DATA_DIR));
         Path queueDataDir = dataDir.resolve(queueDataDirRelative);
         this.queue = new RocksDbQueue(queueDataDir);
-        this.txFactory = txFactory;
+        this.sessionStore = sessionStore;
     }
 
     /**
@@ -117,7 +117,7 @@ public class AttributeDeduplicatorDaemon {
 
                     // perform deduplicate for each (keyspace -> value)
                     for (KeyspaceIndexPair keyspaceIndexPair : uniqueKeyValuePairs) {
-                        deduplicate(txFactory, keyspaceIndexPair);
+                        deduplicate(sessionStore, keyspaceIndexPair);
                     }
 
                     LOG.trace("new attributes processed.");
