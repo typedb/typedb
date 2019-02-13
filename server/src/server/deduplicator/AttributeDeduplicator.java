@@ -48,11 +48,11 @@ public class AttributeDeduplicator {
      * in the duplicates as the "merge target", copying every edges from every "other duplicates" to the merge target, and
      * finally deleting that other duplicates.
      *
-     * @param txFactory the factory object for accessing the database
+     * @param sessionStore the factory object for accessing the database
      * @param keyspaceIndexPair the pair containing information about the attribute keyspace and index
      */
-    public static void deduplicate(SessionStore txFactory, KeyspaceIndexPair keyspaceIndexPair) {
-        SessionImpl session = txFactory.session(keyspaceIndexPair.keyspace());
+    public static void deduplicate(SessionStore sessionStore, KeyspaceIndexPair keyspaceIndexPair) {
+        SessionImpl session = sessionStore.session(keyspaceIndexPair.keyspace());
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             GraphTraversalSource tinker = tx.getTinkerTraversal();
             GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceIndexPair.index());
