@@ -36,7 +36,6 @@ import java.util.concurrent.locks.Lock;
 public class SessionStore {
     private final Config config;
     private final KeyspaceManager keyspaceStore;
-    private final Map<Keyspace, SessionImpl> openedSessions;
     private final LockManager lockManager;
 
     public static SessionStore create(LockManager lockManager, Config config, KeyspaceManager keyspaceStore) {
@@ -44,7 +43,6 @@ public class SessionStore {
     }
 
     private SessionStore(Config config, LockManager lockManager, KeyspaceManager keyspaceStore) {
-        this.openedSessions = new HashMap<>();
         this.config = config;
         this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
@@ -59,9 +57,6 @@ public class SessionStore {
         return session(keyspace).transaction(type);
     }
 
-    public void closeSessions() {
-        this.openedSessions.values().forEach(SessionImpl::close);
-    }
 
     /**
      * Retrieves the {@link Session} needed to open the {@link Transaction}.
@@ -71,10 +66,7 @@ public class SessionStore {
      * @return a new or existing {@link Session} connecting to the provided {@link Keyspace}
      */
     private SessionImpl session(Keyspace keyspace) {
-        if (!openedSessions.containsKey(keyspace)) {
-            openedSessions.put(keyspace, SessionImpl.create(keyspace, config));
-        }
-        return openedSessions.get(keyspace);
+        return SessionImpl.create(keyspace, config);
     }
 
     /**
@@ -102,10 +94,6 @@ public class SessionStore {
 
     public Config config() {
         return config;
-    }
-
-    public KeyspaceManager keyspaceStore() {
-        return keyspaceStore;
     }
 
 }
