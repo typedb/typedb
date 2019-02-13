@@ -30,7 +30,24 @@ service SessionService {
     // Represents a full transaction. The stream of `Transaction.Req`s must begin with a `Open` message.
     // When the call is completed, the transaction will always be closed, with or without a `Commit` message.
     rpc transaction (stream Transaction.Req) returns (stream Transaction.Res);
+    rpc open (OpenSessionReq) returns (OpenSessionRes);
+    rpc close (CloseSessionReq) returns (CloseSessionRes);
 }
+
+message OpenSessionReq {
+    string Keyspace = 1;
+}
+
+message OpenSessionRes {
+    string sessionId = 1;
+}
+
+message CloseSessionReq {
+    string sessionId = 1;
+}
+
+message CloseSessionRes {}
+
 
 message Transaction {
     message Req {
@@ -92,7 +109,7 @@ message Transaction {
 
     message Open {
         message Req {
-            string keyspace = 1;
+            string sessionId = 1;
             Type type = 2;
             /* Fields ignored in the open-source version. */
             string username = 3;

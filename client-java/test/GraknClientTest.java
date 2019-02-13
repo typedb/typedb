@@ -110,12 +110,12 @@ public class GraknClientTest {
         }
     }
 
-    @Test
-    public void whenCreatingAGraknRemoteTx_SendAnOpenMessageToGrpc() {
-        try (Transaction ignored = session.transaction(Transaction.Type.WRITE)) {
-            verify(server.requestListener()).onNext(RequestBuilder.Transaction.open(Keyspace.of(KEYSPACE.getName()), Transaction.Type.WRITE));
-        }
-    }
+//    @Test
+//    public void whenCreatingAGraknRemoteTx_SendAnOpenMessageToGrpc() {
+//        try (Transaction ignored = session.transaction(Transaction.Type.WRITE)) {
+//            verify(server.requestListener()).onNext(RequestBuilder.Transaction.open(Keyspace.of(KEYSPACE.getName()), Transaction.Type.WRITE));
+//        }
+//    }
 
     @Test
     public void whenClosingAGraknRemoteTx_SendCompletedMessageToGrpc() {
@@ -192,19 +192,19 @@ public class GraknClientTest {
         }
     }
 
-    @Test
-    public void whenOpeningATxFails_Throw() {
-        SessionProto.Transaction.Req openRequest = RequestBuilder.Transaction.open(KEYSPACE, Transaction.Type.WRITE);
-        GraknException expectedException = GraknServerException.create("well something went wrong");
-        throwOn(openRequest, expectedException);
-
-        exception.expect(RuntimeException.class);
-        exception.expectMessage(expectedException.getName());
-        exception.expectMessage(expectedException.getMessage());
-
-        GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE);
-        tx.close();
-    }
+//    @Test
+//    public void whenOpeningATxFails_Throw() {
+//        SessionProto.Transaction.Req openRequest = RequestBuilder.Transaction.open(KEYSPACE, Transaction.Type.WRITE);
+//        GraknException expectedException = GraknServerException.create("well something went wrong");
+//        throwOn(openRequest, expectedException);
+//
+//        exception.expect(RuntimeException.class);
+//        exception.expectMessage(expectedException.getName());
+//        exception.expectMessage(expectedException.getMessage());
+//
+//        GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE);
+//        tx.close();
+//    }
 
     @Test
     public void whenCommittingATxFails_Throw() {

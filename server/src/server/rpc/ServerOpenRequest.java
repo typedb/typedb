@@ -37,7 +37,7 @@ public class ServerOpenRequest implements OpenRequest {
     }
 
     @Override
-    public SessionImpl open(SessionProto.Transaction.Open.Req request) {
+    public SessionImpl open(SessionProto.OpenSessionReq request) {
         Keyspace keyspace = Keyspace.of(request.getKeyspace());
         return sessionStore.session(keyspace);
     }
