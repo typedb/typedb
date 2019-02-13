@@ -62,8 +62,7 @@ public class QueryToStringTest {
                         var("y").isa("genre").neq("crime")
                 ),
                 var("y").has("name", var("n"))
-        ).get("x", "y");
-        //TODO: re-add .orderBy("n").limit(8).offset(4)
+        ).get("x", "y").sort("n").offset(4).limit(8);
         assertEquivalent(query, query.toString());
     }
 

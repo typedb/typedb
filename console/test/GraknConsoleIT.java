@@ -320,10 +320,10 @@ public class GraknConsoleIT {
         assertThat(result[result.length - 1], endsWith("> "));
     }
 
-    @Test @Ignore // TODO: un-ignore once we re-enable query limits
+    @Test
     public void when_writingQueryWithLimitOne_expect_oneLineResponse() throws Exception {
         assertConsoleSessionMatches(
-                "match $x sub thing; limit 1; get;",
+                "match $x sub thing; get; limit 1;",
                 anything() // Only one result
         );
     }

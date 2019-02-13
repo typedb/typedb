@@ -38,10 +38,10 @@ query_define        :   DEFINE      statement_type+ ;
 query_undefine      :   UNDEFINE    statement_type+ ;
 
 query_insert        :   MATCH       pattern+    INSERT  statement_instance+
-                    |                           INSERT  statement_instance+ ;
+                    |                           INSERT  statement_instance+  ;
 
-query_delete        :   MATCH       pattern+    DELETE  variables   modifier* ; // GET QUERY followed by aggregate fn
-query_get           :   MATCH       pattern+    GET     variables   modifier* ; // GET QUERY followed by group fn, and
+query_delete        :   MATCH       pattern+    DELETE  variables   filters? ;  // GET QUERY followed by aggregate fn
+query_get           :   MATCH       pattern+    GET     variables   filters? ;  // GET QUERY followed by group fn, and
                                                                                 // optionally, an aggregate fn
 
 query_compute       :   COMPUTE     compute_method      compute_conditions? ';';// TODO: embbed ';' into subrule
@@ -56,11 +56,11 @@ query_get_group_agg :   query_get   function_group      function_aggregate ;
 
 variables           :   ( VAR_ ( ',' VAR_ )* )? ';'     ;
 
-modifier            :   offset  |   limit   |   order   ;
+filters             :   sort?       offset?     limit?  ;
 
-offset              :   OFFSET      INTEGER_    ';'     ;
-limit               :   LIMIT       INTEGER_    ';'     ;
-order               :   ORDER     ( ASC|DESC )? ';'     ;
+sort                :   SORT        VAR_        ORDER_? ';' ;
+offset              :   OFFSET      INTEGER_            ';' ;
+limit               :   LIMIT       INTEGER_            ';' ;
 
 // GET AGGREGATE QUERY =========================================================
 //
@@ -229,8 +229,8 @@ AGGREGATE       : 'aggregate'   ;   COMPUTE         : 'compute'     ;
 // DELETE AND GET QUERY MODIFIER KEYWORDS
 
 OFFSET          : 'offset'      ;   LIMIT           : 'limit'       ;
+SORT            : 'sort'        ;   ORDER_           : ASC | DESC    ;
 ASC             : 'asc'         ;   DESC            : 'desc'        ;
-ORDER           : 'order'       ;
 
 // STATEMENT PROPERTY KEYWORDS
 

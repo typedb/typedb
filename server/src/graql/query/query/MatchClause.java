@@ -43,6 +43,8 @@ import java.util.stream.Stream;
  */
 public class MatchClause {
 
+    // TODO: Fix this to be Conjunction<T extends Pattern>
+    //       You can verify that this is a bug by removing Collections.unmodfiableSet() wrapper
     private final Conjunction<Pattern> pattern;
 
     public MatchClause(Conjunction<Pattern> pattern) {
@@ -67,8 +69,8 @@ public class MatchClause {
      * Construct a get query with all all variables mentioned in the query
      */
     @CheckReturnValue
-    public GraqlGet get() {
-        return new GraqlGet(this);
+    public GraqlGet.Unfiltered get() {
+        return new GraqlGet.Unfiltered(this);
     }
 
     /**
@@ -76,7 +78,7 @@ public class MatchClause {
      * @return a Get Query that selects the given variables
      */
     @CheckReturnValue
-    public GraqlGet get(String var, String... vars) {
+    public GraqlGet.Unfiltered get(String var, String... vars) {
         LinkedHashSet<Variable> varSet = Stream
                 .concat(Stream.of(var), Stream.of(vars))
                 .map(Variable::new)
@@ -89,7 +91,7 @@ public class MatchClause {
      * @return a Get Query that selects the given variables
      */
     @CheckReturnValue
-    public GraqlGet get(Variable var, Variable... vars) {
+    public GraqlGet.Unfiltered get(Variable var, Variable... vars) {
         LinkedHashSet<Variable> varSet = new LinkedHashSet<>();
         varSet.add(var);
         varSet.addAll(Arrays.asList(vars));
@@ -101,7 +103,7 @@ public class MatchClause {
      * @return a Get Query that selects the given variables
      */
     @CheckReturnValue
-    public GraqlGet get(List<Variable> vars) {
+    public GraqlGet.Unfiltered get(List<Variable> vars) {
         return get(new LinkedHashSet<>(vars));
     }
 
@@ -110,8 +112,8 @@ public class MatchClause {
      * @return a Get Query that selects the given variables
      */
     @CheckReturnValue
-    public GraqlGet get(LinkedHashSet<Variable> vars) {
-        return new GraqlGet(this, vars);
+    public GraqlGet.Unfiltered get(LinkedHashSet<Variable> vars) {
+        return new GraqlGet.Unfiltered(this, vars);
     }
 
     /**
@@ -137,8 +139,8 @@ public class MatchClause {
      * Construct a delete query with all all variables mentioned in the query
      */
     @CheckReturnValue
-    public GraqlDelete delete() {
-        return new GraqlDelete(this);
+    public GraqlDelete.Unfiltered delete() {
+        return delete(Collections.emptyList());
     }
 
     /**
@@ -146,7 +148,7 @@ public class MatchClause {
      * @return a delete query that will delete the given variables for each result of this match clause
      */
     @CheckReturnValue
-    public final GraqlDelete delete(String var, String... vars) {
+    public final GraqlDelete.Unfiltered delete(String var, String... vars) {
         LinkedHashSet<Variable> varSet = Stream
                 .concat(Stream.of(var), Stream.of(vars))
                 .map(Variable::new)
@@ -159,7 +161,7 @@ public class MatchClause {
      * @return a delete query that will delete the given variables for each result of this match clause
      */
     @CheckReturnValue
-    public final GraqlDelete delete(Variable var, Variable... vars) {
+    public final GraqlDelete.Unfiltered delete(Variable var, Variable... vars) {
         LinkedHashSet<Variable> varSet = new LinkedHashSet<>();
         varSet.add(var);
         varSet.addAll(Arrays.asList(vars));
@@ -171,8 +173,8 @@ public class MatchClause {
      * @return a delete query that will delete the given variables for each result of this match clause
      */
     @CheckReturnValue
-    public final GraqlDelete delete(List<Variable> vars) {
-        return new GraqlDelete(this, new LinkedHashSet<>(vars));
+    public final GraqlDelete.Unfiltered delete(List<Variable> vars) {
+        return delete(new LinkedHashSet<>(vars));
     }
 
     /**
@@ -180,8 +182,8 @@ public class MatchClause {
      * @return a delete query that will delete the given variables for each result of this match clause
      */
     @CheckReturnValue
-    public final GraqlDelete delete(LinkedHashSet<Variable> vars) {
-        return new GraqlDelete(this, vars);
+    public final GraqlDelete.Unfiltered delete(LinkedHashSet<Variable> vars) {
+        return new GraqlDelete.Unfiltered(this, vars);
     }
 
     @Override

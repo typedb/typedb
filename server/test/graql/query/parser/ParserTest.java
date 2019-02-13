@@ -316,30 +316,55 @@ public class ParserTest {
         assertQueryEquals(expected, parsed, query);
     }
 
-    @Test @Ignore
-    public void testModifierQuery() {
-        String query = "match $y isa movie, has title $n; order by $n; limit 4; offset 2; get;" ;
+    @Test
+    public void testSchemaQuery() {
+        String query = "match $x plays actor; get; sort $x asc;";
         GraqlGet parsed = Graql.parse(query).asGet();
-        GraqlGet expected = match(var("y").isa("movie").has("title", var("n"))).get();
-        // TODO: put back .orderBy("n").limit(4).offset(2)
+        GraqlGet expected = match(var("x").plays("actor")).get().sort("x", "asc");
 
         assertQueryEquals(expected, parsed, query);
     }
 
     @Test
-    public void testSchemaQuery() {
-        String query = "match $x plays actor; get;"; // TODO: put back order by $x asc;
+    public void testGetSort() {
+        String query = "match $x isa movie, has rating $r; get; sort $r desc;";
         GraqlGet parsed = Graql.parse(query).asGet();
-        GraqlGet expected = match(var("x").plays("actor")).get(); // TODO: put back .orderBy("x")
+        GraqlGet expected = match(
+                var("x").isa("movie").has("rating", var("r"))
+        ).get().sort("r", "desc");
 
         assertQueryEquals(expected, parsed, query);
     }
 
-    @Test @Ignore // TODO: put back .orderBy("r", desc)
-    public void testOrderQuery() {
-        String query = "match $x isa movie, has release-date $r; order by $r desc; get;";
+    @Test
+    public void testGetSortLimit() {
+        String query = "match $x isa movie, has rating $r; get; sort $r; limit 10;";
         GraqlGet parsed = Graql.parse(query).asGet();
-        GraqlGet expected = match(var("x").isa("movie").has("release-date", var("r"))).get();
+        GraqlGet expected = match(
+                var("x").isa("movie").has("rating", var("r"))
+        ).get().sort("r").limit(10);
+
+        assertQueryEquals(expected, parsed, query);
+    }
+
+    @Test
+    public void testGetSortOffsetLimit() {
+        String query = "match $x isa movie, has rating $r; get; sort $r desc; offset 10; limit 10;";
+        GraqlGet parsed = Graql.parse(query).asGet();
+        GraqlGet expected = match(
+                var("x").isa("movie").has("rating", var("r"))
+        ).get().sort("r", Token.Order.DESC).offset(10).limit(10);
+
+        assertQueryEquals(expected, parsed, query);
+    }
+
+    @Test
+    public void testGetOffsetLimit() {
+        String query = "match $y isa movie, has title $n; get; offset 2; limit 4;" ;
+        GraqlGet parsed = Graql.parse(query).asGet();
+        GraqlGet expected = match(
+                var("y").isa("movie").has("title", var("n"))
+        ).get().offset(2).limit(4);
 
         assertQueryEquals(expected, parsed, query);
     }

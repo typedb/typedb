@@ -119,13 +119,11 @@ public class BenchmarkSmallIT {
             final long limit = 1;
             String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
             String queryString = "match " + queryPattern + " get;";
-            String limitedQueryString = "match " +
-                    queryPattern +
-                    "limit " + limit +  ";" +
-                    "get;";
+            String limitedQueryString = "match " + queryPattern +
+                    "get; limit " + limit +  ";";
 
             assertEquals(executeQuery(queryString, tx, "full").size(), limit);
-            // assertEquals(executeQuery(limitedQueryString, tx, "limit").size(), limit); TODO: uncomment
+            assertEquals(executeQuery(limitedQueryString, tx, "limit").size(), limit);
         }
         session.close();
     }
@@ -173,7 +171,7 @@ public class BenchmarkSmallIT {
         String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
         Transaction tx = session.transaction(Transaction.Type.WRITE);
         executeQuery(queryString, tx, "full");
-        // executeQuery(Graql.parse(queryString).asGet().match().limit(limit).get(), "limit " + limit); // TODO: uncomment
+        executeQuery(Graql.parse(queryString).asGet().match().get().limit(limit), tx, "limit " + limit);
         tx.close();
         session.close();
     }
@@ -215,8 +213,8 @@ public class BenchmarkSmallIT {
         assertEquals(executeQuery(query, tx, "full").size(), answers);
         assertEquals(executeQuery(query2, tx, "With specific resource").size(), N);
 
-//        executeQuery(query.match().limit(limit).get(), "limit " + limit); // TODO: uncomment
-//        executeQuery(query2.match().limit(limit).get(), "limit " + limit); // TODO: uncomment
+        executeQuery(query.match().get().limit(limit), tx, "limit " + limit);
+        executeQuery(query2.match().get().limit(limit), tx, "limit " + limit);
         tx.close();
         session.close();
     }
@@ -275,7 +273,7 @@ public class BenchmarkSmallIT {
         executeQuery(query, tx, "full");
         executeQuery(query2, tx, "With specific resource");
         executeQuery(query3, tx, "Single argument bound");
-//        executeQuery(query.match().limit(limit).get(), "limit " + limit); // TODO: uncomment
+        executeQuery(query.match().get().limit(limit), tx, "limit " + limit);
         tx.close();
         session.close();
     }
@@ -322,7 +320,7 @@ public class BenchmarkSmallIT {
         GraqlGet query = Graql.parse(queryString).asGet();
 
         executeQuery(query, tx, "full");
-//        executeQuery(query.match().limit(limit).get(), "limit " + limit); // TODO: uncomment
+        executeQuery(query.match().get().limit(limit), tx, "limit " + limit);
         tx.close();
         session.close();
     }
@@ -377,8 +375,7 @@ public class BenchmarkSmallIT {
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;" +
                 "$x has index 'a0';" +
-                // "limit " + answers + ";" + TODO: uncomment
-                "get $y;";
+                "get $y; limit " + answers + ";";
 
         assertEquals(executeQuery(queryString, tx, "tree").size(), answers);
         tx.close();

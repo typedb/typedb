@@ -22,7 +22,7 @@ import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.statement.Variable;
 import graql.lang.util.Token;
 
-public interface AggregateBuilder<T extends GraqlQuery> {
+public interface Aggregatable<T extends GraqlQuery> {
 
     default T count() {
         return aggregate(Token.Statistics.Method.COUNT, null);
