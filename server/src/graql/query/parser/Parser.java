@@ -20,6 +20,8 @@ package grakn.core.graql.query.parser;
 
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.query.MatchClause;
+import grakn.core.graql.query.query.builder.Filterable;
 import graql.lang.exception.GraqlException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
@@ -42,6 +44,7 @@ import graql.grammar.GraqlParser;
 import graql.lang.parser.ErrorListener;
 import graql.lang.util.StringUtil;
 import graql.lang.util.Token;
+import graql.lang.util.Triple;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -243,22 +246,53 @@ public class Parser extends GraqlBaseVisitor {
 
     @Override
     public GraqlDelete visitQuery_delete(GraqlParser.Query_deleteContext ctx) {
-        LinkedHashSet<Pattern> patterns = ctx.pattern().stream().map(this::visitPattern)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        LinkedHashSet<Variable> vars = visitVariables(ctx.variables());
+        MatchClause match = Graql.match(ctx.pattern()
+                .stream().map(this::visitPattern)
+                .collect(Collectors.toCollection(LinkedHashSet::new)));
 
-        return Graql.match(patterns).delete(visitVariables(ctx.variables()));
-
-        // TODO: implement parsing of OFFSET, LIMIT and ORDER
+        if (ctx.filters() == null) {
+            return new GraqlDelete(match, vars);
+        } else {
+            Triple<Filterable.Sorting, Long, Long> filters = visitFilters(ctx.filters());
+            return new GraqlDelete(match, vars, filters.first(), filters.second(), filters.third());
+        }
     }
 
     @Override
     public GraqlGet visitQuery_get(GraqlParser.Query_getContext ctx) {
-        LinkedHashSet<Pattern> patterns = ctx.pattern().stream().map(this::visitPattern)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        LinkedHashSet<Variable> vars = visitVariables(ctx.variables());
+        MatchClause match = Graql.match(ctx.pattern()
+                .stream().map(this::visitPattern)
+                .collect(Collectors.toCollection(LinkedHashSet::new)));
 
-        return Graql.match(patterns).get(visitVariables(ctx.variables()));
+        if (ctx.filters() == null) {
+            return new GraqlGet(match, vars);
+        } else {
+            Triple<Filterable.Sorting, Long, Long> filters = visitFilters(ctx.filters());
+            return new GraqlGet(match, vars, filters.first(), filters.second(), filters.third());
+        }
+    }
 
-        // TODO: implement parsing of OFFSET, LIMIT and ORDER
+    @Override
+    public Triple<Filterable.Sorting, Long, Long> visitFilters(GraqlParser.FiltersContext ctx) {
+        Filterable.Sorting order = null;
+        long offset = -1;
+        long limit = -1;
+
+        if (ctx.sort() != null) {
+            Variable var = getVar(ctx.sort().VAR_());
+            order = ctx.sort().ORDER_() == null ? new Filterable.Sorting(var) :
+                    new Filterable.Sorting(var, Token.Order.of(ctx.sort().ORDER_().getText()));
+        }
+        if (ctx.offset() != null) {
+            offset = getInteger(ctx.offset().INTEGER_());
+        }
+        if (ctx.limit() != null) {
+            limit = getInteger(ctx.limit().INTEGER_());
+        }
+
+        return new Triple<>(order, offset, limit);
     }
 
     /**

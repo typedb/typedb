@@ -55,6 +55,7 @@ import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -66,6 +67,8 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import graql.lang.util.Token;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -249,8 +252,25 @@ public class QueryExecutor {
         return new ConceptSet(conceptsToDelete.stream().map(Concept::id).collect(toSet()));
     }
 
+    @SuppressWarnings("unchecked") // All attribute value are comparable
     public Stream<ConceptMap> get(GraqlGet query) {
-        return match(query.match()).map(result -> result.project(query.vars())).distinct();
+        Stream<ConceptMap> answers = match(query.match()).map(result -> result.project(query.vars())).distinct();
+
+        if (query.sort().isPresent()) {
+            Comparator<ConceptMap> comparator = Comparator.comparing(
+                    answer -> (Comparable<? super Comparable>) answer.get(query.sort().get().var()).asAttribute().value()
+            );
+            comparator = (query.sort().get().order() == Token.Order.DESC) ? comparator.reversed() : comparator;
+            answers = answers.sorted(comparator);
+        }
+        if (query.offset().isPresent()) {
+            answers = answers.skip(query.offset().get());
+        }
+        if (query.limit().isPresent()) {
+            answers = answers.limit(query.offset().get());
+        }
+
+        return answers;
     }
 
     public Stream<Value> aggregate(GraqlGet.Aggregate query) {

@@ -24,6 +24,7 @@ public class Token {
      * Graql commands to determine the type of query
      */
     public enum Command {
+        COMPUTE("compute"),
         MATCH("match"),
         DEFINE("define"),
         UNDEFINE("undefine"),
@@ -32,7 +33,8 @@ public class Token {
         GET("get"),
         AGGREGATE("aggregate"),
         GROUP("group"),
-        COMPUTE("compute");
+        OFFSET("offset"),
+        LIMIT("limit");
 
         private final String command;
 
@@ -48,6 +50,32 @@ public class Token {
         public static Command of(String value) {
             for (Command c : Command.values()) {
                 if (c.command.equals(value)) {
+                    return c;
+                }
+            }
+            return null;
+        }
+    }
+
+    public enum Filter {
+        SORT("sort"),
+        OFFSET("offset"),
+        LIMIT("limit");
+
+        private final String filter;
+
+        Filter(String filter) {
+            this.filter = filter;
+        }
+
+        @Override
+        public String toString() {
+            return this.filter;
+        }
+
+        public static Filter of(String value) {
+            for (Filter c : Filter.values()) {
+                if (c.filter.equals(value)) {
                     return c;
                 }
             }
@@ -210,6 +238,31 @@ public class Token {
         public static DataType of(String value) {
             for (DataType c : values()) {
                 if (c.type.equals(value)) {
+                    return c;
+                }
+            }
+            return null;
+        }
+    }
+
+    public enum Order {
+        ASC("asc"),
+        DESC("desc");
+
+        private final String order;
+
+        Order(String order) {
+            this.order = order;
+        }
+
+        @Override
+        public String toString() {
+            return this.order;
+        }
+
+        public static Order of(String value) {
+            for (Order c : values()) {
+                if (c.order.equals(value)) {
                     return c;
                 }
             }
