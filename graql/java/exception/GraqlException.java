@@ -41,8 +41,8 @@ public class GraqlException extends RuntimeException {
         return new GraqlException(graql.lang.exception.ErrorMessage.CONFLICTING_PROPERTIES.getMessage(statement, property, other));
     }
 
-    public static GraqlException varNotInQuery(String var) {
-        return new GraqlException(graql.lang.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(var));
+    public static GraqlException variableOutOfScope(String var) {
+        return new GraqlException(graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE.getMessage(var));
     }
 
     public static GraqlException noPatterns() {

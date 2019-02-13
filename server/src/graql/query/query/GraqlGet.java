@@ -53,20 +53,24 @@ public class GraqlGet extends GraqlQuery implements Filterable, Aggregatable<Gra
     }
 
     public GraqlGet(MatchClause match, LinkedHashSet<Variable> vars, Sorting sorting, long offset, long limit) {
-        if (vars == null) {
-            throw new NullPointerException("Null vars");
-        }
-        this.vars = vars;
         if (match == null) {
             throw new NullPointerException("Null match");
         }
-        for (Variable var : vars) {
-            if (!match.getSelectedNames().contains(var)) {
-                throw GraqlException.varNotInQuery(var.toString());
-            }
-        }
         this.match = match;
 
+        if (vars == null) {
+            throw new NullPointerException("Null vars");
+        }
+        for (Variable var : vars) {
+            if (!match.getSelectedNames().contains(var)) {
+                throw GraqlException.variableOutOfScope(var.toString());
+            }
+        }
+        this.vars = vars;
+
+        if (sorting != null && !vars().contains(sorting.var())) {
+            throw GraqlException.variableOutOfScope(sorting.var().toString());
+        }
         this.sorting = sorting;
         this.offset = offset;
         this.limit = limit;
@@ -200,8 +204,8 @@ public class GraqlGet extends GraqlQuery implements Filterable, Aggregatable<Gra
 
     public class Sorted extends GraqlGet implements Filterable.Sorted<GraqlGet.Offsetted, GraqlGet.Limited> {
 
-        Sorted(GraqlGet graqlGet, Sorting order) {
-            super(graqlGet.match, graqlGet.vars, order, graqlGet.offset, graqlGet.limit);
+        Sorted(GraqlGet graqlGet, Sorting sorting) {
+            super(graqlGet.match, graqlGet.vars, sorting, graqlGet.offset, graqlGet.limit);
         }
 
         @Override

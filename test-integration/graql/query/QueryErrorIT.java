@@ -27,7 +27,6 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.property.ValueProperty;
-import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
@@ -234,7 +233,7 @@ public class QueryErrorIT {
     @Test
     public void testGetNonExistentVariable() {
         exception.expect(GraqlException.class);
-        exception.expectMessage(graql.lang.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(new Variable("y")));
+        exception.expectMessage(graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE.getMessage(new Variable("y")));
 
         MatchClause match = Graql.match(var("x").isa("movie"));
         Stream<Concept> concepts = tx.stream(match.get("y")).map(ans -> ans.get("y"));

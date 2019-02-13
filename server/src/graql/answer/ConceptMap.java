@@ -115,7 +115,7 @@ public class ConceptMap implements Answer<ConceptMap> {
     @CheckReturnValue
     public Concept get(Variable var) {
         Concept concept = map.get(var);
-        if (concept == null) throw GraqlException.varNotInQuery(var.toString());
+        if (concept == null) throw GraqlException.variableOutOfScope(var.toString());
         return concept;
     }
 

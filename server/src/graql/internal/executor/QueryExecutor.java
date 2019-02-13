@@ -50,6 +50,7 @@ import grakn.core.graql.query.property.HasAttributeProperty;
 import grakn.core.graql.query.property.IsaProperty;
 import grakn.core.graql.query.property.RelationProperty;
 import grakn.core.graql.query.property.VarProperty;
+import grakn.core.graql.query.query.builder.Filterable;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
@@ -233,29 +234,8 @@ public class QueryExecutor {
         }
     }
 
-    public ConceptSet delete(GraqlDelete query) {
-        Stream<ConceptMap> answers = transaction.stream(query.match(), infer)
-                .map(result -> result.project(query.vars()))
-                .distinct();
-
-        // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
-        // Stream.distinct() will then work properly when it calls ConceptImpl.equals()
-        Set<Concept> conceptsToDelete = answers.flatMap(answer -> answer.concepts().stream()).collect(toSet());
-        conceptsToDelete.forEach(concept -> {
-            if (concept.isSchemaConcept()) {
-                throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
-            }
-            concept.delete();
-        });
-
-        // TODO: return deleted Concepts instead of ConceptIds
-        return new ConceptSet(conceptsToDelete.stream().map(Concept::id).collect(toSet()));
-    }
-
     @SuppressWarnings("unchecked") // All attribute values are comparable data types
-    public Stream<ConceptMap> get(GraqlGet query) {
-        Stream<ConceptMap> answers = match(query.match()).map(result -> result.project(query.vars())).distinct();
-
+    private Stream<ConceptMap> filter(Filterable query, Stream<ConceptMap> answers) {
         if (query.sort().isPresent()) {
             Comparator<ConceptMap> comparator = Comparator.comparing(
                     answer -> (Comparable<? super Comparable>) answer.get(query.sort().get().var()).asAttribute().value()
@@ -269,6 +249,38 @@ public class QueryExecutor {
         if (query.limit().isPresent()) {
             answers = answers.limit(query.limit().get());
         }
+
+        return answers;
+    }
+
+    public ConceptSet delete(GraqlDelete query) {
+        Stream<ConceptMap> answers = transaction.stream(query.match(), infer)
+                .map(result -> result.project(query.vars()))
+                .distinct();
+
+        answers = filter(query, answers);
+
+        // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
+        // Stream.distinct() will then work properly when it calls ConceptImpl.equals()
+        Set<Concept> conceptsToDelete = answers
+                .flatMap(answer -> answer.concepts().stream())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        conceptsToDelete.forEach(concept -> {
+            if (concept.isSchemaConcept()) {
+                throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
+            }
+            concept.delete();
+        });
+
+        // TODO: return deleted Concepts instead of ConceptIds
+        return new ConceptSet(conceptsToDelete.stream().map(Concept::id).collect(toSet()));
+    }
+
+    public Stream<ConceptMap> get(GraqlGet query) {
+        Stream<ConceptMap> answers = match(query.match()).map(result -> result.project(query.vars())).distinct();
+
+        answers = filter(query, answers);
 
         return answers;
     }
