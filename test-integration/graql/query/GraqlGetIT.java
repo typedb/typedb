@@ -139,7 +139,6 @@ public class GraqlGetIT {
         assertEquals("Kermit The Frog", answers.get(3).get("y").asAttribute().value());
     }
 
-
     @Test
     public void testCount() {
         List<Value> count = tx.execute(Graql.match(var("x").isa("movie"), var("y").isa("person"), var("r").rel("x").rel("y")).get().count());

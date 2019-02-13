@@ -18,6 +18,8 @@
 
 package grakn.core.graql.query;
 
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -39,6 +41,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
@@ -47,8 +53,9 @@ import static graql.lang.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("OptionalGetWithoutIsPresent")
+@SuppressWarnings({"OptionalGetWithoutIsPresent", "Duplicates"})
 public class GraqlDeleteIT {
 
     public static final Statement ENTITY = type(Schema.MetaSchema.ENTITY.getLabel().getValue());
@@ -92,6 +99,73 @@ public class GraqlDeleteIT {
     @AfterClass
     public static void closeSession() {
         session.close();
+    }
+
+    @Test
+    public void testGetSort() {
+        List<ConceptMap> answers = tx.execute(
+                Graql.match(var("x").isa("person").has("name", var("y")))
+                        .get().sort("y")
+        );
+
+        assertEquals("Al Pacino", answers.get(0).get("y").asAttribute().value());
+        assertEquals("Bette Midler", answers.get(1).get("y").asAttribute().value());
+        assertEquals("Jude Law", answers.get(2).get("y").asAttribute().value());
+        assertEquals("Kermit The Frog", answers.get(3).get("y").asAttribute().value());
+
+        Set<ConceptId> toDelete = answers.stream().map(answer -> answer.get("x").id()).collect(Collectors.toSet());
+
+        ConceptSet deleted = tx.execute(
+                Graql.match(var("x").isa("person").has("name", var("y")))
+                        .delete().sort("y")
+        ).get(0);
+
+        assertTrue(deleted.set().containsAll(toDelete));
+    }
+
+    @Test
+    public void testGetSortAscLimit() {
+        List<ConceptMap> answers = tx.execute(
+                Graql.match(var("x").isa("person").has("name", var("y")))
+                        .get().sort("y", "asc").limit(3)
+        );
+
+        assertEquals(3, answers.size());
+        assertEquals("Al Pacino", answers.get(0).get("y").asAttribute().value());
+        assertEquals("Bette Midler", answers.get(1).get("y").asAttribute().value());
+        assertEquals("Jude Law", answers.get(2).get("y").asAttribute().value());
+
+        Set<ConceptId> toDelete = answers.stream().map(answer -> answer.get("x").id()).collect(Collectors.toSet());
+
+        ConceptSet deleted = tx.execute(
+                Graql.match(var("x").isa("person").has("name", var("y")))
+                        .delete().sort("y", "asc").limit(3)
+        ).get(0);
+
+        assertTrue(deleted.set().containsAll(toDelete));
+    }
+
+    @Test
+    public void testGetSortDescOffsetLimit() {
+        List<ConceptMap> answers = tx.execute(
+                Graql.match(var("x").isa("person").has("name", var("y")))
+                        .get().sort("y", "desc").offset(3).limit(4)
+        );
+
+        assertEquals(4, answers.size());
+        assertEquals("Miranda Heart", answers.get(0).get("y").asAttribute().value());
+        assertEquals("Martin Sheen", answers.get(1).get("y").asAttribute().value());
+        assertEquals("Marlon Brando", answers.get(2).get("y").asAttribute().value());
+        assertEquals("Kermit The Frog", answers.get(3).get("y").asAttribute().value());
+
+        Set<ConceptId> toDelete = answers.stream().map(answer -> answer.get("x").id()).collect(Collectors.toSet());
+
+        ConceptSet deleted = tx.execute(
+                Graql.match(var("x").isa("person").has("name", var("y")))
+                        .delete().sort("y", "desc").offset(3).limit(4)
+        ).get(0);
+
+        assertTrue(deleted.set().containsAll(toDelete));
     }
 
     @Test
