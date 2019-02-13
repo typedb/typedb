@@ -237,9 +237,17 @@ public class QueryExecutor {
     @SuppressWarnings("unchecked") // All attribute values are comparable data types
     private Stream<ConceptMap> filter(Filterable query, Stream<ConceptMap> answers) {
         if (query.sort().isPresent()) {
-            Comparator<ConceptMap> comparator = Comparator.comparing(
-                    answer -> (Comparable<? super Comparable>) answer.get(query.sort().get().var()).asAttribute().value()
-            );
+            Variable var = query.sort().get().var();
+            Comparator<ConceptMap> comparator = (map1, map2) -> {
+                Object val1 = map1.get(var).asAttribute().value();
+                Object val2 = map2.get(var).asAttribute().value();
+
+                if (val1 instanceof String) {
+                    return ((String) val1).compareToIgnoreCase((String) val2);
+                } else {
+                    return ((Comparable<? super Comparable>) val1).compareTo((Comparable<? super Comparable>) val2);
+                }
+            };
             comparator = (query.sort().get().order() == Token.Order.DESC) ? comparator.reversed() : comparator;
             answers = answers.sorted(comparator);
         }
