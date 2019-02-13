@@ -88,12 +88,14 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         String sessionId = keyspace + UUID.randomUUID().toString();
         openSessions.put(sessionId, session);
         responseObserver.onNext(SessionProto.OpenSessionRes.newBuilder().setSessionId(sessionId).build());
+        responseObserver.onCompleted();
     }
 
     @Override
     public void close(SessionProto.CloseSessionReq request, StreamObserver<SessionProto.CloseSessionRes> responseObserver) {
         openSessions.remove(request.getSessionId());
         responseObserver.onNext(SessionProto.CloseSessionRes.newBuilder().build());
+        responseObserver.onCompleted();
     }
 
 
