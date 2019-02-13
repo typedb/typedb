@@ -115,7 +115,6 @@ public class GraknTestServer extends ExternalResource {
     @Override
     protected void after() {
         try {
-            sessionStore.closeSessions();
             keyspaceStore.closeStore();
             graknServer.close();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
