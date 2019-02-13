@@ -244,11 +244,11 @@ deploy_maven_jar = rule(
         ),
         "_pom_xml_template": attr.label(
             allow_single_file = True,
-            default = "@graknlabs_bazel_distribution//maven/templates:pom.xml",
+            default = "@graknlabs_rules_deployment//maven/templates:pom.xml",
         ),
         "_deployment_script_template": attr.label(
             allow_single_file = True,
-            default = "@graknlabs_bazel_distribution//maven/templates:deploy.sh",
+            default = "@graknlabs_rules_deployment//maven/templates:deploy.sh",
         )
     },
     executable = True,

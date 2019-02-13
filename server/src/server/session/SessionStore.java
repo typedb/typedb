@@ -25,8 +25,6 @@ import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.util.LockManager;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -51,8 +49,7 @@ public class SessionStore {
 
 
     /**
-     * Retrieves the {@link Session} needed to open the {@link Transaction}.
-     * This will open a new one {@link Session} if it hasn't been opened before
+     * Create a new {@link Session} needed to open the {@link Transaction}.
      *
      * @param keyspace The {@link Keyspace} of the {@link Session} to retrieve
      * @return a new or existing {@link Session} connecting to the provided {@link Keyspace}
@@ -75,7 +72,7 @@ public class SessionStore {
         lock.lock();
         try {
             // Create new empty keyspace in db
-            SessionImpl session = session(keyspace);
+            SessionImpl session = SessionImpl.create(keyspace, config);
             session.transaction(Transaction.Type.WRITE).close();
             // Add current keyspace to list of available Grakn keyspaces
             keyspaceStore.addKeyspace(keyspace);
