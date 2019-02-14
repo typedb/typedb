@@ -115,11 +115,9 @@ final public class TransactionOLTPFactory {
         if (tx != null && !tx.isClosed()) throw TransactionException.transactionOpen(tx);
 
         // Create new transaction from a Tinker graph if tx is null or s closed
-        if (tx == null || tx.isTinkerPopGraphClosed()) {
+        if (tx == null) {
             if (graph == null) {
                 graph = openGraph();
-            } else {
-                graph = reopenGraph();
             }
             tx = new TransactionOLTP(session, graph);
         }
@@ -143,14 +141,6 @@ final public class TransactionOLTPFactory {
         return JanusGraph;
     }
 
-    private JanusGraph reopenGraph() {
-        if (graph.isClosed()) graph = openGraph();
-
-        if (!graph.tx().isOpen()) {
-            graph.tx().open();
-        }
-        return graph;
-    }
 
     private JanusGraph configureGraph() {
         JanusGraphFactory.Builder builder = JanusGraphFactory.build().

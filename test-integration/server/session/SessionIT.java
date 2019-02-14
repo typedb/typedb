@@ -119,15 +119,23 @@ public class SessionIT {
         tx1.putEntityType("person");
         tx1.commit();
         ExecutorService executor = Executors.newFixedThreadPool(2);
+
         executor.submit(() -> {
-            Transaction tx2 = new SessionImpl(session.keyspace(), config).transaction(WRITE);
+            SessionImpl localSession = new SessionImpl(session.keyspace(), config);
+            Transaction tx2 = localSession.transaction(WRITE);
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
+            tx2.close();
+            localSession.close();
         }).get();
+
         executor.submit(() -> {
-            Transaction tx2 = new SessionImpl(session.keyspace(), config).transaction(WRITE);
+            SessionImpl localSession = new SessionImpl(session.keyspace(), config);
+            Transaction tx2 = localSession.transaction(WRITE);
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
+            tx2.close();
+            localSession.close();
         }).get();
     }
 

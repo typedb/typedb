@@ -23,26 +23,13 @@ import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.keyspace.Keyspace;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class facilitates the construction of Transaction by determining which factory should be built.
  */
 public class SessionImpl implements Session {
-    private static final Logger LOG = LoggerFactory.getLogger(SessionImpl.class);
-
-    private static final Map<String, TransactionOLTPFactory> openOLTPFactories = new ConcurrentHashMap<>();
-    private static final Map<String, TransactionOLAPFactory> openOLAPFactories = new ConcurrentHashMap<>();
-
-    private static final String PRODUCTION = "production";
-    private static final String DISTRIBUTED = "distributed";
 
     private final TransactionOLTPFactory transactionOLTPFactory;
     private final TransactionOLAPFactory transactionOLAPFactory;
@@ -60,34 +47,11 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used. If null is supplied, it will be created
      */
-    public SessionImpl(Keyspace keyspace, @Nullable Config config) {
-        Objects.requireNonNull(keyspace);
-
+    public SessionImpl(Keyspace keyspace, Config config) {
         this.keyspace = keyspace;
         this.config = config;
-        this.transactionOLTPFactory = getOLTPFactory(this);
-        this.transactionOLAPFactory = getOLAPFactory(this);
-    }
-
-    /**
-     * @return A graph factory which produces the relevant expected graph.
-     */
-    private static TransactionOLTPFactory getOLTPFactory(SessionImpl session) {
-        String key = PRODUCTION + "_" + session.keyspace();
-        return openOLTPFactories.computeIfAbsent(key, (k) -> {
-            TransactionOLTPFactory transactionFactory = new TransactionOLTPFactory(session);
-            LOG.trace("New factory created " + transactionFactory);
-            return transactionFactory;
-        });
-    }
-
-    private static TransactionOLAPFactory getOLAPFactory(SessionImpl session) {
-        String key = DISTRIBUTED + "_" + session.keyspace();
-        return openOLAPFactories.computeIfAbsent(key, (k) -> {
-            TransactionOLAPFactory transactionFactory = new TransactionOLAPFactory(session);
-            LOG.trace("New factory created " + transactionFactory);
-            return transactionFactory;
-        });
+        this.transactionOLTPFactory = new TransactionOLTPFactory(this);
+        this.transactionOLAPFactory = new TransactionOLAPFactory(this);
     }
 
 

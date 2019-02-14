@@ -37,6 +37,7 @@ import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraph;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -62,9 +63,11 @@ import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
  */
 public final class ElementFactory {
     private final TransactionOLTP tx;
+    private final JanusGraph graph;
 
-    public ElementFactory(TransactionOLTP tx){
+    public ElementFactory(TransactionOLTP tx, JanusGraph graph){
         this.tx = tx;
+        this.graph = graph;
     }
 
     private <X extends Concept, E extends AbstractElement> X   getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder){
@@ -290,7 +293,7 @@ public final class ElementFactory {
      * @return a new {@link VertexElement}
      */
     public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId ... conceptIds) {
-        Vertex vertex = tx.getTinkerPopGraph().addVertex(baseType.name());
+        Vertex vertex = graph.addVertex(baseType.name());
         String newConceptId = Schema.PREFIX_VERTEX + vertex.id().toString();
         if(conceptIds.length > 1){
             throw new IllegalArgumentException("Cannot provide more than one concept id when creating a new concept");

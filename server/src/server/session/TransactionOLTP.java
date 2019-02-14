@@ -107,20 +107,22 @@ public class TransactionOLTP implements Transaction {
     final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
     //----------------------------- Shared Variables
     private final SessionImpl session;
-    private final JanusGraph graph;
+    private final JanusGraph janusGraph;
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
     //----------------------------- Transaction Specific
     private final ThreadLocal<TransactionCache> localConceptLog = new ThreadLocal<>();
     private final RuleCache ruleCache;
+    private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
 
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
 
-    public TransactionOLTP(SessionImpl session, JanusGraph graph) {
+    public TransactionOLTP(SessionImpl session, JanusGraph janusGraph) {
         this.session = session;
-        this.graph = graph;
-        this.elementFactory = new ElementFactory(this);
+        this.janusGraph = janusGraph;
+        this.janusTransaction = janusGraph.tx();
+        this.elementFactory = new ElementFactory(this, janusGraph);
         this.ruleCache = new RuleCache(this);
 
         //Initialise Graph Caches
@@ -135,22 +137,19 @@ public class TransactionOLTP implements Transaction {
 
     void open(Type type) {
         cache().open(type);
-        if (getTinkerPopGraph().isOpen() && !getTinkerPopGraph().tx().isOpen()) getTinkerPopGraph().tx().open();
+        if (janusGraph.isOpen() && !janusTransaction.isOpen()) janusTransaction.open();
     }
 
-    boolean isTinkerPopGraphClosed() {
-        return getTinkerPopGraph().isClosed();
-    }
 
 
     void closeOpenTransactions() {
-        ((StandardJanusGraph) getTinkerPopGraph()).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close);
-        getTinkerPopGraph().close();
+        ((StandardJanusGraph) janusGraph).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close); // TODO move this up to session
+        janusGraph.close(); // TODO move this up to session
     }
 
     public void clearGraph() {
         try {
-            JanusGraphCleanup.clear(getTinkerPopGraph());
+            JanusGraphCleanup.clear(janusGraph);
         } catch (BackendException e) {
             throw new RuntimeException(e);
         }
@@ -160,7 +159,7 @@ public class TransactionOLTP implements Transaction {
         executeLockingMethod(() -> {
             try {
                 LOG.trace("Graph is valid. Committing graph . . . ");
-                getTinkerPopGraph().tx().commit();
+                janusTransaction.commit();
                 LOG.trace("Graph committed.");
             } catch (UnsupportedOperationException e) {
                 //IGNORED
@@ -280,7 +279,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * @return The graph cache which contains all the data cached and accessible by all transactions.
+     * @return The janusGraph cache which contains all the data cached and accessible by all transactions.
      */
     public GlobalCache getGlobalCache() {
         return globalCache;
@@ -386,10 +385,6 @@ public class TransactionOLTP implements Transaction {
         return getMetaConcept() == null;
     }
 
-    public JanusGraph getTinkerPopGraph() {
-        return graph;
-    }
-
     /**
      * Utility function to get a read-only Tinkerpop traversal.
      *
@@ -398,7 +393,7 @@ public class TransactionOLTP implements Transaction {
     public GraphTraversalSource getTinkerTraversal() {
         operateOnOpenGraph(() -> null); //This is to check if the graph is open
         if (graphTraversalSource == null) {
-            graphTraversalSource = getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance());
+            graphTraversalSource = janusGraph.traversal().withStrategies(ReadOnlyStrategy.instance());
         }
         return graphTraversalSource;
     }
@@ -722,7 +717,7 @@ public class TransactionOLTP implements Transaction {
     public void closeSession() {
         try {
             cache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
-            getTinkerPopGraph().close();
+            janusGraph.close(); // TODO move this up to session
         } catch (Exception e) {
             throw TransactionException.closingFailed(this, e);
         }
@@ -785,7 +780,7 @@ public class TransactionOLTP implements Transaction {
 
     private void closeTransaction(String closedReason) {
         try {
-            graph.tx().close();
+            janusTransaction.close();
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         } finally {
