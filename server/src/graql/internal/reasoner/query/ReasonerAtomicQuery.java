@@ -198,15 +198,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(ConceptMap sub){
-        Atom atom = getAtom();
-        Set<ReasonerAtomicQuery> collect = atom.atomOptions(sub).stream().map(ReasonerAtomicQuery::new).collect(Collectors.toSet());
-        System.out.println("\nqueries:\n");
-        collect.forEach(q -> {
-            System.out.println(q);
-            System.out.println(q.getAtom().getApplicableRules().collect(Collectors.toSet()));
-        });
-        System.out.println("\n");
-        return collect.stream().map(q -> (ReasonerQueryImpl) q);
+        return getAtom().atomOptions(sub).stream().map(ReasonerAtomicQuery::new);
     }
 
     @Override
