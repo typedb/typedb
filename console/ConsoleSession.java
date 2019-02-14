@@ -140,6 +140,8 @@ public class ConsoleSession implements AutoCloseable {
 
             } else if (queryString.equals(CLEAN)) {
                 clean();
+                consoleReader.flush();
+                return;
 
             } else if (queryString.equals(CLEAR)) {
                 consoleReader.clearScreen();
@@ -241,9 +243,6 @@ public class ConsoleSession implements AutoCloseable {
             consoleReader.flush();
             client.keyspaces().delete(keyspace);
             consoleReader.println("Keyspace deleted: " + keyspace);
-
-            reopenTransaction();
-
         } else {
             consoleReader.println("Clean command cancelled");
         }
