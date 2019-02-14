@@ -132,11 +132,15 @@ public class GraknTestServer extends ExternalResource {
 
     public SessionImpl sessionWithNewKeyspace() {
         Keyspace randomKeyspace = Keyspace.of("a" + UUID.randomUUID().toString().replaceAll("-", ""));
-        return SessionImpl.create(randomKeyspace, serverConfig);
+        return new SessionImpl(randomKeyspace, serverConfig);
     }
 
     public SessionStore txFactory(){
         return sessionStore;
+    }
+
+    public Config config(){
+        return serverConfig;
     }
 
 

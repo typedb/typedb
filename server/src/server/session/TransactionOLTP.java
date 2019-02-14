@@ -38,14 +38,14 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.QueryExecutor;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.query.GraqlInsert;
-import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.query.GraqlUndefine;
-import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.query.MatchClause;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
@@ -739,7 +739,7 @@ public class TransactionOLTP implements Transaction {
         try {
             cache().writeToGraphCache(type().equals(Type.READ));
         } finally {
-            String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", keyspace());
+            String closeMessage = ErrorMessage.TX_CLOSED.getMessage(keyspace());
             closeTransaction(closeMessage);
         }
     }
@@ -754,13 +754,13 @@ public class TransactionOLTP implements Transaction {
         if (isClosed()) {
             return;
         }
-        String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
         try {
             validateGraph();
             commitTransactionInternal();
             cache().writeToGraphCache(true);
             //TODO update cache here
         } finally {
+            String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
             closeTransaction(closeMessage);
         }
     }

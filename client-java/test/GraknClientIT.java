@@ -867,54 +867,57 @@ public class GraknClientIT {
 
     @Test
     public void testDefiningASchema_TheSchemaIsDefined() {
-        try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
-            EntityType animal = tx.putEntityType("animal");
-            EntityType dog = tx.putEntityType("dog").sup(animal);
-            EntityType cat = tx.putEntityType("cat");
-            cat.sup(animal);
+//        try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
+//            EntityType animal = tx.putEntityType("animal");
+//            EntityType dog = tx.putEntityType("dog").sup(animal);
+//            EntityType cat = tx.putEntityType("cat");
+//            cat.sup(animal);
+//
+//            cat.label(Label.of("feline"));
+//            dog.isAbstract(true).isAbstract(false);
+//            cat.isAbstract(true);
+//
+//            RelationType chases = tx.putRelationshipType("chases");
+//            Role chased = tx.putRole("chased");
+//            Role chaser = tx.putRole("chaser");
+//            chases.relates(chased).relates(chaser);
+//
+//            Role pointlessRole = tx.putRole("pointless-role");
+//            tx.putRelationshipType("pointless").relates(pointlessRole);
+//
+//            chases.relates(pointlessRole).unrelate(pointlessRole);
+//
+//            dog.plays(chaser);
+//            cat.plays(chased);
+//
+//            AttributeType<String> name = tx.putAttributeType("name", DataType.STRING);
+//            AttributeType<String> id = tx.putAttributeType("id", DataType.STRING).regex("(good|bad)-dog");
+//            AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
+//
+//            animal.has(name);
+//            animal.key(id);
+//
+//            dog.has(age).unhas(age);
+//            cat.key(age).unkey(age);
+//            cat.plays(chaser).unplay(chaser);
+//
+//            Entity dunstan = dog.create();
+//            Attribute<String> dunstanId = id.create("good-dog");
+//            assertNotNull(dunstan.relhas(dunstanId));
+//
+//            Attribute<String> dunstanName = name.create("Dunstan");
+//            dunstan.has(dunstanName).unhas(dunstanName);
+//
+//            chases.create().assign(chaser, dunstan);
+//
+//            Set<Attribute> set = dunstan.keys(name).collect(toSet());
+//            assertEquals(0, set.size());
+//
+//            tx.commit();
+//        }
 
-            cat.label(Label.of("feline"));
-            dog.isAbstract(true).isAbstract(false);
-            cat.isAbstract(true);
-
-            RelationType chases = tx.putRelationshipType("chases");
-            Role chased = tx.putRole("chased");
-            Role chaser = tx.putRole("chaser");
-            chases.relates(chased).relates(chaser);
-
-            Role pointlessRole = tx.putRole("pointless-role");
-            tx.putRelationshipType("pointless").relates(pointlessRole);
-
-            chases.relates(pointlessRole).unrelate(pointlessRole);
-
-            dog.plays(chaser);
-            cat.plays(chased);
-
-            AttributeType<String> name = tx.putAttributeType("name", DataType.STRING);
-            AttributeType<String> id = tx.putAttributeType("id", DataType.STRING).regex("(good|bad)-dog");
-            AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
-
-            animal.has(name);
-            animal.key(id);
-
-            dog.has(age).unhas(age);
-            cat.key(age).unkey(age);
-            cat.plays(chaser).unplay(chaser);
-
-            Entity dunstan = dog.create();
-            Attribute<String> dunstanId = id.create("good-dog");
-            assertNotNull(dunstan.relhas(dunstanId));
-
-            Attribute<String> dunstanName = name.create("Dunstan");
-            dunstan.has(dunstanName).unhas(dunstanName);
-
-            chases.create().assign(chaser, dunstan);
-
-            Set<Attribute> set = dunstan.keys(name).collect(toSet());
-            assertEquals(0, set.size());
-
-            tx.commit();
-        }
+        Transaction tx1 = localSession.transaction(Transaction.Type.READ);
+        Transaction tx2 = localSession.transaction(Transaction.Type.READ);
 
         try (Transaction tx = localSession.transaction(Transaction.Type.READ)) {
             EntityType animal = tx.getEntityType("animal");

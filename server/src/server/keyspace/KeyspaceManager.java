@@ -58,7 +58,7 @@ public class KeyspaceManager {
 
     public KeyspaceManager(Config config){
         this.config = config;
-        this.systemKeyspaceSession = SessionImpl.create(SYSTEM_KB_KEYSPACE, config);
+        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config);
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 
@@ -110,14 +110,13 @@ public class KeyspaceManager {
            return false;
         }
 
-        SessionImpl session = SessionImpl.create(keyspace, config);
-        session.close();
+        SessionImpl session = new SessionImpl(keyspace, config);
         try(TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)){
             tx.closeSession();
             tx.clearGraph();
             tx.cache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
         }
-
+        session.close();
         return deleteReferenceInSystemKeyspace(keyspace);
     }
 

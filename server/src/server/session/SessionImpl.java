@@ -54,30 +54,19 @@ public class SessionImpl implements Session {
     private TransactionOLTP tx = null;
 
     /**
-     * Instantiates {@link SessionImpl}
+     * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
+     * using provided Grakn configuration
      *
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used. If null is supplied, it will be created
      */
-    SessionImpl(Keyspace keyspace, @Nullable Config config) {
+    public SessionImpl(Keyspace keyspace, @Nullable Config config) {
         Objects.requireNonNull(keyspace);
 
         this.keyspace = keyspace;
         this.config = config;
         this.transactionOLTPFactory = getOLTPFactory(this);
         this.transactionOLAPFactory = getOLAPFactory(this);
-    }
-
-    /**
-     * Creates a {@link SessionImpl} specific for internal use (within Grakn Server),
-     * using provided Grakn configuration
-     */
-    public static SessionImpl create(Keyspace keyspace, Config config) {
-        return new SessionImpl(keyspace, config);
-    }
-
-    public static SessionImpl create(Keyspace keyspace) {
-        return new SessionImpl(keyspace, Config.create());
     }
 
     /**
