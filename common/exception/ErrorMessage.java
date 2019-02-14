@@ -58,7 +58,7 @@ public enum ErrorMessage {
     BACKEND_EXCEPTION("Backend Exception."),
     INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
     TX_CLOSED("The transaction for keyspace [%s] is closed. Use the session to get a new transaction for the graph."),
-    SESSION_CLOSED("The session for graph [%s] was closed."),
+    SESSION_CLOSED("The session for graph [%s] is closed. Create a new session to interact with the graph."),
     TX_CLOSED_ON_ACTION("The transaction was %s and closed for graph [%s]. Use the session to get a new transaction for the graph."),
     TXS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),

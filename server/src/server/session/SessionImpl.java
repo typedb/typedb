@@ -19,26 +19,42 @@
 package grakn.core.server.session;
 
 import grakn.core.common.config.Config;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.keyspace.Keyspace;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.util.JanusGraphCleanup;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
 
 /**
- * This class facilitates the construction of Transaction by determining which factory should be built.
+ * This class represents a Grakn Session.
+ * A session is mapped to a single instance of a JanusGraph (they're both bound to a single Keyspace):
+ * opening a session will open a new JanusGraph, closing a session will close the graph.
+ *
+ * The role of the Session is to provide multiple independent transactions that can be used by clients to
+ * access a specific keyspace.
+ *
+ * NOTE:
+ *  - Only 1 transaction per thread can exist.
+ *  - A transaction cannot be shared between multiple threads, each thread will need to get a new transaction form the session.
  */
 public class SessionImpl implements Session {
 
-    private final TransactionOLTPFactory transactionOLTPFactory;
     private final TransactionOLAPFactory transactionOLAPFactory;
+
+    // Session can have at most 1 transaction per thread, so we keep a local reference here
+    private final ThreadLocal<TransactionOLTP> localOLTPTransactionContainer = new ThreadLocal<>();
 
     private final Keyspace keyspace;
     private final Config config;
+    private final JanusGraph graph;
 
-    //References so we don't have to open a tx just to check the count of the transactions
-    private TransactionOLTP tx = null;
 
     /**
      * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
@@ -50,15 +66,33 @@ public class SessionImpl implements Session {
     public SessionImpl(Keyspace keyspace, Config config) {
         this.keyspace = keyspace;
         this.config = config;
-        this.transactionOLTPFactory = new TransactionOLTPFactory(this);
         this.transactionOLAPFactory = new TransactionOLAPFactory(this);
+        this.graph = OLTPGraphFactory.openGraph(this);
     }
 
 
     @Override
     public TransactionOLTP transaction(Transaction.Type type) {
-        tx = transactionOLTPFactory.openOLTP(type);
+        // If graph is closed it means the session was already closed
+        if (graph.isClosed()) throw new SessionException(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
+
+        TransactionOLTP localTx = localOLTPTransactionContainer.get();
+        // If transaction is already open in current thread throw exception
+        if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
+
+        // We are passing the graph to Transaction because there is the need to access graph tinkerpop traversal
+        TransactionOLTP tx = new TransactionOLTP(this, graph);
+        tx.open(type);
+        localOLTPTransactionContainer.set(tx);
         return tx;
+    }
+
+    public void clearGraph() {
+        try {
+            JanusGraphCleanup.clear(graph);
+        } catch (BackendException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -72,12 +106,20 @@ public class SessionImpl implements Session {
         return transactionOLAPFactory.openOLAP();
     }
 
+    /**
+     * Close JanusGraph, it will not be possible to create new transactions using current instance of Session.
+     * If there is a transaction open, close it before closing the graph.
+     * @throws TransactionException
+     */
     @Override
-    public void close() throws TransactionException {
-        if (tx != null) {
-            tx.closeSession();
-            tx.closeOpenTransactions();
+    public void close() {
+        TransactionOLTP localTx = localOLTPTransactionContainer.get();
+        if (localTx != null) {
+            localTx.close(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
         }
+
+        ((StandardJanusGraph) graph).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close);
+        graph.close();
     }
 
     @Override

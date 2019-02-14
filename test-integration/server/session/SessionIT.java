@@ -5,6 +5,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
+import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.keyspace.Keyspace;
 import org.junit.After;
@@ -149,13 +150,25 @@ public class SessionIT {
         assertTrue(tx1.isClosed());
     }
 
+    @Test
+    public void whenClosingSession_tryingToUseTransactionThrowsException() {
+        SessionImpl localSession = new SessionImpl(Keyspace.of("test"), config);
+        Transaction tx1 = localSession.transaction(WRITE);
+        assertFalse(tx1.isClosed());
+        localSession.close();
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage("The session for graph [test] is closed. Create a new session to interact with the graph.");
+        SchemaConcept thing = tx1.getSchemaConcept(Label.of("thing"));
+    }
+
     /**
      * Once a session it's closed it should not be possible to use it to get new transactions.
      */
     @Test
     public void whenSessionIsClosed_itIsNotPossibleToCreateNewTransactions(){
         session.close();
-        expectedException.expect(Exception.class);
+        expectedException.expect(SessionException.class);
+        expectedException.expectMessage("The session for graph [" + session.keyspace() + "] is closed. Create a new session to interact with the graph.");
         Transaction tx1 = session.transaction(WRITE);
 
         SchemaConcept concept = tx1.getSchemaConcept(Label.of("thing"));

@@ -73,11 +73,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.util.JanusGraphCleanup;
-import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.janusgraph.diskstorage.locking.TemporaryLockingException;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +95,9 @@ import java.util.stream.Stream;
 
 /**
  * A {@link Transaction} using {@link JanusGraph} as a vendor backend.
- * Wraps up a {@link JanusGraph} as a method of storing the {@link Transaction} object Model.
+ *
+ * Wraps a TinkerPop transaction (the graph is still needed as we use to retrieve tinker traversals)
+ *
  * With this vendor some issues to be aware of:
  * 1. Whenever a transaction is closed if none remain open then the connection to the graph is closed permanently.
  * 2. Clearing the graph explicitly closes the connection as well.
@@ -137,23 +136,9 @@ public class TransactionOLTP implements Transaction {
 
     void open(Type type) {
         cache().open(type);
-        if (janusGraph.isOpen() && !janusTransaction.isOpen()) janusTransaction.open();
+        if (!janusTransaction.isOpen()) janusTransaction.open();
     }
 
-
-
-    void closeOpenTransactions() {
-        ((StandardJanusGraph) janusGraph).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close); // TODO move this up to session
-        janusGraph.close(); // TODO move this up to session
-    }
-
-    public void clearGraph() {
-        try {
-            JanusGraphCleanup.clear(janusGraph);
-        } catch (BackendException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private void commitTransactionInternal() {
         executeLockingMethod(() -> {
@@ -711,30 +696,21 @@ public class TransactionOLTP implements Transaction {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
     }
 
-    /**
-     * Closes the root session this graph stems from. This will automatically rollback any pending transactions.
-     */
-    public void closeSession() {
-        try {
-            cache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
-            janusGraph.close(); // TODO move this up to session
-        } catch (Exception e) {
-            throw TransactionException.closingFailed(this, e);
-        }
+    @Override
+    public void close() {
+        close(ErrorMessage.TX_CLOSED.getMessage(keyspace()));
     }
-
     /**
      * Close the transaction without committing
      */
-    @Override
-    public void close() {
+
+    public void close(String closeMessage) {
         if (isClosed()) {
             return;
         }
         try {
             cache().writeToGraphCache(type().equals(Type.READ));
         } finally {
-            String closeMessage = ErrorMessage.TX_CLOSED.getMessage(keyspace());
             closeTransaction(closeMessage);
         }
     }

@@ -19,11 +19,16 @@
 package grakn.core.server.session;
 
 import grakn.core.common.config.ConfigKey;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.server.Transaction;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * A {@link Transaction} on top of {@link HadoopGraph}
@@ -39,6 +44,18 @@ public class TransactionOLAPFactory {
     private final Logger LOG = LoggerFactory.getLogger(TransactionOLAPFactory.class);
     private final SessionImpl session;
     private HadoopGraph graph = null;
+    //These properties are loaded in by default and can optionally be overwritten
+    private static final Properties DEFAULT_PROPERTIES;
+
+    static {
+        String DEFAULT_CONFIG = "resources/default-configs.properties";
+        DEFAULT_PROPERTIES = new Properties();
+        try (InputStream in = TransactionOLAPFactory.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
+            DEFAULT_PROPERTIES.load(in);
+        } catch (IOException e) {
+            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
+        }
+    }
 
     public TransactionOLAPFactory(SessionImpl sessionImpl) {
         this.session = sessionImpl;
@@ -70,7 +87,7 @@ public class TransactionOLAPFactory {
             LOG.warn("Hadoop graph ignores parameter address.");
 
             //Load Defaults
-            TransactionOLTPFactory.getDefaultProperties().forEach((key, value) -> {
+            DEFAULT_PROPERTIES.forEach((key, value) -> {
                 if (!session.config().properties().containsKey(key)) {
                     session.config().properties().put(key, value);
                 }
