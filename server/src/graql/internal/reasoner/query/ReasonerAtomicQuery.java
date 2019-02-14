@@ -54,7 +54,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.typeUnifier;
-import static java.lang.System.exit;
 
 /**
  * Base reasoner atomic query. An atomic query is a query constrained to having at most one rule-resolvable atom
