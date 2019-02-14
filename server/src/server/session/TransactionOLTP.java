@@ -110,7 +110,7 @@ public class TransactionOLTP implements Transaction {
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
     //----------------------------- Transaction Specific
-    private final ThreadLocal<TransactionCache> localConceptLog = new ThreadLocal<>();
+    private final ThreadLocal<TransactionCache> localConceptLog;
     private final RuleCache ruleCache;
     private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
 
@@ -121,6 +121,7 @@ public class TransactionOLTP implements Transaction {
         this.session = session;
         this.janusGraph = janusGraph;
         this.janusTransaction = janusGraph.tx();
+        this.localConceptLog = new ThreadLocal<>();
         this.elementFactory = new ElementFactory(this, janusGraph);
         this.ruleCache = new RuleCache(this);
 
@@ -704,7 +705,7 @@ public class TransactionOLTP implements Transaction {
      * Close the transaction without committing
      */
 
-    public void close(String closeMessage) {
+    void close(String closeMessage) {
         if (isClosed()) {
             return;
         }

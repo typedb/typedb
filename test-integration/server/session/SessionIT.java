@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static grakn.core.server.Transaction.Type.READ;
 import static grakn.core.server.Transaction.Type.WRITE;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -183,5 +184,20 @@ public class SessionIT {
         expectedException.expectMessage("The transaction for keyspace [" + session.keyspace() + "] is closed.");
         SchemaConcept concept = tx1.getSchemaConcept(Label.of("thing"));
         assertEquals("thing", concept.label().toString());
+    }
+
+    @Test
+    public void transactionRead_checkMutationsAllowedThrows(){
+        TransactionOLTP tx1 = session.transaction(READ);
+        expectedException.expect(TransactionException.class);
+        tx1.checkMutationAllowed();
+        tx1.close();
+        TransactionOLTP tx2 = session.transaction(WRITE);
+        tx2.checkMutationAllowed();
+        tx2.close();
+        TransactionOLTP tx3 = session.transaction(READ);
+        expectedException.expect(TransactionException.class);
+        tx3.checkMutationAllowed();
+        tx3.close();
     }
 }

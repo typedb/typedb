@@ -116,6 +116,7 @@ public class SessionImpl implements Session {
         TransactionOLTP localTx = localOLTPTransactionContainer.get();
         if (localTx != null) {
             localTx.close(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
+            localOLTPTransactionContainer.set(null);
         }
 
         ((StandardJanusGraph) graph).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close);
