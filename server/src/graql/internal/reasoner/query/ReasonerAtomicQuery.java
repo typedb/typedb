@@ -197,10 +197,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(ConceptMap sub){
-        Atom atom = getAtom();
-        return atom.getSchemaConcept() == null?
-                atom.atomOptions(sub).stream().map(ReasonerAtomicQuery::new) :
-                Stream.of(this);
+        return getAtom().atomOptions(sub).stream().map(ReasonerAtomicQuery::new);
     }
 
     @Override

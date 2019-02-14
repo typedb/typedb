@@ -119,6 +119,7 @@ public class RuleUtils {
 
 
     public static Stream<InferenceRule> stratifyRules(Set<InferenceRule> rules){
+        if(rules.stream().allMatch(r -> r.getBody().isPositive())) return rules.stream();
         Multimap<Type, InferenceRule> typeMap = HashMultimap.create();
         rules.forEach(r -> r.getRule().thenTypes().flatMap(Type::sups).forEach(t -> typeMap.put(t, r)));
         HashMultimap<Type, Type> typeGraph = typeGraph(rules);
