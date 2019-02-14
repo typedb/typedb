@@ -20,9 +20,6 @@ package grakn.core.graql.query.parser;
 
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.query.MatchClause;
-import grakn.core.graql.query.query.builder.Filterable;
-import graql.lang.exception.GraqlException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.property.HasAttributeProperty;
@@ -36,11 +33,15 @@ import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.query.GraqlUndefine;
+import grakn.core.graql.query.query.MatchClause;
+import grakn.core.graql.query.query.builder.Computable;
+import grakn.core.graql.query.query.builder.Filterable;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import graql.grammar.GraqlBaseVisitor;
 import graql.grammar.GraqlLexer;
 import graql.grammar.GraqlParser;
+import graql.lang.exception.GraqlException;
 import graql.lang.parser.ErrorListener;
 import graql.lang.util.StringUtil;
 import graql.lang.util.Token;
@@ -61,7 +62,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -71,7 +71,6 @@ import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.not;
 import static grakn.core.graql.query.Graql.type;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Graql query string parser to produce Graql Java objects
@@ -251,7 +250,7 @@ public class Parser extends GraqlBaseVisitor {
                 .stream().map(this::visitPattern)
                 .collect(Collectors.toCollection(LinkedHashSet::new)));
 
-        if (ctx.filters() == null) {
+        if (ctx.filters().getChildCount() > 0) {
             return new GraqlDelete(match, vars);
         } else {
             Triple<Filterable.Sorting, Long, Long> filters = visitFilters(ctx.filters());
@@ -266,7 +265,7 @@ public class Parser extends GraqlBaseVisitor {
                 .stream().map(this::visitPattern)
                 .collect(Collectors.toCollection(LinkedHashSet::new)));
 
-        if (ctx.filters() == null) {
+        if (ctx.filters().getChildCount() > 0) {
             return new GraqlGet(match, vars);
         } else {
             Triple<Filterable.Sorting, Long, Long> filters = visitFilters(ctx.filters());
@@ -338,41 +337,158 @@ public class Parser extends GraqlBaseVisitor {
 
     // COMPUTE QUERY ===========================================================
 
+    @Override
     public GraqlCompute visitQuery_compute(GraqlParser.Query_computeContext ctx) {
-        GraqlParser.Compute_methodContext method = ctx.compute_method();
-        GraqlParser.Compute_conditionsContext conditions = ctx.compute_conditions();
 
-        GraqlCompute<?> query = Graql.compute(GraqlCompute.Method.of(method.getText()));
-        if (conditions == null) return query;
+        if (ctx.computable().compute_count() != null) {
+            return null;
+        } else if (ctx.computable().compute_value() != null) {
+            return null;
+        } else if (ctx.computable().compute_path() != null) {
+            return null;
+        } else if (ctx.computable().compute_centrality() != null) {
+            return null;
+        } else if (ctx.computable().compute_cluster() != null) {
+            return null;
+        } else {
+            throw new IllegalArgumentException("Unrecognised Graql Compute Query: " + ctx.getText());
+        }
+    }
 
-        for (GraqlParser.Compute_conditionContext conditionCtx : conditions.compute_condition()) {
-            if (conditionCtx.FROM() != null) {
-                query.from(ConceptId.of(visitId(conditionCtx.id())));
+    @Override
+    public GraqlCompute.Statistics.Count visitCompute_count(GraqlParser.Compute_countContext ctx) {
+        GraqlCompute.Statistics.Count compute = Graql.compute().count();
 
-            } else if (conditionCtx.TO() != null) {
-                query.to(ConceptId.of(visitId(conditionCtx.id())));
+        if (ctx.input_count() != null) {
+            compute = compute.in(visitTypes(ctx.input_count().compute_scope().types()));
+        }
 
-            } else if (conditionCtx.OF() != null) {
-                query.of(visitLabels(conditionCtx.labels()));
+        return compute;
+    }
 
-            } else if (conditionCtx.IN() != null) {
-                query.in(visitLabels(conditionCtx.labels()));
+    @Override
+    public GraqlCompute.Statistics.Value visitCompute_value(GraqlParser.Compute_valueContext ctx) {
+        GraqlCompute.Statistics.Value compute;
+        GraqlCompute.Method method = GraqlCompute.Method.of(ctx.compute_method().getText());
 
-            } else if (conditionCtx.USING() != null) {
-                query.using(Token.Compute.Algorithm.of(conditionCtx.compute_algorithm().getText()));
+        if (method == null) {
+            throw new IllegalArgumentException("Unrecognised Graql Compute Statistics method: " + ctx.getText());
 
-            } else if (conditionCtx.WHERE() != null) {
-                query.where(visitCompute_args(conditionCtx.compute_args()));
+        } else if (method.equals(GraqlCompute.Method.MAX)) {
+            compute = Graql.compute().max();
+
+        } else if (method.equals(GraqlCompute.Method.MIN)) {
+            compute = Graql.compute().min();
+
+        } else if (method.equals(GraqlCompute.Method.MEAN)) {
+            compute = Graql.compute().mean();
+
+        } else if (method.equals(GraqlCompute.Method.MEDIAN)) {
+            compute = Graql.compute().median();
+
+        } else if (method.equals(GraqlCompute.Method.SUM)) {
+            compute = Graql.compute().sum();
+
+        } else if (method.equals(GraqlCompute.Method.STD)) {
+            compute = Graql.compute().sum();
+
+        } else {
+            throw new IllegalArgumentException("Unrecognised Graql Compute Statistics method: " + ctx.getText());
+        }
+
+        for (GraqlParser.Input_valueContext valueCtx : ctx.input_value()) {
+
+            if (valueCtx.compute_target() != null) {
+                compute = compute.of(visitTypes(valueCtx.compute_target().types()));
+
+            } else if (valueCtx.compute_scope() != null) {
+                compute = compute.in(visitTypes(valueCtx.compute_scope().types()));
 
             } else {
-                throw GraqlQueryException.invalidComputeQuery_invalidCondition(query.method());
+                throw GraqlQueryException.invalidComputeQuery_invalidCondition(method);
             }
         }
 
-        Optional<GraqlQueryException> exception = query.getException();
-        if (exception.isPresent()) throw exception.get();
+        return compute;
+    }
 
-        return query;
+    @Override
+    public GraqlCompute.Path visitCompute_path(GraqlParser.Compute_pathContext ctx) {
+        GraqlCompute.Path compute = Graql.compute().path();
+
+        for (GraqlParser.Input_pathContext pathCtx : ctx.input_path()) {
+
+            if (pathCtx.compute_direction() != null) {
+                ConceptId id = ConceptId.of(visitId(pathCtx.compute_direction().id()));
+
+                if (pathCtx.compute_direction().FROM() != null) {
+                    compute = compute.from(id);
+
+                } else if (pathCtx.compute_direction().TO() != null) {
+                    compute = compute.to(id);
+                }
+            } else if (pathCtx.compute_scope() != null) {
+                compute = compute.in(visitTypes(pathCtx.compute_scope().types()));
+
+            } else {
+                throw GraqlQueryException.invalidComputeQuery_invalidCondition(GraqlCompute.Method.PATH);
+            }
+        }
+
+        return compute;
+    }
+
+    @Override
+    public GraqlCompute.Centrality visitCompute_centrality(GraqlParser.Compute_centralityContext ctx) {
+        GraqlCompute.Centrality compute = Graql.compute().centrality();
+
+        for (GraqlParser.Input_centralityContext centralityCtx : ctx.input_centrality()) {
+
+            if (centralityCtx.compute_target() != null) {
+                compute = compute.of(visitTypes(centralityCtx.compute_target().types()));
+
+            } else if (centralityCtx.compute_scope() != null) {
+                compute = compute.in(visitTypes(centralityCtx.compute_scope().types()));
+
+            } else if (centralityCtx.compute_config() != null) {
+                compute = (GraqlCompute.Centrality) setComputeConfig(compute, centralityCtx.compute_config());
+
+            } else {
+                throw GraqlQueryException.invalidComputeQuery_invalidCondition(GraqlCompute.Method.CENTRALITY);
+            }
+        }
+
+        return compute;
+    }
+
+    @Override
+    public GraqlCompute.Cluster visitCompute_cluster(GraqlParser.Compute_clusterContext ctx) {
+        GraqlCompute.Cluster compute = Graql.compute().cluster();
+
+        for (GraqlParser.Input_clusterContext clusterCtx : ctx.input_cluster()) {
+
+            if (clusterCtx.compute_scope() != null) {
+                compute = compute.in(visitTypes(clusterCtx.compute_scope().types()));
+
+            } else if (clusterCtx.compute_config() != null) {
+                compute = (GraqlCompute.Cluster) setComputeConfig(compute, clusterCtx.compute_config());
+            } else {
+                throw GraqlQueryException.invalidComputeQuery_invalidCondition(GraqlCompute.Method.CLUSTER);
+            }
+        }
+
+        return compute;
+    }
+
+    private Computable.Configurable setComputeConfig(Computable.Configurable compute, GraqlParser.Compute_configContext ctx) {
+        if (ctx.USING() != null) {
+            compute = compute.using(Token.Compute.Algorithm.of(ctx.compute_algorithm().getText()));
+
+        } else if (ctx.WHERE() != null) {
+            compute = compute.where(visitCompute_args(ctx.compute_args()));
+        }
+
+        return compute;
     }
 
     @Override
@@ -719,16 +835,18 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public Set<String> visitLabels(GraqlParser.LabelsContext labels) {
+    public LinkedHashSet<String> visitTypes(GraqlParser.TypesContext ctx) {
         List<GraqlParser.LabelContext> labelsList = new ArrayList<>();
 
-        if (labels.label() != null) {
-            labelsList.add(labels.label());
-        } else if (labels.label_array() != null) {
-            labelsList.addAll(labels.label_array().label());
+        if (ctx.label() != null) {
+            labelsList.add(ctx.label());
+        } else if (ctx.label_array() != null) {
+            labelsList.addAll(ctx.label_array().label());
         }
 
-        return labelsList.stream().map(this::visitLabel).collect(toSet());
+        return labelsList.stream()
+                .map(this::visitLabel)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     @Override

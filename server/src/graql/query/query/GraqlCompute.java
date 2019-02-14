@@ -25,9 +25,9 @@ import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.query.query.builder.Computable;
 import graql.lang.util.Token;
 
 import javax.annotation.CheckReturnValue;
@@ -55,7 +55,8 @@ import static java.util.stream.Collectors.joining;
  *
  * @param <T> return type of ComputeQuery
  */
-public class GraqlCompute<T extends Answer> extends GraqlQuery {
+@SuppressWarnings("Duplicates") // TODO: remove before merging PR
+public class GraqlCompute<T extends Answer> extends GraqlQuery implements Computable {
 
     public final static Collection<Method> METHODS_ACCEPTED = ImmutableList.copyOf(Method.values());
 
@@ -72,15 +73,15 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
     public final static Map<Method, Boolean> INCLUDE_ATTRIBUTES_DEFAULT = includeAttributesDefault();
 
     private Method method;
-    private boolean includeAttributes;
+    boolean includeAttributes;
 
     // All these condition properties need to start off as NULL, they will be initialised when the user provides input
-    private ConceptId fromID = null;
-    private ConceptId toID = null;
-    private Set<String> ofTypes = null;
-    private Set<String> inTypes = null;
-    private Token.Compute.Algorithm algorithm = null;
-    private Arguments arguments = null; // But arguments will also be set when where() is called for cluster/centrality
+    ConceptId fromID = null;
+    ConceptId toID = null;
+    Set<String> ofTypes = null;
+    Set<String> inTypes = null;
+    Token.Compute.Algorithm algorithm = null;
+    Arguments arguments = null; // But arguments will also be set when where() is called for cluster/centrality
 
     private final Map<Token.Compute.Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
@@ -208,19 +209,9 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         return method;
     }
 
-    public final GraqlCompute<T> from(ConceptId fromID) {
-        this.fromID = fromID;
-        return this;
-    }
-
     @CheckReturnValue
     public final Optional<ConceptId> from() {
         return Optional.ofNullable(fromID);
-    }
-
-    public final GraqlCompute<T> to(ConceptId toID) {
-        this.toID = toID;
-        return this;
     }
 
     @CheckReturnValue
@@ -228,47 +219,15 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         return Optional.ofNullable(toID);
     }
 
-    public final GraqlCompute<T> of(String type, String... types) {
-        ArrayList<String> typeList = new ArrayList<>(types.length + 1);
-        typeList.add(type);
-        typeList.addAll(Arrays.asList(types));
-
-        return of(typeList);
-    }
-
-    public final GraqlCompute<T> of(Collection<String> types) {
-        this.ofTypes = ImmutableSet.copyOf(types);
-
-        return this;
-    }
-
     @CheckReturnValue
     public final Optional<Set<String>> of(){
         return Optional.ofNullable(ofTypes);
-    }
-
-    public final GraqlCompute<T> in(String type, String... types) {
-        ArrayList<String> typeList = new ArrayList<>(types.length + 1);
-        typeList.add(type);
-        typeList.addAll(Arrays.asList(types));
-
-        return in(typeList);
-    }
-
-    public final GraqlCompute<T> in(Collection<String> types) {
-        this.inTypes = ImmutableSet.copyOf(types);
-        return this;
     }
 
     @CheckReturnValue
     public final Optional<Set<String>> in() {
         if (this.inTypes == null) return Optional.of(ImmutableSet.of());
         return Optional.of(this.inTypes);
-    }
-
-    public final GraqlCompute<T> using(Token.Compute.Algorithm algorithm) {
-        this.algorithm = algorithm;
-        return this;
     }
 
     @CheckReturnValue
@@ -279,30 +238,10 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         return Optional.ofNullable(algorithm);
     }
 
-    public final GraqlCompute<T> where(Argument arg, Argument... args) {
-        ArrayList<Argument> argList = new ArrayList<>(args.length + 1);
-        argList.add(arg);
-        argList.addAll(Arrays.asList(args));
-
-        return this.where(argList);
-    }
-
-    public final GraqlCompute<T> where(Collection<Argument> args) {
-        if (this.arguments == null) this.arguments = new Arguments();
-        for (Argument arg : args) this.arguments.setArgument(arg);
-
-        return this;
-    }
-
     @CheckReturnValue
     public final Optional<Arguments> where() {
         if (ARGUMENTS_DEFAULT.containsKey(method) && arguments == null) arguments = new Arguments();
         return Optional.ofNullable(this.arguments);
-    }
-
-    public final GraqlCompute<T> includeAttributes(boolean include) {
-        this.includeAttributes = include;
-        return this;
     }
 
     @CheckReturnValue
@@ -364,7 +303,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
     private String conditionsSyntax() {
         List<String> conditionsList = new ArrayList<>();
 
-        // It is important that check for whether each condition is NULL, rather than using the getters.
+        // It is important that we check for whether each condition is NULL, rather than using the getters.
         // Because, we want to know the user provided conditions, rather than the default conditions from the getters.
         // The exception is for arguments. It needs to be set internally for the query object to have default argument
         // values. However, we can query for .getParameters() to get user provided argument parameters.
@@ -474,12 +413,214 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         return result;
     }
 
-//    public static class Statistics extends GraqlCompute<Value> {
-//
-//        public Statistics(Method<Value> method, boolean includeAttributes) {
-//            super(method, includeAttributes);
-//        }
-//    }
+    public static class Builder {
+
+        public GraqlCompute.Statistics.Count count() {
+            return new GraqlCompute.Statistics.Count();
+        }
+
+        public GraqlCompute.Statistics.Value max() {
+            return new GraqlCompute.Statistics.Value(Method.MAX);
+        }
+
+        public GraqlCompute.Statistics.Value min() {
+            return new GraqlCompute.Statistics.Value(Method.MIN);
+        }
+
+        public GraqlCompute.Statistics.Value mean() {
+            return new GraqlCompute.Statistics.Value(Method.MEAN);
+        }
+
+        public GraqlCompute.Statistics.Value median() {
+            return new GraqlCompute.Statistics.Value(Method.MEDIAN);
+        }
+
+        public GraqlCompute.Statistics.Value sum() {
+            return new GraqlCompute.Statistics.Value(Method.SUM);
+        }
+
+        public GraqlCompute.Statistics.Value std() {
+            return new GraqlCompute.Statistics.Value(Method.STD);
+        }
+
+        public GraqlCompute.Path path() {
+            return new GraqlCompute.Path();
+        }
+
+        public GraqlCompute.Centrality centrality() {
+            return new GraqlCompute.Centrality();
+        }
+
+        public GraqlCompute.Cluster cluster() {
+            return new GraqlCompute.Cluster();
+        }
+
+    }
+
+    public static abstract class Statistics extends GraqlCompute<grakn.core.graql.answer.Value> {
+
+        Statistics(Method<grakn.core.graql.answer.Value> method) {
+            super(method);
+        }
+
+        public static class Count extends GraqlCompute<grakn.core.graql.answer.Value>
+                implements Computable.Scopeable<GraqlCompute.Statistics.Count> {
+
+            Count() {
+                super(Method.COUNT);
+            }
+
+            @Override
+            public GraqlCompute.Statistics.Count in(Collection<String> types) {
+                this.inTypes = ImmutableSet.copyOf(types);
+                return this;
+            }
+
+            @Override
+            public GraqlCompute.Statistics.Count attributes(boolean include) {
+                this.includeAttributes = include;
+                return this;
+            }
+        }
+
+        public static class Value extends GraqlCompute<grakn.core.graql.answer.Value>
+                implements Computable.Targetable<Value>,
+                           Computable.Scopeable<Value> {
+
+            Value(Method<grakn.core.graql.answer.Value> method) {
+                super(method);
+            }
+
+            @Override
+            public GraqlCompute.Statistics.Value of(Collection<String> types) {
+                this.ofTypes = ImmutableSet.copyOf(types);
+                return this;
+            }
+
+            @Override
+            public GraqlCompute.Statistics.Value in(Collection<String> types) {
+                this.inTypes = ImmutableSet.copyOf(types);
+                return this;
+            }
+
+            @Override
+            public GraqlCompute.Statistics.Value attributes(boolean include) {
+                this.includeAttributes = include;
+                return this;
+            }
+        }
+    }
+
+    public static class Path extends GraqlCompute<ConceptList>
+            implements Computable.Directional<GraqlCompute.Path>,
+                       Computable.Scopeable<GraqlCompute.Path> {
+
+        Path(){
+            super(Method.PATH);
+        }
+
+        @Override
+        public GraqlCompute.Path from(ConceptId fromID) {
+            this.fromID = fromID;
+            return this;
+        }
+
+        @Override
+        public GraqlCompute.Path to(ConceptId toID) {
+            this.toID = toID;
+            return this;
+        }
+
+        @Override
+        public GraqlCompute.Path in(Collection<String> types) {
+            this.inTypes = ImmutableSet.copyOf(types);
+            return this;
+        }
+
+        @Override
+        public GraqlCompute.Path attributes(boolean include) {
+            this.includeAttributes = include;
+            return this;
+        }
+    }
+
+    public static class Centrality extends GraqlCompute<ConceptSetMeasure>
+            implements Computable.Targetable<GraqlCompute.Centrality>,
+                       Computable.Scopeable<GraqlCompute.Centrality>,
+                       Computable.Configurable<GraqlCompute.Centrality> {
+
+        Centrality(){
+            super(Method.CENTRALITY);
+        }
+
+        @Override
+        public GraqlCompute.Centrality of(Collection<String> types) {
+            this.ofTypes = ImmutableSet.copyOf(types);
+            return this;
+        }
+
+        @Override
+        public GraqlCompute.Centrality in(Collection<String> types) {
+            this.inTypes = ImmutableSet.copyOf(types);
+            return this;
+        }
+
+        @Override
+        public GraqlCompute.Centrality attributes(boolean include) {
+            this.includeAttributes = include;
+            return this;
+        }
+
+        @Override
+        public GraqlCompute.Centrality using(Token.Compute.Algorithm algorithm) {
+            this.algorithm = algorithm;
+            return this;
+        }
+
+        @Override
+        public GraqlCompute.Centrality where(List<Argument> args) {
+            if (this.arguments == null) this.arguments = new Arguments();
+            for (Argument arg : args) this.arguments.setArgument(arg);
+
+            return this;
+        }
+    }
+
+    public static class Cluster extends GraqlCompute<ConceptSet>
+            implements Computable.Scopeable<GraqlCompute.Cluster>,
+                       Computable.Configurable<GraqlCompute.Cluster> {
+
+        Cluster(){
+            super(Method.CLUSTER);
+        }
+
+        @Override
+        public GraqlCompute.Cluster in(Collection<String> types) {
+            this.inTypes = ImmutableSet.copyOf(types);
+            return this;
+        }
+
+        @Override
+        public GraqlCompute.Cluster attributes(boolean include) {
+            this.includeAttributes = include;
+            return this;
+        }
+
+        @Override
+        public GraqlCompute.Cluster using(Token.Compute.Algorithm algorithm) {
+            this.algorithm = algorithm;
+            return this;
+        }
+
+        @Override
+        public GraqlCompute.Cluster where(List<Argument> args) {
+            if (this.arguments == null) this.arguments = new Arguments();
+            for (Argument arg : args) this.arguments.setArgument(arg);
+
+            return this;
+        }
+    }
+
 
     /**
      * Graql compute method types to determine the type of calculation to execute
@@ -487,13 +628,13 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
      * @param <T> return type of ComputeQuery
      */
     public static class Method<T extends Answer> {
-        public final static Method<Value> COUNT = new Method<>("count");
-        public final static Method<Value> MIN = new Method<>("min");
-        public final static Method<Value> MAX = new Method<>("max");
-        public final static Method<Value> MEDIAN = new Method<>("median");
-        public final static Method<Value> MEAN = new Method<>("mean");
-        public final static Method<Value> STD = new Method<>("std");
-        public final static Method<Value> SUM = new Method<>("sum");
+        public final static Method<grakn.core.graql.answer.Value> COUNT = new Method<>("count");
+        public final static Method<grakn.core.graql.answer.Value> MIN = new Method<>("min");
+        public final static Method<grakn.core.graql.answer.Value> MAX = new Method<>("max");
+        public final static Method<grakn.core.graql.answer.Value> MEDIAN = new Method<>("median");
+        public final static Method<grakn.core.graql.answer.Value> MEAN = new Method<>("mean");
+        public final static Method<grakn.core.graql.answer.Value> STD = new Method<>("std");
+        public final static Method<grakn.core.graql.answer.Value> SUM = new Method<>("sum");
         public final static Method<ConceptList> PATH = new Method<>("path");
         public final static Method<ConceptSetMeasure> CENTRALITY = new Method<>("centrality");
         public final static Method<ConceptSet> CLUSTER = new Method<>("cluster");

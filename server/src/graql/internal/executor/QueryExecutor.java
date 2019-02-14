@@ -316,9 +316,7 @@ public class QueryExecutor {
     }
 
     public Stream<AnswerGroup<ConceptMap>> get(GraqlGet.Group query) {
-        return get(get(query.query()), query.var(),
-                     answers -> answers.collect(Collectors.toList())
-        ).stream();
+        return get(get(query.query()), query.var(), answers -> answers.collect(Collectors.toList())).stream();
     }
 
     public Stream<AnswerGroup<Value>> get(GraqlGet.Group.Aggregate query) {

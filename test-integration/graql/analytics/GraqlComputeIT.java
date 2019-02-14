@@ -122,7 +122,7 @@ public class GraqlComputeIT {
 
         // the null role-player caused analytics to fail at some stage
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute(CENTRALITY).using(DEGREE));
+            tx.execute(Graql.compute().centrality().using(DEGREE));
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();
@@ -134,7 +134,7 @@ public class GraqlComputeIT {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("rule")).getMessage());
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute(COUNT).in("rule", "thing"));
+            tx.execute(Graql.compute().count().in("rule", "thing"));
         }
     }
 
@@ -143,7 +143,7 @@ public class GraqlComputeIT {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("role")).getMessage());
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute(COUNT).in("role"));
+            tx.execute(Graql.compute().count().in("role"));
         }
     }
 
@@ -270,7 +270,7 @@ public class GraqlComputeIT {
             assertTrue(clusterList.isEmpty());
 
             GraqlCompute<?> parsed = Graql.parse("compute cluster using connected-component, where contains = V123;").asCompute();
-            GraqlCompute<?> expected = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(ConceptId.of("V123")));
+            GraqlCompute<?> expected = Graql.compute().cluster().using(CONNECTED_COMPONENT).where(contains(ConceptId.of("V123")));
             assertEquals(expected, parsed);
         }
     }

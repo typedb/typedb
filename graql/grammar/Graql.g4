@@ -40,11 +40,10 @@ query_undefine      :   UNDEFINE    statement_type+ ;
 query_insert        :   MATCH       pattern+    INSERT  statement_instance+
                     |                           INSERT  statement_instance+  ;
 
-query_delete        :   MATCH       pattern+    DELETE  variables   filters? ;  // GET QUERY followed by aggregate fn
-query_get           :   MATCH       pattern+    GET     variables   filters? ;  // GET QUERY followed by group fn, and
+query_delete        :   MATCH       pattern+    DELETE  variables   filters  ;  // GET QUERY followed by aggregate fn
+query_get           :   MATCH       pattern+    GET     variables   filters  ;  // GET QUERY followed by group fn, and
                                                                                 // optionally, an aggregate fn
-
-query_compute       :   COMPUTE     compute_method      compute_conditions? ';';// TODO: embbed ';' into subrule
+query_compute       :   COMPUTE     computable  ;
 
 // GET QUERY ANSWER GROUP AND AGGREGATE FUNCTIONS ==============================
 
@@ -81,23 +80,38 @@ function_group      :   GROUP   VAR_    ';' ;
 // COMPUTE QUERY ===============================================================
 //
 // A compute query is composed of 3 things:
-// The "compute" keyword followed by a method and optionally a set of conditions
+// The "compute" keyword followed by a method and optionally a set of input
 
-compute_method      :   COUNT                                                   // compute the number of concepts
-                    |   MIN         |   MAX         |   MEDIAN                  // compute statistics functions
-                    |   MEAN        |   STD         |   SUM
-                    |   PATH                                                    // compute the paths between concepts
-                    |   CENTRALITY                                              // compute density of connected concepts
-                    |   CLUSTER                                                 // compute detection of cluster
+computable          :   compute_count                                           // compute the number of concepts
+                    |   compute_value                                           // compute statistical values
+                    |   compute_centrality                                      // compute density of connected concepts
+                    |   compute_cluster                                         // compute density of connected concepts
+                    |   compute_path                                            // compute the paths between concepts
                     ;
-compute_conditions  :   compute_condition ( ',' compute_condition )* ;
-compute_condition   :   FROM    id                                              // an instance to start the compute from
-                    |   TO      id                                              // an instance to end the compute at
-                    |   OF      labels                                          // type(s) of instances to apply compute
-                    |   IN      labels                                          // type(s) to scope compute visibility
-                    |   USING   compute_algorithm                               // algorithm to determine how to compute
-                    |   WHERE   compute_args                                    // additional args for compute method
-                    ;
+
+compute_count       :   COUNT          input_count?                             ';';
+compute_value       :   compute_method input_value      (',' input_value     )* ';';
+compute_centrality  :   CENTRALITY     input_centrality (',' input_centrality)* ';';
+compute_cluster     :   CLUSTER        input_cluster    (',' input_cluster   )* ';';
+compute_path        :   PATH           input_path       (',' input_path      )* ';';
+
+compute_method      :   MIN         |   MAX         |   MEDIAN                  // statistical value methods
+                    |   MEAN        |   STD         |   SUM     ;
+
+input_count         :   compute_scope ;
+input_value         :   compute_scope | compute_target      ;
+input_centrality    :   compute_scope | compute_target      | compute_config ;
+input_cluster       :   compute_scope                       | compute_config ;
+input_path          :   compute_scope | compute_direction   ;
+
+
+compute_direction   :   FROM    id                                              // an instance to start the compute from
+                    |   TO      id                  ;                           // an instance to end the compute at
+compute_target      :   OF      types              ;                           // type(s) of instances to apply compute
+compute_scope       :   IN      types              ;                           // type(s) to scope compute visibility
+compute_config      :   USING   compute_algorithm                               // algorithm to determine how to compute
+                    |   WHERE   compute_args        ;                           // additional args for compute method
+
 compute_algorithm   :   DEGREE | K_CORE | CONNECTED_COMPONENT ;                 // algorithm to determine how to compute
 compute_args        :   compute_arg | compute_args_array ;                      // single argument or array of arguments
 compute_args_array  :   '[' compute_arg (',' compute_arg)* ']' ;                // an array of arguments
@@ -179,7 +193,7 @@ via                 :   VIA VAR_ ;                                              
 // TYPE, LABEL AND IDENTIFIER CONSTRUCTS =======================================
 
 type                :   label | VAR_ ;                                          // A type can be a label or variable
-labels              :   label | label_array ;
+types              :   label | label_array ;
 label_array         :   '[' label ( ',' label )* ']' ;
 label               :   identifier | ID_IMPLICIT_;
 

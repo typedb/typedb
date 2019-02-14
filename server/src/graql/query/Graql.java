@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.Answer;
 import grakn.core.graql.query.parser.Parser;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Disjunction;
@@ -47,8 +46,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static grakn.core.graql.query.query.GraqlCompute.Method;
 
 /**
  * Main class containing static methods for creating Graql queries.
@@ -156,8 +153,8 @@ public class Graql {
     }
 
     @CheckReturnValue
-    public static <T extends Answer> GraqlCompute<T> compute(Method<T> method) {
-        return new GraqlCompute<>(method);
+    public static GraqlCompute.Builder compute() {
+        return new GraqlCompute.Builder();
     }
 
     // Pattern Builder Methods

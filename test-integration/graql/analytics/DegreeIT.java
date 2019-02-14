@@ -117,7 +117,7 @@ public class DegreeIT {
 
         Set<List<ConceptSetMeasure>> result = list.parallelStream().map(i -> {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                return tx.execute(Graql.compute(CENTRALITY).using(DEGREE));
+                return tx.execute(Graql.compute().centrality().using(DEGREE));
             }
         }).collect(Collectors.toSet());
         assertEquals(1, result.size());
@@ -131,7 +131,7 @@ public class DegreeIT {
         ));
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            List<ConceptSetMeasure> degrees1 = tx.execute(Graql.compute(CENTRALITY).using(DEGREE).of("thingy"));
+            List<ConceptSetMeasure> degrees1 = tx.execute(Graql.compute().centrality().using(DEGREE).of("thingy"));
 
             assertEquals(2, degrees1.size());
 
@@ -148,17 +148,17 @@ public class DegreeIT {
                     }
             ));
 
-            List<ConceptSetMeasure> degrees2 = tx.execute(Graql.compute(CENTRALITY).using(DEGREE).of("thingy", "related"));
+            List<ConceptSetMeasure> degrees2 = tx.execute(Graql.compute().centrality().using(DEGREE).of("thingy", "related"));
             assertTrue(degrees1.containsAll(degrees2));
 
-            degrees2 = tx.execute(Graql.compute(CENTRALITY).using(DEGREE));
+            degrees2 = tx.execute(Graql.compute().centrality().using(DEGREE));
             assertTrue(degrees0.containsAll(degrees2));
 
             // compute degrees on subgraph
-            List<ConceptSetMeasure> degrees3 = tx.execute(Graql.compute(CENTRALITY).using(DEGREE).in("thingy", "related"));
+            List<ConceptSetMeasure> degrees3 = tx.execute(Graql.compute().centrality().using(DEGREE).in("thingy", "related"));
             assertTrue(degrees1.containsAll(degrees3));
 
-            degrees3 = tx.execute(Graql.compute(CENTRALITY).using(DEGREE).of("thingy").in("related"));
+            degrees3 = tx.execute(Graql.compute().centrality().using(DEGREE).of("thingy").in("related"));
             assertTrue(degrees1.containsAll(degrees3));
         }
     }
@@ -184,7 +184,7 @@ public class DegreeIT {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             // set subgraph, use animal instead of dog
             Set<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
-            List<ConceptSetMeasure> degrees = tx.execute(Graql.compute(CENTRALITY).using(DEGREE).in(ct));
+            List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE).in(ct));
             // check that dog has a degree to confirm sub has been inferred
             assertTrue(correctDegrees.containsAll(degrees));
         }
@@ -233,17 +233,17 @@ public class DegreeIT {
 
             // create a subgraph excluding attributes and their relationship
             HashSet<String> subGraphTypes = Sets.newHashSet("animal", "person", "mans-best-friend");
-            List<ConceptSetMeasure> degrees = tx.execute(Graql.compute(CENTRALITY).using(DEGREE)
+            List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE)
                     .in(subGraphTypes));
             assertTrue(subgraphReferenceDegrees.containsAll(degrees));
 
             // create a subgraph excluding one attribute type only
             HashSet<String> almostFullTypes = Sets.newHashSet("animal", "person", "mans-best-friend", "@has-name", "name");
-            degrees = tx.execute(Graql.compute(CENTRALITY).using(DEGREE).in(almostFullTypes));
+            degrees = tx.execute(Graql.compute().centrality().using(DEGREE).in(almostFullTypes));
             assertTrue(almostFullReferenceDegrees.containsAll(degrees));
 
             // full graph
-            degrees = tx.execute(Graql.compute(CENTRALITY).using(DEGREE));
+            degrees = tx.execute(Graql.compute().centrality().using(DEGREE));
             assertTrue(fullReferenceDegrees.containsAll(degrees));
         }
     }
@@ -270,7 +270,7 @@ public class DegreeIT {
         tx.commit();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            List<ConceptSetMeasure> degrees = tx.execute(Graql.compute(CENTRALITY).using(DEGREE));
+            List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE));
             assertTrue(referenceDegrees.containsAll(degrees));
         }
     }
@@ -309,7 +309,7 @@ public class DegreeIT {
         tx.commit();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            List<ConceptSetMeasure> degrees = tx.execute(Graql.compute(CENTRALITY).using(DEGREE));
+            List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE));
             assertTrue(referenceDegrees.containsAll(degrees));
         }
     }
@@ -344,7 +344,7 @@ public class DegreeIT {
         tx.commit();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            List<ConceptSetMeasure> degrees = tx.execute(Graql.compute(CENTRALITY).using(DEGREE));
+            List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE));
             assertTrue(referenceDegrees.containsAll(degrees));
         }
     }
@@ -376,7 +376,7 @@ public class DegreeIT {
         tx.commit();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            List<ConceptSetMeasure> degrees = tx.execute(Graql.compute(CENTRALITY).using(DEGREE));
+            List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE));
             assertTrue(referenceDegrees.containsAll(degrees));
         }
     }
