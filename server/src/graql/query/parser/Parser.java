@@ -341,15 +341,15 @@ public class Parser extends GraqlBaseVisitor {
     public GraqlCompute visitQuery_compute(GraqlParser.Query_computeContext ctx) {
 
         if (ctx.computable().compute_count() != null) {
-            return null;
+            return visitCompute_count(ctx.computable().compute_count());
         } else if (ctx.computable().compute_value() != null) {
-            return null;
+            return visitCompute_value(ctx.computable().compute_value());
         } else if (ctx.computable().compute_path() != null) {
-            return null;
+            return visitCompute_path(ctx.computable().compute_path());
         } else if (ctx.computable().compute_centrality() != null) {
-            return null;
+            return visitCompute_centrality(ctx.computable().compute_centrality());
         } else if (ctx.computable().compute_cluster() != null) {
-            return null;
+            return visitCompute_cluster(ctx.computable().compute_cluster());
         } else {
             throw new IllegalArgumentException("Unrecognised Graql Compute Query: " + ctx.getText());
         }
