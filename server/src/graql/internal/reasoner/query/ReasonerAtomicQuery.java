@@ -54,6 +54,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.typeUnifier;
+import static java.lang.System.exit;
 
 /**
  * Base reasoner atomic query. An atomic query is a query constrained to having at most one rule-resolvable atom
@@ -198,9 +199,14 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(ConceptMap sub){
         Atom atom = getAtom();
-        return atom.getSchemaConcept() == null?
-                atom.atomOptions(sub).stream().map(ReasonerAtomicQuery::new) :
-                Stream.of(this);
+        Set<ReasonerAtomicQuery> collect = atom.atomOptions(sub).stream().map(ReasonerAtomicQuery::new).collect(Collectors.toSet());
+        System.out.println("\nqueries:\n");
+        collect.forEach(q -> {
+            System.out.println(q);
+            System.out.println(q.getAtom().getApplicableRules().collect(Collectors.toSet()));
+        });
+        System.out.println("\n");
+        return collect.stream().map(q -> (ReasonerQueryImpl) q);
     }
 
     @Override
@@ -229,8 +235,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     private Stream<Pair<InferenceRule, Unifier>> getRuleStream() {
-        return RuleUtils
-                .stratifyRules(getAtom().getApplicableRules().collect(Collectors.toSet()))
+        Set<InferenceRule> rules = getAtom().getApplicableRules().collect(Collectors.toSet());
+        Set<InferenceRule> stratifiedRules = RuleUtils.stratifyRules(rules).collect(Collectors.toSet());
+        assert(rules.equals(stratifiedRules));
+
+        return stratifiedRules.stream()
                 .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)));
     }
 }
