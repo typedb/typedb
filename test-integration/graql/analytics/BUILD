@@ -46,7 +46,8 @@ java_test(
     test_class = "grakn.core.graql.analytics.CountIT",
     srcs = ["CountIT.java"],
     deps = [
-        "//server",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/rule:grakn-test-server",
     ],
     size = "large",

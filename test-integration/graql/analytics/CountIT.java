@@ -32,7 +32,6 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -68,8 +67,8 @@ public class CountIT {
 
         // assert the tx is empty
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            Assert.assertEquals(0, tx.execute(Graql.compute(COUNT)).get(0).number().intValue());
-            Assert.assertEquals(0, tx.execute(Graql.compute(COUNT).includeAttributes(true)).get(0).number().intValue());
+            assertEquals(0, tx.execute(Graql.compute(COUNT)).get(0).number().intValue());
+            assertEquals(0, tx.execute(Graql.compute(COUNT).includeAttributes(true)).get(0).number().intValue());
         }
 
         // add 2 instances
@@ -81,7 +80,7 @@ public class CountIT {
         }
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            Assert.assertEquals(2, tx.execute(Graql.compute(COUNT).in(nameThing)).get(0).number().intValue());
+            assertEquals(2, tx.execute(Graql.compute(COUNT).in(nameThing)).get(0).number().intValue());
         }
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
@@ -92,8 +91,8 @@ public class CountIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             // assert computer returns the correct count of instances
-            Assert.assertEquals(2, tx.execute(Graql.compute(COUNT).in(nameThing).includeAttributes(true)).get(0).number().intValue());
-            Assert.assertEquals(3, tx.execute(Graql.compute(COUNT)).get(0).number().intValue());
+            assertEquals(2, tx.execute(Graql.compute(COUNT).in(nameThing).includeAttributes(true)).get(0).number().intValue());
+            assertEquals(3, tx.execute(Graql.compute(COUNT)).get(0).number().intValue());
         }
     }
 
@@ -123,14 +122,14 @@ public class CountIT {
         result = list.parallelStream()
                 .map(i -> executeCount(session))
                 .collect(Collectors.toSet());
-        Assert.assertEquals(1, result.size());
-        Assert.assertEquals(3L, result.iterator().next().longValue());
+        assertEquals(1, result.size());
+        assertEquals(3L, result.iterator().next().longValue());
 
         result = list.parallelStream()
                 .map(i -> executeCount(session))
                 .collect(Collectors.toSet());
-        Assert.assertEquals(1, result.size());
-        Assert.assertEquals(3L, result.iterator().next().longValue());
+        assertEquals(1, result.size());
+        assertEquals(3L, result.iterator().next().longValue());
     }
 
     @Test

@@ -88,7 +88,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         this(method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
     }
 
-    public GraqlCompute(Method method, boolean includeAttributes) {
+    public GraqlCompute(Method<T> method, boolean includeAttributes) {
         this.method = method;
         this.includeAttributes = includeAttributes;
     }
@@ -103,7 +103,6 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
         required.put(Method.SUM, ImmutableSet.of(Token.Compute.Condition.OF));
         required.put(Method.PATH, ImmutableSet.of(Token.Compute.Condition.FROM, Token.Compute.Condition.TO));
         required.put(Method.CENTRALITY, ImmutableSet.of(Token.Compute.Condition.USING));
-        ;
         required.put(Method.CLUSTER, ImmutableSet.of(Token.Compute.Condition.USING));
 
         return ImmutableMap.copyOf(required);
@@ -111,7 +110,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
 
     private static Map<Method, Collection<Token.Compute.Condition>> conditionsOptional() {
         Map<Method, Collection<Token.Compute.Condition>> optional = new HashMap<>();
-        optional.put(Method.COUNT, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Method.COUNT, ImmutableSet.of(Token.Compute.Condition.OF, Token.Compute.Condition.IN));
         optional.put(Method.MIN, ImmutableSet.of(Token.Compute.Condition.IN));
         optional.put(Method.MAX, ImmutableSet.of(Token.Compute.Condition.IN));
         optional.put(Method.MEDIAN, ImmutableSet.of(Token.Compute.Condition.IN));
@@ -281,7 +280,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
     }
 
     public final GraqlCompute<T> where(Argument arg, Argument... args) {
-        ArrayList<Argument> argList = new ArrayList(args.length + 1);
+        ArrayList<Argument> argList = new ArrayList<>(args.length + 1);
         argList.add(arg);
         argList.addAll(Arrays.asList(args));
 
@@ -474,6 +473,13 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery {
 
         return result;
     }
+
+//    public static class Statistics extends GraqlCompute<Value> {
+//
+//        public Statistics(Method<Value> method, boolean includeAttributes) {
+//            super(method, includeAttributes);
+//        }
+//    }
 
     /**
      * Graql compute method types to determine the type of calculation to execute

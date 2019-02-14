@@ -82,13 +82,6 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(String.format(formatString, args));
     }
 
-    public static GraqlQueryException incorrectAggregateArgumentNumber(
-            String name, int minArgs, int maxArgs, Collection<Variable> args) {
-        String expectedArgs = (minArgs == maxArgs) ? Integer.toString(minArgs) : minArgs + "-" + maxArgs;
-        String message = ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage(name, expectedArgs, args.size());
-        return new GraqlQueryException(message);
-    }
-
     public static GraqlQueryException idNotFound(ConceptId id) {
         return new GraqlQueryException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
     }

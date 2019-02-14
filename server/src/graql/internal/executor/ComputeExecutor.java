@@ -63,9 +63,9 @@ import grakn.core.graql.internal.analytics.StatisticsMapReduce;
 import grakn.core.graql.internal.analytics.StdMapReduce;
 import grakn.core.graql.internal.analytics.SumMapReduce;
 import grakn.core.graql.internal.analytics.Utility;
-import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -88,9 +88,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
-import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
-import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
 import static grakn.core.graql.query.query.GraqlCompute.Method.CENTRALITY;
 import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;
 import static grakn.core.graql.query.query.GraqlCompute.Method.COUNT;
@@ -101,6 +98,9 @@ import static grakn.core.graql.query.query.GraqlCompute.Method.MIN;
 import static grakn.core.graql.query.query.GraqlCompute.Method.PATH;
 import static grakn.core.graql.query.query.GraqlCompute.Method.STD;
 import static grakn.core.graql.query.query.GraqlCompute.Method.SUM;
+import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
+import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
+import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -300,20 +300,20 @@ class ComputeExecutor<T extends Answer> {
             return Stream.of(new Value(0));
         }
 
-        Set<LabelId> typeLabelIds = convertLabelsToIds(scopeTypeLabels());
-        Map<Integer, Long> count;
+        Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels());
+        Set<LabelId> scopeTypeAndImpliedPlayersLabelIDs = convertLabelsToIds(scopeTypeLabelsImplicitPlayers());
+        scopeTypeAndImpliedPlayersLabelIDs.addAll(scopeTypeLabelIDs);
 
-        Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds();
-        rolePlayerLabelIds.addAll(typeLabelIds);
+        Map<Integer, Long> count;
 
         ComputerResult result = compute(
                 new CountVertexProgram(),
                 new CountMapReduceWithAttribute(),
-                rolePlayerLabelIds, false);
+                scopeTypeAndImpliedPlayersLabelIDs, false);
         count = result.memory().get(CountMapReduceWithAttribute.class.getName());
 
         long finalCount = count.keySet().stream()
-                .filter(id -> typeLabelIds.contains(LabelId.of(id)))
+                .filter(id -> scopeTypeLabelIDs.contains(LabelId.of(id)))
                 .mapToLong(count::get).sum();
         if (count.containsKey(GraknMapReduce.RESERVED_TYPE_LABEL_KEY)) {
             finalCount += count.get(GraknMapReduce.RESERVED_TYPE_LABEL_KEY);
@@ -622,15 +622,14 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a set of type label IDs
      */
-    private Set<LabelId> getRolePlayerLabelIds() {
+    private Set<Label> scopeTypeLabelsImplicitPlayers() {
         return scopeTypes()
                 .filter(Concept::isRelationshipType)
                 .map(Concept::asRelationshipType)
                 .filter(RelationType::isImplicit)
                 .flatMap(RelationType::roles)
                 .flatMap(Role::players)
-                .map(type -> tx.convertToId(type.label()))
-                .filter(LabelId::isValid)
+                .map(SchemaConcept::label)
                 .collect(toSet());
     }
 

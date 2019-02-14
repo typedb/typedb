@@ -40,7 +40,7 @@ public class AggregateExecutor {
         else throw new RuntimeException("Invalid attempt to compare non-Numbers in Max Aggregate function");
     }
 
-    public static List<Value> aggregate(Stream<ConceptMap> answers, Token.Statistics.Method method, Variable var) {
+    public static List<Value> aggregate(Stream<ConceptMap> answers, Token.Aggregate.Method method, Variable var) {
         switch (method) {
             case COUNT:
                 return count(answers);

@@ -295,7 +295,7 @@ public class Token {
         }
     }
 
-    public static class Statistics {
+    public static class Aggregate {
 
         public enum Method {
             COUNT("count"),

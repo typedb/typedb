@@ -307,7 +307,7 @@ public class Parser extends GraqlBaseVisitor {
         GraqlParser.Function_aggregateContext function = ctx.function_aggregate();
 
         return new GraqlGet.Aggregate(visitQuery_get(ctx.query_get()),
-                                      Token.Statistics.Method.of(function.function_method().getText()),
+                                      Token.Aggregate.Method.of(function.function_method().getText()),
                                       function.VAR_() != null ? getVar(function.VAR_()) : null);
     }
 
@@ -323,7 +323,7 @@ public class Parser extends GraqlBaseVisitor {
         GraqlParser.Function_aggregateContext function = ctx.function_aggregate();
 
         return new GraqlGet.Group.Aggregate(visitQuery_get(ctx.query_get()).group(var),
-                                            Token.Statistics.Method.of(function.function_method().getText()),
+                                            Token.Aggregate.Method.of(function.function_method().getText()),
                                             function.VAR_() != null ? getVar(function.VAR_()) : null);
     }
 
