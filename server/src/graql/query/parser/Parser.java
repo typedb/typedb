@@ -265,7 +265,7 @@ public class Parser extends GraqlBaseVisitor {
                 .stream().map(this::visitPattern)
                 .collect(Collectors.toCollection(LinkedHashSet::new)));
 
-        if (ctx.filters().getChildCount() > 0) {
+        if (ctx.filters().getChildCount() == 0) {
             return new GraqlGet(match, vars);
         } else {
             Triple<Filterable.Sorting, Long, Long> filters = visitFilters(ctx.filters());
