@@ -35,6 +35,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import graql.lang.exception.GraqlException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -88,7 +89,7 @@ public class PathIT {
         }
     }
 
-    @Test(expected = GraqlQueryException.class)
+    @Test(expected = GraqlException.class)
     public void testShortestPathExceptionIdNotFoundSubgraph() {
         addSchemaAndEntities();
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {

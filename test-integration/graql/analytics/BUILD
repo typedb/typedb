@@ -86,7 +86,8 @@ java_test(
     test_class = "grakn.core.graql.analytics.PathIT",
     srcs = ["PathIT.java"],
     deps = [
-        "//server",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
@@ -99,7 +100,8 @@ java_test(
     test_class = "grakn.core.graql.analytics.StatisticsIT",
     srcs = ["StatisticsIT.java"],
     deps = [
-        "//server",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],

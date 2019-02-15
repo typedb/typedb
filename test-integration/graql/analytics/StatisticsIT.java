@@ -32,10 +32,12 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.query.GraqlCompute;
+import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import graql.lang.exception.GraqlException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -92,20 +94,20 @@ public class StatisticsIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             // resources-type is not set
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().max().in(thing));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().min().in(thing));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().mean().in(thing));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().sum().in(thing));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().std().in(thing));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().median().in(thing));
+            assertExceptionThrown(tx, Graql.compute().max().in(thing));
+            assertExceptionThrown(tx, Graql.compute().min().in(thing));
+            assertExceptionThrown(tx, Graql.compute().mean().in(thing));
+            assertExceptionThrown(tx, Graql.compute().sum().in(thing));
+            assertExceptionThrown(tx, Graql.compute().std().in(thing));
+            assertExceptionThrown(tx, Graql.compute().median().in(thing));
 
             // if it's not a resource-type
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().max().of(thing));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().min().of(thing));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().mean().of(thing));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().sum().of(thing));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().std().of(thing));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().median().of(thing));
+            assertExceptionThrown(tx, Graql.compute().max().of(thing));
+            assertExceptionThrown(tx, Graql.compute().min().of(thing));
+            assertExceptionThrown(tx, Graql.compute().mean().of(thing));
+            assertExceptionThrown(tx, Graql.compute().sum().of(thing));
+            assertExceptionThrown(tx, Graql.compute().std().of(thing));
+            assertExceptionThrown(tx, Graql.compute().median().of(thing));
 
             // resource-type has no instance
             assertTrue(tx.execute(Graql.compute().max().of(resourceType7)).isEmpty());
@@ -124,29 +126,29 @@ public class StatisticsIT {
             assertTrue(tx.execute(Graql.compute().mean().of(resourceType3)).isEmpty());
 
             // resource-type has incorrect data type
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().max().of(resourceType4));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().min().of(resourceType4));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().mean().of(resourceType4));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().sum().of(resourceType4));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().std().of(resourceType4));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().median().of(resourceType4));
+            assertExceptionThrown(tx, Graql.compute().max().of(resourceType4));
+            assertExceptionThrown(tx, Graql.compute().min().of(resourceType4));
+            assertExceptionThrown(tx, Graql.compute().mean().of(resourceType4));
+            assertExceptionThrown(tx, Graql.compute().sum().of(resourceType4));
+            assertExceptionThrown(tx, Graql.compute().std().of(resourceType4));
+            assertExceptionThrown(tx, Graql.compute().median().of(resourceType4));
 
             // resource-types have different data types
             Set<String> resourceTypes = Sets.newHashSet(resourceType1, resourceType2);
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().max().of(resourceTypes));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().min().of(resourceTypes));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().mean().of(resourceTypes));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().sum().of(resourceTypes));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().std().of(resourceTypes));
-            assertGraqlQueryExceptionThrown(tx, Graql.compute().median().of(resourceTypes));
+            assertExceptionThrown(tx, Graql.compute().max().of(resourceTypes));
+            assertExceptionThrown(tx, Graql.compute().min().of(resourceTypes));
+            assertExceptionThrown(tx, Graql.compute().mean().of(resourceTypes));
+            assertExceptionThrown(tx, Graql.compute().sum().of(resourceTypes));
+            assertExceptionThrown(tx, Graql.compute().std().of(resourceTypes));
+            assertExceptionThrown(tx, Graql.compute().median().of(resourceTypes));
         }
     }
 
-    private void assertGraqlQueryExceptionThrown(Transaction tx, GraqlCompute query) {
+    private void assertExceptionThrown(Transaction tx, GraqlCompute query) {
         boolean exceptionThrown = false;
         try {
             tx.execute(query);
-        } catch (GraqlQueryException e) {
+        } catch (GraqlQueryException | GraqlException e) {
             exceptionThrown = true;
         }
         assertTrue(exceptionThrown);
