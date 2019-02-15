@@ -23,14 +23,14 @@ def antlr_dependencies():
     git_repository(
         name = "rules_antlr",
         remote = "https://github.com/graknlabs/rules_antlr",
-        commit = "a802065dc12736d1360946c4bc689c8c8fe0c25f"
+        commit = "3d1806329d7c61241781f7578240d1ff17f9e5d8"
     )
 
 def grpc_dependencies():
     git_repository(
         name = "com_github_grpc_grpc",
         remote = "https://github.com/graknlabs/grpc",
-        commit = "6accbdaccb906f59be846fe11450f662562beef9"
+        commit = "4a1528f6f20a8aa68bdbdc9a66286ec2394fc170"
     )
 
     git_repository(
