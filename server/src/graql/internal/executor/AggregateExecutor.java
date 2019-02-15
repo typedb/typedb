@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.executor;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.query.statement.Variable;
 import graql.lang.util.Token;
 
@@ -40,7 +40,7 @@ public class AggregateExecutor {
         else throw new RuntimeException("Invalid attempt to compare non-Numbers in Max Aggregate function");
     }
 
-    public static List<Value> aggregate(Stream<ConceptMap> answers, Token.Aggregate.Method method, Variable var) {
+    public static List<Numeric> aggregate(Stream<ConceptMap> answers, Token.Aggregate.Method method, Variable var) {
         switch (method) {
             case COUNT:
                 return count(answers);
@@ -59,19 +59,19 @@ public class AggregateExecutor {
         }
     }
 
-    static List<Value> count(Stream<ConceptMap> answers) {
-        return Collections.singletonList(new Value(answers.count()));
+    static List<Numeric> count(Stream<ConceptMap> answers) {
+        return Collections.singletonList(new Numeric(answers.count()));
     }
 
-    static List<Value> max(Stream<ConceptMap> answers, Variable var) {
+    static List<Numeric> max(Stream<ConceptMap> answers, Variable var) {
         PrimitiveNumberComparator comparator = new PrimitiveNumberComparator();
         Number number = answers.map(answer -> getValue(answer, var)).max(comparator).orElse(null);
 
         if (number == null) return Collections.emptyList();
-        else return Collections.singletonList( new Value(number));
+        else return Collections.singletonList( new Numeric(number));
     }
 
-    static List<Value> mean(Stream<ConceptMap> answers, Variable var) {
+    static List<Numeric> mean(Stream<ConceptMap> answers, Variable var) {
         double mean = answers
                 .mapToDouble(answer -> getValue(answer, var).doubleValue())
                 .average()
@@ -80,21 +80,21 @@ public class AggregateExecutor {
         if (Double.isNaN(mean)) {
             return Collections.emptyList();
         } else {
-            return Collections.singletonList(new Value(mean));
+            return Collections.singletonList(new Numeric(mean));
         }
     }
 
-    static List<Value> median(Stream<ConceptMap> answers, Variable var) {
+    static List<Numeric> median(Stream<ConceptMap> answers, Variable var) {
         MedianFinder medianFinder = new MedianFinder();
         answers.map(a -> getValue(a, var)).forEach(medianFinder::addNum);
 
         Number median = medianFinder.findMedian();
 
         if (median == null) return Collections.emptyList();
-        else return Collections.singletonList(new Value(median));
+        else return Collections.singletonList(new Numeric(median));
     }
 
-    static List<Value> min(Stream<ConceptMap> answers, Variable var) {
+    static List<Numeric> min(Stream<ConceptMap> answers, Variable var) {
         PrimitiveNumberComparator comparator = new PrimitiveNumberComparator();
         Number number = answers
                 .map(answer -> getValue(answer, var))
@@ -102,10 +102,10 @@ public class AggregateExecutor {
                 .orElse(null);
 
         if (number == null) return Collections.emptyList();
-        else return Collections.singletonList(new Value(number));
+        else return Collections.singletonList(new Numeric(number));
     }
 
-    static List<Value> std(Stream<ConceptMap> answers, Variable var) {
+    static List<Numeric> std(Stream<ConceptMap> answers, Variable var) {
         Stream<Double> numStream = answers.map(result -> result.get(var)
                 .<Number>asAttribute().value()
                 .doubleValue());
@@ -129,18 +129,18 @@ public class AggregateExecutor {
         if (n < 2) {
             return Collections.emptyList();
         } else {
-            return Collections.singletonList(new Value(sqrt(M2 / (double) (n - 1))));
+            return Collections.singletonList(new Numeric(sqrt(M2 / (double) (n - 1))));
         }
     }
 
-    static List<Value> sum(Stream<ConceptMap> answers, Variable var) {
+    static List<Numeric> sum(Stream<ConceptMap> answers, Variable var) {
         // initial value is set to null so that we can return null if there is no Answers to consume
         Number number = answers
                 .map(answer -> getValue(answer, var))
                 .reduce(null, AggregateExecutor::addNumbers);
 
         if (number == null) return Collections.emptyList();
-        else return Collections.singletonList(new Value(number));
+        else return Collections.singletonList(new Numeric(number));
     }
 
     private static Number addNumbers(Number x, Number y) {

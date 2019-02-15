@@ -21,10 +21,6 @@ package grakn.core.graql.query.query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.answer.Answer;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.query.query.builder.Computable;
 import graql.lang.exception.GraqlException;
@@ -51,10 +47,8 @@ import static java.util.stream.Collectors.joining;
 
 /**
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
- *
- * @param <T> return type of ComputeQuery
  */
-public class GraqlCompute<T extends Answer> extends GraqlQuery implements Computable {
+public abstract class GraqlCompute extends GraqlQuery implements Computable {
 
     public final static List<Token.Compute.Method> METHODS_ACCEPTED = ImmutableList.copyOf(Token.Compute.Method.values());
 
@@ -387,7 +381,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        GraqlCompute<?> that = (GraqlCompute<?>) o;
+        GraqlCompute that = (GraqlCompute) o;
 
         return (this.method().equals(that.method()) &&
                 this.from().equals(that.from()) &&
@@ -457,13 +451,29 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
 
     }
 
-    public static abstract class Statistics extends GraqlCompute<grakn.core.graql.answer.Value> {
+    public static abstract class Statistics extends GraqlCompute {
 
         Statistics(Token.Compute.Method method) {
             super(method);
         }
 
-        public static class Count extends GraqlCompute<grakn.core.graql.answer.Value>
+        public GraqlCompute.Statistics.Count asCount() {
+            if (this instanceof GraqlCompute.Statistics.Count) {
+                return (GraqlCompute.Statistics.Count) this;
+            } else {
+                throw GraqlException.create("This is not a GraqlCompute.Statistics.Count query");
+            }
+        }
+
+        public GraqlCompute.Statistics.Value asValue() {
+            if (this instanceof GraqlCompute.Statistics.Value) {
+                return (GraqlCompute.Statistics.Value) this;
+            } else {
+                throw GraqlException.create("This is not a GraqlCompute.Statistics.Value query");
+            }
+        }
+
+        public static class Count extends GraqlCompute.Statistics
                 implements Computable.Scopeable<GraqlCompute.Statistics.Count> {
 
             Count() {
@@ -483,7 +493,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
             }
         }
 
-        public static class Value extends GraqlCompute<grakn.core.graql.answer.Value>
+        public static class Value extends GraqlCompute.Statistics
                 implements Computable.Targetable<Value>,
                            Computable.Scopeable<Value> {
 
@@ -511,7 +521,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
         }
     }
 
-    public static class Path extends GraqlCompute<ConceptList>
+    public static class Path extends GraqlCompute
             implements Computable.Directional<GraqlCompute.Path>,
                        Computable.Scopeable<GraqlCompute.Path> {
 
@@ -544,7 +554,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
         }
     }
 
-    public static class Centrality extends GraqlCompute<ConceptSetMeasure>
+    public static class Centrality extends GraqlCompute
             implements Computable.Targetable<GraqlCompute.Centrality>,
                        Computable.Scopeable<GraqlCompute.Centrality>,
                        Computable.Configurable<GraqlCompute.Centrality> {
@@ -586,7 +596,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
         }
     }
 
-    public static class Cluster extends GraqlCompute<ConceptSet>
+    public static class Cluster extends GraqlCompute
             implements Computable.Scopeable<GraqlCompute.Cluster>,
                        Computable.Configurable<GraqlCompute.Cluster> {
 

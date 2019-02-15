@@ -18,7 +18,7 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Entity;
@@ -142,7 +142,7 @@ public class CountIT {
             tx.commit();
         }
 
-        Value count;
+        Numeric count;
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             count = tx.execute(Graql.compute().count()).get(0);
             assertEquals(1, count.number().intValue());
@@ -249,7 +249,7 @@ public class CountIT {
             tx.commit();
         }
 
-        Value count;
+        Numeric count;
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             count = tx.execute(Graql.compute().count()).get(0);
             assertEquals(1, count.number().intValue());

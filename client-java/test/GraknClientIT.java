@@ -32,7 +32,7 @@ import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.AttributeType.DataType;
@@ -725,7 +725,7 @@ public class GraknClientIT {
             assertEquals(10, tx.execute(Graql.compute().mean().of("age").in("human")).get(0).number().intValue());
 
 
-            List<Value> answer = tx.execute(Graql.compute().std().of("age").in("human"));
+            List<Numeric> answer = tx.execute(Graql.compute().std().of("age").in("human"));
             assertEquals(0, answer.get(0).number().intValue());
 
 
@@ -820,7 +820,7 @@ public class GraknClientIT {
                 });
             });
 
-            List<AnswerGroup<Value>> counts = tx.execute(
+            List<AnswerGroup<Numeric>> counts = tx.execute(
                     Graql.match(var("x").isa("person").has("name", var("y"))).get()
                     .group("y").count()
             );

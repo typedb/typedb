@@ -21,23 +21,23 @@ package grakn.core.graql.answer;
 /**
  * A type of {@link Answer} object that contains a {@link Number}.
  */
-public class Value implements Answer<Value>{
+public class Numeric implements Answer<Numeric>{
 
     private final Number number;
     private final Explanation explanation;
 
-    public Value(Number number) {
+    public Numeric(Number number) {
         this(number, null);
     }
 
-    public Value(Number number, Explanation explanation) {
+    public Numeric(Number number, Explanation explanation) {
         this.number = number;
         this.explanation = explanation;
     }
 
 
     @Override
-    public Value asValue() {
+    public Numeric asValue() {
         return this;
     }
 
@@ -54,7 +54,7 @@ public class Value implements Answer<Value>{
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        Value a2 = (Value) obj;
+        Numeric a2 = (Numeric) obj;
         return this.number.toString().equals(a2.number.toString());
     }
 

@@ -19,7 +19,7 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
@@ -32,7 +32,6 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.query.GraqlCompute;
-import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -156,7 +155,7 @@ public class StatisticsIT {
 
     @Test
     public void testMinAndMax() {
-        List<Value> result;
+        List<Numeric> result;
 
         // resource-type has no instance
         addSchemaAndEntities();
@@ -248,7 +247,7 @@ public class StatisticsIT {
 
     @Test
     public void testSum() {
-        List<Value> result;
+        List<Numeric> result;
 
         // resource-type has no instance
         addSchemaAndEntities();
@@ -305,7 +304,7 @@ public class StatisticsIT {
 
     @Test
     public void testMean() {
-        List<Value> result;
+        List<Numeric> result;
 
         // resource-type has no instance
         addSchemaAndEntities();
@@ -361,7 +360,7 @@ public class StatisticsIT {
 
     @Test
     public void testStd() {
-        List<Value> result;
+        List<Numeric> result;
 
         // resource-type has no instance
         addSchemaAndEntities();
@@ -431,7 +430,7 @@ public class StatisticsIT {
 
     @Test
     public void testMedian() {
-        List<Value> result;
+        List<Numeric> result;
 
         // resource-type has no instance
         addSchemaAndEntities();
@@ -538,7 +537,7 @@ public class StatisticsIT {
             tx.commit();
         }
 
-        Value result;
+        Numeric result;
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             // No need to test all statistics as most of them share the same vertex program

@@ -784,20 +784,20 @@ public class ParserTest {
 
     @Test
     public void testParseComputeClusterUsingCCWithSize() {
-        GraqlCompute<?> expected = Graql.compute().cluster().using(CONNECTED_COMPONENT).in("movie", "person").where(size(10));
-        GraqlCompute<?> parsed = Graql.parse(
-                "compute cluster in [movie, person], using connected-component, where [size = 10];").asCompute();
+        GraqlCompute expected = Graql.compute().cluster().using(CONNECTED_COMPONENT).in("movie", "person").where(size(10));
+        GraqlCompute parsed = Graql.parse(
+                "compute cluster in [movie, person], using connected-component, where [size = 10];").asComputeCluster();
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseComputeClusterUsingCCWithSizeTwice() {
-        GraqlCompute<?> expected =
+        GraqlCompute expected =
                 Graql.compute().cluster().using(CONNECTED_COMPONENT).in("movie", "person").where(size(10), size(15));
 
-        GraqlCompute<?> parsed = Graql.parse(
-                "compute cluster in [movie, person], using connected-component, where [size = 10, size = 15];").asCompute();
+        GraqlCompute parsed = Graql.parse(
+                "compute cluster in [movie, person], using connected-component, where [size = 10, size = 15];").asComputeCluster();
 
         assertEquals(expected, parsed);
     }
@@ -809,18 +809,18 @@ public class ParserTest {
 
     @Test
     public void testParseComputeClusterUsingKCoreWithK() {
-        GraqlCompute<?> expected = Graql.compute().cluster().using(K_CORE).in("movie", "person").where(k(10));
-        GraqlCompute<?> parsed = Graql.parse(
-                "compute cluster in [movie, person], using k-core, where k = 10;").asCompute();
+        GraqlCompute expected = Graql.compute().cluster().using(K_CORE).in("movie", "person").where(k(10));
+        GraqlCompute parsed = Graql.parse(
+                "compute cluster in [movie, person], using k-core, where k = 10;").asComputeCluster();
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseComputeClusterUsingKCoreWithKTwice() {
-        GraqlCompute<?> expected = Graql.compute().cluster().using(K_CORE).in("movie", "person").where(k(10));
-        GraqlCompute<?> parsed = Graql.parse(
-                "compute cluster in [movie, person], using k-core, where [k = 5, k = 10];").asCompute();
+        GraqlCompute expected = Graql.compute().cluster().using(K_CORE).in("movie", "person").where(k(10));
+        GraqlCompute parsed = Graql.parse(
+                "compute cluster in [movie, person], using k-core, where [k = 5, k = 10];").asComputeCluster();
 
         assertEquals(expected, parsed);
     }

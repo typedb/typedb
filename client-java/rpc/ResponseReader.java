@@ -28,7 +28,7 @@ import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.query.statement.Variable;
@@ -94,8 +94,8 @@ public class ResponseReader {
         );
     }
 
-    static Value value(AnswerProto.Value res) {
-        return new Value(number(res.getNumber()));
+    static Numeric value(AnswerProto.Value res) {
+        return new Numeric(number(res.getNumber()));
     }
 
     static Number number(AnswerProto.Number res) {
