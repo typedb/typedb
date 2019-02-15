@@ -288,13 +288,13 @@ public abstract class GraqlCompute extends GraqlQuery implements Computable {
         StringBuilder query = new StringBuilder();
 
         query.append(Token.Command.COMPUTE).append(Token.Char.SPACE).append(method);
-        if (!conditionsSyntax().isEmpty()) query.append(Token.Char.SPACE).append(conditionsSyntax());
+        if (!printConditions().isEmpty()) query.append(Token.Char.SPACE).append(printConditions());
         query.append(Token.Char.SEMICOLON);
 
         return query.toString();
     }
 
-    private String conditionsSyntax() {
+    private String printConditions() {
         List<String> conditionsList = new ArrayList<>();
 
         // It is important that we check for whether each condition is NULL, rather than using the getters.
@@ -303,27 +303,27 @@ public abstract class GraqlCompute extends GraqlQuery implements Computable {
         // values. However, we can query for .getParameters() to get user provided argument parameters.
         if (fromID != null) conditionsList.add(str(Token.Compute.Condition.FROM, Token.Char.SPACE, Token.Char.QUOTE, fromID, Token.Char.QUOTE));
         if (toID != null) conditionsList.add(str(Token.Compute.Condition.TO, Token.Char.SPACE, Token.Char.QUOTE, toID, Token.Char.QUOTE));
-        if (ofTypes != null) conditionsList.add(ofSyntax());
-        if (inTypes != null) conditionsList.add(inSyntax());
-        if (algorithm != null) conditionsList.add(algorithmSyntax());
-        if (arguments != null && !arguments.getParameters().isEmpty()) conditionsList.add(argumentsSyntax());
+        if (ofTypes != null) conditionsList.add(printOf());
+        if (inTypes != null) conditionsList.add(printIn());
+        if (algorithm != null) conditionsList.add(printAlgorithm());
+        if (arguments != null && !arguments.getParameters().isEmpty()) conditionsList.add(printArguments());
 
         return conditionsList.stream().collect(joining(Token.Char.COMMA_SPACE.toString()));
     }
 
-    private String ofSyntax() {
-        if (ofTypes != null) return str(Token.Compute.Condition.OF, Token.Char.SPACE, typesSyntax(ofTypes));
+    private String printOf() {
+        if (ofTypes != null) return str(Token.Compute.Condition.OF, Token.Char.SPACE, printTypes(ofTypes));
 
         return "";
     }
 
-    private String inSyntax() {
-        if (inTypes != null) return str(Token.Compute.Condition.IN, Token.Char.SPACE, typesSyntax(inTypes));
+    private String printIn() {
+        if (inTypes != null) return str(Token.Compute.Condition.IN, Token.Char.SPACE, printTypes(inTypes));
 
         return "";
     }
 
-    private String typesSyntax(Set<String> types) {
+    private String printTypes(Set<String> types) {
         StringBuilder inTypesString = new StringBuilder();
 
         if (!types.isEmpty()) {
@@ -341,13 +341,13 @@ public abstract class GraqlCompute extends GraqlQuery implements Computable {
         return inTypesString.toString();
     }
 
-    private String algorithmSyntax() {
+    private String printAlgorithm() {
         if (algorithm != null) return str(Token.Compute.Condition.USING, Token.Char.SPACE, algorithm);
 
         return "";
     }
 
-    private String argumentsSyntax() {
+    private String printArguments() {
         if (arguments == null) return "";
 
         List<String> argumentsList = new ArrayList<>();

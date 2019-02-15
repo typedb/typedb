@@ -340,23 +340,23 @@ public class Parser extends GraqlBaseVisitor {
     @Override
     public GraqlCompute visitQuery_compute(GraqlParser.Query_computeContext ctx) {
 
-        if (ctx.computable().compute_count() != null) {
-            return visitCompute_count(ctx.computable().compute_count());
-        } else if (ctx.computable().compute_value() != null) {
-            return visitCompute_value(ctx.computable().compute_value());
-        } else if (ctx.computable().compute_path() != null) {
-            return visitCompute_path(ctx.computable().compute_path());
-        } else if (ctx.computable().compute_centrality() != null) {
-            return visitCompute_centrality(ctx.computable().compute_centrality());
-        } else if (ctx.computable().compute_cluster() != null) {
-            return visitCompute_cluster(ctx.computable().compute_cluster());
+        if (ctx.compute_conditions().conditions_count() != null) {
+            return visitConditions_count(ctx.compute_conditions().conditions_count());
+        } else if (ctx.compute_conditions().conditions_value() != null) {
+            return visitConditions_value(ctx.compute_conditions().conditions_value());
+        } else if (ctx.compute_conditions().conditions_path() != null) {
+            return visitConditions_path(ctx.compute_conditions().conditions_path());
+        } else if (ctx.compute_conditions().conditions_central() != null) {
+            return visitConditions_central(ctx.compute_conditions().conditions_central());
+        } else if (ctx.compute_conditions().conditions_cluster() != null) {
+            return visitConditions_cluster(ctx.compute_conditions().conditions_cluster());
         } else {
             throw new IllegalArgumentException("Unrecognised Graql Compute Query: " + ctx.getText());
         }
     }
 
     @Override
-    public GraqlCompute.Statistics.Count visitCompute_count(GraqlParser.Compute_countContext ctx) {
+    public GraqlCompute.Statistics.Count visitConditions_count(GraqlParser.Conditions_countContext ctx) {
         GraqlCompute.Statistics.Count compute = Graql.compute().count();
 
         if (ctx.input_count() != null) {
@@ -367,7 +367,7 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public GraqlCompute.Statistics.Value visitCompute_value(GraqlParser.Compute_valueContext ctx) {
+    public GraqlCompute.Statistics.Value visitConditions_value(GraqlParser.Conditions_valueContext ctx) {
         GraqlCompute.Statistics.Value compute;
         Token.Compute.Method method = Token.Compute.Method.of(ctx.compute_method().getText());
 
@@ -413,7 +413,7 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public GraqlCompute.Path visitCompute_path(GraqlParser.Compute_pathContext ctx) {
+    public GraqlCompute.Path visitConditions_path(GraqlParser.Conditions_pathContext ctx) {
         GraqlCompute.Path compute = Graql.compute().path();
 
         for (GraqlParser.Input_pathContext pathCtx : ctx.input_path()) {
@@ -439,10 +439,10 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public GraqlCompute.Centrality visitCompute_centrality(GraqlParser.Compute_centralityContext ctx) {
+    public GraqlCompute.Centrality visitConditions_central(GraqlParser.Conditions_centralContext ctx) {
         GraqlCompute.Centrality compute = Graql.compute().centrality();
 
-        for (GraqlParser.Input_centralityContext centralityCtx : ctx.input_centrality()) {
+        for (GraqlParser.Input_centralContext centralityCtx : ctx.input_central()) {
 
             if (centralityCtx.compute_target() != null) {
                 compute = compute.of(visitTypes(centralityCtx.compute_target().types()));
@@ -462,7 +462,7 @@ public class Parser extends GraqlBaseVisitor {
     }
 
     @Override
-    public GraqlCompute.Cluster visitCompute_cluster(GraqlParser.Compute_clusterContext ctx) {
+    public GraqlCompute.Cluster visitConditions_cluster(GraqlParser.Conditions_clusterContext ctx) {
         GraqlCompute.Cluster compute = Graql.compute().cluster();
 
         for (GraqlParser.Input_clusterContext clusterCtx : ctx.input_cluster()) {

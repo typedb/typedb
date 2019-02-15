@@ -43,7 +43,7 @@ query_insert        :   MATCH       pattern+    INSERT  statement_instance+
 query_delete        :   MATCH       pattern+    DELETE  variables   filters  ;  // GET QUERY followed by aggregate fn
 query_get           :   MATCH       pattern+    GET     variables   filters  ;  // GET QUERY followed by group fn, and
                                                                                 // optionally, an aggregate fn
-query_compute       :   COMPUTE     computable  ;
+query_compute       :   COMPUTE     compute_conditions  ;
 
 // GET QUERY ANSWER GROUP AND AGGREGATE FUNCTIONS ==============================
 
@@ -165,25 +165,24 @@ containable         :   STRING_ | VAR_  ;
 // A compute query is composed of 3 things:
 // The "compute" keyword followed by a method and optionally a set of input
 
-computable          :   compute_count                                           // compute the number of concepts
-                    |   compute_value                                           // compute statistical values
-                    |   compute_centrality                                      // compute density of connected concepts
-                    |   compute_cluster                                         // compute density of connected concepts
-                    |   compute_path                                            // compute the paths between concepts
+compute_conditions  :   conditions_count                                        // compute the number of concepts
+                    |   conditions_value                                        // compute statistical values
+                    |   conditions_central                                      // compute density of connected concepts
+                    |   conditions_cluster                                      // compute density of connected concepts
+                    |   conditions_path                                         // compute the paths between concepts
                     ;
-
-compute_count       :   COUNT          input_count?                             ';';
-compute_value       :   compute_method input_value      (',' input_value     )* ';';
-compute_centrality  :   CENTRALITY     input_centrality (',' input_centrality)* ';';
-compute_cluster     :   CLUSTER        input_cluster    (',' input_cluster   )* ';';
-compute_path        :   PATH           input_path       (',' input_path      )* ';';
-
 compute_method      :   MIN         |   MAX         |   MEDIAN                  // statistical value methods
-                    |   MEAN        |   STD         |   SUM     ;
+                    |   MEAN        |   STD         |   SUM
+                    ;
+conditions_count    :   COUNT          input_count?                             ';';
+conditions_value    :   compute_method input_value      (',' input_value     )* ';';
+conditions_central  :   CENTRALITY     input_central (',' input_central)* ';';
+conditions_cluster  :   CLUSTER        input_cluster    (',' input_cluster   )* ';';
+conditions_path     :   PATH           input_path       (',' input_path      )* ';';
 
 input_count         :   compute_scope ;
 input_value         :   compute_scope | compute_target      ;
-input_centrality    :   compute_scope | compute_target      | compute_config ;
+input_central       :   compute_scope | compute_target      | compute_config ;
 input_cluster       :   compute_scope                       | compute_config ;
 input_path          :   compute_scope | compute_direction   ;
 
