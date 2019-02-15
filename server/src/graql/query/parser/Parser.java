@@ -70,6 +70,7 @@ import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.not;
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.query.GraqlCompute.CONDITIONS_ACCEPTED;
+import static graql.lang.util.Collections.triple;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -291,7 +292,7 @@ public class Parser extends GraqlBaseVisitor {
             limit = getInteger(ctx.limit().INTEGER_());
         }
 
-        return new Triple<>(order, offset, limit);
+        return triple(order, offset, limit);
     }
 
     /**
