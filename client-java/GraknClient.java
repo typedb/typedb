@@ -44,6 +44,7 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
@@ -51,7 +52,6 @@ import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.query.GraqlUndefine;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
@@ -124,21 +124,28 @@ public final class GraknClient {
     public class Session implements grakn.core.server.Session {
 
         private final String keyspace;
+        private final SessionServiceGrpc.SessionServiceBlockingStub sessionStub;
+        private final String sessionId;
 
         private Session(String keyspace) {
             if (!Validator.isValidKeyspaceName(keyspace)) {
                 throw GraknClientException.invalidKeyspaceName(keyspace);
             }
             this.keyspace = keyspace;
+            sessionStub = SessionServiceGrpc.newBlockingStub(channel);
+            SessionProto.OpenSessionReq request = SessionProto.OpenSessionReq.newBuilder().setKeyspace(keyspace).build();
+            SessionProto.OpenSessionRes response = sessionStub.open(request);
+            sessionId = response.getSessionId();
         }
 
         @Override
         public Transaction transaction(grakn.core.server.Transaction.Type type) {
-            return new Transaction(this, type);
+            return new Transaction(this, sessionId, type);
         }
 
         @Override
         public void close() throws TransactionException {
+            sessionStub.close(SessionProto.CloseSessionReq.newBuilder().setSessionId(sessionId).build());
             channel.shutdown();
         }
 
@@ -178,11 +185,11 @@ public final class GraknClient {
         private final Type type;
         private final Transceiver transceiver;
 
-        private Transaction(Session session, Type type) {
+        private Transaction(Session session, String sessionId, Type type) {
             this.session = session;
             this.type = type;
             this.transceiver = Transceiver.create(SessionServiceGrpc.newStub(channel));
-            transceiver.send(RequestBuilder.Transaction.open(session.keyspace(), type));
+            transceiver.send(RequestBuilder.Transaction.open(sessionId, type));
             responseOrThrow();
         }
 

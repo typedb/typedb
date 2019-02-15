@@ -468,7 +468,6 @@ public class GraknConsoleIT {
             GraknConsole console = new GraknConsole(args, printOut, printErr);
             console.run();
         } catch (Exception e) {
-            System.out.println("We failed. Here's the stacktrace:");
             printErr.println(e.getMessage());
             printErr.flush();
         } finally {

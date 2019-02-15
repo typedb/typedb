@@ -99,7 +99,7 @@ public class ConsoleSession implements AutoCloseable {
         consoleReader.println("...");
         consoleReader.flush();
 
-        tx = client.session(keyspace).transaction(GraknClient.Transaction.Type.WRITE);
+        tx = session.transaction(GraknClient.Transaction.Type.WRITE);
 
         try {
             String queries = readFile(filePath);
@@ -118,7 +118,7 @@ public class ConsoleSession implements AutoCloseable {
         consoleReader.setExpandEvents(false); // Disable JLine feature when seeing a '!'
         consoleReader.print(COPYRIGHT);
 
-        tx = client.session(keyspace).transaction(GraknClient.Transaction.Type.WRITE);
+        tx = session.transaction(GraknClient.Transaction.Type.WRITE);
         String queryString;
 
         while ((queryString = consoleReader.readLine()) != null) {

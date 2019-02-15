@@ -63,7 +63,7 @@ public class ServerFactory {
         // http services: gRPC server
         io.grpc.Server serverRPC = createServerRPC(config, sessionStore, attributeDeduplicatorDaemon, keyspaceStore, benchmark);
 
-        return createServer(serverID, config, serverRPC, lockManager, attributeDeduplicatorDaemon, keyspaceStore);
+        return createServer(serverID, serverRPC, lockManager, attributeDeduplicatorDaemon, keyspaceStore);
     }
 
     /**
@@ -72,10 +72,10 @@ public class ServerFactory {
      */
 
     public static Server createServer(
-            ServerID serverID, Config config, io.grpc.Server rpcServer,
+            ServerID serverID, io.grpc.Server rpcServer,
             LockManager lockManager, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
 
-        Server server = new Server(serverID, config, lockManager, rpcServer, attributeDeduplicatorDaemon, keyspaceStore);
+        Server server = new Server(serverID, lockManager, rpcServer, attributeDeduplicatorDaemon, keyspaceStore);
 
         Thread thread = new Thread(server::close, "grakn-server-shutdown");
         Runtime.getRuntime().addShutdownHook(thread);

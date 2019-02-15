@@ -115,7 +115,6 @@ public class GraknTestServer extends ExternalResource {
     @Override
     protected void after() {
         try {
-            sessionStore.closeSessions();
             keyspaceStore.closeStore();
             graknServer.close();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
@@ -211,7 +210,7 @@ public class GraknTestServer extends ExternalResource {
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
 
-        return ServerFactory.createServer(id, serverConfig, serverRPC,
+        return ServerFactory.createServer(id, serverRPC,
                                           lockManager, attributeDeduplicatorDaemon, keyspaceStore);
     }
 

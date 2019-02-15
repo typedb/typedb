@@ -41,15 +41,13 @@ public class Server implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
     private final ServerID serverID;
-    private final Config config;
     private final LockManager lockManager;
     private final io.grpc.Server serverRPC;
     private final AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
 
     private final KeyspaceManager keyspaceStore;
 
-    public Server(ServerID serverID, Config config, LockManager lockManager, io.grpc.Server serverRPC, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
-        this.config = config;
+    public Server(ServerID serverID, LockManager lockManager, io.grpc.Server serverRPC, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
         // Redis connection pool
         // Lock provider
         this.lockManager = lockManager;
