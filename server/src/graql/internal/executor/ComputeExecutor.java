@@ -66,7 +66,6 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.server.session.TransactionOLTP;
-import graql.lang.exception.GraqlException;
 import graql.lang.util.Token;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -89,8 +88,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.query.GraqlCompute.ALGORITHMS_ACCEPTED;
-import static grakn.core.graql.query.query.GraqlCompute.METHODS_ACCEPTED;
 import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
 import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
@@ -126,7 +123,7 @@ class ComputeExecutor {
         } else if (method.equals(COUNT)) {
             return runComputeCount(query.asCount());
         } else {
-            throw GraqlException.invalidComputeQuery_invalidMethod(METHODS_ACCEPTED);
+            throw new UnsupportedOperationException("Unsupported Graql Compute Statistics: " + query);
         }
     }
 
@@ -373,8 +370,7 @@ class ComputeExecutor {
         if (query.using().get().equals(DEGREE)) return runComputeDegree(query);
         if (query.using().get().equals(K_CORE)) return runComputeCoreness(query);
 
-        Token.Compute.Method method = query.method();
-        throw GraqlException.invalidComputeQuery_invalidMethodAlgorithm(method, ALGORITHMS_ACCEPTED.get(method));
+        throw new IllegalArgumentException("Unrecognised Graql Compute Centrality algorithm: " + query.method());
     }
 
     /**
@@ -475,8 +471,7 @@ class ComputeExecutor {
         if (query.using().get().equals(K_CORE)) return runComputeKCore(query);
         if (query.using().get().equals(CONNECTED_COMPONENT)) return runComputeConnectedComponent(query);
 
-        Token.Compute.Method method = query.method();
-        throw GraqlException.invalidComputeQuery_invalidMethodAlgorithm(method, ALGORITHMS_ACCEPTED.get(method));
+        throw new IllegalArgumentException("Unrecognised Graql Compute Cluster algorithm: " + query.method());
     }
 
 

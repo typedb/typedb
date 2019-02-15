@@ -69,7 +69,6 @@ import java.util.stream.Stream;
 import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.not;
 import static grakn.core.graql.query.Graql.type;
-import static grakn.core.graql.query.query.GraqlCompute.CONDITIONS_ACCEPTED;
 import static graql.lang.util.Collections.triple;
 import static java.util.stream.Collectors.toList;
 
@@ -406,7 +405,7 @@ public class Parser extends GraqlBaseVisitor {
                 compute = compute.in(visitTypes(valueCtx.compute_scope().types()));
 
             } else {
-                throw GraqlException.invalidComputeQuery_invalidCondition(method, CONDITIONS_ACCEPTED.get(method));
+                throw new IllegalArgumentException("Unrecognised Graql Compute Statistics condition: " + ctx.getText());
             }
         }
 
@@ -432,7 +431,7 @@ public class Parser extends GraqlBaseVisitor {
                 compute = compute.in(visitTypes(pathCtx.compute_scope().types()));
 
             } else {
-                throw GraqlException.invalidComputeQuery_invalidCondition(Token.Compute.Method.PATH, CONDITIONS_ACCEPTED.get(Token.Compute.Method.PATH));
+                throw new IllegalArgumentException("Unrecognised Graql Compute Path condition: " + ctx.getText());
             }
         }
 
@@ -455,7 +454,7 @@ public class Parser extends GraqlBaseVisitor {
                 compute = (GraqlCompute.Centrality) setComputeConfig(compute, centralityCtx.compute_config());
 
             } else {
-                throw GraqlException.invalidComputeQuery_invalidCondition(Token.Compute.Method.CENTRALITY, CONDITIONS_ACCEPTED.get(Token.Compute.Method.CENTRALITY));
+                throw new IllegalArgumentException("Unrecognised Graql Compute Centrality condition: " + ctx.getText());
             }
         }
 
@@ -474,7 +473,7 @@ public class Parser extends GraqlBaseVisitor {
             } else if (clusterCtx.compute_config() != null) {
                 compute = (GraqlCompute.Cluster) setComputeConfig(compute, clusterCtx.compute_config());
             } else {
-                throw GraqlException.invalidComputeQuery_invalidCondition(Token.Compute.Method.CLUSTER, CONDITIONS_ACCEPTED.get(Token.Compute.Method.CLUSTER));
+                throw new IllegalArgumentException("Unrecognised Graql Compute Cluster condition: " + ctx.getText());
             }
         }
 
