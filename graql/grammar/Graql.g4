@@ -61,6 +61,7 @@ sort                :   SORT        VAR_        ORDER_? ';' ;
 offset              :   OFFSET      INTEGER_            ';' ;
 limit               :   LIMIT       INTEGER_            ';' ;
 
+
 // GET AGGREGATE QUERY =========================================================
 //
 // An aggregate function is composed of 2 things:
@@ -77,50 +78,6 @@ function_method     :   COUNT   |   MAX     |   MEAN    |   MEDIAN              
 
 function_group      :   GROUP   VAR_    ';' ;
 
-// COMPUTE QUERY ===============================================================
-//
-// A compute query is composed of 3 things:
-// The "compute" keyword followed by a method and optionally a set of input
-
-computable          :   compute_count                                           // compute the number of concepts
-                    |   compute_value                                           // compute statistical values
-                    |   compute_centrality                                      // compute density of connected concepts
-                    |   compute_cluster                                         // compute density of connected concepts
-                    |   compute_path                                            // compute the paths between concepts
-                    ;
-
-compute_count       :   COUNT          input_count?                             ';';
-compute_value       :   compute_method input_value      (',' input_value     )* ';';
-compute_centrality  :   CENTRALITY     input_centrality (',' input_centrality)* ';';
-compute_cluster     :   CLUSTER        input_cluster    (',' input_cluster   )* ';';
-compute_path        :   PATH           input_path       (',' input_path      )* ';';
-
-compute_method      :   MIN         |   MAX         |   MEDIAN                  // statistical value methods
-                    |   MEAN        |   STD         |   SUM     ;
-
-input_count         :   compute_scope ;
-input_value         :   compute_scope | compute_target      ;
-input_centrality    :   compute_scope | compute_target      | compute_config ;
-input_cluster       :   compute_scope                       | compute_config ;
-input_path          :   compute_scope | compute_direction   ;
-
-
-compute_direction   :   FROM    id                                              // an instance to start the compute from
-                    |   TO      id                  ;                           // an instance to end the compute at
-compute_target      :   OF      types              ;                           // type(s) of instances to apply compute
-compute_scope       :   IN      types              ;                           // type(s) to scope compute visibility
-compute_config      :   USING   compute_algorithm                               // algorithm to determine how to compute
-                    |   WHERE   compute_args        ;                           // additional args for compute method
-
-compute_algorithm   :   DEGREE | K_CORE | CONNECTED_COMPONENT ;                 // algorithm to determine how to compute
-compute_args        :   compute_arg | compute_args_array ;                      // single argument or array of arguments
-compute_args_array  :   '[' compute_arg (',' compute_arg)* ']' ;                // an array of arguments
-compute_arg         :   MIN_K     '=' INTEGER_                                  // a single argument for min-k=INTEGER
-                    |   K         '=' INTEGER_                                  // a single argument for k=INTEGER
-                    |   SIZE      '=' INTEGER_                                  // a single argument for size=INTEGER
-                    |   CONTAINS  '=' id                                        // a single argument for contains=ID
-                    ;
-
 // QUERY PATTERNS ==============================================================
 
 patterns            :   pattern+ ;
@@ -129,7 +86,6 @@ pattern             :   pattern_statement
                     |   pattern_disjunction
                     |   pattern_negation
                     ;
-
 pattern_conjunction :   '{' patterns '}' ';' ;
 pattern_disjunction :   '{' patterns '}'  ( OR '{' patterns '}' )+  ';' ;
 pattern_negation    :   NOT '{' patterns '}' ';' ;
@@ -137,8 +93,7 @@ pattern_negation    :   NOT '{' patterns '}' ';' ;
 // PATTERN STATEMENTS ==========================================================
 
 pattern_statement   :   statement_type
-                    |   statement_instance
-                    ;
+                    |   statement_instance  ;
 
 // TYPE STATEMENTS =============================================================
 
@@ -176,11 +131,6 @@ statement_attribute :   VAR_? operation     ISA_ type   ( ',' attributes )? ';'
                     |   VAR_? operation                                     ';'
                     ;
 
-// ATTRIBUTE CONSTRUCT =========================================================
-
-attributes          :   attribute ( ',' attribute )* ;
-attribute           :   HAS label ( VAR_ | operation ) via? ;                   // Attribute ownership by variable or a
-                                                                                // predicate, and the "via" Relation
 // RELATION CONSTRUCT ==========================================================
 
 relation            :   '(' role_player ( ',' role_player )* ')' ;              // A list of role players in a Relations
@@ -190,16 +140,11 @@ player              :   VAR_ ;                                                  
 via                 :   VIA VAR_ ;                                              // The Relation variable that holds the
                                                                                 // assertion between an Attribute and
                                                                                 // its owner (any Thing)
-// TYPE, LABEL AND IDENTIFIER CONSTRUCTS =======================================
+// ATTRIBUTE CONSTRUCT =========================================================
 
-type                :   label | VAR_ ;                                          // A type can be a label or variable
-types               :   label | label_array ;
-label_array         :   '[' label ( ',' label )* ']' ;
-label               :   identifier | ID_IMPLICIT_;
-
-id                  :   identifier ;
-identifier          :   ID_ | STRING_ | unreserved ;                            // TODO: disallow quoted strings as IDs
-
+attributes          :   attribute ( ',' attribute )* ;
+attribute           :   HAS label ( VAR_ | operation ) via? ;                   // Attribute ownership by variable or a
+                                                                                // predicate, and the "via" Relation
 // ATTRIBUTE OPERATION CONSTRUCTS ==============================================
 
 operation           :   assignment
@@ -213,6 +158,60 @@ comparison          :   comparator  comparable
 comparator          :   EQV | NEQV | GT | GTE | LT | LTE ;
 comparable          :   literal | VAR_  ;
 containable         :   STRING_ | VAR_  ;
+
+
+// COMPUTE QUERY ===============================================================
+//
+// A compute query is composed of 3 things:
+// The "compute" keyword followed by a method and optionally a set of input
+
+computable          :   compute_count                                           // compute the number of concepts
+                    |   compute_value                                           // compute statistical values
+                    |   compute_centrality                                      // compute density of connected concepts
+                    |   compute_cluster                                         // compute density of connected concepts
+                    |   compute_path                                            // compute the paths between concepts
+                    ;
+
+compute_count       :   COUNT          input_count?                             ';';
+compute_value       :   compute_method input_value      (',' input_value     )* ';';
+compute_centrality  :   CENTRALITY     input_centrality (',' input_centrality)* ';';
+compute_cluster     :   CLUSTER        input_cluster    (',' input_cluster   )* ';';
+compute_path        :   PATH           input_path       (',' input_path      )* ';';
+
+compute_method      :   MIN         |   MAX         |   MEDIAN                  // statistical value methods
+                    |   MEAN        |   STD         |   SUM     ;
+
+input_count         :   compute_scope ;
+input_value         :   compute_scope | compute_target      ;
+input_centrality    :   compute_scope | compute_target      | compute_config ;
+input_cluster       :   compute_scope                       | compute_config ;
+input_path          :   compute_scope | compute_direction   ;
+
+
+compute_direction   :   FROM    id                                              // an instance to start the compute from
+                    |   TO      id                  ;                           // an instance to end the compute at
+compute_target      :   OF      types               ;                           // type(s) of instances to apply compute
+compute_scope       :   IN      types               ;                           // type(s) to scope compute visibility
+compute_config      :   USING   compute_algorithm                               // algorithm to determine how to compute
+                    |   WHERE   compute_args        ;                           // additional args for compute method
+
+compute_algorithm   :   DEGREE | K_CORE | CONNECTED_COMPONENT ;                 // algorithm to determine how to compute
+compute_args        :   compute_arg | compute_args_array ;                      // single argument or array of arguments
+compute_args_array  :   '[' compute_arg (',' compute_arg)* ']' ;                // an array of arguments
+compute_arg         :   MIN_K     '=' INTEGER_                                  // a single argument for min-k=INTEGER
+                    |   K         '=' INTEGER_                                  // a single argument for k=INTEGER
+                    |   SIZE      '=' INTEGER_                                  // a single argument for size=INTEGER
+                    |   CONTAINS  '=' id            ;                           // a single argument for contains=ID
+
+// TYPE, LABEL AND IDENTIFIER CONSTRUCTS =======================================
+
+type                :   label | VAR_ ;                                          // A type can be a label or variable
+types               :   label | label_array ;
+label_array         :   '[' label ( ',' label )* ']' ;
+label               :   identifier | ID_IMPLICIT_;
+
+id                  :   identifier ;
+identifier          :   ID_ | STRING_ | unreserved ;                            // TODO: disallow quoted strings as IDs
 
 // LITERAL INPUT VALUES =======================================================
 
