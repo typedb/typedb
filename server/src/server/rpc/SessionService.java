@@ -93,7 +93,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
     @Override
     public void close(SessionProto.CloseSessionReq request, StreamObserver<SessionProto.CloseSessionRes> responseObserver) {
-        openSessions.remove(request.getSessionId());
+        SessionImpl session = openSessions.remove(request.getSessionId());
+        session.close();
         responseObserver.onNext(SessionProto.CloseSessionRes.newBuilder().build());
         responseObserver.onCompleted();
     }

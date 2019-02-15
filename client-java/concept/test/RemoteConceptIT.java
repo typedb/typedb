@@ -137,16 +137,12 @@ public class RemoteConceptIT {
 
     @BeforeClass
     public static void setUpClass() {
-        // TODO: uncomment the code below to confirm we have fixed/removed our Core API Cache
-        // session = Grakn.session(server.grpcUri(), SampleKBLoader.randomKeyspace());
+        String randomKeyspace = "a" + UUID.randomUUID().toString().replaceAll("-", "");
+        session = new GraknClient(server.grpcUri().toString()).session(randomKeyspace);
     }
 
     @Before
     public void setUp() {
-        // move session construction to setupClass
-        String randomKeyspace = "a" + UUID.randomUUID().toString().replaceAll("-", "");
-        session = new GraknClient(server.grpcUri().toString()).session(randomKeyspace);
-
         tx = session.transaction(GraknClient.Transaction.Type.WRITE);
 
         // Attribute Types
@@ -205,13 +201,11 @@ public class RemoteConceptIT {
     @After
     public void closeTx() {
         tx.close();
-        session.close();
     }
 
     @AfterClass
     public static void closeSession() {
-        // TODO: uncomment the code below to confirm we have fixed/removed our Core API Cache
-        //session.close();
+        session.close();
     }
 
     @Test
