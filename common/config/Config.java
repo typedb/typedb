@@ -55,9 +55,6 @@ public class Config {
     public static final Path CONFIG_FILE_PATH = getConfigFilePath(PROJECT_PATH);
     public static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get(".", "services", "grakn", "grakn-core-ascii.txt"));
 
-    public static Config empty() {
-        return Config.of(new Properties());
-    }
 
     public static Config create() {
         if(defaultConfig == null){
@@ -98,7 +95,9 @@ public class Config {
     }
 
     public static Config of(Properties properties) {
-        return new Config(properties);
+        Properties localProps = new Properties();
+        properties.forEach((key, value)-> localProps.setProperty((String)key, (String)value));
+        return new Config(localProps);
     }
 
     private Config(Properties prop) {

@@ -22,11 +22,11 @@ import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
@@ -49,20 +49,6 @@ import static org.junit.Assert.assertThat;
 
 @SuppressWarnings("Duplicates")
 public class SchemaMutationIT {
-    private Role husband;
-    private Role wife;
-    private RelationType marriage;
-    private RelationType drives;
-    private EntityType person;
-    private EntityType woman;
-    private EntityType man;
-    private EntityType car;
-    private EntityType vehicle;
-    private Thing alice;
-    private Thing bob;
-    private Thing bmw;
-    private Role driver;
-    private Role driven;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -73,34 +59,34 @@ public class SchemaMutationIT {
     private SessionImpl session;
 
     @Before
-    public void setUp(){
+    public void setUp() {
         session = server.sessionWithNewKeyspace();
         tx = session.transaction(Transaction.Type.WRITE);
-        husband = tx.putRole("husband");
-        wife = tx.putRole("wife");
-        driver = tx.putRole("driver");
-        driven = tx.putRole("driven");
+        Role husband = tx.putRole("husband");
+        Role wife = tx.putRole("wife");
+        Role driver = tx.putRole("driver");
+        Role driven = tx.putRole("driven");
 
-        marriage = tx.putRelationshipType("marriage").relates(husband).relates(wife);
-        drives = tx.putRelationshipType("drives").relates(driven).relates(driver);
+        RelationType marriage = tx.putRelationshipType("marriage").relates(husband).relates(wife);
+        RelationType drives = tx.putRelationshipType("drives").relates(driven).relates(driver);
 
-        person = tx.putEntityType("person").plays(husband).plays(wife).plays(driver);
-        man = tx.putEntityType("man").sup(person);
-        woman = tx.putEntityType("woman").sup(person);
-        vehicle = tx.putEntityType("vehicle").plays(driven);
-        car = tx.putEntityType("car").sup(vehicle);
+        EntityType person = tx.putEntityType("person").plays(husband).plays(wife).plays(driver);
+        EntityType man = tx.putEntityType("man").sup(person);
+        EntityType woman = tx.putEntityType("woman").sup(person);
+        EntityType vehicle = tx.putEntityType("vehicle").plays(driven);
+        EntityType car = tx.putEntityType("car").sup(vehicle);
 
-        alice = woman.create();
-        bob = man.create();
+        Entity alice = woman.create();
+        Entity bob = man.create();
         marriage.create().assign(wife, alice).assign(husband, bob);
-        bmw = car.create();
+        Entity bmw = car.create();
         drives.create().assign(driver, alice).assign(driven, bmw);
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
-    public void tearDown(){
+    public void tearDown() {
         tx.close();
         session.close();
     }
@@ -108,8 +94,10 @@ public class SchemaMutationIT {
 
     @Test
     public void whenDeletingPlaysUsedByExistingCasting_Throw() throws InvalidKBException {
-        person.unplay(wife);
-
+        Role wife = tx.getRole("wife");
+        tx.getEntityType("person").unplay(wife);
+        EntityType woman = tx.getEntityType("woman");
+        Entity alice = woman.instances().findFirst().get();
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(VALIDATION_CASTING.getMessage(woman.label(), alice.id(), wife.label()));
 
@@ -118,6 +106,9 @@ public class SchemaMutationIT {
 
     @Test
     public void whenDeletingRelatesUsedByExistingRelation_Throw() throws InvalidKBException {
+        RelationType marriage = tx.getRelationshipType("marriage");
+        Role husband = tx.getRole("husband");
+
         marriage.unrelate(husband);
         expectedException.expect(InvalidKBException.class);
         tx.commit();
@@ -125,6 +116,12 @@ public class SchemaMutationIT {
 
     @Test
     public void whenChangingSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidKBException {
+        EntityType vehicle = tx.getEntityType("vehicle");
+        EntityType person = tx.getEntityType("person");
+        Role driven = tx.getRole("driven");
+        EntityType car = tx.getEntityType("car");
+
+
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(TransactionException.changingSuperWillDisconnectRole(vehicle, person, driven).getMessage());
 
@@ -133,6 +130,7 @@ public class SchemaMutationIT {
 
     @Test
     public void whenChangingTypeWithInstancesToAbstract_Throw() throws InvalidKBException {
+        EntityType man = tx.getEntityType("man");
         man.create();
 
         expectedException.expect(TransactionException.class);
@@ -142,10 +140,10 @@ public class SchemaMutationIT {
     }
 
     @Test
-    public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur(){
+    public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur() {
         //Create initial Schema
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
-        EntityType person = tx.putEntityType("perspn").has(name);
+        EntityType person = tx.putEntityType("person").has(name);
         EntityType animal = tx.putEntityType("animal").sup(person);
         Attribute bob = name.create("Bob");
         person.create().has(bob);
@@ -153,12 +151,14 @@ public class SchemaMutationIT {
 
         //Now make animal have the same resource type
         tx = session.transaction(Transaction.Type.WRITE);
-        animal.has(name);
+        EntityType retrievedAnimal = tx.getEntityType("animal");
+        AttributeType nameType = tx.getAttributeType("name");
+        retrievedAnimal.has(nameType);
         tx.commit();
     }
 
     @Test
-    public void whenDeletingRelationTypeAndLeavingRoleByItself_Thow(){
+    public void whenDeletingRelationTypeAndLeavingRoleByItself_Throw() {
         Role role = tx.putRole("my wonderful role");
         RelationType relation = tx.putRelationshipType("my wonderful relation").relates(role);
         relation.relates(role);
@@ -166,7 +166,8 @@ public class SchemaMutationIT {
 
         //Now delete the relation
         tx = session.transaction(Transaction.Type.WRITE);
-        relation.delete();
+        RelationType relationInNewTx = tx.getRelationshipType("my wonderful relation");
+        relationInNewTx.delete();
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(Matchers.containsString(ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.label())));
@@ -175,7 +176,7 @@ public class SchemaMutationIT {
     }
 
     @Test
-    public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstances_ByPreventingChange(){
+    public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstances_ByPreventingChange() {
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
 
         //Create a animal and allow animal to have a name

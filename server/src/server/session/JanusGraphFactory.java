@@ -22,8 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
-import grakn.core.server.Transaction;
-import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.optimisation.JanusPreviousPropertyStepStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
@@ -33,7 +31,6 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.Namifiable;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
@@ -58,11 +55,10 @@ import static java.util.Arrays.stream;
 
 
 /**
- * A {@link Transaction} on top of {@link JanusGraph}
- * This produces a grakn graph on top of {@link JanusGraph}.
+ * This produces a {@link JanusGraph} with custom Grakn configurations.
  */
-final public class TransactionOLTPFactory {
-    private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTPFactory.class);
+final public class JanusGraphFactory {
+    private final static Logger LOG = LoggerFactory.getLogger(JanusGraphFactory.class);
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
     private static final String JANUS_PREFIX = "janusmr.ioformat.conf.";
     private static final String STORAGE_BACKEND = "storage.backend";
@@ -71,25 +67,17 @@ final public class TransactionOLTPFactory {
     private static final String STORAGE_BATCH_LOADING = ConfigKey.STORAGE_BATCH_LOADING.name();
     private static final String STORAGE_REPLICATION_FACTOR = ConfigKey.STORAGE_REPLICATION_FACTOR.name();
 
-    private final SessionImpl session;
-    private TransactionOLTP tx = null;
-    private JanusGraph graph = null;
-
     //These properties are loaded in by default and can optionally be overwritten
     private static final Properties DEFAULT_PROPERTIES;
 
     static {
         String DEFAULT_CONFIG = "resources/default-configs.properties";
         DEFAULT_PROPERTIES = new Properties();
-        try (InputStream in = TransactionOLTPFactory.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
+        try (InputStream in = JanusGraphFactory.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
             DEFAULT_PROPERTIES.load(in);
         } catch (IOException e) {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
         }
-    }
-
-    public static Properties getDefaultProperties() {
-        return DEFAULT_PROPERTIES;
     }
 
     /**
@@ -106,29 +94,9 @@ final public class TransactionOLTPFactory {
     //This maps the storage backend to the needed value
     private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
 
-    public TransactionOLTPFactory(SessionImpl session) {
-        this.session = session;
-    }
 
-    public synchronized TransactionOLTP openOLTP(Transaction.Type type) {
-        // If transaction is already open throw exception
-        if (tx != null && !tx.isClosed()) throw TransactionException.transactionOpen(tx);
-
-        // Create new transaction from a Tinker graph if tx is null or s closed
-        if (tx == null || tx.isTinkerPopGraphClosed()) {
-            if (graph == null) {
-                graph = openGraph();
-            } else {
-                graph = reopenGraph();
-            }
-            tx = new TransactionOLTP(session, graph);
-        }
-        tx.open(type);
-        return tx;
-    }
-
-    private synchronized JanusGraph openGraph() {
-        JanusGraph JanusGraph = configureGraph();
+    public static synchronized JanusGraph openGraph(SessionImpl session) {
+        JanusGraph JanusGraph = configureGraph(session);
         buildJanusIndexes(JanusGraph);
         JanusGraph.tx().onClose(org.apache.tinkerpop.gremlin.structure.Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         if (!strategiesApplied.getAndSet(true)) {
@@ -143,17 +111,9 @@ final public class TransactionOLTPFactory {
         return JanusGraph;
     }
 
-    private JanusGraph reopenGraph() {
-        if (graph.isClosed()) graph = openGraph();
 
-        if (!graph.tx().isOpen()) {
-            graph.tx().open();
-        }
-        return graph;
-    }
-
-    private JanusGraph configureGraph() {
-        JanusGraphFactory.Builder builder = JanusGraphFactory.build().
+    private static JanusGraph configureGraph(SessionImpl session) {
+        org.janusgraph.core.JanusGraphFactory.Builder builder = org.janusgraph.core.JanusGraphFactory.build().
                 set(STORAGE_HOSTNAME, session.config().getProperty(ConfigKey.STORAGE_HOSTNAME)).
                 set(STORAGE_KEYSPACE, session.keyspace().getName()).
                 set(STORAGE_BATCH_LOADING, false);

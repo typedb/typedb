@@ -57,6 +57,7 @@ import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -969,19 +970,19 @@ public class GraknClientIT {
             tx.putEntityType("easter");
             tx.commit();
         }
+        localSession.close();
 
         try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
             assertNotNull(tx.getEntityType("easter"));
 
             client.keyspaces().delete(tx.keyspace().getName());
-
-            //TODO fix in the following PR
-//            assertTrue(tx.isClosed());
         }
 
-        try (Transaction tx = localSession.transaction(Transaction.Type.READ)) {
+        Session newLocalSession = new SessionImpl(localSession.keyspace(), server.config());
+        try (Transaction tx = newLocalSession.transaction(Transaction.Type.READ)) {
             assertNull(tx.getEntityType("easter"));
         }
+        newLocalSession.close();
     }
 
     private <T extends Concept> void assertEqualConcepts(

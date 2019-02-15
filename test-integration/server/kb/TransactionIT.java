@@ -76,33 +76,33 @@ public class TransactionIT {
     private SessionImpl session;
 
     @Before
-    public void setUp(){
+    public void setUp() {
         session = server.sessionWithNewKeyspace();
         tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
-    public void tearDown(){
+    public void tearDown() {
         tx.close();
         session.close();
     }
 
 
     @Test
-    public void whenGettingConceptById_ReturnTheConcept(){
+    public void whenGettingConceptById_ReturnTheConcept() {
         EntityType entityType = tx.putEntityType("test-name");
         assertEquals(entityType, tx.getConcept(entityType.id()));
     }
 
     @Test
-    public void whenAttemptingToMutateViaTraversal_Throw(){
+    public void whenAttemptingToMutateViaTraversal_Throw() {
         expectedException.expect(VerificationException.class);
         expectedException.expectMessage("not read only");
         tx.getTinkerTraversal().V().drop().iterate();
     }
 
     @Test
-    public void whenGettingResourcesByValue_ReturnTheMatchingResources(){
+    public void whenGettingResourcesByValue_ReturnTheMatchingResources() {
         String targetValue = "Geralt";
 //        assertThat(tx.getAttributesByValue(targetValue), is(empty()));
 
@@ -117,7 +117,7 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenGettingTypesByName_ReturnTypes(){
+    public void whenGettingTypesByName_ReturnTypes() {
         String entityTypeLabel = "My Entity Type";
         String relationTypeLabel = "My Relationship Type";
         String roleTypeLabel = "My Role Type";
@@ -142,7 +142,7 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenGettingSubTypesFromRootMeta_IncludeAllTypes(){
+    public void whenGettingSubTypesFromRootMeta_IncludeAllTypes() {
         EntityType sampleEntityType = tx.putEntityType("Sample Entity Type");
         RelationType sampleRelationshipType = tx.putRelationshipType("Sample Relationship Type");
 
@@ -157,12 +157,12 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenGettingTheShardingThreshold_TheCorrectValueIsReturned(){
+    public void whenGettingTheShardingThreshold_TheCorrectValueIsReturned() {
         assertEquals(10000L, tx.shardingThreshold());
     }
 
     @Test
-    public void whenClosingReadOnlyGraph_EnsureTypesAreCached(){
+    public void whenClosingReadOnlyGraph_EnsureTypesAreCached() {
         assertCacheOnlyContainsMetaTypes();
         //noinspection ResultOfMethodCallIgnored
         tx.getMetaConcept().subs(); //This loads some types into transaction cache
@@ -182,13 +182,14 @@ public class TransactionIT {
             assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", finalTypes.contains(type));
         }
     }
-    private void assertCacheOnlyContainsMetaTypes(){
+
+    private void assertCacheOnlyContainsMetaTypes() {
         Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(toSet());
         tx.getGlobalCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
     }
 
     @Test
-    public void whenBuildingAConceptFromAVertex_ReturnConcept(){
+    public void whenBuildingAConceptFromAVertex_ReturnConcept() {
         EntityTypeImpl et = (EntityTypeImpl) tx.putEntityType("Sample Entity Type");
         assertEquals(et, tx.factory().buildConcept(et.vertex()));
     }
@@ -211,10 +212,10 @@ public class TransactionIT {
         tx.close();
 
         boolean errorThrown = false;
-        try{
+        try {
             tx.putEntityType("A Thing");
-        } catch (TransactionException e){
-            if(e.getMessage().equals(ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", tx.keyspace()))){
+        } catch (TransactionException e) {
+            if (e.getMessage().equals("The transaction for keyspace [" + tx.keyspace() + "] is closed. Use the session to get a new transaction for the graph.")) {
                 errorThrown = true;
             }
         }
@@ -262,7 +263,7 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenClosingAGraphWhichWasJustCommitted_DoNothing(){
+    public void whenClosingAGraphWhichWasJustCommitted_DoNothing() {
         tx.commit();
         assertTrue("Graph is still open after commit", tx.isClosed());
         tx.close();
@@ -270,7 +271,7 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenCommittingAGraphWhichWasJustCommitted_DoNothing(){
+    public void whenCommittingAGraphWhichWasJustCommitted_DoNothing() {
         tx.commit();
         assertTrue("Graph is still open after commit", tx.isClosed());
         tx.commit();
@@ -278,14 +279,11 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenAttemptingToMutateReadOnlyGraph_Throw(){
+    public void whenAttemptingToMutateReadOnlyGraph_Throw() {
         tx.close();
         String entityType = "My Entity Type";
         String roleType1 = "My Role Type 1";
-        String roleType2 = "My Role Type 2";
         String relationType1 = "My Relationship Type 1";
-        String relationType2 = "My Relationship Type 2";
-        String resourceType = "My Attribute Type";
 
         //Fail Some Mutations
         tx = session.transaction(Transaction.Type.READ);
@@ -295,45 +293,28 @@ public class TransactionIT {
 
         //Pass some mutations
         tx.close();
-        tx = session.transaction(Transaction.Type.WRITE);
-        EntityType entityT = tx.putEntityType(entityType);
-        entityT.create();
-        Role roleT1 = tx.putRole(roleType1);
-        Role roleT2 = tx.putRole(roleType2);
-        RelationType relationT1 = tx.putRelationshipType(relationType1).relates(roleT1);
-        RelationType relationT2 = tx.putRelationshipType(relationType2).relates(roleT2);
-        AttributeType<String> resourceT = tx.putAttributeType(resourceType, AttributeType.DataType.STRING);
-        tx.commit();
-
-        //Fail some mutations again
-        tx = session.transaction(Transaction.Type.READ);
-        failMutation(tx, entityT::create);
-        failMutation(tx, () -> resourceT.create("A resource"));
-        failMutation(tx, () -> tx.putEntityType(entityType));
-        failMutation(tx, () -> entityT.plays(roleT1));
-        failMutation(tx, () -> relationT1.relates(roleT2));
-        failMutation(tx, () -> relationT2.relates(roleT1));
     }
-    private void failMutation(TransactionOLTP graph, Runnable mutator){
+
+    private void failMutation(TransactionOLTP graph, Runnable mutator) {
         int vertexCount = graph.getTinkerTraversal().V().toList().size();
         int eddgeCount = graph.getTinkerTraversal().E().toList().size();
 
         Exception caughtException = null;
-        try{
+        try {
             mutator.run();
-        } catch (Exception e){
+        } catch (Exception e) {
             caughtException = e;
         }
 
         assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
         assertThat(caughtException, instanceOf(TransactionException.class));
-        assertEquals(caughtException.getMessage(), ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.keyspace()));
+        assertEquals(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.keyspace()), caughtException.getMessage());
         assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.getTinkerTraversal().V().toList().size());
         assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.getTinkerTraversal().E().toList().size());
     }
 
     @Test
-    public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw(){
+    public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw() {
         String keyspace = tx.keyspace().getName();
         failAtOpeningTx(session, Transaction.Type.WRITE, keyspace);
         tx.close();
@@ -343,12 +324,12 @@ public class TransactionIT {
         failAtOpeningTx(session, Transaction.Type.READ, keyspace);
     }
 
-    private void failAtOpeningTx(Session session, Transaction.Type txType, String keyspace){
+    private void failAtOpeningTx(Session session, Transaction.Type txType, String keyspace) {
         Exception exception = null;
-        try{
+        try {
             //noinspection ResultOfMethodCallIgnored
             session.transaction(txType);
-        } catch (TransactionException e){
+        } catch (TransactionException e) {
             exception = e;
         }
         assertNotNull(exception);
@@ -357,7 +338,7 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenShardingSuperNode_EnsureNewInstancesGoToNewShard(){
+    public void whenShardingSuperNode_EnsureNewInstancesGoToNewShard() {
         EntityTypeImpl entityType = (EntityTypeImpl) tx.putEntityType("The Special Type");
         Shard s1 = entityType.currentShard();
 
@@ -419,7 +400,7 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenShardingConcepts_EnsureCountsAreUpdated(){
+    public void whenShardingConcepts_EnsureCountsAreUpdated() {
         EntityType entity = tx.putEntityType("my amazing entity type");
         assertEquals(1L, tx.getShardCount(entity));
 

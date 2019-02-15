@@ -19,93 +19,83 @@
 package grakn.core.server.session;
 
 import grakn.core.common.config.Config;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.keyspace.Keyspace;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.util.JanusGraphCleanup;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * This class facilitates the construction of Transaction by determining which factory should be built.
+ * This class represents a Grakn Session.
+ * A session is mapped to a single instance of a JanusGraph (they're both bound to a single Keyspace):
+ * opening a session will open a new JanusGraph, closing a session will close the graph.
+ *
+ * The role of the Session is to provide multiple independent transactions that can be used by clients to
+ * access a specific keyspace.
+ *
+ * NOTE:
+ *  - Only 1 transaction per thread can exist.
+ *  - A transaction cannot be shared between multiple threads, each thread will need to get a new transaction from a session.
  */
 public class SessionImpl implements Session {
-    private static final Logger LOG = LoggerFactory.getLogger(SessionImpl.class);
 
-    private static final Map<String, TransactionOLTPFactory> openOLTPFactories = new ConcurrentHashMap<>();
-    private static final Map<String, TransactionOLAPFactory> openOLAPFactories = new ConcurrentHashMap<>();
+    private final HadoopGraphFactory hadoopGraphFactory;
 
-    private static final String PRODUCTION = "production";
-    private static final String DISTRIBUTED = "distributed";
-
-    private final TransactionOLTPFactory transactionOLTPFactory;
-    private final TransactionOLAPFactory transactionOLAPFactory;
+    // Session can have at most 1 transaction per thread, so we keep a local reference here
+    private final ThreadLocal<TransactionOLTP> localOLTPTransactionContainer = new ThreadLocal<>();
 
     private final Keyspace keyspace;
     private final Config config;
+    private final JanusGraph graph;
 
-    //References so we don't have to open a tx just to check the count of the transactions
-    private TransactionOLTP tx = null;
 
     /**
-     * Instantiates {@link SessionImpl}
+     * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
+     * using provided Grakn configuration
      *
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used. If null is supplied, it will be created
      */
-    SessionImpl(Keyspace keyspace, @Nullable Config config) {
-        Objects.requireNonNull(keyspace);
-
+    public SessionImpl(Keyspace keyspace, Config config) {
         this.keyspace = keyspace;
         this.config = config;
-        this.transactionOLTPFactory = getOLTPFactory(this);
-        this.transactionOLAPFactory = getOLAPFactory(this);
-    }
-
-    /**
-     * Creates a {@link SessionImpl} specific for internal use (within Grakn Server),
-     * using provided Grakn configuration
-     */
-    public static SessionImpl create(Keyspace keyspace, Config config) {
-        return new SessionImpl(keyspace, config);
-    }
-
-    public static SessionImpl create(Keyspace keyspace) {
-        return new SessionImpl(keyspace, Config.create());
-    }
-
-    /**
-     * @return A graph factory which produces the relevant expected graph.
-     */
-    private static TransactionOLTPFactory getOLTPFactory(SessionImpl session) {
-        String key = PRODUCTION + "_" + session.keyspace();
-        return openOLTPFactories.computeIfAbsent(key, (k) -> {
-            TransactionOLTPFactory transactionFactory = new TransactionOLTPFactory(session);
-            LOG.trace("New factory created " + transactionFactory);
-            return transactionFactory;
-        });
-    }
-
-    private static TransactionOLAPFactory getOLAPFactory(SessionImpl session) {
-        String key = DISTRIBUTED + "_" + session.keyspace();
-        return openOLAPFactories.computeIfAbsent(key, (k) -> {
-            TransactionOLAPFactory transactionFactory = new TransactionOLAPFactory(session);
-            LOG.trace("New factory created " + transactionFactory);
-            return transactionFactory;
-        });
+        // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
+        // be an expensive operation TODO: refactor in the future
+        this.hadoopGraphFactory = new HadoopGraphFactory(this);
+        // Open Janus Graph
+        this.graph = JanusGraphFactory.openGraph(this);
     }
 
 
     @Override
     public TransactionOLTP transaction(Transaction.Type type) {
-        tx = transactionOLTPFactory.openOLTP(type);
+        // If graph is closed it means the session was already closed
+        if (graph.isClosed()) throw new SessionException(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
+
+        TransactionOLTP localTx = localOLTPTransactionContainer.get();
+        // If transaction is already open in current thread throw exception
+        if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
+
+        // We are passing the graph to Transaction because there is the need to access graph tinkerpop traversal
+        TransactionOLTP tx = new TransactionOLTP(this, graph);
+        tx.open(type);
+        localOLTPTransactionContainer.set(tx);
         return tx;
+    }
+
+    public void clearGraph() {
+        try {
+            JanusGraphCleanup.clear(graph);
+        } catch (BackendException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -116,15 +106,24 @@ public class SessionImpl implements Session {
      */
     @CheckReturnValue
     public TransactionOLAP transactionOLAP() {
-        return transactionOLAPFactory.openOLAP();
+        return new TransactionOLAP(hadoopGraphFactory.getGraph());
     }
 
+    /**
+     * Close JanusGraph, it will not be possible to create new transactions using current instance of Session.
+     * If there is a transaction open, close it before closing the graph.
+     * @throws TransactionException
+     */
     @Override
-    public void close() throws TransactionException {
-        if (tx != null) {
-            tx.closeSession();
-            tx.closeOpenTransactions();
+    public void close() {
+        TransactionOLTP localTx = localOLTPTransactionContainer.get();
+        if (localTx != null) {
+            localTx.close(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
+            localOLTPTransactionContainer.set(null);
         }
+
+        ((StandardJanusGraph) graph).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close);
+        graph.close();
     }
 
     @Override

@@ -72,7 +72,7 @@ public class SessionStore {
      */
     private SessionImpl session(Keyspace keyspace) {
         if (!openedSessions.containsKey(keyspace)) {
-            openedSessions.put(keyspace, SessionImpl.create(keyspace, config));
+            openedSessions.put(keyspace, new SessionImpl(keyspace, config));
         }
         return openedSessions.get(keyspace);
     }
