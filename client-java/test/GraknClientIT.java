@@ -57,6 +57,7 @@ import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -867,57 +868,54 @@ public class GraknClientIT {
 
     @Test
     public void testDefiningASchema_TheSchemaIsDefined() {
-//        try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
-//            EntityType animal = tx.putEntityType("animal");
-//            EntityType dog = tx.putEntityType("dog").sup(animal);
-//            EntityType cat = tx.putEntityType("cat");
-//            cat.sup(animal);
-//
-//            cat.label(Label.of("feline"));
-//            dog.isAbstract(true).isAbstract(false);
-//            cat.isAbstract(true);
-//
-//            RelationType chases = tx.putRelationshipType("chases");
-//            Role chased = tx.putRole("chased");
-//            Role chaser = tx.putRole("chaser");
-//            chases.relates(chased).relates(chaser);
-//
-//            Role pointlessRole = tx.putRole("pointless-role");
-//            tx.putRelationshipType("pointless").relates(pointlessRole);
-//
-//            chases.relates(pointlessRole).unrelate(pointlessRole);
-//
-//            dog.plays(chaser);
-//            cat.plays(chased);
-//
-//            AttributeType<String> name = tx.putAttributeType("name", DataType.STRING);
-//            AttributeType<String> id = tx.putAttributeType("id", DataType.STRING).regex("(good|bad)-dog");
-//            AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
-//
-//            animal.has(name);
-//            animal.key(id);
-//
-//            dog.has(age).unhas(age);
-//            cat.key(age).unkey(age);
-//            cat.plays(chaser).unplay(chaser);
-//
-//            Entity dunstan = dog.create();
-//            Attribute<String> dunstanId = id.create("good-dog");
-//            assertNotNull(dunstan.relhas(dunstanId));
-//
-//            Attribute<String> dunstanName = name.create("Dunstan");
-//            dunstan.has(dunstanName).unhas(dunstanName);
-//
-//            chases.create().assign(chaser, dunstan);
-//
-//            Set<Attribute> set = dunstan.keys(name).collect(toSet());
-//            assertEquals(0, set.size());
-//
-//            tx.commit();
-//        }
+        try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
+            EntityType animal = tx.putEntityType("animal");
+            EntityType dog = tx.putEntityType("dog").sup(animal);
+            EntityType cat = tx.putEntityType("cat");
+            cat.sup(animal);
 
-        Transaction tx1 = localSession.transaction(Transaction.Type.READ);
-        Transaction tx2 = localSession.transaction(Transaction.Type.READ);
+            cat.label(Label.of("feline"));
+            dog.isAbstract(true).isAbstract(false);
+            cat.isAbstract(true);
+
+            RelationType chases = tx.putRelationshipType("chases");
+            Role chased = tx.putRole("chased");
+            Role chaser = tx.putRole("chaser");
+            chases.relates(chased).relates(chaser);
+
+            Role pointlessRole = tx.putRole("pointless-role");
+            tx.putRelationshipType("pointless").relates(pointlessRole);
+
+            chases.relates(pointlessRole).unrelate(pointlessRole);
+
+            dog.plays(chaser);
+            cat.plays(chased);
+
+            AttributeType<String> name = tx.putAttributeType("name", DataType.STRING);
+            AttributeType<String> id = tx.putAttributeType("id", DataType.STRING).regex("(good|bad)-dog");
+            AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
+
+            animal.has(name);
+            animal.key(id);
+
+            dog.has(age).unhas(age);
+            cat.key(age).unkey(age);
+            cat.plays(chaser).unplay(chaser);
+
+            Entity dunstan = dog.create();
+            Attribute<String> dunstanId = id.create("good-dog");
+            assertNotNull(dunstan.relhas(dunstanId));
+
+            Attribute<String> dunstanName = name.create("Dunstan");
+            dunstan.has(dunstanName).unhas(dunstanName);
+
+            chases.create().assign(chaser, dunstan);
+
+            Set<Attribute> set = dunstan.keys(name).collect(toSet());
+            assertEquals(0, set.size());
+
+            tx.commit();
+        }
 
         try (Transaction tx = localSession.transaction(Transaction.Type.READ)) {
             EntityType animal = tx.getEntityType("animal");
@@ -972,19 +970,19 @@ public class GraknClientIT {
             tx.putEntityType("easter");
             tx.commit();
         }
+        localSession.close();
 
         try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
             assertNotNull(tx.getEntityType("easter"));
 
             client.keyspaces().delete(tx.keyspace().getName());
-
-            //TODO fix in the following PR
-//            assertTrue(tx.isClosed());
         }
 
-        try (Transaction tx = localSession.transaction(Transaction.Type.READ)) {
+        Session newLocalSession = new SessionImpl(localSession.keyspace(), server.config());
+        try (Transaction tx = newLocalSession.transaction(Transaction.Type.READ)) {
             assertNull(tx.getEntityType("easter"));
         }
+        newLocalSession.close();
     }
 
     private <T extends Concept> void assertEqualConcepts(
