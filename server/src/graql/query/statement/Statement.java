@@ -200,8 +200,8 @@ public class Statement implements Pattern,
     @CheckReturnValue
     public Set<String> getTypes() {
         return properties().stream()
-                .flatMap(property -> property.types())
-                .map(statement -> statement.getType())
+                .flatMap(VarProperty::types)
+                .map(Statement::getType)
                 .flatMap(opt -> opt.map(Stream::of).orElseGet(Stream::empty))
                 .collect(toSet());
     }
@@ -254,7 +254,7 @@ public class Statement implements Pattern,
             Statement statement = statementStack.pop();
             statements.add(statement);
             statement.properties().stream()
-                    .flatMap(varProperty -> varProperty.statements())
+                    .flatMap(VarProperty::statements)
                     .forEach(statementStack::add);
         }
 
@@ -301,9 +301,7 @@ public class Statement implements Pattern,
 
     @Override // TODO: Remove this method altogether once we make compile time validation more strict
     public String toString() {
-        throw new IllegalStateException(
-                "Attempted to print invalid statement: with just a Variable [" + var + "] and no properties"
-        );
+        return var.toString();
     }
 
     @Override

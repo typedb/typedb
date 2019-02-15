@@ -131,6 +131,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
             }
         }
 
+        @Override
+        public String toString(){
+            return comparator().toString() + value();
+        }
+
         public Token.Comparator comparator() {
             return comparator;
         }
