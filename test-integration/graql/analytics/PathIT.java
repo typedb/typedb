@@ -81,7 +81,7 @@ public class PathIT {
     @After
     public void closeSession() { session.close(); }
 
-    @Test(expected = GraqlQueryException.class)
+    @Test(expected = GraqlException.class)
     public void testShortestPathExceptionIdNotFound() {
         // test on an empty tx
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -89,7 +89,7 @@ public class PathIT {
         }
     }
 
-    @Test(expected = GraqlException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFoundSubgraph() {
         addSchemaAndEntities();
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
