@@ -330,6 +330,39 @@ public class Token {
 
     public static class Compute {
 
+        public enum Method {
+            COUNT("count"),
+            MIN("min"),
+            MAX("max"),
+            MEDIAN("median"),
+            MEAN("mean"),
+            STD("std"),
+            SUM("sum"),
+            PATH("path"),
+            CENTRALITY("centrality"),
+            CLUSTER("cluster");
+
+            private final String method;
+
+            Method(String method) {
+                this.method = method;
+            }
+
+            @Override
+            public String toString() {
+                return this.method;
+            }
+
+            public static Method of(String name) {
+                for (Method m : Method.values()) {
+                    if (m.method.equals(name)) {
+                        return m;
+                    }
+                }
+                return null;
+            }
+        }
+
         /**
          * Graql Compute conditions keyword
          */

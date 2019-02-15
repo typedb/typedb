@@ -67,6 +67,8 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.exception.GraqlException;
+import graql.lang.util.Token;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -88,16 +90,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.query.query.GraqlCompute.Method.CENTRALITY;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;
-import static grakn.core.graql.query.query.GraqlCompute.Method.COUNT;
-import static grakn.core.graql.query.query.GraqlCompute.Method.MAX;
-import static grakn.core.graql.query.query.GraqlCompute.Method.MEAN;
-import static grakn.core.graql.query.query.GraqlCompute.Method.MEDIAN;
-import static grakn.core.graql.query.query.GraqlCompute.Method.MIN;
-import static grakn.core.graql.query.query.GraqlCompute.Method.PATH;
-import static grakn.core.graql.query.query.GraqlCompute.Method.STD;
-import static grakn.core.graql.query.query.GraqlCompute.Method.SUM;
+import static grakn.core.graql.query.query.GraqlCompute.ALGORITHMS_ACCEPTED;
+import static grakn.core.graql.query.query.GraqlCompute.METHODS_ACCEPTED;
+import static graql.lang.util.Token.Compute.Method.CENTRALITY;
+import static graql.lang.util.Token.Compute.Method.CLUSTER;
+import static graql.lang.util.Token.Compute.Method.COUNT;
+import static graql.lang.util.Token.Compute.Method.MAX;
+import static graql.lang.util.Token.Compute.Method.MEAN;
+import static graql.lang.util.Token.Compute.Method.MEDIAN;
+import static graql.lang.util.Token.Compute.Method.MIN;
+import static graql.lang.util.Token.Compute.Method.PATH;
+import static graql.lang.util.Token.Compute.Method.STD;
+import static graql.lang.util.Token.Compute.Method.SUM;
 import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
 import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
@@ -119,7 +123,7 @@ class ComputeExecutor<T extends Answer> {
     }
 
     public Stream<T> stream() {
-        GraqlCompute.Method method = query.method();
+        Token.Compute.Method method = query.method();
         if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
             return (Stream<T>) runComputeMinMaxMedianOrSum();
         } else if (method.equals(MEAN)) {
@@ -136,7 +140,7 @@ class ComputeExecutor<T extends Answer> {
             return (Stream<T>) runComputeCluster();
         }
 
-        throw GraqlQueryException.invalidComputeQuery_invalidMethod();
+        throw GraqlException.invalidComputeQuery_invalidMethod(METHODS_ACCEPTED);
     }
 
     public final ComputerResult compute(@Nullable VertexProgram<?> program,
@@ -273,7 +277,7 @@ class ComputeExecutor<T extends Answer> {
      * @return an object which is a subclass of StatisticsMapReduce
      */
     private StatisticsMapReduce<?> initStatisticsMapReduce(Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
-        GraqlCompute.Method method = query.method();
+        Token.Compute.Method method = query.method();
         if (method.equals(MIN)) {
             return new MinMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MAX)) {
@@ -368,7 +372,8 @@ class ComputeExecutor<T extends Answer> {
         if (query.using().get().equals(DEGREE)) return runComputeDegree();
         if (query.using().get().equals(K_CORE)) return runComputeCoreness();
 
-        throw GraqlQueryException.invalidComputeQuery_invalidMethodAlgorithm(query.method());
+        Token.Compute.Method method = query.method();
+        throw GraqlException.invalidComputeQuery_invalidMethodAlgorithm(method, ALGORITHMS_ACCEPTED.get(method));
     }
 
     /**
@@ -469,7 +474,8 @@ class ComputeExecutor<T extends Answer> {
         if (query.using().get().equals(K_CORE)) return runComputeKCore();
         if (query.using().get().equals(CONNECTED_COMPONENT)) return runComputeConnectedComponent();
 
-        throw GraqlQueryException.invalidComputeQuery_invalidMethodAlgorithm(query.method());
+        Token.Compute.Method method = query.method();
+        throw GraqlException.invalidComputeQuery_invalidMethodAlgorithm(method, ALGORITHMS_ACCEPTED.get(method));
     }
 
 

@@ -26,13 +26,12 @@ import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.query.builder.Computable;
+import graql.lang.exception.GraqlException;
 import graql.lang.util.Token;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,21 +56,21 @@ import static java.util.stream.Collectors.joining;
  */
 public class GraqlCompute<T extends Answer> extends GraqlQuery implements Computable {
 
-    public final static Collection<Method> METHODS_ACCEPTED = ImmutableList.copyOf(Method.values());
+    public final static List<Token.Compute.Method> METHODS_ACCEPTED = ImmutableList.copyOf(Token.Compute.Method.values());
 
-    public final static Map<Method, Collection<Token.Compute.Condition>> CONDITIONS_REQUIRED = conditionsRequired();
-    public final static Map<Method, Collection<Token.Compute.Condition>> CONDITIONS_OPTIONAL = conditionsOptional();
-    public final static Map<Method, Collection<Token.Compute.Condition>> CONDITIONS_ACCEPTED = conditionsAccepted();
+    public final static Map<Token.Compute.Method, Set<Token.Compute.Condition>> CONDITIONS_REQUIRED = conditionsRequired();
+    public final static Map<Token.Compute.Method, Set<Token.Compute.Condition>> CONDITIONS_OPTIONAL = conditionsOptional();
+    public final static Map<Token.Compute.Method, Set<Token.Compute.Condition>> CONDITIONS_ACCEPTED = conditionsAccepted();
 
-    public final static Map<Method, Token.Compute.Algorithm> ALGORITHMS_DEFAULT = algorithmsDefault();
-    public final static Map<Method, Collection<Token.Compute.Algorithm>> ALGORITHMS_ACCEPTED = algorithmsAccepted();
+    public final static Map<Token.Compute.Method, Token.Compute.Algorithm> ALGORITHMS_DEFAULT = algorithmsDefault();
+    public final static Map<Token.Compute.Method, Set<Token.Compute.Algorithm>> ALGORITHMS_ACCEPTED = algorithmsAccepted();
 
-    public final static Map<Method, Map<Token.Compute.Algorithm, Collection<Token.Compute.Param>>> ARGUMENTS_ACCEPTED = argumentsAccepted();
-    public final static Map<Method, Map<Token.Compute.Algorithm, Map<Token.Compute.Param, Object>>> ARGUMENTS_DEFAULT = argumentsDefault();
+    public final static Map<Token.Compute.Method, Map<Token.Compute.Algorithm, Set<Token.Compute.Param>>> ARGUMENTS_ACCEPTED = argumentsAccepted();
+    public final static Map<Token.Compute.Method, Map<Token.Compute.Algorithm, Map<Token.Compute.Param, Object>>> ARGUMENTS_DEFAULT = argumentsDefault();
 
-    public final static Map<Method, Boolean> INCLUDE_ATTRIBUTES_DEFAULT = includeAttributesDefault();
+    public final static Map<Token.Compute.Method, Boolean> INCLUDE_ATTRIBUTES_DEFAULT = includeAttributesDefault();
 
-    private Method method;
+    private Token.Compute.Method method;
     boolean includeAttributes;
 
     // All these condition properties need to start off as NULL, they will be initialised when the user provides input
@@ -84,53 +83,53 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
 
     private final Map<Token.Compute.Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
-    public GraqlCompute(Method method) {
+    public GraqlCompute(Token.Compute.Method method) {
         this(method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
     }
 
-    public GraqlCompute(Method method, boolean includeAttributes) {
+    public GraqlCompute(Token.Compute.Method method, boolean includeAttributes) {
         this.method = method;
         this.includeAttributes = includeAttributes;
     }
 
-    private static Map<Method, Collection<Token.Compute.Condition>> conditionsRequired() {
-        Map<Method, Collection<Token.Compute.Condition>> required = new HashMap<>();
-        required.put(Method.MIN, ImmutableSet.of(Token.Compute.Condition.OF));
-        required.put(Method.MAX, ImmutableSet.of(Token.Compute.Condition.OF));
-        required.put(Method.MEDIAN, ImmutableSet.of(Token.Compute.Condition.OF));
-        required.put(Method.MEAN, ImmutableSet.of(Token.Compute.Condition.OF));
-        required.put(Method.STD, ImmutableSet.of(Token.Compute.Condition.OF));
-        required.put(Method.SUM, ImmutableSet.of(Token.Compute.Condition.OF));
-        required.put(Method.PATH, ImmutableSet.of(Token.Compute.Condition.FROM, Token.Compute.Condition.TO));
-        required.put(Method.CENTRALITY, ImmutableSet.of(Token.Compute.Condition.USING));
-        required.put(Method.CLUSTER, ImmutableSet.of(Token.Compute.Condition.USING));
+    private static Map<Token.Compute.Method, Set<Token.Compute.Condition>> conditionsRequired() {
+        Map<Token.Compute.Method, Set<Token.Compute.Condition>> required = new HashMap<>();
+        required.put(Token.Compute.Method.MIN, ImmutableSet.of(Token.Compute.Condition.OF));
+        required.put(Token.Compute.Method.MAX, ImmutableSet.of(Token.Compute.Condition.OF));
+        required.put(Token.Compute.Method.MEDIAN, ImmutableSet.of(Token.Compute.Condition.OF));
+        required.put(Token.Compute.Method.MEAN, ImmutableSet.of(Token.Compute.Condition.OF));
+        required.put(Token.Compute.Method.STD, ImmutableSet.of(Token.Compute.Condition.OF));
+        required.put(Token.Compute.Method.SUM, ImmutableSet.of(Token.Compute.Condition.OF));
+        required.put(Token.Compute.Method.PATH, ImmutableSet.of(Token.Compute.Condition.FROM, Token.Compute.Condition.TO));
+        required.put(Token.Compute.Method.CENTRALITY, ImmutableSet.of(Token.Compute.Condition.USING));
+        required.put(Token.Compute.Method.CLUSTER, ImmutableSet.of(Token.Compute.Condition.USING));
 
         return ImmutableMap.copyOf(required);
     }
 
-    private static Map<Method, Collection<Token.Compute.Condition>> conditionsOptional() {
-        Map<Method, Collection<Token.Compute.Condition>> optional = new HashMap<>();
-        optional.put(Method.COUNT, ImmutableSet.of(Token.Compute.Condition.OF, Token.Compute.Condition.IN));
-        optional.put(Method.MIN, ImmutableSet.of(Token.Compute.Condition.IN));
-        optional.put(Method.MAX, ImmutableSet.of(Token.Compute.Condition.IN));
-        optional.put(Method.MEDIAN, ImmutableSet.of(Token.Compute.Condition.IN));
-        optional.put(Method.MEAN, ImmutableSet.of(Token.Compute.Condition.IN));
-        optional.put(Method.STD, ImmutableSet.of(Token.Compute.Condition.IN));
-        optional.put(Method.SUM, ImmutableSet.of(Token.Compute.Condition.IN));
-        optional.put(Method.PATH, ImmutableSet.of(Token.Compute.Condition.IN));
-        optional.put(Method.CENTRALITY, ImmutableSet.of(Token.Compute.Condition.OF, Token.Compute.Condition.IN, Token.Compute.Condition.WHERE));
-        optional.put(Method.CLUSTER, ImmutableSet.of(Token.Compute.Condition.IN, Token.Compute.Condition.WHERE));
+    private static Map<Token.Compute.Method, Set<Token.Compute.Condition>> conditionsOptional() {
+        Map<Token.Compute.Method, Set<Token.Compute.Condition>> optional = new HashMap<>();
+        optional.put(Token.Compute.Method.COUNT, ImmutableSet.of(Token.Compute.Condition.OF, Token.Compute.Condition.IN));
+        optional.put(Token.Compute.Method.MIN, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Token.Compute.Method.MAX, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Token.Compute.Method.MEDIAN, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Token.Compute.Method.MEAN, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Token.Compute.Method.STD, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Token.Compute.Method.SUM, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Token.Compute.Method.PATH, ImmutableSet.of(Token.Compute.Condition.IN));
+        optional.put(Token.Compute.Method.CENTRALITY, ImmutableSet.of(Token.Compute.Condition.OF, Token.Compute.Condition.IN, Token.Compute.Condition.WHERE));
+        optional.put(Token.Compute.Method.CLUSTER, ImmutableSet.of(Token.Compute.Condition.IN, Token.Compute.Condition.WHERE));
 
         return ImmutableMap.copyOf(optional);
     }
 
-    private static Map<Method, Collection<Token.Compute.Condition>> conditionsAccepted() {
-        Map<Method, Collection<Token.Compute.Condition>> accepted = new HashMap<>();
+    private static Map<Token.Compute.Method, Set<Token.Compute.Condition>> conditionsAccepted() {
+        Map<Token.Compute.Method, Set<Token.Compute.Condition>> accepted = new HashMap<>();
 
-        for (Map.Entry<Method, Collection<Token.Compute.Condition>> entry : CONDITIONS_REQUIRED.entrySet()) {
+        for (Map.Entry<Token.Compute.Method, Set<Token.Compute.Condition>> entry : CONDITIONS_REQUIRED.entrySet()) {
             accepted.put(entry.getKey(), new HashSet<>(entry.getValue()));
         }
-        for (Map.Entry<Method, Collection<Token.Compute.Condition>> entry : CONDITIONS_OPTIONAL.entrySet()) {
+        for (Map.Entry<Token.Compute.Method, Set<Token.Compute.Condition>> entry : CONDITIONS_OPTIONAL.entrySet()) {
             if (accepted.containsKey(entry.getKey())) accepted.get(entry.getKey()).addAll(entry.getValue());
             else accepted.put(entry.getKey(), entry.getValue());
         }
@@ -138,20 +137,20 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
         return ImmutableMap.copyOf(accepted);
     }
 
-    private static Map<Method, Collection<Token.Compute.Algorithm>> algorithmsAccepted() {
-        Map<Method, Collection<Token.Compute.Algorithm>> accepted = new HashMap<>();
+    private static Map<Token.Compute.Method, Set<Token.Compute.Algorithm>> algorithmsAccepted() {
+        Map<Token.Compute.Method, Set<Token.Compute.Algorithm>> accepted = new HashMap<>();
 
-        accepted.put(Method.CENTRALITY, ImmutableSet.of(Token.Compute.Algorithm.DEGREE, Token.Compute.Algorithm.K_CORE));
-        accepted.put(Method.CLUSTER, ImmutableSet.of(Token.Compute.Algorithm.CONNECTED_COMPONENT, Token.Compute.Algorithm.K_CORE));
+        accepted.put(Token.Compute.Method.CENTRALITY, ImmutableSet.of(Token.Compute.Algorithm.DEGREE, Token.Compute.Algorithm.K_CORE));
+        accepted.put(Token.Compute.Method.CLUSTER, ImmutableSet.of(Token.Compute.Algorithm.CONNECTED_COMPONENT, Token.Compute.Algorithm.K_CORE));
 
         return ImmutableMap.copyOf(accepted);
     }
 
-    private static Map<Method, Map<Token.Compute.Algorithm, Collection<Token.Compute.Param>>> argumentsAccepted() {
-        Map<Method, Map<Token.Compute.Algorithm, Collection<Token.Compute.Param>>> accepted = new HashMap<>();
+    private static Map<Token.Compute.Method, Map<Token.Compute.Algorithm, Set<Token.Compute.Param>>> argumentsAccepted() {
+        Map<Token.Compute.Method, Map<Token.Compute.Algorithm, Set<Token.Compute.Param>>> accepted = new HashMap<>();
 
-        accepted.put(Method.CENTRALITY, ImmutableMap.of(Token.Compute.Algorithm.K_CORE, ImmutableSet.of(Token.Compute.Param.MIN_K)));
-        accepted.put(Method.CLUSTER, ImmutableMap.of(
+        accepted.put(Token.Compute.Method.CENTRALITY, ImmutableMap.of(Token.Compute.Algorithm.K_CORE, ImmutableSet.of(Token.Compute.Param.MIN_K)));
+        accepted.put(Token.Compute.Method.CLUSTER, ImmutableMap.of(
                 Token.Compute.Algorithm.K_CORE, ImmutableSet.of(Token.Compute.Param.K),
                 Token.Compute.Algorithm.CONNECTED_COMPONENT, ImmutableSet.of(Token.Compute.Param.SIZE, Token.Compute.Param.CONTAINS)
         ));
@@ -159,35 +158,35 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
         return ImmutableMap.copyOf(accepted);
     }
 
-    private static Map<Method, Map<Token.Compute.Algorithm, Map<Token.Compute.Param, Object>>> argumentsDefault() {
-        Map<Method, Map<Token.Compute.Algorithm, Map<Token.Compute.Param, Object>>> defaults = new HashMap<>();
+    private static Map<Token.Compute.Method, Map<Token.Compute.Algorithm, Map<Token.Compute.Param, Object>>> argumentsDefault() {
+        Map<Token.Compute.Method, Map<Token.Compute.Algorithm, Map<Token.Compute.Param, Object>>> defaults = new HashMap<>();
 
-        defaults.put(Method.CENTRALITY, ImmutableMap.of(Token.Compute.Algorithm.K_CORE, ImmutableMap.of(Token.Compute.Param.MIN_K, Argument.DEFAULT_MIN_K)));
-        defaults.put(Method.CLUSTER, ImmutableMap.of(Token.Compute.Algorithm.K_CORE, ImmutableMap.of(Token.Compute.Param.K, Argument.DEFAULT_K)));
+        defaults.put(Token.Compute.Method.CENTRALITY, ImmutableMap.of(Token.Compute.Algorithm.K_CORE, ImmutableMap.of(Token.Compute.Param.MIN_K, Argument.DEFAULT_MIN_K)));
+        defaults.put(Token.Compute.Method.CLUSTER, ImmutableMap.of(Token.Compute.Algorithm.K_CORE, ImmutableMap.of(Token.Compute.Param.K, Argument.DEFAULT_K)));
 
         return ImmutableMap.copyOf(defaults);
     }
 
-    private static Map<Method, Token.Compute.Algorithm> algorithmsDefault() {
-        Map<Method, Token.Compute.Algorithm> methodAlgorithm = new HashMap<>();
-        methodAlgorithm.put(Method.CENTRALITY, Token.Compute.Algorithm.DEGREE);
-        methodAlgorithm.put(Method.CLUSTER, Token.Compute.Algorithm.CONNECTED_COMPONENT);
+    private static Map<Token.Compute.Method, Token.Compute.Algorithm> algorithmsDefault() {
+        Map<Token.Compute.Method, Token.Compute.Algorithm> methodAlgorithm = new HashMap<>();
+        methodAlgorithm.put(Token.Compute.Method.CENTRALITY, Token.Compute.Algorithm.DEGREE);
+        methodAlgorithm.put(Token.Compute.Method.CLUSTER, Token.Compute.Algorithm.CONNECTED_COMPONENT);
 
         return ImmutableMap.copyOf(methodAlgorithm);
     }
 
-    private static Map<Method, Boolean> includeAttributesDefault() {
-        Map<Method, Boolean> map = new HashMap<>();
-        map.put(Method.COUNT, false);
-        map.put(Method.MIN, true);
-        map.put(Method.MAX, true);
-        map.put(Method.MEDIAN, true);
-        map.put(Method.MEAN, true);
-        map.put(Method.STD, true);
-        map.put(Method.SUM, true);
-        map.put(Method.PATH, false);
-        map.put(Method.CENTRALITY, true);
-        map.put(Method.CLUSTER, false);
+    private static Map<Token.Compute.Method, Boolean> includeAttributesDefault() {
+        Map<Token.Compute.Method, Boolean> map = new HashMap<>();
+        map.put(Token.Compute.Method.COUNT, false);
+        map.put(Token.Compute.Method.MIN, true);
+        map.put(Token.Compute.Method.MAX, true);
+        map.put(Token.Compute.Method.MEDIAN, true);
+        map.put(Token.Compute.Method.MEAN, true);
+        map.put(Token.Compute.Method.STD, true);
+        map.put(Token.Compute.Method.SUM, true);
+        map.put(Token.Compute.Method.PATH, false);
+        map.put(Token.Compute.Method.CENTRALITY, true);
+        map.put(Token.Compute.Method.CLUSTER, false);
 
         return ImmutableMap.copyOf(map);
     }
@@ -204,7 +203,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
         return conditions;
     }
 
-    public final Method method() {
+    public final Token.Compute.Method method() {
         return method;
     }
 
@@ -254,11 +253,11 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
     }
 
     @CheckReturnValue
-    public Optional<GraqlQueryException> getException() {
+    public Optional<GraqlException> getException() {
         // Check that all required conditions for the current query method are provided
-        for (Token.Compute.Condition condition : CONDITIONS_REQUIRED.getOrDefault(this.method(), Collections.emptyList())) {
+        for (Token.Compute.Condition condition : CONDITIONS_REQUIRED.getOrDefault(this.method(), Collections.emptySet())) {
             if (!this.conditionsMap.get(condition).get().isPresent()) {
-                return Optional.of(GraqlQueryException.invalidComputeQuery_missingCondition(this.method()));
+                return Optional.of(GraqlException.invalidComputeQuery_missingCondition(this.method(), CONDITIONS_REQUIRED.get(this.method())));
             }
         }
 
@@ -267,20 +266,22 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
                 .filter(con -> this.conditionsMap.get(con).get().isPresent())
                 .collect(Collectors.toSet())) {
             if (!CONDITIONS_ACCEPTED.get(this.method()).contains(condition)) {
-                return Optional.of(GraqlQueryException.invalidComputeQuery_invalidCondition(this.method()));
+                return Optional.of(GraqlException.invalidComputeQuery_invalidCondition(this.method(), CONDITIONS_ACCEPTED.get(this.method())));
             }
         }
 
         // Check that the provided algorithm is accepted for the current query method
         if (ALGORITHMS_ACCEPTED.containsKey(this.method()) && !ALGORITHMS_ACCEPTED.get(this.method()).contains(this.using().get())) {
-            return Optional.of(GraqlQueryException.invalidComputeQuery_invalidMethodAlgorithm(this.method()));
+            return Optional.of(GraqlException.invalidComputeQuery_invalidMethodAlgorithm(this.method(), ALGORITHMS_ACCEPTED.get(this.method())));
         }
 
         // Check that the provided arguments are accepted for the current query method and algorithm
         if (this.where().isPresent()) {
             for (Token.Compute.Param param : this.where().get().getParameters()) {
                 if (!ARGUMENTS_ACCEPTED.get(this.method()).get(this.using().get()).contains(param)) {
-                    return Optional.of(GraqlQueryException.invalidComputeQuery_invalidArgument(this.method(), this.using().get()));
+                    Token.Compute.Method method1 = this.method();
+                    Token.Compute.Algorithm algorithm1 = this.using().get();
+                    return Optional.of(GraqlException.invalidComputeQuery_invalidArgument(method1, algorithm1, ARGUMENTS_ACCEPTED.get(method1).get(algorithm1)));
                 }
             }
         }
@@ -419,27 +420,27 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
         }
 
         public GraqlCompute.Statistics.Value max() {
-            return new GraqlCompute.Statistics.Value(Method.MAX);
+            return new GraqlCompute.Statistics.Value(Token.Compute.Method.MAX);
         }
 
         public GraqlCompute.Statistics.Value min() {
-            return new GraqlCompute.Statistics.Value(Method.MIN);
+            return new GraqlCompute.Statistics.Value(Token.Compute.Method.MIN);
         }
 
         public GraqlCompute.Statistics.Value mean() {
-            return new GraqlCompute.Statistics.Value(Method.MEAN);
+            return new GraqlCompute.Statistics.Value(Token.Compute.Method.MEAN);
         }
 
         public GraqlCompute.Statistics.Value median() {
-            return new GraqlCompute.Statistics.Value(Method.MEDIAN);
+            return new GraqlCompute.Statistics.Value(Token.Compute.Method.MEDIAN);
         }
 
         public GraqlCompute.Statistics.Value sum() {
-            return new GraqlCompute.Statistics.Value(Method.SUM);
+            return new GraqlCompute.Statistics.Value(Token.Compute.Method.SUM);
         }
 
         public GraqlCompute.Statistics.Value std() {
-            return new GraqlCompute.Statistics.Value(Method.STD);
+            return new GraqlCompute.Statistics.Value(Token.Compute.Method.STD);
         }
 
         public GraqlCompute.Path path() {
@@ -458,7 +459,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
 
     public static abstract class Statistics extends GraqlCompute<grakn.core.graql.answer.Value> {
 
-        Statistics(Method method) {
+        Statistics(Token.Compute.Method method) {
             super(method);
         }
 
@@ -466,7 +467,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
                 implements Computable.Scopeable<GraqlCompute.Statistics.Count> {
 
             Count() {
-                super(Method.COUNT);
+                super(Token.Compute.Method.COUNT);
             }
 
             @Override
@@ -486,7 +487,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
                 implements Computable.Targetable<Value>,
                            Computable.Scopeable<Value> {
 
-            Value(Method method) {
+            Value(Token.Compute.Method method) {
                 super(method);
             }
 
@@ -515,7 +516,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
                        Computable.Scopeable<GraqlCompute.Path> {
 
         Path(){
-            super(Method.PATH);
+            super(Token.Compute.Method.PATH);
         }
 
         @Override
@@ -549,7 +550,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
                        Computable.Configurable<GraqlCompute.Centrality> {
 
         Centrality(){
-            super(Method.CENTRALITY);
+            super(Token.Compute.Method.CENTRALITY);
         }
 
         @Override
@@ -590,7 +591,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
                        Computable.Configurable<GraqlCompute.Cluster> {
 
         Cluster(){
-            super(Method.CLUSTER);
+            super(Token.Compute.Method.CLUSTER);
         }
 
         @Override
@@ -618,63 +619,6 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
 
             return this;
         }
-    }
-
-    public static class Method {
-        public final static Method COUNT = new Method("count");
-        public final static Method MIN = new Method("min");
-        public final static Method MAX = new Method("max");
-        public final static Method MEDIAN = new Method("median");
-        public final static Method MEAN = new Method("mean");
-        public final static Method STD = new Method("std");
-        public final static Method SUM = new Method("sum");
-        public final static Method PATH = new Method("path");
-        public final static Method CENTRALITY = new Method("centrality");
-        public final static Method CLUSTER = new Method("cluster");
-
-        private final static List<Method> list = Arrays.asList(COUNT, MIN, MAX, MEDIAN, MEAN, STD, SUM, PATH, CENTRALITY, CLUSTER);
-        private final String name;
-
-        Method(String name) {
-            this.name = name;
-        }
-
-        private static List<Method> values() { return list; }
-
-        public String name() {
-            return this.name;
-        }
-
-        @Override
-        public String toString() {
-            return this.name;
-        }
-
-        public static Method of(String name) {
-            for (Method m : Method.values()) {
-                if (m.name.equals(name)) {
-                    return m;
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Method that = (Method) o;
-
-            return (this.name().equals(that.name()));
-        }
-
-        @Override
-        public int hashCode() {
-            int result = 31 * name.hashCode();
-            return result;
-        }
-
     }
 
     /**
@@ -769,7 +713,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
         }
 
         @CheckReturnValue
-        public Collection<Token.Compute.Param> getParameters() {
+        public Set<Token.Compute.Param> getParameters() {
             return argumentsOrdered.keySet();
         }
 

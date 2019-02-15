@@ -19,7 +19,6 @@
 package grakn.core.graql.query.parser;
 
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.property.HasAttributeProperty;
@@ -70,6 +69,7 @@ import java.util.stream.Stream;
 import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.not;
 import static grakn.core.graql.query.Graql.type;
+import static grakn.core.graql.query.query.GraqlCompute.CONDITIONS_ACCEPTED;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -369,27 +369,27 @@ public class Parser extends GraqlBaseVisitor {
     @Override
     public GraqlCompute.Statistics.Value visitCompute_value(GraqlParser.Compute_valueContext ctx) {
         GraqlCompute.Statistics.Value compute;
-        GraqlCompute.Method method = GraqlCompute.Method.of(ctx.compute_method().getText());
+        Token.Compute.Method method = Token.Compute.Method.of(ctx.compute_method().getText());
 
         if (method == null) {
             throw new IllegalArgumentException("Unrecognised Graql Compute Statistics method: " + ctx.getText());
 
-        } else if (method.equals(GraqlCompute.Method.MAX)) {
+        } else if (method.equals(Token.Compute.Method.MAX)) {
             compute = Graql.compute().max();
 
-        } else if (method.equals(GraqlCompute.Method.MIN)) {
+        } else if (method.equals(Token.Compute.Method.MIN)) {
             compute = Graql.compute().min();
 
-        } else if (method.equals(GraqlCompute.Method.MEAN)) {
+        } else if (method.equals(Token.Compute.Method.MEAN)) {
             compute = Graql.compute().mean();
 
-        } else if (method.equals(GraqlCompute.Method.MEDIAN)) {
+        } else if (method.equals(Token.Compute.Method.MEDIAN)) {
             compute = Graql.compute().median();
 
-        } else if (method.equals(GraqlCompute.Method.SUM)) {
+        } else if (method.equals(Token.Compute.Method.SUM)) {
             compute = Graql.compute().sum();
 
-        } else if (method.equals(GraqlCompute.Method.STD)) {
+        } else if (method.equals(Token.Compute.Method.STD)) {
             compute = Graql.compute().std();
 
         } else {
@@ -405,7 +405,7 @@ public class Parser extends GraqlBaseVisitor {
                 compute = compute.in(visitTypes(valueCtx.compute_scope().types()));
 
             } else {
-                throw GraqlQueryException.invalidComputeQuery_invalidCondition(method);
+                throw GraqlException.invalidComputeQuery_invalidCondition(method, CONDITIONS_ACCEPTED.get(method));
             }
         }
 
@@ -431,7 +431,7 @@ public class Parser extends GraqlBaseVisitor {
                 compute = compute.in(visitTypes(pathCtx.compute_scope().types()));
 
             } else {
-                throw GraqlQueryException.invalidComputeQuery_invalidCondition(GraqlCompute.Method.PATH);
+                throw GraqlException.invalidComputeQuery_invalidCondition(Token.Compute.Method.PATH, CONDITIONS_ACCEPTED.get(Token.Compute.Method.PATH));
             }
         }
 
@@ -454,7 +454,7 @@ public class Parser extends GraqlBaseVisitor {
                 compute = (GraqlCompute.Centrality) setComputeConfig(compute, centralityCtx.compute_config());
 
             } else {
-                throw GraqlQueryException.invalidComputeQuery_invalidCondition(GraqlCompute.Method.CENTRALITY);
+                throw GraqlException.invalidComputeQuery_invalidCondition(Token.Compute.Method.CENTRALITY, CONDITIONS_ACCEPTED.get(Token.Compute.Method.CENTRALITY));
             }
         }
 
@@ -473,7 +473,7 @@ public class Parser extends GraqlBaseVisitor {
             } else if (clusterCtx.compute_config() != null) {
                 compute = (GraqlCompute.Cluster) setComputeConfig(compute, clusterCtx.compute_config());
             } else {
-                throw GraqlQueryException.invalidComputeQuery_invalidCondition(GraqlCompute.Method.CLUSTER);
+                throw GraqlException.invalidComputeQuery_invalidCondition(Token.Compute.Method.CLUSTER, CONDITIONS_ACCEPTED.get(Token.Compute.Method.CLUSTER));
             }
         }
 

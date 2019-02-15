@@ -20,8 +20,6 @@ package grakn.core.graql.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -29,11 +27,11 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
-import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
-import graql.lang.util.Token;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
@@ -41,20 +39,10 @@ import java.util.Collection;
 import static grakn.core.common.exception.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
 import static grakn.core.common.exception.ErrorMessage.INSERT_RECURSIVE;
 import static grakn.core.common.exception.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
-import static grakn.core.common.exception.ErrorMessage.INVALID_COMPUTE_ARGUMENT;
-import static grakn.core.common.exception.ErrorMessage.INVALID_COMPUTE_CONDITION;
-import static grakn.core.common.exception.ErrorMessage.INVALID_COMPUTE_METHOD;
-import static grakn.core.common.exception.ErrorMessage.INVALID_COMPUTE_METHOD_ALGORITHM;
 import static grakn.core.common.exception.ErrorMessage.INVALID_VALUE;
-import static grakn.core.common.exception.ErrorMessage.MISSING_COMPUTE_CONDITION;
 import static grakn.core.common.exception.ErrorMessage.NEGATIVE_OFFSET;
 import static grakn.core.common.exception.ErrorMessage.NON_POSITIVE_LIMIT;
 import static grakn.core.common.exception.ErrorMessage.UNEXPECTED_RESULT;
-import static grakn.core.graql.query.query.GraqlCompute.ALGORITHMS_ACCEPTED;
-import static grakn.core.graql.query.query.GraqlCompute.ARGUMENTS_ACCEPTED;
-import static grakn.core.graql.query.query.GraqlCompute.CONDITIONS_ACCEPTED;
-import static grakn.core.graql.query.query.GraqlCompute.CONDITIONS_REQUIRED;
-import static grakn.core.graql.query.query.GraqlCompute.METHODS_ACCEPTED;
 
 /**
  * Graql Query Exception
@@ -319,23 +307,4 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(UNEXPECTED_RESULT.getMessage(var.name()));
     }
 
-    public static GraqlQueryException invalidComputeQuery_invalidMethod() {
-        return new GraqlQueryException(INVALID_COMPUTE_METHOD.getMessage(METHODS_ACCEPTED));
-    }
-
-    public static GraqlQueryException invalidComputeQuery_invalidCondition(GraqlCompute.Method method) {
-        return new GraqlQueryException(INVALID_COMPUTE_CONDITION.getMessage(method, CONDITIONS_ACCEPTED.get(method)));
-    }
-
-    public static GraqlQueryException invalidComputeQuery_missingCondition(GraqlCompute.Method method) {
-        return new GraqlQueryException(MISSING_COMPUTE_CONDITION.getMessage(method, CONDITIONS_REQUIRED.get(method)));
-    }
-
-    public static GraqlQueryException invalidComputeQuery_invalidMethodAlgorithm(GraqlCompute.Method method) {
-        return new GraqlQueryException(INVALID_COMPUTE_METHOD_ALGORITHM.getMessage(method, ALGORITHMS_ACCEPTED.get(method)));
-    }
-
-    public static GraqlQueryException invalidComputeQuery_invalidArgument(GraqlCompute.Method method, Token.Compute.Algorithm algorithm) {
-        return new GraqlQueryException(INVALID_COMPUTE_ARGUMENT.getMessage(method, algorithm, ARGUMENTS_ACCEPTED.get(method).get(algorithm)));
-    }
 }
