@@ -119,7 +119,7 @@ class ComputeExecutor<T extends Answer> {
     }
 
     public Stream<T> stream() {
-        GraqlCompute.Method<?> method = query.method();
+        GraqlCompute.Method method = query.method();
         if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
             return (Stream<T>) runComputeMinMaxMedianOrSum();
         } else if (method.equals(MEAN)) {
@@ -273,7 +273,7 @@ class ComputeExecutor<T extends Answer> {
      * @return an object which is a subclass of StatisticsMapReduce
      */
     private StatisticsMapReduce<?> initStatisticsMapReduce(Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
-        GraqlCompute.Method<?> method = query.method();
+        GraqlCompute.Method method = query.method();
         if (method.equals(MIN)) {
             return new MinMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MAX)) {

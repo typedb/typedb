@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-@SuppressWarnings("Duplicates") // TODO: remove before merging PR
 public interface Computable {
 
     interface Directional<T extends Computable.Directional> extends Computable{

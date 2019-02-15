@@ -55,7 +55,6 @@ import static java.util.stream.Collectors.joining;
  *
  * @param <T> return type of ComputeQuery
  */
-@SuppressWarnings("Duplicates") // TODO: remove before merging PR
 public class GraqlCompute<T extends Answer> extends GraqlQuery implements Computable {
 
     public final static Collection<Method> METHODS_ACCEPTED = ImmutableList.copyOf(Method.values());
@@ -85,11 +84,11 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
 
     private final Map<Token.Compute.Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
-    public GraqlCompute(Method<T> method) {
+    public GraqlCompute(Method method) {
         this(method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
     }
 
-    public GraqlCompute(Method<T> method, boolean includeAttributes) {
+    public GraqlCompute(Method method, boolean includeAttributes) {
         this.method = method;
         this.includeAttributes = includeAttributes;
     }
@@ -459,7 +458,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
 
     public static abstract class Statistics extends GraqlCompute<grakn.core.graql.answer.Value> {
 
-        Statistics(Method<grakn.core.graql.answer.Value> method) {
+        Statistics(Method method) {
             super(method);
         }
 
@@ -487,7 +486,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
                 implements Computable.Targetable<Value>,
                            Computable.Scopeable<Value> {
 
-            Value(Method<grakn.core.graql.answer.Value> method) {
+            Value(Method method) {
                 super(method);
             }
 
@@ -621,23 +620,17 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
         }
     }
 
-
-    /**
-     * Graql compute method types to determine the type of calculation to execute
-     *
-     * @param <T> return type of ComputeQuery
-     */
-    public static class Method<T extends Answer> {
-        public final static Method<grakn.core.graql.answer.Value> COUNT = new Method<>("count");
-        public final static Method<grakn.core.graql.answer.Value> MIN = new Method<>("min");
-        public final static Method<grakn.core.graql.answer.Value> MAX = new Method<>("max");
-        public final static Method<grakn.core.graql.answer.Value> MEDIAN = new Method<>("median");
-        public final static Method<grakn.core.graql.answer.Value> MEAN = new Method<>("mean");
-        public final static Method<grakn.core.graql.answer.Value> STD = new Method<>("std");
-        public final static Method<grakn.core.graql.answer.Value> SUM = new Method<>("sum");
-        public final static Method<ConceptList> PATH = new Method<>("path");
-        public final static Method<ConceptSetMeasure> CENTRALITY = new Method<>("centrality");
-        public final static Method<ConceptSet> CLUSTER = new Method<>("cluster");
+    public static class Method {
+        public final static Method COUNT = new Method("count");
+        public final static Method MIN = new Method("min");
+        public final static Method MAX = new Method("max");
+        public final static Method MEDIAN = new Method("median");
+        public final static Method MEAN = new Method("mean");
+        public final static Method STD = new Method("std");
+        public final static Method SUM = new Method("sum");
+        public final static Method PATH = new Method("path");
+        public final static Method CENTRALITY = new Method("centrality");
+        public final static Method CLUSTER = new Method("cluster");
 
         private final static List<Method> list = Arrays.asList(COUNT, MIN, MAX, MEDIAN, MEAN, STD, SUM, PATH, CENTRALITY, CLUSTER);
         private final String name;
@@ -657,8 +650,8 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
             return this.name;
         }
 
-        public static Method<?> of(String name) {
-            for (Method<?> m : Method.values()) {
+        public static Method of(String name) {
+            for (Method m : Method.values()) {
                 if (m.name.equals(name)) {
                     return m;
                 }
@@ -671,7 +664,7 @@ public class GraqlCompute<T extends Answer> extends GraqlQuery implements Comput
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Method<?> that = (Method<?>) o;
+            Method that = (Method) o;
 
             return (this.name().equals(that.name()));
         }
