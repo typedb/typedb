@@ -30,7 +30,7 @@ def grpc_dependencies():
     git_repository(
         name = "com_github_grpc_grpc",
         remote = "https://github.com/graknlabs/grpc",
-        commit = "6accbdaccb906f59be846fe11450f662562beef9"
+        commit = "4a1528f6f20a8aa68bdbdc9a66286ec2394fc170"
     )
 
     git_repository(

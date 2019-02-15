@@ -147,6 +147,20 @@ public final class GraknServerRPCMock extends ExternalResource {
             return null;
         }).when(keyspaceService).delete(any(), any());
 
+        doAnswer(args -> {
+            StreamObserver<SessionProto.OpenSessionRes> response = args.getArgument(1);
+            response.onNext(SessionProto.OpenSessionRes.newBuilder().setSessionId("randomID").build());
+            response.onCompleted();
+            return null;
+        }).when(sessionService).open(any(), any());
+
+        doAnswer(args -> {
+            StreamObserver<SessionProto.CloseSessionRes> response = args.getArgument(1);
+            response.onNext(SessionProto.CloseSessionRes.newBuilder().build());
+            response.onCompleted();
+            return null;
+        }).when(sessionService).close(any(), any());
+
         // Return a default "done" response to every message from the client
         doAnswer(args -> {
             if (serverResponses == null) {

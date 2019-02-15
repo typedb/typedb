@@ -133,7 +133,8 @@ public final class GraknClient {
             }
             this.keyspace = keyspace;
             sessionStub = SessionServiceGrpc.newBlockingStub(channel);
-            SessionProto.OpenSessionRes response = sessionStub.open(SessionProto.OpenSessionReq.newBuilder().setKeyspace(keyspace).build());
+            SessionProto.OpenSessionReq request = SessionProto.OpenSessionReq.newBuilder().setKeyspace(keyspace).build();
+            SessionProto.OpenSessionRes response = sessionStub.open(request);
             sessionId = response.getSessionId();
         }
 
