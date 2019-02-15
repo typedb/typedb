@@ -111,13 +111,6 @@ public class KeyspaceManager {
         }
 
         SessionImpl session = new SessionImpl(keyspace, config);
-
-
-        // TODO: check if opening tx is still needed
-//        try(TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)){
-//            tx.closeSession();
-//            tx.cache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
-//        }
         session.clearGraph();
         session.close();
         return deleteReferenceInSystemKeyspace(keyspace);

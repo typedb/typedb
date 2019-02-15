@@ -42,11 +42,11 @@ import javax.annotation.CheckReturnValue;
  *
  * NOTE:
  *  - Only 1 transaction per thread can exist.
- *  - A transaction cannot be shared between multiple threads, each thread will need to get a new transaction form the session.
+ *  - A transaction cannot be shared between multiple threads, each thread will need to get a new transaction from a session.
  */
 public class SessionImpl implements Session {
 
-    private final TransactionOLAPFactory transactionOLAPFactory;
+    private final HadoopGraphFactory hadoopGraphFactory;
 
     // Session can have at most 1 transaction per thread, so we keep a local reference here
     private final ThreadLocal<TransactionOLTP> localOLTPTransactionContainer = new ThreadLocal<>();
@@ -66,8 +66,11 @@ public class SessionImpl implements Session {
     public SessionImpl(Keyspace keyspace, Config config) {
         this.keyspace = keyspace;
         this.config = config;
-        this.transactionOLAPFactory = new TransactionOLAPFactory(this);
-        this.graph = OLTPGraphFactory.openGraph(this);
+        // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
+        // be an expensive operation TODO: refactor in the future
+        this.hadoopGraphFactory = new HadoopGraphFactory(this);
+        // Open Janus Graph
+        this.graph = JanusGraphFactory.openGraph(this);
     }
 
 
@@ -103,7 +106,7 @@ public class SessionImpl implements Session {
      */
     @CheckReturnValue
     public TransactionOLAP transactionOLAP() {
-        return transactionOLAPFactory.openOLAP();
+        return new TransactionOLAP(hadoopGraphFactory.getGraph());
     }
 
     /**

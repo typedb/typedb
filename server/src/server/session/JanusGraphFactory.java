@@ -31,7 +31,6 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.Namifiable;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
@@ -58,8 +57,8 @@ import static java.util.Arrays.stream;
 /**
  * This produces a {@link JanusGraph} with custom Grakn configurations.
  */
-final public class OLTPGraphFactory {
-    private final static Logger LOG = LoggerFactory.getLogger(OLTPGraphFactory.class);
+final public class JanusGraphFactory {
+    private final static Logger LOG = LoggerFactory.getLogger(JanusGraphFactory.class);
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
     private static final String JANUS_PREFIX = "janusmr.ioformat.conf.";
     private static final String STORAGE_BACKEND = "storage.backend";
@@ -74,7 +73,7 @@ final public class OLTPGraphFactory {
     static {
         String DEFAULT_CONFIG = "resources/default-configs.properties";
         DEFAULT_PROPERTIES = new Properties();
-        try (InputStream in = OLTPGraphFactory.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
+        try (InputStream in = JanusGraphFactory.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
             DEFAULT_PROPERTIES.load(in);
         } catch (IOException e) {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
@@ -114,7 +113,7 @@ final public class OLTPGraphFactory {
 
 
     private static JanusGraph configureGraph(SessionImpl session) {
-        JanusGraphFactory.Builder builder = JanusGraphFactory.build().
+        org.janusgraph.core.JanusGraphFactory.Builder builder = org.janusgraph.core.JanusGraphFactory.build().
                 set(STORAGE_HOSTNAME, session.config().getProperty(ConfigKey.STORAGE_HOSTNAME)).
                 set(STORAGE_KEYSPACE, session.keyspace().getName()).
                 set(STORAGE_BATCH_LOADING, false);

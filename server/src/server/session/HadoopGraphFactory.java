@@ -39,9 +39,9 @@ import java.util.Properties;
  * 2. This factory primarily exists as a means of producing a
  * {@link org.apache.tinkerpop.gremlin.process.computer.GraphComputer} on of {@link HadoopGraph}
  */
-public class TransactionOLAPFactory {
+public class HadoopGraphFactory {
 
-    private final Logger LOG = LoggerFactory.getLogger(TransactionOLAPFactory.class);
+    private final Logger LOG = LoggerFactory.getLogger(HadoopGraphFactory.class);
     private final SessionImpl session;
     private HadoopGraph graph = null;
     //These properties are loaded in by default and can optionally be overwritten
@@ -50,18 +50,17 @@ public class TransactionOLAPFactory {
     static {
         String DEFAULT_CONFIG = "resources/default-configs.properties";
         DEFAULT_PROPERTIES = new Properties();
-        try (InputStream in = TransactionOLAPFactory.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
+        try (InputStream in = HadoopGraphFactory.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
             DEFAULT_PROPERTIES.load(in);
         } catch (IOException e) {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
         }
     }
 
-    public TransactionOLAPFactory(SessionImpl sessionImpl) {
+    public HadoopGraphFactory(SessionImpl sessionImpl) {
         this.session = sessionImpl;
 
         // Janus configurations
-        String mrPrefixConf = "janusmr.ioformat.conf.";
         String graphMrPrefixConf = "janusgraphmr.ioformat.conf.";
         String inputKeyspaceConf = "cassandra.input.keyspace";
         String keyspaceConf = "storage.cassandra.keyspace";
@@ -71,16 +70,11 @@ public class TransactionOLAPFactory {
         String keyspaceValue = session.keyspace().getName();
         String hostnameValue = session.config().getProperty(ConfigKey.STORAGE_HOSTNAME);
 
-        session.config().properties().setProperty(mrPrefixConf + keyspaceConf, keyspaceValue);
-        session.config().properties().setProperty(mrPrefixConf + hostnameConf, hostnameValue);
         session.config().properties().setProperty(graphMrPrefixConf + hostnameConf, hostnameValue);
         session.config().properties().setProperty(graphMrPrefixConf + keyspaceConf, keyspaceValue);
         session.config().properties().setProperty(inputKeyspaceConf, keyspaceValue);
     }
 
-    public TransactionOLAP openOLAP() {
-        return new TransactionOLAP(getGraph());
-    }
 
     public synchronized HadoopGraph getGraph() {
         if (graph == null) {

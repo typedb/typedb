@@ -265,7 +265,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * @return The janusGraph cache which contains all the data cached and accessible by all transactions.
+     * @return The graph cache which contains all the data cached and accessible by all transactions.
      */
     public GlobalCache getGlobalCache() {
         return globalCache;
