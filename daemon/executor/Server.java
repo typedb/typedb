@@ -169,8 +169,8 @@ public class Server {
     }
 
     private String getServerClassPath() {
-        Path jar = Paths.get("server","services", "lib", "*");
-        return graknHome.resolve(jar) + File.pathSeparator + graknHome.resolve("conf");
+        return graknHome.resolve("server").resolve("services").resolve("lib").toString() + File.separator + "*"
+                + File.pathSeparator + graknHome.resolve("conf");
     }
 
     private static boolean isServerReady(String host, int port) {
