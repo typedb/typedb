@@ -390,7 +390,7 @@ public class Parser extends GraqlBaseVisitor {
             compute = Graql.compute().sum();
 
         } else if (method.equals(GraqlCompute.Method.STD)) {
-            compute = Graql.compute().sum();
+            compute = Graql.compute().std();
 
         } else {
             throw new IllegalArgumentException("Unrecognised Graql Compute Statistics method: " + ctx.getText());

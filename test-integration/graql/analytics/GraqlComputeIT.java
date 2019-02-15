@@ -32,12 +32,13 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import graql.lang.exception.GraqlException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -55,12 +56,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.core.graql.query.query.GraqlCompute.Argument.contains;
 import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
-import static grakn.core.graql.query.query.GraqlCompute.Argument.contains;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CENTRALITY;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;
-import static grakn.core.graql.query.query.GraqlCompute.Method.COUNT;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -319,7 +317,7 @@ public class GraqlComputeIT {
         }
     }
 
-    @Test(expected = GraqlQueryException.class)
+    @Test(expected = GraqlException.class)
     public void testErrorWhenNoSubgraphForAnalytics() throws InvalidKBException {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.parse("compute sum;").asCompute());

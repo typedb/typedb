@@ -48,7 +48,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CENTRALITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

@@ -193,7 +193,7 @@ via                 :   VIA VAR_ ;                                              
 // TYPE, LABEL AND IDENTIFIER CONSTRUCTS =======================================
 
 type                :   label | VAR_ ;                                          // A type can be a label or variable
-types              :   label | label_array ;
+types               :   label | label_array ;
 label_array         :   '[' label ( ',' label )* ']' ;
 label               :   identifier | ID_IMPLICIT_;
 
