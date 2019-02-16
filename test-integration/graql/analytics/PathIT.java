@@ -35,7 +35,6 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
-import graql.lang.exception.GraqlException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -81,11 +80,11 @@ public class PathIT {
     @After
     public void closeSession() { session.close(); }
 
-    @Test(expected = GraqlException.class)
+    @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFound() {
         // test on an empty tx
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute().path().from(entityId1.getValue()).to(entityId2.getValue()));
+            tx.execute(Graql.compute().path().from("V123").to("V234"));
         }
     }
 
