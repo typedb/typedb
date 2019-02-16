@@ -38,6 +38,5 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":graql",
-        ":gremlin-visitor-test",
     ],
 )
