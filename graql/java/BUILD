@@ -34,17 +34,6 @@ java_library(
     ],
 )
 
-java_test(
-    name = "gremlin-visitor-test",
-    test_class = "graql.lang.parser.test.GremlinVisitorTest",
-    srcs = ["parser/test/GremlinVisitorTest.java"],
-    deps = [
-        ":graql",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-    ],
-    size = "small"
-)
-
 checkstyle_test(
     name = "checkstyle",
     targets = [
