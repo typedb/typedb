@@ -5,8 +5,9 @@ java_test(
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkBigIT",
     srcs = ["BenchmarkBigIT.java"],
     deps = [
-            "//server",
             "//client-java",
+            "//graql/java:graql",
+            "//server:server",
             "//test-integration/rule:grakn-test-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
@@ -25,8 +26,9 @@ java_test(
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkSmallIT",
     srcs = ["BenchmarkSmallIT.java"],
     deps = [
-        "//server",
         "//client-java",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//test-integration/graql/reasoner/graph:linear-transitivity-matrix-graph",

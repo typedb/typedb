@@ -34,11 +34,11 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.property.IsaProperty;
-import grakn.core.graql.query.property.RelationProperty;
-import grakn.core.graql.query.property.VarProperty;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.property.IsaProperty;
+import graql.lang.property.RelationProperty;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 import java.util.Collection;
 import java.util.Collections;

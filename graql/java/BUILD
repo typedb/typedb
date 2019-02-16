@@ -26,26 +26,16 @@ java_library(
     deps = [
         # External dependencies
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/org/antlr:antlr4-runtime", # sync version with @antlr4_runtime//jar
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-)
-
-java_test(
-    name = "gremlin-visitor-test",
-    test_class = "graql.lang.parser.test.GremlinVisitorTest",
-    srcs = ["parser/test/GremlinVisitorTest.java"],
-    deps = [
-        ":graql",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-    ],
-    size = "small"
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":graql",
-        ":gremlin-visitor-test",
     ],
 )

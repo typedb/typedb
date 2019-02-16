@@ -23,7 +23,8 @@ java_test(
     test_class = "grakn.core.graql.query.pattern.PatternIT",
     srcs = ["PatternIT.java"],
     deps = [
-        "//server",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",

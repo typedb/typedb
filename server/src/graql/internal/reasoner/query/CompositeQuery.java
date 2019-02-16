@@ -35,12 +35,12 @@ import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Negation;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.Graql;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Negation;
+import graql.lang.pattern.Pattern;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 
 import java.util.HashSet;

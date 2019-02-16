@@ -22,10 +22,10 @@ import com.google.auto.value.AutoValue;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.property.RelatesProperty;
-import grakn.core.graql.query.property.VarProperty;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.property.RelatesProperty;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 
 /**

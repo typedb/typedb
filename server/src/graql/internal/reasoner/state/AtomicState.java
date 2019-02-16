@@ -29,7 +29,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.statement.Variable;
 
 import java.util.Set;
 

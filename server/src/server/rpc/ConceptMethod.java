@@ -24,7 +24,7 @@ import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.query.pattern.Pattern;
+import graql.lang.pattern.Pattern;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;

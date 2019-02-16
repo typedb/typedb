@@ -43,12 +43,12 @@ import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.property.IsaProperty;
-import grakn.core.graql.query.property.TypeProperty;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Pattern;
+import graql.lang.property.IsaProperty;
+import graql.lang.property.TypeProperty;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,7 @@ import java.util.stream.Collectors;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.internal.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
-import static grakn.core.graql.query.Graql.var;
+import static graql.lang.Graql.var;
 
 /**
  * Class for generating greedy traversal plans

@@ -41,7 +41,7 @@
 //import java.util.Set;
 //import java.util.stream.Collectors;
 //
-//import static grakn.core.graql.query.Graql.var;
+//import static graql.lang.Graql.var;
 //import static junit.framework.TestCase.assertTrue;
 //import static org.junit.Assert.assertEquals;
 //import static org.junit.Assert.assertFalse;

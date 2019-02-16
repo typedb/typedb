@@ -26,8 +26,8 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Pattern;
+import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
 import grakn.core.protocol.ConceptProto;
 
 import javax.annotation.Nullable;

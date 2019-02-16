@@ -20,12 +20,13 @@ package grakn.core.graql.query;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.query.GraqlDelete;
-import grakn.core.graql.query.query.GraqlInsert;
-import grakn.core.graql.query.query.MatchClause;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.Graql;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Pattern;
+import graql.lang.query.GraqlDelete;
+import graql.lang.query.GraqlInsert;
+import graql.lang.query.MatchClause;
+import graql.lang.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -39,7 +40,7 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import static grakn.core.graql.query.Graql.var;
+import static graql.lang.Graql.var;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;

@@ -4,7 +4,11 @@ java_test(
     name = "chu-liu-edmonds-test",
     test_class = "grakn.core.graql.internal.gremlin.spanningtree.ChuLiuEdmondsTest",
     srcs = ["ChuLiuEdmondsTest.java"],
-    deps = ["//server", "//dependencies/maven/artifacts/com/google/guava:guava"],
+    deps = [
+        "//graql/java:graql",
+        "//server:server",
+        "//dependencies/maven/artifacts/com/google/guava:guava"
+    ],
     size = "small"
 )
 

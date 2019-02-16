@@ -31,12 +31,12 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.property.IsaProperty;
-import grakn.core.graql.query.property.ValueProperty;
-import grakn.core.graql.query.property.VarProperty;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.pattern.Pattern;
+import graql.lang.property.IsaProperty;
+import graql.lang.property.ValueProperty;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 import grakn.core.server.exception.InvalidKBException;
 import graql.lang.util.Token;
 

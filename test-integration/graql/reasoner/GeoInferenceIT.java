@@ -20,10 +20,10 @@ package grakn.core.graql.reasoner;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.query.GraqlGet;
-import grakn.core.graql.query.statement.Statement;
+import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
+import graql.lang.query.GraqlGet;
+import graql.lang.statement.Statement;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -37,7 +37,7 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.List;
 
-import static grakn.core.graql.query.Graql.var;
+import static graql.lang.Graql.var;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;

@@ -64,14 +64,14 @@ import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.property.IsaProperty;
-import grakn.core.graql.query.property.RelationProperty;
-import grakn.core.graql.query.property.VarProperty;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.StatementInstance;
-import grakn.core.graql.query.statement.StatementThing;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.pattern.Pattern;
+import graql.lang.property.IsaProperty;
+import graql.lang.property.RelationProperty;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Statement;
+import graql.lang.statement.StatementInstance;
+import graql.lang.statement.StatementThing;
+import graql.lang.statement.Variable;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.RelationshipTypeImpl;
 
@@ -98,7 +98,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.compatibleR
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.supers;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.top;
-import static grakn.core.graql.query.Graql.var;
+import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 
 /**

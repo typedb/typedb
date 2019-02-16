@@ -25,8 +25,8 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
-import grakn.core.graql.query.property.VarProperty;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
 import java.util.Collection;

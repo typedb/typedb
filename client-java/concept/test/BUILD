@@ -27,7 +27,8 @@ java_test(
     deps = [
         # Grakn Core dependencies
         "//client-java",
-        "//server", # NEEDS TO GO
+        "//graql/java:graql",
+        "//server:server", # NEEDS TO GO
 
         "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

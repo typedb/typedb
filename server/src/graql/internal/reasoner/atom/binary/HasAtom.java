@@ -23,11 +23,11 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.property.HasAttributeTypeProperty;
-import grakn.core.graql.query.property.VarProperty;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.Graql;
+import graql.lang.property.HasAttributeTypeProperty;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 /**
  * TypeAtom corresponding to graql a {@link HasAttributeTypeProperty} property.

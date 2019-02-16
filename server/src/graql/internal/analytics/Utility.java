@@ -24,7 +24,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.Graql;
+import graql.lang.Graql;
 import grakn.core.server.Transaction;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.graql.query.Graql.var;
+import static graql.lang.Graql.var;
 
 /**
  * Some helper methods for MapReduce and vertex program.

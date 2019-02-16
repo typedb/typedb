@@ -29,8 +29,9 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.query.GraqlUndefine;
-import grakn.core.graql.query.statement.Statement;
+import graql.lang.Graql;
+import graql.lang.query.GraqlUndefine;
+import graql.lang.statement.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
@@ -47,8 +48,8 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
 
-import static grakn.core.graql.query.Graql.type;
-import static grakn.core.graql.query.Graql.var;
+import static graql.lang.Graql.type;
+import static graql.lang.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.arrayContaining;

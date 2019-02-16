@@ -22,10 +22,10 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.property.ValueProperty;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.Graql;
+import graql.lang.property.ValueProperty;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 import graql.lang.util.Token;
 
 import javax.annotation.Nullable;

@@ -33,7 +33,7 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Thing;
-import grakn.core.graql.query.pattern.Pattern;
+import graql.lang.pattern.Pattern;
 import grakn.core.rule.GraknTestServer;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -48,7 +48,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static grakn.core.graql.query.Graql.var;
+import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;

@@ -45,9 +45,9 @@ import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.query.property.IsaProperty;
-import grakn.core.graql.query.property.VarProperty;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.property.IsaProperty;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;

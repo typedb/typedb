@@ -28,10 +28,10 @@ import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.property.ValueProperty;
-import grakn.core.graql.query.property.VarProperty;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.property.ValueProperty;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 import graql.lang.util.Token;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -497,7 +497,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 @Override
                 public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
                     // Compare to another variable
-                    grakn.core.graql.query.statement.Variable graqlVariable = value().var();
+                    graql.lang.statement.Variable graqlVariable = value().var();
                     java.lang.String gremlinVariable2 = UUID.randomUUID().toString();
 
                     traversal.as(gremlinVariable2).select(graqlVariable.symbol()).or(
