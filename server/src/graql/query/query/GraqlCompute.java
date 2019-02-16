@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.query;
 
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.query.query.builder.Computable;
 import graql.lang.exception.GraqlException;
 import graql.lang.util.StringUtil;
@@ -53,8 +52,8 @@ public abstract class GraqlCompute extends GraqlQuery implements Computable {
 
     // All these condition properties need to start off as NULL,
     // they will be initialised when the user provides input
-    ConceptId fromID = null;
-    ConceptId toID = null;
+    String fromID = null;
+    String toID = null;
     Set<String> ofTypes = null;
     Set<String> inTypes = null;
     Token.Compute.Algorithm algorithm = null;
@@ -378,23 +377,23 @@ public abstract class GraqlCompute extends GraqlQuery implements Computable {
         }
 
         @CheckReturnValue
-        public final ConceptId from() {
+        public final String from() {
             return fromID;
         }
 
         @CheckReturnValue
-        public final ConceptId to() {
+        public final String to() {
             return toID;
         }
 
         @Override
-        public GraqlCompute.Path from(ConceptId fromID) {
+        public GraqlCompute.Path from(String fromID) {
             this.fromID = fromID;
             return this;
         }
 
         @Override
-        public GraqlCompute.Path to(ConceptId toID) {
+        public GraqlCompute.Path to(String toID) {
             this.toID = toID;
             return this;
         }
@@ -700,7 +699,7 @@ public abstract class GraqlCompute extends GraqlQuery implements Computable {
             return new Argument<>(Token.Compute.Param.SIZE, size);
         }
 
-        public static Argument<ConceptId> contains(ConceptId conceptId) {
+        public static Argument<String> contains(String conceptId) {
             return new Argument<>(Token.Compute.Param.CONTAINS, conceptId);
         }
 
@@ -801,8 +800,8 @@ public abstract class GraqlCompute extends GraqlQuery implements Computable {
 
         @CheckReturnValue
         @Override
-        public Optional<ConceptId> contains() {
-            return Optional.ofNullable((ConceptId) getArgumentValue(Token.Compute.Param.CONTAINS));
+        public Optional<String> contains() {
+            return Optional.ofNullable((String) getArgumentValue(Token.Compute.Param.CONTAINS));
         }
 
         private Object getArgumentValue(Token.Compute.Param param) {

@@ -45,16 +45,16 @@ public interface Computable {
     interface Directional<T extends Computable.Directional> extends Computable {
 
         @CheckReturnValue
-        ConceptId from();
+        String from();
 
         @CheckReturnValue
-        ConceptId to();
+        String to();
 
         @CheckReturnValue
-        T from(ConceptId fromID);
+        T from(String fromID);
 
         @CheckReturnValue
-        T to(ConceptId toID);
+        T to(String toID);
     }
 
     interface Targetable<T extends Computable.Targetable> extends Computable {
@@ -150,6 +150,6 @@ public interface Computable {
 
         Optional<Long> size();
 
-        Optional<ConceptId> contains();
+        Optional<String> contains();
     }
 }

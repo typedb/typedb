@@ -267,7 +267,7 @@ public class GraqlComputeIT {
             assertTrue(clusterList.isEmpty());
 
             GraqlCompute parsed = Graql.parse("compute cluster using connected-component, where contains = V123;").asComputeCluster();
-            GraqlCompute expected = Graql.compute().cluster().using(CONNECTED_COMPONENT).where(contains(ConceptId.of("V123")));
+            GraqlCompute expected = Graql.compute().cluster().using(CONNECTED_COMPONENT).where(contains("V123"));
             assertEquals(expected, parsed);
         }
     }

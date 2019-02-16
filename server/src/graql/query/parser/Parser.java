@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.parser;
 
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.property.HasAttributeProperty;
@@ -419,7 +418,7 @@ public class Parser extends GraqlBaseVisitor {
         for (GraqlParser.Input_pathContext pathCtx : ctx.input_path()) {
 
             if (pathCtx.compute_direction() != null) {
-                ConceptId id = ConceptId.of(visitId(pathCtx.compute_direction().id()));
+                String id = visitId(pathCtx.compute_direction().id());
 
                 if (pathCtx.compute_direction().FROM() != null) {
                     compute = compute.from(id);
@@ -514,7 +513,7 @@ public class Parser extends GraqlBaseVisitor {
                 argList.add(GraqlCompute.Argument.size(getInteger(argContext.INTEGER_())));
 
             } else if (argContext.CONTAINS() != null) {
-                argList.add(GraqlCompute.Argument.contains(ConceptId.of(visitId(argContext.id()))));
+                argList.add(GraqlCompute.Argument.contains(visitId(argContext.id())));
             }
         }
 

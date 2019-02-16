@@ -332,8 +332,8 @@ class ComputeExecutor {
      * @return a Answer containing the list of shortest paths
      */
     private Stream<ConceptList> runComputePath(GraqlCompute.Path query) {
-        ConceptId fromID = query.from();
-        ConceptId toID = query.to();
+        ConceptId fromID = ConceptId.of(query.from());
+        ConceptId toID = ConceptId.of(query.to());
 
         if (!scopeContainsInstances(query, fromID, toID)) throw GraqlQueryException.instanceDoesNotExist();
         if (fromID.equals(toID)) return Stream.of(new ConceptList(ImmutableList.of(fromID)));
@@ -488,7 +488,7 @@ class ComputeExecutor {
 
         GraknVertexProgram<?> vertexProgram;
         if (query.where().contains().isPresent()) {
-            ConceptId conceptId = query.where().contains().get();
+            ConceptId conceptId = ConceptId.of(query.where().contains().get());
             if (!scopeContainsInstances(query, conceptId)) {
                 throw GraqlQueryException.instanceDoesNotExist();
             }

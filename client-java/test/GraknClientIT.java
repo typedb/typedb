@@ -26,7 +26,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.client.GraknClient;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;
@@ -47,11 +46,12 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.printer.Printer;
-import grakn.core.graql.query.query.GraqlDelete;
-import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.query.GraqlDelete;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
@@ -77,11 +77,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static grakn.core.graql.query.Graql.type;
+import static grakn.core.graql.query.Graql.var;
 import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
 import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
-import static grakn.core.graql.query.Graql.type;
-import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -743,7 +743,7 @@ public class GraknClientIT {
             assertTrue(tx.execute(Graql.compute().centrality().using(K_CORE).of("animal")).isEmpty());
 
             // path
-            List<ConceptList> paths = tx.execute(Graql.compute().path().to(idCoco).from(idMike));
+            List<ConceptList> paths = tx.execute(Graql.compute().path().to(idCoco.getValue()).from(idMike.getValue()));
             assertEquals(1, paths.size());
             assertEquals(idCoco, paths.get(0).list().get(2));
             assertEquals(idMike, paths.get(0).list().get(0));
