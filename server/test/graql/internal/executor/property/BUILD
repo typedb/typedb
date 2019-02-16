@@ -18,30 +18,21 @@
 
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
-java_test(
-    name = "graql-delete-test",
-    test_class = "grakn.core.graql.query.GraqlDeleteTest",
-    srcs = ["GraqlDeleteTest.java"],
-    deps = [
-        "//graql/java:graql",
-    ],
-    size = "small"
-)
-
-java_test(
-    name = "graql-insert-test",
-    test_class = "grakn.core.graql.query.GraqlInsertTest",
-    srcs = ["GraqlInsertTest.java"],
-    deps = [
-        "//graql/java:graql",
-    ],
-    size = "small"
-)
-
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graql-delete-test",
-        ":graql-insert-test"
+        ":regex-predicate-test",
     ]
+)
+
+java_test(
+    name = "regex-predicate-test",
+    test_class = "grakn.core.graql.internal.executor.property.ValueExecutorTest",
+    srcs = ["ValueExecutorTest.java"],
+    deps = [
+        "//graql/java:graql",
+        "//server:server",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+    ],
+    size = "small"
 )

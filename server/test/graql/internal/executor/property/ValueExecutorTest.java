@@ -16,9 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.predicate;
+package grakn.core.graql.internal.executor.property;
 
-import grakn.core.graql.internal.executor.property.ValueExecutor;
 import graql.lang.property.ValueProperty;
 import graql.lang.util.Token;
 import org.junit.Test;
@@ -27,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class RegexPredicateTest {
+public class ValueExecutorTest {
 
     @Test
     public void regexPredicateInterpretsCharacterClassesCorrectly() {

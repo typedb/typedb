@@ -18,33 +18,31 @@
 
 package grakn.core.graql.query;
 
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
-import grakn.core.server.Transaction;
+import graql.lang.util.Collections;
 import org.junit.Test;
+
+import java.util.Set;
 
 import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.mockito.Mockito.mock;
 
 public class GraqlInsertTest {
 
     private final MatchClause match1 = Graql.match(var("x").isa("movie"));
     private final MatchClause match2 = Graql.match(var("y").isa("movie"));
 
-    private final ImmutableCollection<Statement> vars1 = ImmutableSet.of(var("x"));
-    private final ImmutableCollection<Statement> vars2 = ImmutableSet.of(var("y"));
+    private final Set<Statement> vars1 = Collections.set(var("x"));
+    private final Set<Statement> vars2 = Collections.set(var("y"));
 
     @Test
     public void insertQueriesWithTheSameVarsAndQueryAreEqual() {
-        GraqlInsert query1 = new GraqlInsert(match1, ImmutableList.copyOf(vars1));
-        GraqlInsert query2 = new GraqlInsert(match1, ImmutableList.copyOf(vars1));
+        GraqlInsert query1 = new GraqlInsert(match1, Collections.list(vars1));
+        GraqlInsert query2 = new GraqlInsert(match1, Collections.list(vars1));
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -52,10 +50,8 @@ public class GraqlInsertTest {
 
     @Test
     public void insertQueriesWithTheSameVarsAndGraphAreEqual() {
-        Transaction graph = mock(Transaction.class);
-
-        GraqlInsert query1 = new GraqlInsert(null, ImmutableList.copyOf(vars1));
-        GraqlInsert query2 = new GraqlInsert(null, ImmutableList.copyOf(vars1));
+        GraqlInsert query1 = new GraqlInsert(null, Collections.list(vars1));
+        GraqlInsert query2 = new GraqlInsert(null, Collections.list(vars1));
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -63,16 +59,16 @@ public class GraqlInsertTest {
 
     @Test
     public void insertQueriesWithDifferentMatchesAreDifferent() {
-        GraqlInsert query1 = new GraqlInsert(match1, ImmutableList.copyOf(vars1));
-        GraqlInsert query2 = new GraqlInsert(match2, ImmutableList.copyOf(vars1));
+        GraqlInsert query1 = new GraqlInsert(match1, Collections.list(vars1));
+        GraqlInsert query2 = new GraqlInsert(match2, Collections.list(vars1));
 
         assertNotEquals(query1, query2);
     }
 
     @Test
     public void insertQueriesWithDifferentVarsAreDifferent() {
-        GraqlInsert query1 = new GraqlInsert(match1, ImmutableList.copyOf(vars1));
-        GraqlInsert query2 = new GraqlInsert(match1, ImmutableList.copyOf(vars2));
+        GraqlInsert query1 = new GraqlInsert(match1, Collections.list(vars1));
+        GraqlInsert query2 = new GraqlInsert(match1, Collections.list(vars2));
 
         assertNotEquals(query1, query2);
     }

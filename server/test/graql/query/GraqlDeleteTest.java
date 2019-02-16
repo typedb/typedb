@@ -18,11 +18,11 @@
 
 package grakn.core.graql.query;
 
-import com.google.common.collect.Sets;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.MatchClause;
 import graql.lang.statement.Variable;
+import graql.lang.util.Collections;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -37,8 +37,8 @@ public class GraqlDeleteTest {
     private final MatchClause match1 = Graql.match(var("x").isa("movie"));
     private final MatchClause match2 = Graql.match(var("y").isa("movie"));
 
-    private final Collection<Variable> vars1 = Sets.newHashSet(new Variable("x"));
-    private final Collection<Variable> vars2 = Sets.newHashSet(new Variable("y"));
+    private final Collection<Variable> vars1 = Collections.set(new Variable("x"));
+    private final Collection<Variable> vars2 = Collections.set(new Variable("y"));
 
     @Test
     public void deleteQueriesWithTheSameMatchAndVarsAreEqual() {

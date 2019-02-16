@@ -23,11 +23,8 @@ java_test(
     test_class = "grakn.core.graql.query.parser.ParserTest",
     srcs = ["ParserTest.java"],
     deps = [
-        "//common:common",
         "//graql/java:graql",
-        "//server:server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
     size = "medium"
 )
@@ -38,10 +35,6 @@ java_test(
     srcs = ["QueryToStringTest.java"],
     deps = [
         "//graql/java:graql",
-        "//server:server",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
     ],
     size = "small"
 )

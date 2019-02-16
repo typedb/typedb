@@ -19,21 +19,14 @@
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
-    name = "graql-delete-test",
-    test_class = "grakn.core.graql.query.GraqlDeleteTest",
-    srcs = ["GraqlDeleteTest.java"],
+    name = "concept-map-test",
+    test_class = "grakn.core.graql.query.ConceptMapTest",
+    srcs = ["ConceptMapTest.java"],
     deps = [
         "//graql/java:graql",
-    ],
-    size = "small"
-)
-
-java_test(
-    name = "graql-insert-test",
-    test_class = "grakn.core.graql.query.GraqlInsertTest",
-    srcs = ["GraqlInsertTest.java"],
-    deps = [
-        "//graql/java:graql",
+        "//server:server",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/org/mockito:mockito-core",
     ],
     size = "small"
 )
@@ -41,7 +34,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graql-delete-test",
-        ":graql-insert-test"
+        ":concept-map-test",
     ]
 )

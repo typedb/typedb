@@ -18,6 +18,7 @@
 
 package graql.lang.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -49,7 +50,11 @@ public class Collections {
 
     @SafeVarargs
     public static <T> List<T> list(T... elements) {
-        List<T> list = Arrays.asList(elements);
+        return list(Arrays.asList(elements));
+    }
+
+    public static <T> List<T> list(Collection<T> elements) {
+        List<T> list = new ArrayList<>(elements);
         return java.util.Collections.unmodifiableList(list);
     }
 

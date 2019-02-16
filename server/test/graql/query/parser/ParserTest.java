@@ -18,9 +18,8 @@
 
 package grakn.core.graql.query.parser;
 
-import com.google.common.base.Strings;
-import grakn.core.graql.internal.Schema;
 import graql.lang.Graql;
+import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.DataTypeProperty;
 import graql.lang.query.GraqlCompute;
@@ -31,7 +30,6 @@ import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.statement.Statement;
-import graql.lang.exception.GraqlException;
 import graql.lang.util.Token;
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -46,7 +44,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.define;
 import static graql.lang.Graql.gte;
@@ -62,6 +59,7 @@ import static graql.lang.Graql.undefine;
 import static graql.lang.Graql.var;
 import static graql.lang.query.GraqlCompute.Argument.k;
 import static graql.lang.query.GraqlCompute.Argument.size;
+import static graql.lang.util.Collections.list;
 import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
 import static java.util.stream.Collectors.toList;
@@ -562,7 +560,7 @@ public class ParserTest {
     public void whenParsingDefineQuery_ResultIsSameAsJavaGraql() {
         String query = "define\n" +
                 "pokemon sub entity;\n" +
-                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";\n" +
+                "evolution sub relationship;\n" +
                 "evolves-from sub role;\n" +
                 "evolves-to sub role;\n" +
                 "evolution relates evolves-from, relates evolves-to;\n" +
@@ -570,10 +568,10 @@ public class ParserTest {
         GraqlDefine parsed = Graql.parse(query).asDefine();
 
         GraqlDefine expected = define(
-                type("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                type("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
-                type("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                type("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                type("pokemon").sub("entity"),
+                type("evolution").sub("relationship"),
+                type("evolves-from").sub("role"),
+                type("evolves-to").sub("role"),
                 type("evolution").relates("evolves-from").relates("evolves-to"),
                 type("pokemon").plays("evolves-from").plays("evolves-to").has("name")
         );
@@ -585,7 +583,7 @@ public class ParserTest {
     public void whenParsingUndefineQuery_ResultIsSameAsJavaGraql() {
         String query = "undefine\n" +
                 "pokemon sub entity;\n" +
-                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";\n" +
+                "evolution sub relationship;\n" +
                 "evolves-from sub role;\n" +
                 "evolves-to sub role;\n" +
                 "evolution relates evolves-from, relates evolves-to;\n" +
@@ -593,10 +591,10 @@ public class ParserTest {
         GraqlUndefine parsed = Graql.parse(query).asUndefine();
 
         GraqlUndefine expected = undefine(
-                type("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                type("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
-                type("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                type("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                type("pokemon").sub("entity"),
+                type("evolution").sub("relationship"),
+                type("evolves-from").sub("role"),
+                type("evolves-to").sub("role"),
                 type("evolution").relates("evolves-from").relates("evolves-to"),
                 type("pokemon").plays("evolves-from").plays("evolves-to").has("name")
         );
@@ -1012,7 +1010,7 @@ public class ParserTest {
         String getString = matchString + " get;";
         String matchInsert = matchString + insertString;
 
-        List<String> options = newArrayList(
+        List<String> options = list(
                 getString + matchInsert,
                 insertString + matchInsert,
                 matchInsert + getString,
@@ -1029,10 +1027,13 @@ public class ParserTest {
     public void testParseManyMatchInsertWithoutStackOverflow() {
         int numQueries = 10_000;
         String matchInsertString = "match $x isa person; insert $y isa person;\n";
-        String longQueryString = Strings.repeat(matchInsertString, numQueries);
-        GraqlInsert matchInsert = match(var("x").isa("person")).insert(var("y").isa("person"));
+        StringBuilder longQuery = new StringBuilder();
+        for(int i=0; i<numQueries; i++) {
+            longQuery.append(matchInsertString);
+        }
 
-        List<GraqlInsert> queries = Graql.<GraqlInsert>parseList(longQueryString).collect(toList());
+        GraqlInsert matchInsert = match(var("x").isa("person")).insert(var("y").isa("person"));
+        List<GraqlInsert> queries = Graql.<GraqlInsert>parseList(longQuery.toString()).collect(toList());
 
         assertEquals(Collections.nCopies(numQueries, matchInsert), queries);
     }

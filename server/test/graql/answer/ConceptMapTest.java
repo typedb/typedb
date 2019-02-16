@@ -16,13 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query;
+package grakn.core.graql.answer;
 
 import com.google.common.collect.ImmutableMap;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
-import graql.lang.statement.Variable;
 import graql.lang.exception.GraqlException;
+import graql.lang.statement.Variable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
