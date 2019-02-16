@@ -19,11 +19,11 @@ package grakn.core.graql.internal.reasoner.atom.binary;
 
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.query.property.HasAttributeTypeProperty;
-import grakn.core.graql.query.property.IsaProperty;
-import grakn.core.graql.query.property.PlaysProperty;
-import grakn.core.graql.query.property.RelatesProperty;
-import grakn.core.graql.query.property.SubProperty;
+import graql.lang.property.HasAttributeTypeProperty;
+import graql.lang.property.IsaProperty;
+import graql.lang.property.PlaysProperty;
+import graql.lang.property.RelatesProperty;
+import graql.lang.property.SubProperty;
 
 import java.util.Set;
 

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.concept;
 
-import grakn.core.graql.query.pattern.Pattern;
+import graql.lang.pattern.Pattern;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

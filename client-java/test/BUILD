@@ -32,9 +32,10 @@ java_test(
         "//client-java",
 
         # Grakn Core dependencies
-        "//common",
+        "//common:common",
         "//protocol:protocol-java",
-        "//server", # NEEDS TO GO
+        "//graql/java:graql",
+        "//server:server", # NEEDS TO GO
 
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",

@@ -35,8 +35,10 @@ java_test(
     test_class = "grakn.core.graql.query.GraqlDeleteTest",
     srcs = ["GraqlDeleteTest.java"],
     deps = [
+        "//graql/java:graql",
+        "//server:server",
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//server"],
+    ],
     size = "small"
 )
 
@@ -45,7 +47,8 @@ java_test(
     test_class = "grakn.core.graql.query.GraqlInsertTest",
     srcs = ["GraqlInsertTest.java"],
     deps = [
-        "//server",
+        "//graql/java:graql",
+        "//server:server",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
     ],

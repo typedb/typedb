@@ -26,7 +26,7 @@ import grakn.core.graql.internal.reasoner.cache.QueryCache;
 import grakn.core.graql.internal.reasoner.cache.StructuralCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.statement.Variable;
 
 import java.util.HashMap;
 import java.util.Map;

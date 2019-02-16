@@ -24,7 +24,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.printer.StringPrinter;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

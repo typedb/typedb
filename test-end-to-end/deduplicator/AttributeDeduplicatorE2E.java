@@ -21,7 +21,7 @@ package grakn.core.deduplicator;
 
 import grakn.core.client.GraknClient;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.Graql;
+import graql.lang.Graql;
 import grakn.core.server.Transaction;
 import graql.lang.util.Token;
 import org.apache.commons.io.FileUtils;
@@ -53,8 +53,8 @@ import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGr
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknStopped;
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertZipExists;
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.unzipGrakn;
-import static grakn.core.graql.query.Graql.type;
-import static grakn.core.graql.query.Graql.var;
+import static graql.lang.Graql.type;
+import static graql.lang.Graql.var;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 

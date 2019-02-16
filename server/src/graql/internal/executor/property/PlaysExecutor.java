@@ -29,10 +29,10 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.binary.PlaysAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.property.PlaysProperty;
-import grakn.core.graql.query.property.VarProperty;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.property.PlaysProperty;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 import java.util.Collections;
 import java.util.HashSet;

@@ -19,7 +19,7 @@
 package grakn.core.graql.query.predicate;
 
 import grakn.core.graql.internal.executor.property.ValueExecutor;
-import grakn.core.graql.query.property.ValueProperty;
+import graql.lang.property.ValueProperty;
 import graql.lang.util.Token;
 import org.junit.Test;
 

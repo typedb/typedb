@@ -19,15 +19,16 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.query.GraqlDelete;
-import grakn.core.graql.query.query.MatchClause;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.Graql;
+import graql.lang.query.GraqlDelete;
+import graql.lang.query.MatchClause;
+import graql.lang.statement.Variable;
 import org.junit.Test;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import static grakn.core.graql.query.Graql.var;
+import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 

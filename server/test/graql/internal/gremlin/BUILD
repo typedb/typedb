@@ -20,9 +20,11 @@ java_test(
     test_class = "grakn.core.graql.internal.gremlin.ConjunctionQueryTest",
     srcs = ["ConjunctionQueryTest.java", "GraqlMatchers.java"],
     deps = [
+        "//graql/java:graql",
+        "//server:server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//server"],
+    ],
     size = "small"
 )
 

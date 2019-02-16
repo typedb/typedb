@@ -21,7 +21,7 @@ package grakn.core.server;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.Graql;
+import graql.lang.Graql;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.deduplicator.AttributeDeduplicator;
 import grakn.core.server.deduplicator.KeyspaceIndexPair;
@@ -38,8 +38,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.graql.query.Graql.type;
-import static grakn.core.graql.query.Graql.var;
+import static graql.lang.Graql.type;
+import static graql.lang.Graql.var;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 

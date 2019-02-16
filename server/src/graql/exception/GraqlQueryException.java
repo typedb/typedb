@@ -30,8 +30,8 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;

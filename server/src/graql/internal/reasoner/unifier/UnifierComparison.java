@@ -22,7 +22,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.statement.Variable;
 
 import java.util.Set;
 import java.util.function.BiFunction;

@@ -19,7 +19,7 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.Graql;
+import graql.lang.Graql;
 import grakn.core.graql.reasoner.graph.DualLinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.NguyenGraph;

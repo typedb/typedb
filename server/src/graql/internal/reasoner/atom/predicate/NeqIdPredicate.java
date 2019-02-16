@@ -22,9 +22,9 @@ import com.google.common.collect.Iterables;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.query.property.NeqProperty;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.property.NeqProperty;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 import java.util.stream.Collectors;
 

@@ -5,7 +5,8 @@ java_test(
     srcs = ["LabelFragmentSetTest.java"],
     test_class = "grakn.core.graql.internal.gremlin.sets.LabelFragmentSetTest",
     deps = [
-        "//server",
+        "//graql/java:graql",
+        "//server:server",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core"
@@ -26,9 +27,11 @@ java_test(
     test_class = "grakn.core.graql.internal.gremlin.sets.RolePlayerFragmentSetTest",
     srcs = ["RolePlayerFragmentSetTest.java"],
     deps = [
+        "//graql/java:graql",
+        "//server:server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//server"],
+    ],
     size = "small"
 )

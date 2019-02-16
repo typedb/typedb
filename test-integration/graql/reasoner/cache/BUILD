@@ -8,8 +8,9 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],
     test_class = "grakn.core.graql.reasoner.cache.RuleCacheIT",
     deps = [
+        "//graql/java:graql",
+        "//server:server",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//server",
         "//test-integration/rule:grakn-test-server",
     ],
 )

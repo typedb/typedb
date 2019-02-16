@@ -29,7 +29,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 
 import java.util.HashMap;

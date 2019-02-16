@@ -23,9 +23,9 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Pattern;
+import graql.lang.statement.Variable;
 import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;

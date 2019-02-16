@@ -60,7 +60,10 @@ java_library(
     name = "geo-graph",
     srcs = ["GeoGraph.java"],
     visibility = ["//test-integration:__subpackages__"],
-    deps = ["//server"],
+    deps = [
+        "//graql/java:graql",
+        "//server:server",
+    ],
 )
 
 java_library(

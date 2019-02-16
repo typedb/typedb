@@ -20,8 +20,8 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.executor.property.ValueExecutor.Operation.Comparison;
-import grakn.core.graql.query.property.VarProperty;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;

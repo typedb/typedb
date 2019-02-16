@@ -27,11 +27,11 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.query.GraqlInsert;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
+import graql.lang.query.GraqlInsert;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import org.junit.Before;
@@ -47,7 +47,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.query.Graql.var;
+import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})

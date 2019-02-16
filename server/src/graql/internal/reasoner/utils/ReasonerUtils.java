@@ -40,11 +40,11 @@ import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
-import grakn.core.graql.query.property.IdProperty;
-import grakn.core.graql.query.property.TypeProperty;
-import grakn.core.graql.query.property.ValueProperty;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.property.IdProperty;
+import graql.lang.property.TypeProperty;
+import graql.lang.property.ValueProperty;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;

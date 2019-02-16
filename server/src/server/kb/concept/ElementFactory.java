@@ -26,7 +26,7 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.pattern.Pattern;
+import graql.lang.pattern.Pattern;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.structure.AbstractElement;

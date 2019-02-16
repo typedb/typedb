@@ -106,7 +106,8 @@ java_test(
     test_class = "grakn.core.graql.query.QueryBuilderIT",
     srcs = ["QueryBuilderIT.java"],
     deps = [
-        "//server",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -119,7 +120,8 @@ java_test(
     test_class = "grakn.core.graql.query.QueryAdminIT",
     srcs = ["QueryAdminIT.java"],
     deps = [
-        "//server",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
 
@@ -150,7 +152,8 @@ java_test(
     test_class = "grakn.core.graql.query.QueryPlannerIT",
     srcs = ["QueryPlannerIT.java"],
     deps = [
-        "//server",
+        "//graql/java:graql",
+        "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
 

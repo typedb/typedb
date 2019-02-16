@@ -27,7 +27,7 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.query.statement.Variable;
+import graql.lang.statement.Variable;
 
 import java.util.Collection;
 import java.util.Collections;

@@ -20,10 +20,11 @@ package grakn.core.graql.query;
 
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.graql.query.query.GraqlDelete;
-import grakn.core.graql.query.query.GraqlInsert;
-import grakn.core.graql.query.query.GraqlUndefine;
-import grakn.core.graql.query.statement.Statement;
+import graql.lang.Graql;
+import graql.lang.query.GraqlDelete;
+import graql.lang.query.GraqlInsert;
+import graql.lang.query.GraqlUndefine;
+import graql.lang.statement.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -37,8 +38,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static grakn.core.graql.query.Graql.type;
-import static grakn.core.graql.query.Graql.var;
+import static graql.lang.Graql.type;
+import static graql.lang.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 

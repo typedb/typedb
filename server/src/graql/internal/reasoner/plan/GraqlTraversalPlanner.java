@@ -32,10 +32,10 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.pattern.Conjunction;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.property.VarProperty;
+import graql.lang.Graql;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Pattern;
+import graql.lang.property.VarProperty;
 import grakn.core.server.session.TransactionOLTP;
 
 import javax.annotation.Nullable;

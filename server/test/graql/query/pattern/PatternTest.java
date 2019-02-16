@@ -19,8 +19,11 @@
 package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.statement.Statement;
+import graql.lang.Graql;
+import graql.lang.statement.Statement;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Disjunction;
+import graql.lang.pattern.Pattern;
 import org.junit.Test;
 
 import java.util.HashSet;
