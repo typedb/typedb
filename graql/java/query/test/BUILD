@@ -31,7 +31,7 @@ java_test(
 
 java_test(
     name = "graql-delete-test",
-    test_class = "grakn.core.graql.query.GraqlDeleteTest",
+    test_class = "graql.lang.query.test.GraqlDeleteTest",
     srcs = ["GraqlDeleteTest.java"],
     deps = [
         "//graql/java:graql",
@@ -41,7 +41,7 @@ java_test(
 
 java_test(
     name = "graql-insert-test",
-    test_class = "grakn.core.graql.query.GraqlInsertTest",
+    test_class = "graql.lang.query.test.GraqlInsertTest",
     srcs = ["GraqlInsertTest.java"],
     deps = [
         "//graql/java:graql",
