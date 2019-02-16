@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.parser;
+package graql.lang.query.test;
 
 import graql.lang.Graql;
 import graql.lang.query.GraqlCompute;
@@ -42,7 +42,8 @@ import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
 import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
 import static org.junit.Assert.assertEquals;
 
-public class QueryToStringTest {
+// TODO: This test should be split into one Graql query test class each
+public class GraqlQueryTest {
 
     @Test
     public void testSimpleGetQueryToString() {

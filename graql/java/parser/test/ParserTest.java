@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.parser;
+package graql.lang.parser.test;
 
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;

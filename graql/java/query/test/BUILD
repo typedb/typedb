@@ -19,20 +19,9 @@
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
-    name = "parser-test",
-    test_class = "grakn.core.graql.query.parser.ParserTest",
-    srcs = ["ParserTest.java"],
-    deps = [
-        "//graql/java:graql",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-    ],
-    size = "medium"
-)
-
-java_test(
-    name = "query-to-string-test",
-    test_class = "grakn.core.graql.query.parser.QueryToStringTest",
-    srcs = ["QueryToStringTest.java"],
+    name = "graql-test",
+    test_class = "graql.lang.query.test.GraqlQueryTest",
+    srcs = ["GraqlQueryTest.java"],
     deps = [
         "//graql/java:graql",
     ],
@@ -42,7 +31,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":parser-test",
-        ":query-to-string-test"
+        ":graql-test",
     ]
 )

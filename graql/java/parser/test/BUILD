@@ -19,21 +19,19 @@
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
-    name = "concept-map-test",
-    test_class = "grakn.core.graql.answer.ConceptMapTest",
-    srcs = ["ConceptMapTest.java"],
+    name = "parser-test",
+    test_class = "graql.lang.parser.test.ParserTest",
+    srcs = ["ParserTest.java"],
     deps = [
         "//graql/java:graql",
-        "//server:server",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
-    size = "small"
+    size = "medium"
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":concept-map-test",
+        ":parser-test",
     ]
 )
