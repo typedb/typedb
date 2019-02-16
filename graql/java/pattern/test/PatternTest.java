@@ -16,19 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query.pattern;
+package graql.lang.pattern.test;
 
-import com.google.common.collect.Sets;
 import graql.lang.Graql;
-import graql.lang.statement.Statement;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Disjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Statement;
 import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
 
+import static graql.lang.util.Collections.set;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("unchecked")
@@ -43,77 +43,69 @@ public class PatternTest {
 
     @Test
     public void testVarDNF() {
-        assertHasDNF(set(conjunction(x)), x);
+        assertHasDNF(set((Conjunction<Statement>[]) new Conjunction[]{conjunction(x)}), x);
     }
 
     @Test
     public void testEmptyConjunctionDNF() {
-        assertHasDNF(set(conjunction()), conjunction());
+        assertHasDNF(set((Conjunction<Statement>[]) new Conjunction[]{conjunction()}), conjunction());
     }
 
     @Test
     public void testSingletonConjunctionDNF() {
-        assertHasDNF(set(conjunction(x)), conjunction(x));
+        assertHasDNF(set((Conjunction<Statement>[]) new Conjunction[]{conjunction(x)}), conjunction(x));
     }
 
     @Test
     public void testMultipleConjunctionDNF() {
-        assertHasDNF(set(conjunction(x, y, z)), conjunction(x, y, z));
+        assertHasDNF(set((Conjunction<Statement>[]) new Conjunction[]{conjunction(x, y, z)}), conjunction(x, y, z));
     }
 
     @Test
     public void testNestedConjunctionDNF() {
-        assertHasDNF(set(conjunction(x, y, z)), conjunction(conjunction(x, y), z));
+        assertHasDNF(set((Conjunction<Statement>[]) new Conjunction[]{conjunction(x, y, z)}), conjunction(conjunction(x, y), z));
     }
 
     @Test
     public void testEmptyDisjunctionDNF() {
-        assertHasDNF(set(), disjunction());
+        assertHasDNF(set((Conjunction<Statement>[]) new Conjunction[]{}), disjunction());
     }
 
     @Test
     public void testSingletonDisjunctionDNF() {
-        assertHasDNF(set(conjunction(x)), disjunction(x));
+        assertHasDNF(set((Conjunction<Statement>[]) new Conjunction[]{conjunction(x)}), disjunction(x));
     }
 
     @Test
     public void testMultipleDisjunctionDNF() {
-        assertHasDNF(set(conjunction(x), conjunction(y), conjunction(z)), disjunction(x, y, z));
+        assertHasDNF(set((Conjunction<Statement>[]) new Conjunction[]{conjunction(x), conjunction(y), conjunction(z)}), disjunction(x, y, z));
     }
 
     @Test
     public void testNestedDisjunctionDNF() {
-        assertHasDNF(set(conjunction(x), conjunction(y), conjunction(z)), disjunction(disjunction(x, y), z));
+        assertHasDNF(set((Conjunction<Statement>[]) new Conjunction[]{conjunction(x), conjunction(y), conjunction(z)}), disjunction(disjunction(x, y), z));
     }
 
     @Test
     public void testDNFIdentity() {
-        Set disjunction = set(conjunction(x, y, z), conjunction(a, b, c));
+        Set disjunction = set((Conjunction<Statement>[]) new Conjunction[]{conjunction(x, y, z), conjunction(a, b, c)});
         assertHasDNF(disjunction, Graql.or(disjunction));
     }
 
     @Test
     public void testCNFToDNF() {
         Conjunction cnf = conjunction(disjunction(x, y, z), disjunction(a, b, c));
-        Set<Conjunction<Statement>> dnf = set(
-                conjunction(x, a), conjunction(x, b), conjunction(x, c),
-                conjunction(y, a), conjunction(y, b), conjunction(y, c),
-                conjunction(z, a), conjunction(z, b), conjunction(z, c)
-        );
+        Set<Conjunction<Statement>> dnf = set((Conjunction<Statement>[]) new Conjunction[]{conjunction(x, a), conjunction(x, b), conjunction(x, c), conjunction(y, a), conjunction(y, b), conjunction(y, c), conjunction(z, a), conjunction(z, b), conjunction(z, c)});
 
         assertHasDNF(dnf, cnf);
     }
 
     private <T extends Pattern> Conjunction<T> conjunction(T... patterns) {
-        return Graql.and(Sets.newHashSet(patterns));
+        return Graql.and(set(patterns));
     }
 
     private <T extends Pattern> Disjunction<T> disjunction(T... patterns) {
-        return Graql.or(Sets.newHashSet(patterns));
-    }
-
-    private <T extends Pattern> Set<T> set(T... patterns) {
-        return Sets.newHashSet(patterns);
+        return Graql.or(set(patterns));
     }
 
     private void assertHasDNF(Set<Conjunction<Statement>> expected, Pattern pattern) {

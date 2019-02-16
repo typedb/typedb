@@ -19,9 +19,30 @@
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
-    name = "graql-test",
+    name = "graql-query-test",
     test_class = "graql.lang.query.test.GraqlQueryTest",
     srcs = ["GraqlQueryTest.java"],
+    deps = [
+        "//graql/java:graql",
+    ],
+    size = "small"
+)
+
+
+java_test(
+    name = "graql-delete-test",
+    test_class = "grakn.core.graql.query.GraqlDeleteTest",
+    srcs = ["GraqlDeleteTest.java"],
+    deps = [
+        "//graql/java:graql",
+    ],
+    size = "small"
+)
+
+java_test(
+    name = "graql-insert-test",
+    test_class = "grakn.core.graql.query.GraqlInsertTest",
+    srcs = ["GraqlInsertTest.java"],
     deps = [
         "//graql/java:graql",
     ],
@@ -31,6 +52,8 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graql-test",
+        ":graql-query-test",
+        ":graql-delete-test",
+        ":graql-insert-test",
     ]
 )

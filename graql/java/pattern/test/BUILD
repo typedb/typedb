@@ -19,13 +19,11 @@
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
-    name = "pattern-impl-test",
-    test_class = "grakn.core.graql.query.pattern.PatternTest",
+    name = "pattern-test",
+    test_class = "graql.lang.pattern.test.PatternTest",
     srcs = ["PatternTest.java"],
     deps = [
         "//graql/java:graql",
-        "//server:server",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
     size = "small"
 )
@@ -33,6 +31,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":pattern-impl-test"
+        ":pattern-test"
     ],
 )
