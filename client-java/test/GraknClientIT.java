@@ -26,13 +26,12 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.client.GraknClient;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.AttributeType.DataType;
@@ -47,11 +46,12 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.printer.Printer;
-import grakn.core.graql.query.query.GraqlDelete;
-import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.query.GraqlDelete;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.rule.GraknTestServer;
@@ -77,21 +77,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static grakn.core.graql.query.Graql.type;
+import static grakn.core.graql.query.Graql.var;
 import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
 import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CENTRALITY;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;
-import static grakn.core.graql.query.query.GraqlCompute.Method.COUNT;
-import static grakn.core.graql.query.query.GraqlCompute.Method.MAX;
-import static grakn.core.graql.query.query.GraqlCompute.Method.MEAN;
-import static grakn.core.graql.query.query.GraqlCompute.Method.MEDIAN;
-import static grakn.core.graql.query.query.GraqlCompute.Method.MIN;
-import static grakn.core.graql.query.query.GraqlCompute.Method.PATH;
-import static grakn.core.graql.query.query.GraqlCompute.Method.STD;
-import static grakn.core.graql.query.query.GraqlCompute.Method.SUM;
-import static grakn.core.graql.query.Graql.type;
-import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -727,46 +717,46 @@ public class GraknClientIT {
 
         try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.READ)) {
             // count
-            assertEquals(1, tx.execute(Graql.compute(COUNT).in("animal")).get(0).number().intValue());
+            assertEquals(1, tx.execute(Graql.compute().count().in("animal")).get(0).number().intValue());
 
             // statistics
-            assertEquals(10, tx.execute(Graql.compute(MIN).of("age").in("human")).get(0).number().intValue());
-            assertEquals(10, tx.execute(Graql.compute(MAX).of("age").in("human")).get(0).number().intValue());
-            assertEquals(10, tx.execute(Graql.compute(MEAN).of("age").in("human")).get(0).number().intValue());
+            assertEquals(10, tx.execute(Graql.compute().min().of("age").in("human")).get(0).number().intValue());
+            assertEquals(10, tx.execute(Graql.compute().max().of("age").in("human")).get(0).number().intValue());
+            assertEquals(10, tx.execute(Graql.compute().mean().of("age").in("human")).get(0).number().intValue());
 
 
-            List<Value> answer = tx.execute(Graql.compute(STD).of("age").in("human"));
+            List<Numeric> answer = tx.execute(Graql.compute().std().of("age").in("human"));
             assertEquals(0, answer.get(0).number().intValue());
 
 
-            assertEquals(10, tx.execute(Graql.compute(SUM).of("age").in("human")).get(0).number().intValue());
-            assertEquals(10, tx.execute(Graql.compute(MEDIAN).of("age").in("human")).get(0).number().intValue());
+            assertEquals(10, tx.execute(Graql.compute().sum().of("age").in("human")).get(0).number().intValue());
+            assertEquals(10, tx.execute(Graql.compute().median().of("age").in("human")).get(0).number().intValue());
 
             // degree
-            List<ConceptSetMeasure> centrality = tx.execute(Graql.compute(CENTRALITY).using(DEGREE)
+            List<ConceptSetMeasure> centrality = tx.execute(Graql.compute().centrality().using(DEGREE)
                     .of("animal").in("human", "animal", "pet-ownership"));
             assertEquals(1, centrality.size());
             assertEquals(idCoco, centrality.get(0).set().iterator().next());
             assertEquals(1, centrality.get(0).measurement().intValue());
 
             // coreness
-            assertTrue(tx.execute(Graql.compute(CENTRALITY).using(K_CORE).of("animal")).isEmpty());
+            assertTrue(tx.execute(Graql.compute().centrality().using(K_CORE).of("animal")).isEmpty());
 
             // path
-            List<ConceptList> paths = tx.execute(Graql.compute(PATH).to(idCoco).from(idMike));
+            List<ConceptList> paths = tx.execute(Graql.compute().path().to(idCoco.getValue()).from(idMike.getValue()));
             assertEquals(1, paths.size());
             assertEquals(idCoco, paths.get(0).list().get(2));
             assertEquals(idMike, paths.get(0).list().get(0));
 
             // connected component
-            List<ConceptSet> clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT)
+            List<ConceptSet> clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT)
                     .in("human", "animal", "pet-ownership"));
             assertEquals(1, clusterList.size());
             assertEquals(3, clusterList.get(0).set().size());
             assertEquals(Sets.newHashSet(idCoco, idMike, idCocoAndMike), clusterList.get(0).set());
 
             // k-core
-            assertTrue(tx.execute(Graql.compute(CLUSTER).using(K_CORE).in("human", "animal", "pet-ownership")).isEmpty());
+            assertTrue(tx.execute(Graql.compute().cluster().using(K_CORE).in("human", "animal", "pet-ownership")).isEmpty());
         }
     }
 
@@ -830,7 +820,7 @@ public class GraknClientIT {
                 });
             });
 
-            List<AnswerGroup<Value>> counts = tx.execute(
+            List<AnswerGroup<Numeric>> counts = tx.execute(
                     Graql.match(var("x").isa("person").has("name", var("y"))).get()
                     .group("y").count()
             );

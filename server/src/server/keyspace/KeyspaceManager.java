@@ -20,7 +20,6 @@ package grakn.core.server.keyspace;
 
 import com.google.common.base.Stopwatch;
 import grakn.core.common.config.Config;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.EntityType;

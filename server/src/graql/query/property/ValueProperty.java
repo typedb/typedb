@@ -23,9 +23,9 @@ import grakn.core.graql.query.statement.StatementAttribute;
 import graql.lang.util.StringUtil;
 import graql.lang.util.Token;
 
+import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  * Represents the {@code value} property on an attribute.

@@ -20,7 +20,7 @@ package grakn.core.graql.query;
 
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.graph.MovieGraph;
@@ -157,7 +157,7 @@ public class GraqlGetIT {
 
     @Test
     public void testCount() {
-        List<Value> count = tx.execute(Graql.match(var("x").isa("movie"), var("y").isa("person"), var("r").rel("x").rel("y")).get().count());
+        List<Numeric> count = tx.execute(Graql.match(var("x").isa("movie"), var("y").isa("person"), var("r").rel("x").rel("y")).get().count());
 
         assertEquals(14, count.get(0).number().intValue());
 
@@ -184,7 +184,7 @@ public class GraqlGetIT {
 
     @Test
     public void testGroupCount() {
-        List<AnswerGroup<Value>> groupCount = tx.execute(Graql.match(var("x").isa("movie"), var("r").rel("x")).get()
+        List<AnswerGroup<Numeric>> groupCount = tx.execute(Graql.match(var("x").isa("movie"), var("r").rel("x")).get()
                 .group("x").count());
         Thing godfather = tx.getAttributeType("title").attribute("Godfather").owner();
 
@@ -197,7 +197,7 @@ public class GraqlGetIT {
 
     @Test
     public void testGroupCountMultipleVars() {
-        List<AnswerGroup<Value>> groupCounts = tx.execute(Graql.match(
+        List<AnswerGroup<Numeric>> groupCounts = tx.execute(Graql.match(
                 var("x").isa("movie"),
                 var("y").isa("person"),
                 var("z").isa("person"),
@@ -209,7 +209,7 @@ public class GraqlGetIT {
 
         boolean containsChineseCoffee = false, containsGodfather = false;
 
-        for (AnswerGroup<Value> group : groupCounts) {
+        for (AnswerGroup<Numeric> group : groupCounts) {
             if (group.owner().equals(chineseCoffee)) {
                 assertEquals(10, group.answers().get(0).number().intValue());
                 containsChineseCoffee = true;
@@ -226,7 +226,7 @@ public class GraqlGetIT {
 
     @Test
     public void testGroupMax() {
-        List<AnswerGroup<Value>> groupCount =
+        List<AnswerGroup<Numeric>> groupCount =
                 tx.execute(Graql.match(
                         var("x").isa("person"),
                         var("y").isa("movie").has("tmdb-vote-count", var("z")),
@@ -238,7 +238,7 @@ public class GraqlGetIT {
 
         boolean containsMarlonBrando = false, containsAlPacino = false;
 
-        for (AnswerGroup<Value> group : groupCount) {
+        for (AnswerGroup<Numeric> group : groupCount) {
             if (group.owner().equals(marlonBrando)) {
                 assertEquals(1000, group.answers().get(0).number().intValue());
                 containsMarlonBrando = true;

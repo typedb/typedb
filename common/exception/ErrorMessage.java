@@ -218,16 +218,6 @@ public enum ErrorMessage {
     CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
-    INVALID_COMPUTE_METHOD("Invalid compute method. " +
-            "The available compute methods are: [%s]."),
-
-    INVALID_COMPUTE_CONDITION("Invalid condition(s) for 'compute [%s]'. The accepted condition(s) are: [%s]."),
-
-    MISSING_COMPUTE_CONDITION("Missing condition(s) for 'compute [%s]'. The required condition(s) are: [%s]."),
-
-    INVALID_COMPUTE_METHOD_ALGORITHM("Invalid algorithm for 'compute [%s]'. The accepted algorithm(s) are: [%s]."),
-
-    INVALID_COMPUTE_ARGUMENT("Invalid argument(s) 'compute [%s] using [%s]'. The accepted argument(s) are: [%s]."),
 
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
     K_SMALLER_THAN_TWO("k can't be smaller than 2."),

@@ -27,6 +27,7 @@ import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import graql.lang.util.Token;
+
 import javax.annotation.Nullable;
 
 public class NeqValuePredicate extends NeqPredicate {

@@ -18,13 +18,34 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@com_github_google_bazel_common//tools/jarjar:jarjar.bzl", "jarjar_library")
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
-jarjar_library(
-    name = 'graql',
-    jars = [
-        "//graql/java/parser:parser",
-        "//graql/java/exception:exception",
-        "//graql/java/util:util",
+java_library(
+    name = "graql",
+    srcs = ["//graql/grammar:graql-java"] + glob(["**/*.java"], exclude = ["**/test/**"]),
+    deps = [
+        # External dependencies
+        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/antlr:antlr4-runtime", # sync version with @antlr4_runtime//jar
+    ],
+)
+
+java_test(
+    name = "gremlin-visitor-test",
+    test_class = "graql.lang.parser.test.GremlinVisitorTest",
+    srcs = ["parser/test/GremlinVisitorTest.java"],
+    deps = [
+        ":graql",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+    ],
+    size = "small"
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":graql",
+        ":gremlin-visitor-test",
     ],
 )

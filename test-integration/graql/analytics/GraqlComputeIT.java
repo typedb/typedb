@@ -22,7 +22,7 @@ import com.google.common.collect.Lists;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
@@ -32,12 +32,13 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import graql.lang.exception.GraqlException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -55,19 +56,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.core.graql.query.query.GraqlCompute.Argument.contains;
 import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
-import static grakn.core.graql.query.query.GraqlCompute.Argument.contains;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CENTRALITY;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;
-import static grakn.core.graql.query.query.GraqlCompute.Method.COUNT;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-@SuppressWarnings("CheckReturnValue")
 public class GraqlComputeIT {
 
     private static final String thingy = "thingy";
@@ -122,7 +119,7 @@ public class GraqlComputeIT {
 
         // the null role-player caused analytics to fail at some stage
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute(CENTRALITY).using(DEGREE));
+            tx.execute(Graql.compute().centrality().using(DEGREE));
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();
@@ -134,7 +131,7 @@ public class GraqlComputeIT {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("rule")).getMessage());
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute(COUNT).in("rule", "thing"));
+            tx.execute(Graql.compute().count().in("rule", "thing"));
         }
     }
 
@@ -143,7 +140,7 @@ public class GraqlComputeIT {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("role")).getMessage());
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute(COUNT).in("role"));
+            tx.execute(Graql.compute().count().in("role"));
         }
     }
 
@@ -161,7 +158,7 @@ public class GraqlComputeIT {
 
         List<?> result = queryList.parallelStream().map(query -> {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                return tx.execute(Graql.parse(query).asCompute()).toString();
+                return tx.execute(Graql.<GraqlCompute>parse(query)).toString();
             }
         }).collect(Collectors.toList());
         assertEquals(queryList.size(), result.size());
@@ -171,10 +168,10 @@ public class GraqlComputeIT {
     public void testGraqlCount() throws InvalidKBException {
         addSchemaAndEntities();
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            assertEquals(6, tx.execute(Graql.<GraqlCompute<Value>>parse("compute count;"))
+            assertEquals(6, tx.execute(Graql.parse("compute count;").asComputeStatistics())
                     .get(0).number().intValue());
 
-            assertEquals(3, tx.execute(Graql.<GraqlCompute<Value>>parse("compute count in [thingy, thingy];"))
+            assertEquals(3, tx.execute(Graql.parse("compute count in [thingy, thingy];").asComputeStatistics())
                     .get(0).number().intValue());
         }
     }
@@ -184,7 +181,7 @@ public class GraqlComputeIT {
         addSchemaAndEntities();
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             List<ConceptSetMeasure> degrees =
-                    tx.execute(Graql.<GraqlCompute<ConceptSetMeasure>>parse("compute centrality using degree;"));
+                    tx.execute(Graql.parse("compute centrality using degree;").asComputeCentrality());
 
             Map<String, Long> correctDegrees = new HashMap<>();
             correctDegrees.put(entityId1, 1L);
@@ -207,14 +204,14 @@ public class GraqlComputeIT {
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithStatistics() {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.parse("compute sum of thingy;").asCompute());
+            tx.execute(Graql.parse("compute sum of thingy;").asComputeStatistics());
         }
     }
 
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithDegree() {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.parse("compute centrality of thingy, using degree;").asCompute());
+            tx.execute(Graql.parse("compute centrality of thingy, using degree;").asComputeCentrality());
         }
     }
 
@@ -248,16 +245,16 @@ public class GraqlComputeIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             // use graql to compute various statistics
-            Value result = tx.execute(Graql.<GraqlCompute<Value>>parse("compute sum of my-resource;")).get(0);
+            Numeric result = tx.execute(Graql.parse("compute sum of my-resource;").asComputeStatistics()).get(0);
             assertEquals(6, result.number().intValue());
-            result = tx.execute(Graql.<GraqlCompute<Value>>parse("compute min of my-resource;")).get(0);
+            result = tx.execute(Graql.parse("compute min of my-resource;").asComputeStatistics()).get(0);
             assertEquals(1, result.number().intValue());
-            result = tx.execute(Graql.<GraqlCompute<Value>>parse("compute max of my-resource;")).get(0);
+            result = tx.execute(Graql.parse("compute max of my-resource;").asComputeStatistics()).get(0);
             assertEquals(3, result.number().intValue());
-            result = tx.execute(Graql.<GraqlCompute<Value>>parse("compute mean of my-resource;")).get(0);
+            result = tx.execute(Graql.parse("compute mean of my-resource;").asComputeStatistics()).get(0);
             assertNotNull(result.number());
             assertEquals(2.0, result.number().doubleValue(), 0.1);
-            result = tx.execute(Graql.<GraqlCompute<Value>>parse("compute median of my-resource;")).get(0);
+            result = tx.execute(Graql.parse("compute median of my-resource;").asComputeStatistics()).get(0);
             assertEquals(2, result.number().intValue());
         }
     }
@@ -266,11 +263,11 @@ public class GraqlComputeIT {
     public void testConnectedComponents() throws InvalidKBException {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             List<ConceptSet> clusterList =
-                    tx.execute(Graql.<GraqlCompute<ConceptSet>>parse("compute cluster using connected-component;"));
+                    tx.execute(Graql.parse("compute cluster using connected-component;").asComputeCluster());
             assertTrue(clusterList.isEmpty());
 
-            GraqlCompute<?> parsed = Graql.parse("compute cluster using connected-component, where contains = V123;").asCompute();
-            GraqlCompute<?> expected = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(ConceptId.of("V123")));
+            GraqlCompute parsed = Graql.parse("compute cluster using connected-component, where contains = V123;").asComputeCluster();
+            GraqlCompute expected = Graql.compute().cluster().using(CONNECTED_COMPONENT).where(contains("V123"));
             assertEquals(expected, parsed);
         }
     }
@@ -280,7 +277,7 @@ public class GraqlComputeIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            GraqlCompute<ConceptList> query = Graql.parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
+            GraqlCompute.Path query = Graql.parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';").asComputePath();
             List<ConceptList> paths = tx.execute(query);
 
             List<ConceptId> path = Collections.emptyList();
@@ -297,7 +294,7 @@ public class GraqlComputeIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            GraqlCompute<ConceptList> query = Graql.parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
+            GraqlCompute.Path query = Graql.parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';").asComputePath();
             List<ConceptList> paths = tx.execute(query);
             assertEquals(1, paths.size());
             List<String> result = paths.get(0).list().stream().map(ConceptId::getValue).collect(Collectors.toList());
@@ -315,18 +312,18 @@ public class GraqlComputeIT {
         }
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.parse("compute sum of thingy;").asCompute());
+            tx.execute(Graql.parse("compute sum of thingy;").asComputeStatistics());
         }
     }
 
-    @Test(expected = GraqlQueryException.class)
+    @Test(expected = GraqlException.class)
     public void testErrorWhenNoSubgraphForAnalytics() throws InvalidKBException {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.parse("compute sum;").asCompute());
-            tx.execute(Graql.parse("compute min;").asCompute());
-            tx.execute(Graql.parse("compute max;").asCompute());
-            tx.execute(Graql.parse("compute mean;").asCompute());
-            tx.execute(Graql.parse("compute std;").asCompute());
+            tx.execute(Graql.parse("compute sum;").asComputeStatistics());
+            tx.execute(Graql.parse("compute min;").asComputeStatistics());
+            tx.execute(Graql.parse("compute max;").asComputeStatistics());
+            tx.execute(Graql.parse("compute mean;").asComputeStatistics());
+            tx.execute(Graql.parse("compute std;").asComputeStatistics());
         }
     }
 
@@ -347,7 +344,7 @@ public class GraqlComputeIT {
                 // insert a node but do not commit it
                 tx.execute(Graql.parse("define thingy sub entity;").asDefine());
                 // use analytics
-                tx.execute(Graql.parse(command).asCompute());
+                tx.execute(Graql.<GraqlCompute>parse(command));
             }
 
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {

@@ -61,7 +61,6 @@ import static grakn.core.graql.internal.Schema.MetaSchema.ENTITY;
 import static grakn.core.graql.internal.Schema.MetaSchema.RELATIONSHIP;
 import static grakn.core.graql.internal.Schema.MetaSchema.ROLE;
 import static grakn.core.graql.internal.Schema.MetaSchema.RULE;
-import static grakn.core.graql.query.Graql.parse;
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;

@@ -23,7 +23,12 @@ public enum ErrorMessage {
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
     CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'"),
     VARIABLE_OUT_OF_SCOPE("the variable %s is out of scope of the query"),
-    NO_PATTERNS("no patterns have been provided. at least one pattern must be provided");
+    NO_PATTERNS("no patterns have been provided. at least one pattern must be provided"),
+    INVALID_COMPUTE_METHOD("Invalid compute method. The available compute methods are: [%s]."),
+    INVALID_COMPUTE_CONDITION("Invalid condition(s) for 'compute [%s]'. The accepted condition(s) are: [%s]."),
+    MISSING_COMPUTE_CONDITION("Missing condition(s) for 'compute [%s]'. The required condition(s) are: [%s]."),
+    INVALID_COMPUTE_METHOD_ALGORITHM("Invalid algorithm for 'compute [%s]'. The accepted algorithm(s) are: [%s]."),
+    INVALID_COMPUTE_ARGUMENT("Invalid argument(s) 'compute [%s] using [%s]'. The accepted argument(s) are: [%s]."),;
 
     private final String message;
 

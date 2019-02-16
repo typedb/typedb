@@ -77,7 +77,7 @@ public class GraqlGet extends GraqlQuery implements Filterable, Aggregatable<Gra
     }
 
     @Override
-    public Aggregate aggregate(Token.Statistics.Method method, Variable var) {
+    public Aggregate aggregate(Token.Aggregate.Method method, Variable var) {
         return new Aggregate(this, method, var);
     }
 
@@ -241,10 +241,10 @@ public class GraqlGet extends GraqlQuery implements Filterable, Aggregatable<Gra
     public static class Aggregate extends GraqlQuery {
 
         private final GraqlGet query;
-        private final Token.Statistics.Method method;
+        private final Token.Aggregate.Method method;
         private final Variable var;
 
-        public Aggregate(GraqlGet query, Token.Statistics.Method method, Variable var) {
+        public Aggregate(GraqlGet query, Token.Aggregate.Method method, Variable var) {
             if (query == null) {
                 throw new NullPointerException("GetQuery is null");
             }
@@ -255,9 +255,9 @@ public class GraqlGet extends GraqlQuery implements Filterable, Aggregatable<Gra
             }
             this.method = method;
 
-            if (var == null && !method.equals(Token.Statistics.Method.COUNT)) {
+            if (var == null && !method.equals(Token.Aggregate.Method.COUNT)) {
                 throw new NullPointerException("Variable is null");
-            } else if (var != null && method.equals(Token.Statistics.Method.COUNT)) {
+            } else if (var != null && method.equals(Token.Aggregate.Method.COUNT)) {
                 throw new IllegalArgumentException("Aggregate COUNT does not accept a Variable");
             } else if (var != null && !query.vars().contains(var)) {
                 throw new IllegalArgumentException("Aggregate variable should be contained in GET query");
@@ -270,7 +270,7 @@ public class GraqlGet extends GraqlQuery implements Filterable, Aggregatable<Gra
             return query;
         }
 
-        public Token.Statistics.Method method() {
+        public Token.Aggregate.Method method() {
             return method;
         }
 
@@ -344,7 +344,7 @@ public class GraqlGet extends GraqlQuery implements Filterable, Aggregatable<Gra
         }
 
         @Override
-        public Aggregate aggregate(Token.Statistics.Method method, Variable var) {
+        public Aggregate aggregate(Token.Aggregate.Method method, Variable var) {
             return new Aggregate(this, method, var);
         }
 
@@ -383,10 +383,10 @@ public class GraqlGet extends GraqlQuery implements Filterable, Aggregatable<Gra
         public static class Aggregate extends GraqlQuery {
 
             private final GraqlGet.Group group;
-            private final Token.Statistics.Method method;
+            private final Token.Aggregate.Method method;
             private final Variable var;
 
-            public Aggregate(GraqlGet.Group group, Token.Statistics.Method method, Variable var) {
+            public Aggregate(GraqlGet.Group group, Token.Aggregate.Method method, Variable var) {
 
                 if (group == null) {
                     throw new NullPointerException("GraqlGet.Group is null");
@@ -398,9 +398,9 @@ public class GraqlGet extends GraqlQuery implements Filterable, Aggregatable<Gra
                 }
                 this.method = method;
 
-                if (var == null && !this.method.equals(Token.Statistics.Method.COUNT)) {
+                if (var == null && !this.method.equals(Token.Aggregate.Method.COUNT)) {
                     throw new NullPointerException("Variable is null");
-                } else if (var != null && this.method.equals(Token.Statistics.Method.COUNT)) {
+                } else if (var != null && this.method.equals(Token.Aggregate.Method.COUNT)) {
                     throw new IllegalArgumentException("Aggregate COUNT does not accept a Variable");
                 } else if (var != null && !group.query().vars().contains(var)) {
                     throw new IllegalArgumentException("Aggregate variable should be contained in GET query");
@@ -412,7 +412,7 @@ public class GraqlGet extends GraqlQuery implements Filterable, Aggregatable<Gra
                 return group;
             }
 
-            public Token.Statistics.Method method() {
+            public Token.Aggregate.Method method() {
                 return method;
             }
 

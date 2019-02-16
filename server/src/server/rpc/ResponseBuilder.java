@@ -26,11 +26,10 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Explanation;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
-import graql.lang.exception.GraqlException;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
@@ -39,6 +38,7 @@ import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
+import graql.lang.exception.GraqlException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
@@ -279,8 +279,8 @@ public class ResponseBuilder {
                 answer.setConceptSetMeasure(conceptSetMeasure((ConceptSetMeasure) object));
             } else if (object instanceof ConceptSet) {
                 answer.setConceptSet(conceptSet((ConceptSet) object));
-            } else if (object instanceof Value) {
-                answer.setValue(value((Value) object));
+            } else if (object instanceof Numeric) {
+                answer.setValue(value((Numeric) object));
             }
 
             return answer.build();
@@ -352,7 +352,7 @@ public class ResponseBuilder {
             return conceptSetMeasureProto.build();
         }
 
-        static AnswerProto.Value value(Value answer) {
+        static AnswerProto.Value value(Numeric answer) {
             AnswerProto.Value.Builder valueProto = AnswerProto.Value.newBuilder();
             valueProto.setNumber(number(answer.number()));
 

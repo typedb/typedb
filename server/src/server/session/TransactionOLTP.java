@@ -20,11 +20,12 @@ package grakn.core.server.session;
 
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
+import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -211,7 +212,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public Stream<Value> stream(GraqlGet.Aggregate query, boolean infer) {
+    public Stream<Numeric> stream(GraqlGet.Aggregate query, boolean infer) {
         return executor(infer).aggregate(query);
     }
 
@@ -221,12 +222,27 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public Stream<AnswerGroup<Value>> stream(GraqlGet.Group.Aggregate query, boolean infer) {
+    public Stream<AnswerGroup<Numeric>> stream(GraqlGet.Group.Aggregate query, boolean infer) {
         return executor(infer).get(query);
     }
 
     @Override
-    public <T extends Answer> Stream<T> stream(GraqlCompute<T> query, boolean infer) {
+    public Stream<Numeric> stream(GraqlCompute.Statistics query, boolean infer) {
+        return executor(infer).compute(query);
+    }
+
+    @Override
+    public Stream<ConceptList> stream(GraqlCompute.Path query, boolean infer) {
+        return executor(infer).compute(query);
+    }
+
+    @Override
+    public Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query, boolean infer) {
+        return executor(infer).compute(query);
+    }
+
+    @Override
+    public Stream<ConceptSet> stream(GraqlCompute.Cluster query, boolean infer) {
         return executor(infer).compute(query);
     }
 

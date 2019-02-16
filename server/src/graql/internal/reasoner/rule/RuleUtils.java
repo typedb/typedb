@@ -35,6 +35,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.utils.TarjanSCC;
 import grakn.core.server.session.TransactionOLTP;
+
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;

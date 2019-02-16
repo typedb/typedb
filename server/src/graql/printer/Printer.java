@@ -23,7 +23,7 @@ import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 
@@ -112,8 +112,8 @@ public abstract class Printer<Builder> {
                 return conceptSet((ConceptSet) object);
             }
         }
-        else if (object instanceof Value) {
-            return value((Value) object);
+        else if (object instanceof Numeric) {
+            return value((Numeric) object);
         }
         else if (object instanceof Map) {
             return map((Map<?, ?>) object);
@@ -218,13 +218,13 @@ public abstract class Printer<Builder> {
     protected abstract Builder conceptSetMeasure(ConceptSetMeasure answer);
 
     /**
-     * Convert any {@link Value} into its print builder
+     * Convert any {@link Numeric} into its print builder
      *
      * @param answer is the answer result of a Graql Compute queries
      * @return the number as an output builder
      */
     @CheckReturnValue
-    protected Builder value(Value answer) {
+    protected Builder value(Numeric answer) {
         return object(answer.number());
     }
 

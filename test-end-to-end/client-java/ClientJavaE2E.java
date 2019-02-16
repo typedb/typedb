@@ -2,15 +2,14 @@ package grakn.core.client;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.query.GraqlInsert;
-import graql.lang.util.Token;
 import grakn.core.server.Transaction;
+import graql.lang.util.Token;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -232,7 +231,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - compute count...");
-            final GraqlCompute<Value> computeQuery = Graql.compute(GraqlCompute.Method.COUNT).in("lion");
+            final GraqlCompute.Statistics computeQuery = Graql.compute().count().in("lion");
             LOG.info("clientJavaE2E() - '" + computeQuery + "'");
             int computeCount = tx.execute(computeQuery).get(0).number().intValue();
             assertThat(computeCount, equalTo(lionNames().length));

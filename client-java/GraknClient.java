@@ -29,11 +29,12 @@ import grakn.core.client.rpc.Transceiver;
 import grakn.core.common.exception.Validator;
 import grakn.core.common.http.SimpleURI;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
+import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -405,8 +406,8 @@ public final class GraknClient {
         }
 
         @Override
-        public Stream<Value> stream(GraqlGet.Aggregate query, boolean infer) {
-            Iterable<Value> iterable = () -> rpcIterator(query, infer);
+        public Stream<Numeric> stream(GraqlGet.Aggregate query, boolean infer) {
+            Iterable<Numeric> iterable = () -> rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
@@ -417,14 +418,32 @@ public final class GraknClient {
         }
 
         @Override
-        public Stream<AnswerGroup<Value>> stream(GraqlGet.Group.Aggregate query, boolean infer) {
-            Iterable<AnswerGroup<Value>> iterable = () -> rpcIterator(query, infer);
+        public Stream<AnswerGroup<Numeric>> stream(GraqlGet.Group.Aggregate query, boolean infer) {
+            Iterable<AnswerGroup<Numeric>> iterable = () -> rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
         @Override
-        public <T extends Answer> Stream<T> stream(GraqlCompute<T> query, boolean infer) {
-            Iterable<T> iterable = () -> rpcIterator(query, infer);
+        public Stream<Numeric> stream(GraqlCompute.Statistics query, boolean infer) {
+            Iterable<Numeric> iterable = () -> rpcIterator(query, infer);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
+        public Stream<ConceptList> stream(GraqlCompute.Path query, boolean infer) {
+            Iterable<ConceptList> iterable = () -> rpcIterator(query, infer);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
+        public Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query, boolean infer) {
+            Iterable<ConceptSetMeasure> iterable = () -> rpcIterator(query, infer);
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
+        public Stream<ConceptSet> stream(GraqlCompute.Cluster query, boolean infer) {
+            Iterable<ConceptSet> iterable = () -> rpcIterator(query, infer);
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 

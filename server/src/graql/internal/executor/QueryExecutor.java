@@ -24,9 +24,11 @@ import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
+import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
@@ -36,24 +38,30 @@ import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
-import grakn.core.graql.query.query.GraqlCompute;
-import grakn.core.graql.query.query.GraqlDefine;
-import grakn.core.graql.query.query.GraqlDelete;
-import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.query.GraqlInsert;
-import grakn.core.graql.query.query.MatchClause;
-import grakn.core.graql.query.query.GraqlUndefine;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.property.HasAttributeProperty;
 import grakn.core.graql.query.property.IsaProperty;
 import grakn.core.graql.query.property.RelationProperty;
 import grakn.core.graql.query.property.VarProperty;
+import grakn.core.graql.query.query.GraqlCompute;
+import grakn.core.graql.query.query.GraqlDefine;
+import grakn.core.graql.query.query.GraqlDelete;
+import grakn.core.graql.query.query.GraqlGet;
+import grakn.core.graql.query.query.GraqlInsert;
+import grakn.core.graql.query.query.GraqlUndefine;
+import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.query.builder.Filterable;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.util.Token;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -68,12 +76,6 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import graql.lang.util.Token;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static grakn.core.common.util.CommonUtil.toImmutableList;
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
@@ -293,7 +295,7 @@ public class QueryExecutor {
         return answers;
     }
 
-    public Stream<Value> aggregate(GraqlGet.Aggregate query) {
+    public Stream<Numeric> aggregate(GraqlGet.Aggregate query) {
         Stream<ConceptMap> answers = get(query.query());
         switch (query.method()) {
             case COUNT:
@@ -316,12 +318,10 @@ public class QueryExecutor {
     }
 
     public Stream<AnswerGroup<ConceptMap>> get(GraqlGet.Group query) {
-        return get(get(query.query()), query.var(),
-                     answers -> answers.collect(Collectors.toList())
-        ).stream();
+        return get(get(query.query()), query.var(), answers -> answers.collect(Collectors.toList())).stream();
     }
 
-    public Stream<AnswerGroup<Value>> get(GraqlGet.Group.Aggregate query) {
+    public Stream<AnswerGroup<Numeric>> get(GraqlGet.Group.Aggregate query) {
         return get(get(query.group().query()), query.group().var(),
                      answers -> AggregateExecutor.aggregate(answers, query.method(), query.var())
         ).stream();
@@ -339,13 +339,24 @@ public class QueryExecutor {
         return answerGroups;
     }
 
-    public <T extends Answer> Stream<T> compute(GraqlCompute<T> query) {
-        Optional<GraqlQueryException> exception = query.getException();
-        if (exception.isPresent()) throw exception.get();
+    public Stream<Numeric> compute(GraqlCompute.Statistics query) {
+        if (query.getException().isPresent()) throw query.getException().get();
+        return new ComputeExecutor(transaction).stream(query);
+    }
 
-        ComputeExecutor<T> job = new ComputeExecutor<>(transaction, query);
+    public Stream<ConceptList> compute(GraqlCompute.Path query) {
+        if (query.getException().isPresent()) throw query.getException().get();
+        return new ComputeExecutor(transaction).stream(query);
+    }
 
-        return job.stream();
+    public Stream<ConceptSetMeasure> compute(GraqlCompute.Centrality query) {
+        if (query.getException().isPresent()) throw query.getException().get();
+        return new ComputeExecutor(transaction).stream(query);
+    }
+
+    public Stream<ConceptSet> compute(GraqlCompute.Cluster query) {
+        if (query.getException().isPresent()) throw query.getException().get();
+        return new ComputeExecutor(transaction).stream(query);
     }
 
     private void validateProperty(VarProperty varProperty, Statement statement) {

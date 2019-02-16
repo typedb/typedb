@@ -24,11 +24,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -63,10 +62,12 @@ import grakn.core.graql.internal.analytics.StatisticsMapReduce;
 import grakn.core.graql.internal.analytics.StdMapReduce;
 import grakn.core.graql.internal.analytics.SumMapReduce;
 import grakn.core.graql.internal.analytics.Utility;
-import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.query.GraqlCompute;
+import grakn.core.graql.query.query.builder.Computable;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.util.Token;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -91,52 +92,52 @@ import java.util.stream.Stream;
 import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
 import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CENTRALITY;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;
-import static grakn.core.graql.query.query.GraqlCompute.Method.COUNT;
-import static grakn.core.graql.query.query.GraqlCompute.Method.MAX;
-import static grakn.core.graql.query.query.GraqlCompute.Method.MEAN;
-import static grakn.core.graql.query.query.GraqlCompute.Method.MEDIAN;
-import static grakn.core.graql.query.query.GraqlCompute.Method.MIN;
-import static grakn.core.graql.query.query.GraqlCompute.Method.PATH;
-import static grakn.core.graql.query.query.GraqlCompute.Method.STD;
-import static grakn.core.graql.query.query.GraqlCompute.Method.SUM;
+import static graql.lang.util.Token.Compute.Method.COUNT;
+import static graql.lang.util.Token.Compute.Method.MAX;
+import static graql.lang.util.Token.Compute.Method.MEAN;
+import static graql.lang.util.Token.Compute.Method.MEDIAN;
+import static graql.lang.util.Token.Compute.Method.MIN;
+import static graql.lang.util.Token.Compute.Method.STD;
+import static graql.lang.util.Token.Compute.Method.SUM;
 import static java.util.stream.Collectors.toSet;
 
 /**
  * A Graql Compute query executor
  */
-class ComputeExecutor<T extends Answer> {
-
-    private final GraqlCompute<T> query;
+class ComputeExecutor {
 
     private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutor.class);
     private final TransactionOLTP tx;
 
-    public ComputeExecutor(TransactionOLTP tx, GraqlCompute<T> query) {
+    ComputeExecutor(TransactionOLTP tx) {
         this.tx = tx;
-        this.query = query;
     }
 
-    public Stream<T> stream() {
-        GraqlCompute.Method<?> method = query.method();
+    Stream<Numeric> stream(GraqlCompute.Statistics query) {
+        Token.Compute.Method method = query.method();
         if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
-            return (Stream<T>) runComputeMinMaxMedianOrSum();
+            return runComputeMinMaxMedianOrSum(query.asValue());
         } else if (method.equals(MEAN)) {
-            return (Stream<T>) runComputeMean();
+            return runComputeMean(query.asValue());
         } else if (method.equals(STD)) {
-            return (Stream<T>) runComputeStd();
+            return runComputeStd(query.asValue());
         } else if (method.equals(COUNT)) {
-            return (Stream<T>) runComputeCount();
-        } else if (method.equals(PATH)) {
-            return (Stream<T>) runComputePath();
-        } else if (method.equals(CENTRALITY)) {
-            return (Stream<T>) runComputeCentrality();
-        } else if (method.equals(CLUSTER)) {
-            return (Stream<T>) runComputeCluster();
+            return runComputeCount(query.asCount());
+        } else {
+            throw new UnsupportedOperationException("Unsupported Graql Compute Statistics: " + query);
         }
+    }
 
-        throw GraqlQueryException.invalidComputeQuery_invalidMethod();
+    Stream<ConceptList> stream(GraqlCompute.Path query) {
+        return runComputePath(query);
+    }
+
+    Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query) {
+        return runComputeCentrality(query);
+    }
+
+    Stream<ConceptSet> stream(GraqlCompute.Cluster query) {
+        return runComputeCluster(query);
     }
 
     public final ComputerResult compute(@Nullable VertexProgram<?> program,
@@ -159,10 +160,10 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private Stream<Value> runComputeMinMaxMedianOrSum() {
-        Number number = runComputeStatistics();
+    private Stream<Numeric> runComputeMinMaxMedianOrSum(GraqlCompute.Statistics.Value query) {
+        Number number = runComputeStatistics(query);
         if (number == null) return Stream.empty();
-        else return Stream.of(new Value(number));
+        else return Stream.of(new Numeric(number));
     }
 
     /**
@@ -170,12 +171,12 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private Stream<Value> runComputeMean() {
-        Map<String, Double> meanPair = runComputeStatistics();
+    private Stream<Numeric> runComputeMean(GraqlCompute.Statistics.Value query) {
+        Map<String, Double> meanPair = runComputeStatistics(query);
         if (meanPair == null) return Stream.empty();
 
         Double mean = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
-        return Stream.of(new Value(mean));
+        return Stream.of(new Numeric(mean));
     }
 
     /**
@@ -183,8 +184,8 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private Stream<Value> runComputeStd() {
-        Map<String, Double> stdTuple = runComputeStatistics();
+    private Stream<Numeric> runComputeStd(GraqlCompute.Statistics.Value query) {
+        Map<String, Double> stdTuple = runComputeStatistics(query);
         if (stdTuple == null)  return Stream.empty();
 
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
@@ -192,7 +193,7 @@ class ComputeExecutor<T extends Answer> {
         double count = stdTuple.get(StdMapReduce.COUNT);
         Double std = Math.sqrt(squareSum / count - (sum / count) * (sum / count));
 
-        return Stream.of(new Value(std));
+        return Stream.of(new Numeric(std));
     }
 
     /**
@@ -202,15 +203,15 @@ class ComputeExecutor<T extends Answer> {
      * @return result of compute statistics algorithm, which will be of type S
      */
     @Nullable
-    private <S> S runComputeStatistics() {
-        AttributeType.DataType<?> targetDataType = validateAndGetTargetDataType();
-        if (!targetContainsInstance()) return null;
+    private <S> S runComputeStatistics(GraqlCompute.Statistics.Value query) {
+        AttributeType.DataType<?> targetDataType = validateAndGetTargetDataType(query);
+        if (!targetContainsInstance(query)) return null;
 
-        Set<LabelId> extendedScopeTypes = convertLabelsToIds(extendedScopeTypeLabels());
-        Set<LabelId> targetTypes = convertLabelsToIds(targetTypeLabels());
+        Set<LabelId> extendedScopeTypes = convertLabelsToIds(extendedScopeTypeLabels(query));
+        Set<LabelId> targetTypes = convertLabelsToIds(targetTypeLabels(query));
 
         VertexProgram program = initStatisticsVertexProgram(query, targetTypes, targetDataType);
-        StatisticsMapReduce<?> mapReduce = initStatisticsMapReduce(targetTypes, targetDataType);
+        StatisticsMapReduce<?> mapReduce = initStatisticsMapReduce(query, targetTypes, targetDataType);
         ComputerResult computerResult = compute(program, mapReduce, extendedScopeTypes);
 
         if (query.method().equals(MEDIAN)) {
@@ -230,9 +231,9 @@ class ComputeExecutor<T extends Answer> {
      * @return the DataType of the target types
      */
     @Nullable
-    private AttributeType.DataType<?> validateAndGetTargetDataType() {
+    private AttributeType.DataType<?> validateAndGetTargetDataType(GraqlCompute.Statistics.Value query) {
         AttributeType.DataType<?> dataType = null;
-        for (Type type : targetTypes()) {
+        for (Type type : targetTypes(query)) {
             // check if the selected type is a attribute type
             if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.label());
             AttributeType<?> attributeType = type.asAttributeType();
@@ -245,7 +246,7 @@ class ComputeExecutor<T extends Answer> {
             } else {
                 // check if all the attribute types have the same data-type
                 if (!dataType.equals(attributeType.dataType())) {
-                    throw GraqlQueryException.attributesWithDifferentDataTypes(query.of().get());
+                    throw GraqlQueryException.attributesWithDifferentDataTypes(query.of());
                 }
             }
         }
@@ -272,8 +273,10 @@ class ComputeExecutor<T extends Answer> {
      * @param targetDataType representing the data type of the target attribute types
      * @return an object which is a subclass of StatisticsMapReduce
      */
-    private StatisticsMapReduce<?> initStatisticsMapReduce(Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
-        GraqlCompute.Method<?> method = query.method();
+    private StatisticsMapReduce<?> initStatisticsMapReduce(GraqlCompute.Statistics.Value query,
+                                                           Set<LabelId> targetTypes,
+                                                           AttributeType.DataType<?> targetDataType) {
+        Token.Compute.Method method = query.method();
         if (method.equals(MIN)) {
             return new MinMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MAX)) {
@@ -294,33 +297,33 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a Answer object containing the count value
      */
-    private Stream<Value> runComputeCount() {
-        if (!scopeContainsInstance()) {
+    private Stream<Numeric> runComputeCount(GraqlCompute.Statistics.Count query) {
+        if (!scopeContainsInstance(query)) {
             LOG.debug("Count = 0");
-            return Stream.of(new Value(0));
+            return Stream.of(new Numeric(0));
         }
 
-        Set<LabelId> typeLabelIds = convertLabelsToIds(scopeTypeLabels());
-        Map<Integer, Long> count;
+        Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels(query));
+        Set<LabelId> scopeTypeAndImpliedPlayersLabelIDs = convertLabelsToIds(scopeTypeLabelsImplicitPlayers(query));
+        scopeTypeAndImpliedPlayersLabelIDs.addAll(scopeTypeLabelIDs);
 
-        Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds();
-        rolePlayerLabelIds.addAll(typeLabelIds);
+        Map<Integer, Long> count;
 
         ComputerResult result = compute(
                 new CountVertexProgram(),
                 new CountMapReduceWithAttribute(),
-                rolePlayerLabelIds, false);
+                scopeTypeAndImpliedPlayersLabelIDs, false);
         count = result.memory().get(CountMapReduceWithAttribute.class.getName());
 
         long finalCount = count.keySet().stream()
-                .filter(id -> typeLabelIds.contains(LabelId.of(id)))
+                .filter(id -> scopeTypeLabelIDs.contains(LabelId.of(id)))
                 .mapToLong(count::get).sum();
         if (count.containsKey(GraknMapReduce.RESERVED_TYPE_LABEL_KEY)) {
             finalCount += count.get(GraknMapReduce.RESERVED_TYPE_LABEL_KEY);
         }
 
         LOG.debug("Count = " + finalCount);
-        return Stream.of(new Value(finalCount));
+        return Stream.of(new Numeric(finalCount));
     }
 
     /**
@@ -328,14 +331,14 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a Answer containing the list of shortest paths
      */
-    private Stream<ConceptList> runComputePath() {
-        ConceptId fromID = query.from().get();
-        ConceptId toID = query.to().get();
+    private Stream<ConceptList> runComputePath(GraqlCompute.Path query) {
+        ConceptId fromID = ConceptId.of(query.from());
+        ConceptId toID = ConceptId.of(query.to());
 
-        if (!scopeContainsInstances(fromID, toID)) throw GraqlQueryException.instanceDoesNotExist();
+        if (!scopeContainsInstances(query, fromID, toID)) throw GraqlQueryException.instanceDoesNotExist();
         if (fromID.equals(toID)) return Stream.of(new ConceptList(ImmutableList.of(fromID)));
 
-        Set<LabelId> scopedLabelIds = convertLabelsToIds(scopeTypeLabels());
+        Set<LabelId> scopedLabelIds = convertLabelsToIds(scopeTypeLabels(query));
 
         ComputerResult result = compute(new ShortestPathVertexProgram(fromID, toID), null, scopedLabelIds);
 
@@ -348,7 +351,7 @@ class ComputeExecutor<T extends Answer> {
         List<List<ConceptId>> paths;
         if (!resultFromMemory.isEmpty()) {
             paths = getComputePathResultList(pathsAsEdgeList, fromID);
-            if (scopeIncludesAttributes()) {
+            if (scopeIncludesAttributes(query)) {
                 paths = getComputePathResultListIncludingImplicitRelations(paths);
             }
         }
@@ -364,11 +367,11 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a Answer containing the centrality count map
      */
-    private Stream<ConceptSetMeasure> runComputeCentrality() {
-        if (query.using().get().equals(DEGREE)) return runComputeDegree();
-        if (query.using().get().equals(K_CORE)) return runComputeCoreness();
+    private Stream<ConceptSetMeasure> runComputeCentrality(GraqlCompute.Centrality query) {
+        if (query.using().equals(DEGREE)) return runComputeDegree(query);
+        if (query.using().equals(K_CORE)) return runComputeCoreness(query);
 
-        throw GraqlQueryException.invalidComputeQuery_invalidMethodAlgorithm(query.method());
+        throw new IllegalArgumentException("Unrecognised Graql Compute Centrality algorithm: " + query.method());
     }
 
     /**
@@ -376,14 +379,14 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a Answer containing the centrality count map
      */
-    private Stream<ConceptSetMeasure> runComputeDegree() {
+    private Stream<ConceptSetMeasure> runComputeDegree(GraqlCompute.Centrality query) {
         Set<Label> targetTypeLabels;
 
         // Check if ofType is valid before returning emptyMap
-        if (!query.of().isPresent() || query.of().get().isEmpty()) {
-            targetTypeLabels = scopeTypeLabels();
+        if (query.of().isEmpty()) {
+            targetTypeLabels = scopeTypeLabels(query);
         } else {
-            targetTypeLabels = query.of().get().stream()
+            targetTypeLabels = query.of().stream()
                     .flatMap(t -> {
                         Label typeLabel = Label.of(t);
                         Type type = tx.getSchemaConcept(typeLabel);
@@ -394,9 +397,9 @@ class ComputeExecutor<T extends Answer> {
                     .collect(toSet());
         }
 
-        Set<Label> scopeTypeLabels = Sets.union(scopeTypeLabels(), targetTypeLabels);
+        Set<Label> scopeTypeLabels = Sets.union(scopeTypeLabels(query), targetTypeLabels);
 
-        if (!scopeContainsInstance()) {
+        if (!scopeContainsInstance(query)) {
             return Stream.empty();
         }
 
@@ -418,18 +421,18 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a Answer containing the centrality count map
      */
-    private Stream<ConceptSetMeasure> runComputeCoreness() {
-        long k = query.where().get().minK().get();
+    private Stream<ConceptSetMeasure> runComputeCoreness(GraqlCompute.Centrality query) {
+        long k = query.where().minK().get();
 
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
         Set<Label> targetTypeLabels;
 
         // Check if ofType is valid before returning emptyMap
-        if (!query.of().isPresent() || query.of().get().isEmpty()) {
-            targetTypeLabels = scopeTypeLabels();
+        if (query.of().isEmpty()) {
+            targetTypeLabels = scopeTypeLabels(query);
         } else {
-            targetTypeLabels = query.of().get().stream()
+            targetTypeLabels = query.of().stream()
                     .flatMap(t -> {
                         Label typeLabel = Label.of(t);
                         Type type = tx.getSchemaConcept(typeLabel);
@@ -441,9 +444,9 @@ class ComputeExecutor<T extends Answer> {
                     .collect(toSet());
         }
 
-        Set<Label> scopeTypeLabels = Sets.union(scopeTypeLabels(), targetTypeLabels);
+        Set<Label> scopeTypeLabels = Sets.union(scopeTypeLabels(query), targetTypeLabels);
 
-        if (!scopeContainsInstance()) {
+        if (!scopeContainsInstance(query)) {
             return Stream.empty();
         }
 
@@ -465,28 +468,28 @@ class ComputeExecutor<T extends Answer> {
                 .map(centrality -> new ConceptSetMeasure(centrality.getValue(), centrality.getKey()));
     }
 
-    private Stream<ConceptSet> runComputeCluster() {
-        if (query.using().get().equals(K_CORE)) return runComputeKCore();
-        if (query.using().get().equals(CONNECTED_COMPONENT)) return runComputeConnectedComponent();
+    private Stream<ConceptSet> runComputeCluster(GraqlCompute.Cluster query) {
+        if (query.using().equals(K_CORE)) return runComputeKCore(query);
+        if (query.using().equals(CONNECTED_COMPONENT)) return runComputeConnectedComponent(query);
 
-        throw GraqlQueryException.invalidComputeQuery_invalidMethodAlgorithm(query.method());
+        throw new IllegalArgumentException("Unrecognised Graql Compute Cluster algorithm: " + query.method());
     }
 
 
-    private Stream<ConceptSet> runComputeConnectedComponent() {
-        boolean restrictSize = query.where().get().size().isPresent();
+    private Stream<ConceptSet> runComputeConnectedComponent(GraqlCompute.Cluster query) {
+        boolean restrictSize = query.where().size().isPresent();
 
-        if (!scopeContainsInstance()) {
+        if (!scopeContainsInstance(query)) {
             LOG.info("Selected types don't have instances");
             return Stream.empty();
         }
 
-        Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels());
+        Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels(query));
 
         GraknVertexProgram<?> vertexProgram;
-        if (query.where().get().contains().isPresent()) {
-            ConceptId conceptId = query.where().get().contains().get();
-            if (!scopeContainsInstances(conceptId)) {
+        if (query.where().contains().isPresent()) {
+            ConceptId conceptId = ConceptId.of(query.where().contains().get());
+            if (!scopeContainsInstances(query, conceptId)) {
                 throw GraqlQueryException.instanceDoesNotExist();
             }
             vertexProgram = new ConnectedComponentVertexProgram(conceptId);
@@ -495,7 +498,7 @@ class ComputeExecutor<T extends Answer> {
         }
 
         GraknMapReduce<?> mapReduce;
-        if (restrictSize) mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().get().size().get());
+        if (restrictSize) mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().size().get());
         else mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
 
         Memory memory = compute(vertexProgram, mapReduce, scopeTypeLabelIDs).memory();
@@ -503,10 +506,10 @@ class ComputeExecutor<T extends Answer> {
         return result.values().stream().map(ConceptSet::new);
 
 //        TODO: Enable the following compute cluster-size through a separate compute method
-//        if (!query.where().get().members().get()) {
+//        if (!query.where().members().get()) {
 //            GraknMapReduce<?> mapReduce;
 //            if (restrictSize) {
-//                mapreduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().get().size().get());
+//                mapreduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().size().get());
 //            } else {
 //                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
 //            }
@@ -515,17 +518,17 @@ class ComputeExecutor<T extends Answer> {
 //        }
     }
 
-    private Stream<ConceptSet> runComputeKCore() {
-        long k = query.where().get().k().get();
+    private Stream<ConceptSet> runComputeKCore(GraqlCompute.Cluster query) {
+        long k = query.where().k().get();
 
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
-        if (!scopeContainsInstance()) {
+        if (!scopeContainsInstance(query)) {
             return Stream.empty();
         }
 
         ComputerResult computerResult;
-        Set<LabelId> subLabelIds = convertLabelsToIds(scopeTypeLabels());
+        Set<LabelId> subLabelIds = convertLabelsToIds(scopeTypeLabels(query));
         try {
             computerResult = compute(
                     new KCoreVertexProgram(k),
@@ -622,15 +625,14 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a set of type label IDs
      */
-    private Set<LabelId> getRolePlayerLabelIds() {
-        return scopeTypes()
+    private Set<Label> scopeTypeLabelsImplicitPlayers(GraqlCompute query) {
+        return scopeTypes(query)
                 .filter(Concept::isRelationshipType)
                 .map(Concept::asRelationshipType)
                 .filter(RelationType::isImplicit)
                 .flatMap(RelationType::roles)
                 .flatMap(Role::players)
-                .map(type -> tx.convertToId(type.label()))
-                .filter(LabelId::isValid)
+                .map(SchemaConcept::label)
                 .collect(toSet());
     }
 
@@ -653,12 +655,12 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a set of Types
      */
-    private ImmutableSet<Type> targetTypes() {
-        if (!query.of().isPresent() || query.of().get().isEmpty()) {
+    private ImmutableSet<Type> targetTypes(Computable.Targetable<?> query) {
+        if (query.of().isEmpty()) {
             throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
         }
 
-        return query.of().get().stream()
+        return query.of().stream()
                 .map(t -> {
                     Label label = Label.of(t);
                     Type type = tx.getSchemaConcept(label);
@@ -675,8 +677,8 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a set of type Labels
      */
-    private Set<Label> targetTypeLabels() {
-        return targetTypes().stream()
+    private Set<Label> targetTypeLabels(Computable.Targetable<?> query) {
+        return targetTypes(query).stream()
                 .map(SchemaConcept::label)
                 .collect(CommonUtil.toImmutableSet());
     }
@@ -686,9 +688,9 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return true if they exist, false if they don't
      */
-    private boolean targetContainsInstance() {
-        for (Label attributeType : targetTypeLabels()) {
-            for (Label type : scopeTypeLabels()) {
+    private boolean targetContainsInstance(GraqlCompute.Statistics.Value query) {
+        for (Label attributeType : targetTypeLabels(query)) {
+            for (Label type : scopeTypeLabels(query)) {
                 Boolean patternExist = tx.stream(Graql.match(
                         Graql.var("x").has(attributeType.getValue(), Graql.var()),
                         Graql.var("x").isa(Graql.type(type.getValue()))
@@ -713,10 +715,10 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a set of type labels
      */
-    private Set<Label> extendedScopeTypeLabels() {
-        Set<Label> extendedTypeLabels = getAttributeImplicitRelationTypeLabes(targetTypes());
-        extendedTypeLabels.addAll(scopeTypeLabels());
-        extendedTypeLabels.addAll(query.of().get().stream().map(Label::of).collect(toSet()));
+    private Set<Label> extendedScopeTypeLabels(GraqlCompute.Statistics.Value query) {
+        Set<Label> extendedTypeLabels = getAttributeImplicitRelationTypeLabes(targetTypes(query));
+        extendedTypeLabels.addAll(scopeTypeLabels(query));
+        extendedTypeLabels.addAll(query.of().stream().map(Label::of).collect(toSet()));
         return extendedTypeLabels;
     }
 
@@ -725,13 +727,13 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return stream of Concept Types
      */
-    private Stream<Type> scopeTypes() {
+    private Stream<Type> scopeTypes(GraqlCompute query) {
         // Get all types if query.inTypes() is empty, else get all scoped types of each meta type.
         // Only include attributes and implicit "has-xxx" relationships when user specifically asked for them.
-        if (!query.in().isPresent() || query.in().get().isEmpty()) {
+        if (query.in().isEmpty()) {
             ImmutableSet.Builder<Type> typeBuilder = ImmutableSet.builder();
 
-            if (scopeIncludesAttributes()) {
+            if (scopeIncludesAttributes(query)) {
                 tx.getMetaConcept().subs().forEach(typeBuilder::add);
             } else {
                 tx.getMetaEntityType().subs().forEach(typeBuilder::add);
@@ -741,14 +743,14 @@ class ComputeExecutor<T extends Answer> {
 
             return typeBuilder.build().stream();
         } else {
-            Stream<Type> subTypes = query.in().get().stream().map(t -> {
+            Stream<Type> subTypes = query.in().stream().map(t -> {
                 Label label = Label.of(t);
                 Type type = tx.getType(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
                 return type;
             }).flatMap(Type::subs);
 
-            if (!scopeIncludesAttributes()) {
+            if (!scopeIncludesAttributes(query)) {
                 subTypes = subTypes.filter(relationshipType -> !relationshipType.isImplicit());
             }
 
@@ -761,8 +763,8 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return a set of Concept Type Labels
      */
-    private ImmutableSet<Label> scopeTypeLabels() {
-        return scopeTypes().map(SchemaConcept::label).collect(CommonUtil.toImmutableSet());
+    private ImmutableSet<Label> scopeTypeLabels(GraqlCompute query) {
+        return scopeTypes(query).map(SchemaConcept::label).collect(CommonUtil.toImmutableSet());
     }
 
 
@@ -771,9 +773,9 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return
      */
-    private boolean scopeContainsInstance() {
-        if (scopeTypeLabels().isEmpty()) return false;
-        List<Pattern> checkSubtypes = scopeTypeLabels().stream()
+    private boolean scopeContainsInstance(GraqlCompute query) {
+        if (scopeTypeLabels(query).isEmpty()) return false;
+        List<Pattern> checkSubtypes = scopeTypeLabels(query).stream()
                 .map(type -> Graql.var("x").isa(Graql.type(type.getValue()))).collect(Collectors.toList());
 
         return tx.stream(Graql.match(Graql.or(checkSubtypes)), false).iterator().hasNext();
@@ -785,10 +787,10 @@ class ComputeExecutor<T extends Answer> {
      * @param ids
      * @return true if they exist, false if they don't
      */
-    private boolean scopeContainsInstances(ConceptId... ids) {
+    private boolean scopeContainsInstances(GraqlCompute query, ConceptId... ids) {
         for (ConceptId id : ids) {
             Thing thing = tx.getConcept(id);
-            if (thing == null || !scopeTypeLabels().contains(thing.type().label())) return false;
+            if (thing == null || !scopeTypeLabels(query).contains(thing.type().label())) return false;
         }
         return true;
     }
@@ -798,8 +800,8 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return true if they exist, false if they don't
      */
-    private final boolean scopeIncludesAttributes() {
-        return query.includesAttributes() || scopeIncludesImplicitOrAttributeTypes();
+    private boolean scopeIncludesAttributes(GraqlCompute query) {
+        return query.includesAttributes() || scopeIncludesImplicitOrAttributeTypes(query);
     }
 
     /**
@@ -807,9 +809,9 @@ class ComputeExecutor<T extends Answer> {
      *
      * @return true if they exist, false if they don't
      */
-    private boolean scopeIncludesImplicitOrAttributeTypes() {
-        if (!query.in().isPresent()) return false;
-        return query.in().get().stream().anyMatch(t -> {
+    private boolean scopeIncludesImplicitOrAttributeTypes(GraqlCompute query) {
+        if (query.in().isEmpty()) return false;
+        return query.in().stream().anyMatch(t -> {
             Label label = Label.of(t);
             SchemaConcept type = tx.getSchemaConcept(label);
             return (type != null && (type.isAttributeType() || type.isImplicit()));

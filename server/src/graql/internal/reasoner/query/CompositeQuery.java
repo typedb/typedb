@@ -42,6 +42,7 @@ import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.session.TransactionOLTP;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;

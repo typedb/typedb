@@ -46,11 +46,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static grakn.core.graql.query.query.GraqlCompute.Argument.contains;
 import static grakn.core.graql.query.query.GraqlCompute.Argument.size;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;
-import static grakn.core.graql.query.query.GraqlCompute.Method.COUNT;
+import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -90,12 +88,12 @@ public class ConnectedComponentIT {
     @Test
     public void testNullSourceIdIsIgnored() {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(null)));
+            tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).where(contains(null)));
         }
 
         addSchemaAndEntities();
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in(thing).where(contains(null)));
+            tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).in(thing).where(contains(null)));
         }
     }
 
@@ -103,7 +101,7 @@ public class ConnectedComponentIT {
     public void testSourceDoesNotExistInSubGraph() {
         addSchemaAndEntities();
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in(thing).where(contains(entityId4)));
+            tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).in(thing).where(contains(entityId4.getValue())));
         }
     }
 
@@ -111,11 +109,11 @@ public class ConnectedComponentIT {
     public void testConnectedComponentOnEmptyGraph() {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             // test on an empty rule.tx()
-            List<ConceptSet> clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true));
+            List<ConceptSet> clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true));
             assertTrue(clusterList.isEmpty());
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT));
             assertTrue(clusterList.isEmpty());
-            assertEquals(0, tx.execute(Graql.compute(COUNT)).get(0).number().intValue());
+            assertEquals(0, tx.execute(Graql.compute().count()).get(0).number().intValue());
         }
     }
 
@@ -126,26 +124,26 @@ public class ConnectedComponentIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true).where(size(1L)));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true).where(size(1L)));
             assertEquals(0, clusterList.size());
 
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).where(size(1L)));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).where(size(1L)));
             assertEquals(0, clusterList.size());
         }
 
         addResourceRelations();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true).where(size(1L)));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true).where(size(1L)));
             assertEquals(5, clusterList.size());
 
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true).where(size(1L), contains(entityId1)));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true).where(size(1L), contains(entityId1.getValue())));
             assertEquals(0, clusterList.size());
 
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).where(size(1L)));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).where(size(1L)));
             assertEquals(0, clusterList.size());
 
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(entityId4), size(1L)));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).where(contains(entityId4.getValue()), size(1L)));
             assertEquals(0, clusterList.size());
         }
     }
@@ -169,20 +167,20 @@ public class ConnectedComponentIT {
         }
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            List<ConceptSet> clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT)
+            List<ConceptSet> clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT)
                     .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue()));
             assertEquals(1, clusterList.size());
             assertEquals(5, clusterList.iterator().next().set().size());
 
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT)
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT)
                     .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
-                    .where(contains(entityId2)));
+                    .where(contains(entityId2.getValue())));
             assertEquals(1, clusterList.size());
             assertEquals(5, clusterList.iterator().next().set().size());
 
-            assertEquals(1, tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true)
+            assertEquals(1, tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true)
                     .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
-                    .includeAttributes(true)).size());
+                    .attributes(true)).size());
         }
     }
 
@@ -193,19 +191,19 @@ public class ConnectedComponentIT {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true));
             assertEquals(1, clusterList.size());
             assertEquals(7, clusterList.iterator().next().set().size()); // 4 entities, 3 assertions
 
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(entityId1)).includeAttributes(true));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).where(contains(entityId1.getValue())).attributes(true));
             assertEquals(1, clusterList.size());
             assertEquals(7, clusterList.iterator().next().set().size());
 
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT));
             assertEquals(1, clusterList.size());
             assertEquals(7, clusterList.iterator().next().set().size());
 
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(entityId4)));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).where(contains(entityId4.getValue())));
             assertEquals(1, clusterList.size());
             assertEquals(7, clusterList.iterator().next().set().size());
         }
@@ -214,7 +212,7 @@ public class ConnectedComponentIT {
         addResourceRelations();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true));
             Map<Integer, Integer> populationCount00 = new HashMap<>();
             clusterList.forEach(cluster -> populationCount00.put(cluster.set().size(),
                     populationCount00.containsKey(cluster.set().size()) ? populationCount00.get(cluster.set().size()) + 1 : 1));
@@ -222,10 +220,10 @@ public class ConnectedComponentIT {
             assertEquals(5, populationCount00.get(1).intValue());
             assertEquals(1, populationCount00.get(15).intValue());
 
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(aDisconnectedAttribute)).includeAttributes(true));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).where(contains(aDisconnectedAttribute.getValue())).attributes(true));
             assertEquals(1, clusterList.size());
 
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT));
             assertEquals(1, clusterList.size());
             Map<Integer, Integer> populationCount1 = new HashMap<>();
             clusterList.forEach(cluster -> populationCount1.put(cluster.set().size(),
@@ -235,7 +233,7 @@ public class ConnectedComponentIT {
             // test on subtypes. This will change existing cluster labels.
             Set<String> subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
                     resourceType3, resourceType4, resourceType5, resourceType6);
-            clusterList = tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in(subTypes));
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).in(subTypes));
             assertEquals(17, clusterList.size()); // No relationships, so this is the entity count;
         }
     }
@@ -253,7 +251,7 @@ public class ConnectedComponentIT {
 
         Set<List<ConceptSet>> result = list.parallelStream().map(i -> {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                return tx.execute(Graql.compute(CLUSTER).using(CONNECTED_COMPONENT));
+                return tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT));
             }
         }).collect(Collectors.toSet());
         result.forEach(map -> {

@@ -20,9 +20,11 @@ package grakn.core.server;
 
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
+import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -34,6 +36,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
@@ -41,7 +44,6 @@ import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.GraqlQuery;
 import grakn.core.graql.query.query.GraqlUndefine;
-import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.keyspace.Keyspace;
@@ -161,19 +163,19 @@ public interface Transaction extends AutoCloseable {
 
     // Aggregate Query
 
-    default List<Value> execute(GraqlGet.Aggregate query) {
+    default List<Numeric> execute(GraqlGet.Aggregate query) {
         return execute(query, true);
     }
 
-    default List<Value> execute(GraqlGet.Aggregate query, boolean infer) {
+    default List<Numeric> execute(GraqlGet.Aggregate query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<Value> stream(GraqlGet.Aggregate query) {
+    default Stream<Numeric> stream(GraqlGet.Aggregate query) {
         return stream(query, true);
     }
 
-    Stream<Value> stream(GraqlGet.Aggregate query, boolean infer);
+    Stream<Numeric> stream(GraqlGet.Aggregate query, boolean infer);
 
     // Group Query
 
@@ -193,35 +195,77 @@ public interface Transaction extends AutoCloseable {
 
     // Group Aggregate Query
 
-    default List<AnswerGroup<Value>> execute(GraqlGet.Group.Aggregate query) {
+    default List<AnswerGroup<Numeric>> execute(GraqlGet.Group.Aggregate query) {
         return execute(query, true);
     }
 
-    default List<AnswerGroup<Value>> execute(GraqlGet.Group.Aggregate query, boolean infer) {
+    default List<AnswerGroup<Numeric>> execute(GraqlGet.Group.Aggregate query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default Stream<AnswerGroup<Value>> stream(GraqlGet.Group.Aggregate query) {
+    default Stream<AnswerGroup<Numeric>> stream(GraqlGet.Group.Aggregate query) {
         return stream(query, true);
     }
 
-    Stream<AnswerGroup<Value>> stream(GraqlGet.Group.Aggregate query, boolean infer);
+    Stream<AnswerGroup<Numeric>> stream(GraqlGet.Group.Aggregate query, boolean infer);
 
     // Compute Query
 
-    default <T extends Answer> List<T> execute(GraqlCompute<T> query) {
+    default List<Numeric> execute(GraqlCompute.Statistics query) {
         return execute(query, true);
     }
 
-    default <T extends Answer> List<T> execute(GraqlCompute<T> query, boolean infer) {
+    default List<Numeric> execute(GraqlCompute.Statistics query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    default <T extends Answer> Stream<T> stream(GraqlCompute<T> query) {
+    default Stream<Numeric> stream(GraqlCompute.Statistics query) {
         return stream(query, true);
     }
 
-    <T extends Answer> Stream<T> stream(GraqlCompute<T> query, boolean infer);
+    Stream<Numeric> stream(GraqlCompute.Statistics query, boolean infer);
+
+    default List<ConceptList> execute(GraqlCompute.Path query) {
+        return execute(query, true);
+    }
+
+    default List<ConceptList> execute(GraqlCompute.Path query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default Stream<ConceptList> stream(GraqlCompute.Path query) {
+        return stream(query, true);
+    }
+
+    Stream<ConceptList> stream(GraqlCompute.Path query, boolean infer);
+
+    default List<ConceptSetMeasure> execute(GraqlCompute.Centrality query) {
+        return execute(query, true);
+    }
+
+    default List<ConceptSetMeasure> execute(GraqlCompute.Centrality query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query) {
+        return stream(query, true);
+    }
+
+    Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query, boolean infer);
+
+    default List<ConceptSet> execute(GraqlCompute.Cluster query) {
+        return execute(query, true);
+    }
+
+    default List<ConceptSet> execute(GraqlCompute.Cluster query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    default Stream<ConceptSet> stream(GraqlCompute.Cluster query) {
+        return stream(query, true);
+    }
+
+    Stream<ConceptSet> stream(GraqlCompute.Cluster query, boolean infer);
 
     // Generic Query
 
@@ -262,8 +306,17 @@ public interface Transaction extends AutoCloseable {
         } else if (query instanceof GraqlGet.Group) {
             return stream((GraqlGet.Group) query, infer);
 
-        } else if (query instanceof GraqlCompute<?>) {
-            return stream((GraqlCompute<?>) query, infer);
+        } else if (query instanceof GraqlCompute.Statistics) {
+            return stream((GraqlCompute.Statistics) query, infer);
+
+        } else if (query instanceof GraqlCompute.Path) {
+            return stream((GraqlCompute.Path) query, infer);
+
+        } else if (query instanceof GraqlCompute.Centrality) {
+            return stream((GraqlCompute.Centrality) query, infer);
+
+        } else if (query instanceof GraqlCompute.Cluster) {
+            return stream((GraqlCompute.Cluster) query, infer);
 
         } else {
             throw new IllegalArgumentException("Unrecognised Query object");

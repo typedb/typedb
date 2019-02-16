@@ -18,24 +18,15 @@
 
 package grakn.core.graql.query.parser;
 
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlGet;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.query.GraqlInsert;
-import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.query.GraqlQuery;
+import grakn.core.graql.query.query.MatchClause;
 import graql.lang.util.Token;
 import org.junit.Test;
 
-import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
-import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
-import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
-import static grakn.core.graql.query.query.GraqlCompute.Argument.k;
-import static grakn.core.graql.query.query.GraqlCompute.Argument.min_k;
-import static grakn.core.graql.query.query.GraqlCompute.Argument.size;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CENTRALITY;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;
-import static grakn.core.graql.query.query.GraqlCompute.Method.COUNT;
 import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
@@ -43,6 +34,12 @@ import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.rel;
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.query.GraqlCompute.Argument.k;
+import static grakn.core.graql.query.query.GraqlCompute.Argument.min_k;
+import static grakn.core.graql.query.query.GraqlCompute.Argument.size;
+import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
+import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
+import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
 import static org.junit.Assert.assertEquals;
 
 public class QueryToStringTest {
@@ -145,42 +142,42 @@ public class QueryToStringTest {
 
     @Test
     public void testComputeQueryToString() {
-        assertEquals("compute count;", Graql.compute(COUNT).toString());
+        assertEquals("compute count;", Graql.compute().count().toString());
     }
 
     @Test
     public void testComputeQuerySubgraphToString() {
-        GraqlCompute query = Graql.compute(CENTRALITY).using(DEGREE).in("movie", "person");
+        GraqlCompute query = Graql.compute().centrality().using(DEGREE).in("movie", "person");
         assertEquivalent(query, "compute centrality in [movie, person], using degree;");
     }
 
     @Test
     public void testClusterToString() {
-        GraqlCompute connectedcomponent = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person");
+        GraqlCompute connectedcomponent = Graql.compute().cluster().using(CONNECTED_COMPONENT).in("movie", "person");
         assertEquivalent(connectedcomponent, "compute cluster in [movie, person], using connected-component;");
 
-        GraqlCompute kcore = Graql.compute(CLUSTER).using(K_CORE).in("movie", "person");
+        GraqlCompute kcore = Graql.compute().cluster().using(K_CORE).in("movie", "person");
         assertEquivalent(kcore, "compute cluster in [movie, person], using k-core;");
     }
 
     @Test
     public void testCCSizeToString() {
-        GraqlCompute query = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person").where(size(10));
+        GraqlCompute query = Graql.compute().cluster().using(CONNECTED_COMPONENT).in("movie", "person").where(size(10));
         assertEquivalent(query, "compute cluster in [movie, person], using connected-component, where size=10;");
     }
 
     @Test
     public void testKCoreToString() {
-        GraqlCompute query = Graql.compute(CLUSTER).using(K_CORE).in("movie", "person").where(k(10));
+        GraqlCompute query = Graql.compute().cluster().using(K_CORE).in("movie", "person").where(k(10));
         assertEquivalent(query, "compute cluster in [movie, person], using k-core, where k=10;");
     }
 
     @Test
     public void testCentralityOf() {
-        GraqlCompute query = Graql.compute(CENTRALITY).using(DEGREE).in("movie", "person").of("person");
+        GraqlCompute query = Graql.compute().centrality().using(DEGREE).in("movie", "person").of("person");
         assertEquivalent(query, "compute centrality of person, in [movie, person], using degree;");
 
-        query = Graql.compute(CENTRALITY).using(K_CORE).in("movie", "person").of("person").where(min_k(5));
+        query = Graql.compute().centrality().using(K_CORE).in("movie", "person").of("person").where(min_k(5));
         assertEquivalent(query, "compute centrality of person, in [movie, person], using k-core, where min-k=5;");
     }
 

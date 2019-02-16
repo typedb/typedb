@@ -47,6 +47,7 @@ import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.pattern.Conjunction;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.server.session.TransactionOLTP;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;

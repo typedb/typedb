@@ -19,23 +19,22 @@
 package grakn.core.graql.query.parser;
 
 import com.google.common.base.Strings;
-import graql.lang.exception.GraqlException;
 import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.property.DataTypeProperty;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlDefine;
 import grakn.core.graql.query.query.GraqlDelete;
 import grakn.core.graql.query.query.GraqlGet;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.GraqlQuery;
-import graql.lang.util.Token;
 import grakn.core.graql.query.query.GraqlUndefine;
-import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.property.DataTypeProperty;
 import grakn.core.graql.query.statement.Statement;
+import graql.lang.exception.GraqlException;
+import graql.lang.util.Token;
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -48,11 +47,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
-import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
-import static grakn.core.graql.query.query.GraqlCompute.Argument.k;
-import static grakn.core.graql.query.query.GraqlCompute.Argument.size;
-import static grakn.core.graql.query.query.GraqlCompute.Method.CLUSTER;
 import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.define;
 import static grakn.core.graql.query.Graql.gte;
@@ -66,6 +60,10 @@ import static grakn.core.graql.query.Graql.rel;
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.undefine;
 import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.query.GraqlCompute.Argument.k;
+import static grakn.core.graql.query.query.GraqlCompute.Argument.size;
+import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
+import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -786,20 +784,20 @@ public class ParserTest {
 
     @Test
     public void testParseComputeClusterUsingCCWithSize() {
-        GraqlCompute<?> expected = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person").where(size(10));
-        GraqlCompute<?> parsed = Graql.parse(
-                "compute cluster in [movie, person], using connected-component, where [size = 10];").asCompute();
+        GraqlCompute expected = Graql.compute().cluster().using(CONNECTED_COMPONENT).in("movie", "person").where(size(10));
+        GraqlCompute parsed = Graql.parse(
+                "compute cluster in [movie, person], using connected-component, where [size = 10];").asComputeCluster();
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseComputeClusterUsingCCWithSizeTwice() {
-        GraqlCompute<?> expected =
-                Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person").where(size(10), size(15));
+        GraqlCompute expected =
+                Graql.compute().cluster().using(CONNECTED_COMPONENT).in("movie", "person").where(size(10), size(15));
 
-        GraqlCompute<?> parsed = Graql.parse(
-                "compute cluster in [movie, person], using connected-component, where [size = 10, size = 15];").asCompute();
+        GraqlCompute parsed = Graql.parse(
+                "compute cluster in [movie, person], using connected-component, where [size = 10, size = 15];").asComputeCluster();
 
         assertEquals(expected, parsed);
     }
@@ -811,18 +809,18 @@ public class ParserTest {
 
     @Test
     public void testParseComputeClusterUsingKCoreWithK() {
-        GraqlCompute<?> expected = Graql.compute(CLUSTER).using(K_CORE).in("movie", "person").where(k(10));
-        GraqlCompute<?> parsed = Graql.parse(
-                "compute cluster in [movie, person], using k-core, where k = 10;").asCompute();
+        GraqlCompute expected = Graql.compute().cluster().using(K_CORE).in("movie", "person").where(k(10));
+        GraqlCompute parsed = Graql.parse(
+                "compute cluster in [movie, person], using k-core, where k = 10;").asComputeCluster();
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseComputeClusterUsingKCoreWithKTwice() {
-        GraqlCompute<?> expected = Graql.compute(CLUSTER).using(K_CORE).in("movie", "person").where(k(10));
-        GraqlCompute<?> parsed = Graql.parse(
-                "compute cluster in [movie, person], using k-core, where [k = 5, k = 10];").asCompute();
+        GraqlCompute expected = Graql.compute().cluster().using(K_CORE).in("movie", "person").where(k(10));
+        GraqlCompute parsed = Graql.parse(
+                "compute cluster in [movie, person], using k-core, where [k = 5, k = 10];").asComputeCluster();
 
         assertEquals(expected, parsed);
     }

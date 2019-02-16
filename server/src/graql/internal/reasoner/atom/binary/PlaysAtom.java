@@ -19,13 +19,13 @@
 package grakn.core.graql.internal.reasoner.atom.binary;
 
 import com.google.auto.value.AutoValue;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
 import grakn.core.graql.query.property.PlaysProperty;
 import grakn.core.graql.query.property.VarProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 
 /**
  * TypeAtom corresponding to graql a {@link PlaysProperty} property.

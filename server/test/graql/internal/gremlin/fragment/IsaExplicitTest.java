@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.query.GraqlInsert;
 import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.statement.Statement;

@@ -91,11 +91,35 @@ public abstract class GraqlQuery {
         }
     }
 
-    public GraqlCompute<?> asCompute() {
-        if (this instanceof GraqlCompute<?>) {
-            return (GraqlCompute<?>) this;
+    public GraqlCompute.Statistics asComputeStatistics() {
+        if (this instanceof GraqlCompute.Statistics) {
+            return (GraqlCompute.Statistics) this;
         } else {
-            throw GraqlException.create("This is not a GraqlCompute query");
+            throw GraqlException.create("This is not a GraqlCompute.Statistics query");
+        }
+    }
+
+    public GraqlCompute.Path asComputePath() {
+        if (this instanceof GraqlCompute.Path) {
+            return (GraqlCompute.Path) this;
+        } else {
+            throw GraqlException.create("This is not a GraqlCompute.Path query");
+        }
+    }
+
+    public GraqlCompute.Centrality asComputeCentrality() {
+        if (this instanceof GraqlCompute.Centrality) {
+            return (GraqlCompute.Centrality) this;
+        } else {
+            throw GraqlException.create("This is not a GraqlCompute.Centrality query");
+        }
+    }
+
+    public GraqlCompute.Cluster asComputeCluster() {
+        if (this instanceof GraqlCompute.Cluster) {
+            return (GraqlCompute.Cluster) this;
+        } else {
+            throw GraqlException.create("This is not a GraqlCompute.Cluster query");
         }
     }
 

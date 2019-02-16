@@ -22,8 +22,8 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
-import grakn.core.graql.query.statement.Variable;
 import grakn.core.graql.query.property.VarProperty;
+import grakn.core.graql.query.statement.Variable;
 
 import java.util.Set;
 

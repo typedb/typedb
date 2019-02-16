@@ -52,8 +52,8 @@ public interface Answer<T> {
         throw TransactionException.invalidCasting(this, ConceptSetMeasure.class);
     }
 
-    default Value asValue() {
-        throw TransactionException.invalidCasting(this, Value.class);
+    default Numeric asValue() {
+        throw TransactionException.invalidCasting(this, Numeric.class);
     }
 
     /**
