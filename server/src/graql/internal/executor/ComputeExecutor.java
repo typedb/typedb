@@ -65,6 +65,7 @@ import grakn.core.graql.internal.analytics.Utility;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.query.GraqlCompute;
+import grakn.core.graql.query.query.builder.Computable;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.util.Token;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -245,7 +246,7 @@ class ComputeExecutor {
             } else {
                 // check if all the attribute types have the same data-type
                 if (!dataType.equals(attributeType.dataType())) {
-                    throw GraqlQueryException.attributesWithDifferentDataTypes(query.of().get());
+                    throw GraqlQueryException.attributesWithDifferentDataTypes(query.of());
                 }
             }
         }
@@ -331,8 +332,8 @@ class ComputeExecutor {
      * @return a Answer containing the list of shortest paths
      */
     private Stream<ConceptList> runComputePath(GraqlCompute.Path query) {
-        ConceptId fromID = query.from().get();
-        ConceptId toID = query.to().get();
+        ConceptId fromID = query.from();
+        ConceptId toID = query.to();
 
         if (!scopeContainsInstances(query, fromID, toID)) throw GraqlQueryException.instanceDoesNotExist();
         if (fromID.equals(toID)) return Stream.of(new ConceptList(ImmutableList.of(fromID)));
@@ -367,8 +368,8 @@ class ComputeExecutor {
      * @return a Answer containing the centrality count map
      */
     private Stream<ConceptSetMeasure> runComputeCentrality(GraqlCompute.Centrality query) {
-        if (query.using().get().equals(DEGREE)) return runComputeDegree(query);
-        if (query.using().get().equals(K_CORE)) return runComputeCoreness(query);
+        if (query.using().equals(DEGREE)) return runComputeDegree(query);
+        if (query.using().equals(K_CORE)) return runComputeCoreness(query);
 
         throw new IllegalArgumentException("Unrecognised Graql Compute Centrality algorithm: " + query.method());
     }
@@ -382,10 +383,10 @@ class ComputeExecutor {
         Set<Label> targetTypeLabels;
 
         // Check if ofType is valid before returning emptyMap
-        if (!query.of().isPresent() || query.of().get().isEmpty()) {
+        if (query.of().isEmpty()) {
             targetTypeLabels = scopeTypeLabels(query);
         } else {
-            targetTypeLabels = query.of().get().stream()
+            targetTypeLabels = query.of().stream()
                     .flatMap(t -> {
                         Label typeLabel = Label.of(t);
                         Type type = tx.getSchemaConcept(typeLabel);
@@ -421,17 +422,17 @@ class ComputeExecutor {
      * @return a Answer containing the centrality count map
      */
     private Stream<ConceptSetMeasure> runComputeCoreness(GraqlCompute.Centrality query) {
-        long k = query.where().get().minK().get();
+        long k = query.where().minK().get();
 
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
         Set<Label> targetTypeLabels;
 
         // Check if ofType is valid before returning emptyMap
-        if (!query.of().isPresent() || query.of().get().isEmpty()) {
+        if (query.of().isEmpty()) {
             targetTypeLabels = scopeTypeLabels(query);
         } else {
-            targetTypeLabels = query.of().get().stream()
+            targetTypeLabels = query.of().stream()
                     .flatMap(t -> {
                         Label typeLabel = Label.of(t);
                         Type type = tx.getSchemaConcept(typeLabel);
@@ -468,15 +469,15 @@ class ComputeExecutor {
     }
 
     private Stream<ConceptSet> runComputeCluster(GraqlCompute.Cluster query) {
-        if (query.using().get().equals(K_CORE)) return runComputeKCore(query);
-        if (query.using().get().equals(CONNECTED_COMPONENT)) return runComputeConnectedComponent(query);
+        if (query.using().equals(K_CORE)) return runComputeKCore(query);
+        if (query.using().equals(CONNECTED_COMPONENT)) return runComputeConnectedComponent(query);
 
         throw new IllegalArgumentException("Unrecognised Graql Compute Cluster algorithm: " + query.method());
     }
 
 
     private Stream<ConceptSet> runComputeConnectedComponent(GraqlCompute.Cluster query) {
-        boolean restrictSize = query.where().get().size().isPresent();
+        boolean restrictSize = query.where().size().isPresent();
 
         if (!scopeContainsInstance(query)) {
             LOG.info("Selected types don't have instances");
@@ -486,8 +487,8 @@ class ComputeExecutor {
         Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels(query));
 
         GraknVertexProgram<?> vertexProgram;
-        if (query.where().get().contains().isPresent()) {
-            ConceptId conceptId = query.where().get().contains().get();
+        if (query.where().contains().isPresent()) {
+            ConceptId conceptId = query.where().contains().get();
             if (!scopeContainsInstances(query, conceptId)) {
                 throw GraqlQueryException.instanceDoesNotExist();
             }
@@ -497,7 +498,7 @@ class ComputeExecutor {
         }
 
         GraknMapReduce<?> mapReduce;
-        if (restrictSize) mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().get().size().get());
+        if (restrictSize) mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().size().get());
         else mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
 
         Memory memory = compute(vertexProgram, mapReduce, scopeTypeLabelIDs).memory();
@@ -505,10 +506,10 @@ class ComputeExecutor {
         return result.values().stream().map(ConceptSet::new);
 
 //        TODO: Enable the following compute cluster-size through a separate compute method
-//        if (!query.where().get().members().get()) {
+//        if (!query.where().members().get()) {
 //            GraknMapReduce<?> mapReduce;
 //            if (restrictSize) {
-//                mapreduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().get().size().get());
+//                mapreduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().size().get());
 //            } else {
 //                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
 //            }
@@ -518,7 +519,7 @@ class ComputeExecutor {
     }
 
     private Stream<ConceptSet> runComputeKCore(GraqlCompute.Cluster query) {
-        long k = query.where().get().k().get();
+        long k = query.where().k().get();
 
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
@@ -654,12 +655,12 @@ class ComputeExecutor {
      *
      * @return a set of Types
      */
-    private ImmutableSet<Type> targetTypes(GraqlCompute query) {
-        if (!query.of().isPresent() || query.of().get().isEmpty()) {
+    private ImmutableSet<Type> targetTypes(Computable.Targetable<?> query) {
+        if (query.of().isEmpty()) {
             throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
         }
 
-        return query.of().get().stream()
+        return query.of().stream()
                 .map(t -> {
                     Label label = Label.of(t);
                     Type type = tx.getSchemaConcept(label);
@@ -676,7 +677,7 @@ class ComputeExecutor {
      *
      * @return a set of type Labels
      */
-    private Set<Label> targetTypeLabels(GraqlCompute query) {
+    private Set<Label> targetTypeLabels(Computable.Targetable<?> query) {
         return targetTypes(query).stream()
                 .map(SchemaConcept::label)
                 .collect(CommonUtil.toImmutableSet());
@@ -687,7 +688,7 @@ class ComputeExecutor {
      *
      * @return true if they exist, false if they don't
      */
-    private boolean targetContainsInstance(GraqlCompute query) {
+    private boolean targetContainsInstance(GraqlCompute.Statistics.Value query) {
         for (Label attributeType : targetTypeLabels(query)) {
             for (Label type : scopeTypeLabels(query)) {
                 Boolean patternExist = tx.stream(Graql.match(
@@ -714,10 +715,10 @@ class ComputeExecutor {
      *
      * @return a set of type labels
      */
-    private Set<Label> extendedScopeTypeLabels(GraqlCompute query) {
+    private Set<Label> extendedScopeTypeLabels(GraqlCompute.Statistics.Value query) {
         Set<Label> extendedTypeLabels = getAttributeImplicitRelationTypeLabes(targetTypes(query));
         extendedTypeLabels.addAll(scopeTypeLabels(query));
-        extendedTypeLabels.addAll(query.of().get().stream().map(Label::of).collect(toSet()));
+        extendedTypeLabels.addAll(query.of().stream().map(Label::of).collect(toSet()));
         return extendedTypeLabels;
     }
 
@@ -729,7 +730,7 @@ class ComputeExecutor {
     private Stream<Type> scopeTypes(GraqlCompute query) {
         // Get all types if query.inTypes() is empty, else get all scoped types of each meta type.
         // Only include attributes and implicit "has-xxx" relationships when user specifically asked for them.
-        if (!query.in().isPresent() || query.in().get().isEmpty()) {
+        if (query.in().isEmpty()) {
             ImmutableSet.Builder<Type> typeBuilder = ImmutableSet.builder();
 
             if (scopeIncludesAttributes(query)) {
@@ -742,7 +743,7 @@ class ComputeExecutor {
 
             return typeBuilder.build().stream();
         } else {
-            Stream<Type> subTypes = query.in().get().stream().map(t -> {
+            Stream<Type> subTypes = query.in().stream().map(t -> {
                 Label label = Label.of(t);
                 Type type = tx.getType(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
@@ -809,8 +810,8 @@ class ComputeExecutor {
      * @return true if they exist, false if they don't
      */
     private boolean scopeIncludesImplicitOrAttributeTypes(GraqlCompute query) {
-        if (!query.in().isPresent()) return false;
-        return query.in().get().stream().anyMatch(t -> {
+        if (query.in().isEmpty()) return false;
+        return query.in().stream().anyMatch(t -> {
             Label label = Label.of(t);
             SchemaConcept type = tx.getSchemaConcept(label);
             return (type != null && (type.isAttributeType() || type.isImplicit()));
