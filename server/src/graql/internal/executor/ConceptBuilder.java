@@ -31,14 +31,14 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
-import graql.lang.util.Token;
 import grakn.core.graql.query.pattern.Pattern;
-import grakn.core.graql.query.statement.Statement;
-import grakn.core.graql.query.statement.Variable;
 import grakn.core.graql.query.property.IsaProperty;
 import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.property.VarProperty;
+import grakn.core.graql.query.statement.Statement;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.exception.InvalidKBException;
+import graql.lang.util.Token;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;

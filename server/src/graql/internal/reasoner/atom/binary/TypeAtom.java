@@ -17,8 +17,8 @@
  */
 package grakn.core.graql.internal.reasoner.atom.binary;
 
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.query.property.HasAttributeTypeProperty;
 import grakn.core.graql.query.property.IsaProperty;
 import grakn.core.graql.query.property.PlaysProperty;

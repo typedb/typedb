@@ -48,6 +48,7 @@ import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.session.TransactionOLTP;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;

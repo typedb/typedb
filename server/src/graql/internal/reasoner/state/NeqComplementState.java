@@ -19,14 +19,14 @@
 package grakn.core.graql.internal.reasoner.state;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-
 import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
+import grakn.core.graql.internal.reasoner.unifier.Unifier;
+
 import java.util.Set;
 import java.util.stream.Collectors;
 

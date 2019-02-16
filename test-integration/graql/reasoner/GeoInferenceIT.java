@@ -20,9 +20,9 @@ package grakn.core.graql.reasoner;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.query.GraqlGet;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
@@ -32,7 +32,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collection;

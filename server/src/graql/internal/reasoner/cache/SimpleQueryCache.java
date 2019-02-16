@@ -19,11 +19,11 @@
 package grakn.core.graql.internal.reasoner.cache;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.statement.Variable;

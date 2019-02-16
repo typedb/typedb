@@ -20,6 +20,7 @@ package grakn.core.graql.internal.reasoner.utils;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;

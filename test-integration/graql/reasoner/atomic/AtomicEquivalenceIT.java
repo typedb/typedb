@@ -18,9 +18,9 @@
 
 package grakn.core.graql.reasoner.atomic;
 
-import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.pattern.Conjunction;

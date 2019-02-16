@@ -30,7 +30,6 @@ import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
-import graql.lang.exception.GraqlException;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
@@ -39,6 +38,7 @@ import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
+import graql.lang.exception.GraqlException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 

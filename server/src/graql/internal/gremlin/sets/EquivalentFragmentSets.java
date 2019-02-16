@@ -28,8 +28,8 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.query.statement.Variable;
 import grakn.core.graql.query.property.VarProperty;
+import grakn.core.graql.query.statement.Variable;
 import grakn.core.server.Transaction;
 
 import javax.annotation.Nullable;

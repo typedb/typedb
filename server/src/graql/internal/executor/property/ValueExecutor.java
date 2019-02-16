@@ -19,20 +19,20 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import graql.lang.util.Token;
+import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
+import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.property.VarProperty;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
+import graql.lang.util.Token;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

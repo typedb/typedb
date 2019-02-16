@@ -23,8 +23,8 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.query.MatchClause;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
@@ -38,7 +38,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
-import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 

@@ -18,21 +18,15 @@
 
 package grakn.core.graql.query.parser;
 
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.query.GraqlCompute;
 import grakn.core.graql.query.query.GraqlGet;
-import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.query.GraqlInsert;
-import grakn.core.graql.query.query.MatchClause;
 import grakn.core.graql.query.query.GraqlQuery;
+import grakn.core.graql.query.query.MatchClause;
 import graql.lang.util.Token;
 import org.junit.Test;
 
-import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
-import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
-import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
-import static grakn.core.graql.query.query.GraqlCompute.Argument.k;
-import static grakn.core.graql.query.query.GraqlCompute.Argument.min_k;
-import static grakn.core.graql.query.query.GraqlCompute.Argument.size;
 import static grakn.core.graql.query.Graql.and;
 import static grakn.core.graql.query.Graql.lte;
 import static grakn.core.graql.query.Graql.match;
@@ -40,6 +34,12 @@ import static grakn.core.graql.query.Graql.or;
 import static grakn.core.graql.query.Graql.rel;
 import static grakn.core.graql.query.Graql.type;
 import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.query.GraqlCompute.Argument.k;
+import static grakn.core.graql.query.query.GraqlCompute.Argument.min_k;
+import static grakn.core.graql.query.query.GraqlCompute.Argument.size;
+import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
+import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
+import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
 import static org.junit.Assert.assertEquals;
 
 public class QueryToStringTest {

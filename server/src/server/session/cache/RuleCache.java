@@ -25,6 +25,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.session.TransactionOLTP;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

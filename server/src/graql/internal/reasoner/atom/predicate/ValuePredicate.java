@@ -24,11 +24,12 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.query.Graql;
-import graql.lang.util.Token;
-import javax.annotation.Nullable;
 import grakn.core.graql.query.property.ValueProperty;
 import grakn.core.graql.query.statement.Statement;
 import grakn.core.graql.query.statement.Variable;
+import graql.lang.util.Token;
+
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
