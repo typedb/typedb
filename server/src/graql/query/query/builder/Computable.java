@@ -18,7 +18,6 @@
 
 package grakn.core.graql.query.query.builder;
 
-import grakn.core.graql.concept.ConceptId;
 import graql.lang.exception.GraqlException;
 import graql.lang.util.Token;
 
