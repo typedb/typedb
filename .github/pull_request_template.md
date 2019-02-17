@@ -1,7 +1,7 @@
-# Why is this PR needed?
+## What is the goal of this PR?
 
-# What does the PR do?
+Please reference the GitHub issues, and why the goals are valuable to achieve. Then remove this line.
 
-# Does it break backwards compatibility?
+## What are the changes implemented in this PR?
 
-# List of future improvements not on this PR
+Please reference the GitHub issues, and explain why your changes achieve the above goal(s). Then remove this line.
