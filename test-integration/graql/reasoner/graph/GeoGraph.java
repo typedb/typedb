@@ -25,10 +25,10 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
-import graql.lang.Graql;
-import graql.lang.pattern.Pattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
 
 public class GeoGraph {
 

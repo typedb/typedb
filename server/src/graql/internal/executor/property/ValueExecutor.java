@@ -28,11 +28,11 @@ import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import graql.lang.util.Token;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -113,10 +113,10 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
      */
     public static abstract class Operation<T, U> {
 
-        private final Token.Comparator comparator;
+        private final Graql.Token.Comparator comparator;
         private final T value;
 
-        Operation(Token.Comparator comparator, T value) {
+        Operation(Graql.Token.Comparator comparator, T value) {
             this.comparator = comparator;
             this.value = value;
         }
@@ -136,7 +136,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
             return comparator().toString() + value();
         }
 
-        public Token.Comparator comparator() {
+        public Graql.Token.Comparator comparator() {
             return comparator;
         }
 
@@ -145,7 +145,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         }
 
         public boolean isValueEquality() {
-            return comparator.equals(Token.Comparator.EQV) && !(this instanceof Comparison.Variable);
+            return comparator.equals(Graql.Token.Comparator.EQV) && !(this instanceof Comparison.Variable);
         }
 
         protected U persistedValue() {
@@ -203,35 +203,35 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         }
 
         private boolean isCompatibleWithNEQ(ValueExecutor.Operation<?, ?> other) {
-            if (!this.comparator().equals(Token.Comparator.NEQV)) return false;
+            if (!this.comparator().equals(Graql.Token.Comparator.NEQV)) return false;
             if (this instanceof Comparison.Variable || other instanceof Comparison.Variable) return true;
 
             //checks for !=/= contradiction
             return (!this.value().equals(other.value()) ||
-                    this.value().equals(other.value()) && !(other.comparator().equals(Token.Comparator.EQV)));
+                    this.value().equals(other.value()) && !(other.comparator().equals(Graql.Token.Comparator.EQV)));
         }
 
         private boolean isCompatibleWithContains(ValueExecutor.Operation<?, ?> other) {
-            if (other.comparator().equals(Token.Comparator.CONTAINS)) return true;
-            if (!other.comparator().equals(Token.Comparator.EQV)) return false;
+            if (other.comparator().equals(Graql.Token.Comparator.CONTAINS)) return true;
+            if (!other.comparator().equals(Graql.Token.Comparator.EQV)) return false;
 
             return (other instanceof Comparison.Variable ||
                     other.value() instanceof String && this.predicate().test((U) other.persistedValue()));
         }
 
         private boolean isCompatibleWithRegex(ValueExecutor.Operation<?, ?> other) {
-            if (!other.comparator().equals(Token.Comparator.EQV)) return false;
+            if (!other.comparator().equals(Graql.Token.Comparator.EQV)) return false;
 
             return (other instanceof Comparison.Variable ||
                     this.predicate().test((U) other.persistedValue()));
         }
 
         public boolean isCompatible(ValueExecutor.Operation<?, ?> other) {
-            if (other.comparator().equals(Token.Comparator.NEQV)) {
+            if (other.comparator().equals(Graql.Token.Comparator.NEQV)) {
                 return other.isCompatibleWithNEQ(this);
-            } else if (other.comparator().equals(Token.Comparator.CONTAINS)) {
+            } else if (other.comparator().equals(Graql.Token.Comparator.CONTAINS)) {
                 return other.isCompatibleWithContains(this);
-            } else if (other.comparator().equals(Token.Comparator.LIKE)) {
+            } else if (other.comparator().equals(Graql.Token.Comparator.LIKE)) {
                 return other.isCompatibleWithRegex(this);
             }
 
@@ -246,9 +246,9 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         }
 
         public boolean subsumes(ValueExecutor.Operation<?, ?> other) {
-            if (this.comparator().equals(Token.Comparator.LIKE)) {
+            if (this.comparator().equals(Graql.Token.Comparator.LIKE)) {
                 return isCompatibleWithRegex(other);
-            } else if (other.comparator().equals(Token.Comparator.LIKE)) {
+            } else if (other.comparator().equals(Graql.Token.Comparator.LIKE)) {
                 return false;
             }
 
@@ -286,7 +286,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         static abstract class Assignment<T, U> extends Operation<T, U> {
 
             Assignment(T value) {
-                super(Token.Comparator.EQV, value);
+                super(Graql.Token.Comparator.EQV, value);
             }
 
             static Assignment<?, ?> of(ValueProperty.Operation.Assignment<?> assignment) {
@@ -343,14 +343,14 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
         public static abstract class Comparison<T, U> extends Operation<T, U> {
 
-            final Map<Token.Comparator, Function<U, P<U>>> PREDICATES_COMPARABLE = comparablePredicates();
+            final Map<Graql.Token.Comparator, Function<U, P<U>>> PREDICATES_COMPARABLE = comparablePredicates();
 
-            Comparison(Token.Comparator comparator, T value) {
+            Comparison(Graql.Token.Comparator comparator, T value) {
                 super(comparator, value);
             }
 
             static Comparison<?, ?> of(ValueProperty.Operation.Comparison<?> comparison) {
-                Token.Comparator comparator = comparison.comparator();
+                Graql.Token.Comparator comparator = comparison.comparator();
 
                 if (comparison instanceof ValueProperty.Operation.Comparison.Number<?>) {
                     return new Comparison.Number<>(comparator, ((ValueProperty.Operation.Comparison.Number<?>) comparison).value());
@@ -372,14 +372,14 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 }
             }
 
-            static <V> Map<Token.Comparator, Function<V, P<V>>> comparablePredicates() {
-                Map<Token.Comparator, Function<V, P<V>>> predicates = new HashMap<>();
-                predicates.put(Token.Comparator.EQV, P::eq);
-                predicates.put(Token.Comparator.NEQV, P::neq);
-                predicates.put(Token.Comparator.GT, P::gt);
-                predicates.put(Token.Comparator.GTE, P::gte);
-                predicates.put(Token.Comparator.LT, P::lt);
-                predicates.put(Token.Comparator.LTE, P::lte);
+            static <V> Map<Graql.Token.Comparator, Function<V, P<V>>> comparablePredicates() {
+                Map<Graql.Token.Comparator, Function<V, P<V>>> predicates = new HashMap<>();
+                predicates.put(Graql.Token.Comparator.EQV, P::eq);
+                predicates.put(Graql.Token.Comparator.NEQV, P::neq);
+                predicates.put(Graql.Token.Comparator.GT, P::gt);
+                predicates.put(Graql.Token.Comparator.GTE, P::gte);
+                predicates.put(Graql.Token.Comparator.LT, P::lt);
+                predicates.put(Graql.Token.Comparator.LTE, P::lte);
 
                 return Collections.unmodifiableMap(predicates);
             }
@@ -405,39 +405,39 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
             static class Number<N extends java.lang.Number> extends Comparison<N, N> {
 
-                Number(Token.Comparator comparator, N value) {
+                Number(Graql.Token.Comparator comparator, N value) {
                     super(comparator, value);
                 }
             }
 
             static class Boolean extends Comparison<java.lang.Boolean, java.lang.Boolean> {
 
-                Boolean(Token.Comparator comparator, boolean value) {
+                Boolean(Graql.Token.Comparator comparator, boolean value) {
                     super(comparator, value);
                 }
             }
 
             static class DateTime extends Comparison<LocalDateTime, Long> {
 
-                DateTime(Token.Comparator comparator, LocalDateTime value) {
+                DateTime(Graql.Token.Comparator comparator, LocalDateTime value) {
                     super(comparator, value);
                 }
             }
 
             public static class String extends Comparison<java.lang.String, java.lang.String> {
 
-                final Map<Token.Comparator, Function<java.lang.String, P<java.lang.String>>> PREDICATES_STRING = stringPredicates();
+                final Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> PREDICATES_STRING = stringPredicates();
 
-                public String(Token.Comparator comparator, java.lang.String value) {
+                public String(Graql.Token.Comparator comparator, java.lang.String value) {
                     super(comparator, value);
                 }
 
-                private static Map<Token.Comparator, Function<java.lang.String, P<java.lang.String>>> stringPredicates() {
-                    Map<Token.Comparator, Function<java.lang.String, P<java.lang.String>>> predicates = new HashMap<>();
+                private static Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> stringPredicates() {
+                    Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> predicates = new HashMap<>();
 
                     predicates.putAll(comparablePredicates());
-                    predicates.put(Token.Comparator.CONTAINS, containsPredicate());
-                    predicates.put(Token.Comparator.LIKE, regexPredicate());
+                    predicates.put(Graql.Token.Comparator.CONTAINS, containsPredicate());
+                    predicates.put(Graql.Token.Comparator.LIKE, regexPredicate());
 
                     return Collections.unmodifiableMap(predicates);
                 }
@@ -459,21 +459,21 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 private final java.lang.String gremlinVariable;
 
-                private static final Map<Token.Comparator, Function<java.lang.String, P<java.lang.String>>> PREDICATES_VAR = varPredicates();
+                private static final Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> PREDICATES_VAR = varPredicates();
                 private static final java.lang.String[] VALUE_PROPERTIES = AttributeType.DataType.SUPPORTED_TYPES.values().stream()
                         .map(AttributeType.DataType::getVertexProperty).distinct()
                         .map(Enum::name).toArray(java.lang.String[]::new);
 
-                Variable(Token.Comparator comparator, Statement value) {
+                Variable(Graql.Token.Comparator comparator, Statement value) {
                     super(comparator, value);
                     gremlinVariable = UUID.randomUUID().toString();
                 }
 
-                private static Map<Token.Comparator, Function<java.lang.String, P<java.lang.String>>> varPredicates() {
-                    Map<Token.Comparator, Function<java.lang.String, P<java.lang.String>>> predicates = new HashMap<>();
+                private static Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> varPredicates() {
+                    Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> predicates = new HashMap<>();
 
                     predicates.putAll(comparablePredicates());
-                    predicates.put(Token.Comparator.CONTAINS, containsPredicate());
+                    predicates.put(Graql.Token.Comparator.CONTAINS, containsPredicate());
 
                     return Collections.unmodifiableMap(predicates);
                 }

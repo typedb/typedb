@@ -19,13 +19,13 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.graql.answer.ConceptMap;
-import graql.lang.Graql;
-import graql.lang.query.GraqlGet;
-import graql.lang.statement.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
+import graql.lang.query.GraqlGet;
+import graql.lang.statement.Statement;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -34,8 +34,8 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static graql.lang.Graql.var;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 public class VariableRolesIT {

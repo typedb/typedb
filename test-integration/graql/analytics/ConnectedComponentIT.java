@@ -29,11 +29,11 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
-import graql.lang.Graql;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -46,9 +46,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.query.GraqlCompute.Argument.contains;
 import static graql.lang.query.GraqlCompute.Argument.size;
-import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

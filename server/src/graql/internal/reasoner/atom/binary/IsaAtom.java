@@ -34,12 +34,12 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
+import grakn.core.server.kb.concept.EntityTypeImpl;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.server.kb.concept.EntityTypeImpl;
 
 import javax.annotation.Nullable;
 import java.util.Comparator;

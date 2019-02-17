@@ -25,12 +25,12 @@ import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.RelationType;
-import graql.lang.Graql;
-import graql.lang.query.GraqlGet;
-import graql.lang.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import graql.lang.Graql;
+import graql.lang.query.GraqlGet;
+import graql.lang.statement.Variable;
 import org.junit.ClassRule;
 import org.junit.Test;
 

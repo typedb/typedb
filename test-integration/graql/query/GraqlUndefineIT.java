@@ -29,15 +29,14 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
-import graql.lang.Graql;
-import graql.lang.query.GraqlUndefine;
-import graql.lang.statement.Statement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
-import graql.lang.util.Token;
+import graql.lang.Graql;
+import graql.lang.query.GraqlUndefine;
+import graql.lang.statement.Statement;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -48,9 +47,9 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
 
+import static grakn.core.util.GraqlTestUtil.assertExists;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
-import static grakn.core.util.GraqlTestUtil.assertExists;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
@@ -101,7 +100,7 @@ public class GraqlUndefineIT {
 
     @Test
     public void whenUndefiningDataType_DoNothing() {
-        tx.execute(Graql.undefine(type("name").datatype(Token.DataType.STRING)));
+        tx.execute(Graql.undefine(type("name").datatype(Graql.Token.DataType.STRING)));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
         assertEquals(AttributeType.DataType.STRING, tx.getAttributeType("name").dataType());
@@ -226,7 +225,7 @@ public class GraqlUndefineIT {
 
     @Test
     public void whenUndefiningRegexProperty_TheAttributeTypeHasNoRegex() {
-        tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ATTRIBUTE).datatype(Token.DataType.STRING).regex("abc")));
+        tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ATTRIBUTE).datatype(Graql.Token.DataType.STRING).regex("abc")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
@@ -239,7 +238,7 @@ public class GraqlUndefineIT {
 
     @Test
     public void whenUndefiningRegexPropertyWithWrongRegex_DoNothing() {
-        tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ATTRIBUTE).datatype(Token.DataType.STRING).regex("abc")));
+        tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ATTRIBUTE).datatype(Graql.Token.DataType.STRING).regex("abc")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
@@ -309,7 +308,7 @@ public class GraqlUndefineIT {
     public void undefineTypeAndTheirAttributes() {
         tx.execute(Graql.define(
                 type("company").sub("entity").has("registration"),
-                type("registration").sub("attribute").datatype(Token.DataType.STRING)
+                type("registration").sub("attribute").datatype(Graql.Token.DataType.STRING)
         ));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
@@ -332,7 +331,7 @@ public class GraqlUndefineIT {
     public void undefineTypeAndTheirAttributeAndRolesAndRelationships() {
         Collection<Statement> schema = ImmutableList.of(
                 type("pokemon").sub(ENTITY).has("pokedex-no").plays("ancestor").plays("descendant"),
-                type("pokedex-no").sub(ATTRIBUTE).datatype(Token.DataType.LONG),
+                type("pokedex-no").sub(ATTRIBUTE).datatype(Graql.Token.DataType.LONG),
                 type("evolution").sub(RELATIONSHIP).relates("ancestor").relates("descendant"),
                 type("ancestor").sub(ROLE),
                 type("descendant").sub(ROLE)
@@ -365,7 +364,7 @@ public class GraqlUndefineIT {
     @Test
     public void undefineTypeAndTheirAttributeWhenThereIsAnInstanceOfThem_Throw() {
         tx.execute(Graql.define(
-                type("registration").sub("attribute").datatype(Token.DataType.STRING),
+                type("registration").sub("attribute").datatype(Graql.Token.DataType.STRING),
                 type("company").sub("entity").has("registration")
         ));
         tx.execute(Graql.insert(
@@ -386,7 +385,7 @@ public class GraqlUndefineIT {
     @Test
     public void whenUndefiningATypeAndTheirInheritedAttribute_Throw() {
         tx.execute(Graql.define(
-                type("registration").sub("attribute").datatype(Token.DataType.STRING),
+                type("registration").sub("attribute").datatype(Graql.Token.DataType.STRING),
                 type("company").sub("entity").has("registration"),
                 type("sub-company").sub("company")
         ));
@@ -435,7 +434,7 @@ public class GraqlUndefineIT {
         Concept movie = tx.execute(Graql.insert(x.isa("movie"))).get(0).get(x.var());
 
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(Token.Property.ISA.toString()).getMessage());
+        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(Graql.Token.Property.ISA.toString()).getMessage());
 
         tx.execute(Graql.undefine(var().id(movie.id().getValue()).isa("movie")));
     }

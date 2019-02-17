@@ -23,11 +23,11 @@ import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import graql.lang.pattern.Pattern;
-import graql.lang.query.GraqlQuery;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.SessionProto;
+import graql.lang.pattern.Pattern;
+import graql.lang.query.GraqlQuery;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;

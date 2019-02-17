@@ -31,14 +31,14 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
+import grakn.core.server.exception.InvalidKBException;
+import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.server.exception.InvalidKBException;
-import graql.lang.util.Token;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -276,14 +276,14 @@ public class ConceptBuilder {
         }
     }
 
-    private static final BuilderParam<Type> TYPE = BuilderParam.of(Token.Property.ISA);
-    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(Token.Property.SUB);
-    private static final BuilderParam<Label> LABEL = BuilderParam.of(Token.Property.TYPE);
-    private static final BuilderParam<ConceptId> ID = BuilderParam.of(Token.Property.ID);
-    private static final BuilderParam<Object> VALUE = BuilderParam.of(Token.Property.VALUE);
-    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(Token.Property.DATA_TYPE);
-    private static final BuilderParam<Pattern> WHEN = BuilderParam.of(Token.Property.WHEN);
-    private static final BuilderParam<Pattern> THEN = BuilderParam.of(Token.Property.THEN);
+    private static final BuilderParam<Type> TYPE = BuilderParam.of(Graql.Token.Property.ISA);
+    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(Graql.Token.Property.SUB);
+    private static final BuilderParam<Label> LABEL = BuilderParam.of(Graql.Token.Property.TYPE);
+    private static final BuilderParam<ConceptId> ID = BuilderParam.of(Graql.Token.Property.ID);
+    private static final BuilderParam<Object> VALUE = BuilderParam.of(Graql.Token.Property.VALUE);
+    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(Graql.Token.Property.DATA_TYPE);
+    private static final BuilderParam<Pattern> WHEN = BuilderParam.of(Graql.Token.Property.WHEN);
+    private static final BuilderParam<Pattern> THEN = BuilderParam.of(Graql.Token.Property.THEN);
     private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role"); // TODO: replace this with a value registered in an enum
     private static final BuilderParam<Unit> IS_RULE = BuilderParam.of("rule"); // TODO: replace this with a value registered in an enum
 

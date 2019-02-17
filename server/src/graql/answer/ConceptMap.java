@@ -33,8 +33,8 @@ import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
-import graql.lang.statement.Variable;
 import graql.lang.exception.GraqlException;
+import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;

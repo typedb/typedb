@@ -28,9 +28,9 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.server.Transaction;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
-import grakn.core.server.Transaction;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
