@@ -95,16 +95,6 @@ jobs:
       - bazel:
           command: bazel test //console/... --test_output=errors
 
-  graql:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - checkout
-      - bazel_install
-      - bazel_add_rbe_credential
-      - bazel:
-          command: bazel test //graql/... --test_output=errors
-
   server:
     machine: true
     working_directory: ~/grakn
@@ -218,10 +208,6 @@ workflows:
           filters:
             branches:
               ignore: grakn-core-release-branch
-      - graql:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
       - server:
           filters:
             branches:
@@ -253,7 +239,6 @@ workflows:
             - client-java
             - common
             - console
-            - graql
             - server
             - test-integration
             - test-integration-reasoner
