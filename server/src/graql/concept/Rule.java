@@ -25,12 +25,13 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * A {@link SchemaConcept} used to model and categorise {@link Rule}s.
+ * A SchemaConcept used to model and categorise Rules.
  */
 public interface Rule extends SchemaConcept {
     //------------------------------------- Accessors ----------------------------------
+
     /**
-     * Retrieves the when part of the {@link Rule}
+     * Retrieves the when part of the Rule
      * When this query is satisfied the "then" part of the rule is executed.
      *
      * @return A string representing the left hand side Graql query.
@@ -40,7 +41,7 @@ public interface Rule extends SchemaConcept {
     Pattern when();
 
     /**
-     * Retrieves the then part of the {@link Rule}.
+     * Retrieves the then part of the Rule.
      * This query is executed when the "when" part of the rule is satisfied
      *
      * @return A string representing the right hand side Graql query.
@@ -50,53 +51,52 @@ public interface Rule extends SchemaConcept {
     Pattern then();
 
     /**
-     * Retrieve a set of {@link Type}s that constitute a part of the hypothesis of this {@link Rule}.
+     * Retrieve a set of Types that constitute a part of the hypothesis of this Rule.
      *
-     * @return A collection of Concept {@link Type}s that constitute a part of the hypothesis of the {@link Rule}
+     * @return A collection of Concept Types that constitute a part of the hypothesis of the Rule
      */
     @CheckReturnValue
     Stream<Type> whenTypes();
 
     /**
-     * Retrieve a set of {@link Type}s that constitue a part of the conclusion of the {@link Rule}.
+     * Retrieve a set of Types that constitue a part of the conclusion of the Rule.
      *
-     * @return A collection of {@link Type}s that constitute a part of the conclusion of the {@link Rule}
+     * @return A collection of Types that constitute a part of the conclusion of the Rule
      */
     @CheckReturnValue
     Stream<Type> thenTypes();
 
     //------------------------------------- Modifiers ----------------------------------
+
     /**
-     * Changes the {@link Label} of this {@link Concept} to a new one.
-     * @param label The new {@link Label}.
-     * @return The {@link Concept} itself
+     * Changes the Label of this Concept to a new one.
+     *
+     * @param label The new Label.
+     * @return The Concept itself
      */
     Rule label(Label label);
 
     /**
-     *
-     * @return The super of this {@link Rule}
+     * @return The super of this Rule
      */
     @Nullable
     @Override
     Rule sup();
 
     /**
-     *
-     * @param superRule The super of this {@link Rule}
-     * @return The {@link Rule} itself
+     * @param superRule The super of this Rule
+     * @return The Rule itself
      */
     Rule sup(Rule superRule);
 
     /**
-     * @return All the super-types of this this {@link Rule}
+     * @return All the super-types of this this Rule
      */
     @Override
     Stream<Rule> sups();
 
     /**
-     *
-     * @return All the sub of this {@link Rule}
+     * @return All the sub of this Rule
      */
     @Override
     Stream<Rule> subs();
@@ -105,14 +105,14 @@ public interface Rule extends SchemaConcept {
     @Deprecated
     @CheckReturnValue
     @Override
-    default Rule asRule(){
+    default Rule asRule() {
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isRule(){
+    default boolean isRule() {
         return true;
     }
 }

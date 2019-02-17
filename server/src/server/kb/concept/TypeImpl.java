@@ -21,10 +21,7 @@ package grakn.core.server.kb.concept;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
@@ -49,11 +46,11 @@ import java.util.stream.Stream;
 
 /**
  * A Type represents any ontological element in the graph.
- * Types are used to model the behaviour of {@link Thing} and how they relate to each other.
- * They also aid in categorising {@link Thing} to different types.
+ * Types are used to model the behaviour of Thing and how they relate to each other.
+ * They also aid in categorising Thing to different types.
  *
- * @param <T> The leaf interface of the object concept. For example an {@link EntityType} or {@link RelationType}
- * @param <V> The instance of this type. For example {@link Entity} or {@link Relation}
+ * @param <T> The leaf interface of the object concept. For example an EntityType or RelationType
+ * @param <V> The instance of this type. For example Entity or Relation
  */
 public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type {
 
@@ -105,9 +102,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     /**
-     * Checks if an {@link Thing} is allowed to be created and linked to this {@link Type}.
+     * Checks if an Thing is allowed to be created and linked to this Type.
      * This can fail is the {@link Transaction.Type} is read only.
-     * It can also fail when attempting to attach an {@link Attribute} to a meta type
+     * It can also fail when attempting to attach an Attribute to a meta type
      */
     private void preCheckForInstanceCreation() {
         vertex().tx().checkMutationAllowed();
@@ -236,9 +233,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     /**
-     * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationType}s from their
-     * {@link RelationshipEdge}s. This Disconnection happens because {@link RelationType#instances()} depends on the
-     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationType}.
+     * This is a temporary patch to prevent accidentally disconnecting implicit RelationTypes from their
+     * RelationEdges. This Disconnection happens because RelationType.instances() depends on the
+     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the Type and the implicit RelationType.
      * <p>
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.
      */
@@ -291,13 +288,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
 
     /**
-     * Helper method to delete a {@link AttributeType} which is possible linked to this {@link Type}.
-     * The link to {@link AttributeType} is removed if <code>attributeToRemove</code> is in the candidate list
+     * Helper method to delete a AttributeType which is possible linked to this Type.
+     * The link to AttributeType is removed if <code>attributeToRemove</code> is in the candidate list
      * <code>attributeTypes</code>
      *
-     * @param attributeToRemove the {@link AttributeType} to remove
+     * @param attributeToRemove the AttributeType to remove
      * @param isKey             a boolean to determine whether the AttributeType to be removed is a KEY to the owning Type
-     * @return the {@link Type} itself
+     * @return the Type itself
      */
     private T unlinkAttribute(AttributeType<?> attributeToRemove, boolean isKey) {
         Stream<AttributeType> attributeTypes = isKey ? keys() : attributes();
@@ -307,7 +304,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         if (attributeTypes.anyMatch(a -> a.equals(attributeToRemove))) {
             Label relationLabel = relationSchema.getLabel(attributeToRemove.label());
-            RelationshipTypeImpl relation = vertex().tx().getSchemaConcept(relationLabel);
+            RelationTypeImpl relation = vertex().tx().getSchemaConcept(relationLabel);
             if (attributeToRemove.instances().flatMap(Attribute::owners).anyMatch(thing -> thing.type().equals(this))) {
                 throw TransactionException.illegalUnhasWithInstance(this.label().getValue(), attributeToRemove.label().getValue(), isKey);
             }
@@ -391,14 +388,14 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     /**
-     * Creates a relation type which allows this type and a {@link Attribute} type to be linked.
+     * Creates a relation type which allows this type and a Attribute type to be linked.
      *
-     * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
+     * @param attributeType The AttributeType which instances of this type should be allowed to play.
      * @param has           the implicit relation type to build
-     * @param hasValue      the implicit role type to build for the {@link AttributeType}
+     * @param hasValue      the implicit role type to build for the AttributeType
      * @param hasOwner      the implicit role type to build for the type
-     * @param required      Indicates if the {@link Attribute} is required on the entity
-     * @return The {@link Type} itself
+     * @param required      Indicates if the Attribute is required on the entity
+     * @return The Type itself
      */
     private T has(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required) {
         Label attributeLabel = attributeType.label();
@@ -445,11 +442,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     /**
-     * Checks if the provided {@link AttributeType} is already used in an other implicit relation.
+     * Checks if the provided AttributeType is already used in an other implicit relation.
      *
      * @param implicitType  The implicit relation to check against.
-     * @param attributeType The {@link AttributeType} which should not be in that implicit relation
-     * @throws TransactionException when the {@link AttributeType} is already used in another implicit relation
+     * @param attributeType The AttributeType which should not be in that implicit relation
+     * @throws TransactionException when the AttributeType is already used in another implicit relation
      */
     private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, AttributeType attributeType) {
         if (attributes(implicitType).anyMatch(rt -> rt.equals(attributeType))) {

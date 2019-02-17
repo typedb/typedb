@@ -26,17 +26,17 @@ import java.util.stream.Stream;
 
 /**
  * A Type represents any ontological element in the graph.
- * Types are used to model the behaviour of {@link Thing} and how they relate to each other.
- * They also aid in categorising {@link Thing} to different types.
+ * Types are used to model the behaviour of Thing and how they relate to each other.
+ * They also aid in categorising Thing to different types.
  */
 public interface Type extends SchemaConcept {
     //------------------------------------- Modifiers ----------------------------------
 
     /**
-     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * Changes the Label of this Concept to a new one.
      *
-     * @param label The new {@link Label}.
-     * @return The {@link Concept} itself
+     * @param label The new Label.
+     * @return The Concept itself
      */
     Type label(Label label);
 
@@ -57,18 +57,18 @@ public interface Type extends SchemaConcept {
     Type plays(Role role) throws TransactionException;
 
     /**
-     * Creates a {@link RelationType} which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
+     * Creates a RelationType which allows this type and a AttributeType to be linked in a strictly one-to-one mapping.
      *
-     * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
+     * @param attributeType The AttributeType which instances of this type should be allowed to play.
      * @return The Type itself.
      * @throws TransactionException if this is a meta-type
      */
     Type key(AttributeType attributeType) throws TransactionException;
 
     /**
-     * Creates a {@link RelationType} which allows this type and a {@link AttributeType}  to be linked.
+     * Creates a RelationType which allows this type and a AttributeType  to be linked.
      *
-     * @param attributeType The {@link AttributeType}  which instances of this type should be allowed to play.
+     * @param attributeType The AttributeType  which instances of this type should be allowed to play.
      * @return The Type itself.
      * @throws TransactionException if this is a meta-type
      */
@@ -82,13 +82,13 @@ public interface Type extends SchemaConcept {
     Stream<Role> playing();
 
     /**
-     * @return The {@link AttributeType}s which this {@link Type} is linked with.
+     * @return The AttributeTypes which this Type is linked with.
      */
     @CheckReturnValue
     Stream<AttributeType> attributes();
 
     /**
-     * @return The {@link AttributeType}s which this {@link Type} is linked with as a key.
+     * @return The AttributeTypes which this Type is linked with as a key.
      */
     @CheckReturnValue
     Stream<AttributeType> keys();
@@ -101,7 +101,7 @@ public interface Type extends SchemaConcept {
     Type sup();
 
     /**
-     * @return All the the super-types of this {@link Type}
+     * @return All the the super-types of this Type
      */
     @Override
     Stream<? extends Type> sups();
@@ -136,26 +136,26 @@ public interface Type extends SchemaConcept {
     //------------------------------------- Other ----------------------------------
 
     /**
-     * Removes the ability of this {@link Type} to play a specific {@link Role}
+     * Removes the ability of this Type to play a specific Role
      *
-     * @param role The {@link Role} which the {@link Thing}s of this {@link Type} should no longer be allowed to play.
-     * @return The {@link Type} itself.
+     * @param role The Role which the Things of this Type should no longer be allowed to play.
+     * @return The Type itself.
      */
     Type unplay(Role role);
 
     /**
-     * Removes the ability for {@link Thing}s of this {@link Type} to have {@link Attribute}s of type {@link AttributeType}
+     * Removes the ability for Things of this Type to have Attributes of type AttributeType
      *
-     * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have
-     * @return The {@link Type} itself.
+     * @param attributeType the AttributeType which this Type can no longer have
+     * @return The Type itself.
      */
     Type unhas(AttributeType attributeType);
 
     /**
-     * Removes {@link AttributeType} as a key to this {@link Type}
+     * Removes AttributeType as a key to this Type
      *
-     * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have as a key
-     * @return The {@link Type} itself.
+     * @param attributeType the AttributeType which this Type can no longer have as a key
+     * @return The Type itself.
      */
     Type unkey(AttributeType attributeType);
 

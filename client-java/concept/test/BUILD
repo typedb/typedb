@@ -27,13 +27,15 @@ java_test(
     deps = [
         # Grakn Core dependencies
         "//client-java",
-        "@graknlabs_graql//java:graql",
         "//server:server", # NEEDS TO GO
-
         "//test-integration/rule:grakn-test-server",
+
+        # Grakn Labs dependencies
+        "@graknlabs_graql//java:graql",
+
+        # Maven External dependencies
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]

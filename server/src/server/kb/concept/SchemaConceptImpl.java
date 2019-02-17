@@ -18,12 +18,8 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
@@ -43,19 +39,19 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
 
 /**
  * <p>
- *     Schema Specific {@link Concept}
+ *     Schema Specific Concept
  * </p>
  *
  * <p>
  *     Allows you to create schema or ontological elements.
  *     These differ from normal graph constructs in two ways:
- *     1. They have a unique {@link Label} which identifies them
+ *     1. They have a unique Label which identifies them
  *     2. You can link them together into a hierarchical structure
  * </p>
  *
  *
  * @param <T> The leaf interface of the object concept.
- *           For example an {@link EntityType} or {@link RelationType} or {@link Role}
+ *           For example an EntityType or RelationType or Role
  */
 public abstract class SchemaConceptImpl<T extends SchemaConcept> extends ConceptImpl implements SchemaConcept {
     private final Cache<Label> cachedLabel = Cache.createPersistentCache(this, Cacheable.label(), () ->  Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
@@ -106,7 +102,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     /**
      *
-     * @return The super of this {@link SchemaConcept}
+     * @return The super of this SchemaConcept
      */
     public T sup() {
         return cachedSuperType.get();
@@ -139,7 +135,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     /**
-     * Deletes the concept as a {@link SchemaConcept}
+     * Deletes the concept as a SchemaConcept
      */
     @Override
     public void delete(){
@@ -191,7 +187,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     /**
      *
-     * @param root The current {@link SchemaConcept}
+     * @param root The current SchemaConcept
      * @return All the sub children of the root. Effectively calls  the cache {@link SchemaConceptImpl#cachedDirectSubTypes} recursively
      */
     @SuppressWarnings("unchecked")
@@ -201,8 +197,8 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     /**
-     * Checks if we are mutating a {@link SchemaConcept} in a valid way. {@link SchemaConcept} mutations are valid if:
-     * 1. The {@link SchemaConcept} is not a meta-type
+     * Checks if we are mutating a SchemaConcept in a valid way. SchemaConcept mutations are valid if:
+     * 1. The SchemaConcept is not a meta-type
      * 2. The graph is not batch loading
      */
     void checkSchemaMutationAllowed(){
@@ -293,7 +289,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     /**
      *
-     * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a hypothesis
+     * @return A collection of Rule for which this SchemaConcept serves as a hypothesis
      */
     @Override
     public Stream<Rule> whenRules() {
@@ -302,7 +298,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     /**
      *
-     * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion
+     * @return A collection of Rule for which this SchemaConcept serves as a conclusion
      */
     @Override
     public Stream<Rule> thenRules() {

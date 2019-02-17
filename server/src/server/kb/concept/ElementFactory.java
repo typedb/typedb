@@ -52,8 +52,8 @@ import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
  * </p>
  *
  * <p>
- *     This class turns Tinkerpop {@link Vertex} and {@link org.apache.tinkerpop.gremlin.structure.Edge}
- *     into Grakn {@link Concept} and {@link EdgeElement}.
+ *     This class turns Tinkerpop Vertex and {@link org.apache.tinkerpop.gremlin.structure.Edge}
+ *     into Grakn Concept and EdgeElement.
  *
  *     Construction is only successful if the vertex and edge properties contain the needed information.
  *     A concept must include a label which is a {@link Schema.BaseType}.
@@ -99,22 +99,22 @@ public final class ElementFactory {
     }
 
     // ---------------------------------------- Building Relationship Types  -----------------------------------------------
-    public RelationshipTypeImpl buildRelationshipType(VertexElement vertex, RelationType type){
-        return getOrBuildConcept(vertex, (v) -> RelationshipTypeImpl.create(v, type));
+    public RelationTypeImpl buildRelationshipType(VertexElement vertex, RelationType type){
+        return getOrBuildConcept(vertex, (v) -> RelationTypeImpl.create(v, type));
     }
 
     // -------------------------------------------- Building Relations
-    RelationshipImpl buildRelation(VertexElement vertex, RelationType type){
-        return getOrBuildConcept(vertex, (v) -> RelationshipImpl.create(buildRelationReified(v, type)));
+    RelationImpl buildRelation(VertexElement vertex, RelationType type){
+        return getOrBuildConcept(vertex, (v) -> RelationImpl.create(buildRelationReified(v, type)));
     }
-    public RelationshipImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value){
-        return getOrBuildConcept(edge, (e) -> RelationshipImpl.create(RelationshipEdge.create(type, owner, value, edge)));
+    public RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value){
+        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.create(type, owner, value, edge)));
     }
-    RelationshipImpl buildRelation(EdgeElement edge){
-        return getOrBuildConcept(edge, (e) -> RelationshipImpl.create(RelationshipEdge.get(edge)));
+    RelationImpl buildRelation(EdgeElement edge){
+        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.get(edge)));
     }
-    RelationshipReified buildRelationReified(VertexElement vertex, RelationType type){
-        return RelationshipReified.create(vertex, type);
+    RelationReified buildRelationReified(VertexElement vertex, RelationType type){
+        return RelationReified.create(vertex, type);
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
@@ -162,7 +162,7 @@ public final class ElementFactory {
             Concept concept;
             switch (type) {
                 case RELATIONSHIP:
-                    concept = RelationshipImpl.create(RelationshipReified.get(vertexElement));
+                    concept = RelationImpl.create(RelationReified.get(vertexElement));
                     break;
                 case TYPE:
                     concept = new TypeImpl(vertexElement);
@@ -171,7 +171,7 @@ public final class ElementFactory {
                     concept = RoleImpl.get(vertexElement);
                     break;
                 case RELATIONSHIP_TYPE:
-                    concept = RelationshipTypeImpl.get(vertexElement);
+                    concept = RelationTypeImpl.get(vertexElement);
                     break;
                 case ENTITY:
                     concept = EntityImpl.get(vertexElement);
@@ -197,10 +197,10 @@ public final class ElementFactory {
     }
 
     /**
-     * Constructors are called directly because this is only called when reading a known {@link Edge} or {@link Concept}.
+     * Constructors are called directly because this is only called when reading a known Edge or Concept.
      * Thus tracking the concept can be skipped.
      *
-     * @param edge A {@link Edge} of an unknown type
+     * @param edge A Edge of an unknown type
      * @return A concept built to the correct type
      */
     public <X extends Concept> X buildConcept(Edge edge){
@@ -215,7 +215,7 @@ public final class ElementFactory {
             Concept concept;
             switch (label) {
                 case ATTRIBUTE:
-                    concept = RelationshipImpl.create(RelationshipEdge.get(edgeElement));
+                    concept = RelationImpl.create(RelationEdge.get(edgeElement));
                     break;
                 default:
                     throw TransactionException.unknownConcept(label.name());
@@ -271,11 +271,11 @@ public final class ElementFactory {
     }
 
     /**
-     * Builds a {@link VertexElement} from an already existing Vertex. An empty optional is returned if the passed in
+     * Builds a VertexElement from an already existing Vertex. An empty optional is returned if the passed in
      * vertex is not valid. A vertex is not valid if it is null or has been deleted
      *
-     * @param vertex A vertex which can possibly be turned into a {@link VertexElement}
-     * @return A {@link VertexElement} of
+     * @param vertex A vertex which can possibly be turned into a VertexElement
+     * @return A VertexElement of
      */
     public VertexElement buildVertexElement(Vertex vertex){
         if(!tx.isValidElement(vertex)){
@@ -286,11 +286,11 @@ public final class ElementFactory {
     }
 
     /**
-     * Creates a new {@link VertexElement} with a {@link ConceptId} which can optionally be set.
+     * Creates a new VertexElement with a ConceptId which can optionally be set.
      *
      * @param baseType The {@link Schema.BaseType}
-     * @param conceptIds the optional {@link ConceptId} to set as the new {@link ConceptId}
-     * @return a new {@link VertexElement}
+     * @param conceptIds the optional ConceptId to set as the new ConceptId
+     * @return a new VertexElement
      */
     public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId ... conceptIds) {
         Vertex vertex = graph.addVertex(baseType.name());

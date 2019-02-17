@@ -18,59 +18,30 @@
 
 package grakn.core.graql.answer;
 
-import grakn.core.server.exception.TransactionException;
-
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
  * An object that contains the answer of every Graql Query.
- *
- * @param <T> the data structure in which the specific type of Answer is contained in.
  */
-public interface Answer<T> {
-
-    default AnswerGroup asAnswerGroup() {
-        throw TransactionException.invalidCasting(this, AnswerGroup.class);
-    }
-
-    default ConceptList asConceptList() {
-        throw TransactionException.invalidCasting(this, ConceptList.class);
-    }
-
-    default ConceptMap asConceptMap() {
-        throw TransactionException.invalidCasting(this, ConceptMap.class);
-    }
-
-    default ConceptSet asConceptSet() {
-        throw TransactionException.invalidCasting(this, ConceptSet.class);
-    }
-
-    default ConceptSetMeasure asConceptSetMeasure() {
-        throw TransactionException.invalidCasting(this, ConceptSetMeasure.class);
-    }
-
-    default Numeric asValue() {
-        throw TransactionException.invalidCasting(this, Numeric.class);
-    }
+public abstract class Answer {
 
     /**
      * @return an explanation object indicating how this answer was obtained
      */
     @Nullable
     @CheckReturnValue
-    default Explanation explanation() {
-        return null;
-    }
+    public abstract Explanation explanation();
 
     /**
      * @return all explanations taking part in the derivation of this answer
      */
     @CheckReturnValue
-    default Set<Explanation> explanations() {
-        if (this.explanation() == null) return null;
+    public Set<Explanation> explanations() {
+        if (this.explanation() == null) return Collections.emptySet();
         Set<Explanation> explanations = new HashSet<>();
         explanations.add(this.explanation());
         this.explanation().getAnswers().forEach(ans -> explanations.addAll(ans.explanations()));

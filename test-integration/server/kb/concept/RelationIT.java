@@ -61,7 +61,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class RelationIT {
-    private RelationshipImpl relation;
+    private RelationImpl relation;
     private RoleImpl role1;
     private ThingImpl rolePlayer1;
     private RoleImpl role2;
@@ -92,7 +92,7 @@ public class RelationIT {
         rolePlayer1 = (ThingImpl) type.create();
         rolePlayer2 = (ThingImpl) type.create();
 
-        relation = (RelationshipImpl) relationshipType.create();
+        relation = (RelationImpl) relationshipType.create();
 
         relation.assign(role1, rolePlayer1);
         relation.assign(role2, rolePlayer2);
@@ -117,7 +117,7 @@ public class RelationIT {
 
     @Test
     public void whenCreatingAnInferredRelationship_EnsureMarkedAsInferred(){
-        RelationshipTypeImpl rt = RelationshipTypeImpl.from(tx.putRelationshipType("rt"));
+        RelationTypeImpl rt = RelationTypeImpl.from(tx.putRelationshipType("rt"));
         Relation relationship = rt.create();
         Relation relationshipInferred = rt.addRelationshipInferred();
         assertFalse(relationship.isInferred());
@@ -331,7 +331,7 @@ public class RelationIT {
         Attribute attribute = attributeType.create("Things");
         Relation relationship = relationshipType.create();
 
-        RelationshipImpl.from(relationship).attributeInferred(attribute);
+        RelationImpl.from(relationship).attributeInferred(attribute);
         assertTrue(relationship.relationships().findAny().get().isInferred());
     }
 

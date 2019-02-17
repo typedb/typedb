@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * A type of {@link Answer} object that contains a {@link List} of Concepts.
  */
-public class ConceptList implements Answer<ConceptList>{
+public class ConceptList extends Answer {
 
     // TODO: change to store List<Concept> once we are able to construct Concept without a database look up
     private final List<ConceptId> list;
@@ -39,11 +39,6 @@ public class ConceptList implements Answer<ConceptList>{
     public ConceptList(List<ConceptId> list, Explanation explanation) {
         this.list = Collections.unmodifiableList(list);
         this.explanation = explanation;
-    }
-
-    @Override
-    public ConceptList asConceptList() {
-        return this;
     }
 
     @Override
@@ -64,7 +59,7 @@ public class ConceptList implements Answer<ConceptList>{
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         return list.hashCode();
     }
 }

@@ -204,8 +204,8 @@ public class AttributeIT {
 
         entity.has(attribute);
 
-        RelationshipStructure relationshipStructure = RelationshipImpl.from(Iterables.getOnlyElement(entity.relationships().collect(toSet()))).structure();
-        assertThat(relationshipStructure, instanceOf(RelationshipEdge.class));
+        RelationStructure relationshipStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relationships().collect(toSet()))).structure();
+        assertThat(relationshipStructure, instanceOf(RelationEdge.class));
         assertTrue("Edge Relationship id not starting with [" + Schema.PREFIX_EDGE + "]", relationshipStructure.id().getValue().startsWith(Schema.PREFIX_EDGE));
         assertEquals(entity, attribute.owner());
         assertThat(entity.attributes().collect(toSet()), containsInAnyOrder(attribute));
@@ -219,11 +219,11 @@ public class AttributeIT {
         EntityType entityType = tx.putEntityType("My entity type").has(attributeType);
         Entity entity = entityType.create();
         entity.has(attribute);
-        RelationshipImpl relation = RelationshipImpl.from(entity.relationships().iterator().next());
+        RelationImpl relation = RelationImpl.from(entity.relationships().iterator().next());
 
         //Check it's a relation edge.
-        RelationshipStructure relationshipStructureBefore = relation.structure();
-        assertThat(relationshipStructureBefore, instanceOf(RelationshipEdge.class));
+        RelationStructure relationshipStructureBefore = relation.structure();
+        assertThat(relationshipStructureBefore, instanceOf(RelationEdge.class));
 
         //Get the roles and role players via the relation edge:
         Map<Role, Set<Thing>> allRolePlayerBefore = relationshipStructureBefore.allRolePlayers();
@@ -238,8 +238,8 @@ public class AttributeIT {
         relation.assign(newRole, newEntity);
 
         //Check it's a relation reified now.
-        RelationshipStructure relationshipStructureAfter = relation.structure();
-        assertThat(relationshipStructureAfter, instanceOf(RelationshipReified.class));
+        RelationStructure relationshipStructureAfter = relation.structure();
+        assertThat(relationshipStructureAfter, instanceOf(RelationReified.class));
 
         //Check IDs are equal
         assertEquals(relationshipStructureBefore.id(), relation.id());

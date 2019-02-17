@@ -65,7 +65,7 @@ import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
 import grakn.core.server.Transaction;
-import grakn.core.server.kb.concept.RelationshipTypeImpl;
+import grakn.core.server.kb.concept.RelationTypeImpl;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.RelationProperty;
@@ -1051,7 +1051,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         //if the relation already exists, only assign roleplayers, otherwise create a new relation
         Relation relationship = substitution.containsVar(getVarName())?
                 substitution.get(getVarName()).asRelation() :
-                RelationshipTypeImpl.from(relationType).addRelationshipInferred();
+                RelationTypeImpl.from(relationType).addRelationshipInferred();
 
         roleVarMap.asMap()
                 .forEach((key, value) -> value.forEach(var -> relationship.assign(key, substitution.get(var).asThing())));

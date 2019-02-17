@@ -295,7 +295,7 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when creating a label which starts with a reserved character {@link Schema.ImplicitType#RESERVED}
+     * Thrown when creating a label which starts with a reserved character Schema.ImplicitType#RESERVED
      */
     public static TransactionException invalidLabelStart(Label label) {
         return create(String.format("Cannot create a label {%s} starting with character {%s} as it is a reserved starting character", label, Schema.ImplicitType.RESERVED.getValue()));

@@ -24,19 +24,19 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 /**
- * Represent a literal {@link Attribute} in the graph.
- * Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
- * 1. It is unique to its {@link AttributeType} based on it's value.
+ * Represent a literal Attribute in the graph.
+ * Acts as an Thing when relating to other instances except it has the added functionality of:
+ * 1. It is unique to its AttributeType based on it's value.
  * 2. It has an {@link AttributeType.DataType} associated with it which constrains the allowed values.
  *
  * @param <D> The data type of this resource type.
- *            Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
+ *            Supported Types include: String, Long, Double, and Boolean
  */
 public interface Attribute<D> extends Thing {
     //------------------------------------- Accessors ----------------------------------
 
     /**
-     * Retrieves the value of the {@link Attribute}.
+     * Retrieves the value of the Attribute.
      *
      * @return The value itself
      */
@@ -44,7 +44,7 @@ public interface Attribute<D> extends Thing {
     D value();
 
     /**
-     * Retrieves the type of the {@link Attribute}, that is, the {@link AttributeType} of which this resource is an Thing.
+     * Retrieves the type of the Attribute, that is, the AttributeType of which this resource is an Thing.
      *
      * @return The {@link AttributeType of which this resource is an Thing.
      */
@@ -52,25 +52,25 @@ public interface Attribute<D> extends Thing {
     AttributeType<D> type();
 
     /**
-     * Retrieves the data type of this {@link Attribute}'s {@link AttributeType}.
+     * Retrieves the data type of this Attribute's AttributeType.
      *
-     * @return The data type of this {@link Attribute}'s type.
+     * @return The data type of this Attribute's type.
      */
     @CheckReturnValue
     AttributeType.DataType<D> dataType();
 
     /**
-     * Retrieves the set of all Instances that possess this {@link Attribute}.
+     * Retrieves the set of all Instances that possess this Attribute.
      *
-     * @return The list of all Instances that possess this {@link Attribute}.
+     * @return The list of all Instances that possess this Attribute.
      */
     @CheckReturnValue
     Stream<Thing> owners();
 
     /**
-     * If the {@link Attribute} is unique, this method retrieves the Thing that possesses it.
+     * If the Attribute is unique, this method retrieves the Thing that possesses it.
      *
-     * @return The Thing which is connected to a unique {@link Attribute}.
+     * @return The Thing which is connected to a unique Attribute.
      */
     @CheckReturnValue
     @Nullable
@@ -84,19 +84,19 @@ public interface Attribute<D> extends Thing {
     }
 
     /**
-     * Creates a relation from this instance to the provided {@link Attribute}.
+     * Creates a relation from this instance to the provided Attribute.
      *
-     * @param attribute The {@link Attribute} to which a relationship is created
+     * @param attribute The Attribute to which a relationship is created
      * @return The instance itself
      */
     @Override
     Attribute has(Attribute attribute);
 
     /**
-     * Removes the provided {@link Attribute} from this {@link Attribute}
+     * Removes the provided Attribute from this Attribute
      *
-     * @param attribute the {@link Attribute} to be removed
-     * @return The {@link Attribute} itself
+     * @param attribute the Attribute to be removed
+     * @return The Attribute itself
      */
     @Override
     Attribute unhas(Attribute attribute);

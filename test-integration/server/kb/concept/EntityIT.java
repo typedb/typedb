@@ -103,7 +103,7 @@ public class EntityIT {
         relationshipType.relates(role3);
 
         //Check Structure is in order
-        RelationshipImpl relation = (RelationshipImpl) relationshipType.create().
+        RelationImpl relation = (RelationImpl) relationshipType.create().
                 assign(role1, rolePlayer1).
                 assign(role2, rolePlayer2).
                 assign(role3, rolePlayer3);

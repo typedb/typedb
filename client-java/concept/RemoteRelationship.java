@@ -19,7 +19,6 @@
 
 package grakn.core.client.concept;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.client.GraknClient;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.graql.concept.Concept;
@@ -41,11 +40,14 @@ import java.util.stream.Stream;
 /**
  * Client implementation of {@link Relation}
  */
-@AutoValue
-public abstract class RemoteRelationship extends RemoteThing<Relation, RelationType> implements Relation {
+public class RemoteRelationship extends RemoteThing<Relation, RelationType> implements Relation {
+
+    RemoteRelationship(GraknClient.Transaction tx, ConceptId id) {
+        super(tx, id);
+    }
 
     static RemoteRelationship construct(GraknClient.Transaction tx, ConceptId id) {
-        return new AutoValue_RemoteRelationship(tx, id);
+        return new RemoteRelationship(tx, id);
     }
 
     @Override // TODO: Weird. Why is this not a stream, while other collections are returned as stream
@@ -76,7 +78,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relation, RelationT
     public final Stream<Thing> rolePlayers(Role... roles) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationRolePlayersReq(ConceptProto.Relation.RolePlayers.Req.newBuilder()
-                        .addAllRoles(RequestBuilder.Concept.concepts(Arrays.asList(roles)))).build();
+                                                   .addAllRoles(RequestBuilder.Concept.concepts(Arrays.asList(roles)))).build();
 
         int iteratorId = runMethod(method).getRelationRolePlayersIter().getId();
         return conceptStream(iteratorId, res -> res.getRelationRolePlayersIterRes().getThing()).map(Concept::asThing);
@@ -86,8 +88,8 @@ public abstract class RemoteRelationship extends RemoteThing<Relation, RelationT
     public final Relation assign(Role role, Thing player) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationAssignReq(ConceptProto.Relation.Assign.Req.newBuilder()
-                        .setRole(RequestBuilder.Concept.concept(role))
-                        .setPlayer(RequestBuilder.Concept.concept(player))).build();
+                                              .setRole(RequestBuilder.Concept.concept(role))
+                                              .setPlayer(RequestBuilder.Concept.concept(player))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -97,8 +99,8 @@ public abstract class RemoteRelationship extends RemoteThing<Relation, RelationT
     public final void unassign(Role role, Thing player) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationUnassignReq(ConceptProto.Relation.Unassign.Req.newBuilder()
-                        .setRole(RequestBuilder.Concept.concept(role))
-                        .setPlayer(RequestBuilder.Concept.concept(player))).build();
+                                                .setRole(RequestBuilder.Concept.concept(role))
+                                                .setPlayer(RequestBuilder.Concept.concept(player))).build();
 
         runMethod(method);
     }

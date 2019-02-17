@@ -21,10 +21,10 @@ package grakn.core.graql.concept;
 import javax.annotation.CheckReturnValue;
 
 /**
- * An instance of Entity Type {@link EntityType}
+ * An instance of Entity Type EntityType
  * This represents an entity in the graph.
- * Entities are objects which are defined by their {@link Attribute} and their links to
- * other entities via {@link Relation}
+ * Entities are objects which are defined by their Attribute and their links to
+ * other entities via Relation
  */
 public interface Entity extends Thing {
     //------------------------------------- Accessors ----------------------------------
@@ -37,19 +37,19 @@ public interface Entity extends Thing {
     EntityType type();
 
     /**
-     * Creates a relation from this instance to the provided {@link Attribute}.
+     * Creates a relation from this instance to the provided Attribute.
      *
-     * @param attribute The {@link Attribute} to which a relationship is created
+     * @param attribute The Attribute to which a relationship is created
      * @return The instance itself
      */
     @Override
     Entity has(Attribute attribute);
 
     /**
-     * Removes the provided {@link Attribute} from this {@link Entity}
+     * Removes the provided Attribute from this Entity
      *
-     * @param attribute the {@link Attribute} to be removed
-     * @return The {@link Entity} itself
+     * @param attribute the Attribute to be removed
+     * @return The Entity itself
      */
     @Override
     Entity unhas(Attribute attribute);

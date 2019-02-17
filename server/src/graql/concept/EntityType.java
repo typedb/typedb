@@ -23,18 +23,18 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * {@link SchemaConcept} used to represent categories.
+ * SchemaConcept used to represent categories.
  * An ontological element which represents categories instances can fall within.
- * Any instance of a Entity Type is called an {@link Entity}.
+ * Any instance of a Entity Type is called an Entity.
  */
 public interface EntityType extends Type {
     //------------------------------------- Modifiers ----------------------------------
 
     /**
-     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * Changes the Label of this Concept to a new one.
      *
-     * @param label The new {@link Label}.
-     * @return The {@link Concept} itself
+     * @param label The new Label.
+     * @return The Concept itself
      */
     EntityType label(Label label);
 
@@ -65,28 +65,28 @@ public interface EntityType extends Type {
     EntityType plays(Role role);
 
     /**
-     * Removes the ability of this {@link EntityType} to play a specific {@link Role}
+     * Removes the ability of this EntityType to play a specific Role
      *
-     * @param role The {@link Role} which the {@link Thing}s of this {@link EntityType} should no longer be allowed to play.
-     * @return The {@link EntityType} itself.
+     * @param role The Role which the Things of this EntityType should no longer be allowed to play.
+     * @return The EntityType itself.
      */
     @Override
     EntityType unplay(Role role);
 
     /**
-     * Removes the ability for {@link Thing}s of this {@link EntityType} to have {@link Attribute}s of type {@link AttributeType}
+     * Removes the ability for Things of this EntityType to have Attributes of type AttributeType
      *
-     * @param attributeType the {@link AttributeType} which this {@link EntityType} can no longer have
-     * @return The {@link EntityType} itself.
+     * @param attributeType the AttributeType which this EntityType can no longer have
+     * @return The EntityType itself.
      */
     @Override
     EntityType unhas(AttributeType attributeType);
 
     /**
-     * Removes {@link AttributeType} as a key to this {@link EntityType}
+     * Removes AttributeType as a key to this EntityType
      *
-     * @param attributeType the {@link AttributeType} which this {@link EntityType} can no longer have as a key
-     * @return The {@link EntityType} itself.
+     * @param attributeType the AttributeType which this EntityType can no longer have as a key
+     * @return The EntityType itself.
      */
     @Override
     EntityType unkey(AttributeType attributeType);
@@ -100,7 +100,7 @@ public interface EntityType extends Type {
     Entity create();
 
     /**
-     * Creates a {@link RelationType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
      * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
@@ -109,7 +109,7 @@ public interface EntityType extends Type {
     EntityType key(AttributeType attributeType);
 
     /**
-     * Creates a {@link RelationType} which allows this type and a resource type to be linked.
+     * Creates a RelationType which allows this type and a resource type to be linked.
      *
      * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.

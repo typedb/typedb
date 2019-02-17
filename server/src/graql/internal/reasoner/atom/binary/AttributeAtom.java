@@ -47,7 +47,7 @@ import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.concept.AttributeTypeImpl;
 import grakn.core.server.kb.concept.EntityImpl;
-import grakn.core.server.kb.concept.RelationshipImpl;
+import grakn.core.server.kb.concept.RelationImpl;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
@@ -313,7 +313,7 @@ public abstract class AttributeAtom extends Binary{
             if (owner.isEntity()) {
                 EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
             } else if (owner.isRelationship()) {
-                RelationshipImpl.from(owner.asRelation()).attributeInferred(attribute);
+                RelationImpl.from(owner.asRelation()).attributeInferred(attribute);
             } else if (owner.isAttribute()) {
                 AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
             }

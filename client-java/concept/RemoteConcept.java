@@ -36,6 +36,20 @@ import java.util.stream.StreamSupport;
  */
 public abstract class RemoteConcept<SomeConcept extends Concept> implements Concept {
 
+    private final GraknClient.Transaction tx;
+    private final ConceptId id;
+
+    RemoteConcept(GraknClient.Transaction tx, ConceptId id) {
+        if (tx == null) {
+            throw new NullPointerException("Null tx");
+        }
+        this.tx = tx;
+        if (id == null) {
+            throw new NullPointerException("Null id");
+        }
+        this.id = id;
+    }
+
     public static Concept of(ConceptProto.Concept concept, GraknClient.Transaction tx) {
         ConceptId id = ConceptId.of(concept.getId());
 
@@ -64,10 +78,13 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
         }
     }
 
-    abstract GraknClient.Transaction tx();
+    GraknClient.Transaction tx() {
+        return tx;
+    }
 
-    @Override
-    public abstract ConceptId id();
+    public ConceptId id() {
+        return id;
+    }
 
     @Override
     public final void delete() throws TransactionException {
@@ -83,10 +100,12 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
         return tx().getConcept(id()) == null;
     }
 
+    abstract SomeConcept asCurrentBaseType(Concept other);
+
     protected final Stream<? extends Concept> conceptStream
             (int iteratorId, Function<ConceptProto.Method.Iter.Res, ConceptProto.Concept> conceptGetter) {
 
-        Iterable<? extends  Concept> iterable = () -> tx().iterator(
+        Iterable<? extends Concept> iterable = () -> tx().iterator(
                 iteratorId, res -> of(conceptGetter.apply(res.getConceptMethodIterRes()), tx())
         );
 
@@ -101,6 +120,29 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
         return tx().runConceptMethod(id, method).getConceptMethodRes().getResponse();
     }
 
-    abstract SomeConcept asCurrentBaseType(Concept other);
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + "{tx=" + tx + ", id=" + id + "}";
+    }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RemoteConcept<?> that = (RemoteConcept<?>) o;
+
+        return (tx.equals(that.tx())) &&
+                id.equals(that.id());
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= tx.hashCode();
+        h *= 1000003;
+        h ^= id.hashCode();
+        return h;
+    }
 }

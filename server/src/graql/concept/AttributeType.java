@@ -18,7 +18,6 @@
 
 package grakn.core.graql.concept;
 
-
 import com.google.common.collect.ImmutableMap;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.exception.TransactionException;
@@ -32,98 +31,98 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * An ontological element which models and categorises the various {@link Attribute} in the graph.
- * This ontological element behaves similarly to {@link Type} when defining how it relates to other
+ * An ontological element which models and categorises the various Attribute in the graph.
+ * This ontological element behaves similarly to Type when defining how it relates to other
  * types. It has two additional functions to be aware of:
- * 1. It has a {@link DataType} constraining the data types of the values it's instances may take.
+ * 1. It has a DataType constraining the data types of the values it's instances may take.
  * 2. Any of it's instances are unique to the type.
- * For example if you have an {@link AttributeType} modelling month throughout the year there can only be one January.
+ * For example if you have an AttributeType modelling month throughout the year there can only be one January.
  *
  * @param <D> The data type of this resource type.
- *            Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
+ *            Supported Types include: String, Long, Double, and Boolean
  */
 public interface AttributeType<D> extends Type {
     //------------------------------------- Modifiers ----------------------------------
 
     /**
-     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * Changes the Label of this Concept to a new one.
      *
-     * @param label The new {@link Label}.
-     * @return The {@link Concept} itself
+     * @param label The new Label.
+     * @return The Concept itself
      */
     AttributeType label(Label label);
 
     /**
-     * Sets the {@link AttributeType} to be abstract - which prevents it from having any instances.
+     * Sets the AttributeType to be abstract - which prevents it from having any instances.
      *
-     * @param isAbstract Specifies if the {@link AttributeType} is to be abstract (true) or not (false).
-     * @return The {@link AttributeType} itself.
+     * @param isAbstract Specifies if the AttributeType is to be abstract (true) or not (false).
+     * @return The AttributeType itself.
      */
     @Override
     AttributeType<D> isAbstract(Boolean isAbstract);
 
     /**
-     * Sets the supertype of the {@link AttributeType} to be the AttributeType specified.
+     * Sets the supertype of the AttributeType to be the AttributeType specified.
      *
-     * @param type The super type of this {@link AttributeType}.
-     * @return The {@link AttributeType} itself.
+     * @param type The super type of this AttributeType.
+     * @return The AttributeType itself.
      */
     AttributeType<D> sup(AttributeType<D> type);
 
     /**
-     * Sets the Role which instances of this {@link AttributeType} may play.
+     * Sets the Role which instances of this AttributeType may play.
      *
-     * @param role The Role Type which the instances of this {@link AttributeType} are allowed to play.
-     * @return The {@link AttributeType} itself.
+     * @param role The Role Type which the instances of this AttributeType are allowed to play.
+     * @return The AttributeType itself.
      */
     @Override
     AttributeType<D> plays(Role role);
 
     /**
-     * Removes the ability of this {@link AttributeType} to play a specific {@link Role}
+     * Removes the ability of this AttributeType to play a specific Role
      *
-     * @param role The {@link Role} which the {@link Thing}s of this {@link AttributeType} should no longer be allowed to play.
-     * @return The {@link AttributeType} itself.
+     * @param role The Role which the Things of this AttributeType should no longer be allowed to play.
+     * @return The AttributeType itself.
      */
     @Override
     AttributeType<D> unplay(Role role);
 
     /**
-     * Removes the ability for {@link Thing}s of this {@link AttributeType} to have {@link Attribute}s of type {@link AttributeType}
+     * Removes the ability for Things of this AttributeType to have Attributes of type AttributeType
      *
-     * @param attributeType the {@link AttributeType} which this {@link AttributeType} can no longer have
-     * @return The {@link AttributeType} itself.
+     * @param attributeType the AttributeType which this AttributeType can no longer have
+     * @return The AttributeType itself.
      */
     @Override
     AttributeType<D> unhas(AttributeType attributeType);
 
     /**
-     * Removes {@link AttributeType} as a key to this {@link AttributeType}
+     * Removes AttributeType as a key to this AttributeType
      *
-     * @param attributeType the {@link AttributeType} which this {@link AttributeType} can no longer have as a key
-     * @return The {@link AttributeType} itself.
+     * @param attributeType the AttributeType which this AttributeType can no longer have as a key
+     * @return The AttributeType itself.
      */
     @Override
     AttributeType<D> unkey(AttributeType attributeType);
 
     /**
-     * Set the regular expression that instances of the {@link AttributeType} must conform to.
+     * Set the regular expression that instances of the AttributeType must conform to.
      *
-     * @param regex The regular expression that instances of this {@link AttributeType} must conform to.
-     * @return The {@link AttributeType} itself.
+     * @param regex The regular expression that instances of this AttributeType must conform to.
+     * @return The AttributeType itself.
      */
     AttributeType<D> regex(String regex);
 
     /**
-     * Set the value for the {@link Attribute}, unique to its type.
+     * Set the value for the Attribute, unique to its type.
      *
-     * @param value A value for the {@link Attribute} which is unique to its type
-     * @return new or existing {@link Attribute} of this type with the provided value.
+     * @param value A value for the Attribute which is unique to its type
+     * @return new or existing Attribute of this type with the provided value.
      */
     Attribute<D> create(D value);
 
     /**
-     * Creates a {@link RelationType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
      * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
@@ -132,7 +131,7 @@ public interface AttributeType<D> extends Type {
     AttributeType<D> key(AttributeType attributeType);
 
     /**
-     * Creates a {@link RelationType} which allows this type and a resource type to be linked.
+     * Creates a RelationType which allows this type and a resource type to be linked.
      *
      * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
@@ -143,19 +142,19 @@ public interface AttributeType<D> extends Type {
     //------------------------------------- Accessors ---------------------------------
 
     /**
-     * Returns the supertype of this {@link AttributeType}.
+     * Returns the supertype of this AttributeType.
      *
-     * @return The supertype of this {@link AttributeType},
+     * @return The supertype of this AttributeType,
      */
     @Override
     @Nullable
     AttributeType<D> sup();
 
     /**
-     * Get the {@link Attribute} with the value provided, and its type, or return NULL
+     * Get the Attribute with the value provided, and its type, or return NULL
      *
-     * @param value A value which an {@link Attribute} in the graph may be holding
-     * @return The {@link Attribute} with the provided value and type or null if no such {@link Attribute} exists.
+     * @param value A value which an Attribute in the graph may be holding
+     * @return The Attribute with the provided value and type or null if no such Attribute exists.
      * @see Attribute
      */
     @CheckReturnValue
@@ -163,45 +162,45 @@ public interface AttributeType<D> extends Type {
     Attribute<D> attribute(D value);
 
     /**
-     * Returns a collection of super-types of this {@link AttributeType}.
+     * Returns a collection of super-types of this AttributeType.
      *
-     * @return The super-types of this {@link AttributeType}
+     * @return The super-types of this AttributeType
      */
     @Override
     Stream<AttributeType<D>> sups();
 
     /**
-     * Returns a collection of subtypes of this {@link AttributeType}.
+     * Returns a collection of subtypes of this AttributeType.
      *
-     * @return The subtypes of this {@link AttributeType}
+     * @return The subtypes of this AttributeType
      */
     @Override
     Stream<AttributeType<D>> subs();
 
     /**
-     * Returns a collection of all {@link Attribute} of this {@link AttributeType}.
+     * Returns a collection of all Attribute of this AttributeType.
      *
-     * @return The resource instances of this {@link AttributeType}
+     * @return The resource instances of this AttributeType
      */
     @Override
     Stream<Attribute<D>> instances();
 
     /**
-     * Get the data type to which instances of the {@link AttributeType} must conform.
+     * Get the data type to which instances of the AttributeType must conform.
      *
-     * @return The data type to which instances of this {@link Attribute}  must conform.
+     * @return The data type to which instances of this Attribute  must conform.
      */
     @Nullable
     @CheckReturnValue
     DataType<D> dataType();
 
     /**
-     * Retrieve the regular expression to which instances of this {@link AttributeType} must conform, or {@code null} if no
+     * Retrieve the regular expression to which instances of this AttributeType must conform, or {@code null} if no
      * regular expression is set.
      * <p>
-     * By default, an {@link AttributeType} does not have a regular expression set.
+     * By default, an AttributeType does not have a regular expression set.
      *
-     * @return The regular expression to which instances of this {@link AttributeType} must conform.
+     * @return The regular expression to which instances of this AttributeType must conform.
      */
     @CheckReturnValue
     @Nullable

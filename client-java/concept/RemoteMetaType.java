@@ -19,7 +19,6 @@
 
 package grakn.core.client.concept;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -29,11 +28,14 @@ import grakn.core.graql.concept.Type;
 /**
  * Client implementation of {@link Type}
  */
-@AutoValue
-public abstract class RemoteMetaType extends RemoteType<Type, Thing> {
+public class RemoteMetaType extends RemoteType<Type, Thing> {
+
+    RemoteMetaType(GraknClient.Transaction tx, ConceptId id) {
+        super(tx, id);
+    }
 
     static RemoteMetaType construct(GraknClient.Transaction tx, ConceptId id) {
-        return new AutoValue_RemoteMetaType(tx, id);
+        return new RemoteMetaType(tx, id);
     }
 
     @Override

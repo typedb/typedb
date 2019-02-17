@@ -31,15 +31,8 @@ import java.util.Set;
 public interface Explanation {
 
     /**
-     * produce a new explanation with provided query set
-     * @param q query this explanation should be associated with
-     * @return explanation with provided query
-     */
-    @CheckReturnValue
-    Explanation setQuery(ReasonerQuery q);
-
-    /**
      * produce a new explanation with a provided parent answer
+     *
      * @param ans parent answer
      * @return new explanation with dependent answers
      */
@@ -52,6 +45,15 @@ public interface Explanation {
     @Nullable
     @CheckReturnValue
     ReasonerQuery getQuery();
+
+    /**
+     * produce a new explanation with provided query set
+     *
+     * @param q query this explanation should be associated with
+     * @return explanation with provided query
+     */
+    @CheckReturnValue
+    Explanation setQuery(ReasonerQuery q);
 
     /**
      * @return answers this explanation is dependent on
@@ -72,28 +74,24 @@ public interface Explanation {
     Set<ConceptMap> deductions();
 
     /**
-     *
      * @return true if this explanation explains the answer on the basis of database lookup
      */
     @CheckReturnValue
     boolean isLookupExplanation();
 
     /**
-     *
      * @return true if this explanation explains the answer on the basis of rule application
      */
     @CheckReturnValue
     boolean isRuleExplanation();
 
     /**
-     *
      * @return true if this explanation explains an intermediate answer being a product of a join operation
      */
     @CheckReturnValue
     boolean isJoinExplanation();
 
     /**
-     *
      * @return true if this is an empty explanation (explanation wasn't recorded)
      */
     @CheckReturnValue

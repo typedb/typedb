@@ -22,7 +22,6 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
@@ -39,29 +38,29 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     A relation type defines how {@link Type} may relate to one another.
+ *     A relation type defines how Type may relate to one another.
  *     They are used to model and categorise n-ary relationships.
  * </p>
  *
  *
  */
-public class RelationshipTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
+public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     private final Cache<Set<Role>> cachedRelates = Cache.createSessionCache(this, Cacheable.set(), () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    private RelationshipTypeImpl(VertexElement vertexElement) {
+    private RelationTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    private RelationshipTypeImpl(VertexElement vertexElement, RelationType type) {
+    private RelationTypeImpl(VertexElement vertexElement, RelationType type) {
         super(vertexElement, type);
     }
 
-    public static RelationshipTypeImpl get(VertexElement vertexElement){
-        return new RelationshipTypeImpl(vertexElement);
+    public static RelationTypeImpl get(VertexElement vertexElement){
+        return new RelationTypeImpl(vertexElement);
     }
 
-    public static RelationshipTypeImpl create(VertexElement vertexElement, RelationType type){
-        RelationshipTypeImpl relationType = new RelationshipTypeImpl(vertexElement, type);
+    public static RelationTypeImpl create(VertexElement vertexElement, RelationType type){
+        RelationTypeImpl relationType = new RelationTypeImpl(vertexElement, type);
         vertexElement.tx().cache().trackForValidation(relationType);
         return relationType;
     }
@@ -107,8 +106,8 @@ public class RelationshipTypeImpl extends TypeImpl<RelationType, Relation> imple
 
     /**
      *
-     * @param role The {@link Role} to delete from this {@link RelationType}.
-     * @return The {@link Relation} Type itself.
+     * @param role The Role to delete from this RelationType.
+     * @return The Relation Type itself.
      */
     @Override
     public RelationType unrelate(Role role) {
@@ -149,7 +148,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationType, Relation> imple
     @Override
     void trackRolePlayers(){
         instances().forEach(concept -> {
-            RelationshipImpl relation = RelationshipImpl.from(concept);
+            RelationImpl relation = RelationImpl.from(concept);
             if(relation.reified().isPresent()){
                 relation.reified().get().castingsRelation().forEach(rolePlayer -> vertex().tx().cache().trackForValidation(rolePlayer));
             }
@@ -183,7 +182,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationType, Relation> imple
                 });
     }
 
-    public static RelationshipTypeImpl from(RelationType relationshipType){
-        return (RelationshipTypeImpl) relationshipType;
+    public static RelationTypeImpl from(RelationType relationshipType){
+        return (RelationTypeImpl) relationshipType;
     }
 }

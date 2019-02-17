@@ -19,10 +19,12 @@
 
 package grakn.core.client.concept;
 
+import grakn.core.client.GraknClient;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
@@ -36,9 +38,13 @@ import java.util.stream.Stream;
  * Client implementation of {@link Thing}
  *
  * @param <SomeThing> The exact type of this class
- * @param <SomeType> the type of an instance of this class
+ * @param <SomeType>  the type of an instance of this class
  */
 abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> extends RemoteConcept<SomeThing> implements Thing {
+
+    RemoteThing(GraknClient.Transaction tx, ConceptId id) {
+        super(tx, id);
+    }
 
     @Override
     public final SomeType type() {
@@ -61,7 +67,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingKeysReq(ConceptProto.Thing.Keys.Req.newBuilder()
-                        .addAllAttributeTypes(RequestBuilder.Concept.concepts(Arrays.asList(attributeTypes)))).build();
+                                         .addAllAttributeTypes(RequestBuilder.Concept.concepts(Arrays.asList(attributeTypes)))).build();
 
         int iteratorId = runMethod(method).getThingKeysIter().getId();
         return conceptStream(iteratorId, res -> res.getThingKeysIterRes().getAttribute()).map(Concept::asAttribute);
@@ -71,7 +77,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingAttributesReq(ConceptProto.Thing.Attributes.Req.newBuilder()
-                        .addAllAttributeTypes(RequestBuilder.Concept.concepts(Arrays.asList(attributeTypes)))).build();
+                                               .addAllAttributeTypes(RequestBuilder.Concept.concepts(Arrays.asList(attributeTypes)))).build();
 
         int iteratorId = runMethod(method).getThingAttributesIter().getId();
         return conceptStream(iteratorId, res -> res.getThingAttributesIterRes().getAttribute()).map(Concept::asAttribute);
@@ -81,7 +87,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final Stream<Relation> relationships(Role... roles) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingRelationsReq(ConceptProto.Thing.Relations.Req.newBuilder()
-                        .addAllRoles(RequestBuilder.Concept.concepts(Arrays.asList(roles)))).build();
+                                              .addAllRoles(RequestBuilder.Concept.concepts(Arrays.asList(roles)))).build();
 
         int iteratorId = runMethod(method).getThingRelationsIter().getId();
         return conceptStream(iteratorId, res -> res.getThingRelationsIterRes().getRelation()).map(Concept::asRelation);
@@ -102,13 +108,14 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         return asCurrentBaseType(this);
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     public final Relation relhas(Attribute attribute) {
         // TODO: replace usage of this method as a getter, with relationships(Attribute attribute)
         // TODO: then remove this method altogether and just use has(Attribute attribute)
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingRelhasReq(ConceptProto.Thing.Relhas.Req.newBuilder()
-                        .setAttribute(RequestBuilder.Concept.concept(attribute))).build();
+                                           .setAttribute(RequestBuilder.Concept.concept(attribute))).build();
 
         Concept concept = RemoteConcept.of(runMethod(method).getThingRelhasRes().getRelation(), tx());
         return concept.asRelation();
@@ -118,7 +125,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final SomeThing unhas(Attribute attribute) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingUnhasReq(ConceptProto.Thing.Unhas.Req.newBuilder()
-                        .setAttribute(RequestBuilder.Concept.concept(attribute))).build();
+                                          .setAttribute(RequestBuilder.Concept.concept(attribute))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);

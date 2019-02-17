@@ -26,7 +26,7 @@ import java.util.Set;
 /**
  * A type of {@link Answer} object that contains a {@link Set}.
  */
-public class ConceptSet implements Answer<ConceptSet> {
+public class ConceptSet extends Answer {
 
     // TODO: change to store Set<Concept> once we are able to construct Concept without a database look up
     private final Set<ConceptId> set;
@@ -39,11 +39,6 @@ public class ConceptSet implements Answer<ConceptSet> {
     public ConceptSet(Set<ConceptId> set, Explanation explanation) {
         this.set = Collections.unmodifiableSet(set);
         this.explanation = explanation;
-    }
-
-    @Override
-    public ConceptSet asConceptSet() {
-        return this;
     }
 
     @Override

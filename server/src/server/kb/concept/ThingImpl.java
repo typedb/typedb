@@ -23,8 +23,6 @@ import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
 import grakn.core.graql.concept.Relation;
@@ -58,20 +56,20 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * <p>
- *     A data instance in the graph belonging to a specific {@link Type}
+ *     A data instance in the graph belonging to a specific Type
  * </p>
  *
  * <p>
  *     Instances represent data in the graph.
- *     Every instance belongs to a {@link Type} which serves as a way of categorising them.
- *     Instances can relate to one another via {@link Relation}
+ *     Every instance belongs to a Type which serves as a way of categorising them.
+ *     Instances can relate to one another via Relation
  * </p>
  *
  *
- * @param <T> The leaf interface of the object concept which extends {@link Thing}.
- *           For example {@link Entity} or {@link Relation}.
- * @param <V> The type of the concept which extends {@link Type} of the concept.
- *           For example {@link EntityType} or {@link RelationType}
+ * @param <T> The leaf interface of the object concept which extends Thing.
+ *           For example Entity or Relation.
+ * @param <V> The type of the concept which extends Type of the concept.
+ *           For example EntityType or RelationType
  */
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
     private final Cache<Label> cachedInternalType = Cache.createTxCache(this, Cacheable.label(), () -> {
@@ -102,7 +100,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     /**
-     * This {@link Thing} gets tracked for validation only if it has keys which need to be checked.
+     * This Thing gets tracked for validation only if it has keys which need to be checked.
      */
     private void track(){
         if(type().keys().findAny().isPresent()){
@@ -134,7 +132,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             if(relation.type().isImplicit()){//For now implicit relationships die
                 relation.delete();
             } else {
-                RelationshipImpl rel = (RelationshipImpl) relation;
+                RelationImpl rel = (RelationImpl) relation;
                 rel.cleanUp();
             }
         });
@@ -169,10 +167,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     /**
-     * Helper class which filters a {@link Stream} of {@link Attribute} to those of a specific set of {@link AttributeType}.
+     * Helper class which filters a Stream of Attribute to those of a specific set of AttributeType.
      *
-     * @param conceptStream The {@link Stream} to filter
-     * @param attributeTypesIds The {@link AttributeType} {@link ConceptId}s to filter to.
+     * @param conceptStream The Stream to filter
+     * @param attributeTypesIds The AttributeType ConceptIds to filter to.
      * @return the filtered stream
      */
     private <X extends Concept> Stream<Attribute<?>> attributes(Stream<X> conceptStream, Set<ConceptId> attributeTypesIds){
@@ -188,9 +186,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     /**
-     * Castings are retrieved from the perspective of the {@link Thing} which is a role player in a {@link Relation}
+     * Castings are retrieved from the perspective of the Thing which is a role player in a Relation
      *
-     * @return All the {@link Casting} which this instance is cast into the role
+     * @return All the Casting which this instance is cast into the role
      */
     Stream<Casting> castingsInstance(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER).

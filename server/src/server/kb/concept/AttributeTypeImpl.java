@@ -20,7 +20,6 @@ package grakn.core.server.kb.concept;
 
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.structure.VertexElement;
@@ -34,20 +33,20 @@ import java.util.regex.Pattern;
 
 /**
  * <p>
- *     An ontological element which models and categorises the various {@link Attribute} in the graph.
+ *     An ontological element which models and categorises the various Attribute in the graph.
  * </p>
  *
  * <p>
- *     This ontological element behaves similarly to {@link Type} when defining how it relates to other
+ *     This ontological element behaves similarly to Type when defining how it relates to other
  *     types. It has two additional functions to be aware of:
  *     1. It has a {@link AttributeType.DataType} constraining the data types of the values it's instances may take.
  *     2. Any of it's instances are unique to the type.
- *     For example if you have a {@link AttributeType} modelling month throughout the year there can only be one January.
+ *     For example if you have a AttributeType modelling month throughout the year there can only be one January.
  * </p>
  *
  *
  * @param <D> The data type of this resource type.
- *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
+ *           Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
     private AttributeTypeImpl(VertexElement vertexElement) {
@@ -79,7 +78,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
     /**
      * @param regex The regular expression which instances of this resource must conform to.
-     * @return The {@link AttributeType} itself.
+     * @return The AttributeType itself.
      */
     @Override
     public AttributeType<D> regex(String regex) {

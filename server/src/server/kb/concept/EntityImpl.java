@@ -18,21 +18,19 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Relation;
 import grakn.core.server.kb.structure.VertexElement;
 
 /**
  * <p>
- *     An instance of Entity Type {@link EntityType}
+ *     An instance of Entity Type EntityType
  * </p>
  *
  * <p>
  *     This represents an entity in the graph.
- *     Entities are objects which are defined by their {@link Attribute} and their links to
- *     other entities via {@link Relation}
+ *     Entities are objects which are defined by their Attribute and their links to
+ *     other entities via Relation
  * </p>
  *
  */
