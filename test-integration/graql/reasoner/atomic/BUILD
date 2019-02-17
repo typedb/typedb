@@ -5,7 +5,7 @@ java_test(
     srcs = ["AtomicTypeInferenceIT.java"],
     test_class = "grakn.core.graql.reasoner.atomic.AtomicTypeInferenceIT",
     deps = [
-            "//graql/java:graql",
+            "@graknlabs_graql//java:graql",
             "//server:server",
             "//test-integration/rule:grakn-test-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -22,7 +22,7 @@ java_test(
     srcs = ["AtomicUnificationIT.java"],
     test_class = "grakn.core.graql.reasoner.atomic.AtomicUnificationIT",
     deps = [
-            "//graql/java:graql",
+            "@graknlabs_graql//java:graql",
             "//server:server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -39,7 +39,7 @@ java_test(
     srcs = ["AtomicRuleApplicabilityIT.java"],
     test_class = "grakn.core.graql.reasoner.atomic.AtomicRuleApplicabilityIT",
     deps = [
-            "//graql/java:graql",
+            "@graknlabs_graql//java:graql",
             "//server:server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -58,7 +58,7 @@ java_test(
     srcs = ["AtomicRoleInferenceIT.java"],
     test_class = "grakn.core.graql.reasoner.atomic.AtomicRoleInferenceIT",
     deps = [
-            "//graql/java:graql",
+            "@graknlabs_graql//java:graql",
             "//server:server",
             "//test-integration/rule:grakn-test-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -76,7 +76,7 @@ java_test(
     srcs = ["AtomicEquivalenceIT.java"],
     test_class = "grakn.core.graql.reasoner.atomic.AtomicEquivalenceIT",
     deps = [
-            "//graql/java:graql",
+            "@graknlabs_graql//java:graql",
             "//server:server",
             "//test-integration/rule:grakn-test-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

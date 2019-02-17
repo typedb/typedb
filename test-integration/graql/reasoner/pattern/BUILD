@@ -11,7 +11,7 @@ java_library(
     srcs = ["RelationPattern.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//dependencies/maven/artifacts/com/google/guava",
         "//test-integration/graql/reasoner/pattern:query-pattern",

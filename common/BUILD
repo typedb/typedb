@@ -17,8 +17,8 @@
 #
 
 package(default_visibility = ["//visibility:public"])
-load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 
+load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 load("@com_github_google_bazel_common//tools/jarjar:jarjar.bzl", "jarjar_library")
 
 jarjar_library(

@@ -30,6 +30,7 @@ tools_dependencies()
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_dependencies")
 checkstyle_dependencies()
 
+
 #####################################
 # Load Java dependencies from Maven #
 #####################################
@@ -38,17 +39,23 @@ load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
 maven_dependencies()
 
 
-########################################
-# Load compiler dependencies for ANTLR #
-########################################
+###########################
+# Load Graql dependencies #
+###########################
+
+load("//dependencies/git:dependencies.bzl", "graknlabs_graql")
+graknlabs_graql()
 
 # Load ANTLR dependencies for Bazel
-load("//dependencies/compilers:dependencies.bzl", "antlr_dependencies")
+load("@graknlabs_graql//dependencies/compilers:dependencies.bzl", "antlr_dependencies")
 antlr_dependencies()
 
 # Load ANTLR dependencies for ANTLR programs
 load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
 antlr_dependencies()
+
+load("@graknlabs_graql//dependencies/maven:dependencies.bzl", graql_dependencies = "maven_dependencies")
+graql_dependencies()
 
 
 #######################################
@@ -67,9 +74,9 @@ load("@stackb_rules_proto//java:deps.bzl", "java_grpc_compile")
 java_grpc_compile()
 
 
-########################################
-#    Load Distribution Dependencies    #
-########################################
+##################################
+# Load Distribution Dependencies #
+##################################
 
 load("//dependencies/distribution:dependencies.bzl", "distribution_dependencies")
 distribution_dependencies()
@@ -77,6 +84,7 @@ distribution_dependencies()
 load("@graknlabs_bazel_distribution//github:dependencies.bzl", "github_dependencies_for_deployment")
 github_dependencies_for_deployment()
 
+# Why does it break when we move thie declaration after loading tools_dependencies?
 load("@com_github_google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
 google_common_workspace_rules()
 

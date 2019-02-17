@@ -7,7 +7,7 @@ java_test(
     deps = [
         "//client-java:client-java",
         "//common:common",
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni",

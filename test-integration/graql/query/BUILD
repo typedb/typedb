@@ -24,7 +24,7 @@ java_test(
     srcs = ["GraqlGetIT.java"],
     deps = [
         "//common:common",
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
@@ -38,7 +38,7 @@ java_test(
     srcs = ["GraqlDefineIT.java"],
     deps = [
         "//common:common",
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
@@ -55,7 +55,7 @@ java_test(
     srcs = ["GraqlDeleteIT.java"],
     deps = [
         "//common:common",
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
@@ -70,7 +70,7 @@ java_test(
     srcs = ["GraqlInsertIT.java"],
     deps = [
         "//common:common",
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
@@ -88,7 +88,7 @@ java_test(
     test_class = "grakn.core.graql.query.GraqlUndefineIT",
     srcs = ["GraqlUndefineIT.java"],
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
@@ -106,7 +106,7 @@ java_test(
     test_class = "grakn.core.graql.query.QueryBuilderIT",
     srcs = ["QueryBuilderIT.java"],
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
@@ -120,7 +120,7 @@ java_test(
     test_class = "grakn.core.graql.query.QueryAdminIT",
     srcs = ["QueryAdminIT.java"],
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
@@ -136,7 +136,7 @@ java_test(
     srcs = ["QueryErrorIT.java"],
     deps = [
         "//common:common",
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
@@ -152,7 +152,7 @@ java_test(
     test_class = "grakn.core.graql.query.QueryPlannerIT",
     srcs = ["QueryPlannerIT.java"],
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",

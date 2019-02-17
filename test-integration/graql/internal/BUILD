@@ -23,7 +23,7 @@ java_test(
     test_class = "grakn.core.graql.internal.IsaExplicitIT",
     srcs = ["IsaExplicitIT.java"],
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
