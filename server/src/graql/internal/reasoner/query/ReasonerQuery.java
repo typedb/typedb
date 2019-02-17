@@ -23,10 +23,10 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
+import grakn.core.server.Transaction;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Variable;
-import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;

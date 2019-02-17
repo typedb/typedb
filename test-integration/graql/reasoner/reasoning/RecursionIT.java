@@ -19,7 +19,6 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.graql.answer.ConceptMap;
-import graql.lang.Graql;
 import grakn.core.graql.reasoner.graph.DualLinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.NguyenGraph;
@@ -32,6 +31,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.util.GraqlTestUtil;
+import graql.lang.Graql;
 import org.junit.ClassRule;
 import org.junit.Test;
 

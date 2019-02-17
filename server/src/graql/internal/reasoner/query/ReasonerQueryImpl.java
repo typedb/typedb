@@ -55,14 +55,13 @@ import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.server.session.TransactionOLTP;
-import graql.lang.util.Token;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -163,7 +162,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     boolean isNeqPositive(){
         return !getAtoms(NeqPredicate.class).findFirst().isPresent()
                 && getAtoms(AttributeAtom.class).flatMap(at -> at.getMultiPredicate().stream())
-                .noneMatch(p -> p.getPredicate().comparator().equals(Token.Comparator.NEQV));
+                .noneMatch(p -> p.getPredicate().comparator().equals(Graql.Token.Comparator.NEQV));
     }
 
     /**

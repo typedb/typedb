@@ -22,10 +22,10 @@ import com.google.common.collect.Iterables;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
-import grakn.core.server.session.TransactionOLTP;
 
 import java.util.List;
 import java.util.Set;

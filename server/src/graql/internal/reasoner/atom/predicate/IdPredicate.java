@@ -25,12 +25,12 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.server.Transaction;
+import graql.lang.Graql;
 import graql.lang.property.IdProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.server.Transaction;
-import graql.lang.util.Token;
 
 /**
  * Predicate implementation specialising it to be an id predicate. Corresponds to {@link IdProperty}.
@@ -128,7 +128,7 @@ public class IdPredicate extends Predicate<ConceptId> {
 
         if (value != null) {
             return ValuePredicate.create(this.getVarName(),
-                                         ValueProperty.Operation.Comparison.of(Token.Comparator.EQV, value),
+                                         ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.EQV, value),
                                          this.getParentQuery());
         } else {
             return null;

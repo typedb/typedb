@@ -26,11 +26,11 @@ import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.property.DataTypeAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import graql.lang.Graql;
 import graql.lang.property.DataTypeProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import graql.lang.util.Token;
 
 import java.util.Collections;
 import java.util.Set;
@@ -40,7 +40,7 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
     private final Variable var;
     private final DataTypeProperty property;
     private final AttributeType.DataType dataType;
-    private static final ImmutableMap<Token.DataType, AttributeType.DataType<?>> DATA_TYPES = dataTypes();
+    private static final ImmutableMap<Graql.Token.DataType, AttributeType.DataType<?>> DATA_TYPES = dataTypes();
 
     DataTypeExecutor(Variable var, DataTypeProperty property) {
         if (var == null) {
@@ -59,13 +59,13 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
         this.dataType = DATA_TYPES.get(property.dataType());
     }
 
-    private static ImmutableMap<Token.DataType, AttributeType.DataType<?>> dataTypes() {
-        ImmutableMap.Builder<Token.DataType, AttributeType.DataType<?>> dataTypes = new ImmutableMap.Builder<>();
-        dataTypes.put(Token.DataType.BOOLEAN, AttributeType.DataType.BOOLEAN);
-        dataTypes.put(Token.DataType.DATE, AttributeType.DataType.DATE);
-        dataTypes.put(Token.DataType.DOUBLE, AttributeType.DataType.DOUBLE);
-        dataTypes.put(Token.DataType.LONG, AttributeType.DataType.LONG);
-        dataTypes.put(Token.DataType.STRING, AttributeType.DataType.STRING);
+    private static ImmutableMap<Graql.Token.DataType, AttributeType.DataType<?>> dataTypes() {
+        ImmutableMap.Builder<Graql.Token.DataType, AttributeType.DataType<?>> dataTypes = new ImmutableMap.Builder<>();
+        dataTypes.put(Graql.Token.DataType.BOOLEAN, AttributeType.DataType.BOOLEAN);
+        dataTypes.put(Graql.Token.DataType.DATE, AttributeType.DataType.DATE);
+        dataTypes.put(Graql.Token.DataType.DOUBLE, AttributeType.DataType.DOUBLE);
+        dataTypes.put(Graql.Token.DataType.LONG, AttributeType.DataType.LONG);
+        dataTypes.put(Graql.Token.DataType.STRING, AttributeType.DataType.STRING);
 
         return dataTypes.build();
     }

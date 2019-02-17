@@ -22,12 +22,12 @@ import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
-import graql.lang.Graql;
-import graql.lang.pattern.Pattern;
-import graql.lang.query.MatchClause;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
+import graql.lang.query.MatchClause;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.io.BufferedReader;

@@ -29,6 +29,7 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -37,8 +38,6 @@ import graql.lang.property.SubProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.server.session.TransactionOLTP;
-import graql.lang.util.Token;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -148,7 +147,7 @@ public class GraqlTraversalTest {
     @Ignore //TODO: No longer applicable. Think of a new test to replace this.
     @Test
     public void valueFilteringIsBetterThanANonFilteringOperation() {
-        ValueExecutor.Operation<?,?> gt_1 = ValueExecutor.Operation.of(ValueProperty.Operation.Comparison.of(Token.Comparator.GT, 1));
+        ValueExecutor.Operation<?,?> gt_1 = ValueExecutor.Operation.of(ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.GT, 1));
         GraqlTraversal valueFilterFirst = traversal(value(null, x.var(), gt_1), inRolePlayer(x.var(), b.var()), outRolePlayer(b.var(), y.var()), outIsa(null, y.var(), z.var()));
         GraqlTraversal rolePlayerFirst = traversal(outIsa(null, y.var(), z.var()), inRolePlayer(y.var(), b.var()), outRolePlayer(b.var(), x.var()), value(null, x.var(), gt_1));
 

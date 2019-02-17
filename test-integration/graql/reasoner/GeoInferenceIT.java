@@ -20,14 +20,14 @@ package grakn.core.graql.reasoner;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
-import graql.lang.Graql;
-import graql.lang.pattern.Pattern;
-import graql.lang.query.GraqlGet;
-import graql.lang.statement.Statement;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
+import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
+import graql.lang.query.GraqlGet;
+import graql.lang.statement.Statement;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

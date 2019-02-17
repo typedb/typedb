@@ -2,14 +2,13 @@ package grakn.core.client;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
+import grakn.core.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
-import grakn.core.server.Transaction;
-import graql.lang.util.Token;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -112,7 +111,7 @@ public class ClientJavaE2E {
                     type("mating").sub("relationship").relates("male-partner").relates("female-partner").plays("child-bearer"),
                     type("parentship").sub("relationship").relates("parent").relates("child"),
 
-                    type("name").sub("attribute").datatype(Token.DataType.STRING),
+                    type("name").sub("attribute").datatype(Graql.Token.DataType.STRING),
                     type("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring"),
 
                     type("infer-parentship-from-mating-and-child-bearing").sub("rule")

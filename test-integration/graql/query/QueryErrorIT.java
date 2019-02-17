@@ -26,11 +26,6 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
-import graql.lang.Graql;
-import graql.lang.property.ValueProperty;
-import graql.lang.query.MatchClause;
-import graql.lang.statement.Statement;
-import graql.lang.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -38,8 +33,12 @@ import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
-import graql.lang.util.Token;
+import graql.lang.property.ValueProperty;
+import graql.lang.query.MatchClause;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -192,7 +191,7 @@ public class QueryErrorIT {
         try (Transaction newTx = newSession.transaction(Transaction.Type.WRITE)) {
             newTx.execute(Graql.define(
                     type("person").sub("entity"),
-                    type("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Token.DataType.STRING)
+                    type("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Graql.Token.DataType.STRING)
             ));
 
             exception.expect(TransactionException.class);

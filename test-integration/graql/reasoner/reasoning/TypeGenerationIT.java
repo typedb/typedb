@@ -19,10 +19,10 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.graql.answer.ConceptMap;
-import graql.lang.Graql;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import graql.lang.Graql;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;

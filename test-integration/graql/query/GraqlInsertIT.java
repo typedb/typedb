@@ -35,19 +35,18 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.internal.Schema;
-import graql.lang.Graql;
-import graql.lang.pattern.Pattern;
-import graql.lang.property.IsaProperty;
-import graql.lang.query.GraqlInsert;
-import graql.lang.statement.Statement;
-import graql.lang.statement.Variable;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
-import graql.lang.util.Token;
+import graql.lang.pattern.Pattern;
+import graql.lang.property.IsaProperty;
+import graql.lang.query.GraqlInsert;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -67,10 +66,10 @@ import java.util.List;
 import java.util.Set;
 
 import static grakn.core.graql.internal.Schema.MetaSchema.ENTITY;
-import static graql.lang.Graql.type;
-import static graql.lang.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
+import static graql.lang.Graql.type;
+import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.NO_PATTERNS;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -295,7 +294,7 @@ public class GraqlInsertIT {
     public void testKeyCorrectUsage() throws InvalidKBException {
         tx.execute(Graql.define(
                 type("a-new-type").sub("entity").key("a-new-resource-type"),
-                type("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Token.DataType.STRING)
+                type("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Graql.Token.DataType.STRING)
         ));
 
         tx.execute(Graql.insert(var().isa("a-new-type").has("a-new-resource-type", "hello")));
@@ -305,7 +304,7 @@ public class GraqlInsertIT {
     public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidKBException {
         tx.execute(Graql.define(
                 type("a-new-type").sub("entity").key("a-new-attribute-type"),
-                type("a-new-attribute-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Token.DataType.STRING)
+                type("a-new-attribute-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Graql.Token.DataType.STRING)
         ));
 
         tx.execute(Graql.insert(
@@ -323,7 +322,7 @@ public class GraqlInsertIT {
                 type("a-new-type").sub("entity").key("a-new-resource-type"),
                 type("a-new-resource-type")
                         .sub(type(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()))
-                        .datatype(Token.DataType.STRING)
+                        .datatype(Graql.Token.DataType.STRING)
         ));
 
         tx.execute(Graql.insert(
@@ -339,7 +338,7 @@ public class GraqlInsertIT {
     public void testKeyRequiredOwner() throws InvalidKBException {
         tx.execute(Graql.define(
                 type("a-new-type").sub("entity").key("a-new-resource-type"),
-                type("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Token.DataType.STRING)
+                type("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Graql.Token.DataType.STRING)
         ));
 
         tx.execute(Graql.insert(var().isa("a-new-type")));
@@ -611,7 +610,7 @@ public class GraqlInsertIT {
     @Test
     public void whenInsertingASchemaConcept_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(Token.Property.SUB.toString()).getMessage());
+        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(Graql.Token.Property.SUB.toString()).getMessage());
 
         tx.execute(Graql.insert(type("new-type").sub(type(ENTITY.getLabel().getValue()))));
     }
@@ -619,7 +618,7 @@ public class GraqlInsertIT {
     @Test
     public void whenModifyingASchemaConceptInAnInsertQuery_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(Token.Property.PLAYS.toString()).getMessage());
+        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(Graql.Token.Property.PLAYS.toString()).getMessage());
 
         tx.execute(Graql.insert(type("movie").plays("actor")));
     }

@@ -62,12 +62,11 @@ import grakn.core.graql.internal.analytics.StatisticsMapReduce;
 import grakn.core.graql.internal.analytics.StdMapReduce;
 import grakn.core.graql.internal.analytics.SumMapReduce;
 import grakn.core.graql.internal.analytics.Utility;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.builder.Computable;
-import grakn.core.server.session.TransactionOLTP;
-import graql.lang.util.Token;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -89,16 +88,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static graql.lang.util.Token.Compute.Algorithm.CONNECTED_COMPONENT;
-import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
-import static graql.lang.util.Token.Compute.Algorithm.K_CORE;
-import static graql.lang.util.Token.Compute.Method.COUNT;
-import static graql.lang.util.Token.Compute.Method.MAX;
-import static graql.lang.util.Token.Compute.Method.MEAN;
-import static graql.lang.util.Token.Compute.Method.MEDIAN;
-import static graql.lang.util.Token.Compute.Method.MIN;
-import static graql.lang.util.Token.Compute.Method.STD;
-import static graql.lang.util.Token.Compute.Method.SUM;
+import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
+import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
+import static graql.lang.Graql.Token.Compute.Algorithm.K_CORE;
+import static graql.lang.Graql.Token.Compute.Method.COUNT;
+import static graql.lang.Graql.Token.Compute.Method.MAX;
+import static graql.lang.Graql.Token.Compute.Method.MEAN;
+import static graql.lang.Graql.Token.Compute.Method.MEDIAN;
+import static graql.lang.Graql.Token.Compute.Method.MIN;
+import static graql.lang.Graql.Token.Compute.Method.STD;
+import static graql.lang.Graql.Token.Compute.Method.SUM;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -114,7 +113,7 @@ class ComputeExecutor {
     }
 
     Stream<Numeric> stream(GraqlCompute.Statistics query) {
-        Token.Compute.Method method = query.method();
+        Graql.Token.Compute.Method method = query.method();
         if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
             return runComputeMinMaxMedianOrSum(query.asValue());
         } else if (method.equals(MEAN)) {
@@ -276,7 +275,7 @@ class ComputeExecutor {
     private StatisticsMapReduce<?> initStatisticsMapReduce(GraqlCompute.Statistics.Value query,
                                                            Set<LabelId> targetTypes,
                                                            AttributeType.DataType<?> targetDataType) {
-        Token.Compute.Method method = query.method();
+        Graql.Token.Compute.Method method = query.method();
         if (method.equals(MIN)) {
             return new MinMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MAX)) {

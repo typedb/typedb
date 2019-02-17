@@ -20,8 +20,8 @@ package grakn.core.graql.internal.executor;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Numeric;
+import graql.lang.Graql;
 import graql.lang.statement.Variable;
-import graql.lang.util.Token;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -40,7 +40,7 @@ public class AggregateExecutor {
         else throw new RuntimeException("Invalid attempt to compare non-Numbers in Max Aggregate function");
     }
 
-    public static List<Numeric> aggregate(Stream<ConceptMap> answers, Token.Aggregate.Method method, Variable var) {
+    public static List<Numeric> aggregate(Stream<ConceptMap> answers, Graql.Token.Aggregate.Method method, Variable var) {
         switch (method) {
             case COUNT:
                 return count(answers);

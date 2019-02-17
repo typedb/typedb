@@ -28,11 +28,11 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
-import graql.lang.Graql;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -47,7 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static graql.lang.util.Token.Compute.Algorithm.DEGREE;
+import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

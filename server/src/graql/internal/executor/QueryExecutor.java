@@ -38,6 +38,7 @@ import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -55,8 +56,6 @@ import graql.lang.query.MatchClause;
 import graql.lang.query.builder.Filterable;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.server.session.TransactionOLTP;
-import graql.lang.util.Token;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -250,7 +249,7 @@ public class QueryExecutor {
                     return ((Comparable<? super Comparable>) val1).compareTo((Comparable<? super Comparable>) val2);
                 }
             };
-            comparator = (query.sort().get().order() == Token.Order.DESC) ? comparator.reversed() : comparator;
+            comparator = (query.sort().get().order() == Graql.Token.Order.DESC) ? comparator.reversed() : comparator;
             answers = answers.sorted(comparator);
         }
         if (query.offset().isPresent()) {

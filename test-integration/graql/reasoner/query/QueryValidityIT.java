@@ -19,12 +19,12 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.exception.GraqlQueryException;
-import graql.lang.Graql;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;

@@ -24,12 +24,12 @@ import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
-import graql.lang.pattern.Pattern;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.pattern.Pattern;
 
 import java.util.List;
 import java.util.Map;

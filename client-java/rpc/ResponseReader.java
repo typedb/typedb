@@ -31,8 +31,8 @@ import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
-import graql.lang.statement.Variable;
 import grakn.core.protocol.AnswerProto;
+import graql.lang.statement.Variable;
 
 import java.text.NumberFormat;
 import java.text.ParseException;

@@ -27,7 +27,6 @@ import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import graql.lang.util.Token;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -56,7 +55,7 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
 
     public static ValuePredicate neq(Variable varName, @Nullable Variable var, @Nullable Object value, ReasonerQuery parent){
         Variable predicateVar = var != null? var : Graql.var().var().asUserDefined();
-        ValueProperty.Operation.Comparison<?> op = ValueProperty.Operation.Comparison.of(Token.Comparator.NEQV, value != null ? value : Graql.var(predicateVar));
+        ValueProperty.Operation.Comparison<?> op = ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.NEQV, value != null ? value : Graql.var(predicateVar));
         return create(varName, op, parent);
     }
 
