@@ -28,7 +28,7 @@ java_library(
         # Grakn Core dependencies
         "//common:common",
         "//protocol:protocol-java",
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
 
         # External dependencies

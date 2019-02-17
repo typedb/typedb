@@ -61,7 +61,7 @@ java_library(
     srcs = ["GeoGraph.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
     ],
 )

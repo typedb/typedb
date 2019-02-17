@@ -16,21 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
-java_test(
-    name = "pattern-test",
-    test_class = "graql.lang.pattern.test.PatternTest",
-    srcs = ["PatternTest.java"],
-    deps = [
-        "//graql/java:graql",
-    ],
-    size = "small"
-)
-
-checkstyle_test(
-    name = "checkstyle",
-    targets = [
-        ":pattern-test"
-    ],
-)
+def graknlabs_graql():
+    git_repository(
+        name = "graknlabs_graql",
+        remote = "https://github.com/graknlabs/graql",
+        commit = "f55faace4e35f0dd9396327d00a433618b7ab3c9"
+    )

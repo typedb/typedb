@@ -6,7 +6,7 @@ java_test(
     srcs = ["GraqlTraversalTest.java", "GraqlMatchers.java"],
     deps = [
         "//common:common",
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -20,7 +20,7 @@ java_test(
     test_class = "grakn.core.graql.internal.gremlin.ConjunctionQueryTest",
     srcs = ["ConjunctionQueryTest.java", "GraqlMatchers.java"],
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",

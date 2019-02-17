@@ -31,7 +31,7 @@ java_library(
         # Grakn Core dependencies
         "//common:common",
         "//client-java:client-java",
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server", # NEEDS TO GO
 
         # External dependencies

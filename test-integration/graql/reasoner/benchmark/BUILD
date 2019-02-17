@@ -6,7 +6,7 @@ java_test(
     srcs = ["BenchmarkBigIT.java"],
     deps = [
             "//client-java",
-            "//graql/java:graql",
+            "@graknlabs_graql//java:graql",
             "//server:server",
             "//test-integration/rule:grakn-test-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -27,7 +27,7 @@ java_test(
     srcs = ["BenchmarkSmallIT.java"],
     deps = [
         "//client-java",
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/com/google/guava:guava",

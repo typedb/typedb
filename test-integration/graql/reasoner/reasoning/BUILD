@@ -8,7 +8,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.NeqIdPredicateIT",
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -23,7 +23,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.NeqValuePredicateIT",
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//dependencies/maven/artifacts/com/google/guava",
         "//test-integration/rule:grakn-test-server",
@@ -45,7 +45,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.reasoning.RecursionIT",
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -70,7 +70,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.AttributeAttachmentIT",
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -87,7 +87,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.TypeGenerationIT",
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -102,7 +102,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.TypeHierarchiesIT",
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//test-integration/rule:grakn-test-server",
@@ -118,7 +118,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.VariableRolesIT",
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/apache/commons:commons-math3",

@@ -5,7 +5,7 @@ java_library(
     srcs = ["GraqlTestUtil.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-      "//graql/java:graql",
+      "@graknlabs_graql//java:graql",
       "//server:server",
       "//dependencies/maven/artifacts/commons-collections:commons-collections",
       "//dependencies/maven/artifacts/junit:junit"

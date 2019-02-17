@@ -5,7 +5,7 @@ java_test(
     test_class = "grakn.core.graql.internal.gremlin.spanningtree.ChuLiuEdmondsTest",
     srcs = ["ChuLiuEdmondsTest.java"],
     deps = [
-        "//graql/java:graql",
+        "@graknlabs_graql//java:graql",
         "//server:server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
