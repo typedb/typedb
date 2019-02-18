@@ -7,37 +7,37 @@ role2 sub role;
 
 #Entities
 
-genericEntity sub entity
-    has name
-    plays role1
+genericEntity sub entity,
+    has name,
+    plays role1,
     plays role2;
 
 #Relations
 
-baseRelation sub relationship
-    relates role1
+baseRelation sub relationship,
+    relates role1,
     relates role2;
 
-anotherBaseRelation sub relationship
-    relates role1
+anotherBaseRelation sub relationship,
+    relates role1,
     relates role2;
 
-inferredRelation sub relationship
-    relates role1
+inferredRelation sub relationship,
+    relates role1,
     relates role2;
 
 #Resources
 
 "name" sub attribute, datatype string;
 
-rule-1 sub rule
+rule-1 sub rule,
     when {
     	(role1: $x, role2: $y) isa baseRelation;
     	($y, $z) isa inferredRelation;
     	($z, $u) isa anotherBaseRelation;
     	($u, $v) isa baseRelation;
     	(role1: $v, role2: $w) isa inferredRelation;
-    }
+    },
     then {
     	(role1: $x, role2: $w) isa inferredRelation;
     };
@@ -54,43 +54,43 @@ operator sub role;
 owned sub role;
 owner sub role;
 
-geo-location sub entity
-    plays location
+geo-location sub entity,
+    plays location,
     plays subject;
 
-asset sub entity
-    plays place
-    plays owned
+asset sub entity,
+    plays place,
+    plays owned,
     plays operated;
 
-company sub entity
-    plays operator
-    plays owner
+company sub entity,
+    plays operator,
+    plays owner,
     plays subject;
 
-factor sub entity
-    has value
+factor sub entity,
+    has value,
     plays object;
 
-carried-relation sub relationship
-    relates object
+carried-relation sub relationship,
+    relates object,
     relates subject;
 
-coordinates sub relationship
-    relates location
+coordinates sub relationship,
+    relates location,
     relates place;
 
-operates sub relationship
-    relates operated
+operates sub relationship,
+    relates operated,
     relates operator;
 
-owns sub relationship
-    relates owned
+owns sub relationship,
+    relates owned,
     relates owner;
 
 value sub attribute, datatype string;
 
-carryRelation sub rule
+carryRelation sub rule,
 when {
   $geo isa geo-location;
   $asset isa asset;
@@ -98,17 +98,17 @@ when {
   (object: $obj, subject: $geo) isa carried-relation;
   (location: $geo, place: $asset) isa coordinates;
   (operated: $asset, operator: $company) isa operates;
-}
+},
 then {
   (object: $obj, subject: $company) isa carried-relation;
 };
 
-assetOperator sub rule
+assetOperator sub rule,
 when {
   $a isa company;
   $b isa asset;
   (owner: $a, owned: $b) isa owns;
-}
+},
 then {
   (operator: $a, operated: $b) isa operates;
 };
@@ -116,19 +116,19 @@ then {
 
 ######################################################################
 
-column sub entity
-    plays tagged
+column sub entity,
+    plays tagged,
     plays linked-column;
 
-tag sub entity
-    has tag-type
+tag sub entity,
+    has tag-type,
     plays tagger;
 
-tagging sub relationship
-    relates tagged
+tagging sub relationship,
+    relates tagged,
     relates tagger;
 
-same-tag-column-link sub relationship
+same-tag-column-link sub relationship,
     relates linked-column;
 
 tag-type sub attribute, datatype string;

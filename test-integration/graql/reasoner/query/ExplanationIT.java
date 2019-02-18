@@ -85,13 +85,13 @@ public class ExplanationIT {
     }
 
     @Test
-    public void whenQueryingWithReasoningOff_explanationsAreNull(){
+    public void whenQueryingWithReasoningOff_explanationsAreEmpty(){
         try (Transaction tx = geoSession.transaction(Transaction.Type.READ)) {
             String queryString = "match $x isa city, has name $n; get;";
 
             GraqlGet query = Graql.parse(queryString);
             List<ConceptMap> answers = tx.execute(query, false);
-            answers.forEach(ans -> Assert.assertNull(ans.explanation()));
+            answers.forEach(ans -> Assert.assertTrue(ans.explanation().isEmpty()));
         }
     }
 
@@ -244,7 +244,7 @@ public class ExplanationIT {
         try (Transaction tx = explanationSession.transaction(Transaction.Type.READ)) {
             String queryString = "match " +
                     "$x has value 'high';" +
-                    "($x, $y) isa carried-relzation;" +
+                    "($x, $y) isa carried-relation;" +
                     "get;";
 
             GraqlGet query = Graql.parse(queryString);
@@ -262,7 +262,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingEquivalentPartialQueries_explanationsAreCorrect(){
-        try (Transaction tx = explanationSession.transaction(Transaction.Type.READ)) {
+        try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
             String queryString = "match $x isa same-tag-column-link; get;";
 
             GraqlGet query = Graql.parse(queryString);
