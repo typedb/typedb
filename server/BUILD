@@ -39,7 +39,6 @@ java_library(
         "//protocol:protocol-java",
 
         # External dependencies
-        "//dependencies/maven/artifacts/grakn/benchmark:lib",
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
