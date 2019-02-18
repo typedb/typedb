@@ -82,21 +82,29 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     }
 
     @Override
-    public void open(SessionProto.OpenSessionReq request, StreamObserver<SessionProto.OpenSessionRes> responseObserver) {
-        String keyspace = request.getKeyspace();
-        SessionImpl session = requestOpener.open(request);
-        String sessionId = keyspace + UUID.randomUUID().toString();
-        openSessions.put(sessionId, session);
-        responseObserver.onNext(SessionProto.OpenSessionRes.newBuilder().setSessionId(sessionId).build());
-        responseObserver.onCompleted();
+    public void open(SessionProto.Session.Open.Req request, StreamObserver<SessionProto.Session.Open.Res> responseObserver) {
+        try {
+            String keyspace = request.getKeyspace();
+            SessionImpl session = requestOpener.open(request);
+            String sessionId = keyspace + UUID.randomUUID().toString();
+            openSessions.put(sessionId, session);
+            responseObserver.onNext(SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionId).build());
+            responseObserver.onCompleted();
+        } catch (RuntimeException e) {
+            responseObserver.onError(ResponseBuilder.exception(e));
+        }
     }
 
     @Override
-    public void close(SessionProto.CloseSessionReq request, StreamObserver<SessionProto.CloseSessionRes> responseObserver) {
-        SessionImpl session = openSessions.remove(request.getSessionId());
-        session.close();
-        responseObserver.onNext(SessionProto.CloseSessionRes.newBuilder().build());
-        responseObserver.onCompleted();
+    public void close(SessionProto.Session.Close.Req request, StreamObserver<SessionProto.Session.Close.Res> responseObserver) {
+        try {
+            SessionImpl session = openSessions.remove(request.getSessionId());
+            session.close();
+            responseObserver.onNext(SessionProto.Session.Close.Res.newBuilder().build());
+            responseObserver.onCompleted();
+        } catch (RuntimeException e) {
+            responseObserver.onError(ResponseBuilder.exception(e));
+        }
     }
 
 

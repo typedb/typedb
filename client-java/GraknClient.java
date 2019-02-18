@@ -134,8 +134,7 @@ public final class GraknClient {
             }
             this.keyspace = keyspace;
             sessionStub = SessionServiceGrpc.newBlockingStub(channel);
-            SessionProto.OpenSessionReq request = SessionProto.OpenSessionReq.newBuilder().setKeyspace(keyspace).build();
-            SessionProto.OpenSessionRes response = sessionStub.open(request);
+            SessionProto.Session.Open.Res response = sessionStub.open(RequestBuilder.Session.open(keyspace));
             sessionId = response.getSessionId();
         }
 
@@ -146,7 +145,7 @@ public final class GraknClient {
 
         @Override
         public void close() throws TransactionException {
-            sessionStub.close(SessionProto.CloseSessionReq.newBuilder().setSessionId(sessionId).build());
+            sessionStub.close(RequestBuilder.Session.close(sessionId));
             channel.shutdown();
         }
 

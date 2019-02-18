@@ -14,7 +14,7 @@ java_test(
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
-    data = ["//:distribution"]
+    data = ["//:distribution"],
 )
 
 checkstyle_test(

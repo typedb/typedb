@@ -26,5 +26,5 @@ import grakn.core.server.session.SessionImpl;
  */
 public interface OpenRequest {
 
-    SessionImpl open(SessionProto.OpenSessionReq request);
+    SessionImpl open(SessionProto.Session.Open.Req request);
 }

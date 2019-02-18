@@ -53,7 +53,7 @@ public class ServerFactory {
 
         KeyspaceManager keyspaceStore = new KeyspaceManager(config);
 
-        // tx-factory
+        // session factory
         SessionStore sessionStore = SessionStore.create(lockManager, config, keyspaceStore);
 
 
