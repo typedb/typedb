@@ -1,0 +1,180 @@
+define
+
+#Roles
+
+role1 sub role;
+role2 sub role;
+
+#Entities
+
+genericEntity sub entity,
+    has name,
+    plays role1,
+    plays role2;
+
+#Relations
+
+baseRelation sub relationship,
+    relates role1,
+    relates role2;
+
+anotherBaseRelation sub relationship,
+    relates role1,
+    relates role2;
+
+inferredRelation sub relationship,
+    relates role1,
+    relates role2;
+
+#Resources
+
+"name" sub attribute, datatype string;
+
+rule-1 sub rule,
+    when {
+    	(role1: $x, role2: $y) isa baseRelation;
+    	($y, $z) isa inferredRelation;
+    	($z, $u) isa anotherBaseRelation;
+    	($u, $v) isa baseRelation;
+    	(role1: $v, role2: $w) isa inferredRelation;
+    },
+    then {
+    	(role1: $x, role2: $w) isa inferredRelation;
+    };
+
+
+######################################################################
+
+object sub role;
+subject sub role;
+location sub role;
+place sub role;
+operated sub role;
+operator sub role;
+owned sub role;
+owner sub role;
+
+geo-location sub entity,
+    plays location,
+    plays subject;
+
+asset sub entity,
+    plays place,
+    plays owned,
+    plays operated;
+
+company sub entity,
+    plays operator,
+    plays owner,
+    plays subject;
+
+factor sub entity,
+    has value,
+    plays object;
+
+carried-relation sub relationship,
+    relates object,
+    relates subject;
+
+coordinates sub relationship,
+    relates location,
+    relates place;
+
+operates sub relationship,
+    relates operated,
+    relates operator;
+
+owns sub relationship,
+    relates owned,
+    relates owner;
+
+value sub attribute, datatype string;
+
+carryRelation sub rule,
+when {
+  $geo isa geo-location;
+  $asset isa asset;
+  $company isa company;
+  (object: $obj, subject: $geo) isa carried-relation;
+  (location: $geo, place: $asset) isa coordinates;
+  (operated: $asset, operator: $company) isa operates;
+},
+then {
+  (object: $obj, subject: $company) isa carried-relation;
+};
+
+assetOperator sub rule,
+when {
+  $a isa company;
+  $b isa asset;
+  (owner: $a, owned: $b) isa owns;
+},
+then {
+  (operator: $a, operated: $b) isa operates;
+};
+
+
+######################################################################
+
+column sub entity,
+    plays tagged,
+    plays linked-column;
+
+tag sub entity,
+    has tag-type,
+    plays tagger;
+
+tagging sub relationship,
+    relates tagged,
+    relates tagger;
+
+same-tag-column-link sub relationship,
+    relates linked-column;
+
+tag-type sub attribute, datatype string;
+
+same-tag-column-linking sub rule,
+when {
+	$col1 isa column;
+	$col2 isa column;
+	$tag isa tag, has tag-type "dimension";
+	(tagged: $col1, tagger: $tag) isa tagging;
+	(tagged: $col2, tagger: $tag) isa tagging;
+	$col1 != $col2;
+},
+then {
+	(linked-column: $col1, linked-column: $col2) isa same-tag-column-link;
+};
+
+
+insert
+
+$a1 isa genericEntity, has name "a1";
+$a2 isa genericEntity, has name "a2";
+$b isa genericEntity, has name "b";
+$c isa genericEntity, has name "c";
+
+(role1:$a1, role2:$c) isa anotherBaseRelation;
+(role1:$a2, role2:$c) isa anotherBaseRelation;
+(role1:$a1, role2:$b) isa baseRelation;
+(role1:$a2, role2:$b) isa baseRelation;
+(role1:$b, role2:$c) isa inferredRelation;
+
+######################################################################
+
+$fac isa factor, has value 'high';
+$geo isa geo-location;
+$asset isa asset;
+$company isa company;
+(object: $fac, subject: $geo) isa carried-relation;
+(location: $geo, place: $asset) isa coordinates;
+(owned: $asset, owner: $company) isa owns;
+
+
+######################################################################
+
+$col1 isa column;
+$col2 isa column;
+$tag isa tag, has tag-type "dimension";
+(tagged: $col1, tagger: $tag) isa tagging;
+(tagged: $col2, tagger: $tag) isa tagging;
