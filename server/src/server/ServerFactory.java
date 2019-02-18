@@ -18,6 +18,7 @@
 
 package grakn.core.server;
 
+import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
@@ -85,10 +86,10 @@ public class ServerFactory {
     private static io.grpc.Server createServerRPC(Config config, SessionStore sessionStore, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore, boolean benchmark){
         int grpcPort = config.getProperty(ConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(sessionStore);
-//
-//        if (benchmark) {
-//            ServerTracingInstrumentation.initInstrumentation("server-instrumentation");
-//        }
+
+        if (benchmark) {
+            ServerTracingInstrumentation.initInstrumentation("server-instrumentation");
+        }
 
         io.grpc.Server serverRPC = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))

@@ -32,6 +32,14 @@ options:
 
 
 dependencies:
+
+  grakn.benchmark:
+    lib:
+      version: "1.5.0-837e62dabf6198ac09b7b9f35c2cd793bac2deb4-SNAPSHOT"
+      lang: java
+      exclude:
+        - "grakn.core.protocol"
+
   ch.qos.logback:
     logback-classic:
       version: "1.2.3"
