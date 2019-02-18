@@ -40,6 +40,18 @@ import static java.util.stream.Collectors.toList;
  */
 public class RequestBuilder {
 
+
+    public static class Session {
+
+        public static SessionProto.Session.Open.Req open(String keyspace) {
+            return SessionProto.Session.Open.Req.newBuilder().setKeyspace(keyspace).build();
+        }
+
+        public static SessionProto.Session.Close.Req close(String sessionId) {
+            return SessionProto.Session.Close.Req.newBuilder().setSessionId(sessionId).build();
+        }
+    }
+
     /**
      * An RPC Request Builder class for Transaction Service
      */

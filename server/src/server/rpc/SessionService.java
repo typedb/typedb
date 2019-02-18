@@ -18,11 +18,9 @@
 
 package grakn.core.server.rpc;
 
-import brave.ScopedSpan;
 import brave.Span;
 import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -82,21 +80,29 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     }
 
     @Override
-    public void open(SessionProto.OpenSessionReq request, StreamObserver<SessionProto.OpenSessionRes> responseObserver) {
-        String keyspace = request.getKeyspace();
-        SessionImpl session = requestOpener.open(request);
-        String sessionId = keyspace + UUID.randomUUID().toString();
-        openSessions.put(sessionId, session);
-        responseObserver.onNext(SessionProto.OpenSessionRes.newBuilder().setSessionId(sessionId).build());
-        responseObserver.onCompleted();
+    public void open(SessionProto.Session.Open.Req request, StreamObserver<SessionProto.Session.Open.Res> responseObserver) {
+        try {
+            String keyspace = request.getKeyspace();
+            SessionImpl session = requestOpener.open(request);
+            String sessionId = keyspace + UUID.randomUUID().toString();
+            openSessions.put(sessionId, session);
+            responseObserver.onNext(SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionId).build());
+            responseObserver.onCompleted();
+        } catch (RuntimeException e) {
+            responseObserver.onError(ResponseBuilder.exception(e));
+        }
     }
 
     @Override
-    public void close(SessionProto.CloseSessionReq request, StreamObserver<SessionProto.CloseSessionRes> responseObserver) {
-        SessionImpl session = openSessions.remove(request.getSessionId());
-        session.close();
-        responseObserver.onNext(SessionProto.CloseSessionRes.newBuilder().build());
-        responseObserver.onCompleted();
+    public void close(SessionProto.Session.Close.Req request, StreamObserver<SessionProto.Session.Close.Res> responseObserver) {
+        try {
+            SessionImpl session = openSessions.remove(request.getSessionId());
+            session.close();
+            responseObserver.onNext(SessionProto.Session.Close.Res.newBuilder().build());
+            responseObserver.onCompleted();
+        } catch (RuntimeException e) {
+            responseObserver.onError(ResponseBuilder.exception(e));
+        }
     }
 
 
@@ -139,17 +145,17 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         public void onNext(Transaction.Req request) {
             // !important: this is the gRPC thread
             try {
-                if (ServerTracingInstrumentation.tracingEnabledFromMessage(request)) {
-                    TraceContext receivedTraceContext = ServerTracingInstrumentation.extractTraceContext(request);
-                    Span queueSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("Server receive queue", receivedTraceContext);
-                    queueSpan.start();
-                    queueSpan.tag("childNumber", "0");
-
-                    // hop context & active Span across thread boundaries
-                    submit(() -> handleRequest(request, queueSpan, receivedTraceContext));
-                } else {
+//                if (ServerTracingInstrumentation.tracingEnabledFromMessage(request)) {
+//                    TraceContext receivedTraceContext = ServerTracingInstrumentation.extractTraceContext(request);
+//                    Span queueSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("Server receive queue", receivedTraceContext);
+//                    queueSpan.start();
+//                    queueSpan.tag("childNumber", "0");
+//
+//                    // hop context & active Span across thread boundaries
+//                    submit(() -> handleRequest(request, queueSpan, receivedTraceContext));
+//                } else {
                     submit(() -> handleRequest(request));
-                }
+//                }
             } catch (RuntimeException e) {
                 close(e);
             }
@@ -172,8 +178,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             queueSpan.finish(); // time spent in queue
 
             // create a new scoped span
-            ScopedSpan span = ServerTracingInstrumentation.startScopedChildSpanWithParentContext("Server handle request", context);
-            span.tag("childNumber", "1");
+//            ScopedSpan span = ServerTracingInstrumentation.startScopedChildSpanWithParentContext("Server handle request", context);
+//            span.tag("childNumber", "1");
             handleRequest(request);
         }
 
@@ -359,9 +365,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void onNextResponse(Transaction.Res response) {
-            if (ServerTracingInstrumentation.tracingActive()) {
-                ServerTracingInstrumentation.currentSpan().finish();
-            }
+//            if (ServerTracingInstrumentation.tracingActive()) {
+//                ServerTracingInstrumentation.currentSpan().finish();
+//            }
             responseSender.onNext(response);
         }
     }
