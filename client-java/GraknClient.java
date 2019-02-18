@@ -20,6 +20,7 @@
 package grakn.core.client;
 
 import com.google.common.collect.AbstractIterator;
+import grakn.benchmark.lib.clientinstrumentation.ClientTracingInstrumentationInterceptor;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.exception.GraknClientException;
 import grakn.core.client.rpc.RequestBuilder;
@@ -93,7 +94,7 @@ public final class GraknClient {
         SimpleURI parsedURI = new SimpleURI(address);
         if (benchmark) {
             channel = ManagedChannelBuilder.forAddress(parsedURI.getHost(), parsedURI.getPort())
-//                    .intercept(new ClientTracingInstrumentationInterceptor("client-java-instrumentation"))
+                    .intercept(new ClientTracingInstrumentationInterceptor("client-java-instrumentation"))
                     .usePlaintext(true).build();
         } else {
             channel = ManagedChannelBuilder.forAddress(parsedURI.getHost(), parsedURI.getPort())

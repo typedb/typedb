@@ -31,6 +31,8 @@ java_library(
         "@graknlabs_graql//java:graql",
         "//server:server",
 
+         "//dependencies/maven/artifacts/grakn/benchmark:lib",
+
         # External dependencies
 
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",

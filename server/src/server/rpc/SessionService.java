@@ -18,9 +18,11 @@
 
 package grakn.core.server.rpc;
 
+import brave.ScopedSpan;
 import brave.Span;
 import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -145,17 +147,17 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         public void onNext(Transaction.Req request) {
             // !important: this is the gRPC thread
             try {
-//                if (ServerTracingInstrumentation.tracingEnabledFromMessage(request)) {
-//                    TraceContext receivedTraceContext = ServerTracingInstrumentation.extractTraceContext(request);
-//                    Span queueSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("Server receive queue", receivedTraceContext);
-//                    queueSpan.start();
-//                    queueSpan.tag("childNumber", "0");
-//
-//                    // hop context & active Span across thread boundaries
-//                    submit(() -> handleRequest(request, queueSpan, receivedTraceContext));
-//                } else {
+                if (ServerTracingInstrumentation.tracingEnabledFromMessage(request)) {
+                    TraceContext receivedTraceContext = ServerTracingInstrumentation.extractTraceContext(request);
+                    Span queueSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("Server receive queue", receivedTraceContext);
+                    queueSpan.start();
+                    queueSpan.tag("childNumber", "0");
+
+                    // hop context & active Span across thread boundaries
+                    submit(() -> handleRequest(request, queueSpan, receivedTraceContext));
+                } else {
                     submit(() -> handleRequest(request));
-//                }
+                }
             } catch (RuntimeException e) {
                 close(e);
             }
@@ -178,8 +180,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             queueSpan.finish(); // time spent in queue
 
             // create a new scoped span
-//            ScopedSpan span = ServerTracingInstrumentation.startScopedChildSpanWithParentContext("Server handle request", context);
-//            span.tag("childNumber", "1");
+            ScopedSpan span = ServerTracingInstrumentation.startScopedChildSpanWithParentContext("Server handle request", context);
+            span.tag("childNumber", "1");
             handleRequest(request);
         }
 
@@ -365,9 +367,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void onNextResponse(Transaction.Res response) {
-//            if (ServerTracingInstrumentation.tracingActive()) {
-//                ServerTracingInstrumentation.currentSpan().finish();
-//            }
+            if (ServerTracingInstrumentation.tracingActive()) {
+                ServerTracingInstrumentation.currentSpan().finish();
+            }
             responseSender.onNext(response);
         }
     }
