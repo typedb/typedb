@@ -52,17 +52,11 @@ You can visit the [Setup Guide](https://dev.grakn.ai/docs/running-grakn/install-
 1. Make sure you have the following dependencies installed on your machine:
     - Java 8
     - Python >= 2.7 and Pip >= 18.1
-    - [Bazel >= 0.18.0](https://docs.bazel.build/versions/master/install-os-x.html)
-    - `rpmbuild`, available via `apt install rpm` (Debian derivatives) or `brew install rpm` (macOS)
-
-2. Install Workbase requirements:
+    - [Bazel](http://docs.bazel.build/install.html)
+1. Compile (you should get `bazel-genfiles/grakn-core-all.zip` as a result) 
 ```
-$ bazel run @nodejs//:npm install
-```
-3. Compile:
-```
-$ bazel build //...
-```
+$ bazel build //:distribution
+````
 
 ## Contributions
 
