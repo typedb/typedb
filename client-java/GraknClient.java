@@ -69,6 +69,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -83,6 +84,7 @@ public final class GraknClient {
 
     public static final String DEFAULT_URI = "localhost:48555";
 
+    private static final int CONNECTION_TIMEOUT_SECOND = 15;
     private ManagedChannel channel;
     private Keyspaces keyspaces;
 
@@ -133,7 +135,8 @@ public final class GraknClient {
                 throw GraknClientException.invalidKeyspaceName(keyspace);
             }
             this.keyspace = keyspace;
-            sessionStub = SessionServiceGrpc.newBlockingStub(channel);
+            sessionStub = SessionServiceGrpc.newBlockingStub(channel)
+                    .withDeadlineAfter(CONNECTION_TIMEOUT_SECOND, TimeUnit.SECONDS);
             SessionProto.Session.Open.Res response = sessionStub.open(RequestBuilder.Session.open(keyspace));
             sessionId = response.getSessionId();
         }
@@ -164,7 +167,8 @@ public final class GraknClient {
         private KeyspaceServiceBlockingStub keyspaceBlockingStub;
 
         private Keyspaces() {
-            keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
+            keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel)
+                    .withDeadlineAfter(CONNECTION_TIMEOUT_SECOND, TimeUnit.SECONDS);
         }
 
         public void delete(String name) {
@@ -188,7 +192,8 @@ public final class GraknClient {
         private Transaction(Session session, String sessionId, Type type) {
             this.session = session;
             this.type = type;
-            this.transceiver = Transceiver.create(SessionServiceGrpc.newStub(channel));
+            this.transceiver = Transceiver.create(SessionServiceGrpc.newStub(channel)
+                    .withDeadlineAfter(CONNECTION_TIMEOUT_SECOND, TimeUnit.SECONDS));
             transceiver.send(RequestBuilder.Transaction.open(sessionId, type));
             responseOrThrow();
         }
