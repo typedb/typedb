@@ -22,11 +22,12 @@ import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
 /**
- * A class which represents an id of any {@link Concept}.
+ * A class which represents an id of any Concept.
  * Also contains a static method for producing concept IDs from Strings.
  */
 public class ConceptId implements Comparable<ConceptId>, Serializable {
 
+    private static final long serialVersionUID = -1723590529071614152L;
     private final String value;
 
     /**
@@ -48,6 +49,15 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
     }
 
     /**
+     * @param value The string which potentially represents a Concept
+     * @return The matching concept ID
+     */
+    @CheckReturnValue
+    public static ConceptId of(String value) {
+        return new ConceptId(value);
+    }
+
+    /**
      * @return Used for indexing purposes and for graql traversals
      */
     @CheckReturnValue
@@ -58,15 +68,6 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
     @Override
     public int compareTo(ConceptId o) {
         return getValue().compareTo(o.getValue());
-    }
-
-    /**
-     * @param value The string which potentially represents a Concept
-     * @return The matching concept ID
-     */
-    @CheckReturnValue
-    public static ConceptId of(String value) {
-        return new ConceptId(value);
     }
 
     @Override
@@ -88,6 +89,4 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
         int result = 31 * this.value.hashCode();
         return result;
     }
-
-    private static final long serialVersionUID = -1723590529071614152L;
 }

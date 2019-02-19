@@ -24,24 +24,24 @@ import grakn.core.common.exception.GraknException;
 
 public class GraknClientException extends GraknException {
 
-    GraknClientException(String error){
+    GraknClientException(String error) {
         super(error);
     }
 
-    protected GraknClientException(String error, Exception e){
+    protected GraknClientException(String error, Exception e) {
         super(error, e);
-    }
-
-    @Override
-    public String getName() {
-        return this.getClass().getName();
     }
 
     public static GraknClientException create(String error) {
         return new GraknClientException(error);
     }
 
-    public static GraknClientException invalidKeyspaceName(String keyspace){
+    public static GraknClientException invalidKeyspaceName(String keyspace) {
         return create(ErrorMessage.INVALID_KEYSPACE_NAME.getMessage(keyspace));
+    }
+
+    @Override
+    public String getName() {
+        return this.getClass().getName();
     }
 }

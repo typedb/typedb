@@ -19,7 +19,6 @@
 
 package grakn.core.client.concept;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -38,11 +37,14 @@ import java.util.stream.Stream;
  *
  * @param <D> The data type of this attribute
  */
-@AutoValue
-public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeType<D>> implements Attribute<D> {
+public class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeType<D>> implements Attribute<D> {
+
+    RemoteAttribute(GraknClient.Transaction tx, ConceptId id) {
+        super(tx, id);
+    }
 
     static <D> RemoteAttribute<D> construct(GraknClient.Transaction tx, ConceptId id) {
-        return new AutoValue_RemoteAttribute<>(tx, id);
+        return new RemoteAttribute<>(tx, id);
     }
 
     @Override
@@ -55,17 +57,26 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
     }
 
     @SuppressWarnings("unchecked")
-    private D castValue(ConceptProto.ValueObject value){
-        switch (value.getValueCase()){
-            case DATE: return (D) LocalDateTime.ofInstant(Instant.ofEpochMilli(value.getDate()), ZoneId.of("Z"));
-            case STRING: return (D) value.getString();
-            case BOOLEAN: return (D) (Boolean) value.getBoolean();
-            case INTEGER: return (D) (Integer) value.getInteger();
-            case LONG: return (D) (Long) value.getLong();
-            case FLOAT: return (D) (Float) value.getFloat();
-            case DOUBLE: return (D) (Double) value.getDouble();
-            case VALUE_NOT_SET: return null;
-            default: throw new IllegalArgumentException("Unexpected value for attribute: " + value);
+    private D castValue(ConceptProto.ValueObject value) {
+        switch (value.getValueCase()) {
+            case DATE:
+                return (D) LocalDateTime.ofInstant(Instant.ofEpochMilli(value.getDate()), ZoneId.of("Z"));
+            case STRING:
+                return (D) value.getString();
+            case BOOLEAN:
+                return (D) (Boolean) value.getBoolean();
+            case INTEGER:
+                return (D) (Integer) value.getInteger();
+            case LONG:
+                return (D) (Long) value.getLong();
+            case FLOAT:
+                return (D) (Float) value.getFloat();
+            case DOUBLE:
+                return (D) (Double) value.getDouble();
+            case VALUE_NOT_SET:
+                return null;
+            default:
+                throw new IllegalArgumentException("Unexpected value for attribute: " + value);
         }
     }
 

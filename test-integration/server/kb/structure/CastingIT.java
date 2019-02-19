@@ -26,7 +26,7 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.kb.concept.RelationshipImpl;
+import grakn.core.server.kb.concept.RelationImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -73,7 +73,7 @@ public class CastingIT {
     public void whenCreatingRelation_EnsureRolePlayerContainsInstanceRoleTypeRelationTypeAndRelation(){
         Entity e1 = entityType.create();
 
-        RelationshipImpl relation = (RelationshipImpl) relationshipType.create().
+        RelationImpl relation = (RelationImpl) relationshipType.create().
                 assign(role1, e1);
 
         Set<Casting> castings = relation.reified().get().castingsRelation().collect(Collectors.toSet());
@@ -91,7 +91,7 @@ public class CastingIT {
         Entity e1 = entityType.create();
         Entity e3 = entityType.create();
 
-        RelationshipImpl relation = (RelationshipImpl) relationshipType.create().
+        RelationImpl relation = (RelationImpl) relationshipType.create().
                 assign(role1, e1);
 
         Set<Thing> things = relation.reified().get().castingsRelation().map(Casting::getRolePlayer).collect(Collectors.toSet());

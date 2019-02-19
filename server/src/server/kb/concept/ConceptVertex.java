@@ -23,11 +23,11 @@ import grakn.core.server.kb.structure.VertexElement;
 
 /**
  * <p>
- *     A {@link Concept} represented as a {@link VertexElement}
+ *     A Concept represented as a VertexElement
  * </p>
  *
  * <p>
- *     This class is helper used to ensure that any concept which needs to contain a {@link VertexElement} can handle it.
+ *     This class is helper used to ensure that any concept which needs to contain a VertexElement can handle it.
  *     Either by returning an existing one r going through some reification procedure to return a new one.
  * </p>
  *

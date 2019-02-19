@@ -20,18 +20,17 @@ package grakn.core.server.kb.concept;
 
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 
 /**
  * <p>
- *     {@link SchemaConcept} used to represent categories.
+ *     SchemaConcept used to represent categories.
  * </p>
  *
  * <p>
- *     A {@link SchemaConcept} which represents categories instances can fall within.
- *     Any instance of a {@link EntityType} is called an {@link Entity}.
+ *     A SchemaConcept which represents categories instances can fall within.
+ *     Any instance of a EntityType is called an Entity.
  * </p>
  *
  *

@@ -279,7 +279,7 @@ public class GraqlGetIT {
                 .get("y", "z")
                 .sum("z");
 
-        assertEquals(tx.execute(query).get(0).asValue().number().doubleValue(), 27.7, 0.01d);
+        assertEquals(tx.execute(query).get(0).number().doubleValue(), 27.7, 0.01d);
     }
 
     @Test

@@ -38,7 +38,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.concept.RelationshipTypeImpl;
+import grakn.core.server.kb.concept.RelationTypeImpl;
 import grakn.core.server.kb.concept.RuleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
@@ -208,7 +208,7 @@ class ValidateGlobalRules {
      * @return Error messages if the role type sub structure does not match the {@link RelationType} sub structure
      */
     static Set<String> validateRelationTypesToRolesSchema(RelationType relationshipType){
-        RelationshipTypeImpl superRelationType = (RelationshipTypeImpl) relationshipType.sup();
+        RelationTypeImpl superRelationType = (RelationTypeImpl) relationshipType.sup();
         if(Schema.MetaSchema.isMetaLabel(superRelationType.label()) || superRelationType.isAbstract()){ //If super type is a meta type no validation needed
             return Collections.emptySet();
         }

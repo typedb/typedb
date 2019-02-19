@@ -21,7 +21,7 @@ package grakn.core.graql.answer;
 /**
  * A type of {@link Answer} object that contains a {@link Number}.
  */
-public class Numeric implements Answer<Numeric>{
+public class Numeric extends Answer {
 
     private final Number number;
     private final Explanation explanation;
@@ -33,12 +33,6 @@ public class Numeric implements Answer<Numeric>{
     public Numeric(Number number, Explanation explanation) {
         this.number = number;
         this.explanation = explanation;
-    }
-
-
-    @Override
-    public Numeric asValue() {
-        return this;
     }
 
     @Override
@@ -59,7 +53,7 @@ public class Numeric implements Answer<Numeric>{
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         return number.hashCode();
     }
 }

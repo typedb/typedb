@@ -19,7 +19,6 @@
 
 package grakn.core.client.concept;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.client.GraknClient;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.Concept;
@@ -36,15 +35,19 @@ import java.util.stream.Stream;
 /**
  * Client implementation of {@link Rule}
  */
-@AutoValue
-public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
+public class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
+
+    RemoteRule(GraknClient.Transaction tx, ConceptId id) {
+        super(tx, id);
+    }
 
     static RemoteRule construct(GraknClient.Transaction tx, ConceptId id) {
-        return new AutoValue_RemoteRule(tx, id);
+        return new RemoteRule(tx, id);
     }
 
     @Nullable
     @Override
+    @SuppressWarnings("Duplicates") // response.getResCase() does not return the same type
     public final Pattern when() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRuleWhenReq(ConceptProto.Rule.When.Req.getDefaultInstance()).build();
@@ -62,6 +65,7 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
 
     @Nullable
     @Override
+    @SuppressWarnings("Duplicates") // response.getResCase() does not return the same type
     public final Pattern then() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRuleThenReq(ConceptProto.Rule.Then.Req.getDefaultInstance()).build();

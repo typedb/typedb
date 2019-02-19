@@ -284,9 +284,9 @@ public class GraknClientIT {
     //ensures that each branch ends up with an lookup explanation
     private void checkExplanationCompleteness(ConceptMap answer) {
         assertFalse("Non-lookup explanation misses children",
-                answer.explanations().stream()
-                        .filter(e -> !e.isLookupExplanation())
-                        .anyMatch(e -> e.getAnswers().isEmpty())
+                    answer.explanations().stream()
+                            .filter(e -> !e.isLookupExplanation())
+                            .anyMatch(e -> e.getAnswers().isEmpty())
         );
     }
 
@@ -294,9 +294,9 @@ public class GraknClientIT {
         List<ConceptMap> answers = answer.explanation().getAnswers();
         answers.forEach(a -> {
             TestCase.assertTrue("Disconnected answer in explanation",
-                    answers.stream()
-                            .filter(a2 -> !a2.equals(a))
-                            .anyMatch(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
+                                answers.stream()
+                                        .filter(a2 -> !a2.equals(a))
+                                        .anyMatch(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
             );
         });
     }
@@ -351,7 +351,7 @@ public class GraknClientIT {
         ) {
             GraqlGet query = Graql.match(var("x").isa("thing")).get();
 
-            remoteTx.stream(query).forEach( answer -> {
+            remoteTx.stream(query).forEach(answer -> {
                 Concept remoteConcept = answer.get("x");
                 Concept localConcept = localTx.getConcept(remoteConcept.id());
 
@@ -399,7 +399,6 @@ public class GraknClientIT {
             assertTrue(tx.execute(Graql.match(var("x").isa("person")).get()).isEmpty());
         }
     }
-
 
 
     @Test
@@ -734,7 +733,7 @@ public class GraknClientIT {
 
             // degree
             List<ConceptSetMeasure> centrality = tx.execute(Graql.compute().centrality().using(DEGREE)
-                    .of("animal").in("human", "animal", "pet-ownership"));
+                                                                    .of("animal").in("human", "animal", "pet-ownership"));
             assertEquals(1, centrality.size());
             assertEquals(idCoco, centrality.get(0).set().iterator().next());
             assertEquals(1, centrality.get(0).measurement().intValue());
@@ -750,7 +749,7 @@ public class GraknClientIT {
 
             // connected component
             List<ConceptSet> clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT)
-                    .in("human", "animal", "pet-ownership"));
+                                                              .in("human", "animal", "pet-ownership"));
             assertEquals(1, clusterList.size());
             assertEquals(3, clusterList.get(0).set().size());
             assertEquals(Sets.newHashSet(idCoco, idMike, idCocoAndMike), clusterList.get(0).set());
@@ -822,7 +821,7 @@ public class GraknClientIT {
 
             List<AnswerGroup<Numeric>> counts = tx.execute(
                     Graql.match(var("x").isa("person").has("name", var("y"))).get()
-                    .group("y").count()
+                            .group("y").count()
             );
 
             assertEquals(2, counts.size());

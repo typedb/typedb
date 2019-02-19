@@ -25,17 +25,16 @@ java_library(
     name = "client-java",
     srcs = glob(["**/*.java"], exclude = ["**/test/*.java"]),
     deps = [
-        # Grakn Core dependencies
+        # Internal dependencies
         "//common:common",
         "//protocol:protocol-java",
-        "@graknlabs_graql//java:graql",
         "//server:server",
 
-         "//dependencies/maven/artifacts/grakn/benchmark:lib",
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java:graql",
 
-        # External dependencies
-
-        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
+        # External dependencies from Maven
+        "//dependencies/maven/artifacts/grakn/benchmark:lib", # TODO: This should be replaced with Bazel
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",

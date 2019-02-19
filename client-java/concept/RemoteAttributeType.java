@@ -19,7 +19,6 @@
 
 package grakn.core.client.concept;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.client.GraknClient;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.common.util.CommonUtil;
@@ -36,18 +35,21 @@ import javax.annotation.Nullable;
  *
  * @param <D> The data type of this attribute type
  */
-@AutoValue
-public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
+public class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
+
+    RemoteAttributeType(GraknClient.Transaction tx, ConceptId id) {
+        super(tx, id);
+    }
 
     static <D> RemoteAttributeType<D> construct(GraknClient.Transaction tx, ConceptId id) {
-        return new AutoValue_RemoteAttributeType<>(tx, id);
+        return new RemoteAttributeType<>(tx, id);
     }
 
     @Override
     public final Attribute<D> create(D value) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setAttributeTypeCreateReq(ConceptProto.AttributeType.Create.Req.newBuilder()
-                        .setValue(RequestBuilder.Concept.attributeValue(value))).build();
+                                                   .setValue(RequestBuilder.Concept.attributeValue(value))).build();
 
         Concept concept = RemoteConcept.of(runMethod(method).getAttributeTypeCreateRes().getAttribute(), tx());
         return asInstance(concept);
@@ -58,7 +60,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     public final Attribute<D> attribute(D value) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setAttributeTypeAttributeReq(ConceptProto.AttributeType.Attribute.Req.newBuilder()
-                        .setValue(RequestBuilder.Concept.attributeValue(value))).build();
+                                                      .setValue(RequestBuilder.Concept.attributeValue(value))).build();
 
         ConceptProto.AttributeType.Attribute.Res response = runMethod(method).getAttributeTypeAttributeRes();
         switch (response.getResCase()) {
@@ -103,7 +105,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
         if (regex == null) regex = "";
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setAttributeTypeSetRegexReq(ConceptProto.AttributeType.SetRegex.Req.newBuilder()
-                        .setRegex(regex)).build();
+                                                     .setRegex(regex)).build();
 
         runMethod(method);
         return asCurrentBaseType(this);

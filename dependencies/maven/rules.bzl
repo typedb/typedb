@@ -200,7 +200,7 @@ def _transitive_maven_dependencies(_target, ctx):
     return [TransitiveMavenInfo(transitive_dependencies = tags)]
 
 # Filled in by deployment_rules_builder
-_maven_packages = "common,server,console,protocol,client-java".split(",")
+_maven_packages = "common,concept,console,protocol,server,client-java".split(",")
 _default_version_file = None if 'version_file_placeholder' in "//:VERSION" else "//:VERSION"
 _default_deployment_properties = None if 'deployment_properties_placeholder' in "//:deployment.properties" else "//:deployment.properties"
 

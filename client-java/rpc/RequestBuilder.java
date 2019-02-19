@@ -108,7 +108,7 @@ public class RequestBuilder {
         public static SessionProto.Transaction.Req getAttributes(Object value) {
             return SessionProto.Transaction.Req.newBuilder()
                     .setGetAttributesReq(SessionProto.Transaction.GetAttributes.Req.newBuilder()
-                            .setValue(Concept.attributeValue(value))
+                                                 .setValue(Concept.attributeValue(value))
                     ).build();
         }
 
@@ -153,7 +153,7 @@ public class RequestBuilder {
         public static SessionProto.Transaction.Req iterate(int iteratorId) {
             return SessionProto.Transaction.Req.newBuilder()
                     .setIterateReq(SessionProto.Transaction.Iter.Req.newBuilder()
-                            .setId(iteratorId)).build();
+                                           .setId(iteratorId)).build();
         }
     }
 

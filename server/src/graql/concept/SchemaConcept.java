@@ -28,17 +28,17 @@ import java.util.stream.Stream;
  * Facilitates construction of ontological elements.
  * Allows you to create schema or ontological elements.
  * These differ from normal graph constructs in two ways:
- * 1. They have a unique {@link Label} which identifies them
+ * 1. They have a unique Label which identifies them
  * 2. You can link them together into a hierarchical structure
  */
 public interface SchemaConcept extends Concept {
     //------------------------------------- Modifiers ----------------------------------
 
     /**
-     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * Changes the Label of this Concept to a new one.
      *
-     * @param label The new {@link Label}.
-     * @return The {@link Concept} itself
+     * @param label The new Label.
+     * @return The Concept itself
      */
     SchemaConcept label(Label label);
 
@@ -80,34 +80,34 @@ public interface SchemaConcept extends Concept {
      * <p>
      * The indirect subs are the concept itself and all indirect subs of direct subs.
      *
-     * @return All the indirect sub-types of this {@link SchemaConcept}
+     * @return All the indirect sub-types of this SchemaConcept
      */
     @CheckReturnValue
     Stream<? extends SchemaConcept> subs();
 
     /**
-     * Return whether the {@link SchemaConcept} was created implicitly.
+     * Return whether the SchemaConcept was created implicitly.
      * <p>
-     * By default, {@link SchemaConcept} are not implicit.
+     * By default, SchemaConcept are not implicit.
      *
-     * @return returns true if the type was created implicitly through the {@link Attribute} syntax
+     * @return returns true if the type was created implicitly through the Attribute syntax
      */
     @CheckReturnValue
     Boolean isImplicit();
 
     /**
-     * Return the collection of {@link Rule} for which this {@link SchemaConcept} serves as a hypothesis.
+     * Return the collection of Rule for which this SchemaConcept serves as a hypothesis.
      *
-     * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a hypothesis
+     * @return A collection of Rule for which this SchemaConcept serves as a hypothesis
      * @see Rule
      */
     @CheckReturnValue
     Stream<Rule> whenRules();
 
     /**
-     * Return the collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion.
+     * Return the collection of Rule for which this SchemaConcept serves as a conclusion.
      *
-     * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion
+     * @return A collection of Rule for which this SchemaConcept serves as a conclusion
      * @see Rule
      */
     @CheckReturnValue

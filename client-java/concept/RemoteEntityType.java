@@ -19,7 +19,6 @@
 
 package grakn.core.client.concept;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -30,15 +29,18 @@ import grakn.core.protocol.ConceptProto;
 
 /**
  * Client implementation of a MetaType, a special type of {@link Type}
- *
- * TODO: This class is not defined in which is not defined in Core API, and at server side implementation.
+ * <p>
+ * TODO: This class is not defined in Concept API, and at server side implementation.
  * TODO: we should remove this class, or implement properly on server side.
  */
-@AutoValue
-public abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implements EntityType {
+public class RemoteEntityType extends RemoteType<EntityType, Entity> implements EntityType {
+
+    RemoteEntityType(GraknClient.Transaction tx, ConceptId id) {
+        super(tx, id);
+    }
 
     static RemoteEntityType construct(GraknClient.Transaction tx, ConceptId id) {
-        return new AutoValue_RemoteEntityType(tx, id);
+        return new RemoteEntityType(tx, id);
     }
 
     @Override

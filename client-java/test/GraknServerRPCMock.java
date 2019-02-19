@@ -59,7 +59,6 @@ import static org.mockito.Mockito.mock;
  * <p>
  * In order to mock additional responses, use the method {@link #setResponse(Transaction.Req, Transaction.Res...)}.
  * </p>
- *
  */
 public final class GraknServerRPCMock extends ExternalResource {
 
@@ -79,15 +78,19 @@ public final class GraknServerRPCMock extends ExternalResource {
         this.keyspaceService = keyspaceService;
     }
 
+    private static SessionProto.Transaction.Res done() {
+        return SessionProto.Transaction.Res.newBuilder()
+                .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                                       .setDone(true)).build();
+    }
+
     SessionServiceImplBase sessionService() {
         return sessionService;
     }
 
-
     StreamObserver<Transaction.Req> requestListener() {
         return requestListener;
     }
-
 
     void setResponse(Transaction.Req request, Transaction.Res... responses) {
         setResponse(request, Arrays.asList(responses));
@@ -119,18 +122,6 @@ public final class GraknServerRPCMock extends ExternalResource {
             next.get().handle(serverResponses);
             return null;
         }).when(requestListener).onNext(request);
-    }
-
-    private interface TxResponseHandler {
-        static TxResponseHandler onNext(Transaction.Res response) {
-            return streamObserver -> streamObserver.onNext(response);
-        }
-
-        static TxResponseHandler onError(Throwable throwable) {
-            return streamObserver -> streamObserver.onError(throwable);
-        }
-
-        void handle(StreamObserver<Transaction.Res> streamObserver);
     }
 
     @Override
@@ -196,17 +187,22 @@ public final class GraknServerRPCMock extends ExternalResource {
         }
     }
 
-    private static SessionProto.Transaction.Res done() {
-        return SessionProto.Transaction.Res.newBuilder()
-                .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
-                        .setDone(true)).build();
+    private interface TxResponseHandler {
+        static TxResponseHandler onNext(Transaction.Res response) {
+            return streamObserver -> streamObserver.onNext(response);
+        }
+
+        static TxResponseHandler onError(Throwable throwable) {
+            return streamObserver -> streamObserver.onError(throwable);
+        }
+
+        void handle(StreamObserver<Transaction.Res> streamObserver);
     }
 
     /**
      * Contains a mutable map of iterators of {@link Transaction.Res}s for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
-     *
-         */
+     */
     public class ServerIteratorsMock {
         private final Map<Integer, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
 

@@ -19,7 +19,6 @@
 
 package grakn.core.client.concept;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.client.GraknClient;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.graql.concept.Concept;
@@ -34,11 +33,14 @@ import java.util.stream.Stream;
 /**
  * Client implementation of {@link RelationType}
  */
-@AutoValue
-public abstract class RemoteRelationshipType extends RemoteType<RelationType, Relation> implements RelationType {
+public class RemoteRelationshipType extends RemoteType<RelationType, Relation> implements RelationType {
+
+    RemoteRelationshipType(GraknClient.Transaction tx, ConceptId id) {
+        super(tx, id);
+    }
 
     static RemoteRelationshipType construct(GraknClient.Transaction tx, ConceptId id) {
-        return new AutoValue_RemoteRelationshipType(tx, id);
+        return new RemoteRelationshipType(tx, id);
     }
 
     @Override
@@ -64,7 +66,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationType, Re
     public final RelationType relates(Role role) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationTypeRelatesReq(ConceptProto.RelationType.Relates.Req.newBuilder()
-                        .setRole(RequestBuilder.Concept.concept(role))).build();
+                                                   .setRole(RequestBuilder.Concept.concept(role))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -74,7 +76,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationType, Re
     public final RelationType unrelate(Role role) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationTypeUnrelateReq(ConceptProto.RelationType.Unrelate.Req.newBuilder()
-                        .setRole(RequestBuilder.Concept.concept(role))).build();
+                                                    .setRole(RequestBuilder.Concept.concept(role))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);

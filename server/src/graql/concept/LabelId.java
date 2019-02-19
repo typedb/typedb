@@ -23,7 +23,7 @@ import java.io.Serializable;
 
 /**
  * A Type Id
- * A class which represents an id of any {@link SchemaConcept}.
+ * A class which represents an id of any SchemaConcept.
  * Also contains a static method for producing IDs from Integers.
  */
 public class LabelId implements Comparable<LabelId>, Serializable {
@@ -36,6 +36,21 @@ public class LabelId implements Comparable<LabelId>, Serializable {
             throw new NullPointerException("Null value");
         }
         this.value = value;
+    }
+
+    /**
+     * @param value The integer which potentially represents a Type
+     * @return The matching type ID
+     */
+    public static LabelId of(Integer value) {
+        return new LabelId(value);
+    }
+
+    /**
+     * @return a type id which does not match any type
+     */
+    public static LabelId invalid() {
+        return new LabelId(-1);
     }
 
     /**
@@ -53,21 +68,6 @@ public class LabelId implements Comparable<LabelId>, Serializable {
 
     public boolean isValid() {
         return getValue() != -1;
-    }
-
-    /**
-     * @param value The integer which potentially represents a Type
-     * @return The matching type ID
-     */
-    public static LabelId of(Integer value) {
-        return new LabelId(value);
-    }
-
-    /**
-     * @return a type id which does not match any type
-     */
-    public static LabelId invalid() {
-        return new LabelId(-1);
     }
 
     @Override

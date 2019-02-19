@@ -15,13 +15,31 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
-
-def distribution_dependencies():
-    git_repository(
-        name="graknlabs_bazel_distribution",
-        remote="https://github.com/graknlabs/bazel-distribution",
-        commit="5f7a464b943fc3c370c42d2f5b59993ec2cd435f"
-    )
+#
+#package(default_visibility = ["//visibility:public"])
+#
+#load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
+#load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+#
+#java_library(
+#    name = "concept",
+#    srcs = glob(["**/*.java"]),
+#    deps = [
+#
+#    ],
+#    tags = ["maven_coordinates=grakn.core:concept:{pom_version}"],
+#)
+#
+#
+#deploy_maven_jar(
+#    name = "deploy-maven-jar",
+#    target = ":concept",
+#    package = "concept",
+#)
+#
+#checkstyle_test(
+#    name = "checkstyle",
+#    targets = [
+#        ":concept"
+#    ],
+#)

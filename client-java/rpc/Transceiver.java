@@ -19,8 +19,7 @@
 
 package grakn.core.client.rpc;
 
-import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
+import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.exception.TransactionException;
@@ -33,21 +32,20 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
-
 /**
  * Wrapper making transaction calls to the Grakn RPC Server - handles sending a stream of {@link Transaction.Req} and
  * receiving a stream of {@link Transaction.Res}.
- *
+ * <p>
  * A request is sent with the {@link #send(Transaction.Req)}} method, and you can block for a response with the
  * {@link #receive()} method.
- *
+ * <p>
  * {@code
- *     try (Transceiver tx = Transceiver.create(stub) {
- *         tx.send(openMessage);
- *         Transaction.Res doneMessage = tx.receive().ok();
- *         tx.send(commitMessage);
- *         StatusRuntimeException validationError = tx.receive.error();
- *     }
+ * try (Transceiver tx = Transceiver.create(stub) {
+ * tx.send(openMessage);
+ * Transaction.Res doneMessage = tx.receive().ok();
+ * tx.send(commitMessage);
+ * StatusRuntimeException validationError = tx.receive.error();
+ * }
  * }
  */
 public class Transceiver implements AutoCloseable {
@@ -68,7 +66,7 @@ public class Transceiver implements AutoCloseable {
 
     /**
      * Send a request and return immediately.
-     *
+     * <p>
      * This method is non-blocking - it returns immediately.
      */
     public void send(Transaction.Req request) {
@@ -91,7 +89,7 @@ public class Transceiver implements AutoCloseable {
 
     @Override
     public void close() {
-        try{
+        try {
             requestSender.onCompleted();
         } catch (IllegalStateException e) {
             //IGNORED
@@ -103,13 +101,13 @@ public class Transceiver implements AutoCloseable {
         responseListener.close();
     }
 
-    public boolean isClosed(){
+    public boolean isClosed() {
         return responseListener.terminated.get();
     }
 
     /**
      * A {@link StreamObserver} that stores all responses in a blocking queue.
-     *
+     * <p>
      * A response can be polled with the {@link #poll()} method.
      */
     private static class ResponseListener implements StreamObserver<Transaction.Res>, AutoCloseable {
@@ -169,11 +167,44 @@ public class Transceiver implements AutoCloseable {
      * A response from the gRPC server, that may be a successful response {@link #ok(Transaction.Res), an error
      * {@link #error(StatusRuntimeException)}} or a "completed" message {@link #completed()}.
      */
-    @AutoValue
-    public abstract static class Response {
+    public static class Response {
 
-        abstract @Nullable Transaction.Res nullableOk();
-        abstract @Nullable StatusRuntimeException nullableError();
+        private final SessionProto.Transaction.Res nullableOk;
+        private final StatusRuntimeException nullableError;
+
+        Response(@Nullable SessionProto.Transaction.Res nullableOk, @Nullable StatusRuntimeException nullableError) {
+            this.nullableOk = nullableOk;
+            this.nullableError = nullableError;
+        }
+
+        private static Response create(@Nullable Transaction.Res response, @Nullable StatusRuntimeException error) {
+            if (!(response == null || error == null)) {
+                throw new IllegalArgumentException("One of Transaction.Res or StatusRuntimeException must be null");
+            }
+            return new Response(response, error);
+        }
+
+        static Response completed() {
+            return create(null, null);
+        }
+
+        static Response error(StatusRuntimeException error) {
+            return create(null, error);
+        }
+
+        static Response ok(Transaction.Res response) {
+            return create(response, null);
+        }
+
+        @Nullable
+        SessionProto.Transaction.Res nullableOk() {
+            return nullableOk;
+        }
+
+        @Nullable
+        StatusRuntimeException nullableError() {
+            return nullableError;
+        }
 
         public final Type type() {
             if (nullableOk() != null) {
@@ -183,13 +214,6 @@ public class Transceiver implements AutoCloseable {
             } else {
                 return Type.COMPLETED;
             }
-        }
-
-        /**
-         * Enum indicating the type of {@link Response}.
-         */
-        public enum Type {
-            OK, ERROR, COMPLETED;
         }
 
         /**
@@ -220,21 +244,39 @@ public class Transceiver implements AutoCloseable {
             }
         }
 
-        private static Response create(@Nullable Transaction.Res response, @Nullable StatusRuntimeException error) {
-            Preconditions.checkArgument(response == null || error == null);
-            return new AutoValue_Transceiver_Response(response, error);
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{nullableOk=" + nullableOk + ", nullableError=" + nullableError + "}";
         }
 
-        static Response completed() {
-            return create(null, null);
+        @Override
+        public boolean equals(Object o) {
+            if (o == this) {
+                return true;
+            }
+            if (o instanceof Transceiver.Response) {
+                Transceiver.Response that = (Transceiver.Response) o;
+                return ((this.nullableOk == null) ? (that.nullableOk() == null) : this.nullableOk.equals(that.nullableOk()))
+                        && ((this.nullableError == null) ? (that.nullableError() == null) : this.nullableError.equals(that.nullableError()));
+            }
+            return false;
         }
 
-        static Response error(StatusRuntimeException error) {
-            return create(null, error);
+        @Override
+        public int hashCode() {
+            int h = 1;
+            h *= 1000003;
+            h ^= (nullableOk == null) ? 0 : this.nullableOk.hashCode();
+            h *= 1000003;
+            h ^= (nullableError == null) ? 0 : this.nullableError.hashCode();
+            return h;
         }
 
-        static Response ok(Transaction.Res response) {
-            return create(response, null);
+        /**
+         * Enum indicating the type of {@link Response}.
+         */
+        public enum Type {
+            OK, ERROR, COMPLETED
         }
     }
 }

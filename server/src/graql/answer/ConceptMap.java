@@ -53,7 +53,7 @@ import java.util.stream.Stream;
 /**
  * A type of {@link Answer} object that contains a {@link Map} of Concepts.
  */
-public class ConceptMap implements Answer<ConceptMap> {
+public class ConceptMap extends Answer {
 
     private final Map<Variable, Concept> map;
     private final Explanation explanation;
@@ -74,11 +74,6 @@ public class ConceptMap implements Answer<ConceptMap> {
 
     public ConceptMap(Map<Variable, Concept> m) {
         this(m, new QueryExplanation());
-    }
-
-    @Override
-    public ConceptMap asConceptMap() {
-        return this;
     }
 
     @Override
@@ -154,6 +149,30 @@ public class ConceptMap implements Answer<ConceptMap> {
     }
 
     /**
+     * explain this answer by providing explanation with preserving the structure of dependent answers
+     *
+     * @param exp explanation for this answer
+     * @return explained answer
+     */
+    public ConceptMap explain(Explanation exp) {
+        return new ConceptMap(this.map, exp.childOf(this));
+    }
+
+    /**
+     * @param vars variables defining the projection
+     * @return project the answer retaining the requested variables
+     */
+    @CheckReturnValue
+    public ConceptMap project(Set<Variable> vars) {
+        return new ConceptMap(
+                this.map.entrySet().stream()
+                        .filter(e -> vars.contains(e.getKey()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
+                this.explanation()
+        );
+    }
+
+    /**
      * perform an answer merge with optional explanation
      * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
      *
@@ -222,30 +241,6 @@ public class ConceptMap implements Answer<ConceptMap> {
      */
     @CheckReturnValue
     public ConceptMap merge(ConceptMap a2) { return this.merge(a2, false);}
-
-    /**
-     * explain this answer by providing explanation with preserving the structure of dependent answers
-     *
-     * @param exp explanation for this answer
-     * @return explained answer
-     */
-    public ConceptMap explain(Explanation exp) {
-        return new ConceptMap(this.map, exp.childOf(this));
-    }
-
-    /**
-     * @param vars variables defining the projection
-     * @return project the answer retaining the requested variables
-     */
-    @CheckReturnValue
-    public ConceptMap project(Set<Variable> vars) {
-        return new ConceptMap(
-                this.map.entrySet().stream()
-                        .filter(e -> vars.contains(e.getKey()))
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-                this.explanation()
-        );
-    }
 
     /**
      * @param partialSub partial child substitution that needs to be incorporated

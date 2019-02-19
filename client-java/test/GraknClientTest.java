@@ -80,21 +80,21 @@ public class GraknClientTest {
 
     private final static SessionServiceGrpc.SessionServiceImplBase sessionService = mock(SessionServiceGrpc.SessionServiceImplBase.class);
     private final static KeyspaceServiceGrpc.KeyspaceServiceImplBase keyspaceService = mock(KeyspaceServiceGrpc.KeyspaceServiceImplBase.class);
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
-    // The gRPC server itself is "real" and can be connected to using the {@link #channel()}
-    @Rule
-    public final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
-
-    @Rule
-    public final GraknServerRPCMock server = new GraknServerRPCMock(sessionService, keyspaceService);
-
     private static final Keyspace KEYSPACE = Keyspace.of("grakn");
     private static final String V123 = "V123";
     private static final int ITERATOR = 100;
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+    // The gRPC server itself is "real" and can be connected to using the {@link #channel()}
+    @Rule
+    public final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
+    @Rule
+    public final GraknServerRPCMock server = new GraknServerRPCMock(sessionService, keyspaceService);
     private GraknClient.Session session;
+
+    private static StatusRuntimeException error(Status status, GraknException e) {
+        return status.withDescription(e.getName() + " - " + e.getMessage()).asRuntimeException();
+    }
 
     @Before
     public void setUp() {
@@ -151,9 +151,9 @@ public class GraknClientTest {
         ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
         SessionProto.Transaction.Res iteratorNext = SessionProto.Transaction.Res.newBuilder()
                 .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
-                        .setQueryIterRes(SessionProto.Transaction.Query.Iter.Res.newBuilder()
-                                .setAnswer(AnswerProto.Answer.newBuilder()
-                                        .setConceptMap(AnswerProto.ConceptMap.newBuilder().putMap("x", v123))))).build();
+                                       .setQueryIterRes(SessionProto.Transaction.Query.Iter.Res.newBuilder()
+                                                                .setAnswer(AnswerProto.Answer.newBuilder()
+                                                                                   .setConceptMap(AnswerProto.ConceptMap.newBuilder().putMap("x", v123))))).build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), queryIterator);
         server.setResponse(RequestBuilder.Transaction.iterate(ITERATOR), iteratorNext);
@@ -275,7 +275,7 @@ public class GraknClientTest {
                     .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE).build();
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder().setPutEntityTypeRes(SessionProto.Transaction.PutEntityType.Res.newBuilder()
-                    .setEntityType(protoConcept)).build();
+                                                                                                                          .setEntityType(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putEntityType(label), response);
 
             assertEquals(RemoteConcept.of(protoConcept, tx), tx.putEntityType(label));
@@ -295,7 +295,7 @@ public class GraknClientTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setPutRelationTypeRes(SessionProto.Transaction.PutRelationType.Res.newBuilder()
-                            .setRelationType(protoConcept)).build();
+                                                   .setRelationType(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response);
 
             assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRelationshipType(label));
@@ -316,7 +316,7 @@ public class GraknClientTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setPutAttributeTypeRes(SessionProto.Transaction.PutAttributeType.Res.newBuilder()
-                            .setAttributeType(protoConcept)).build();
+                                                    .setAttributeType(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putAttributeType(label, dataType), response);
 
             assertEquals(RemoteConcept.of(protoConcept, tx), tx.putAttributeType(label, dataType));
@@ -336,7 +336,7 @@ public class GraknClientTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setPutRoleRes(SessionProto.Transaction.PutRole.Res.newBuilder()
-                            .setRole(protoConcept)).build();
+                                           .setRole(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRole(label), response);
 
             assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRole(label));
@@ -358,7 +358,7 @@ public class GraknClientTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setPutRuleRes(SessionProto.Transaction.PutRule.Res.newBuilder()
-                            .setRule(protoConcept)).build();
+                                           .setRule(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRule(label, when, then), response);
 
             assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRule(label, when, then));
@@ -377,7 +377,7 @@ public class GraknClientTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetConceptRes(SessionProto.Transaction.GetConcept.Res.newBuilder()
-                            .setConcept(protoConcept)).build();
+                                              .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
             assertEquals(RemoteConcept.of(protoConcept, tx), tx.getConcept(id));
@@ -393,7 +393,7 @@ public class GraknClientTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetConceptRes(SessionProto.Transaction.GetConcept.Res.newBuilder()
-                            .setNull(ConceptProto.Null.getDefaultInstance()))
+                                              .setNull(ConceptProto.Null.getDefaultInstance()))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
@@ -414,7 +414,7 @@ public class GraknClientTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetSchemaConceptRes(SessionProto.Transaction.GetSchemaConcept.Res.newBuilder()
-                            .setSchemaConcept(protoConcept))
+                                                    .setSchemaConcept(protoConcept))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 
@@ -431,7 +431,7 @@ public class GraknClientTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetSchemaConceptRes(SessionProto.Transaction.GetSchemaConcept.Res.newBuilder()
-                            .setNull(ConceptProto.Null.getDefaultInstance()))
+                                                    .setNull(ConceptProto.Null.getDefaultInstance()))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 
@@ -494,9 +494,5 @@ public class GraknClientTest {
         }
 
         server.setResponse(request, exception);
-    }
-
-    private static StatusRuntimeException error(Status status, GraknException e) {
-        return status.withDescription(e.getName() + " - " + e.getMessage()).asRuntimeException();
     }
 }

@@ -38,39 +38,39 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * Encapsulates relationships between {@link Thing}
- * A relation which is an instance of a {@link RelationType} defines how instances may relate to one another.
+ * Encapsulates relationships between Thing
+ * A relation which is an instance of a RelationType defines how instances may relate to one another.
  */
-public class RelationshipImpl implements Relation, ConceptVertex, CacheOwner {
-    private RelationshipStructure relationshipStructure;
+public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
+    private RelationStructure relationshipStructure;
 
-    private RelationshipImpl(RelationshipStructure relationshipStructure) {
+    private RelationImpl(RelationStructure relationshipStructure) {
         this.relationshipStructure = relationshipStructure;
         if (relationshipStructure.isReified()) {
             relationshipStructure.reify().owner(this);
         }
     }
 
-    public static RelationshipImpl create(RelationshipStructure relationshipStructure) {
-        return new RelationshipImpl(relationshipStructure);
+    public static RelationImpl create(RelationStructure relationshipStructure) {
+        return new RelationImpl(relationshipStructure);
     }
 
     /**
-     * Gets the {@link RelationshipReified} if the {@link Relation} has been reified.
-     * To reify the {@link Relation} you use {@link RelationshipImpl#reify()}.
-     * NOTE: This approach is done to make sure that only write operations will cause the {@link Relation} to reify
+     * Gets the RelationReified if the Relation has been reified.
+     * To reify the Relation you use RelationImpl.reify().
+     * NOTE: This approach is done to make sure that only write operations will cause the Relation to reify
      *
-     * @return The {@link RelationshipReified} if the {@link Relation} has been reified
+     * @return The RelationReified if the Relation has been reified
      */
-    public Optional<RelationshipReified> reified() {
+    public Optional<RelationReified> reified() {
         if (!relationshipStructure.isReified()) return Optional.empty();
         return Optional.of(relationshipStructure.reify());
     }
 
     /**
-     * Reifys and returns the {@link RelationshipReified}
+     * Reifys and returns the RelationReified
      */
-    public RelationshipReified reify() {
+    public RelationReified reify() {
         if (relationshipStructure.isReified()) return relationshipStructure.reify();
 
         //Get the role players to transfer
@@ -88,7 +88,7 @@ public class RelationshipImpl implements Relation, ConceptVertex, CacheOwner {
         return relationshipStructure.reify();
     }
 
-    public RelationshipStructure structure() {
+    public RelationStructure structure() {
         return relationshipStructure;
     }
 
@@ -129,17 +129,17 @@ public class RelationshipImpl implements Relation, ConceptVertex, CacheOwner {
     }
 
     /**
-     * Reads some data from a {@link RelationshipReified}. If the {@link Relation} has not been reified then an empty
-     * {@link Stream} is returned.
+     * Reads some data from a RelationReified. If the Relation has not been reified then an empty
+     * Stream is returned.
      */
-    private <X> Stream<X> readFromReified(Function<RelationshipReified, Stream<X>> producer) {
+    private <X> Stream<X> readFromReified(Function<RelationReified, Stream<X>> producer) {
         return reified().map(producer).orElseGet(Stream::empty);
     }
 
     /**
-     * Retrieve a list of all {@link Thing} involved in the {@link Relation}, and the {@link Role} they play.
+     * Retrieve a list of all Thing involved in the Relation, and the Role they play.
      *
-     * @return A list of all the {@link Role}s and the {@link Thing}s playing them in this {@link Relation}.
+     * @return A list of all the Roles and the Things playing them in this Relation.
      * @see Role
      */
     @Override
@@ -153,11 +153,11 @@ public class RelationshipImpl implements Relation, ConceptVertex, CacheOwner {
     }
 
     /**
-     * Expands this {@link Relation} to include a new role player which is playing a specific {@link Role}.
+     * Expands this Relation to include a new role player which is playing a specific Role.
      *
      * @param role   The role of the new role player.
      * @param player The new role player.
-     * @return The {@link Relation} itself
+     * @return The Relation itself
      */
     @Override
     public Relation assign(Role role, Thing player) {
@@ -194,7 +194,7 @@ public class RelationshipImpl implements Relation, ConceptVertex, CacheOwner {
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        return id().equals(((RelationshipImpl) object).id());
+        return id().equals(((RelationImpl) object).id());
     }
 
     @Override
@@ -227,8 +227,8 @@ public class RelationshipImpl implements Relation, ConceptVertex, CacheOwner {
         return reify().vertex();
     }
 
-    public static RelationshipImpl from(Relation relationship) {
-        return (RelationshipImpl) relationship;
+    public static RelationImpl from(Relation relationship) {
+        return (RelationImpl) relationship;
     }
 
     @Override

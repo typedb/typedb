@@ -23,18 +23,18 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * An {@link SchemaConcept} which defines a role which can be played in a {@link RelationType}
- * This ontological element defines the {@link Role} which make up a {@link RelationType}.
- * It behaves similarly to {@link SchemaConcept} when relating to other types.
+ * An SchemaConcept which defines a role which can be played in a RelationType
+ * This ontological element defines the Role which make up a RelationType.
+ * It behaves similarly to SchemaConcept when relating to other types.
  */
 public interface Role extends SchemaConcept {
     //------------------------------------- Modifiers ----------------------------------
 
     /**
-     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * Changes the Label of this Concept to a new one.
      *
-     * @param label The new {@link Label}.
-     * @return The {@link Concept} itself
+     * @param label The new Label.
+     * @return The Concept itself
      */
     Role label(Label label);
 
@@ -58,7 +58,7 @@ public interface Role extends SchemaConcept {
     Role sup();
 
     /**
-     * @return All the super-types of this this {@link Role}
+     * @return All the super-types of this this Role
      */
     @Override
     Stream<Role> sups();
@@ -72,18 +72,18 @@ public interface Role extends SchemaConcept {
     Stream<Role> subs();
 
     /**
-     * Returns the {@link RelationType}s that this {@link Role} takes part in.
+     * Returns the RelationTypes that this Role takes part in.
      *
-     * @return The {@link RelationType} which this {@link Role} takes part in.
+     * @return The RelationType which this Role takes part in.
      * @see RelationType
      */
     @CheckReturnValue
     Stream<RelationType> relationships();
 
     /**
-     * Returns a collection of the {@link Type}s that can play this {@link Role}.
+     * Returns a collection of the Types that can play this Role.
      *
-     * @return A list of all the {@link Type}s which can play this {@link Role}.
+     * @return A list of all the Types which can play this Role.
      * @see Type
      */
     @CheckReturnValue

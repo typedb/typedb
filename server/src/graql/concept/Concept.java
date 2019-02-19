@@ -27,9 +27,9 @@ import javax.annotation.CheckReturnValue;
  * The base concept implementation.
  * A concept which can every object in the graph.
  * This class forms the basis of assuring the graph follows the Grakn object model.
- * It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
- * ({@link EntityType}, {@link Role}, {@link RelationType}, {@link Rule} or {@link AttributeType})
- * or an {@link Thing} ({@link Entity}, {@link Relation} , {@link Attribute}).
+ * It provides methods to retrieve information about the Concept, and determine if it is a Type
+ * (EntityType, Role, RelationType, Rule or AttributeType)
+ * or an Thing (Entity, Relation , Attribute).
  */
 public interface Concept {
     //------------------------------------- Accessors ----------------------------------
@@ -45,9 +45,9 @@ public interface Concept {
     //------------------------------------- Other ---------------------------------
 
     /**
-     * Return as a {@link SchemaConcept} if the {@link Concept} is a {@link SchemaConcept}.
+     * Return as a SchemaConcept if the Concept is a SchemaConcept.
      *
-     * @return A {@link SchemaConcept} if the {@link Concept} is a {@link SchemaConcept}
+     * @return A SchemaConcept if the Concept is a SchemaConcept
      */
     @CheckReturnValue
     default SchemaConcept asSchemaConcept() {
@@ -55,9 +55,9 @@ public interface Concept {
     }
 
     /**
-     * Return as a {@link Type} if the {@link Concept} is a {@link Type}.
+     * Return as a Type if the Concept is a Type.
      *
-     * @return A {@link Type} if the {@link Concept} is a {@link Type}
+     * @return A Type if the Concept is a Type
      */
     @CheckReturnValue
     default Type asType() {
@@ -65,9 +65,9 @@ public interface Concept {
     }
 
     /**
-     * Return as an {@link Thing} if the {@link Concept} is an {@link Thing}.
+     * Return as an Thing if the Concept is an Thing.
      *
-     * @return An {@link Thing} if the {@link Concept} is an {@link Thing}
+     * @return An Thing if the Concept is an Thing
      */
     @CheckReturnValue
     default Thing asThing() {
@@ -75,9 +75,9 @@ public interface Concept {
     }
 
     /**
-     * Return as an {@link EntityType} if the {@link Concept} is an {@link EntityType}.
+     * Return as an EntityType if the Concept is an EntityType.
      *
-     * @return A {@link EntityType} if the {@link Concept} is an {@link EntityType}
+     * @return A EntityType if the Concept is an EntityType
      */
     @CheckReturnValue
     default EntityType asEntityType() {
@@ -85,9 +85,9 @@ public interface Concept {
     }
 
     /**
-     * Return as a {@link Role} if the {@link Concept} is a {@link Role}.
+     * Return as a Role if the Concept is a Role.
      *
-     * @return A {@link Role} if the {@link Concept} is a {@link Role}
+     * @return A Role if the Concept is a Role
      */
     @CheckReturnValue
     default Role asRole() {
@@ -95,9 +95,9 @@ public interface Concept {
     }
 
     /**
-     * Return as a {@link RelationType} if the {@link Concept} is a {@link RelationType}.
+     * Return as a RelationType if the Concept is a RelationType.
      *
-     * @return A {@link RelationType} if the {@link Concept} is a {@link RelationType}
+     * @return A RelationType if the Concept is a RelationType
      */
     @CheckReturnValue
     default RelationType asRelationshipType() {
@@ -105,9 +105,9 @@ public interface Concept {
     }
 
     /**
-     * Return as a {@link AttributeType} if the {@link Concept} is a {@link AttributeType}
+     * Return as a AttributeType if the Concept is a AttributeType
      *
-     * @return A {@link AttributeType} if the {@link Concept} is a {@link AttributeType}
+     * @return A AttributeType if the Concept is a AttributeType
      */
     @CheckReturnValue
     default <D> AttributeType<D> asAttributeType() {
@@ -115,9 +115,9 @@ public interface Concept {
     }
 
     /**
-     * Return as a {@link Rule} if the {@link Concept} is a {@link Rule}.
+     * Return as a Rule if the Concept is a Rule.
      *
-     * @return A {@link Rule} if the {@link Concept} is a {@link Rule}
+     * @return A Rule if the Concept is a Rule
      */
     @CheckReturnValue
     default Rule asRule() {
@@ -125,9 +125,9 @@ public interface Concept {
     }
 
     /**
-     * Return as an {@link Entity}, if the {@link Concept} is an {@link Entity} {@link Thing}.
+     * Return as an Entity, if the Concept is an Entity Thing.
      *
-     * @return An {@link Entity} if the {@link Concept} is a {@link Thing}
+     * @return An Entity if the Concept is a Thing
      */
     @CheckReturnValue
     default Entity asEntity() {
@@ -135,9 +135,9 @@ public interface Concept {
     }
 
     /**
-     * Return as a {@link Relation} if the {@link Concept} is a {@link Relation} {@link Thing}.
+     * Return as a Relation if the Concept is a Relation Thing.
      *
-     * @return A {@link Relation}  if the {@link Concept} is a {@link Relation}
+     * @return A Relation  if the Concept is a Relation
      */
     @CheckReturnValue
     default Relation asRelation() {
@@ -145,9 +145,9 @@ public interface Concept {
     }
 
     /**
-     * Return as a {@link Attribute}  if the {@link Concept} is a {@link Attribute} {@link Thing}.
+     * Return as a Attribute  if the Concept is a Attribute Thing.
      *
-     * @return A {@link Attribute} if the {@link Concept} is a {@link Attribute}
+     * @return A Attribute if the Concept is a Attribute
      */
     @CheckReturnValue
     default <D> Attribute<D> asAttribute() {
@@ -155,9 +155,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link SchemaConcept}
+     * Determine if the Concept is a SchemaConcept
      *
-     * @return true if the{@link Concept} concept is a {@link SchemaConcept}
+     * @return true if theConcept concept is a SchemaConcept
      */
     @CheckReturnValue
     default boolean isSchemaConcept() {
@@ -165,9 +165,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Type}.
+     * Determine if the Concept is a Type.
      *
-     * @return true if the{@link Concept} concept is a {@link Type}
+     * @return true if theConcept concept is a Type
      */
     @CheckReturnValue
     default boolean isType() {
@@ -175,9 +175,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is an {@link Thing}.
+     * Determine if the Concept is an Thing.
      *
-     * @return true if the {@link Concept} is an {@link Thing}
+     * @return true if the Concept is an Thing
      */
     @CheckReturnValue
     default boolean isThing() {
@@ -185,9 +185,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is an {@link EntityType}.
+     * Determine if the Concept is an EntityType.
      *
-     * @return true if the {@link Concept} is an {@link EntityType}.
+     * @return true if the Concept is an EntityType.
      */
     @CheckReturnValue
     default boolean isEntityType() {
@@ -195,9 +195,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Role}.
+     * Determine if the Concept is a Role.
      *
-     * @return true if the {@link Concept} is a {@link Role}
+     * @return true if the Concept is a Role
      */
     @CheckReturnValue
     default boolean isRole() {
@@ -205,9 +205,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link RelationType}.
+     * Determine if the Concept is a RelationType.
      *
-     * @return true if the {@link Concept} is a {@link RelationType}
+     * @return true if the Concept is a RelationType
      */
     @CheckReturnValue
     default boolean isRelationshipType() {
@@ -215,9 +215,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link AttributeType}.
+     * Determine if the Concept is a AttributeType.
      *
-     * @return true if the{@link Concept} concept is a {@link AttributeType}
+     * @return true if theConcept concept is a AttributeType
      */
     @CheckReturnValue
     default boolean isAttributeType() {
@@ -225,9 +225,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Rule}.
+     * Determine if the Concept is a Rule.
      *
-     * @return true if the {@link Concept} is a {@link Rule}
+     * @return true if the Concept is a Rule
      */
     @CheckReturnValue
     default boolean isRule() {
@@ -235,9 +235,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is an {@link Entity}.
+     * Determine if the Concept is an Entity.
      *
-     * @return true if the {@link Concept} is a {@link Entity}
+     * @return true if the Concept is a Entity
      */
     @CheckReturnValue
     default boolean isEntity() {
@@ -245,9 +245,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Relation}.
+     * Determine if the Concept is a Relation.
      *
-     * @return true if the {@link Concept} is a {@link Relation}
+     * @return true if the Concept is a Relation
      */
     @CheckReturnValue
     default boolean isRelationship() {
@@ -255,9 +255,9 @@ public interface Concept {
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Attribute}.
+     * Determine if the Concept is a Attribute.
      *
-     * @return true if the {@link Concept} is a {@link Attribute}
+     * @return true if the Concept is a Attribute
      */
     @CheckReturnValue
     default boolean isAttribute() {

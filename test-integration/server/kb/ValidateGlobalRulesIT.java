@@ -28,7 +28,7 @@ import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
-import grakn.core.server.kb.concept.RelationshipImpl;
+import grakn.core.server.kb.concept.RelationImpl;
 import grakn.core.server.kb.concept.RoleImpl;
 import grakn.core.server.kb.concept.ThingImpl;
 import grakn.core.server.kb.structure.Casting;
@@ -73,7 +73,7 @@ public class ValidateGlobalRulesIT {
         Thing geralt = hunter.create();
         ThingImpl werewolf = (ThingImpl) wolf.create();
 
-        RelationshipImpl assertion = (RelationshipImpl) hunts.create().
+        RelationImpl assertion = (RelationImpl) hunts.create().
                 assign(witcher, geralt).assign(monster, werewolf);
         assertion.reified().get().castingsRelation().forEach(rolePlayer ->
                 assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
@@ -113,14 +113,14 @@ public class ValidateGlobalRulesIT {
 
         EntityImpl entity = (EntityImpl) entityType.create();
 
-        RelationshipImpl relation1 = (RelationshipImpl) relationshipType.create()
+        RelationImpl relation1 = (RelationImpl) relationshipType.create()
                 .assign(role2, other1).assign(role1, entity);
 
         // Valid with only a single relation
         relation1.reified().get().castingsRelation().forEach(rolePlayer ->
                 assertTrue(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
-        RelationshipImpl relation2 = (RelationshipImpl) relationshipType.create()
+        RelationImpl relation2 = (RelationImpl) relationshipType.create()
                 .assign(role2, other2).assign(role1, entity);
 
         // Invalid with multiple relations

@@ -25,7 +25,7 @@ import java.util.Set;
 /**
  * A type of {@link Answer} object that contains a {@link Set} and {@link Number}, by extending {@link ConceptSet}.
  */
-public class ConceptSetMeasure extends ConceptSet{
+public class ConceptSetMeasure extends ConceptSet {
 
     private final Number measurement;
 
@@ -36,11 +36,6 @@ public class ConceptSetMeasure extends ConceptSet{
     public ConceptSetMeasure(Set<ConceptId> set, Number measurement, Explanation explanation) {
         super(set, explanation);
         this.measurement = measurement;
-    }
-
-    @Override
-    public ConceptSetMeasure asConceptSetMeasure() {
-        return this;
     }
 
     public Number measurement() {
@@ -57,7 +52,7 @@ public class ConceptSetMeasure extends ConceptSet{
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         int hash = super.hashCode();
         hash = 31 * hash + measurement.hashCode();
 

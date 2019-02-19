@@ -19,7 +19,6 @@
 
 package grakn.core.client.concept;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -33,11 +32,14 @@ import java.util.stream.Stream;
 /**
  * Client implementation of {@link Role}
  */
-@AutoValue
-public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
+public class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
+
+    RemoteRole(GraknClient.Transaction tx, ConceptId id) {
+        super(tx, id);
+    }
 
     static RemoteRole construct(GraknClient.Transaction tx, ConceptId id) {
-        return new AutoValue_RemoteRole(tx, id);
+        return new RemoteRole(tx, id);
     }
 
     @Override

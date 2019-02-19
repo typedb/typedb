@@ -19,7 +19,6 @@
 
 package grakn.core.client.rpc;
 
-import com.google.common.collect.ImmutableMap;
 import grakn.core.client.GraknClient;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.graql.answer.Answer;
@@ -36,6 +35,9 @@ import graql.lang.statement.Variable;
 
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -71,12 +73,13 @@ public class ResponseReader {
                 res.getAnswersList().stream().map(answer -> answer(answer, tx)).collect(toList())
         );
     }
+
     static ConceptMap conceptMap(AnswerProto.ConceptMap res, GraknClient.Transaction tx) {
-        ImmutableMap.Builder<Variable, Concept> map = ImmutableMap.builder();
+        Map<Variable, Concept> map = new HashMap<>();
         res.getMapMap().forEach((resVar, resConcept) -> {
             map.put(new Variable(resVar), RemoteConcept.of(resConcept, tx));
         });
-        return new ConceptMap(map.build());
+        return new ConceptMap(Collections.unmodifiableMap(map));
     }
 
     static ConceptList conceptList(AnswerProto.ConceptList res) {

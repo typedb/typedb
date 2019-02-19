@@ -26,9 +26,10 @@ import java.util.List;
 /**
  * A type of {@link Answer} object that contains a {@link List} of {@link Answer}s as the members and a {@link Concept}
  * as the owner.
+ *
  * @param <T> the type of {@link Answer} being grouped
  */
-public class AnswerGroup<T extends Answer> implements Answer<AnswerGroup<T>> {
+public class AnswerGroup<T extends Answer> extends Answer {
 
     private final Concept owner;
     private final List<T> answers;
@@ -42,12 +43,6 @@ public class AnswerGroup<T extends Answer> implements Answer<AnswerGroup<T>> {
         this.owner = owner;
         this.answers = answers;
         this.explanation = explanation;
-    }
-
-
-    @Override
-    public AnswerGroup<T> asAnswerGroup() {
-        return this;
     }
 
     @Nullable
@@ -74,7 +69,7 @@ public class AnswerGroup<T extends Answer> implements Answer<AnswerGroup<T>> {
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         int hash = owner.hashCode();
         hash = 31 * hash + answers.hashCode();
 

@@ -24,8 +24,8 @@ import java.util.function.Function;
 
 /**
  * A Label
- * A class which represents the unique label of any {@link SchemaConcept}
- * Also contains a static method for producing {@link Label}s from Strings.
+ * A class which represents the unique label of any SchemaConcept
+ * Also contains a static method for producing Labels from Strings.
  */
 public class Label implements Comparable<Label>, Serializable {
     private static final long serialVersionUID = 2051578406740868932L;
@@ -39,12 +39,21 @@ public class Label implements Comparable<Label>, Serializable {
         this.value = value;
     }
 
+    /**
+     * @param value The string which potentially represents a Type
+     * @return The matching Type Label
+     */
+    @CheckReturnValue
+    public static Label of(String value) {
+        return new Label(value);
+    }
+
     public String getValue() {
         return value;
     }
 
     /**
-     * Rename a {@link Label} (does not modify the original {@link Label})
+     * Rename a Label (does not modify the original Label)
      *
      * @param mapper a function to apply to the underlying type label
      * @return the new type label
@@ -57,15 +66,6 @@ public class Label implements Comparable<Label>, Serializable {
     @Override
     public int compareTo(Label o) {
         return getValue().compareTo(o.getValue());
-    }
-
-    /**
-     * @param value The string which potentially represents a Type
-     * @return The matching Type Label
-     */
-    @CheckReturnValue
-    public static Label of(String value) {
-        return new Label(value);
     }
 
     @Override

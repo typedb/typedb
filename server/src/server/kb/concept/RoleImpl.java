@@ -21,7 +21,6 @@ package grakn.core.server.kb.concept;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.kb.cache.Cache;
@@ -36,14 +35,14 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     An {@link SchemaConcept} which defines a {@link Role} which can be played in a {@link RelationType}.
+ *     An SchemaConcept which defines a Role which can be played in a RelationType.
  * </p>
  *
  * <p>
- *     This {@link SchemaConcept} defines the roles which make up a {@link RelationType}.
+ *     This SchemaConcept defines the roles which make up a RelationType.
  *     It has some additional functionality:
- *     1. It cannot play a {@link Role} to itself.
- *     2. It is special in that it is unique to {@link RelationType}s.
+ *     1. It cannot play a Role to itself.
+ *     2. It is special in that it is unique to RelationTypes.
  * </p>
  *
  *
@@ -119,7 +118,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     public Stream<Casting> rolePlayers(){
         return relationships().
                 flatMap(RelationType::instances).
-                map(relation -> RelationshipImpl.from(relation).reified()).
+                map(relation -> RelationImpl.from(relation).reified()).
                 flatMap(CommonUtil::optionalToStream).
                 flatMap(relation -> relation.castingsRelation(this));
     }

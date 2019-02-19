@@ -19,8 +19,6 @@
 
 package grakn.core.client.concept.test;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import grakn.core.client.GraknClient;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -43,6 +41,8 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,16 +67,13 @@ public class RemoteConceptIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
     private static GraknClient.Session session;
+    private static int EMAIL_COUNTER = 0;
     private GraknClient.Transaction tx;
-
     // Attribute Type Labels
     private Label EMAIL = Label.of("email");
     private Label NAME = Label.of("name");
     private Label AGE = Label.of("age");
-
     private String EMAIL_REGEX = "\\S+@\\S+";
-    private static int EMAIL_COUNTER = 0;
-
     // Entity Type Labels
     private Label LIVING_THING = Label.of("living-thing");
     private Label PERSON = Label.of("person");
@@ -141,6 +138,11 @@ public class RemoteConceptIT {
         session = new GraknClient(server.grpcUri().toString()).session(randomKeyspace);
     }
 
+    @AfterClass
+    public static void closeSession() {
+        session.close();
+    }
+
     @Before
     public void setUp() {
         tx = session.transaction(GraknClient.Transaction.Type.WRITE);
@@ -201,11 +203,6 @@ public class RemoteConceptIT {
     @After
     public void closeTx() {
         tx.close();
-    }
-
-    @AfterClass
-    public static void closeSession() {
-        session.close();
     }
 
     @Test
@@ -420,10 +417,10 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingAllRolePlayers_GetTheExpectedResult() {
-        Map<Role, Set<Thing>> expected = ImmutableMap.of(
-                wife, ImmutableSet.of(alice),
-                husband, ImmutableSet.of(bob)
-        );
+        Map<Role, Set<Thing>> expected = new HashMap<>();
+        expected.put(wife, Collections.singleton(alice));
+        expected.put(husband, Collections.singleton(bob));
+
         assertEquals(expected, aliceAndBob.rolePlayersMap());
     }
 

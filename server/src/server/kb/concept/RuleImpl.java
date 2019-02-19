@@ -31,11 +31,11 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     An ontological element used to model and categorise different types of {@link Rule}.
+ *     An ontological element used to model and categorise different types of Rule.
  * </p>
  *
  * <p>
- *     An ontological element used to define different types of {@link Rule}.
+ *     An ontological element used to define different types of Rule.
  * </p>
  *
  */
@@ -87,7 +87,7 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
 
     /**
      *
-     * @param type The {@link Type} which this {@link Rule} applies to.
+     * @param type The Type which this Rule applies to.
      */
     public void addHypothesis(Type type) {
         putEdge(ConceptVertex.from(type), Schema.EdgeLabel.HYPOTHESIS);
@@ -95,7 +95,7 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
 
     /**
      *
-     * @param type The {@link Type} which is the conclusion of this {@link Rule}.
+     * @param type The Type which is the conclusion of this Rule.
      */
     public void addConclusion(Type type) {
         putEdge(ConceptVertex.from(type), Schema.EdgeLabel.CONCLUSION);

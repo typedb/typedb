@@ -45,34 +45,34 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Encapsulates The {@link Relation} as a {@link VertexElement}
+ *     Encapsulates The Relation as a VertexElement
  * </p>
  *
  * <p>
- *     This wraps up a {@link Relation} as a {@link VertexElement}. It is used to represent any {@link Relation} which
+ *     This wraps up a Relation as a VertexElement. It is used to represent any Relation which
  *     has been reified.
  * </p>
  *
  *
  */
-public class RelationshipReified extends ThingImpl<Relation, RelationType> implements RelationshipStructure {
+public class RelationReified extends ThingImpl<Relation, RelationType> implements RelationStructure {
 
-    @Nullable private RelationshipImpl owner;
+    @Nullable private RelationImpl owner;
 
-    private RelationshipReified(VertexElement vertexElement) {
+    private RelationReified(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    private RelationshipReified(VertexElement vertexElement, RelationType type) {
+    private RelationReified(VertexElement vertexElement, RelationType type) {
         super(vertexElement, type);
     }
 
-    public static RelationshipReified get(VertexElement vertexElement){
-        return new RelationshipReified(vertexElement);
+    public static RelationReified get(VertexElement vertexElement){
+        return new RelationReified(vertexElement);
     }
 
-    public static RelationshipReified create(VertexElement vertexElement, RelationType type){
-        return new RelationshipReified(vertexElement, type);
+    public static RelationReified create(VertexElement vertexElement, RelationType type){
+        return new RelationReified(vertexElement, type);
     }
 
     @Override
@@ -113,12 +113,12 @@ public class RelationshipReified extends ThingImpl<Relation, RelationType> imple
 
     /**
      * If the edge does not exist then it adds a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from
-     * this {@link Relation} to a target {@link Thing} which is playing some {@link Role}.
+     * this Relation to a target Thing which is playing some Role.
      *
      * If the edge does exist nothing is done.
      *
-     * @param role The {@link Role} being played by the {@link Thing} in this {@link Relation}
-     * @param toThing The {@link Thing} playing a {@link Role} in this {@link Relation}
+     * @param role The Role being played by the Thing in this Relation
+     * @param toThing The Thing playing a Role in this Relation
      */
     public void putRolePlayerEdge(Role role, Thing toThing) {
         //Checking if the edge exists
@@ -145,10 +145,10 @@ public class RelationshipReified extends ThingImpl<Relation, RelationType> imple
     }
 
     /**
-     * Castings are retrieved from the perspective of the {@link Relation}
+     * Castings are retrieved from the perspective of the Relation
      *
-     * @param roles The {@link Role} which the {@link Thing}s are playing
-     * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relation}
+     * @param roles The Role which the Things are playing
+     * @return The Casting which unify a Role and Thing with this Relation
      */
     public Stream<Casting> castingsRelation(Role... roles){
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
@@ -189,17 +189,17 @@ public class RelationshipReified extends ThingImpl<Relation, RelationType> imple
     }
 
     /**
-     * Sets the owner of this structure to a specific {@link RelationshipImpl}.
-     * This is so that the internal structure can use the {@link Relation} reference;
+     * Sets the owner of this structure to a specific RelationImpl.
+     * This is so that the internal structure can use the Relation reference;
      *
-     * @param relationship the owner of this {@link RelationshipReified}
+     * @param relationship the owner of this RelationReified
      */
-    public void owner(RelationshipImpl relationship) {
+    public void owner(RelationImpl relationship) {
         owner = relationship;
     }
 
     @Override
-    public RelationshipReified reify() {
+    public RelationReified reify() {
         return this;
     }
 

@@ -22,10 +22,10 @@ import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;
 
 /**
- * A data instance in the graph belonging to a specific {@link Type}
+ * A data instance in the graph belonging to a specific Type
  * Instances represent data in the graph.
- * Every instance belongs to a {@link Type} which serves as a way of categorising them.
- * Instances can relate to one another via {@link Relation}
+ * Every instance belongs to a Type which serves as a way of categorising them.
+ * Instances can relate to one another via Relation
  */
 public interface Thing extends Concept {
     //------------------------------------- Accessors ----------------------------------
@@ -51,69 +51,69 @@ public interface Thing extends Concept {
     Stream<Relation> relationships(Role... roles);
 
     /**
-     * Determine the {@link Role}s that this {@link Thing} is currently playing.
+     * Determine the Roles that this Thing is currently playing.
      *
-     * @return A set of all the {@link Role}s which this {@link Thing} is currently playing.
+     * @return A set of all the Roles which this Thing is currently playing.
      * @see Role
      */
     @CheckReturnValue
     Stream<Role> roles();
 
     /**
-     * Creates a {@link Relation} from this {@link Thing} to the provided {@link Attribute}.
+     * Creates a Relation from this Thing to the provided Attribute.
      * <p>
      * This has the same effect as {@link #relhas(Attribute)}, but returns the instance itself to allow
      * method chaining.
      * </p>
      *
-     * @param attribute The {@link Attribute} to which a {@link Relation} is created
+     * @param attribute The Attribute to which a Relation is created
      * @return The instance itself
      */
     Thing has(Attribute attribute);
 
     /**
-     * Creates a {@link Relation} from this instance to the provided {@link Attribute}.
+     * Creates a Relation from this instance to the provided Attribute.
      * <p>
-     * This has the same effect as {@link #has(Attribute)}, but returns the new {@link Relation}.
+     * This has the same effect as {@link #has(Attribute)}, but returns the new Relation.
      * </p>
      *
-     * @param attribute The {@link Attribute} to which a {@link Relation} is created
-     * @return The {@link Relation} connecting the {@link Thing} and the {@link Attribute}
+     * @param attribute The Attribute to which a Relation is created
+     * @return The Relation connecting the Thing and the Attribute
      */
     Relation relhas(Attribute attribute);
 
     /**
-     * Retrieves a collection of {@link Attribute} attached to this {@link Thing}
+     * Retrieves a collection of Attribute attached to this Thing
      *
-     * @param attributeTypes {@link AttributeType}s of the {@link Attribute}s attached to this entity
-     * @return A collection of {@link AttributeType}s attached to this Thing.
+     * @param attributeTypes AttributeTypes of the Attributes attached to this entity
+     * @return A collection of AttributeTypes attached to this Thing.
      * @see Attribute
      */
     @CheckReturnValue
     Stream<Attribute<?>> attributes(AttributeType... attributeTypes);
 
     /**
-     * Retrieves a collection of {@link Attribute} attached to this {@link Thing} as a key
+     * Retrieves a collection of Attribute attached to this Thing as a key
      *
-     * @param attributeTypes {@link AttributeType}s of the {@link Attribute}s attached to this entity
-     * @return A collection of {@link AttributeType}s attached to this Thing.
+     * @param attributeTypes AttributeTypes of the Attributes attached to this entity
+     * @return A collection of AttributeTypes attached to this Thing.
      * @see Attribute
      */
     @CheckReturnValue
     Stream<Attribute<?>> keys(AttributeType... attributeTypes);
 
     /**
-     * Removes the provided {@link Attribute} from this {@link Thing}
+     * Removes the provided Attribute from this Thing
      *
-     * @param attribute the {@link Attribute} to be removed
-     * @return The {@link Thing} itself
+     * @param attribute the Attribute to be removed
+     * @return The Thing itself
      */
     Thing unhas(Attribute attribute);
 
     /**
-     * Used to indicate if this {@link Thing} has been created as the result of a {@link Rule} inference.
+     * Used to indicate if this Thing has been created as the result of a Rule inference.
      *
-     * @return true if this {@link Thing} exists due to a rule
+     * @return true if this Thing exists due to a rule
      * @see Rule
      */
     boolean isInferred();

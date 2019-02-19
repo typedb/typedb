@@ -30,12 +30,12 @@ import java.util.stream.Stream;
 
 /**
  * Represent a literal resource in the graph.
- * Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
- * 1. It is unique to its {@link AttributeType} based on it's value.
+ * Acts as an Thing when relating to other instances except it has the added functionality of:
+ * 1. It is unique to its AttributeType based on it's value.
  * 2. It has a {@link AttributeType.DataType} associated with it which constrains the allowed values.
  *
  * @param <D> The data type of this resource type.
- *            Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
+ *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
     private AttributeImpl(VertexElement vertexElement) {
@@ -90,7 +90,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     /**
-     * @return The data type of this {@link Attribute}'s {@link AttributeType}.
+     * @return The data type of this Attribute's AttributeType.
      */
     @Override
     public AttributeType.DataType<D> dataType() {

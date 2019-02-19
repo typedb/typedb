@@ -19,9 +19,11 @@
 
 package grakn.core.client.concept;
 
+import grakn.core.client.GraknClient;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
 import grakn.core.graql.concept.Rule;
@@ -38,10 +40,14 @@ import java.util.stream.Stream;
  */
 abstract class RemoteSchemaConcept<SomeSchemaConcept extends SchemaConcept> extends RemoteConcept<SomeSchemaConcept> implements SchemaConcept {
 
+    RemoteSchemaConcept(GraknClient.Transaction tx, ConceptId id) {
+        super(tx, id);
+    }
+
     public final SomeSchemaConcept sup(SomeSchemaConcept type) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptSetSupReq(ConceptProto.SchemaConcept.SetSup.Req.newBuilder()
-                        .setSchemaConcept(RequestBuilder.Concept.concept(type))).build();
+                                                   .setSchemaConcept(RequestBuilder.Concept.concept(type))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -67,7 +73,7 @@ abstract class RemoteSchemaConcept<SomeSchemaConcept extends SchemaConcept> exte
     public final SomeSchemaConcept label(Label label) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptSetLabelReq(ConceptProto.SchemaConcept.SetLabel.Req.newBuilder()
-                        .setLabel(label.getValue())).build();
+                                                     .setLabel(label.getValue())).build();
 
         runMethod(method);
         return asCurrentBaseType(this);

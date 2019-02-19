@@ -209,31 +209,31 @@ public final class Schema {
     }
 
     /**
-     * This stores the schema which is required when implicitly creating roles for the has-{@link Attribute} methods
+     * This stores the schema which is required when implicitly creating roles for the has-Attribute methods
      */
     public enum ImplicitType {
         /**
-         * Reserved character used by all implicit {@link Type}s
+         * Reserved character used by all implicit Types
          */
         RESERVED("@"),
 
         /**
-         * The label of the generic has-{@link Attribute} relationship, used for attaching {@link Attribute}s to instances with the 'has' syntax
+         * The label of the generic has-Attribute relationship, used for attaching Attributes to instances with the 'has' syntax
          */
         HAS("@has-%s"),
 
         /**
-         * The label of a role in has-{@link Attribute}, played by the owner of the {@link Attribute}
+         * The label of a role in has-Attribute, played by the owner of the Attribute
          */
         HAS_OWNER("@has-%s-owner"),
 
         /**
-         * The label of a role in has-{@link Attribute}, played by the {@link Attribute}
+         * The label of a role in has-Attribute, played by the Attribute
          */
         HAS_VALUE("@has-%s-value"),
 
         /**
-         * The label of the generic key relationship, used for attaching {@link Attribute}s to instances with the 'has' syntax and additionally constraining them to be unique
+         * The label of the generic key relationship, used for attaching Attributes to instances with the 'has' syntax and additionally constraining them to be unique
          */
         KEY("@key-%s"),
 
@@ -243,7 +243,7 @@ public final class Schema {
         KEY_OWNER("@key-%s-owner"),
 
         /**
-         * The label of a role in key, played by the {@link Attribute}
+         * The label of a role in key, played by the Attribute
          */
         KEY_VALUE("@key-%s-value");
 
@@ -292,9 +292,9 @@ public final class Schema {
 
     /**
      *
-     * @param label The {@link AttributeType} label
-     * @param value The value of the {@link Attribute}
-     * @return A unique id for the {@link Attribute}
+     * @param label The AttributeType label
+     * @param value The value of the Attribute
+     * @return A unique id for the Attribute
      */
     @CheckReturnValue
     public static String generateAttributeIndex(Label label, String value){
