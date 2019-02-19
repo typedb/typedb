@@ -84,7 +84,7 @@ public final class GraknClient {
 
     public static final String DEFAULT_URI = "localhost:48555";
 
-    private static final int CONNECTION_TIMEOUT_SECOND = 15;
+    private static final int CONNECTION_TIMEOUT_SECOND = 20;
     private ManagedChannel channel;
     private Keyspaces keyspaces;
 
