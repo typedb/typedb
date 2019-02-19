@@ -86,6 +86,10 @@ public final class GraknClient {
     private ManagedChannel channel;
     private Keyspaces keyspaces;
 
+    public GraknClient() {
+        this(DEFAULT_URI);
+    }
+
     public GraknClient(String address) {
         this(address, false);
     }
@@ -103,9 +107,9 @@ public final class GraknClient {
         keyspaces = new Keyspaces();
     }
 
-    public GraknClient(ManagedChannel channel) {
+    public GraknClient overrideChannel(ManagedChannel channel) {
         this.channel = channel;
-        keyspaces = new Keyspaces();
+        return this;
     }
 
     public Session session(String keyspace) {

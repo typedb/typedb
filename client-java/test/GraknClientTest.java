@@ -100,7 +100,7 @@ public class GraknClientTest {
     public void setUp() {
         serverRule.getServiceRegistry().addService(sessionService);
         serverRule.getServiceRegistry().addService(keyspaceService);
-        session = new GraknClient(serverRule.getChannel()).session(KEYSPACE.getName());
+        session = new GraknClient().overrideChannel(serverRule.getChannel()).session(KEYSPACE.getName());
     }
 
     @Test
