@@ -18,6 +18,8 @@
 
 package grakn.core.server.session;
 
+import brave.ScopedSpan;
+import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.answer.AnswerGroup;
@@ -111,29 +113,49 @@ public class TransactionOLTP implements Transaction {
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
     //----------------------------- Transaction Specific
-    private final ThreadLocal<TransactionCache> localConceptLog;
     private final RuleCache ruleCache;
     private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
+    private final TransactionCache transactionCache;
+
+    private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
 
     public TransactionOLTP(SessionImpl session, JanusGraph janusGraph) {
+
+        createdInCurrentThread.set(true);
+
+        ScopedSpan span = null;
+        if (ServerTracingInstrumentation.tracingActive()) span = ServerTracingInstrumentation.createScopedChildSpan("TransactionOLTP constructor");
+
         this.session = session;
         this.janusGraph = janusGraph;
+
+        if (span != null) span.annotate("Creating janusGraph Tx");
+
         this.janusTransaction = janusGraph.tx();
-        this.localConceptLog = new ThreadLocal<>();
+
+        if (span != null) span.annotate("Creating ElementFactory");
         this.elementFactory = new ElementFactory(this, janusGraph);
+
+        if (span != null) span.annotate("Creating RuleCache");
         this.ruleCache = new RuleCache(this);
 
         //Initialise Graph Caches
+        if (span != null) span.annotate("Creating Global Cache");
         this.globalCache = new GlobalCache(session.config());
+        this.transactionCache = new TransactionCache(globalCache);
 
         //Initialise Graph
+        if (span != null) span.annotate("Opening `cache` with WRITE type");
         cache().open(Type.WRITE);
 
+        if (span != null) span.annotate("Initialize meta concept");
         // TODO: We should initialise meta concepts every time we create a new transaction
         if (initialiseMetaConcepts()) commit();
+
+        if (span != null) span.finish();
     }
 
     void open(Type type) {
@@ -298,15 +320,9 @@ public class TransactionOLTP implements Transaction {
     }
 
     public TransactionCache cache() {
-        TransactionCache transactionCache = localConceptLog.get();
-        if (transactionCache == null) {
-            localConceptLog.set(transactionCache = new TransactionCache(getGlobalCache()));
-        }
-
         if (transactionCache.isTxOpen() && transactionCache.schemaNotCached()) {
             transactionCache.refreshSchemaCache();
         }
-
         return transactionCache;
     }
 
@@ -340,6 +356,9 @@ public class TransactionOLTP implements Transaction {
 
     @SuppressWarnings("unchecked") // TODO: we shouldn't initialising meta concepts from within a transaction
     private boolean initialiseMetaConcepts() {
+        ScopedSpan span = null;
+        if (ServerTracingInstrumentation.tracingActive()) span = ServerTracingInstrumentation.createScopedChildSpan("TransactionOLTP constructor");
+
         boolean schemaInitialised = false;
         if (isMetaSchemaNotInitialised()) {
             VertexElement type = addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
@@ -360,13 +379,17 @@ public class TransactionOLTP implements Transaction {
             schemaInitialised = true;
         }
 
+        if (span != null) span.annotate("Copying meta concepts to cache");
         //Copy entire schema to the graph cache. This may be a bad idea as it will slow down graph initialisation
         copyToCache(getMetaConcept());
 
+        if (span != null) span.annotate("Copying meta roles to cache");
         //Role and rule have to be copied separately due to not being connected to meta schema
         copyToCache(getMetaRole());
+        if (span != null) span.annotate("Copying meta rules to cache");
         copyToCache(getMetaRule());
 
+        if (span != null) span.finish();
         return schemaInitialised;
     }
 
@@ -470,8 +493,12 @@ public class TransactionOLTP implements Transaction {
      * @throws TransactionException if the graph is closed.
      */
     private <X> X operateOnOpenGraph(Supplier<X> supplier) {
-        if (isClosed()) throw TransactionException.transactionClosed(this, cache().getClosedReason());
+        if (!isLocal() || isClosed()) throw TransactionException.transactionClosed(this, cache().getClosedReason());
         return supplier.get();
+    }
+
+    private boolean isLocal() {
+        return createdInCurrentThread.get();
     }
 
     @Override

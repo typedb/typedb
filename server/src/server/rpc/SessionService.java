@@ -268,9 +268,24 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
 
-            tx = openSessions.get(request.getSessionId()).transaction(Type.of(request.getType().getNumber()));
+            ScopedSpan span = null;
+            if (ServerTracingInstrumentation.tracingActive()) span = ServerTracingInstrumentation.createScopedChildSpan("SessionService.open");
+
+            Span getSession = null;
+            if (span != null) getSession = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting session", span.context()).start();
+            SessionImpl sess = openSessions.get(request.getSessionId());
+            if (getSession != null) getSession.finish();
+
+            Span txSpan = null;
+            if (span != null) txSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting transaction", span.context()).start();
+            tx = sess.transaction(Type.of(request.getType().getNumber()));
+            if (txSpan != null) txSpan.finish();
+
             Transaction.Res response = ResponseBuilder.Transaction.open();
+            if (span != null) span.finish();
+
             onNextResponse(response);
+
         }
 
         private void commit() {
