@@ -119,8 +119,15 @@ public class RuleUtils {
     }
 
 
+    /**
+     * @param rules to be stratified (ordered)
+     * @return stream of rules ordered in terms of priority (high priority first)
+     */
     public static Stream<InferenceRule> stratifyRules(Set<InferenceRule> rules){
-        if(rules.stream().allMatch(r -> r.getBody().isPositive())) return rules.stream();
+        if(rules.stream().allMatch(r -> r.getBody().isPositive())){
+            return rules.stream()
+                    .sorted(Comparator.comparing(r -> -r.resolutionPriority()));
+        }
         Multimap<Type, InferenceRule> typeMap = HashMultimap.create();
         rules.forEach(r -> r.getRule().thenTypes().flatMap(Type::sups).forEach(t -> typeMap.put(t, r)));
         HashMultimap<Type, Type> typeGraph = typeGraph(rules);
