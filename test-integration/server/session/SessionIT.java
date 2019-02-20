@@ -176,7 +176,7 @@ public class SessionIT {
 
     @Test
     public void whenClosingSession_tryingToUseTransactionThrowsException() {
-        KeyspaceCache keyspaceCache = new KeyspaceCache(config):
+        KeyspaceCache keyspaceCache = new KeyspaceCache(config);
         SessionImpl localSession = new SessionImpl(Keyspace.of("test"), config, keyspaceCache);
         Transaction tx1 = localSession.transaction(WRITE);
         assertFalse(tx1.isClosed());
