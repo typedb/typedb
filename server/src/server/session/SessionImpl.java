@@ -143,7 +143,7 @@ public class SessionImpl implements Session {
     private void copyToCache(SchemaConcept schemaConcept) {
         schemaConcept.subs().forEach(concept -> {
             sessionCache.cacheLabel(concept.label(), concept.labelId());
-            sessionCache.cacheType(concept.label(), concept);
+//            sessionCache.cacheType(concept.label(), concept);
         });
     }
 

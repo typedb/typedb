@@ -127,7 +127,7 @@ public class SessionCache {
 
                 //Add a new one
                 cachedLabels.putAll(transactionCache.getLabelCache());
-                cachedTypes.putAll(transactionCache.getSchemaConceptCache());
+//                cachedTypes.putAll(transactionCache.getSchemaConceptCache());
             } finally {
                 lock.readLock().unlock();
             }
