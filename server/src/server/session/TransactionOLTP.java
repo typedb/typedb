@@ -56,8 +56,8 @@ import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.session.cache.RuleCache;
-import grakn.core.server.session.cache.SessionCache;
 import grakn.core.server.session.cache.TransactionCache;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
@@ -111,7 +111,7 @@ public class TransactionOLTP implements Transaction {
     private final SessionImpl session;
     private final JanusGraph janusGraph;
     private final ElementFactory elementFactory;
-    private final SessionCache sessionCache;
+    private final KeyspaceCache keyspaceCache;
     //----------------------------- Transaction Specific
     private final RuleCache ruleCache;
     private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
@@ -122,7 +122,7 @@ public class TransactionOLTP implements Transaction {
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
 
-    public TransactionOLTP(SessionImpl session, JanusGraph janusGraph, SessionCache sessionCache) {
+    public TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache) {
 
         createdInCurrentThread.set(true);
 
@@ -142,8 +142,8 @@ public class TransactionOLTP implements Transaction {
         if (span != null) span.annotate("Creating RuleCache");
         this.ruleCache = new RuleCache(this);
 
-        this.sessionCache = sessionCache;
-        this.transactionCache = new TransactionCache(sessionCache);
+        this.keyspaceCache = keyspaceCache;
+        this.transactionCache = new TransactionCache(keyspaceCache);
 
         //Initialise Graph
 //        if (span != null) span.annotate("Opening `cache` with WRITE type");
@@ -299,8 +299,8 @@ public class TransactionOLTP implements Transaction {
     /**
      * @return The graph cache which contains all the data cached and accessible by all transactions.
      */
-    public SessionCache getSessionCache() {
-        return sessionCache;
+    public KeyspaceCache getKeyspaceCache() {
+        return keyspaceCache;
     }
 
     /**
@@ -691,7 +691,7 @@ public class TransactionOLTP implements Transaction {
             return;
         }
         try {
-            cache().writeToSessionCache(type().equals(Type.READ));
+            cache().writeToKeyspaceCache(type().equals(Type.READ));
         } finally {
             closeTransaction(closeMessage);
         }
@@ -710,7 +710,7 @@ public class TransactionOLTP implements Transaction {
         try {
             validateGraph();
             commitTransactionInternal();
-            cache().writeToSessionCache(true);
+            cache().writeToKeyspaceCache(true);
             //TODO update cache here
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
@@ -756,7 +756,7 @@ public class TransactionOLTP implements Transaction {
 
         commitTransactionInternal();
 
-        cache().writeToSessionCache(true);
+        cache().writeToKeyspaceCache(true);
 
         //If we have logs to commit get them and add them
         if (logsExist) {

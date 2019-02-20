@@ -30,6 +30,7 @@ import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.session.cache.KeyspaceCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +58,9 @@ public class KeyspaceManager {
 
     public KeyspaceManager(Config config){
         this.config = config;
-        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config);
+
+        KeyspaceCache keyspaceCache = new KeyspaceCache(config);
+        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache);
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 
@@ -109,7 +112,8 @@ public class KeyspaceManager {
            return false;
         }
 
-        SessionImpl session = new SessionImpl(keyspace, config);
+        KeyspaceCache keyspaceCache = new KeyspaceCache(config);
+        SessionImpl session = new SessionImpl(keyspace, config, keyspaceCache);
         session.clearGraph();
         session.close();
         return deleteReferenceInSystemKeyspace(keyspace);

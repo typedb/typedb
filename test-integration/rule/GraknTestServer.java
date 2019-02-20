@@ -33,6 +33,7 @@ import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.SessionStore;
+import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.util.LockManager;
 import grakn.core.server.util.ServerID;
 import grakn.core.server.util.ServerLockManager;
@@ -131,7 +132,7 @@ public class GraknTestServer extends ExternalResource {
 
     public SessionImpl sessionWithNewKeyspace() {
         Keyspace randomKeyspace = Keyspace.of("a" + UUID.randomUUID().toString().replaceAll("-", ""));
-        return new SessionImpl(randomKeyspace, serverConfig);
+        return sessionStore.session(randomKeyspace);
     }
 
     public SessionStore txFactory(){

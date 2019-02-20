@@ -23,8 +23,11 @@ import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
+import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.util.LockManager;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -37,6 +40,8 @@ public class SessionStore {
     private final KeyspaceManager keyspaceStore;
     private final LockManager lockManager;
 
+    private final ConcurrentHashMap<Keyspace, KeyspaceCache> keyspaceCacheMap;
+
     public static SessionStore create(LockManager lockManager, Config config, KeyspaceManager keyspaceStore) {
         return new SessionStore(config, lockManager, keyspaceStore);
     }
@@ -45,6 +50,7 @@ public class SessionStore {
         this.config = config;
         this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
+        keyspaceCacheMap = new ConcurrentHashMap<>();
     }
 
 
@@ -59,7 +65,7 @@ public class SessionStore {
         if (!keyspaceStore.containsKeyspace(keyspace)) {
             initialiseNewKeyspace(keyspace);
         }
-        return new SessionImpl(keyspace, config);
+        return new SessionImpl(keyspace, config, keyspaceCacheMap.get(keyspace));
     }
 
     /**
@@ -72,8 +78,13 @@ public class SessionStore {
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
         lock.lock();
         try {
+
+            // create new KeyspaceCache
+            KeyspaceCache keyspaceCache = new KeyspaceCache(config);
+            keyspaceCacheMap.put(keyspace, keyspaceCache);
+
             // Create new empty keyspace in db
-            SessionImpl session = new SessionImpl(keyspace, config);
+            SessionImpl session = new SessionImpl(keyspace, config, keyspaceCache);
 
             // Add current keyspace to list of available Grakn keyspaces
             keyspaceStore.addKeyspace(keyspace);

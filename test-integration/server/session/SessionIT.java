@@ -26,6 +26,7 @@ import grakn.core.server.Transaction;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.session.cache.KeyspaceCache;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -140,8 +141,11 @@ public class SessionIT {
         tx1.commit();
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
+        // shared KeyspaceCache
+        KeyspaceCache keyspaceCache = new KeyspaceCache(config);
+
         executor.submit(() -> {
-            SessionImpl localSession = new SessionImpl(session.keyspace(), config);
+            SessionImpl localSession = new SessionImpl(session.keyspace(), config, keyspaceCache);
             Transaction tx2 = localSession.transaction(WRITE);
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
@@ -150,7 +154,7 @@ public class SessionIT {
         }).get();
 
         executor.submit(() -> {
-            SessionImpl localSession = new SessionImpl(session.keyspace(), config);
+            SessionImpl localSession = new SessionImpl(session.keyspace(), config, keyspaceCache);
             Transaction tx2 = localSession.transaction(WRITE);
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
@@ -162,7 +166,8 @@ public class SessionIT {
 
     @Test
     public void whenClosingSession_transactionIsAlsoClosed() {
-        SessionImpl localSession = new SessionImpl(Keyspace.of("test"), config);
+        KeyspaceCache keyspaceCache = new KeyspaceCache(config);
+        SessionImpl localSession = new SessionImpl(Keyspace.of("test"), config, keyspaceCache);
         Transaction tx1 = localSession.transaction(WRITE);
         assertFalse(tx1.isClosed());
         localSession.close();
@@ -171,7 +176,8 @@ public class SessionIT {
 
     @Test
     public void whenClosingSession_tryingToUseTransactionThrowsException() {
-        SessionImpl localSession = new SessionImpl(Keyspace.of("test"), config);
+        KeyspaceCache keyspaceCache = new KeyspaceCache(config):
+        SessionImpl localSession = new SessionImpl(Keyspace.of("test"), config, keyspaceCache);
         Transaction tx1 = localSession.transaction(WRITE);
         assertFalse(tx1.isClosed());
         localSession.close();

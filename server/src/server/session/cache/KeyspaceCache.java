@@ -51,14 +51,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  *
  */
-public class SessionCache {
+public class KeyspaceCache {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     //Caches
     private final Cache<Label, SchemaConcept> cachedTypes;
+
+    // label cache
     private final Map<Label, LabelId> cachedLabels;
 
-    public SessionCache(Config config) {
+    public KeyspaceCache(Config config) {
         cachedLabels = new ConcurrentHashMap<>();
 
         int cacheTimeout = config.getProperty(ConfigKey.SESSION_CACHE_TIMEOUT_MS);
@@ -66,6 +68,26 @@ public class SessionCache {
                 .maximumSize(1000)
                 .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
                 .build();
+    }
+
+    public KeyspaceCache(Map<Label, LabelId> cachedLabels, Cache<Label, SchemaConcept> cachedTypes) {
+        this.cachedLabels = cachedLabels;
+        this.cachedTypes =  cachedTypes;
+    }
+
+    public KeyspaceCache copy(int cacheTimeout) {
+
+        Cache<Label, SchemaConcept> cachedTypesCopy = CacheBuilder.newBuilder()
+                .maximumSize(1000)
+                .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
+                .build();
+
+        cachedTypesCopy.putAll(this.getCachedTypes());
+
+        Map<Label, LabelId> cachedLabels = new ConcurrentHashMap<>();
+        cachedLabels.putAll(this.getCachedLabels());
+        KeyspaceCache copiedCache = new KeyspaceCache(cachedLabels, cachedTypes);
+        return copiedCache;
     }
 
     void populateSchemaTxCache(TransactionCache transactionCache){

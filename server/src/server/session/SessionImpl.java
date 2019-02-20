@@ -21,6 +21,7 @@ package grakn.core.server.session;
 import brave.ScopedSpan;
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
@@ -30,7 +31,7 @@ import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.cache.SessionCache;
+import grakn.core.server.session.cache.KeyspaceCache;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.util.JanusGraphCleanup;
 import org.janusgraph.diskstorage.BackendException;
@@ -60,7 +61,7 @@ public class SessionImpl implements Session {
     private final Keyspace keyspace;
     private final Config config;
     private final JanusGraph graph;
-    private final SessionCache sessionCache;
+    private final KeyspaceCache keyspaceCache;
 
     /**
      * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
@@ -69,7 +70,7 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used. If null is supplied, it will be created
      */
-    public SessionImpl(Keyspace keyspace, Config config) {
+    public SessionImpl(Keyspace keyspace, Config config, KeyspaceCache keyspaceCache) {
         this.keyspace = keyspace;
         this.config = config;
         // be an expensive operation TODO: refactor in the future
@@ -77,15 +78,16 @@ public class SessionImpl implements Session {
         // Open Janus Graph
         this.graph = JanusGraphFactory.openGraph(this);
 
-        this.sessionCache = new SessionCache(config());
+        this.keyspaceCache = keyspaceCache;
 
         TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
         // copy schema to session cache if there are any schema concepts
         if (!keyspaceHasBeenInitialised(tx)) {
             initialiseMetaConcepts(tx);
+            copyMetaConceptsToKeyspaceCache(tx);
+            tx.commit();
         }
-        copyMetaConceptsToSessionCache(tx);
-        tx.commit();
+        tx.close();
     }
 
     @Override
@@ -104,7 +106,7 @@ public class SessionImpl implements Session {
 
         if (span != null) span.annotate("Getting new tx");
         // We are passing the graph to Transaction because there is the need to access graph tinkerpop traversal
-        TransactionOLTP tx = new TransactionOLTP(this, graph, sessionCache);
+        TransactionOLTP tx = new TransactionOLTP(this, graph, keyspaceCache);
 
         if (span != null) span.annotate("Opening tx with type");
         tx.open(type);
@@ -134,7 +136,7 @@ public class SessionImpl implements Session {
         entityType.addEdge(type, Schema.EdgeLabel.SUB);
     }
 
-    protected void copyMetaConceptsToSessionCache(TransactionOLTP tx) {
+    protected void copyMetaConceptsToKeyspaceCache(TransactionOLTP tx) {
         copyToCache(tx.getMetaConcept());
         copyToCache(tx.getMetaRole());
         copyToCache(tx.getMetaRule());
@@ -142,8 +144,8 @@ public class SessionImpl implements Session {
 
     private void copyToCache(SchemaConcept schemaConcept) {
         schemaConcept.subs().forEach(concept -> {
-            sessionCache.cacheLabel(concept.label(), concept.labelId());
-//            sessionCache.cacheType(concept.label(), concept);
+            keyspaceCache.cacheLabel(concept.label(), concept.labelId());
+//            keyspaceCache.cacheType(concept.label(), concept);
         });
     }
 
