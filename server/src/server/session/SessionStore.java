@@ -74,7 +74,7 @@ public class SessionStore {
         try {
             // Create new empty keyspace in db
             SessionImpl session = new SessionImpl(keyspace, config);
-            session.transaction(Transaction.Type.WRITE).close();
+
             // Add current keyspace to list of available Grakn keyspaces
             keyspaceStore.addKeyspace(keyspace);
             session.close();
@@ -82,6 +82,9 @@ public class SessionStore {
             lock.unlock();
         }
     }
+
+
+
 
     private static String getLockingKey(Keyspace keyspace) {
         return "/creating-new-keyspace-lock/" + keyspace.getName();

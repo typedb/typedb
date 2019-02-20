@@ -51,14 +51,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  *
  */
-public class GlobalCache {
+public class SessionCache {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     //Caches
     private final Cache<Label, SchemaConcept> cachedTypes;
     private final Map<Label, LabelId> cachedLabels;
 
-    public GlobalCache(Config config) {
+    public SessionCache(Config config) {
         cachedLabels = new ConcurrentHashMap<>();
 
         int cacheTimeout = config.getProperty(ConfigKey.SESSION_CACHE_TIMEOUT_MS);

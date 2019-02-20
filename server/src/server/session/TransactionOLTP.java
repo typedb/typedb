@@ -56,8 +56,8 @@ import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.cache.GlobalCache;
 import grakn.core.server.session.cache.RuleCache;
+import grakn.core.server.session.cache.SessionCache;
 import grakn.core.server.session.cache.TransactionCache;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
@@ -111,7 +111,7 @@ public class TransactionOLTP implements Transaction {
     private final SessionImpl session;
     private final JanusGraph janusGraph;
     private final ElementFactory elementFactory;
-    private final GlobalCache globalCache;
+    private final SessionCache sessionCache;
     //----------------------------- Transaction Specific
     private final RuleCache ruleCache;
     private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
@@ -122,7 +122,7 @@ public class TransactionOLTP implements Transaction {
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
 
-    public TransactionOLTP(SessionImpl session, JanusGraph janusGraph) {
+    public TransactionOLTP(SessionImpl session, JanusGraph janusGraph, SessionCache sessionCache) {
 
         createdInCurrentThread.set(true);
 
@@ -142,18 +142,12 @@ public class TransactionOLTP implements Transaction {
         if (span != null) span.annotate("Creating RuleCache");
         this.ruleCache = new RuleCache(this);
 
-        //Initialise Graph Caches
-        if (span != null) span.annotate("Creating Global Cache");
-        this.globalCache = new GlobalCache(session.config());
-        this.transactionCache = new TransactionCache(globalCache);
+        this.sessionCache = sessionCache;
+        this.transactionCache = new TransactionCache(sessionCache);
 
         //Initialise Graph
-        if (span != null) span.annotate("Opening `cache` with WRITE type");
-        cache().open(Type.WRITE);
-
-        if (span != null) span.annotate("Initialize meta concept");
-        // TODO: We should initialise meta concepts every time we create a new transaction
-        if (initialiseMetaConcepts()) commit();
+//        if (span != null) span.annotate("Opening `cache` with WRITE type");
+//        cache().open(Type.WRITE);
 
         if (span != null) span.finish();
     }
@@ -305,8 +299,8 @@ public class TransactionOLTP implements Transaction {
     /**
      * @return The graph cache which contains all the data cached and accessible by all transactions.
      */
-    public GlobalCache getGlobalCache() {
-        return globalCache;
+    public SessionCache getSessionCache() {
+        return sessionCache;
     }
 
     /**
@@ -352,62 +346,6 @@ public class TransactionOLTP implements Transaction {
      */
     public <T extends Concept> T buildConcept(Edge edge) {
         return factory().buildConcept(edge);
-    }
-
-    @SuppressWarnings("unchecked") // TODO: we shouldn't initialising meta concepts from within a transaction
-    private boolean initialiseMetaConcepts() {
-        ScopedSpan span = null;
-        if (ServerTracingInstrumentation.tracingActive()) span = ServerTracingInstrumentation.createScopedChildSpan("TransactionOLTP constructor");
-
-        boolean schemaInitialised = false;
-        if (isMetaSchemaNotInitialised()) {
-            VertexElement type = addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
-            VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
-            VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATIONSHIP.getId(), Schema.MetaSchema.RELATIONSHIP.getLabel(), Schema.BaseType.RELATIONSHIP_TYPE);
-            VertexElement resourceType = addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
-            addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
-            addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
-
-            relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-            resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-            entityType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-
-            relationType.addEdge(type, Schema.EdgeLabel.SUB);
-            resourceType.addEdge(type, Schema.EdgeLabel.SUB);
-            entityType.addEdge(type, Schema.EdgeLabel.SUB);
-
-            schemaInitialised = true;
-        }
-
-        if (span != null) span.annotate("Copying meta concepts to cache");
-        //Copy entire schema to the graph cache. This may be a bad idea as it will slow down graph initialisation
-        copyToCache(getMetaConcept());
-
-        if (span != null) span.annotate("Copying meta roles to cache");
-        //Role and rule have to be copied separately due to not being connected to meta schema
-        copyToCache(getMetaRole());
-        if (span != null) span.annotate("Copying meta rules to cache");
-        copyToCache(getMetaRule());
-
-        if (span != null) span.finish();
-        return schemaInitialised;
-    }
-
-    /**
-     * Copies the {@link SchemaConcept} and it's subs into the {@link TransactionCache}.
-     * This is important as lookups for {@link SchemaConcept}s based on {@link Label} depend on this caching.
-     *
-     * @param schemaConcept the {@link SchemaConcept} to be copied into the {@link TransactionCache}
-     */
-    private void copyToCache(SchemaConcept schemaConcept) {
-        schemaConcept.subs().forEach(concept -> {
-            getGlobalCache().cacheLabel(concept.label(), concept.labelId());
-            getGlobalCache().cacheType(concept.label(), concept);
-        });
-    }
-
-    private boolean isMetaSchemaNotInitialised() {
-        return getMetaConcept() == null;
     }
 
     /**
@@ -478,7 +416,7 @@ public class TransactionOLTP implements Transaction {
      * @param baseType The base type of the new type
      * @return The new type vertex
      */
-    private VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
+    protected VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
         VertexElement vertexElement = addVertexElement(baseType);
         vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
@@ -578,11 +516,11 @@ public class TransactionOLTP implements Transaction {
      * @return The {@link SchemaConcept} which was either cached or built via a DB read or write
      */
     private SchemaConcept buildSchemaConcept(Label label, Supplier<SchemaConcept> dbBuilder) {
-        if (cache().isTypeCached(label)) {
-            return cache().getCachedSchemaConcept(label);
-        } else {
+//        if (cache().isTypeCached(label)) {
+//            return cache().getCachedSchemaConcept(label);
+//        } else {
             return dbBuilder.get();
-        }
+//        }
     }
 
     @Override
@@ -753,7 +691,7 @@ public class TransactionOLTP implements Transaction {
             return;
         }
         try {
-            cache().writeToGraphCache(type().equals(Type.READ));
+            cache().writeToSessionCache(type().equals(Type.READ));
         } finally {
             closeTransaction(closeMessage);
         }
@@ -772,7 +710,7 @@ public class TransactionOLTP implements Transaction {
         try {
             validateGraph();
             commitTransactionInternal();
-            cache().writeToGraphCache(true);
+            cache().writeToSessionCache(true);
             //TODO update cache here
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
@@ -818,7 +756,7 @@ public class TransactionOLTP implements Transaction {
 
         commitTransactionInternal();
 
-        cache().writeToGraphCache(true);
+        cache().writeToSessionCache(true);
 
         //If we have logs to commit get them and add them
         if (logsExist) {

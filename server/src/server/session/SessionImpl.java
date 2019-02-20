@@ -22,11 +22,15 @@ import brave.ScopedSpan;
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.internal.Schema;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.session.cache.SessionCache;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.util.JanusGraphCleanup;
 import org.janusgraph.diskstorage.BackendException;
@@ -56,7 +60,7 @@ public class SessionImpl implements Session {
     private final Keyspace keyspace;
     private final Config config;
     private final JanusGraph graph;
-
+    private final SessionCache sessionCache;
 
     /**
      * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
@@ -68,13 +72,21 @@ public class SessionImpl implements Session {
     public SessionImpl(Keyspace keyspace, Config config) {
         this.keyspace = keyspace;
         this.config = config;
-        // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
         // be an expensive operation TODO: refactor in the future
         this.hadoopGraphFactory = new HadoopGraphFactory(this);
         // Open Janus Graph
         this.graph = JanusGraphFactory.openGraph(this);
-    }
 
+        this.sessionCache = new SessionCache(config());
+
+        TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
+        // copy schema to session cache if there are any schema concepts
+        if (!keyspaceHasBeenInitialised(tx)) {
+            initialiseMetaConcepts(tx);
+        }
+        copyMetaConceptsToSessionCache(tx);
+        tx.commit();
+    }
 
     @Override
     public TransactionOLTP transaction(Transaction.Type type) {
@@ -92,7 +104,7 @@ public class SessionImpl implements Session {
 
         if (span != null) span.annotate("Getting new tx");
         // We are passing the graph to Transaction because there is the need to access graph tinkerpop traversal
-        TransactionOLTP tx = new TransactionOLTP(this, graph);
+        TransactionOLTP tx = new TransactionOLTP(this, graph, sessionCache);
 
         if (span != null) span.annotate("Opening tx with type");
         tx.open(type);
@@ -103,6 +115,40 @@ public class SessionImpl implements Session {
 
         if (span != null) span.finish();
         return tx;
+    }
+
+    private void initialiseMetaConcepts(TransactionOLTP tx) {
+        VertexElement type = tx.addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
+        VertexElement entityType = tx.addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
+        VertexElement relationType = tx.addTypeVertex(Schema.MetaSchema.RELATIONSHIP.getId(), Schema.MetaSchema.RELATIONSHIP.getLabel(), Schema.BaseType.RELATIONSHIP_TYPE);
+        VertexElement resourceType = tx.addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
+        tx.addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
+        tx.addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
+
+        relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+        resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+        entityType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+
+        relationType.addEdge(type, Schema.EdgeLabel.SUB);
+        resourceType.addEdge(type, Schema.EdgeLabel.SUB);
+        entityType.addEdge(type, Schema.EdgeLabel.SUB);
+    }
+
+    protected void copyMetaConceptsToSessionCache(TransactionOLTP tx) {
+        copyToCache(tx.getMetaConcept());
+        copyToCache(tx.getMetaRole());
+        copyToCache(tx.getMetaRule());
+    }
+
+    private void copyToCache(SchemaConcept schemaConcept) {
+        schemaConcept.subs().forEach(concept -> {
+            sessionCache.cacheLabel(concept.label(), concept.labelId());
+            sessionCache.cacheType(concept.label(), concept);
+        });
+    }
+
+    private boolean keyspaceHasBeenInitialised(TransactionOLTP tx) {
+        return tx.getMetaConcept() != null;
     }
 
     public void clearGraph() {

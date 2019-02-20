@@ -178,14 +178,14 @@ public class TransactionIT {
 
         tx.abort();
 
-        for (SchemaConcept type : tx.getGlobalCache().getCachedTypes().values()) {
+        for (SchemaConcept type : tx.getSessionCache().getCachedTypes().values()) {
             assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", finalTypes.contains(type));
         }
     }
 
     private void assertCacheOnlyContainsMetaTypes() {
         Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(toSet());
-        tx.getGlobalCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
+        tx.getSessionCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
     }
 
     @Test
@@ -240,7 +240,7 @@ public class TransactionIT {
         tx = session.transaction(Transaction.Type.WRITE);
 
         //Check cache is in good order
-        Collection<SchemaConcept> cachedValues = tx.getGlobalCache().getCachedTypes().values();
+        Collection<SchemaConcept> cachedValues = tx.getSessionCache().getCachedTypes().values();
         assertTrue("Type [" + r1 + "] was not cached", cachedValues.contains(r1));
         assertTrue("Type [" + r2 + "] was not cached", cachedValues.contains(r2));
         assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
@@ -258,7 +258,7 @@ public class TransactionIT {
         }).get();
 
         //Check the above mutation did not affect central repo
-        SchemaConcept foundE1 = tx.getGlobalCache().getCachedTypes().get(e1.label());
+        SchemaConcept foundE1 = tx.getSessionCache().getCachedTypes().get(e1.label());
         assertTrue("Main cache was affected by transaction", foundE1.asType().playing().anyMatch(role -> role.equals(r1)));
     }
 

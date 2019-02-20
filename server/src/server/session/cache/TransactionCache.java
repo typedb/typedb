@@ -51,7 +51,7 @@ import java.util.Set;
  */
 public class TransactionCache {
     //Cache which is shared across multiple transactions
-    private final GlobalCache globalCache;
+    private final SessionCache sessionCache;
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
@@ -83,8 +83,8 @@ public class TransactionCache {
     private Transaction.Type txType;
     private String closedReason = null;
 
-    public TransactionCache(GlobalCache globalCache) {
-        this.globalCache = globalCache;
+    public TransactionCache(SessionCache sessionCache) {
+        this.sessionCache = sessionCache;
     }
 
     /**
@@ -92,11 +92,11 @@ public class TransactionCache {
      *
      * @param isSafe true only if it is safe to copy the cache completely without any checks
      */
-    public void writeToGraphCache(boolean isSafe) {
+    public void writeToSessionCache(boolean isSafe) {
         //When a commit has occurred or a transaction is read only all types can be overridden this is because we know they are valid.
         //When it is not safe to simply flush we have to check that no mutations were made
         if (isSafe || !writeOccurred) {
-            globalCache.readTxCache(this);
+            sessionCache.readTxCache(this);
         }
     }
 
@@ -121,7 +121,7 @@ public class TransactionCache {
      * do not accidentally break the central schema cache.
      */
     public void refreshSchemaCache() {
-        globalCache.populateSchemaTxCache(this);
+        sessionCache.populateSchemaTxCache(this);
     }
 
     /**
