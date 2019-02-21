@@ -18,11 +18,6 @@
 
 package grakn.core.server.kb.cache;
 
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Type;
-import grakn.core.server.kb.concept.ConceptImpl;
-
 import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -30,8 +25,8 @@ import java.util.function.Supplier;
 
 /**
  * An internal cached object which hits the database only when it needs to.
- * This is used to cache the components of ontological concepts. i.e. the fields of {@link Type},
- * {@link RelationType}, and {@link Role}.
+ * This is used to cache the components of ontological concepts. i.e. the fields of Type,
+ * RelationType, and Role.
  *
  * @param <V> The object it is caching
  */
@@ -44,18 +39,15 @@ public class Cache<V> {
 
     //Transaction bound. If this is not set it does not yet exist in the scope of the transaction.
     private final ThreadLocal<V> valueTx = new ThreadLocal<>();
-
-    //Globally bound value which has already been persisted and acts as a shared component cache
-    private Optional<V> valueGlobal = Optional.empty();
-
     //Flag indicating if this Cache should be flushed into the Session cache upon being disposed of
     private final boolean isSessionCache;
-
     //Flag indicating if this Cache can be cleared.
     // If this is false then the owner object must be deleted and garabe collected for the cache to die
     private final boolean isClearable;
+    //Globally bound value which has already been persisted and acts as a shared component cache
+    private Optional<V> valueGlobal = Optional.empty();
 
-    private Cache(CacheOwner owner, Cacheable<V> cacheable, boolean isSessionCache, boolean isClearable, Supplier<V> databaseReader){
+    private Cache(CacheOwner owner, Cacheable<V> cacheable, boolean isSessionCache, boolean isClearable, Supplier<V> databaseReader) {
         this.isSessionCache = isSessionCache;
         this.isClearable = isClearable;
         this.cacheable = cacheable;
@@ -64,22 +56,22 @@ public class Cache<V> {
     }
 
     /**
-     * Creates a {@link Cache} that will only exist within the context of a Transaction
+     * Creates a Cache that will only exist within the context of a Transaction
      */
-    public static Cache createTxCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader){
+    public static Cache createTxCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader) {
         return new Cache(owner, cacheable, false, true, databaseReader);
     }
 
     /**
-     * Creates a {@link Cache} that will only flush to a central shared cache then the Transaction is disposed off
+     * Creates a Cache that will only flush to a central shared cache then the Transaction is disposed off
      */
-    public static Cache createSessionCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader){
+    public static Cache createSessionCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader) {
         return new Cache(owner, cacheable, true, true, databaseReader);
     }
 
     /**
-     * Creates a session level {@link Cache} which cannot be cleared.
-     * When creating these types of {@link Cache}s the only way to get rid of them is to remove the owner {@link ConceptImpl}
+     * Creates a session level Cache which cannot be cleared.
+     * When creating these types of Caches the only way to get rid of them is to remove the owner ConceptImpl
      */
     public static Cache createPersistentCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader) {
         return new Cache(owner, cacheable, true, false, databaseReader);
@@ -91,13 +83,13 @@ public class Cache<V> {
      * @return The cached object.
      */
     @Nullable
-    public V get(){
+    public V get() {
         V value = valueTx.get();
 
-        if(value != null) return value;
-        if(valueGlobal.isPresent()) value = cacheable.copy(valueGlobal.get());
-        if(value == null) value = databaseReader.get();
-        if(value == null) return null;
+        if (value != null) return value;
+        if (valueGlobal.isPresent()) value = cacheable.copy(valueGlobal.get());
+        if (value == null) value = databaseReader.get();
+        if (value == null) return null;
 
         valueTx.set(value);
 
@@ -107,8 +99,8 @@ public class Cache<V> {
     /**
      * Clears the cache.
      */
-    public void clear(){
-        if(isClearable) {
+    public void clear() {
+        if (isClearable) {
             valueTx.remove();
         }
     }
@@ -118,15 +110,14 @@ public class Cache<V> {
      *
      * @param value the value to be cached
      */
-    public void set(@Nullable V value){
+    public void set(@Nullable V value) {
         valueTx.set(value);
     }
 
     /**
-     *
      * @return true if there is anything stored in the cache
      */
-    public boolean isPresent(){
+    public boolean isPresent() {
         return valueTx.get() != null || valueGlobal.isPresent();
     }
 
@@ -135,8 +126,8 @@ public class Cache<V> {
      *
      * @param modifier the mutator function.
      */
-    public void ifPresent(Consumer<V> modifier){
-        if(isPresent()){
+    public void ifPresent(Consumer<V> modifier) {
+        if (isPresent()) {
             modifier.accept(get());
         }
     }
@@ -145,10 +136,10 @@ public class Cache<V> {
      * Takes the current value in the transaction cache if it is present and puts it in the valueGlobal reference so
      * that it can be accessed via all transactions.
      */
-    public void flush(){
-        if(isSessionCache && isPresent()) {
+    public void flush() {
+        if (isSessionCache && isPresent()) {
             V newValue = get();
-            if(!valueGlobal.isPresent() || !valueGlobal.get().equals(newValue)) valueGlobal = Optional.of(get());
+            if (!valueGlobal.isPresent() || !valueGlobal.get().equals(newValue)) valueGlobal = Optional.of(get());
         }
     }
 }

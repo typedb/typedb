@@ -64,8 +64,8 @@ public interface Transaction extends AutoCloseable {
 
     /**
      * An enum that determines the type of Grakn Transaction.
-     * This class is used to describe how a transaction on {@link Transaction} should behave.
-     * When producing a graph using a {@link Session} one of the following enums must be provided:
+     * This class is used to describe how a transaction on Transaction should behave.
+     * When producing a graph using a Session one of the following enums must be provided:
      * READ - A read only transaction. If you attempt to mutate the graph with such a transaction an exception will be thrown.
      * WRITE - A transaction which allows you to mutate the graph.
      * BATCH - A transaction which allows mutations to be performed more quickly but disables some consistency checks.
@@ -336,7 +336,7 @@ public interface Transaction extends AutoCloseable {
     }
 
     /**
-     * Get the root of all {@link RelationType}.
+     * Get the root of all RelationType.
      *
      * @return The meta relation type -> relation-type.
      */
@@ -346,7 +346,7 @@ public interface Transaction extends AutoCloseable {
     }
 
     /**
-     * Get the root of all the {@link Role}.
+     * Get the root of all the Role.
      *
      * @return The meta role type -> role-type.
      */
@@ -356,7 +356,7 @@ public interface Transaction extends AutoCloseable {
     }
 
     /**
-     * Get the root of all the {@link AttributeType}.
+     * Get the root of all the AttributeType.
      *
      * @return The meta resource type -> resource-type.
      */
@@ -376,9 +376,9 @@ public interface Transaction extends AutoCloseable {
     }
 
     /**
-     * Get the root of all {@link Rule}s;
+     * Get the root of all Rules;
      *
-     * @return The meta {@link Rule}
+     * @return The meta Rule
      */
     @CheckReturnValue
     default Rule getMetaRule() {
@@ -388,13 +388,11 @@ public interface Transaction extends AutoCloseable {
     //------------------------------------- Admin Specific Operations ----------------------------------
 
     /**
-     * Get all super-concepts of the given {@link SchemaConcept} including itself and including the meta-type
-     * {@link Schema.MetaSchema#THING}.
-     *
+     * Get all super-concepts of the given SchemaConcept including itself and including the meta-type
+     * Schema.MetaSchema#THING.
      * <p>
-     * If you want a more precise type that will exclude {@link Schema.MetaSchema#THING}, use
-     * {@link SchemaConcept#sups()}.
-     * </p>
+     * If you want a more precise type that will exclude Schema.MetaSchema#THING, use
+     * SchemaConcept#sups().
      */
     @CheckReturnValue
     Stream<SchemaConcept> sups(SchemaConcept schemaConcept);
@@ -402,42 +400,42 @@ public interface Transaction extends AutoCloseable {
     //------------------------------------- Concept Construction ----------------------------------
 
     /**
-     * Create a new {@link EntityType} with super-type {@code entity}, or return a pre-existing {@link EntityType},
+     * Create a new EntityType with super-type {@code entity}, or return a pre-existing EntityType,
      * with the specified label.
      *
-     * @param label A unique label for the {@link EntityType}
-     * @return A new or existing {@link EntityType} with the provided label
+     * @param label A unique label for the EntityType
+     * @return A new or existing EntityType with the provided label
      * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-EntityType.
      */
     default EntityType putEntityType(String label) {
         return putEntityType(Label.of(label));
     }
 
     /**
-     * Create a new {@link EntityType} with super-type {@code entity}, or return a pre-existing {@link EntityType},
+     * Create a new EntityType with super-type {@code entity}, or return a pre-existing EntityType,
      * with the specified label.
      *
-     * @param label A unique label for the {@link EntityType}
-     * @return A new or existing {@link EntityType} with the provided label
+     * @param label A unique label for the EntityType
+     * @return A new or existing EntityType with the provided label
      * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-EntityType.
      */
     EntityType putEntityType(Label label);
 
     /**
-     * Create a new non-unique {@link AttributeType} with super-type {@code resource}, or return a pre-existing
-     * non-unique {@link AttributeType}, with the specified label and data type.
+     * Create a new non-unique AttributeType with super-type {@code resource}, or return a pre-existing
+     * non-unique AttributeType, with the specified label and data type.
      *
-     * @param label    A unique label for the {@link AttributeType}
-     * @param dataType The data type of the {@link AttributeType}.
+     * @param label    A unique label for the AttributeType
+     * @param dataType The data type of the AttributeType.
      *                 Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V>      The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *                 This should match the parameter type
-     * @return A new or existing {@link AttributeType} with the provided label and data type.
+     * @return A new or existing AttributeType with the provided label and data type.
      * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link AttributeType}.
-     * @throws TransactionException       if the {@param label} is already in use by an existing {@link AttributeType} which is
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
+     * @throws TransactionException       if the {@param label} is already in use by an existing AttributeType which is
      *                                    unique or has a different datatype.
      */
     default <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType) {
@@ -445,140 +443,140 @@ public interface Transaction extends AutoCloseable {
     }
 
     /**
-     * Create a new non-unique {@link AttributeType} with super-type {@code resource}, or return a pre-existing
-     * non-unique {@link AttributeType}, with the specified label and data type.
+     * Create a new non-unique AttributeType with super-type {@code resource}, or return a pre-existing
+     * non-unique AttributeType, with the specified label and data type.
      *
-     * @param label    A unique label for the {@link AttributeType}
-     * @param dataType The data type of the {@link AttributeType}.
+     * @param label    A unique label for the AttributeType
+     * @param dataType The data type of the AttributeType.
      *                 Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V>      The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *                 This should match the parameter type
-     * @return A new or existing {@link AttributeType} with the provided label and data type.
+     * @return A new or existing AttributeType with the provided label and data type.
      * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link AttributeType}.
-     * @throws TransactionException       if the {@param label} is already in use by an existing {@link AttributeType} which is
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
+     * @throws TransactionException       if the {@param label} is already in use by an existing AttributeType which is
      *                                    unique or has a different datatype.
      */
     <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType);
 
     /**
-     * Create a {@link Rule} with super-type {@code rule}, or return a pre-existing {@link Rule}, with the
+     * Create a Rule with super-type {@code rule}, or return a pre-existing Rule, with the
      * specified label.
      *
-     * @param label A unique label for the {@link Rule}
-     * @param when  A string representing the when part of the {@link Rule}
-     * @param then  A string representing the then part of the {@link Rule}
-     * @return new or existing {@link Rule} with the provided label.
+     * @param label A unique label for the Rule
+     * @param when  A string representing the when part of the Rule
+     * @param then  A string representing the then part of the Rule
+     * @return new or existing Rule with the provided label.
      * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Rule}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Rule.
      */
     default Rule putRule(String label, Pattern when, Pattern then) {
         return putRule(Label.of(label), when, then);
     }
 
     /**
-     * Create a {@link Rule} with super-type {@code rule}, or return a pre-existing {@link Rule}, with the
+     * Create a Rule with super-type {@code rule}, or return a pre-existing Rule, with the
      * specified label.
      *
-     * @param label A unique label for the {@link Rule}
-     * @return new or existing {@link Rule} with the provided label.
+     * @param label A unique label for the Rule
+     * @return new or existing Rule with the provided label.
      * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Rule}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Rule.
      */
     Rule putRule(Label label, Pattern when, Pattern then);
 
     /**
-     * Create a {@link RelationType} with super-type {@code relation}, or return a pre-existing {@link RelationType},
+     * Create a RelationType with super-type {@code relation}, or return a pre-existing RelationType,
      * with the specified label.
      *
-     * @param label A unique label for the {@link RelationType}
-     * @return A new or existing {@link RelationType} with the provided label.
+     * @param label A unique label for the RelationType
+     * @return A new or existing RelationType with the provided label.
      * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-RelationType.
      */
     default RelationType putRelationType(String label) {
         return putRelationType(Label.of(label));
     }
 
     /**
-     * Create a {@link RelationType} with super-type {@code relation}, or return a pre-existing {@link RelationType},
+     * Create a RelationType with super-type {@code relation}, or return a pre-existing RelationType,
      * with the specified label.
      *
-     * @param label A unique label for the {@link RelationType}
-     * @return A new or existing {@link RelationType} with the provided label.
+     * @param label A unique label for the RelationType
+     * @return A new or existing RelationType with the provided label.
      * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-RelationType.
      */
     RelationType putRelationType(Label label);
 
     /**
-     * Create a {@link Role} with super-type {@code role}, or return a pre-existing {@link Role}, with the
+     * Create a Role with super-type {@code role}, or return a pre-existing Role, with the
      * specified label.
      *
-     * @param label A unique label for the {@link Role}
-     * @return new or existing {@link Role} with the provided Id.
+     * @param label A unique label for the Role
+     * @return new or existing Role with the provided Id.
      * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Role}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Role.
      */
     default Role putRole(String label) {
         return putRole(Label.of(label));
     }
 
     /**
-     * Create a {@link Role} with super-type {@code role}, or return a pre-existing {@link Role}, with the
+     * Create a Role with super-type {@code role}, or return a pre-existing Role, with the
      * specified label.
      *
-     * @param label A unique label for the {@link Role}
-     * @return new or existing {@link Role} with the provided Id.
+     * @param label A unique label for the Role
+     * @return new or existing Role with the provided Id.
      * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Role}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Role.
      */
     Role putRole(Label label);
 
     //------------------------------------- Concept Lookup ----------------------------------
 
     /**
-     * Get the {@link Concept} with identifier provided, if it exists.
+     * Get the Concept with identifier provided, if it exists.
      *
-     * @param id A unique identifier for the {@link Concept} in the graph.
-     * @return The {@link Concept} with the provided id or null if no such {@link Concept} exists.
+     * @param id A unique identifier for the Concept in the graph.
+     * @return The Concept with the provided id or null if no such Concept exists.
      * @throws TransactionException if the graph is closed
-     * @throws ClassCastException   if the concept is not an instance of {@link T}
+     * @throws ClassCastException   if the concept is not an instance of T
      */
     @CheckReturnValue
     @Nullable
     <T extends Concept> T getConcept(ConceptId id);
 
     /**
-     * Get the {@link SchemaConcept} with the label provided, if it exists.
+     * Get the SchemaConcept with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the {@link SchemaConcept} in the graph.
-     * @return The {@link SchemaConcept} with the provided label or null if no such {@link SchemaConcept} exists.
+     * @param label A unique label which identifies the SchemaConcept in the graph.
+     * @return The SchemaConcept with the provided label or null if no such SchemaConcept exists.
      * @throws TransactionException if the graph is closed
-     * @throws ClassCastException   if the type is not an instance of {@link T}
+     * @throws ClassCastException   if the type is not an instance of T
      */
     @CheckReturnValue
     @Nullable
     <T extends SchemaConcept> T getSchemaConcept(Label label);
 
     /**
-     * Get the {@link grakn.core.graql.concept.Type} with the label provided, if it exists.
+     * Get the grakn.core.graql.concept.Type with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the {@link grakn.core.graql.concept.Type} in the graph.
-     * @return The {@link grakn.core.graql.concept.Type} with the provided label or null if no such {@link grakn.core.graql.concept.Type} exists.
+     * @param label A unique label which identifies the grakn.core.graql.concept.Type in the graph.
+     * @return The grakn.core.graql.concept.Type with the provided label or null if no such grakn.core.graql.concept.Type exists.
      * @throws TransactionException if the graph is closed
-     * @throws ClassCastException   if the type is not an instance of {@link T}
+     * @throws ClassCastException   if the type is not an instance of T
      */
     @CheckReturnValue
     @Nullable
     <T extends grakn.core.graql.concept.Type> T getType(Label label);
 
     /**
-     * Get all {@link Attribute} holding the value provided, if they exist.
+     * Get all Attribute holding the value provided, if they exist.
      *
-     * @param value A value which an {@link Attribute} in the graph may be holding.
+     * @param value A value which an Attribute in the graph may be holding.
      * @param <V>   The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The {@link Attribute}s holding the provided value or an empty collection if no such {@link Attribute} exists.
+     * @return The Attributes holding the provided value or an empty collection if no such Attribute exists.
      * @throws TransactionException if the graph is closed
      */
     @CheckReturnValue
@@ -596,10 +594,10 @@ public interface Transaction extends AutoCloseable {
     EntityType getEntityType(String label);
 
     /**
-     * Get the {@link RelationType} with the label provided, if it exists.
+     * Get the RelationType with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the {@link RelationType} in the graph.
-     * @return The {@link RelationType} with the provided label or null if no such {@link RelationType} exists.
+     * @param label A unique label which identifies the RelationType in the graph.
+     * @return The RelationType with the provided label or null if no such RelationType exists.
      * @throws TransactionException if the graph is closed
      */
     @CheckReturnValue
@@ -607,11 +605,11 @@ public interface Transaction extends AutoCloseable {
     RelationType getRelationType(String label);
 
     /**
-     * Get the {@link AttributeType} with the label provided, if it exists.
+     * Get the AttributeType with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the {@link AttributeType} in the graph.
+     * @param label A unique label which identifies the AttributeType in the graph.
      * @param <V>   The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The {@link AttributeType} with the provided label or null if no such {@link AttributeType} exists.
+     * @return The AttributeType with the provided label or null if no such AttributeType exists.
      * @throws TransactionException if the graph is closed
      */
     @CheckReturnValue
@@ -630,10 +628,10 @@ public interface Transaction extends AutoCloseable {
     Role getRole(String label);
 
     /**
-     * Get the {@link Rule} with the label provided, if it exists.
+     * Get the Rule with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the {@link Rule} in the graph.
-     * @return The {@link Rule} with the provided label or null if no such Rule Type exists.
+     * @param label A unique label which identifies the Rule in the graph.
+     * @return The Rule with the provided label or null if no such Rule Type exists.
      * @throws TransactionException if the graph is closed
      */
     @CheckReturnValue
@@ -649,16 +647,16 @@ public interface Transaction extends AutoCloseable {
     Type type();
 
     /**
-     * Returns the {@link Session} which was used to create this {@link Transaction}
+     * Returns the Session which was used to create this Transaction
      *
-     * @return the owner {@link Session}
+     * @return the owner Session
      */
     Session session();
 
     /**
-     * Utility function to get {@link Keyspace} of the knowledge base.
+     * Utility function to get Keyspace of the knowledge base.
      *
-     * @return The {@link Keyspace} of the knowledge base.
+     * @return The Keyspace of the knowledge base.
      */
     @CheckReturnValue
     default Keyspace keyspace() {
@@ -674,13 +672,13 @@ public interface Transaction extends AutoCloseable {
     boolean isClosed();
 
     /**
-     * Closes the current transaction. Rendering this graph unusable. You must use the {@link Session} to
+     * Closes the current transaction. Rendering this graph unusable. You must use the Session to
      * get a new open transaction.
      */
     void close();
 
     /**
-     * Reverts any changes done to the graph and closes the transaction. You must use the {@link Session} to
+     * Reverts any changes done to the graph and closes the transaction. You must use the Session to
      * get a new open transaction.
      */
     default void abort() {
@@ -688,7 +686,7 @@ public interface Transaction extends AutoCloseable {
     }
 
     /**
-     * Commits any changes to the graph and closes the transaction. You must use the {@link Session} to
+     * Commits any changes to the graph and closes the transaction. You must use the Session to
      * get a new open transaction.
      */
     void commit();

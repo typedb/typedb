@@ -27,7 +27,6 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;

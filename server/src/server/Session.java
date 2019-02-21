@@ -32,7 +32,7 @@ public interface Session extends AutoCloseable {
     /**
      * Gets a new transaction bound to the keyspace of this Session.
      *
-     * @param transactionType The type of transaction to open see {@link Transaction.Type} for more details
+     * @param transactionType The type of transaction to open see Transaction.Type for more details
      * @return A new Grakn graph transaction
      * @see Transaction
      */
@@ -41,14 +41,13 @@ public interface Session extends AutoCloseable {
 
     /**
      * Closes the main connection to the graph. This should be done at the end of using the graph.
-     *
      */
     void close();
 
     /**
-     * Use to determine which {@link Keyspace} this {@link Session} is interacting with.
+     * Use to determine which Keyspace this Session is interacting with.
      *
-     * @return The {@link Keyspace} of the knowledge base this {@link Session} is interacting with.
+     * @return The Keyspace of the knowledge base this Session is interacting with.
      */
     Keyspace keyspace();
 }

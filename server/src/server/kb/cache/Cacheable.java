@@ -32,70 +32,64 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 
 /**
- * <p>
- *     Contains the functionality needed to add an {@link Object} to {@link Cache}
- * </p>
- *
- * <p>
- *     This is used to wrap functionality needed by {@link Cache}.
- *     Specifically it is used to ensure that when flushing {@link Cache#valueGlobal} into {@link Cache#valueTx}
- *     no cache leaks can occur. For example this is needed when caching {@link java.util.Collection}
- * </p>
- *
+ * Contains the functionality needed to add an Object to Cache
+ * This is used to wrap functionality needed by Cache.
+ * Specifically it is used to ensure that when flushing Cache#valueGlobal into Cache#valueTx
+ * no cache leaks can occur. For example this is needed when caching java.util.Collection
  *
  * @param <V>
  */
 public class Cacheable<V> {
     private final UnaryOperator<V> copier;
 
-    private Cacheable(UnaryOperator<V> copier){
+    private Cacheable(UnaryOperator<V> copier) {
         this.copier = copier;
     }
 
     // Constructors for supported cache-able items
-    public static Cacheable<ConceptId> conceptId(){
+    public static Cacheable<ConceptId> conceptId() {
         return new Cacheable<>((o) -> o);
     }
 
-    public static Cacheable<Long> number(){
+    public static Cacheable<Long> number() {
         return new Cacheable<>((o) -> o);
     }
 
-    public static Cacheable<Label> label(){
+    public static Cacheable<Label> label() {
         return new Cacheable<>((o) -> o);
     }
 
-    public static Cacheable<LabelId> labelId(){
+    public static Cacheable<LabelId> labelId() {
         return new Cacheable<>((o) -> o);
     }
 
-    public static Cacheable<Boolean> bool(){
+    public static Cacheable<Boolean> bool() {
         return new Cacheable<>((o) -> o);
     }
 
-    public static Cacheable<Shard> shard(){
+    public static Cacheable<Shard> shard() {
         return new Cacheable<>((o) -> o);
     }
 
-    public static <T extends Concept> Cacheable<T> concept(){
+    public static <T extends Concept> Cacheable<T> concept() {
         return new Cacheable<>((o) -> o);
     }
 
-    public static <T> Cacheable<Set<T>> set(){
+    public static <T> Cacheable<Set<T>> set() {
         return new Cacheable<>(HashSet::new);
     }
 
-    public static <K, T> Cacheable<Map<K, T>> map(){
+    public static <K, T> Cacheable<Map<K, T>> map() {
         return new Cacheable<>(HashMap::new);
     }
 
     /**
-     * Copies the old value into a new value. How this copying is done is dictated by {@link Cacheable#copier}
+     * Copies the old value into a new value. How this copying is done is dictated by Cacheable#copier
      *
      * @param oldValue The old value
-     * @return the new value as defined by {@link Cacheable#copier}
+     * @return the new value as defined by Cacheable#copier
      */
-    public V copy(V oldValue){
+    public V copy(V oldValue) {
         return copier.apply(oldValue);
     }
 }
