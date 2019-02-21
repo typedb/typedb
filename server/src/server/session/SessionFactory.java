@@ -101,7 +101,7 @@ public class SessionFactory {
         // WARNING this MUST be a re-entrant lock otherwise we deadlock right here!
         lock.lock();
         try {
-            if (!keyspaceCacheMap.contains(keyspace)) {
+            if (!keyspaceCacheMap.containsKey(keyspace)) {
                 keyspaceCacheMap.put(keyspace, new KeyspaceCache(config));
                 // do cache reference counting for proper eviction
                 keyspaceCacheUseCounts.put(keyspace, 0);
