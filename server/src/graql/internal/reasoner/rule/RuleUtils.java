@@ -128,17 +128,15 @@ public class RuleUtils {
 
     private static boolean isTypeReachable(Type start, Type end, HashMultimap<Type, Type> typeGraph){
         Stack<Type> stack = new Stack<>();
-        Set<Type> visited = Sets.newHashSet(start);
+        Set<Type> visited = Sets.newHashSet();
         boolean reachable = false;
-        stack.addAll(typeGraph.get(start));
-        while(!stack.isEmpty()){
+        stack.push(start);
+        while(!reachable && !stack.isEmpty()){
             Type type = stack.pop();
-            if (type.equals(end)){
-                reachable = true;
-                break;
-            }
             if (!visited.contains(type)){
-                stack.addAll(typeGraph.get(type));
+                Set<Type> neighbours = typeGraph.get(type);
+                if (neighbours.contains(end)) reachable = true;
+                stack.addAll(neighbours);
                 visited.add(type);
             }
         }
