@@ -18,6 +18,8 @@
 
 package grakn.core.graql.answer;
 
+import graql.lang.pattern.Pattern;
+
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -32,21 +34,21 @@ import java.util.stream.Collectors;
  */
 public class Explanation {
 
-    private final String queryPattern;
+    private final Pattern pattern;
     private final List<ConceptMap> answers;
 
     public Explanation() {
-        this.queryPattern = null;
+        this.pattern = null;
         this.answers = Collections.unmodifiableList(Collections.emptyList());
     }
 
-    public Explanation(String queryPattern, List<ConceptMap> ans) {
-        this.queryPattern = queryPattern;
+    public Explanation(Pattern pattern, List<ConceptMap> ans) {
+        this.pattern = pattern;
         this.answers = Collections.unmodifiableList(ans);
     }
 
-    public Explanation(String queryPattern) {
-        this(queryPattern, new ArrayList<>());
+    public Explanation(Pattern pattern) {
+        this(pattern, new ArrayList<>());
     }
 
     public Explanation(List<ConceptMap> ans) {
@@ -58,17 +60,17 @@ public class Explanation {
      */
     @CheckReturnValue
     @Nullable
-    public String getQueryPattern() { return queryPattern;}
+    public Pattern getPattern() { return pattern;}
 
     /**
      * produce a new explanation with provided query set
      *
-     * @param queryPattern query this explanation should be associated with
+     * @param pattern query this explanation should be associated with
      * @return explanation with provided query
      */
     @CheckReturnValue
-    public Explanation setQueryPattern(String queryPattern) {
-        return new Explanation(queryPattern);
+    public Explanation setPattern(Pattern pattern) {
+        return new Explanation(pattern);
     }
 
     /**
@@ -79,7 +81,7 @@ public class Explanation {
      */
     @CheckReturnValue
     public Explanation childOf(ConceptMap ans) {
-        return new Explanation(getQueryPattern(), ans.explanation().getAnswers());
+        return new Explanation(getPattern(), ans.explanation().getAnswers());
     }
 
     /**

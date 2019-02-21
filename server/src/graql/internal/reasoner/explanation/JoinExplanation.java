@@ -21,6 +21,7 @@ package grakn.core.graql.internal.reasoner.explanation;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
+import graql.lang.pattern.Pattern;
 
 import java.util.List;
 
@@ -30,7 +31,7 @@ import java.util.List;
 public class JoinExplanation extends Explanation {
 
     public JoinExplanation(List<ConceptMap> answers){ super(answers);}
-    public JoinExplanation(String queryPattern, List<ConceptMap> partialAnswers){
+    public JoinExplanation(Pattern queryPattern, List<ConceptMap> partialAnswers){
         super(queryPattern, partialAnswers);
     }
 

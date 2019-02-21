@@ -28,6 +28,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Variable;
 import java.util.Collection;
@@ -337,10 +338,10 @@ public class ExplanationIT {
     }
 
     private boolean explanationConsistentWithAnswer(ConceptMap ans){
-        String queryPattern = ans.explanation().getQueryPattern();
+        Pattern queryPattern = ans.explanation().getPattern();
         Set<Variable> vars = new HashSet<>();
         if (queryPattern != null){
-            Graql.parsePattern(queryPattern).statements().forEach(s -> vars.addAll(s.variables()));
+            queryPattern.statements().forEach(s -> vars.addAll(s.variables()));
         }
         return vars.containsAll(ans.map().keySet());
     }

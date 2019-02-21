@@ -528,7 +528,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
          return this.selectAtoms()
             .map(at -> at.inferTypes(mergedAnswer.project(at.getVarNames())))
             .map(ReasonerQueries::atomic)
-                .map(aq -> mergedAnswer.project(aq.getVarNames()).explain(new LookupExplanation(aq.getPattern().toString())))
+                .map(aq -> mergedAnswer.project(aq.getVarNames()).explain(new LookupExplanation(aq.getPattern())))
             .collect(Collectors.toList());
     }
 
@@ -544,7 +544,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
         if(!this.isRuleResolvable()) {
             dbIterator = tx.stream(getQuery(), false)
-                    .map(ans -> ans.explain(new JoinExplanation(this.getPattern().toString(), this.splitToPartialAnswers(ans))))
+                    .map(ans -> ans.explain(new JoinExplanation(this.getPattern(), this.splitToPartialAnswers(ans))))
                     .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                     .iterator();
             subGoalIterator = Collections.emptyIterator();

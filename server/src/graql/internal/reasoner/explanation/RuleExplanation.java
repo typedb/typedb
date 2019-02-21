@@ -20,6 +20,7 @@ package grakn.core.graql.internal.reasoner.explanation;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
+import graql.lang.pattern.Pattern;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,18 +33,18 @@ public class RuleExplanation extends Explanation {
 
     private final String ruleId;
 
-    public RuleExplanation(String queryPattern, String ruleId){
-        super(queryPattern);
+    public RuleExplanation(Pattern pattern, String ruleId){
+        super(pattern);
         this.ruleId = ruleId;
     }
-    private RuleExplanation(String queryPattern, List<ConceptMap> answers, String ruleId){
+    private RuleExplanation(Pattern queryPattern, List<ConceptMap> answers, String ruleId){
         super(queryPattern, answers);
         this.ruleId = ruleId;
     }
 
     @Override
-    public RuleExplanation setQueryPattern(String queryPattern){
-        return new RuleExplanation(queryPattern, getRuleId());
+    public RuleExplanation setPattern(Pattern pattern){
+        return new RuleExplanation(pattern, getRuleId());
     }
 
     @Override
@@ -55,7 +56,7 @@ public class RuleExplanation extends Explanation {
                         Collections.singletonList(ans) :
                         explanation.getAnswers()
         );
-        return new RuleExplanation(getQueryPattern(), answerList, getRuleId());
+        return new RuleExplanation(getPattern(), answerList, getRuleId());
     }
 
     @Override

@@ -269,12 +269,12 @@ public class GraknClientIT {
 
             assertFalse(answers.get(0).explanation().isEmpty());
             Explanation explanation = answers.get(0).explanation();
-            System.out.println("pattern: " + explanation.getQueryPattern());
+            System.out.println("pattern: " + explanation.getPattern());
             System.out.println("answers: " + printer.toString(explanation.getAnswers()));
 
             assertFalse(explanation.getAnswers().get(1).explanation().isEmpty());
             explanation = explanation.getAnswers().get(1).explanation();
-            System.out.println("pattern: " + explanation.getQueryPattern());
+            System.out.println("pattern: " + explanation.getPattern());
             System.out.println("answers: " + printer.toString(explanation.getAnswers()));
 
             // TODO: test the explanation object testExplanation(answer) below, and remove prints above
@@ -316,10 +316,10 @@ public class GraknClientIT {
     }
 
     private boolean explanationConsistentWithAnswer(ConceptMap ans){
-        String queryPattern = ans.explanation().getQueryPattern();
+        Pattern queryPattern = ans.explanation().getPattern();
         Set<Variable> vars = new HashSet<>();
         if (queryPattern != null){
-            Graql.parsePattern(queryPattern).statements().forEach(s -> vars.addAll(s.variables()));
+            queryPattern.statements().forEach(s -> vars.addAll(s.variables()));
         }
         return vars.containsAll(ans.map().keySet());
     }
