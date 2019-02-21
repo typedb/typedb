@@ -58,7 +58,7 @@ public class ReachabilityGraph {
         EntityType node = tx.getEntityType("node");
         Role from = tx.getRole("from");
         Role to = tx.getRole("to");
-        RelationType link = tx.getRelationshipType("link");
+        RelationType link = tx.getRelationType("link");
 
         //basic test variant from Green
         putEntityWithResource(tx, "aa", node, key);

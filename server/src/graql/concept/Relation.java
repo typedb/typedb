@@ -109,7 +109,7 @@ public interface Relation extends Thing {
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isRelationship() {
+    default boolean isRelation() {
         return true;
     }
 }

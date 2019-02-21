@@ -33,14 +33,14 @@ import java.util.stream.Stream;
 /**
  * Client implementation of RelationType
  */
-public class RemoteRelationshipType extends RemoteType<RelationType, Relation> implements RelationType {
+public class RemoteRelationType extends RemoteType<RelationType, Relation> implements RelationType {
 
-    RemoteRelationshipType(GraknClient.Transaction tx, ConceptId id) {
+    RemoteRelationType(GraknClient.Transaction tx, ConceptId id) {
         super(tx, id);
     }
 
-    static RemoteRelationshipType construct(GraknClient.Transaction tx, ConceptId id) {
-        return new RemoteRelationshipType(tx, id);
+    static RemoteRelationType construct(GraknClient.Transaction tx, ConceptId id) {
+        return new RemoteRelationType(tx, id);
     }
 
     @Override
@@ -84,12 +84,12 @@ public class RemoteRelationshipType extends RemoteType<RelationType, Relation> i
 
     @Override
     final RelationType asCurrentBaseType(Concept other) {
-        return other.asRelationshipType();
+        return other.asRelationType();
     }
 
     @Override
     final boolean equalsCurrentBaseType(Concept other) {
-        return other.isRelationshipType();
+        return other.isRelationType();
     }
 
     @Override

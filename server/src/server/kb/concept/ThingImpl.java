@@ -253,7 +253,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      */
     @Override
-    public Stream<Relation> relationships(Role... roles) {
+    public Stream<Relation> relations(Role... roles) {
         return Stream.concat(reifiedRelations(roles), edgeRelations(roles));
     }
 
@@ -341,7 +341,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Role roleHasValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().label()));
         Role roleKeyValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().label()));
 
-        Stream<Relation> relationships = relationships(filterNulls(roleHasOwner, roleKeyOwner));
+        Stream<Relation> relationships = relations(filterNulls(roleHasOwner, roleKeyOwner));
         relationships.filter(relationship -> {
             Stream<Thing> rolePlayers = relationship.rolePlayers(filterNulls(roleHasValue, roleKeyValue));
             return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));

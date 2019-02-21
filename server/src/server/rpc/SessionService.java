@@ -328,7 +328,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void putRelationshipType(Transaction.PutRelationType.Req request) {
-            RelationType relationshipType = tx().putRelationshipType(Label.of(request.getLabel()));
+            RelationType relationshipType = tx().putRelationType(Label.of(request.getLabel()));
             Transaction.Res response = ResponseBuilder.Transaction.putRelationshipType(relationshipType);
             onNextResponse(response);
         }

@@ -63,7 +63,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     }
 
     @Override
-    public Stream<RelationType> relationships() {
+    public Stream<RelationType> relations() {
         return cachedRelationTypes.get().stream();
     }
 
@@ -107,7 +107,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      * @return Get all the roleplayers of this role type
      */
     public Stream<Casting> rolePlayers() {
-        return relationships().
+        return relations().
                 flatMap(RelationType::instances).
                 map(relation -> RelationImpl.from(relation).reified()).
                 flatMap(CommonUtil::optionalToStream).

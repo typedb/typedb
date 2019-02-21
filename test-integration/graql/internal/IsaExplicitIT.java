@@ -76,7 +76,7 @@ public class IsaExplicitIT {
         superType1.plays(role1).plays(role2).plays(role3);
         entityType2.plays(role1).plays(role2).plays(role3);
         entityType3.plays(role1).plays(role2).plays(role3);
-        RelationType relationshipType = tx.putRelationshipType("related")
+        RelationType relationshipType = tx.putRelationType("related")
                 .relates(role1).relates(role2).relates(role3);
 
         Entity entity1 = entityType1.create();

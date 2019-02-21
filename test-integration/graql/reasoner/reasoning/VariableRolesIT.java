@@ -190,7 +190,7 @@ public class VariableRolesIT {
 
     private void ternaryNaryRelationWithVariableRoles(String label, int conceptDOF){
         try(TransactionOLTP tx = variableRoleSession.transaction(Transaction.Type.WRITE)) {
-                        final int arity = (int) tx.getRelationshipType(label).roles().count();
+                        final int arity = (int) tx.getRelationType(label).roles().count();
 
             Statement resourcePattern = var("a1").has("name", "a");
 

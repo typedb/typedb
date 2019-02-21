@@ -341,7 +341,7 @@ public class GraqlUndefineIT {
         tx = session.transaction(Transaction.Type.WRITE);
 
         EntityType pokemon = tx.getEntityType("pokemon");
-        RelationType evolution = tx.getRelationshipType("evolution");
+        RelationType evolution = tx.getRelationType("evolution");
         AttributeType<Long> pokedexNo = tx.getAttributeType("pokedex-no");
         Role ancestor = tx.getRole("ancestor");
         Role descendant = tx.getRole("descendant");

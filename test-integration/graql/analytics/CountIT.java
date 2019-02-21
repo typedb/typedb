@@ -183,7 +183,7 @@ public class CountIT {
             name.plays(resourceValue);
 
             RelationType relationshipType =
-                    tx.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
+                    tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                             .relates(resourceOwner).relates(resourceValue);
             relationshipType.create()
                     .assign(resourceOwner, aPerson)
@@ -239,7 +239,7 @@ public class CountIT {
             name.plays(resourceValue);
 
             RelationType relationshipType =
-                    tx.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
+                    tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                             .relates(resourceOwner).relates(resourceValue);
             // here relationship type is still implicit
             relationshipType.create()

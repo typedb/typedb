@@ -89,7 +89,7 @@ public class AttributeIT {
     public void whenAttachingResourcesToInstances_EnsureInstancesAreReturnedAsOwners() throws Exception {
         EntityType randomThing = tx.putEntityType("A Thing");
         AttributeType<String> attributeType = tx.putAttributeType("A Attribute Thing", AttributeType.DataType.STRING);
-        RelationType hasResource = tx.putRelationshipType("Has Attribute");
+        RelationType hasResource = tx.putRelationType("Has Attribute");
         Role resourceRole = tx.putRole("Attribute Role");
         Role actorRole = tx.putRole("Actor");
         Thing pacino = randomThing.create();
@@ -204,7 +204,7 @@ public class AttributeIT {
 
         entity.has(attribute);
 
-        RelationStructure relationshipStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relationships().collect(toSet()))).structure();
+        RelationStructure relationshipStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
         assertThat(relationshipStructure, instanceOf(RelationEdge.class));
         assertTrue("Edge Relationship id not starting with [" + Schema.PREFIX_EDGE + "]", relationshipStructure.id().getValue().startsWith(Schema.PREFIX_EDGE));
         assertEquals(entity, attribute.owner());
@@ -219,7 +219,7 @@ public class AttributeIT {
         EntityType entityType = tx.putEntityType("My entity type").has(attributeType);
         Entity entity = entityType.create();
         entity.has(attribute);
-        RelationImpl relation = RelationImpl.from(entity.relationships().iterator().next());
+        RelationImpl relation = RelationImpl.from(entity.relations().iterator().next());
 
         //Check it's a relation edge.
         RelationStructure relationshipStructureBefore = relation.structure();
@@ -281,15 +281,15 @@ public class AttributeIT {
         Entity e1 = entityType.create();
         Entity e2 = entityType.create();
 
-        assertThat(attribute.relationships().collect(toSet()), empty());
+        assertThat(attribute.relations().collect(toSet()), empty());
 
         e1.has(attribute);
         e2.has(attribute);
 
-        Relation rel1 = Iterables.getOnlyElement(e1.relationships().collect(toSet()));
-        Relation rel2 = Iterables.getOnlyElement(e2.relationships().collect(toSet()));
+        Relation rel1 = Iterables.getOnlyElement(e1.relations().collect(toSet()));
+        Relation rel2 = Iterables.getOnlyElement(e2.relations().collect(toSet()));
 
-        assertThat(attribute.relationships().collect(toSet()), containsInAnyOrder(rel1, rel2));
+        assertThat(attribute.relations().collect(toSet()), containsInAnyOrder(rel1, rel2));
     }
 
     @Test

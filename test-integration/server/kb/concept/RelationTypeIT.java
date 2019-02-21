@@ -68,7 +68,7 @@ public class RelationTypeIT {
 
     @Test
     public void whenGettingTheRolesOfRelationTypes_AllTheRolesAreReturned() throws Exception {
-        RelationType relationshipType = tx.putRelationshipType("relationTypes");
+        RelationType relationshipType = tx.putRelationType("relationTypes");
         Role role1 = tx.putRole("role1");
         Role role2 = tx.putRole("role2");
         Role role3 = tx.putRole("role3");
@@ -78,7 +78,7 @@ public class RelationTypeIT {
 
     @Test
     public void whenMutatingRolesOfRelationType_EnsureRelationTypeRolesAreAlwaysUpdated(){
-        RelationType relationshipType = tx.putRelationshipType("c1");
+        RelationType relationshipType = tx.putRelationType("c1");
         Role role1 = tx.putRole("c2");
         Role role2 = tx.putRole("c3");
         assertThat(relationshipType.roles().collect(toSet()), empty());
@@ -98,7 +98,7 @@ public class RelationTypeIT {
         EntityType entityType = tx.putEntityType("My Special Entity Type").has(attributeType);
         Entity entity = entityType.create();
 
-        RelationType implicitRelationshipType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
+        RelationType implicitRelationshipType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
 
         assertNotNull(implicitRelationshipType);
         assertThat(implicitRelationshipType.instances().collect(toSet()), empty());
@@ -116,7 +116,7 @@ public class RelationTypeIT {
         EntityType entityType = tx.putEntityType("My Special Entity Type").has(attributeType);
         entityType.create().has(attribute);
 
-        RelationType implicitRelationshipType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
+        RelationType implicitRelationshipType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
 
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(TransactionException.addingInstancesToAbstractType(implicitRelationshipType).getMessage());

@@ -283,7 +283,7 @@ public class GraknClientTest {
     }
 
     @Test
-    public void whenPuttingRelationshipType_EnsureCorrectRequestIsSent() {
+    public void whenPuttingRelationType_EnsureCorrectRequestIsSent() {
         ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
 
@@ -296,9 +296,9 @@ public class GraknClientTest {
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setPutRelationTypeRes(SessionProto.Transaction.PutRelationType.Res.newBuilder()
                                                    .setRelationType(protoConcept)).build();
-            server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response);
+            server.setResponse(RequestBuilder.Transaction.putRelationType(label), response);
 
-            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRelationshipType(label));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRelationType(label));
         }
     }
 

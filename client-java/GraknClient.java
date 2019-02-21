@@ -311,10 +311,10 @@ public final class GraknClient {
 
         @Nullable
         @Override
-        public RelationType getRelationshipType(String label) {
+        public RelationType getRelationType(String label) {
             SchemaConcept concept = getSchemaConcept(Label.of(label));
-            if (concept == null || !concept.isRelationshipType()) return null;
-            return concept.asRelationshipType();
+            if (concept == null || !concept.isRelationType()) return null;
+            return concept.asRelationType();
         }
 
         @Nullable
@@ -391,9 +391,9 @@ public final class GraknClient {
         }
 
         @Override
-        public RelationType putRelationshipType(Label label) {
-            transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
-            return RemoteConcept.of(responseOrThrow().getPutRelationTypeRes().getRelationType(), this).asRelationshipType();
+        public RelationType putRelationType(Label label) {
+            transceiver.send(RequestBuilder.Transaction.putRelationType(label));
+            return RemoteConcept.of(responseOrThrow().getPutRelationTypeRes().getRelationType(), this).asRelationType();
         }
 
         @Override

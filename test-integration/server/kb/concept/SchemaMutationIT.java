@@ -67,8 +67,8 @@ public class SchemaMutationIT {
         Role driver = tx.putRole("driver");
         Role driven = tx.putRole("driven");
 
-        RelationType marriage = tx.putRelationshipType("marriage").relates(husband).relates(wife);
-        RelationType drives = tx.putRelationshipType("drives").relates(driven).relates(driver);
+        RelationType marriage = tx.putRelationType("marriage").relates(husband).relates(wife);
+        RelationType drives = tx.putRelationType("drives").relates(driven).relates(driver);
 
         EntityType person = tx.putEntityType("person").plays(husband).plays(wife).plays(driver);
         EntityType man = tx.putEntityType("man").sup(person);
@@ -106,7 +106,7 @@ public class SchemaMutationIT {
 
     @Test
     public void whenDeletingRelatesUsedByExistingRelation_Throw() throws InvalidKBException {
-        RelationType marriage = tx.getRelationshipType("marriage");
+        RelationType marriage = tx.getRelationType("marriage");
         Role husband = tx.getRole("husband");
 
         marriage.unrelate(husband);
@@ -160,13 +160,13 @@ public class SchemaMutationIT {
     @Test
     public void whenDeletingRelationTypeAndLeavingRoleByItself_Throw() {
         Role role = tx.putRole("my wonderful role");
-        RelationType relation = tx.putRelationshipType("my wonderful relation").relates(role);
+        RelationType relation = tx.putRelationType("my wonderful relation").relates(role);
         relation.relates(role);
         tx.commit();
 
         //Now delete the relation
         tx = session.transaction(Transaction.Type.WRITE);
-        RelationType relationInNewTx = tx.getRelationshipType("my wonderful relation");
+        RelationType relationInNewTx = tx.getRelationType("my wonderful relation");
         relationInNewTx.delete();
 
         expectedException.expect(InvalidKBException.class);
@@ -184,7 +184,7 @@ public class SchemaMutationIT {
 
         //Create a dog which is a animal and is therefore allowed to have a name
         EntityType dog = tx.putEntityType("dog").sup(animal);
-        RelationType has_name = tx.getRelationshipType("@has-name");
+        RelationType has_name = tx.getRelationType("@has-name");
 
         //Create a dog and name it puppy
         Attribute<String> puppy = name.create("puppy");

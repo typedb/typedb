@@ -288,7 +288,7 @@ public class InferenceRule {
     public boolean appendsRolePlayers(){
         Atom headAtom = getHead().getAtom();
         SchemaConcept headType = headAtom.getSchemaConcept();
-        if (headType.isRelationshipType()
+        if (headType.isRelationType()
                 && headAtom.getVarName().isUserDefinedName()) {
             RelationshipAtom bodyAtom = getBody().getAtoms(RelationshipAtom.class)
                     .filter(at -> Objects.nonNull(at.getSchemaConcept()))

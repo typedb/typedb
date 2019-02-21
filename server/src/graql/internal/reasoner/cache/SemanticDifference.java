@@ -75,7 +75,7 @@ public class SemanticDifference {
         if (!answer.containsVar(var)) return new HashSet<>();
         Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
         return answer.get(var).asThing()
-                .relationships(roleAndTheirSubs.toArray(new Role[0]))
+                .relations(roleAndTheirSubs.toArray(new Role[0]))
                 .collect(Collectors.toSet());
     }
 

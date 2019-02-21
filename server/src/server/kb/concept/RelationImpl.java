@@ -123,8 +123,8 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
     }
 
     @Override
-    public Stream<Relation> relationships(Role... roles) {
-        return readFromReified((relationReified) -> relationReified.relationships(roles));
+    public Stream<Relation> relations(Role... roles) {
+        return readFromReified((relationReified) -> relationReified.relations(roles));
     }
 
     @Override

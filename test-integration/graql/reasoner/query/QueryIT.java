@@ -84,11 +84,11 @@ public class QueryIT {
             try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
 
                 Role someRole = tx.putRole("someRole");
-                tx.putRelationshipType("relation")
+                tx.putRelationType("relation")
                         .relates(someRole);
-                RelationType inferredBase = tx.putRelationshipType("inferredBase")
+                RelationType inferredBase = tx.putRelationType("inferredBase")
                         .relates(someRole);
-                tx.putRelationshipType("inferred")
+                tx.putRelationType("inferred")
                         .relates(someRole).sup(inferredBase);
                 tx.putEntityType("genericEntity")
                         .plays(someRole);

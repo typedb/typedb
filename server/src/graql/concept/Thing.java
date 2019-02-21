@@ -48,7 +48,7 @@ public interface Thing extends Concept {
      * @see Relation
      */
     @CheckReturnValue
-    Stream<Relation> relationships(Role... roles);
+    Stream<Relation> relations(Role... roles);
 
     /**
      * Determine the Roles that this Thing is currently playing.

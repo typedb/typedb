@@ -130,7 +130,7 @@ class ValidateGlobalRules {
      * @return an error if one is found
      */
     private static Optional<String> roleNotLinkedToRelationShip(Role role, RelationType relationshipType, Relation relationship){
-        boolean notFound = role.relationships().
+        boolean notFound = role.relations().
                 noneMatch(innerRelationType -> innerRelationType.label().equals(relationshipType.label()));
         if(notFound){
             return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relationship.id(), role.label(), relationshipType.label()));
@@ -162,8 +162,8 @@ class ValidateGlobalRules {
                     satisfiesPlays = true;
 
                     // Assert unique relationship for this role type
-                    if (required && !CommonUtil.containsOnly(thing.relationships(role), 1)) {
-                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(thing.id(), thing.type().label(), role.label(), thing.relationships(role).count()));
+                    if (required && !CommonUtil.containsOnly(thing.relations(role), 1)) {
+                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(thing.id(), thing.type().label(), role.label(), thing.relations(role).count()));
                     }
                 }
             }
@@ -183,7 +183,7 @@ class ValidateGlobalRules {
      * @return An error message if the relates does not have a single incoming RELATES edge
      */
     static Optional<String> validateHasSingleIncomingRelatesEdge(Role role){
-        if(!role.relationships().findAny().isPresent()) {
+        if(!role.relations().findAny().isPresent()) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.label()));
         }
         return Optional.empty();
@@ -262,7 +262,7 @@ class ValidateGlobalRules {
                 if(playsEntry.getValue()){
                     Role role = playsEntry.getKey();
                     // Assert there is a relationship for this type
-                    Stream<Relation> relationships = thing.relationships(role);
+                    Stream<Relation> relationships = thing.relations(role);
 
                     if(!CommonUtil.containsOnly(relationships, 1)){
                         Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.label());

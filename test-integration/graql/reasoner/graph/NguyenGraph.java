@@ -59,9 +59,9 @@ public class NguyenGraph{
         EntityType entity = tx.getEntityType("entity2");
         EntityType aEntity = tx.getEntityType("a-entity");
         EntityType bEntity = tx.getEntityType("b-entity");
-        RelationType r = tx.getRelationshipType("R");
-        RelationType p = tx.getRelationshipType("P");
-        RelationType q = tx.getRelationshipType("Q");
+        RelationType r = tx.getRelationType("R");
+        RelationType p = tx.getRelationType("P");
+        RelationType q = tx.getRelationType("Q");
 
         ConceptId cId = putEntityWithResource(tx, "c", entity, key).id();
         ConceptId dId = putEntityWithResource(tx, "d", entity, key).id();

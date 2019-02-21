@@ -409,7 +409,7 @@ public class QueryExecutor {
         maybeLabel.ifPresent(label -> {
             SchemaConcept schemaConcept = transaction.getSchemaConcept(label);
 
-            if (schemaConcept == null || !schemaConcept.isRelationshipType()) {
+            if (schemaConcept == null || !schemaConcept.isRelationType()) {
                 throw GraqlQueryException.notARelationType(label);
             }
         });

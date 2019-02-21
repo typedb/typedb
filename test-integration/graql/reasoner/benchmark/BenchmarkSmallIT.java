@@ -69,12 +69,12 @@ public class BenchmarkSmallIT {
             Role fromRole = tx.putRole("fromRole");
             Role toRole = tx.putRole("toRole");
 
-            RelationType relation0 = tx.putRelationshipType("relation0")
+            RelationType relation0 = tx.putRelationType("relation0")
                     .relates(fromRole)
                     .relates(toRole);
 
             for (int i = 1; i <= N; i++) {
-                tx.putRelationshipType("relation" + i)
+                tx.putRelationType("relation" + i)
                         .relates(fromRole)
                         .relates(toRole);
             }

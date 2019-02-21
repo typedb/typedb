@@ -107,7 +107,7 @@ public class CorenessIT {
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             entityType.plays(role1).plays(role2);
-            tx.putRelationshipType(related)
+            tx.putRelationType(related)
                     .relates(role1).relates(role2)
                     .create()
                     .assign(role1, entity1)
@@ -116,7 +116,7 @@ public class CorenessIT {
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
             entityType.plays(role3).plays(role4);
-            tx.putRelationshipType(veryRelated)
+            tx.putRelationType(veryRelated)
                     .relates(role3).relates(role4)
                     .create()
                     .assign(role3, entity1)
@@ -201,12 +201,12 @@ public class CorenessIT {
 
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            RelationType relationshipType1 = tx.putRelationshipType(related)
+            RelationType relationshipType1 = tx.putRelationType(related)
                     .relates(role1).relates(role2);
 
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
-            RelationType relationshipType2 = tx.putRelationshipType(veryRelated)
+            RelationType relationshipType2 = tx.putRelationType(veryRelated)
                     .relates(role3).relates(role4);
 
             entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
@@ -318,12 +318,12 @@ public class CorenessIT {
 
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            RelationType relationshipType1 = tx.putRelationshipType(related)
+            RelationType relationshipType1 = tx.putRelationType(related)
                     .relates(role1).relates(role2);
 
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
-            RelationType relationshipType2 = tx.putRelationshipType(veryRelated)
+            RelationType relationshipType2 = tx.putRelationType(veryRelated)
                     .relates(role3).relates(role4);
 
             entityType1.plays(role1).plays(role2).plays(role3).plays(role4);

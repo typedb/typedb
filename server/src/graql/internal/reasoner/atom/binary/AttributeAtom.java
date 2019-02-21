@@ -312,7 +312,7 @@ public abstract class AttributeAtom extends Binary{
         if (owner.asThing().attributes(attribute.type()).noneMatch(a -> a.equals(attribute))) {
             if (owner.isEntity()) {
                 EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
-            } else if (owner.isRelationship()) {
+            } else if (owner.isRelation()) {
                 RelationImpl.from(owner.asRelation()).attributeInferred(attribute);
             } else if (owner.isAttribute()) {
                 AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);

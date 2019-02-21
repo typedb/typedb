@@ -700,13 +700,13 @@ public class RuleTest {
                 .plays(someRole)
                 .plays(anotherRole);
 
-        tx.putRelationshipType("relation")
+        tx.putRelationType("relation")
                 .relates(someRole)
                 .relates(anotherRole)
                 .relates(singleRole)
                 .plays(someRole)
                 .plays(anotherRole);
-        tx.putRelationshipType("anotherRelation")
+        tx.putRelationType("anotherRelation")
                 .relates(singleRole);
     }
 }

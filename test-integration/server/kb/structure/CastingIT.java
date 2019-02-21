@@ -61,7 +61,7 @@ public class CastingIT {
         role2 = tx.putRole("role2");
         role3 = tx.putRole("role3");
         entityType = tx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
-        relationshipType = tx.putRelationshipType("Relationship Type").relates(role1).relates(role2).relates(role3);
+        relationshipType = tx.putRelationType("Relationship Type").relates(role1).relates(role2).relates(role3);
     }
 
     @After

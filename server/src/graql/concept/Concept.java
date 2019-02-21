@@ -100,7 +100,7 @@ public interface Concept {
      * @return A RelationType if the Concept is a RelationType
      */
     @CheckReturnValue
-    default RelationType asRelationshipType() {
+    default RelationType asRelationType() {
         throw TransactionException.invalidCasting(this, RelationType.class);
     }
 
@@ -210,7 +210,7 @@ public interface Concept {
      * @return true if the Concept is a RelationType
      */
     @CheckReturnValue
-    default boolean isRelationshipType() {
+    default boolean isRelationType() {
         return false;
     }
 
@@ -250,7 +250,7 @@ public interface Concept {
      * @return true if the Concept is a Relation
      */
     @CheckReturnValue
-    default boolean isRelationship() {
+    default boolean isRelation() {
         return false;
     }
 

@@ -496,8 +496,8 @@ public interface Transaction extends AutoCloseable {
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
      */
-    default RelationType putRelationshipType(String label) {
-        return putRelationshipType(Label.of(label));
+    default RelationType putRelationType(String label) {
+        return putRelationType(Label.of(label));
     }
 
     /**
@@ -509,7 +509,7 @@ public interface Transaction extends AutoCloseable {
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
      */
-    RelationType putRelationshipType(Label label);
+    RelationType putRelationType(Label label);
 
     /**
      * Create a {@link Role} with super-type {@code role}, or return a pre-existing {@link Role}, with the
@@ -604,7 +604,7 @@ public interface Transaction extends AutoCloseable {
      */
     @CheckReturnValue
     @Nullable
-    RelationType getRelationshipType(String label);
+    RelationType getRelationType(String label);
 
     /**
      * Get the {@link AttributeType} with the label provided, if it exists.
