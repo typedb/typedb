@@ -31,7 +31,7 @@ import grakn.core.protocol.ConceptProto;
 import javax.annotation.Nullable;
 
 /**
- * Client implementation of {@link AttributeType}
+ * Client implementation of AttributeType
  *
  * @param <D> The data type of this attribute type
  */

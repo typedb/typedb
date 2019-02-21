@@ -419,7 +419,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public Set<String> validateOntologically() {
         Set<String> errors = new HashSet<>();
         SchemaConcept type = getSchemaConcept();
-        if (type != null && !type.isRelationshipType()){
+        if (type != null && !type.isRelationType()){
             errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage(type.label()));
             return errors;
         }
@@ -430,7 +430,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
             Role role = e.getKey();
             if (!Schema.MetaSchema.isMetaLabel(role.label())) {
                 //check whether this role can be played in this relation
-                if (type != null && type.asRelationshipType().roles().noneMatch(r -> r.equals(role))) {
+                if (type != null && type.asRelationType().roles().noneMatch(r -> r.equals(role))) {
                     errors.add(ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage(role.label(), type.label()));
                 }
 
@@ -739,7 +739,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Transaction graph = getParentQuery().tx();
         Role metaRole = graph.getMetaRole();
         List<RelationProperty.RolePlayer> allocatedRelationPlayers = new ArrayList<>();
-        RelationType relType = getSchemaConcept() != null? getSchemaConcept().asRelationshipType() : null;
+        RelationType relType = getSchemaConcept() != null? getSchemaConcept().asRelationType() : null;
 
         //explicit role types from castings
         List<RelationProperty.RolePlayer> inferredRelationPlayers = new ArrayList<>();
@@ -762,8 +762,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Set<Role> possibleRoles = relType != null?
                 relType.roles().collect(toSet()) :
                 inferPossibleTypes(sub).stream()
-                        .filter(Concept::isRelationshipType)
-                        .map(Concept::asRelationshipType)
+                        .filter(Concept::isRelationType)
+                        .map(Concept::asRelationType)
                         .flatMap(RelationType::roles).collect(toSet());
 
         //possible role types for each casting based on its type
@@ -1044,7 +1044,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Override
     public Stream<ConceptMap> materialise(){
-        RelationType relationType = getSchemaConcept().asRelationshipType();
+        RelationType relationType = getSchemaConcept().asRelationType();
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();
 

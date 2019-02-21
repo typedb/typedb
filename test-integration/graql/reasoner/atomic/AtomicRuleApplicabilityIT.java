@@ -345,7 +345,7 @@ public class AtomicRuleApplicabilityIT {
 
         assertEquals(tx.ruleCache().getRules().count(), type.getApplicableRules().count());
         assertThat(type2.getApplicableRules().collect(toSet()), empty());
-        assertEquals(tx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isRelationshipType)).count(), type3.getApplicableRules().count());
+        assertEquals(tx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isRelationType)).count(), type3.getApplicableRules().count());
         tx.close();
     }
 
@@ -417,7 +417,7 @@ public class AtomicRuleApplicabilityIT {
         Atom relation3 = ReasonerQueries.create(conjunction(relationString3, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
 
         assertEquals(7, relation.getApplicableRules().count());
-        assertEquals(tx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isRelationshipType)).count(), relation2.getApplicableRules().count());
+        assertEquals(tx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isRelationType)).count(), relation2.getApplicableRules().count());
 
         //TODO not filtered correctly
         //assertEquals(tx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isAttributeType)).count(), relation3.getApplicableRules().count());
@@ -750,7 +750,7 @@ public class AtomicRuleApplicabilityIT {
     @Test
     public void testRuleApplicability_whenMatchingRulesForGroundAtomRedefinedViaRule_ruleIsMatched(){
         TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.READ);
-        Relation instance = tx.getRelationshipType("reifiable-relation").instances().findFirst().orElse(null);
+        Relation instance = tx.getRelationType("reifiable-relation").instances().findFirst().orElse(null);
         String queryString = "{ $r has description 'typed-reified'; $r id '" + instance.id().getValue() + "'; };";
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
 
@@ -761,7 +761,7 @@ public class AtomicRuleApplicabilityIT {
     @Test
     public void testRuleApplicability_whenMatchingRulesForGroundTypeWhichIsNotRedefined_noRulesAreMatched(){
         TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.READ);
-        Relation instance = tx.getRelationshipType("binary").instances().findFirst().orElse(null);
+        Relation instance = tx.getRelationType("binary").instances().findFirst().orElse(null);
         String queryString = "{ $x isa binary; $x id '" + instance.id().getValue() + "'; };";
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
 
@@ -772,7 +772,7 @@ public class AtomicRuleApplicabilityIT {
     @Test
     public void testRuleApplicability_whenMatchingRulesForASpecificRelation_noRulesAreMatched(){
         TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.READ);
-        Relation instance = tx.getRelationshipType("binary").instances().findFirst().orElse(null);
+        Relation instance = tx.getRelationType("binary").instances().findFirst().orElse(null);
         String queryString = "{ $r ($x, $y) isa binary; $r id '" + instance.id().getValue() + "'; };";
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
 

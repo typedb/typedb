@@ -55,8 +55,8 @@ public class DualLinearTransitivityMatrixGraph{
 
         EntityType aEntity = tx.getEntityType("a-entity");
         EntityType bEntity = tx.getEntityType("b-entity");
-        RelationType R1 = tx.getRelationshipType("R1");
-        RelationType R2 = tx.getRelationshipType("R2");
+        RelationType R1 = tx.getRelationType("R1");
+        RelationType R2 = tx.getRelationType("R2");
 
         ConceptId[] aInstancesIds = new ConceptId[m+1];
         ConceptId[][] bInstancesIds = new ConceptId[m][n+1];

@@ -44,6 +44,7 @@ import java.util.stream.Stream;
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner {
     private final Set<Cache> registeredCaches = new HashSet<>();
+    private final VertexElement vertexElement;
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
     private final Cache<Shard> currentShard = Cache.createTxCache(this, Cacheable.shard(), () -> {
         String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
@@ -52,7 +53,6 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     });
     private final Cache<Long> shardCount = Cache.createSessionCache(this, Cacheable.number(), () -> shards().count());
     private final Cache<ConceptId> conceptId = Cache.createPersistentCache(this, Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
-    private final VertexElement vertexElement;
 
     ConceptImpl(VertexElement vertexElement) {
         this.vertexElement = vertexElement;
@@ -105,7 +105,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
         switch (direction) {
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).
-                        flatMap(edge -> Stream.<X>of(
+                        flatMap(edge -> Stream.of(
                                 vertex().tx().factory().buildConcept(edge.source()),
                                 vertex().tx().factory().buildConcept(edge.target()))
                         );

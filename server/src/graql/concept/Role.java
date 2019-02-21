@@ -78,7 +78,7 @@ public interface Role extends SchemaConcept {
      * @see RelationType
      */
     @CheckReturnValue
-    Stream<RelationType> relationships();
+    Stream<RelationType> relations();
 
     /**
      * Returns a collection of the Types that can play this Role.

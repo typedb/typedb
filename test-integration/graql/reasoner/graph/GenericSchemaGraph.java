@@ -62,8 +62,8 @@ public class GenericSchemaGraph {
         EntityType anotherEntityType = tx.getEntityType("anotherBaseRoleEntity");
         AttributeType<Object> resourceType = tx.getAttributeType("resource");
         AttributeType<Object> anotherResourceType = tx.getAttributeType("resource-long");
-        RelationType binary = tx.getRelationshipType("binary");
-        RelationType ternary = tx.getRelationshipType("ternary");
+        RelationType binary = tx.getRelationType("binary");
+        RelationType ternary = tx.getRelationType("ternary");
 
         Iterator<Entity> entities = entityType.instances()
                 .filter(et -> !et.type().equals(subRoleEntityType) )

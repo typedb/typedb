@@ -197,7 +197,6 @@ public interface AttributeType<D> extends Type {
     /**
      * Retrieve the regular expression to which instances of this AttributeType must conform, or {@code null} if no
      * regular expression is set.
-     * <p>
      * By default, an AttributeType does not have a regular expression set.
      *
      * @return The regular expression to which instances of this AttributeType must conform.

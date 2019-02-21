@@ -53,8 +53,8 @@ public class DiagonalGraph{
         Role relTo = tx.getRole("rel-to");
 
         EntityType entity1 = tx.getEntityType("entity1");
-        RelationType horizontal = tx.getRelationshipType("horizontal");
-        RelationType vertical = tx.getRelationshipType("vertical");
+        RelationType horizontal = tx.getRelationType("horizontal");
+        RelationType vertical = tx.getRelationType("vertical");
         ConceptId[][] instanceIds = new ConceptId[n][m];
         long inserts = 0;
         for (int i = 0; i < n; i++) {

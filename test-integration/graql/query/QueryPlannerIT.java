@@ -99,9 +99,9 @@ public class QueryPlannerIT {
         superType1.plays(role1).plays(role2).plays(role3);
         entityType2.plays(role1).plays(role2).plays(role3);
         entityType3.plays(role1).plays(role2).plays(role3);
-        RelationType relationshipType1 = graph.putRelationshipType(related)
+        RelationType relationshipType1 = graph.putRelationType(related)
                 .relates(role1).relates(role2).relates(role3);
-        graph.putRelationshipType(sameAsRelated)
+        graph.putRelationType(sameAsRelated)
                 .relates(role1).relates(role2).relates(role3);
 
         Role role4 = graph.putRole("role4");
@@ -109,7 +109,7 @@ public class QueryPlannerIT {
         entityType1.plays(role4).plays(role5);
         entityType2.plays(role4).plays(role5);
         entityType4.plays(role4);
-        graph.putRelationshipType(veryRelated)
+        graph.putRelationType(veryRelated)
                 .relates(role4).relates(role5);
 
         Entity entity1 = entityType1.create();

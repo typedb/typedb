@@ -33,12 +33,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
- * Wrapper making transaction calls to the Grakn RPC Server - handles sending a stream of {@link Transaction.Req} and
- * receiving a stream of {@link Transaction.Res}.
- * <p>
- * A request is sent with the {@link #send(Transaction.Req)}} method, and you can block for a response with the
- * {@link #receive()} method.
- * <p>
+ * Wrapper making transaction calls to the Grakn RPC Server - handles sending a stream of Transaction.Req and
+ * receiving a stream of Transaction.Res.
+ * A request is sent with the #send(Transaction.Req)} method, and you can block for a response with the
+ * #receive() method.
  * {@code
  * try (Transceiver tx = Transceiver.create(stub) {
  * tx.send(openMessage);
@@ -66,8 +64,7 @@ public class Transceiver implements AutoCloseable {
 
     /**
      * Send a request and return immediately.
-     * <p>
-     * This method is non-blocking - it returns immediately.
+         * This method is non-blocking - it returns immediately.
      */
     public void send(Transaction.Req request) {
         if (responseListener.terminated.get()) {
@@ -106,9 +103,8 @@ public class Transceiver implements AutoCloseable {
     }
 
     /**
-     * A {@link StreamObserver} that stores all responses in a blocking queue.
-     * <p>
-     * A response can be polled with the {@link #poll()} method.
+     * A StreamObserver that stores all responses in a blocking queue.
+         * A response can be polled with the #poll() method.
      */
     private static class ResponseListener implements StreamObserver<Transaction.Res>, AutoCloseable {
 
@@ -164,8 +160,8 @@ public class Transceiver implements AutoCloseable {
     }
 
     /**
-     * A response from the gRPC server, that may be a successful response {@link #ok(Transaction.Res), an error
-     * {@link #error(StatusRuntimeException)}} or a "completed" message {@link #completed()}.
+     * A response from the gRPC server, that may be a successful response #ok(Transaction.Res), an error
+     * {#error(StatusRuntimeException)} or a "completed" message #completed().
      */
     public static class Response {
 
@@ -273,7 +269,7 @@ public class Transceiver implements AutoCloseable {
         }
 
         /**
-         * Enum indicating the type of {@link Response}.
+         * Enum indicating the type of Response.
          */
         public enum Type {
             OK, ERROR, COMPLETED

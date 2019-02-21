@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Client implementation of {@link Concept}
+ * Client implementation of Concept
  *
  * @param <SomeConcept> represents the actual class of object to downcast to
  */
@@ -57,13 +57,13 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
             case ENTITY:
                 return RemoteEntity.construct(tx, id);
             case RELATION:
-                return RemoteRelationship.construct(tx, id);
+                return RemoteRelation.construct(tx, id);
             case ATTRIBUTE:
                 return RemoteAttribute.construct(tx, id);
             case ENTITY_TYPE:
                 return RemoteEntityType.construct(tx, id);
             case RELATION_TYPE:
-                return RemoteRelationshipType.construct(tx, id);
+                return RemoteRelationType.construct(tx, id);
             case ATTRIBUTE_TYPE:
                 return RemoteAttributeType.construct(tx, id);
             case ROLE:

@@ -54,7 +54,7 @@ public class LinearTransitivityMatrixGraph{
         Role Qto = tx.getRole("Q-to");
 
         EntityType aEntity = tx.getEntityType("a-entity");
-        RelationType Q = tx.getRelationshipType("Q");
+        RelationType Q = tx.getRelationType("Q");
         ConceptId[][] aInstancesIds = new ConceptId[n+1][m+1];
         Thing aInst = putEntityWithResource(tx, "a", tx.getEntityType("entity2"), key);
         for(int i = 1 ; i <= n ;i++) {

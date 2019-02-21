@@ -57,7 +57,7 @@ public class PathMatrixGraph {
         Role arcFrom = tx.getRole("arc-from");
         Role arcTo = tx.getRole("arc-to");
 
-        RelationType arc = tx.getRelationshipType("arc");
+        RelationType arc = tx.getRelationType("arc");
         putEntityWithResource(tx, "a0", startVertex, key);
 
         for(int i = 0 ; i < n ;i++) {

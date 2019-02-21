@@ -69,7 +69,7 @@ public class PathTreeGraph{
         EntityType vertex = tx.getEntityType("vertex");
         EntityType startVertex = tx.getEntityType("start-vertex");
 
-        RelationType arc = tx.getRelationshipType("arc");
+        RelationType arc = tx.getRelationType("arc");
         putEntityWithResource(tx, "a0", startVertex, key);
 
         int outputThreshold = 500;

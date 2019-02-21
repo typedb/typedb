@@ -44,20 +44,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     Encapsulates The Relation as a VertexElement
- * </p>
- *
- * <p>
- *     This wraps up a Relation as a VertexElement. It is used to represent any Relation which
- *     has been reified.
- * </p>
- *
- *
+ * Encapsulates The Relation as a VertexElement
+ * This wraps up a Relation as a VertexElement. It is used to represent any Relation which
+ * has been reified.
  */
 public class RelationReified extends ThingImpl<Relation, RelationType> implements RelationStructure {
 
-    @Nullable private RelationImpl owner;
+    @Nullable
+    private RelationImpl owner;
 
     private RelationReified(VertexElement vertexElement) {
         super(vertexElement);
@@ -67,11 +61,11 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         super(vertexElement, type);
     }
 
-    public static RelationReified get(VertexElement vertexElement){
+    public static RelationReified get(VertexElement vertexElement) {
         return new RelationReified(vertexElement);
     }
 
-    public static RelationReified create(VertexElement vertexElement, RelationType type){
+    public static RelationReified create(VertexElement vertexElement, RelationType type) {
         return new RelationReified(vertexElement, type);
     }
 
@@ -96,8 +90,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         castingsRelation().filter(casting -> casting.getRole().equals(role) && casting.getRolePlayer().equals(thing)).
                 findAny().
                 ifPresent(casting -> {
-                   casting.delete();
-                   vertex().tx().cache().remove(casting);
+                    casting.delete();
+                    vertex().tx().cache().remove(casting);
                 });
     }
 
@@ -105,19 +99,18 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         Objects.requireNonNull(role);
         Objects.requireNonNull(thing);
 
-        if(Schema.MetaSchema.isMetaLabel(role.label())) throw TransactionException.metaTypeImmutable(role.label());
+        if (Schema.MetaSchema.isMetaLabel(role.label())) throw TransactionException.metaTypeImmutable(role.label());
 
         //Do the actual put of the role and role player
         putRolePlayerEdge(role, thing);
     }
 
     /**
-     * If the edge does not exist then it adds a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from
+     * If the edge does not exist then it adds a Schema.EdgeLabel#ROLE_PLAYER edge from
      * this Relation to a target Thing which is playing some Role.
-     *
      * If the edge does exist nothing is done.
      *
-     * @param role The Role being played by the Thing in this Relation
+     * @param role    The Role being played by the Thing in this Relation
      * @param toThing The Thing playing a Role in this Relation
      */
     public void putRolePlayerEdge(Role role, Thing toThing) {
@@ -132,7 +125,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 has(Schema.VertexProperty.ID.name(), toThing.id()).
                 select("edge");
 
-        if(traversal.hasNext()){
+        if (traversal.hasNext()) {
             return;
         }
 
@@ -150,9 +143,9 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
      * @param roles The Role which the Things are playing
      * @return The Casting which unify a Role and Thing with this Relation
      */
-    public Stream<Casting> castingsRelation(Role... roles){
+    public Stream<Casting> castingsRelation(Role... roles) {
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
-        if(roleSet.isEmpty()){
+        if (roleSet.isEmpty()) {
             return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER).
                     map(edge -> Casting.withRelationship(edge, owner));
         }
@@ -170,11 +163,11 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     }
 
     @Override
-    public String innerToString(){
+    public String innerToString() {
         StringBuilder description = new StringBuilder();
         description.append("ID [").append(id()).append("] Type [").append(type().label()).append("] Roles and Role Players: \n");
         for (Map.Entry<Role, Set<Thing>> entry : allRolePlayers().entrySet()) {
-            if(entry.getValue().isEmpty()){
+            if (entry.getValue().isEmpty()) {
                 description.append("    Role [").append(entry.getKey().label()).append("] not played by any instance \n");
             } else {
                 StringBuilder instancesString = new StringBuilder();

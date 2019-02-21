@@ -19,30 +19,23 @@
 package grakn.core.server.kb.structure;
 
 import grakn.core.graql.internal.Schema;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 /**
- * <p>
- *     Represent an {@link Edge} in a {@link Transaction}
- * </p>
- *
- * <p>
- *    Wraps a tinkerpop {@link Edge} constraining it to the Grakn Object Model.
- * </p>
- *
+ * Represent an Edge in a Transaction
+ * Wraps a tinkerpop Edge constraining it to the Grakn Object Model.
  */
 public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
-    public EdgeElement(TransactionOLTP graknGraph, Edge e){
+    public EdgeElement(TransactionOLTP graknGraph, Edge e) {
         super(graknGraph, e, Schema.PREFIX_EDGE);
     }
 
     /**
      * Deletes the edge between two concepts and adds both those concepts for re-validation in case something goes wrong
      */
-    public void delete(){
+    public void delete() {
         element().remove();
     }
 
@@ -61,11 +54,11 @@ public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
         return element().id().equals(edge.id());
     }
 
-    public VertexElement source(){
+    public VertexElement source() {
         return tx().factory().buildVertexElement(element().outVertex());
     }
 
-    public VertexElement target(){
+    public VertexElement target() {
         return tx().factory().buildVertexElement(element().inVertex());
     }
 }

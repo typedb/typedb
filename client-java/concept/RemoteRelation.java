@@ -38,16 +38,16 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link Relation}
+ * Client implementation of Relation
  */
-public class RemoteRelationship extends RemoteThing<Relation, RelationType> implements Relation {
+public class RemoteRelation extends RemoteThing<Relation, RelationType> implements Relation {
 
-    RemoteRelationship(GraknClient.Transaction tx, ConceptId id) {
+    RemoteRelation(GraknClient.Transaction tx, ConceptId id) {
         super(tx, id);
     }
 
-    static RemoteRelationship construct(GraknClient.Transaction tx, ConceptId id) {
-        return new RemoteRelationship(tx, id);
+    static RemoteRelation construct(GraknClient.Transaction tx, ConceptId id) {
+        return new RemoteRelation(tx, id);
     }
 
     @Override // TODO: Weird. Why is this not a stream, while other collections are returned as stream
@@ -107,7 +107,7 @@ public class RemoteRelationship extends RemoteThing<Relation, RelationType> impl
 
     @Override
     final RelationType asCurrentType(Concept concept) {
-        return concept.asRelationshipType();
+        return concept.asRelationType();
     }
 
     @Override

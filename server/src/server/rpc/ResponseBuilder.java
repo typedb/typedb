@@ -174,13 +174,13 @@ public class ResponseBuilder {
         private static ConceptProto.Concept.BASE_TYPE getBaseType(grakn.core.graql.concept.Concept concept) {
             if (concept.isEntityType()) {
                 return ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE;
-            } else if (concept.isRelationshipType()) {
+            } else if (concept.isRelationType()) {
                 return ConceptProto.Concept.BASE_TYPE.RELATION_TYPE;
             } else if (concept.isAttributeType()) {
                 return ConceptProto.Concept.BASE_TYPE.ATTRIBUTE_TYPE;
             } else if (concept.isEntity()) {
                 return ConceptProto.Concept.BASE_TYPE.ENTITY;
-            } else if (concept.isRelationship()) {
+            } else if (concept.isRelation()) {
                 return ConceptProto.Concept.BASE_TYPE.RELATION;
             } else if (concept.isAttribute()) {
                 return ConceptProto.Concept.BASE_TYPE.ATTRIBUTE;

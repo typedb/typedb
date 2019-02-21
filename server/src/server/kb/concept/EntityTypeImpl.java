@@ -24,18 +24,11 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 
 /**
- * <p>
- *     SchemaConcept used to represent categories.
- * </p>
- *
- * <p>
- *     A SchemaConcept which represents categories instances can fall within.
- *     Any instance of a EntityType is called an Entity.
- * </p>
- *
- *
+ * SchemaConcept used to represent categories.
+ * A SchemaConcept which represents categories instances can fall within.
+ * Any instance of a EntityType is called an Entity.
  */
-public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
+public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType {
     private EntityTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
@@ -44,12 +37,16 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
         super(vertexElement, type);
     }
 
-    public static EntityTypeImpl get(VertexElement vertexElement){
+    public static EntityTypeImpl get(VertexElement vertexElement) {
         return new EntityTypeImpl(vertexElement);
     }
 
-    public static EntityTypeImpl create(VertexElement vertexElement, EntityType type){
+    public static EntityTypeImpl create(VertexElement vertexElement, EntityType type) {
         return new EntityTypeImpl(vertexElement, type);
+    }
+
+    public static EntityTypeImpl from(EntityType entityType) {
+        return (EntityTypeImpl) entityType;
     }
 
     @Override
@@ -59,9 +56,5 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
 
     public Entity addEntityInferred() {
         return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> vertex().tx().factory().buildEntity(vertex, type), true);
-    }
-
-    public static EntityTypeImpl from(EntityType entityType){
-        return (EntityTypeImpl) entityType;
     }
 }

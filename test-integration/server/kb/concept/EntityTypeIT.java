@@ -295,15 +295,15 @@ public class EntityTypeIT {
                 containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
 
         //Check Implicit Types Follow SUB Structure
-        RelationType superRelation = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(superAttributeType.label()).getValue());
+        RelationType superRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(superAttributeType.label()).getValue());
         Role superRoleOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(superAttributeType.label()).getValue());
         Role superRoleValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(superAttributeType.label()).getValue());
 
-        RelationType relation = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
+        RelationType relation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
         Role roleOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(attributeType.label()).getValue());
         Role roleValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(attributeType.label()).getValue());
 
-        RelationType metaRelation = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(metaType.label()).getValue());
+        RelationType metaRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(metaType.label()).getValue());
         Role metaRoleOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(metaType.label()).getValue());
         Role metaRoleValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(metaType.label()).getValue());
 
@@ -334,15 +334,15 @@ public class EntityTypeIT {
                 containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
 
         //Check Implicit Types Follow SUB Structure
-        RelationType superRelation = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(superAttributeType.label()).getValue());
+        RelationType superRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(superAttributeType.label()).getValue());
         Role superRoleOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(superAttributeType.label()).getValue());
         Role superRoleValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(superAttributeType.label()).getValue());
 
-        RelationType relation = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
+        RelationType relation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
         Role roleOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(attributeType.label()).getValue());
         Role roleValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(attributeType.label()).getValue());
 
-        RelationType metaRelation = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(metaType.label()).getValue());
+        RelationType metaRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(metaType.label()).getValue());
         Role metaRoleOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(metaType.label()).getValue());
         Role metaRoleValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(metaType.label()).getValue());
 

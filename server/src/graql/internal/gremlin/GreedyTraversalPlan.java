@@ -316,7 +316,7 @@ public class GreedyTraversalPlan {
     }
 
     private static void addAllPossibleRelationships(Multimap<Type, RelationType> relationshipMap, Type metaType) {
-        metaType.subs().forEach(type -> type.playing().flatMap(Role::relationships)
+        metaType.subs().forEach(type -> type.playing().flatMap(Role::relations)
                 .forEach(relationshipType -> relationshipMap.put(type, relationshipType)));
     }
 

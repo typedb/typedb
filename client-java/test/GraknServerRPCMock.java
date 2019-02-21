@@ -48,17 +48,11 @@ import static org.mockito.Mockito.mock;
 /**
  * Semi-mocked gRPC server that can handle transactions.
  *
- * <p>
- * The {@link #sessionService()} and {@link #requestListener()} are both mock objects and should be used with
- * {@link org.mockito.Mockito#verify(Object)}.
- * </p>
- * <p>
- * By default, the server will return a "done" {@link Transaction.Res} to every message. And will respond
- * with {@link StreamObserver#onCompleted()} when receiving a {@link StreamObserver#onCompleted()} from the client.
- * </p>
- * <p>
- * In order to mock additional responses, use the method {@link #setResponse(Transaction.Req, Transaction.Res...)}.
- * </p>
+ * The #sessionService() and #requestListener() are both mock objects and should be used with
+ * org.mockito.Mockito#verify(Object).
+ * By default, the server will return a "done" Transaction.Res to every message. And will respond
+ * with StreamObserver#onCompleted() when receiving a StreamObserver#onCompleted() from the client.
+ * In order to mock additional responses, use the method #setResponse(Transaction.Req, Transaction.Res...).
  */
 public final class GraknServerRPCMock extends ExternalResource {
 
@@ -200,14 +194,14 @@ public final class GraknServerRPCMock extends ExternalResource {
     }
 
     /**
-     * Contains a mutable map of iterators of {@link Transaction.Res}s for gRPC. These iterators are used for returning
+     * Contains a mutable map of iterators of Transaction.Ress for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
      */
     public class ServerIteratorsMock {
         private final Map<Integer, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
 
         /**
-         * Return the next response from an iterator. {@link SessionProto.Transaction.Iter.Res} response will return
+         * Return the next response from an iterator. SessionProto.Transaction.Iter.Res response will return
          * done if the iterator is exhausted.
          */
         public Optional<Transaction.Res> next(int iteratorId) {

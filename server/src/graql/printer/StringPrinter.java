@@ -110,7 +110,7 @@ public class StringPrinter extends Printer<StringBuilder> {
                     .append(conceptId(concept.id()));
         }
 
-        if (concept.isRelationship()) {
+        if (concept.isRelation()) {
             List<String> rolePlayerList = new LinkedList<>();
             for (Map.Entry<Role, Set<Thing>> rolePlayers : concept.asRelation().rolePlayersMap().entrySet()) {
                 Role role = rolePlayers.getKey();

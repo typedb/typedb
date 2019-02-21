@@ -392,8 +392,8 @@ public class ConceptBuilder {
 
         if (type.isEntityType()) {
             return type.asEntityType().create();
-        } else if (type.isRelationshipType()) {
-            return type.asRelationshipType().create();
+        } else if (type.isRelationType()) {
+            return type.asRelationType().create();
         } else if (type.isAttributeType()) {
             return type.asAttributeType().create(use(VALUE));
         } else if (type.label().equals(Schema.MetaSchema.THING.getLabel())) {
@@ -411,8 +411,8 @@ public class ConceptBuilder {
 
         if (superConcept.isEntityType()) {
             concept = executor.tx().putEntityType(label);
-        } else if (superConcept.isRelationshipType()) {
-            concept = executor.tx().putRelationshipType(label);
+        } else if (superConcept.isRelationType()) {
+            concept = executor.tx().putRelationType(label);
         } else if (superConcept.isRole()) {
             concept = executor.tx().putRole(label);
         } else if (superConcept.isAttributeType()) {
@@ -438,8 +438,8 @@ public class ConceptBuilder {
     public static void setSuper(SchemaConcept subConcept, SchemaConcept superConcept) {
         if (superConcept.isEntityType()) {
             subConcept.asEntityType().sup(superConcept.asEntityType());
-        } else if (superConcept.isRelationshipType()) {
-            subConcept.asRelationshipType().sup(superConcept.asRelationshipType());
+        } else if (superConcept.isRelationType()) {
+            subConcept.asRelationType().sup(superConcept.asRelationType());
         } else if (superConcept.isRole()) {
             subConcept.asRole().sup(superConcept.asRole());
         } else if (superConcept.isAttributeType()) {

@@ -65,7 +65,7 @@ public class GeoGraph {
 
         geoEntity = tx.putRole("geo-entity");
         entityLocation = tx.putRole("entity-location");
-        isLocatedIn = tx.putRelationshipType("is-located-in")
+        isLocatedIn = tx.putRelationType("is-located-in")
                 .relates(geoEntity).relates(entityLocation);
 
         geographicalObject = tx.putEntityType("geoObject")

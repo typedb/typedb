@@ -39,7 +39,7 @@ public interface Entity extends Thing {
     /**
      * Creates a relation from this instance to the provided Attribute.
      *
-     * @param attribute The Attribute to which a relationship is created
+     * @param attribute The Attribute to which a relation is created
      * @return The instance itself
      */
     @Override

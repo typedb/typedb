@@ -105,7 +105,7 @@ public class SchemaConceptIT {
 
         entityType.has(attributeType);
 
-        RelationType relationshipType = tx.getRelationshipType(hasResourceLabel.getValue());
+        RelationType relationshipType = tx.getRelationType(hasResourceLabel.getValue());
         Assert.assertEquals(hasResourceLabel, relationshipType.label());
 
         Set<Label> roleLabels = relationshipType.roles().map(SchemaConcept::label).collect(toSet());

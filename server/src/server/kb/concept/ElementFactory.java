@@ -47,93 +47,89 @@ import java.util.function.Function;
 import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
 
 /**
- * <p>
- *     Constructs Concepts And Edges
- * </p>
- *
- * <p>
- *     This class turns Tinkerpop Vertex and {@link org.apache.tinkerpop.gremlin.structure.Edge}
- *     into Grakn Concept and EdgeElement.
- *
- *     Construction is only successful if the vertex and edge properties contain the needed information.
- *     A concept must include a label which is a {@link Schema.BaseType}.
- *     An edge must include a label which is a {@link Schema.EdgeLabel}.
- * </p>
- *
+ * Constructs Concepts And Edges
+ * This class turns Tinkerpop Vertex and org.apache.tinkerpop.gremlin.structure.Edge
+ * into Grakn Concept and EdgeElement.
+ * Construction is only successful if the vertex and edge properties contain the needed information.
+ * A concept must include a label which is a Schema.BaseType.
+ * An edge must include a label which is a Schema.EdgeLabel.
  */
 public final class ElementFactory {
     private final TransactionOLTP tx;
     private final JanusGraph graph;
 
-    public ElementFactory(TransactionOLTP tx, JanusGraph graph){
+    public ElementFactory(TransactionOLTP tx, JanusGraph graph) {
         this.tx = tx;
         this.graph = graph;
     }
 
-    private <X extends Concept, E extends AbstractElement> X   getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder){
-        if(!tx.cache().isConceptCached(conceptId)){
+    private <X extends Concept, E extends AbstractElement> X getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder) {
+        if (!tx.cache().isConceptCached(conceptId)) {
             X newConcept = conceptBuilder.apply(element);
             tx.cache().cacheConcept(newConcept);
         }
         return tx.cache().getCachedConcept(conceptId);
     }
 
-    private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder){
+    private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder) {
         ConceptId conceptId = ConceptId.of(element.property(Schema.VertexProperty.ID));
         return getOrBuildConcept(element, conceptId, conceptBuilder);
     }
 
-    private <X extends Concept> X getOrBuildConcept(EdgeElement element, Function<EdgeElement, X> conceptBuilder){
+    private <X extends Concept> X getOrBuildConcept(EdgeElement element, Function<EdgeElement, X> conceptBuilder) {
         ConceptId conceptId = ConceptId.of(element.id().getValue());
         return getOrBuildConcept(element, conceptId, conceptBuilder);
     }
 
     // ---------------------------------------- Building Attribute Types  -----------------------------------------------
-    public <V> AttributeTypeImpl<V> buildAttributeType(VertexElement vertex, AttributeType<V> type, AttributeType.DataType<V> dataType){
+    public <V> AttributeTypeImpl<V> buildAttributeType(VertexElement vertex, AttributeType<V> type, AttributeType.DataType<V> dataType) {
         return getOrBuildConcept(vertex, (v) -> AttributeTypeImpl.create(v, type, dataType));
     }
 
     // ------------------------------------------ Building Attribute
-    <V> AttributeImpl<V> buildAttribute(VertexElement vertex, AttributeType<V> type, Object persitedValue){
+    <V> AttributeImpl<V> buildAttribute(VertexElement vertex, AttributeType<V> type, Object persitedValue) {
         return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persitedValue));
     }
 
     // ---------------------------------------- Building Relationship Types  -----------------------------------------------
-    public RelationTypeImpl buildRelationshipType(VertexElement vertex, RelationType type){
+    public RelationTypeImpl buildRelationshipType(VertexElement vertex, RelationType type) {
         return getOrBuildConcept(vertex, (v) -> RelationTypeImpl.create(v, type));
     }
 
     // -------------------------------------------- Building Relations
-    RelationImpl buildRelation(VertexElement vertex, RelationType type){
+    RelationImpl buildRelation(VertexElement vertex, RelationType type) {
         return getOrBuildConcept(vertex, (v) -> RelationImpl.create(buildRelationReified(v, type)));
     }
-    public RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value){
+
+    public RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value) {
         return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.create(type, owner, value, edge)));
     }
-    RelationImpl buildRelation(EdgeElement edge){
+
+    RelationImpl buildRelation(EdgeElement edge) {
         return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.get(edge)));
     }
-    RelationReified buildRelationReified(VertexElement vertex, RelationType type){
+
+    RelationReified buildRelationReified(VertexElement vertex, RelationType type) {
         return RelationReified.create(vertex, type);
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
-    public EntityTypeImpl buildEntityType(VertexElement vertex, EntityType type){
+    public EntityTypeImpl buildEntityType(VertexElement vertex, EntityType type) {
         return getOrBuildConcept(vertex, (v) -> EntityTypeImpl.create(v, type));
     }
 
     // ------------------------------------------- Building Entities
-    EntityImpl buildEntity(VertexElement vertex, EntityType type){
+    EntityImpl buildEntity(VertexElement vertex, EntityType type) {
         return getOrBuildConcept(vertex, (v) -> EntityImpl.create(v, type));
     }
 
     // ----------------------------------------- Building Rules --------------------------------------------------
-    public RuleImpl buildRule(VertexElement vertex, Rule type, Pattern when, Pattern then){
+    public RuleImpl buildRule(VertexElement vertex, Rule type, Pattern when, Pattern then) {
         return getOrBuildConcept(vertex, (v) -> RuleImpl.create(v, type, when, then));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    public RoleImpl buildRole(VertexElement vertex, Role type){
+    public RoleImpl buildRole(VertexElement vertex, Role type) {
         return getOrBuildConcept(vertex, (v) -> RoleImpl.create(v, type));
     }
 
@@ -144,21 +140,21 @@ public final class ElementFactory {
      * @param vertex A vertex of an unknown type
      * @return A concept built to the correct type
      */
-    public <X extends Concept> X buildConcept(Vertex vertex){
+    public <X extends Concept> X buildConcept(Vertex vertex) {
         return buildConcept(buildVertexElement(vertex));
     }
 
-    public <X extends Concept> X buildConcept(VertexElement vertexElement){
+    public <X extends Concept> X buildConcept(VertexElement vertexElement) {
         Schema.BaseType type;
 
         try {
             type = getBaseType(vertexElement);
-        } catch (IllegalStateException e){
+        } catch (IllegalStateException e) {
             throw TemporaryWriteException.indexOverlap(vertexElement.element(), e);
         }
 
         ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));
-        if(!tx.cache().isConceptCached(conceptId)){
+        if (!tx.cache().isConceptCached(conceptId)) {
             Concept concept;
             switch (type) {
                 case RELATIONSHIP:
@@ -203,15 +199,15 @@ public final class ElementFactory {
      * @param edge A Edge of an unknown type
      * @return A concept built to the correct type
      */
-    public <X extends Concept> X buildConcept(Edge edge){
+    public <X extends Concept> X buildConcept(Edge edge) {
         return buildConcept(buildEdgeElement(edge));
     }
 
-    public <X extends Concept> X buildConcept(EdgeElement edgeElement){
+    public <X extends Concept> X buildConcept(EdgeElement edgeElement) {
         Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
 
         ConceptId conceptId = ConceptId.of(edgeElement.id().getValue());
-        if(!tx.cache().isConceptCached(conceptId)){
+        if (!tx.cache().isConceptCached(conceptId)) {
             Concept concept;
             switch (label) {
                 case ATTRIBUTE:
@@ -233,40 +229,39 @@ public final class ElementFactory {
      * @param vertex The vertex to build a concept from
      * @return The base type of the vertex, if it is a valid concept.
      */
-    private Schema.BaseType getBaseType(VertexElement vertex){
+    private Schema.BaseType getBaseType(VertexElement vertex) {
         try {
             return Schema.BaseType.valueOf(vertex.label());
-        } catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             //Base type appears to be invalid. Let's try getting the type via the shard edge
             Optional<VertexElement> type = vertex.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).
                     map(EdgeElement::target).findAny();
 
-            if(type.isPresent()){
+            if (type.isPresent()) {
                 String label = type.get().label();
-                if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
-                if(label.equals(RELATIONSHIP_TYPE.name())) return Schema.BaseType.RELATIONSHIP;
-                if(label.equals(Schema.BaseType.ATTRIBUTE_TYPE.name())) return Schema.BaseType.ATTRIBUTE;
+                if (label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
+                if (label.equals(RELATIONSHIP_TYPE.name())) return Schema.BaseType.RELATIONSHIP;
+                if (label.equals(Schema.BaseType.ATTRIBUTE_TYPE.name())) return Schema.BaseType.ATTRIBUTE;
             }
         }
         throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");
     }
 
     // ---------------------------------------- Non Concept Construction -----------------------------------------------
-    public EdgeElement buildEdgeElement(Edge edge){
+    public EdgeElement buildEdgeElement(Edge edge) {
         return new EdgeElement(tx, edge);
     }
 
 
-
-    Shard buildShard(ConceptImpl shardOwner, VertexElement vertexElement){
+    Shard buildShard(ConceptImpl shardOwner, VertexElement vertexElement) {
         return new Shard(shardOwner, vertexElement);
     }
 
-    Shard buildShard(VertexElement vertexElement){
+    Shard buildShard(VertexElement vertexElement) {
         return new Shard(vertexElement);
     }
 
-    Shard buildShard(Vertex vertex){
+    Shard buildShard(Vertex vertex) {
         return new Shard(buildVertexElement(vertex));
     }
 
@@ -277,8 +272,8 @@ public final class ElementFactory {
      * @param vertex A vertex which can possibly be turned into a VertexElement
      * @return A VertexElement of
      */
-    public VertexElement buildVertexElement(Vertex vertex){
-        if(!tx.isValidElement(vertex)){
+    public VertexElement buildVertexElement(Vertex vertex) {
+        if (!tx.isValidElement(vertex)) {
             Objects.requireNonNull(vertex);
             throw TransactionException.invalidElement(vertex);
         }
@@ -288,16 +283,16 @@ public final class ElementFactory {
     /**
      * Creates a new VertexElement with a ConceptId which can optionally be set.
      *
-     * @param baseType The {@link Schema.BaseType}
+     * @param baseType   The Schema.BaseType
      * @param conceptIds the optional ConceptId to set as the new ConceptId
      * @return a new VertexElement
      */
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId ... conceptIds) {
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId... conceptIds) {
         Vertex vertex = graph.addVertex(baseType.name());
         String newConceptId = Schema.PREFIX_VERTEX + vertex.id().toString();
-        if(conceptIds.length > 1){
+        if (conceptIds.length > 1) {
             throw new IllegalArgumentException("Cannot provide more than one concept id when creating a new concept");
-        } else if (conceptIds.length == 1){
+        } else if (conceptIds.length == 1) {
             newConceptId = conceptIds[0].getValue();
         }
         vertex.property(Schema.VertexProperty.ID.name(), newConceptId);

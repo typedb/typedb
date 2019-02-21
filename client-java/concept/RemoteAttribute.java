@@ -33,7 +33,7 @@ import java.time.ZoneId;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link Attribute}
+ * Client implementation of Attribute
  *
  * @param <D> The data type of this attribute
  */
