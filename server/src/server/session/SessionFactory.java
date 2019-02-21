@@ -40,12 +40,14 @@ public class SessionFactory {
     private final LockManager lockManager;
 
     private final ConcurrentHashMap<Keyspace, KeyspaceCache> keyspaceCacheMap;
+    private final ConcurrentHashMap<Keyspace, Integer> keyspaceCacheUseCounts;
 
     public SessionFactory(LockManager lockManager, Config config, KeyspaceManager keyspaceStore) {
         this.config = config;
         this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
         this.keyspaceCacheMap = new ConcurrentHashMap<>();
+        this.keyspaceCacheUseCounts = new ConcurrentHashMap<>();
     }
 
     /**
@@ -59,7 +61,8 @@ public class SessionFactory {
         if (!keyspaceStore.containsKeyspace(keyspace)) {
             initialiseNewKeyspace(keyspace);
         }
-        return new SessionImpl(keyspace, config, keyspaceCacheMap.get(keyspace));
+        // TODO this is wasteful after an initialiseNewKeyspace
+        return newSessionImpl(keyspace, config);
     }
 
     /**
@@ -72,13 +75,7 @@ public class SessionFactory {
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
         lock.lock();
         try {
-
-            // create new KeyspaceCache
-            KeyspaceCache keyspaceCache = new KeyspaceCache(config);
-            keyspaceCacheMap.put(keyspace, keyspaceCache);
-
-            // Create new empty keyspace in db
-            SessionImpl session = new SessionImpl(keyspace, config, keyspaceCache);
+            SessionImpl session = newSessionImpl(keyspace, config);
 
             // Add current keyspace to list of available Grakn keyspaces
             keyspaceStore.addKeyspace(keyspace);
@@ -88,9 +85,69 @@ public class SessionFactory {
         }
     }
 
+    /**
+     * Obtain a new session to a keyspace, while doing the required accounting
+     * for reference counting keyspace cache usage to ensure proper keyspaceCache eviction
+     * @param keyspace
+     * @param config
+     * @return
+     */
+    private SessionImpl newSessionImpl(Keyspace keyspace, Config config) {
+
+        SessionImpl session;
+
+        // handle two concurrent opening sessions to a new/prexisting keyspace with no active sessions
+        Lock lock = lockManager.getLock(getLockingKey(keyspace));
+        // WARNING this MUST be a re-entrant lock otherwise we deadlock right here!
+        lock.lock();
+        try {
+            if (!keyspaceCacheMap.contains(keyspace)) {
+                keyspaceCacheMap.put(keyspace, new KeyspaceCache(config));
+                // do cache reference counting for proper eviction
+                keyspaceCacheUseCounts.put(keyspace, 0);
+            }
+
+            // atomic increment of the count
+            keyspaceCacheUseCounts.put(keyspace, keyspaceCacheUseCounts.get(keyspace) + 1);
+
+        } finally {
+            lock.unlock();
+        }
+
+        // These don't need to be locked:
+        // keyspaceCache won't be evicted until the SessionImpl created here is closed
+        // it may be written to before by a thread that interrupts right here, but this is fine
+        KeyspaceCache keyspaceCache = keyspaceCacheMap.get(keyspace);
+        session = new SessionImpl(keyspace, config, keyspaceCache, () -> onSessionClose(keyspace));
+        return session;
+    }
+
+    private void onSessionClose(Keyspace keyspace) {
+        Lock lock = lockManager.getLock(getLockingKey(keyspace));
+        lock.lock();
+        try {
+            // atomically update the keyspaceCache reference count
+            Integer keyspaceCacheReferenceCount = keyspaceCacheUseCounts.get(keyspace);
+            int newCount = keyspaceCacheReferenceCount - 1;
+
+            if (newCount == 0) {
+                // if this is the last session using the keyspace, evict it the cache and corresponding counter
+                keyspaceCacheMap.remove(keyspace);
+                keyspaceCacheUseCounts.remove(keyspace);
+            } else {
+                // otherwise, just update the count atomically
+                keyspaceCacheUseCounts.put(keyspace, newCount);
+            }
+        } finally {
+            lock.unlock();
+        }
+
+        // by the end of this method, the reference count have been atomically updated (or removed)
+        // and the keyspaceCache has been removed is necessary
+    }
 
     private static String getLockingKey(Keyspace keyspace) {
-        return "/creating-new-keyspace-lock/" + keyspace.getName();
+        return "/keyspace-lock/" + keyspace.getName();
     }
 
 }
