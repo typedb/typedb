@@ -114,6 +114,7 @@ public class TransactionOLTP implements Transaction {
     //----------------------------- Transaction Specific
     private final RuleCache ruleCache;
     private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
+    private final KeyspaceCache keyspaceCache;
     private final TransactionCache transactionCache;
 
     private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
@@ -141,6 +142,7 @@ public class TransactionOLTP implements Transaction {
         if (span != null) span.annotate("Creating RuleCache");
         this.ruleCache = new RuleCache(this);
 
+        this.keyspaceCache = keyspaceCache;
         this.transactionCache = new TransactionCache(keyspaceCache);
 
         if (span != null) span.finish();
@@ -678,11 +680,8 @@ public class TransactionOLTP implements Transaction {
         if (isClosed()) {
             return;
         }
-        try {
-            cache().writeToKeyspaceCache(type().equals(Type.READ));
-        } finally {
-            closeTransaction(closeMessage);
-        }
+        cache().refreshKeyspaceCache();
+        closeTransaction(closeMessage);
     }
 
     /**
@@ -697,9 +696,10 @@ public class TransactionOLTP implements Transaction {
         }
         try {
             validateGraph();
-            commitTransactionInternal();
-            cache().writeToKeyspaceCache(true);
-            //TODO update cache here
+            synchronized (keyspaceCache) {
+                commitTransactionInternal();
+                cache().flushToKeyspaceCache();
+            }
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
             closeTransaction(closeMessage);
@@ -742,9 +742,10 @@ public class TransactionOLTP implements Transaction {
         Map<String, Set<ConceptId>> newAttributes = cache().getNewAttributes();
         boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
-        commitTransactionInternal();
-
-        cache().writeToKeyspaceCache(true);
+        synchronized (keyspaceCache) {
+            commitTransactionInternal();
+            cache().flushToKeyspaceCache();
+        }
 
         //If we have logs to commit get them and add them
         if (logsExist) {

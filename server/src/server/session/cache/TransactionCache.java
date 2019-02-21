@@ -88,16 +88,19 @@ public class TransactionCache {
     }
 
     /**
-     * A helper method which writes back into the graph cache at the end of a transaction.
      *
-     * @param isSafe true only if it is safe to copy the cache completely without any checks
      */
-    public void writeToKeyspaceCache(boolean isSafe) {
-        //When a commit has occurred or a transaction is read only all types can be overridden this is because we know they are valid.
-        //When it is not safe to simply flush we have to check that no mutations were made
-        if (isSafe || !writeOccurred) {
+    public void refreshKeyspaceCache() {
+        // This is used to prevent the keyspace cache from expiring its stored concept cache
+        // This method is NOT used to actually change things in the keyspace cache
+        if (!writeOccurred) {
             keyspaceCache.readTxCache(this);
         }
+    }
+
+    public void flushToKeyspaceCache() {
+        // This method is used to actually flush to the keyspace cache
+        keyspaceCache.readTxCache(this);
     }
 
     /**

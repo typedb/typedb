@@ -85,10 +85,9 @@ public class SessionImpl implements Session {
         // copy schema to session cache if there are any schema concepts
         if (!keyspaceHasBeenInitialised(tx)) {
             initialiseMetaConcepts(tx);
-            copyMetaConceptsToKeyspaceCache(tx);
-            tx.commit();
         }
-        tx.close();
+        copyMetaConceptsToKeyspaceCache(tx);
+        tx.commit();
     }
 
     @Override
