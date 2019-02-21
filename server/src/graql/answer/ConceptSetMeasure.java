@@ -19,7 +19,6 @@
 package grakn.core.graql.answer;
 
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
 
 import java.util.Set;
 

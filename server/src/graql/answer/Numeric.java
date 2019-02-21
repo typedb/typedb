@@ -18,8 +18,6 @@
 
 package grakn.core.graql.answer;
 
-import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
-
 /**
  * A type of Answer object that contains a Number.
  */

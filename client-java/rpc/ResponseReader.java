@@ -31,7 +31,7 @@ import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
+import grakn.core.graql.answer.QueryExplanation;
 import grakn.core.protocol.AnswerProto;
 import graql.lang.statement.Variable;
 

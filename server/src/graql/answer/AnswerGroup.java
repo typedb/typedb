@@ -19,7 +19,6 @@
 package grakn.core.graql.answer;
 
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
 
 import javax.annotation.Nullable;
 import java.util.List;

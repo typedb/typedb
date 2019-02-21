@@ -20,6 +20,7 @@ package grakn.core.graql.internal.reasoner.explanation;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
+import grakn.core.graql.answer.QueryExplanation;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 
 import java.util.List;

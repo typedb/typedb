@@ -16,11 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.reasoner.explanation;
+package grakn.core.graql.answer;
 
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.Explanation;
-
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -54,28 +53,53 @@ public class QueryExplanation implements Explanation {
         this(null, ans);
     }
 
-    @Override
+    /**
+     * @return query pattern associated with this explanation
+     */
+    @CheckReturnValue
+    @Nullable
     public String getQueryPattern() { return queryPattern;}
 
-    @Override
+    /**
+     * produce a new explanation with provided query set
+     *
+     * @param queryPattern query this explanation should be associated with
+     * @return explanation with provided query
+     */
+    @CheckReturnValue
     public Explanation setQueryPattern(String queryPattern) {
         return new QueryExplanation(queryPattern);
     }
 
-    @Override
+    /**
+     * produce a new explanation with a provided parent answer
+     *
+     * @param ans parent answer
+     * @return new explanation with dependent answers
+     */
+    @CheckReturnValue
     public Explanation childOf(ConceptMap ans) {
         return new QueryExplanation(getQueryPattern(), ans.explanation().getAnswers());
     }
 
-    @Override
+    /**
+     * @return answers this explanation is dependent on
+     */
+    @CheckReturnValue
     public List<ConceptMap> getAnswers() { return answers;}
 
-    @Override
+    /**
+     * @return set of answers corresponding to the explicit path
+     */
+    @CheckReturnValue
     public Set<ConceptMap> explicit() {
         return deductions().stream().filter(ans -> ans.explanation().isLookupExplanation()).collect(Collectors.toSet());
     }
 
-    @Override
+    /**
+     * @return set of all answers taking part in the derivation of this answer
+     */
+    @CheckReturnValue
     public Set<ConceptMap> deductions() {
         Set<ConceptMap> answers = new HashSet<>(this.getAnswers());
         this.getAnswers().forEach(ans -> answers.addAll(ans.explanation().deductions()));
