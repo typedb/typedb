@@ -31,7 +31,6 @@ import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.answer.QueryExplanation;
 import grakn.core.protocol.AnswerProto;
 import graql.lang.statement.Variable;
 
@@ -74,7 +73,7 @@ public class ResponseReader {
     private static Explanation explanation(AnswerProto.Explanation res, GraknClient.Transaction tx) {
         List<ConceptMap> answers = new ArrayList<>();
         res.getAnswersList().forEach(answer -> answers.add(conceptMap(answer, tx)));
-        return new QueryExplanation(res.getPattern(), answers);
+        return new Explanation(res.getPattern(), answers);
     }
 
     private static AnswerGroup<?> answerGroup(AnswerProto.AnswerGroup res, GraknClient.Transaction tx) {

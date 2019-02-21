@@ -33,7 +33,7 @@ public class ConceptList extends Answer {
     private final Explanation explanation;
 
     public ConceptList(List<ConceptId> list) {
-        this(list, new QueryExplanation());
+        this(list, new Explanation());
     }
 
     public ConceptList(List<ConceptId> list, Explanation explanation) {

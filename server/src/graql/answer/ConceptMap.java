@@ -53,7 +53,7 @@ public class ConceptMap extends Answer {
 
     public ConceptMap() {
         this.map = Collections.emptyMap();
-        this.explanation = new QueryExplanation();
+        this.explanation = new Explanation();
     }
 
     public ConceptMap(ConceptMap map) {
@@ -66,7 +66,7 @@ public class ConceptMap extends Answer {
     }
 
     public ConceptMap(Map<Variable, Concept> m) {
-        this(m, new QueryExplanation());
+        this(m, new Explanation());
     }
 
     @Override

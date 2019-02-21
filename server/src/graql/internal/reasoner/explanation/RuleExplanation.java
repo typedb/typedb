@@ -20,7 +20,6 @@ package grakn.core.graql.internal.reasoner.explanation;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
-import grakn.core.graql.answer.QueryExplanation;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,7 +28,7 @@ import java.util.List;
 /**
  * Explanation class for rule application.
  */
-public class RuleExplanation extends QueryExplanation {
+public class RuleExplanation extends Explanation {
 
     private final String ruleId;
 
@@ -43,12 +42,12 @@ public class RuleExplanation extends QueryExplanation {
     }
 
     @Override
-    public Explanation setQueryPattern(String queryPattern){
+    public RuleExplanation setQueryPattern(String queryPattern){
         return new RuleExplanation(queryPattern, getRuleId());
     }
 
     @Override
-    public Explanation childOf(ConceptMap ans) {
+    public RuleExplanation childOf(ConceptMap ans) {
         Explanation explanation = ans.explanation();
         List<ConceptMap> answerList = new ArrayList<>(this.getAnswers());
         answerList.addAll(

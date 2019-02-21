@@ -33,7 +33,7 @@ public class ConceptSet extends Answer {
     private final Explanation explanation;
 
     public ConceptSet(Set<ConceptId> set) {
-        this(set, new QueryExplanation());
+        this(set, new Explanation());
     }
 
     public ConceptSet(Set<ConceptId> set, Explanation explanation) {

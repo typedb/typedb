@@ -20,14 +20,13 @@ package grakn.core.graql.internal.reasoner.explanation;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
-import grakn.core.graql.answer.QueryExplanation;
 
 import java.util.List;
 
 /**
  * Explanation class for db lookup.
  */
-public class LookupExplanation extends QueryExplanation {
+public class LookupExplanation extends Explanation {
 
     public LookupExplanation(String queryPattern){ super(queryPattern);}
     private LookupExplanation(String queryPattern, List<ConceptMap> answers){
@@ -35,12 +34,12 @@ public class LookupExplanation extends QueryExplanation {
     }
 
     @Override
-    public Explanation setQueryPattern(String queryPattern){
+    public LookupExplanation setQueryPattern(String queryPattern){
         return new LookupExplanation(queryPattern);
     }
 
     @Override
-    public Explanation childOf(ConceptMap ans) {
+    public LookupExplanation childOf(ConceptMap ans) {
         return new LookupExplanation(getQueryPattern(), ans.explanation().getAnswers());
     }
 

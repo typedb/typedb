@@ -36,7 +36,7 @@ public class AnswerGroup<T extends Answer> extends Answer {
     private final Explanation explanation;
 
     public AnswerGroup(Concept owner, List<T> answers) {
-        this(owner, answers, new QueryExplanation());
+        this(owner, answers, new Explanation());
     }
 
     public AnswerGroup(Concept owner, List<T> answers, Explanation explanation) {

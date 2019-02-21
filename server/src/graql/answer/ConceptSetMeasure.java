@@ -30,7 +30,7 @@ public class ConceptSetMeasure extends ConceptSet {
     private final Number measurement;
 
     public ConceptSetMeasure(Set<ConceptId> set, Number measurement) {
-        this(set, measurement, new QueryExplanation());
+        this(set, measurement, new Explanation());
     }
 
     public ConceptSetMeasure(Set<ConceptId> set, Number measurement, Explanation explanation) {

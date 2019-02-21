@@ -27,7 +27,7 @@ public class Numeric extends Answer {
     private final Explanation explanation;
 
     public Numeric(Number number) {
-        this(number, new QueryExplanation());
+        this(number, new Explanation());
     }
 
     public Numeric(Number number, Explanation explanation) {
