@@ -19,12 +19,13 @@
 package grakn.core.graql.answer;
 
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
 
 import java.util.Collections;
 import java.util.Set;
 
 /**
- * A type of {@link Answer} object that contains a {@link Set}.
+ * A type of Answer object that contains a Set.
  */
 public class ConceptSet extends Answer {
 
@@ -33,7 +34,7 @@ public class ConceptSet extends Answer {
     private final Explanation explanation;
 
     public ConceptSet(Set<ConceptId> set) {
-        this(set, null);
+        this(set, new QueryExplanation());
     }
 
     public ConceptSet(Set<ConceptId> set, Explanation explanation) {

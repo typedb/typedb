@@ -21,15 +21,11 @@ package grakn.core.graql.internal.reasoner.explanation;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
+
 import java.util.List;
 
 /**
- *
- * <p>
  * Explanation class for a join explanation - resulting from merging atoms in a conjunction.
- * </p>
- *
- *
  */
 public class JoinExplanation extends QueryExplanation {
 

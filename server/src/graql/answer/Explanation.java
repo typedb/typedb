@@ -18,10 +18,10 @@
 
 package grakn.core.graql.answer;
 
-import java.util.List;
-import java.util.Set;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Base class for explanation classes.

@@ -21,7 +21,6 @@ package grakn.core.graql.answer;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
@@ -46,7 +45,7 @@ import javax.annotation.CheckReturnValue;
 
 
 /**
- * A type of {@link Answer} object that contains a {@link Map} of Concepts.
+ * A type of Answer object that contains a Map of Concepts.
  */
 public class ConceptMap extends Answer {
 
@@ -88,9 +87,9 @@ public class ConceptMap extends Answer {
     public Collection<Concept> concepts() { return map.values(); }
 
     /**
-     * Return the {@link Concept} bound to the given variable name.
+     * Return the Concept bound to the given variable name.
      *
-     * @throws GraqlQueryException if the {@link Variable} is not in this {@link ConceptMap}
+     * @throws GraqlQueryException if the Variable is not in this ConceptMap
      */
     @CheckReturnValue
     public Concept get(String var) {
@@ -98,9 +97,9 @@ public class ConceptMap extends Answer {
     }
 
     /**
-     * Return the {@link Concept} bound to the given {@link Variable}.
+     * Return the Concept bound to the given Variable.
      *
-     * @throws GraqlQueryException if the {@link Variable} is not in this {@link ConceptMap}
+     * @throws GraqlQueryException if the Variable is not in this ConceptMap
      */
     @CheckReturnValue
     public Concept get(Variable var) {
@@ -273,7 +272,7 @@ public class ConceptMap extends Answer {
     }
 
     /**
-     * @param toExpand set of variables for which {@link Role} hierarchy should be expanded
+     * @param toExpand set of variables for which Role hierarchy should be expanded
      * @return stream of answers with expanded role hierarchy
      */
     @CheckReturnValue

@@ -18,47 +18,47 @@
 
 package grakn.core.graql.internal.reasoner.explanation;
 
-import com.google.common.collect.ImmutableList;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- *
- * <p>
- * Base class for explanation classes.
- * </p>
- *
- *
+ * Reasoner explanation for inferred answers
  */
 public class QueryExplanation implements Explanation {
 
     private final String queryPattern;
-    private final ImmutableList<ConceptMap> answers;
+    private final List<ConceptMap> answers;
 
-    public QueryExplanation(){
+    public QueryExplanation() {
         this.queryPattern = null;
-        this.answers = ImmutableList.of();}
-    QueryExplanation(String queryPattern, List<ConceptMap> ans){
-        this.queryPattern = queryPattern;
-        this.answers = ImmutableList.copyOf(ans);
+        this.answers = Collections.unmodifiableList(Collections.emptyList());
     }
-    QueryExplanation(String queryPattern){
+
+    public QueryExplanation(String queryPattern, List<ConceptMap> ans) {
+        this.queryPattern = queryPattern;
+        this.answers = Collections.unmodifiableList(ans);
+    }
+
+    public QueryExplanation(String queryPattern) {
         this(queryPattern, new ArrayList<>());
     }
-    QueryExplanation(List<ConceptMap> ans){
+
+    public QueryExplanation(List<ConceptMap> ans) {
         this(null, ans);
     }
 
     @Override
-    public String getQueryPattern(){ return queryPattern;}
+    public String getQueryPattern() { return queryPattern;}
 
     @Override
-    public Explanation setQueryPattern(String queryPattern){
+    public Explanation setQueryPattern(String queryPattern) {
         return new QueryExplanation(queryPattern);
     }
 
@@ -68,28 +68,28 @@ public class QueryExplanation implements Explanation {
     }
 
     @Override
-    public ImmutableList<ConceptMap> getAnswers(){ return answers;}
+    public List<ConceptMap> getAnswers() { return answers;}
 
     @Override
-    public Set<ConceptMap> explicit(){
+    public Set<ConceptMap> explicit() {
         return deductions().stream().filter(ans -> ans.explanation().isLookupExplanation()).collect(Collectors.toSet());
     }
 
     @Override
-    public Set<ConceptMap> deductions(){
+    public Set<ConceptMap> deductions() {
         Set<ConceptMap> answers = new HashSet<>(this.getAnswers());
         this.getAnswers().forEach(ans -> answers.addAll(ans.explanation().deductions()));
         return answers;
     }
 
     @Override
-    public boolean isLookupExplanation(){ return false;}
+    public boolean isLookupExplanation() { return false;}
 
     @Override
-    public boolean isRuleExplanation(){ return false;}
+    public boolean isRuleExplanation() { return false;}
 
     @Override
-    public boolean isJoinExplanation(){ return false;}
+    public boolean isJoinExplanation() { return false;}
 
     @Override
     public boolean isEmpty() { return !isLookupExplanation() && !isRuleExplanation() && getAnswers().isEmpty();}

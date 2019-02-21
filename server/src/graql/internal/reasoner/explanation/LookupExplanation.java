@@ -20,15 +20,11 @@ package grakn.core.graql.internal.reasoner.explanation;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
+
 import java.util.List;
 
 /**
- *
- * <p>
  * Explanation class for db lookup.
- * </p>
- *
- *
  */
 public class LookupExplanation extends QueryExplanation {
 

@@ -19,18 +19,19 @@
 package grakn.core.graql.answer;
 
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
 
 import java.util.Set;
 
 /**
- * A type of {@link Answer} object that contains a {@link Set} and {@link Number}, by extending {@link ConceptSet}.
+ * A type of Answer object that contains a Set and Number, by extending ConceptSet.
  */
 public class ConceptSetMeasure extends ConceptSet {
 
     private final Number measurement;
 
     public ConceptSetMeasure(Set<ConceptId> set, Number measurement) {
-        this(set, measurement, null);
+        this(set, measurement, new QueryExplanation());
     }
 
     public ConceptSetMeasure(Set<ConceptId> set, Number measurement, Explanation explanation) {

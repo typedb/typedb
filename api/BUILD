@@ -16,30 +16,34 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 #
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = [
+    "//server:__subpackages__",
+    "//client:__subpackages__",
+    # TODO: expose this package to "@graknlabs_grakn_kgms//server:__subpackages__"
+])
 
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 #java_library(
-#    name = "concept",
+#    name = "api",
 #    srcs = glob(["**/*.java"]),
 #    deps = [
 #
 #    ],
-#    tags = ["maven_coordinates=grakn.core:concept:{pom_version}"],
+#    tags = ["maven_coordinates=grakn.core:api:{pom_version}"],
 #)
 #
 #
 #deploy_maven_jar(
 #    name = "deploy-maven-jar",
-#    target = ":concept",
-#    package = "concept",
+#    target = ":api",
+#    package = "api",
 #)
 #
 #checkstyle_test(
 #    name = "checkstyle",
 #    targets = [
-#        ":concept"
+#        ":api"
 #    ],
 #)
