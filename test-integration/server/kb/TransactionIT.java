@@ -224,44 +224,6 @@ public class TransactionIT {
         tx.putEntityType("A Thing");
     }
 
-    @Test
-    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws InvalidKBException, ExecutionException, InterruptedException {
-        //Check Central cache is empty
-        assertCacheOnlyContainsMetaTypes();
-
-        Role r1 = tx.putRole("r1");
-        Role r2 = tx.putRole("r2");
-        EntityType e1 = tx.putEntityType("e1").plays(r1).plays(r2);
-        RelationType rel1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
-
-        //Purge the above concepts into the main cache
-        tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
-
-        //Check cache is in good order
-//        Collection<SchemaConcept> cachedValues = tx.getKeyspaceCache().getCachedTypes().values();
-//        assertTrue("Type [" + r1 + "] was not cached", cachedValues.contains(r1));
-//        assertTrue("Type [" + r2 + "] was not cached", cachedValues.contains(r2));
-//        assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
-//        assertTrue("Type [" + rel1 + "] was not cached", cachedValues.contains(rel1));
-
-        assertThat(e1.playing().collect(toSet()), containsInAnyOrder(r1, r2));
-
-        Set<Role> playing = e1.playing().collect(toSet());
-
-        ExecutorService pool = Executors.newSingleThreadExecutor();
-        //Mutate Schema in a separate thread
-        pool.submit(() -> {
-            Transaction innerGraph = session.transaction(Transaction.Type.WRITE);
-            EntityType entityType = innerGraph.getEntityType("e1");
-            Role role = innerGraph.getRole("r1");
-            entityType.unplay(role);
-        }).get();
-
-        //Check the above mutation did not affect central repo
-        SchemaConcept foundE1 = tx.getKeyspaceCache().getCachedTypes().get(e1.label());
-        assertTrue("Main cache was affected by transaction", foundE1.asType().playing().anyMatch(role -> role.equals(r1)));
-    }
 
     @Test
     public void whenClosingAGraphWhichWasJustCommitted_DoNothing() {

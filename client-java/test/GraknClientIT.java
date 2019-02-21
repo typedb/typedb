@@ -968,8 +968,7 @@ public class GraknClientIT {
             client.keyspaces().delete(tx.keyspace().getName());
         }
 
-        KeyspaceCache keyspaceCache = new KeyspaceCache(server.config());
-        Session newLocalSession = new SessionImpl(localSession.keyspace(), server.config(), keyspaceCache);
+        Session newLocalSession = server.sessionFactory().session(localSession.keyspace());
         try (Transaction tx = newLocalSession.transaction(Transaction.Type.READ)) {
             assertNull(tx.getEntityType("easter"));
         }

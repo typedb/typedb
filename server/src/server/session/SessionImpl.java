@@ -68,11 +68,12 @@ public class SessionImpl implements Session {
      * using provided Grakn configuration
      *
      * @param keyspace to which keyspace the session should be bound to
-     * @param config   config to be used. If null is supplied, it will be created
+     * @param config   config to be used.
      */
     public SessionImpl(Keyspace keyspace, Config config, KeyspaceCache keyspaceCache) {
         this.keyspace = keyspace;
         this.config = config;
+        // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
         // be an expensive operation TODO: refactor in the future
         this.hadoopGraphFactory = new HadoopGraphFactory(this);
         // Open Janus Graph

@@ -32,8 +32,7 @@ import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.SessionStore;
-import grakn.core.server.session.cache.KeyspaceCache;
+import grakn.core.server.session.SessionFactory;
 import grakn.core.server.util.LockManager;
 import grakn.core.server.util.ServerID;
 import grakn.core.server.util.ServerLockManager;
@@ -75,7 +74,7 @@ public class GraknTestServer extends ExternalResource {
     private int nativeTransportPort;
     private int grpcPort;
 
-    private SessionStore sessionStore;
+    private SessionFactory sessionFactory;
 
     public GraknTestServer() {
         this(SERVER_CONFIG_PATH, CASSANDRA_CONFIG_PATH);
@@ -132,17 +131,12 @@ public class GraknTestServer extends ExternalResource {
 
     public SessionImpl sessionWithNewKeyspace() {
         Keyspace randomKeyspace = Keyspace.of("a" + UUID.randomUUID().toString().replaceAll("-", ""));
-        return sessionStore.session(randomKeyspace);
+        return sessionFactory.session(randomKeyspace);
     }
 
-    public SessionStore txFactory(){
-        return sessionStore;
+    public SessionFactory sessionFactory(){
+        return sessionFactory;
     }
-
-    public Config config(){
-        return serverConfig;
-    }
-
 
     //Cassandra Helpers
     private void generateCassandraRandomPorts() throws IOException {
@@ -201,10 +195,10 @@ public class GraknTestServer extends ExternalResource {
         keyspaceStore = new KeyspaceManager(serverConfig);
 
         // tx-factory
-        sessionStore = SessionStore.create(lockManager, serverConfig, keyspaceStore);
+        sessionFactory = new SessionFactory(lockManager, serverConfig, keyspaceStore);
 
-        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(serverConfig, sessionStore);
-        OpenRequest requestOpener = new ServerOpenRequest(sessionStore);
+        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(serverConfig, sessionFactory);
+        OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
         io.grpc.Server serverRPC = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))

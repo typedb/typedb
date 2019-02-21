@@ -26,7 +26,6 @@ import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.util.LockManager;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 
@@ -35,24 +34,19 @@ import java.util.concurrent.locks.Lock;
  * All components should use this factory so that every time a session to a new keyspace gets created
  * it is possible to also update the Keyspace Store (which tracks all existing keyspaces).
  */
-public class SessionStore {
+public class SessionFactory {
     private final Config config;
     private final KeyspaceManager keyspaceStore;
     private final LockManager lockManager;
 
     private final ConcurrentHashMap<Keyspace, KeyspaceCache> keyspaceCacheMap;
 
-    public static SessionStore create(LockManager lockManager, Config config, KeyspaceManager keyspaceStore) {
-        return new SessionStore(config, lockManager, keyspaceStore);
-    }
-
-    private SessionStore(Config config, LockManager lockManager, KeyspaceManager keyspaceStore) {
+    public SessionFactory(LockManager lockManager, Config config, KeyspaceManager keyspaceStore) {
         this.config = config;
         this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
-        keyspaceCacheMap = new ConcurrentHashMap<>();
+        this.keyspaceCacheMap = new ConcurrentHashMap<>();
     }
-
 
     /**
      * Retrieves the {@link Session} needed to open the {@link Transaction}.
@@ -93,8 +87,6 @@ public class SessionStore {
             lock.unlock();
         }
     }
-
-
 
 
     private static String getLockingKey(Keyspace keyspace) {

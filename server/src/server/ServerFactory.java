@@ -27,7 +27,7 @@ import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
-import grakn.core.server.session.SessionStore;
+import grakn.core.server.session.SessionFactory;
 import grakn.core.server.util.LockManager;
 import grakn.core.server.util.ServerID;
 import grakn.core.server.util.ServerLockManager;
@@ -54,14 +54,14 @@ public class ServerFactory {
         KeyspaceManager keyspaceStore = new KeyspaceManager(config);
 
         // session factory
-        SessionStore sessionStore = SessionStore.create(lockManager, config, keyspaceStore);
+        SessionFactory sessionFactory = new SessionFactory(lockManager, config, keyspaceStore);
 
 
         // post-processing
-        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, sessionStore);
+        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, sessionFactory);
 
         // http services: gRPC server
-        io.grpc.Server serverRPC = createServerRPC(config, sessionStore, attributeDeduplicatorDaemon, keyspaceStore, benchmark);
+        io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, attributeDeduplicatorDaemon, keyspaceStore, benchmark);
 
         return createServer(serverID, serverRPC, lockManager, attributeDeduplicatorDaemon, keyspaceStore);
     }
@@ -83,9 +83,9 @@ public class ServerFactory {
         return server;
     }
 
-    private static io.grpc.Server createServerRPC(Config config, SessionStore sessionStore, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore, boolean benchmark){
+    private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore, boolean benchmark){
         int grpcPort = config.getProperty(ConfigKey.GRPC_PORT);
-        OpenRequest requestOpener = new ServerOpenRequest(sessionStore);
+        OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
         if (benchmark) {
             ServerTracingInstrumentation.initInstrumentation("server-instrumentation");

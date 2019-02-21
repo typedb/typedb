@@ -18,7 +18,6 @@
 
 package grakn.core.server.session;
 
-import grakn.core.common.config.Config;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
@@ -26,7 +25,6 @@ import grakn.core.server.Transaction;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.cache.KeyspaceCache;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -52,13 +50,11 @@ public class SessionIT {
     public static final GraknTestServer server = new GraknTestServer();
 
     private SessionImpl session;
-    private Config config;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUp() {
-        config = server.config();
         session = server.sessionWithNewKeyspace();
     }
 
@@ -142,10 +138,9 @@ public class SessionIT {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
         // shared KeyspaceCache
-        KeyspaceCache keyspaceCache = new KeyspaceCache(config);
 
         executor.submit(() -> {
-            SessionImpl localSession = new SessionImpl(session.keyspace(), config, keyspaceCache);
+            SessionImpl localSession = server.sessionFactory().session(session.keyspace());
             Transaction tx2 = localSession.transaction(WRITE);
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
@@ -154,7 +149,7 @@ public class SessionIT {
         }).get();
 
         executor.submit(() -> {
-            SessionImpl localSession = new SessionImpl(session.keyspace(), config, keyspaceCache);
+            SessionImpl localSession = server.sessionFactory().session(session.keyspace());
             Transaction tx2 = localSession.transaction(WRITE);
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
@@ -166,8 +161,7 @@ public class SessionIT {
 
     @Test
     public void whenClosingSession_transactionIsAlsoClosed() {
-        KeyspaceCache keyspaceCache = new KeyspaceCache(config);
-        SessionImpl localSession = new SessionImpl(Keyspace.of("test"), config, keyspaceCache);
+        SessionImpl localSession = server.sessionFactory().session(Keyspace.of("test"));
         Transaction tx1 = localSession.transaction(WRITE);
         assertFalse(tx1.isClosed());
         localSession.close();
@@ -176,8 +170,7 @@ public class SessionIT {
 
     @Test
     public void whenClosingSession_tryingToUseTransactionThrowsException() {
-        KeyspaceCache keyspaceCache = new KeyspaceCache(config);
-        SessionImpl localSession = new SessionImpl(Keyspace.of("test"), config, keyspaceCache);
+        SessionImpl localSession = server.sessionFactory().session(Keyspace.of("test"));
         Transaction tx1 = localSession.transaction(WRITE);
         assertFalse(tx1.isClosed());
         localSession.close();
