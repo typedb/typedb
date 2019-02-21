@@ -20,10 +20,7 @@ package grakn.core.graql.internal.reasoner.explanation;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
-
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -37,34 +34,36 @@ import java.util.List;
  */
 public class RuleExplanation extends QueryExplanation {
 
-    private final InferenceRule rule;
+    private final String ruleId;
 
-    public RuleExplanation(ReasonerQuery q, InferenceRule rl){
-        super(q);
-        this.rule = rl;
+    public RuleExplanation(String queryPattern, String ruleId){
+        super(queryPattern);
+        this.ruleId = ruleId;
     }
-    private RuleExplanation(ReasonerQuery q, List<ConceptMap> answers, InferenceRule rl){
-        super(q, answers);
-        this.rule = rl;
+    private RuleExplanation(String queryPattern, List<ConceptMap> answers, String ruleId){
+        super(queryPattern, answers);
+        this.ruleId = ruleId;
     }
 
     @Override
-    public Explanation setQuery(ReasonerQuery q){
-        return new RuleExplanation(q, getRule());
+    public Explanation setQueryPattern(String queryPattern){
+        return new RuleExplanation(queryPattern, getRuleId());
     }
 
     @Override
     public Explanation childOf(ConceptMap ans) {
         Explanation explanation = ans.explanation();
-        return new RuleExplanation(getQuery(),
-                ReasonerUtils.listUnion(this.getAnswers(), explanation.isLookupExplanation()?
+        List<ConceptMap> answerList = new ArrayList<>(this.getAnswers());
+        answerList.addAll(
+                explanation.isLookupExplanation()?
                         Collections.singletonList(ans) :
-                        explanation.getAnswers()),
-                getRule());
+                        explanation.getAnswers()
+        );
+        return new RuleExplanation(getQueryPattern(), answerList, getRuleId());
     }
 
     @Override
     public boolean isRuleExplanation(){ return true;}
 
-    public InferenceRule getRule(){ return rule;}
+    public String getRuleId(){ return ruleId;}
 }

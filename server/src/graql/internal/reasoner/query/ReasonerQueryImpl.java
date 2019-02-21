@@ -42,6 +42,7 @@ import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.cache.Index;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
+import grakn.core.graql.internal.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.internal.reasoner.plan.ResolutionQueryPlan;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
@@ -523,6 +524,14 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         return Stream.of(this);
     }
 
+    private List<ConceptMap> splitToPartialAnswers(ConceptMap mergedAnswer){
+         return this.selectAtoms()
+            .map(at -> at.inferTypes(mergedAnswer.project(at.getVarNames())))
+            .map(ReasonerQueries::atomic)
+                .map(aq -> mergedAnswer.project(aq.getVarNames()).explain(new LookupExplanation(aq.getPattern().toString())))
+            .collect(Collectors.toList());
+    }
+
     /**
      * @param parent parent state
      * @param subGoals set of visited sub goals
@@ -535,7 +544,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
         if(!this.isRuleResolvable()) {
             dbIterator = tx.stream(getQuery(), false)
-                    .map(ans -> ans.explain(new JoinExplanation(this, ans)))
+                    .map(ans -> ans.explain(new JoinExplanation(this.getPattern().toString(), this.splitToPartialAnswers(ans))))
                     .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                     .iterator();
             subGoalIterator = Collections.emptyIterator();

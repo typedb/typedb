@@ -18,12 +18,10 @@
 
 package grakn.core.graql.answer;
 
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Set;
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 
 /**
  * Base class for explanation classes.
@@ -40,20 +38,20 @@ public interface Explanation {
     Explanation childOf(ConceptMap ans);
 
     /**
-     * @return query associated with this explanation
+     * @return query pattern associated with this explanation
      */
     @Nullable
     @CheckReturnValue
-    ReasonerQuery getQuery();
+    String getQueryPattern();
 
     /**
      * produce a new explanation with provided query set
      *
-     * @param q query this explanation should be associated with
+     * @param queryPattern query this explanation should be associated with
      * @return explanation with provided query
      */
     @CheckReturnValue
-    Explanation setQuery(ReasonerQuery q);
+    Explanation setQueryPattern(String queryPattern);
 
     /**
      * @return answers this explanation is dependent on

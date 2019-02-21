@@ -115,7 +115,7 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         return answer
                 .merge(query.getSubstitution())
                 .project(query.getVarNames())
-                .explain(new RuleExplanation(query, rule));
+                .explain(new RuleExplanation(query.getPattern().toString(), rule.getRule().id().getValue()));
     }
 
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
@@ -159,6 +159,8 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
 
         return answer
                 .merge(query.getSubstitution())
-                .explain(new RuleExplanation(query, rule));
+                .explain(new RuleExplanation(
+                        query.getPattern().toString(),
+                        rule.getRule().id().getValue()));
     }
 }

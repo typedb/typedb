@@ -23,7 +23,6 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
@@ -280,7 +279,7 @@ public class ExplanationIT {
 
 
     private void testExplanation(Collection<ConceptMap> answers){
-        answers.forEach(this::testExplanation);
+        answers.forEach(ans -> testExplanation(ans));
     }
 
     private void testExplanation(ConceptMap answer){
@@ -338,8 +337,11 @@ public class ExplanationIT {
     }
 
     private boolean explanationConsistentWithAnswer(ConceptMap ans){
-        ReasonerQuery query = ans.explanation().getQuery();
-        Set<Variable> vars = query != null? query.getVarNames() : new HashSet<>();
+        String queryPattern = ans.explanation().getQueryPattern();
+        Set<Variable> vars = new HashSet<>();
+        if (queryPattern != null){
+            Graql.parsePattern(queryPattern).statements().forEach(s -> vars.addAll(s.variables()));
+        }
         return vars.containsAll(ans.map().keySet());
     }
 }
