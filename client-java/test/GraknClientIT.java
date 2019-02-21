@@ -46,12 +46,14 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.printer.Printer;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDelete;
@@ -231,7 +233,7 @@ public class GraknClientIT {
     @Test
     @Ignore
     public void testExecutingAQuery_ExplanationsAreReturned() {
-        Session reasonerLocalSession = server.sessionWithNewKeyspace();
+        SessionImpl reasonerLocalSession = server.sessionWithNewKeyspace();
         try (Transaction tx = reasonerLocalSession.transaction(Transaction.Type.WRITE)) {
 //            GenealogyKB.get().accept(tx);
             tx.commit();
@@ -309,9 +311,12 @@ public class GraknClientIT {
         answers.forEach(a -> TestCase.assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
     }
 
-    private boolean explanationConsistentWithAnswer(ConceptMap ans) {
-        ReasonerQuery query = ans.explanation().getQuery();
-        Set<Variable> vars = query != null ? query.getVarNames() : new HashSet<>();
+    private boolean explanationConsistentWithAnswer(ConceptMap ans){
+        String queryPattern = ans.explanation().getQueryPattern();
+        Set<Variable> vars = new HashSet<>();
+        if (queryPattern != null){
+            Graql.parsePattern(queryPattern).statements().forEach(s -> vars.addAll(s.variables()));
+        }
         return vars.containsAll(ans.map().keySet());
     }
 
