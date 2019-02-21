@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.CheckReturnValue;
 
 /**
  * Quantifies semantic difference between two queries provided they are in a subsumption relation, i. e. there exists
@@ -124,6 +125,26 @@ public class SemanticDifference {
             mergedDefinition.put(var, varDef != null ? varDef.merge(varDefToMerge) : varDefToMerge);
         });
         return new SemanticDifference(new HashSet<>(mergedDefinition.values()));
+    }
+
+    /**
+     * @param answer to project
+     * @param partialSub partial child substitution that needs to be incorporated
+     * @param vars       child vars
+     * @param unifier    parent-child unifier
+     * @return projected answer (empty if semantic difference not satisfied)
+     */
+    @CheckReturnValue
+    public ConceptMap applyToAnswer(ConceptMap answer, ConceptMap partialSub, Set<Variable> vars, Unifier unifier) {
+        ConceptMap unified = answer.unify(unifier);
+        if (unified.isEmpty()) return unified;
+        Set<Variable> varsToRetain = Sets.difference(unified.vars(), partialSub.vars());
+        return this.satisfiedBy(unified) ?
+                unified
+                        .project(varsToRetain)
+                        .merge(partialSub)
+                        .project(vars) :
+                new ConceptMap();
     }
 
     boolean isEmpty() { return definition.stream().allMatch(VariableDefinition::isTrivial);}

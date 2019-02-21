@@ -18,7 +18,9 @@
 
 package grakn.core.graql.internal.reasoner.atom;
 
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.executor.property.PropertyExecutor;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqValuePredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
@@ -33,6 +35,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.CheckReturnValue;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.findValuePropertyOp;
 
@@ -72,6 +75,19 @@ public class AtomicFactory {
                         .flatMap(Atom::getInnerPredicates)
                         .noneMatch(at::equals)
                 );
+    }
+
+    /**
+     * @param parent query context
+     * @return (partial) set of predicates corresponding to this answer
+     */
+    @CheckReturnValue
+    public static Set<Atomic> answerToPredicates(ConceptMap answer, ReasonerQuery parent) {
+        Set<Variable> varNames = parent.getVarNames();
+        return answer.map().entrySet().stream()
+                .filter(e -> varNames.contains(e.getKey()))
+                .map(e -> IdPredicate.create(e.getKey(), e.getValue().id(), parent))
+                .collect(Collectors.toSet());
     }
 
     public static Atomic createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
