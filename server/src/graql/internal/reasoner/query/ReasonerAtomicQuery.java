@@ -205,7 +205,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, MultilevelSemanticCache cache) {
         Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
-                .map(a -> a.explain(a.explanation().setQuery(this)))
+                .map(a -> a.explain(a.explanation().setQueryPattern(this.getPattern().toString())))
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                 .iterator();
 

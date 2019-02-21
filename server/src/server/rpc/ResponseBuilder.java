@@ -290,7 +290,7 @@ public class ResponseBuilder {
             AnswerProto.Explanation.Builder builder = AnswerProto.Explanation.newBuilder()
                     .addAllAnswers(explanation.getAnswers().stream().map(Answer::conceptMap)
                             .collect(Collectors.toList()));
-            if (explanation.getQuery() != null) builder.setPattern(explanation.getQuery().getPattern().toString());
+            if (explanation.getQueryPattern() != null) builder.setPattern(explanation.getQueryPattern());
             return builder.build();
         }
 

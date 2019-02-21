@@ -19,15 +19,18 @@
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Variable;
@@ -97,7 +100,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingTransitiveClosure_explanationsAreCorrectlyNested() {
-        try (Transaction tx = geoSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = geoSession.transaction(Transaction.Type.READ)) {
             String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
             Concept polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
@@ -111,7 +114,7 @@ public class ExplanationIT {
             ConceptMap answer4 = new ConceptMap(ImmutableMap.of(var("x").var(), polibuda, var("y").var(), europe));
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
-            testExplanation(answers);
+            testExplanation(tx, answers);
 
             ConceptMap queryAnswer1 = findAnswer(answer1, answers);
             ConceptMap queryAnswer2 = findAnswer(answer2, answers);
@@ -146,7 +149,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingTransitiveClosureWithSpecificResourceAndTypes_explanationsAreCorrect() {
-        try (Transaction tx = geoSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = geoSession.transaction(Transaction.Type.READ)) {
             String queryString = "match $x isa university;" +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                     "$y isa country;$y has name 'Poland'; get;";
@@ -158,7 +161,7 @@ public class ExplanationIT {
             ConceptMap answer2 = new ConceptMap(ImmutableMap.of(var("x").var(), uw, var("y").var(), poland));
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
-            testExplanation(answers);
+            testExplanation(tx, answers);
 
             ConceptMap queryAnswer1 = findAnswer(answer1, answers);
             ConceptMap queryAnswer2 = findAnswer(answer2, answers);
@@ -185,7 +188,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingAGroundQuery_explanationsAreCorrect(){
-        try (Transaction tx = geoSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = geoSession.transaction(Transaction.Type.READ)) {
             Concept polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
             Concept europe = getConcept(tx, "name", "Europe");
             String queryString = "match " +
@@ -202,13 +205,13 @@ public class ExplanationIT {
             assertEquals(2, answer.explanation().getAnswers().size());
             assertEquals(3, getRuleExplanations(answer).size());
             assertEquals(4, answer.explanation().explicit().size());
-            testExplanation(answers);
+            testExplanation(tx, answers);
         }
     }
 
     @Test
     public void whenExplainingConjunctiveQueryWithTwoIdPredicates_explanationsAreCorrect(){
-        try (Transaction tx = geoSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = geoSession.transaction(Transaction.Type.READ)) {
             Concept polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
@@ -221,13 +224,13 @@ public class ExplanationIT {
             GraqlGet query = Graql.parse(queryString);
             List<ConceptMap> answers = tx.execute(query);
             assertEquals(answers.size(), 1);
-            testExplanation(answers);
+            testExplanation(tx, answers);
         }
     }
 
     @Test
     public void whenExplainingConjunctions_explanationsAreCorrect(){
-        try (Transaction tx = explanationSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = explanationSession.transaction(Transaction.Type.READ)) {
             String queryString = "match " +
                     "(role1: $x, role2: $w) isa inferredRelation;" +
                     "$x has name $xName;" +
@@ -235,13 +238,13 @@ public class ExplanationIT {
 
             GraqlGet query = Graql.parse(queryString);
             List<ConceptMap> answers = tx.execute(query);
-            testExplanation(answers);
+            testExplanation(tx, answers);
         }
     }
 
     @Test
     public void whenExplainingMixedAtomicQueries_explanationsAreCorrect(){
-        try (Transaction tx = explanationSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = explanationSession.transaction(Transaction.Type.READ)) {
             String queryString = "match " +
                     "$x has value 'high';" +
                     "($x, $y) isa carried-relation;" +
@@ -249,7 +252,7 @@ public class ExplanationIT {
 
             GraqlGet query = Graql.parse(queryString);
             List<ConceptMap> answers = tx.execute(query);
-            testExplanation(answers);
+            testExplanation(tx, answers);
             answers.stream()
                     .filter(ans -> ans.explanations().stream().anyMatch(Explanation::isRuleExplanation))
                     .forEach(inferredAnswer -> {
@@ -262,12 +265,12 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingEquivalentPartialQueries_explanationsAreCorrect(){
-        try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = explanationSession.transaction(Transaction.Type.WRITE)) {
             String queryString = "match $x isa same-tag-column-link; get;";
 
             GraqlGet query = Graql.parse(queryString);
             List<ConceptMap> answers = tx.execute(query);
-            testExplanation(answers);
+            testExplanation(tx, answers);
             answers.stream()
                     .filter(ans -> ans.explanations().stream().anyMatch(Explanation::isRuleExplanation))
                     .forEach(inferredAnswer -> {
@@ -279,12 +282,12 @@ public class ExplanationIT {
     }
 
 
-    private void testExplanation(Collection<ConceptMap> answers){
-        answers.forEach(this::testExplanation);
+    private void testExplanation(TransactionOLTP tx, Collection<ConceptMap> answers){
+        answers.forEach(ans -> testExplanation(tx, ans));
     }
 
-    private void testExplanation(ConceptMap answer){
-        answerHasConsistentExplanations(answer);
+    private void testExplanation(TransactionOLTP tx, ConceptMap answer){
+        answerHasConsistentExplanations(tx, answer);
         checkExplanationCompleteness(answer);
         checkAnswerConnectedness(answer);
     }
@@ -309,12 +312,12 @@ public class ExplanationIT {
         });
     }
 
-    private void answerHasConsistentExplanations(ConceptMap answer){
+    private void answerHasConsistentExplanations(TransactionOLTP tx, ConceptMap answer){
         Set<ConceptMap> answers = answer.explanation().deductions().stream()
                 .filter(a -> !a.explanation().isJoinExplanation())
                 .collect(Collectors.toSet());
 
-        answers.forEach(a -> assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
+        answers.forEach(a -> assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(tx, a)));
     }
 
     private static Concept getConcept(Transaction tx, String typeLabel, String val){
@@ -337,8 +340,12 @@ public class ExplanationIT {
         return a.explanations().stream().filter(Explanation::isLookupExplanation).collect(Collectors.toSet());
     }
 
-    private boolean explanationConsistentWithAnswer(ConceptMap ans){
-        ReasonerQuery query = ans.explanation().getQuery();
+    private boolean explanationConsistentWithAnswer(TransactionOLTP tx, ConceptMap ans){
+        ReasonerQuery query =
+                ReasonerQueries.create(
+                        Iterables.getOnlyElement(Graql.parsePattern(ans.explanation().getQueryPattern()).getDisjunctiveNormalForm().getPatterns()),
+                        tx
+                );
         Set<Variable> vars = query != null? query.getVarNames() : new HashSet<>();
         return vars.containsAll(ans.map().keySet());
     }

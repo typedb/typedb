@@ -20,12 +20,8 @@ package grakn.core.graql.internal.reasoner.explanation;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
-
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -38,13 +34,8 @@ import java.util.stream.Collectors;
 public class JoinExplanation extends QueryExplanation {
 
     public JoinExplanation(List<ConceptMap> answers){ super(answers);}
-    public JoinExplanation(ReasonerQueryImpl q, ConceptMap mergedAnswer){
-        super(q, q.selectAtoms()
-                .map(at -> at.inferTypes(mergedAnswer.project(at.getVarNames())))
-                .map(ReasonerQueries::atomic)
-                .map(aq -> mergedAnswer.project(aq.getVarNames()).explain(new LookupExplanation(aq)))
-                .collect(Collectors.toList())
-        );
+    public JoinExplanation(String queryPattern, List<ConceptMap> partialAnswers){
+        super(queryPattern, partialAnswers);
     }
 
     @Override

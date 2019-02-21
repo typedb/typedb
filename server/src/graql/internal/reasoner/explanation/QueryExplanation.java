@@ -21,8 +21,6 @@ package grakn.core.graql.internal.reasoner.explanation;
 import com.google.common.collect.ImmutableList;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -39,31 +37,34 @@ import java.util.stream.Collectors;
  */
 public class QueryExplanation implements Explanation {
 
-    private final ReasonerQuery query;
+    private final String queryPattern;
     private final ImmutableList<ConceptMap> answers;
 
     public QueryExplanation(){
-        this.query = null;
+        this.queryPattern = null;
         this.answers = ImmutableList.of();}
-    QueryExplanation(ReasonerQuery q, List<ConceptMap> ans){
-        this.query = q;
+    QueryExplanation(String queryPattern, List<ConceptMap> ans){
+        this.queryPattern = queryPattern;
         this.answers = ImmutableList.copyOf(ans);
     }
-    QueryExplanation(ReasonerQuery q){
-        this(q, new ArrayList<>());
+    QueryExplanation(String queryPattern){
+        this(queryPattern, new ArrayList<>());
     }
     QueryExplanation(List<ConceptMap> ans){
         this(null, ans);
     }
 
     @Override
-    public Explanation setQuery(ReasonerQuery q){
-        return new QueryExplanation(q);
+    public String getQueryPattern(){ return queryPattern;}
+
+    @Override
+    public Explanation setQueryPattern(String queryPattern){
+        return new QueryExplanation(queryPattern);
     }
 
     @Override
     public Explanation childOf(ConceptMap ans) {
-        return new QueryExplanation(getQuery(), ans.explanation().getAnswers());
+        return new QueryExplanation(getQueryPattern(), ans.explanation().getAnswers());
     }
 
     @Override
@@ -92,7 +93,4 @@ public class QueryExplanation implements Explanation {
 
     @Override
     public boolean isEmpty() { return !isLookupExplanation() && !isRuleExplanation() && getAnswers().isEmpty();}
-
-    @Override
-    public ReasonerQuery getQuery(){ return query;}
 }
