@@ -60,7 +60,7 @@ public class KeyspaceManager {
         this.config = config;
 
         KeyspaceCache keyspaceCache = new KeyspaceCache(config);
-        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache);
+        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, () -> {});
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 
@@ -113,7 +113,7 @@ public class KeyspaceManager {
         }
 
         KeyspaceCache keyspaceCache = new KeyspaceCache(config);
-        SessionImpl session = new SessionImpl(keyspace, config, keyspaceCache);
+        SessionImpl session = new SessionImpl(keyspace, config, keyspaceCache, () -> {});
         session.clearGraph();
         session.close();
         return deleteReferenceInSystemKeyspace(keyspace);
