@@ -48,7 +48,7 @@ public interface Thing extends Concept {
      * @see Relation
      */
     @CheckReturnValue
-    Stream<Relation> relationships(Role... roles);
+    Stream<Relation> relations(Role... roles);
 
     /**
      * Determine the Roles that this Thing is currently playing.
@@ -61,10 +61,8 @@ public interface Thing extends Concept {
 
     /**
      * Creates a Relation from this Thing to the provided Attribute.
-     * <p>
-     * This has the same effect as {@link #relhas(Attribute)}, but returns the instance itself to allow
+     * This has the same effect as #relhas(Attribute), but returns the instance itself to allow
      * method chaining.
-     * </p>
      *
      * @param attribute The Attribute to which a Relation is created
      * @return The instance itself
@@ -73,9 +71,7 @@ public interface Thing extends Concept {
 
     /**
      * Creates a Relation from this instance to the provided Attribute.
-     * <p>
-     * This has the same effect as {@link #has(Attribute)}, but returns the new Relation.
-     * </p>
+     * This has the same effect as #has(Attribute), but returns the new Relation.
      *
      * @param attribute The Attribute to which a Relation is created
      * @return The Relation connecting the Thing and the Attribute

@@ -18,21 +18,13 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.server.Transaction;
-
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
 /**
- * <p>
- *     A Concept Id
- * </p>
- *
- * <p>
- *     A class which represents an id of any {@link AbstractElement} in the {@link Transaction}.
- *     Also contains a static method for producing {@link AbstractElement} IDs from Strings.
- * </p>
- *
+ * A Concept Id
+ * A class which represents an id of any AbstractElement in the Transaction.
+ * Also contains a static method for producing AbstractElement IDs from Strings.
  */
 public class ElementId implements Serializable {
 
@@ -40,12 +32,21 @@ public class ElementId implements Serializable {
     private final String elementId;
     private int hashCode = 0;
 
-    private ElementId(String conceptId){
+    private ElementId(String conceptId) {
         this.elementId = conceptId;
     }
 
+    /**
+     * @param value The string which potentially represents a Concept
+     * @return The matching concept ID
+     */
     @CheckReturnValue
-    public String getValue(){
+    public static ElementId of(String value) {
+        return new ElementId(value);
+    }
+
+    @CheckReturnValue
+    public String getValue() {
         return elementId;
     }
 
@@ -59,24 +60,14 @@ public class ElementId implements Serializable {
 
     @Override
     public int hashCode() {
-        if (hashCode == 0 ){
+        if (hashCode == 0) {
             hashCode = elementId.hashCode();
         }
         return hashCode;
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return getValue();
-    }
-
-    /**
-     *
-     * @param value The string which potentially represents a Concept
-     * @return The matching concept ID
-     */
-    @CheckReturnValue
-    public static ElementId of(String value){
-        return new ElementId(value);
     }
 }

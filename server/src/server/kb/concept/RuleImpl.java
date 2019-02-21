@@ -30,14 +30,8 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     An ontological element used to model and categorise different types of Rule.
- * </p>
- *
- * <p>
- *     An ontological element used to define different types of Rule.
- * </p>
- *
+ * An ontological element used to model and categorise different types of Rule.
+ * An ontological element used to define different types of Rule.
  */
 public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
     private RuleImpl(VertexElement vertexElement) {
@@ -50,7 +44,7 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
         vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, then(), Pattern::toString);
     }
 
-    public static RuleImpl get(VertexElement vertexElement){
+    public static RuleImpl get(VertexElement vertexElement) {
         return new RuleImpl(vertexElement);
     }
 
@@ -58,6 +52,11 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
         RuleImpl rule = new RuleImpl(vertexElement, type, when, then);
         vertexElement.tx().cache().trackForValidation(rule);
         return rule;
+    }
+
+    public static <X extends Type, Y extends Thing> RuleImpl from(Rule type) {
+        //noinspection unchecked
+        return (RuleImpl) type;
     }
 
     @Override
@@ -99,7 +98,6 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
     }
 
     /**
-     *
      * @param type The Type which this Rule applies to.
      */
     public void addPositiveHypothesis(Type type) {
@@ -115,23 +113,17 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
     }
 
     /**
-     *
      * @param type The Type which is the conclusion of this Rule.
      */
     public void addConclusion(Type type) {
         putEdge(ConceptVertex.from(type), Schema.EdgeLabel.CONCLUSION);
     }
 
-    private Pattern parsePattern(String value){
-        if(value == null) {
+    private Pattern parsePattern(String value) {
+        if (value == null) {
             return null;
         } else {
             return Graql.parsePattern(value);
         }
-    }
-
-    public static <X extends Type, Y extends Thing> RuleImpl from(Rule type){
-        //noinspection unchecked
-        return (RuleImpl) type;
     }
 }

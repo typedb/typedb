@@ -60,7 +60,7 @@ public class RoleIT {
         session = server.sessionWithNewKeyspace();
         tx = session.transaction(Transaction.Type.WRITE);
         role = tx.putRole("My Role");
-        relationshipType = tx.putRelationshipType("RelationshipType");
+        relationshipType = tx.putRelationType("RelationshipType");
     }
 
     @After
@@ -71,9 +71,9 @@ public class RoleIT {
 
     @Test
     public void whenGettingTheRelationTypesARoleIsInvolvedIn_ReturnTheRelationTypes() {
-        assertThat(role.relationships().collect(toSet()), empty());
+        assertThat(role.relations().collect(toSet()), empty());
         relationshipType.relates(role);
-        assertThat(role.relationships().collect(toSet()), containsInAnyOrder(relationshipType));
+        assertThat(role.relations().collect(toSet()), containsInAnyOrder(relationshipType));
     }
 
     @Test
@@ -104,7 +104,7 @@ public class RoleIT {
     @Test
     public void whenDeletingRoleTypeWithRelationTypes_Throw(){
         Role role2 = tx.putRole("New Role Type");
-        tx.putRelationshipType("Thing").relates(role2).relates(role);
+        tx.putRelationType("Thing").relates(role2).relates(role);
 
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(TransactionException.cannotBeDeleted(role2).getMessage());
@@ -116,7 +116,7 @@ public class RoleIT {
     public void whenDeletingRoleTypeWithRolePlayers_Throw(){
         Role roleA = tx.putRole("roleA");
         Role roleB = tx.putRole("roleB");
-        RelationType relationshipType = tx.putRelationshipType("relationTypes").relates(roleA).relates(roleB);
+        RelationType relationshipType = tx.putRelationType("relationTypes").relates(roleA).relates(roleB);
         EntityType entityType = tx.putEntityType("entityType").plays(roleA).plays(roleB);
 
         Entity a = entityType.create();
@@ -135,11 +135,11 @@ public class RoleIT {
         Role roleA = tx.putRole("roleA");
         Role roleB = tx.putRole("roleB");
         relationshipType.relates(roleA).relates(role);
-        RelationType relationshipType2 = tx.putRelationshipType("relationshipType2").relates(roleB).relates(role);
+        RelationType relationshipType2 = tx.putRelationType("relationshipType2").relates(roleB).relates(role);
         tx.commit();
 
-        assertThat(roleA.relationships().collect(toSet()), containsInAnyOrder(relationshipType));
-        assertThat(roleB.relationships().collect(toSet()), containsInAnyOrder(relationshipType2));
-        assertThat(role.relationships().collect(toSet()), containsInAnyOrder(relationshipType, relationshipType2));
+        assertThat(roleA.relations().collect(toSet()), containsInAnyOrder(relationshipType));
+        assertThat(roleB.relations().collect(toSet()), containsInAnyOrder(relationshipType2));
+        assertThat(role.relations().collect(toSet()), containsInAnyOrder(relationshipType, relationshipType2));
     }
 }

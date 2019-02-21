@@ -18,9 +18,7 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.kb.concept.ConceptImpl;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -28,46 +26,38 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     Represent a Shard of a concept
- * </p>
- *
- * <p>
- *     Wraps a {@link VertexElement} which is a shard of a {@link Concept}.
- *     This is used to break supernodes apart. For example the instances of a {@link Type} are
- *     spread across several shards.
- * </p>
- *
+ * Represent a Shard of a concept
+ * Wraps a VertexElement which is a shard of a Concept.
+ * This is used to break supernodes apart. For example the instances of a Type are
+ * spread across several shards.
  */
 public class Shard {
     private final VertexElement vertexElement;
 
-    public Shard(ConceptImpl owner, VertexElement vertexElement){
+    public Shard(ConceptImpl owner, VertexElement vertexElement) {
         this(vertexElement);
         owner(owner);
     }
 
-    public Shard(VertexElement vertexElement){
+    public Shard(VertexElement vertexElement) {
         this.vertexElement = vertexElement;
     }
 
-    public VertexElement vertex(){
+    public VertexElement vertex() {
         return vertexElement;
     }
 
     /**
-     *
      * @return The id of this shard. Strings are used because shards are looked up via the string index.
      */
-    public String id(){
+    public String id() {
         return vertex().property(Schema.VertexProperty.ID);
     }
 
     /**
-     *
      * @param owner Sets the owner of this shard
      */
-    private void owner(ConceptImpl owner){
+    private void owner(ConceptImpl owner) {
         vertex().putEdge(owner.vertex(), Schema.EdgeLabel.SHARD);
     }
 
@@ -76,22 +66,20 @@ public class Shard {
      *
      * @param concept The concept to link to this shard
      */
-    public void link(ConceptImpl concept){
+    public void link(ConceptImpl concept) {
         concept.vertex().addEdge(vertex(), Schema.EdgeLabel.ISA);
     }
 
     /**
-     *
      * @return All the concept linked to this shard
      */
-    public <V extends Thing> Stream<V> links(){
-        return  vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).
+    public <V extends Thing> Stream<V> links() {
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).
                 map(EdgeElement::source).
-                map(vertexElement ->  vertex().tx().factory().<V>buildConcept(vertexElement));
+                map(vertexElement -> vertex().tx().factory().buildConcept(vertexElement));
     }
 
     /**
-     *
      * @return The hash code of the underlying vertex
      */
     public int hashCode() {

@@ -54,7 +54,7 @@ public class TransitivityMatrixGraph{
         Role qto = tx.getRole("Q-to");
 
         EntityType aEntity = tx.getEntityType("a-entity");
-        RelationType q = tx.getRelationshipType("Q");
+        RelationType q = tx.getRelationType("Q");
         Thing aInst = putEntityWithResource(tx, "a", tx.getEntityType("entity2"), key);
         ConceptId[][] aInstanceIds = new ConceptId[n][m];
         for(int i = 0 ; i < n ;i++) {

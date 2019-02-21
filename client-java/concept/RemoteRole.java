@@ -30,7 +30,7 @@ import grakn.core.protocol.ConceptProto;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link Role}
+ * Client implementation of Role
  */
 public class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
 
@@ -43,11 +43,11 @@ public class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
     }
 
     @Override
-    public final Stream<RelationType> relationships() {
+    public final Stream<RelationType> relations() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRoleRelationsReq(ConceptProto.Role.Relations.Req.getDefaultInstance()).build();
         int iteratorId = runMethod(method).getRoleRelationsIter().getId();
-        return conceptStream(iteratorId, res -> res.getRoleRelationsIterRes().getRelationType()).map(Concept::asRelationshipType);
+        return conceptStream(iteratorId, res -> res.getRoleRelationsIterRes().getRelationType()).map(Concept::asRelationType);
     }
 
     @Override

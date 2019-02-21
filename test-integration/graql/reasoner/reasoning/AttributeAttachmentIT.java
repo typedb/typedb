@@ -193,7 +193,7 @@ public class AttributeAttachmentIT {
                     {
                         assertTrue(ans.get("x").isEntity());
                         assertTrue(ans.get("y").isAttribute());
-                        assertTrue(ans.get("z").isRelationship());
+                        assertTrue(ans.get("z").isRelation());
                     }
             );
 
@@ -202,7 +202,7 @@ public class AttributeAttachmentIT {
             assertEquals(1, answers2.size());
             answers2.forEach(ans ->
                     {
-                        assertTrue(ans.get("x").isRelationship());
+                        assertTrue(ans.get("x").isRelation());
                         assertTrue(ans.get("y").isAttribute());
                     }
             );

@@ -21,7 +21,6 @@ package grakn.core.server.kb;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
@@ -68,28 +67,22 @@ import static grakn.core.common.exception.ErrorMessage.VALIDATION_REQUIRED_RELAT
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
 
 /**
- * <p>
- *     Specific Validation Rules
- * </p>
- *
- * <p>
- *     This class contains the implementation for the following validation rules:
- *     1. Plays Validation which ensures that a {@link Thing} is allowed to play the {@link Role}
- *        it has been assigned to.
- *     2. Relates Validation which ensures that every {@link Role} which is not abstract is
- *        assigned to a {@link RelationType} via {@link RelationType#relates(Role)}.
- *     3. Minimum Role Validation which ensures that every {@link RelationType} has at least 2 {@link Role}
- *        assigned to it via {@link RelationType#relates(Role)}.
- *     4. {@link Relation} Structure Validation which ensures that each {@link Relation} has the
- *        correct structure.
- *     5. Abstract Type Validation which ensures that each abstract {@link Type} has no {@link Thing}.
- *     6. {@link RelationType} Hierarchy Validation which ensures that {@link RelationType} with a hierarchical structure
- *        have a valid matching {@link Role} hierarchical structure.
- *     7. Required Resources validation which ensures that each {@link Thing} with required
- *        {@link Attribute} has a valid {@link Relation} to that {@link Attribute}.
- *     8. Unique {@link Relation} Validation which ensures that no duplicate {@link Relation} are created.
- * </p>
- *
+ * Specific Validation Rules
+ * This class contains the implementation for the following validation rules:
+ * 1. Plays Validation which ensures that a Thing is allowed to play the Role
+ * it has been assigned to.
+ * 2. Relates Validation which ensures that every Role which is not abstract is
+ * assigned to a RelationType via RelationType#relates(Role).
+ * 3. Minimum Role Validation which ensures that every RelationType has at least 2 Role
+ * assigned to it via RelationType#relates(Role).
+ * 4. Relation Structure Validation which ensures that each Relation has the
+ * correct structure.
+ * 5. Abstract Type Validation which ensures that each abstract Type has no Thing.
+ * 6. RelationType Hierarchy Validation which ensures that RelationType with a hierarchical structure
+ * have a valid matching Role hierarchical structure.
+ * 7. Required Resources validation which ensures that each Thing with required
+ * Attribute has a valid Relation to that Attribute.
+ * 8. Unique Relation Validation which ensures that no duplicate Relation are created.
  */
 class ValidateGlobalRules {
     private ValidateGlobalRules() {
@@ -97,11 +90,10 @@ class ValidateGlobalRules {
     }
 
     /**
-     * This method checks if the plays edge has been added between the roleplayer's {@link Type} and
-     * the {@link Role} being played.
-     *
-     * It also checks if the {@link Role} of the {@link Casting} has been linked to the {@link RelationType} of the
-     * {@link Relation} which the {@link Casting} connects to.
+     * This method checks if the plays edge has been added between the roleplayer's Type and
+     * the Role being played.
+         * It also checks if the Role of the Casting has been linked to the RelationType of the
+     * Relation which the Casting connects to.
      *
      * @return Specific errors if any are found
      */
@@ -121,56 +113,55 @@ class ValidateGlobalRules {
     }
 
     /**
-     * Checks if the {@link Role} of the {@link Casting} has been linked to the {@link RelationType} of
-     * the {@link Relation} which the {@link Casting} connects to.
+     * Checks if the Role of the Casting has been linked to the RelationType of
+     * the Relation which the Casting connects to.
      *
-     * @param role the {@link Role} which the {@link Casting} refers to
-     * @param relationshipType the {@link RelationType} which should connect to the role
-     * @param relationship the {@link Relation} which the {@link Casting} refers to
+     * @param role             the Role which the Casting refers to
+     * @param relationshipType the RelationType which should connect to the role
+     * @param relationship     the Relation which the Casting refers to
      * @return an error if one is found
      */
-    private static Optional<String> roleNotLinkedToRelationShip(Role role, RelationType relationshipType, Relation relationship){
-        boolean notFound = role.relationships().
+    private static Optional<String> roleNotLinkedToRelationShip(Role role, RelationType relationshipType, Relation relationship) {
+        boolean notFound = role.relations().
                 noneMatch(innerRelationType -> innerRelationType.label().equals(relationshipType.label()));
-        if(notFound){
+        if (notFound) {
             return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relationship.id(), role.label(), relationshipType.label()));
         }
         return Optional.empty();
     }
 
     /**
-     * Checks  if the plays edge has been added between the roleplayer's {@link Type} and
-     * the {@link Role} being played.
+     * Checks  if the plays edge has been added between the roleplayer's Type and
+     * the Role being played.
+         * Also checks that required Role are satisfied
      *
-     * Also checks that required {@link Role} are satisfied
-     *
-     * @param role The {@link Role} which the role-player is playing
+     * @param role  The Role which the role-player is playing
      * @param thing the role-player
      * @return an error if one is found
      */
-    private static Optional<String> roleNotAllowedToBePlayed(Role role, Thing thing){
+    private static Optional<String> roleNotAllowedToBePlayed(Role role, Thing thing) {
         TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) thing.type();
 
         boolean satisfiesPlays = false;
-        while(currentConcept != null){
+        while (currentConcept != null) {
             Map<Role, Boolean> plays = currentConcept.directPlays();
 
             for (Map.Entry<Role, Boolean> playsEntry : plays.entrySet()) {
                 Role rolePlayed = playsEntry.getKey();
                 Boolean required = playsEntry.getValue();
-                if(rolePlayed.label().equals(role.label())){
+                if (rolePlayed.label().equals(role.label())) {
                     satisfiesPlays = true;
 
                     // Assert unique relationship for this role type
-                    if (required && !CommonUtil.containsOnly(thing.relationships(role), 1)) {
-                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(thing.id(), thing.type().label(), role.label(), thing.relationships(role).count()));
+                    if (required && !CommonUtil.containsOnly(thing.relations(role), 1)) {
+                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(thing.id(), thing.type().label(), role.label(), thing.relations(role).count()));
                     }
                 }
             }
             currentConcept = (TypeImpl) currentConcept.sup();
         }
 
-        if(satisfiesPlays) {
+        if (satisfiesPlays) {
             return Optional.empty();
         } else {
             return Optional.of(VALIDATION_CASTING.getMessage(thing.type().label(), thing.id(), role.label()));
@@ -178,24 +169,22 @@ class ValidateGlobalRules {
     }
 
     /**
-     *
      * @param role The Role to validate
      * @return An error message if the relates does not have a single incoming RELATES edge
      */
-    static Optional<String> validateHasSingleIncomingRelatesEdge(Role role){
-        if(!role.relationships().findAny().isPresent()) {
+    static Optional<String> validateHasSingleIncomingRelatesEdge(Role role) {
+        if (!role.relations().findAny().isPresent()) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.label()));
         }
         return Optional.empty();
     }
 
     /**
-     *
-     * @param relationshipType The {@link RelationType} to validate
+     * @param relationshipType The RelationType to validate
      * @return An error message if the relationTypes does not have at least 1 role
      */
     static Optional<String> validateHasMinimumRoles(RelationType relationshipType) {
-        if(relationshipType.isAbstract() || relationshipType.roles().iterator().hasNext()){
+        if (relationshipType.isAbstract() || relationshipType.roles().iterator().hasNext()) {
             return Optional.empty();
         } else {
             return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationshipType.label()));
@@ -203,13 +192,12 @@ class ValidateGlobalRules {
     }
 
     /**
-     *
-     * @param relationshipType the {@link RelationType} to be validated
-     * @return Error messages if the role type sub structure does not match the {@link RelationType} sub structure
+     * @param relationshipType the RelationType to be validated
+     * @return Error messages if the role type sub structure does not match the RelationType sub structure
      */
-    static Set<String> validateRelationTypesToRolesSchema(RelationType relationshipType){
+    static Set<String> validateRelationTypesToRolesSchema(RelationType relationshipType) {
         RelationTypeImpl superRelationType = (RelationTypeImpl) relationshipType.sup();
-        if(Schema.MetaSchema.isMetaLabel(superRelationType.label()) || superRelationType.isAbstract()){ //If super type is a meta type no validation needed
+        if (Schema.MetaSchema.isMetaLabel(superRelationType.label()) || superRelationType.isAbstract()) { //If super type is a meta type no validation needed
             return Collections.emptySet();
         }
 
@@ -221,7 +209,7 @@ class ValidateGlobalRules {
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers
-        if(!superRelationType.isAbstract()) {
+        if (!superRelationType.isAbstract()) {
             Set<Label> allSuperRolesPlayed = new HashSet<>();
             superRelationType.sups().forEach(rel -> rel.roles().forEach(roleType -> allSuperRolesPlayed.add(roleType.label())));
 
@@ -229,7 +217,7 @@ class ValidateGlobalRules {
                 boolean validRoleTypeFound = SchemaConceptImpl.from(relate).sups().
                         anyMatch(superRole -> allSuperRolesPlayed.contains(superRole.label()));
 
-                if(!validRoleTypeFound){
+                if (!validRoleTypeFound) {
                     errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.label(), relationshipType.label(), "super", "super", superRelationType.label()));
                 }
             }
@@ -239,32 +227,31 @@ class ValidateGlobalRules {
         for (Role superRelate : superRelates) {
             boolean subRoleNotFoundInRelates = superRelate.subs().noneMatch(sub -> relatesLabels.contains(sub.label()));
 
-            if(subRoleNotFoundInRelates){
+            if (subRoleNotFoundInRelates) {
                 errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.label(), superRelationType.label(), "sub", "sub", relationshipType.label()));
             }
         }
 
-       return errorMessages;
+        return errorMessages;
     }
 
     /**
-     *
      * @param thing The thing to be validated
      * @return An error message if the thing does not have all the required resources
      */
     static Optional<String> validateInstancePlaysAllRequiredRoles(Thing thing) {
         TypeImpl<?, ?> currentConcept = (TypeImpl) thing.type();
 
-        while(currentConcept != null){
+        while (currentConcept != null) {
 
             Map<Role, Boolean> plays = currentConcept.directPlays();
             for (Map.Entry<Role, Boolean> playsEntry : plays.entrySet()) {
-                if(playsEntry.getValue()){
+                if (playsEntry.getValue()) {
                     Role role = playsEntry.getKey();
                     // Assert there is a relationship for this type
-                    Stream<Relation> relationships = thing.relationships(role);
+                    Stream<Relation> relationships = thing.relations(role);
 
-                    if(!CommonUtil.containsOnly(relationships, 1)){
+                    if (!CommonUtil.containsOnly(relationships, 1)) {
                         Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.label());
                         return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.id(), resourceTypeLabel));
                     }
@@ -279,7 +266,6 @@ class ValidateGlobalRules {
      * @param graph  graph used to ensure rules contain no contradictions
      * @return Error messages if the rules in the db contain contradictions (positive and negative paths between types)
      */
-
     static Set<String> validateNoContradictions(TransactionOLTP graph){
         Set<String> errors = new HashSet<>();
         RuleUtils.findTypeGraphContradictions(graph).forEach(p ->
@@ -306,17 +292,16 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated
      * @return Error messages if the rule is not a valid clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
-    static Set<String> validateRuleIsValidClause(TransactionOLTP graph, Rule rule){
+    static Set<String> validateRuleIsValidClause(TransactionOLTP graph, Rule rule) {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<Pattern>> patterns = rule.when().getNegationDNF().getPatterns();
-        if (patterns.size() > 1){
+        if (patterns.size() > 1) {
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
-        }
-        else {
+        } else {
             errors.addAll(CompositeQuery.validateAsRuleBody(Iterables.getOnlyElement(patterns), rule, graph));
         }
 
-        if (errors.isEmpty()){
+        if (errors.isEmpty()) {
             errors.addAll(validateRuleHead(graph, rule));
         }
         return errors;
@@ -324,10 +309,10 @@ class ValidateGlobalRules {
 
     /**
      * @param graph graph (tx) of interest
-     * @param rule the rule to be cast into a combined conjunction query
+     * @param rule  the rule to be cast into a combined conjunction query
      * @return a combined conjunction created from statements from both the body and the head of the rule
      */
-    private static ReasonerQuery combinedRuleQuery(TransactionOLTP graph, Rule rule){
+    private static ReasonerQuery combinedRuleQuery(TransactionOLTP graph, Rule rule) {
         ReasonerQuery bodyQuery = ReasonerQueries.create(Graql.and(rule.when().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())), graph);
         ReasonerQuery headQuery = ReasonerQueries.create(Graql.and(rule.then().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())), graph);
         return headQuery.conjunction(bodyQuery);
@@ -335,8 +320,9 @@ class ValidateGlobalRules {
 
     /**
      * NB: this only gets checked if the rule obeys the Horn clause form
+     *
      * @param graph graph used to ensure the rule is a valid Horn clause
-     * @param rule the rule to be validated ontologically
+     * @param rule  the rule to be validated ontologically
      * @return Error messages if the rule has ontological inconsistencies
      */
     static Set<String> validateRuleOntologically(TransactionOLTP graph, Rule rule) {
@@ -352,7 +338,7 @@ class ValidateGlobalRules {
 
     /**
      * @param graph graph used to ensure the rule head is valid
-     * @param rule the rule to be validated
+     * @param rule  the rule to be validated
      * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain illegal atomics and is ontologically valid
      */
     private static Set<String> validateRuleHead(TransactionOLTP graph, Rule rule) {
@@ -360,7 +346,7 @@ class ValidateGlobalRules {
         Set<Conjunction<Statement>> headPatterns = rule.then().getDisjunctiveNormalForm().getPatterns();
         Set<Conjunction<Statement>> bodyPatterns = rule.when().getDisjunctiveNormalForm().getPatterns();
 
-        if (headPatterns.size() != 1){
+        if (headPatterns.size() != 1) {
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.label()));
         } else {
             ReasonerQuery bodyQuery = ReasonerQueries.create(Iterables.getOnlyElement(bodyPatterns), graph);
@@ -385,11 +371,10 @@ class ValidateGlobalRules {
     }
 
     /**
-     *
      * @param rule The rule to be validated
      * @return Error messages if the when or then of a rule refers to a non existent type
      */
-    static Set<String> validateRuleSchemaConceptExist(Transaction graph, Rule rule){
+    static Set<String> validateRuleSchemaConceptExist(Transaction graph, Rule rule) {
         Set<String> errors = new HashSet<>();
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_WHEN, rule.when()));
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_THEN, rule.then()));
@@ -397,10 +382,9 @@ class ValidateGlobalRules {
     }
 
     /**
-     *
-     * @param graph The graph to query against
-     * @param rule The rule the pattern was extracted from
-     * @param side The side from which the pattern was extracted
+     * @param graph   The graph to query against
+     * @param rule    The rule the pattern was extracted from
+     * @param side    The side from which the pattern was extracted
      * @param pattern The pattern from which we will extract the types in the pattern
      * @return A list of errors if the pattern refers to any non-existent types in the graph
      */
@@ -438,11 +422,12 @@ class ValidateGlobalRules {
     }
 
     /**
-     * Checks if a {@link Relation} has at least one role player.
-     * @param relationship The {@link Relation} to check
+     * Checks if a Relation has at least one role player.
+     *
+     * @param relationship The Relation to check
      */
     static Optional<String> validateRelationshipHasRolePlayers(Relation relationship) {
-        if(!relationship.rolePlayers().findAny().isPresent()){
+        if (!relationship.rolePlayers().findAny().isPresent()) {
             return Optional.of(ErrorMessage.VALIDATION_RELATIONSHIP_WITH_NO_ROLE_PLAYERS.getMessage(relationship.id(), relationship.type().label()));
         }
         return Optional.empty();

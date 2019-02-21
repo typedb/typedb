@@ -198,7 +198,7 @@ public class OntologicalQueryIT {
         String specificQueryString = "match $x isa reifiable-relation;get;";
         List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
-        assertEquals(tx.execute(Graql.parse(specificQueryString).asGet()).size() * tx.getRelationshipType("reifiable-relation").subs().count(), answers.size());
+        assertEquals(tx.execute(Graql.parse(specificQueryString).asGet()).size() * tx.getRelationType("reifiable-relation").subs().count(), answers.size());
         assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.parse(queryString).asGet(), false));
     }
 
@@ -220,7 +220,7 @@ public class OntologicalQueryIT {
                 String queryString = "match $x isa $type; $type sub relationship; get;";
         List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
-        assertEquals(tx.getRelationshipType("relationship").subs().flatMap(RelationType::instances).count(), answers.size());
+        assertEquals(tx.getRelationType("relationship").subs().flatMap(RelationType::instances).count(), answers.size());
         assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.parse(queryString).asGet(), false));
     }
 
@@ -275,7 +275,7 @@ public class OntologicalQueryIT {
 
         List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
         assertEquals(
-                tx.getRelationshipType("reifying-relation").roles().collect(Collectors.toSet()),
+                tx.getRelationType("reifying-relation").roles().collect(Collectors.toSet()),
                 answers.stream().map(ans -> ans.get("x")).collect(Collectors.toSet())
         );
     }

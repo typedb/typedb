@@ -150,8 +150,8 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
             Set<RelationType> relTypes = relLabels.stream()
                     .map(tx::<SchemaConcept>getSchemaConcept)
                     .filter(Objects::nonNull)
-                    .filter(Concept::isRelationshipType)
-                    .map(Concept::asRelationshipType)
+                    .filter(Concept::isRelationType)
+                    .map(Concept::asRelationType)
                     .collect(toSet());
 
             Set<Role> roles = roleLabels.stream()
@@ -215,7 +215,7 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
             Stream<SchemaConcept> concepts =
                     relationLabel.labels().stream().map(graph::<SchemaConcept>getSchemaConcept);
 
-            if (concepts.allMatch(schemaConcept -> schemaConcept != null && schemaConcept.isRelationshipType())) {
+            if (concepts.allMatch(schemaConcept -> schemaConcept != null && schemaConcept.isRelationType())) {
                 fragmentSets.remove(rolePlayer);
                 fragmentSets.add(rolePlayer.addRelationshipTypeLabels(relationLabel.labels()));
 

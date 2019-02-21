@@ -125,18 +125,18 @@ public class TransactionIT {
         String ruleTypeLabel = "My Rule Type";
 
         assertNull(tx.getEntityType(entityTypeLabel));
-        assertNull(tx.getRelationshipType(relationTypeLabel));
+        assertNull(tx.getRelationType(relationTypeLabel));
         assertNull(tx.getRole(roleTypeLabel));
         assertNull(tx.getAttributeType(resourceTypeLabel));
         assertNull(tx.getRule(ruleTypeLabel));
 
         EntityType entityType = tx.putEntityType(entityTypeLabel);
-        RelationType relationshipType = tx.putRelationshipType(relationTypeLabel);
+        RelationType relationshipType = tx.putRelationType(relationTypeLabel);
         Role role = tx.putRole(roleTypeLabel);
         AttributeType attributeType = tx.putAttributeType(resourceTypeLabel, AttributeType.DataType.STRING);
 
         assertEquals(entityType, tx.getEntityType(entityTypeLabel));
-        assertEquals(relationshipType, tx.getRelationshipType(relationTypeLabel));
+        assertEquals(relationshipType, tx.getRelationType(relationTypeLabel));
         assertEquals(role, tx.getRole(roleTypeLabel));
         assertEquals(attributeType, tx.getAttributeType(resourceTypeLabel));
     }
@@ -144,7 +144,7 @@ public class TransactionIT {
     @Test
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes() {
         EntityType sampleEntityType = tx.putEntityType("Sample Entity Type");
-        RelationType sampleRelationshipType = tx.putRelationshipType("Sample Relationship Type");
+        RelationType sampleRelationshipType = tx.putRelationType("Sample Relationship Type");
 
         assertThat(tx.getMetaConcept().subs().collect(toSet()), containsInAnyOrder(
                 tx.getMetaConcept(),
@@ -233,7 +233,7 @@ public class TransactionIT {
         Role r1 = tx.putRole("r1");
         Role r2 = tx.putRole("r2");
         EntityType e1 = tx.putEntityType("e1").plays(r1).plays(r2);
-        RelationType rel1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
+        RelationType rel1 = tx.putRelationType("rel1").relates(r1).relates(r2);
 
         //Purge the above concepts into the main cache
         tx.commit();
@@ -289,7 +289,7 @@ public class TransactionIT {
         tx = session.transaction(Transaction.Type.READ);
         failMutation(tx, () -> tx.putEntityType(entityType));
         failMutation(tx, () -> tx.putRole(roleType1));
-        failMutation(tx, () -> tx.putRelationshipType(relationType1));
+        failMutation(tx, () -> tx.putRelationType(relationType1));
 
         //Pass some mutations
         tx.close();

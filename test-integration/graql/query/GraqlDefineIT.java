@@ -467,7 +467,7 @@ public class GraqlDefineIT {
     public void whenDefiningARelationship_SubRoleDeclarationsCanBeSkipped() {
         tx.execute(Graql.define(type("marriage").sub(type(RELATIONSHIP.getLabel().getValue())).relates("husband").relates("wife")));
 
-        RelationType marriage = tx.getRelationshipType("marriage");
+        RelationType marriage = tx.getRelationType("marriage");
         Role husband = tx.getRole("husband");
         Role wife = tx.getRole("wife");
         assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(husband, wife));
@@ -482,7 +482,7 @@ public class GraqlDefineIT {
                           .relates("father", "parent")
                           .relates("son", "child")));
 
-        RelationType marriage = tx.getRelationshipType("fatherhood");
+        RelationType marriage = tx.getRelationType("fatherhood");
         Role father = tx.getRole("father");
         Role son = tx.getRole("son");
         assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(father, son));
@@ -507,7 +507,7 @@ public class GraqlDefineIT {
                 type("person").plays("husband").plays("wife")
         ));
 
-        RelationType marriage = tx.getRelationshipType("marriage");
+        RelationType marriage = tx.getRelationType("marriage");
         EntityType person = tx.getEntityType("person");
         Role husband = tx.getRole("husband");
         Role wife = tx.getRole("wife");

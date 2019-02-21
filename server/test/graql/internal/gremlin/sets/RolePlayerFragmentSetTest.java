@@ -174,7 +174,7 @@ public class RolePlayerFragmentSetTest {
     public void whenLabelDoesNotReferToARelationType_DoNotApplyRelationTypeOptimisation() {
         Label movie = Label.of("movie");
         SchemaConcept movieConcept = mock(SchemaConcept.class);
-        when(movieConcept.isRelationshipType()).thenReturn(false);
+        when(movieConcept.isRelationType()).thenReturn(false);
         when(tx.getSchemaConcept(movie)).thenReturn(movieConcept);
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, null),

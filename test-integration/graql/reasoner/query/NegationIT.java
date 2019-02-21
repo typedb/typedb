@@ -610,7 +610,7 @@ public class NegationIT {
     }
 
     private boolean thingsRelated(Map<Thing, Role> thingMap, Label relation, Transaction tx){
-        RelationType relationshipType = tx.getRelationshipType(relation.getValue());
+        RelationType relationshipType = tx.getRelationType(relation.getValue());
         boolean inferrable = relationshipType.subs().flatMap(SchemaConcept::thenRules).findFirst().isPresent();
 
         if (!inferrable){

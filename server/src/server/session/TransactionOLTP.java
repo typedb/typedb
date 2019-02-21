@@ -559,7 +559,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public RelationType putRelationshipType(Label label) {
+    public RelationType putRelationType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, false,
                                 v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
@@ -694,7 +694,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public RelationType getRelationshipType(String label) {
+    public RelationType getRelationType(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RELATIONSHIP_TYPE);
     }
 

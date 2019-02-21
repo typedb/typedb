@@ -34,18 +34,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     An SchemaConcept which defines a Role which can be played in a RelationType.
- * </p>
- *
- * <p>
- *     This SchemaConcept defines the roles which make up a RelationType.
- *     It has some additional functionality:
- *     1. It cannot play a Role to itself.
- *     2. It is special in that it is unique to RelationTypes.
- * </p>
- *
- *
+ * An SchemaConcept which defines a Role which can be played in a RelationType.
+ * This SchemaConcept defines the roles which make up a RelationType.
+ * It has some additional functionality:
+ * 1. It cannot play a Role to itself.
+ * 2. It is special in that it is unique to RelationTypes.
  */
 public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     private final Cache<Set<Type>> cachedDirectPlayedByTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
@@ -59,7 +52,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
         super(vertexElement, type);
     }
 
-    public static RoleImpl get(VertexElement vertexElement){
+    public static RoleImpl get(VertexElement vertexElement) {
         return new RoleImpl(vertexElement);
     }
 
@@ -70,7 +63,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     }
 
     @Override
-    public Stream<RelationType> relationships() {
+    public Stream<RelationType> relations() {
         return cachedRelationTypes.get().stream();
     }
 
@@ -80,7 +73,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      *
      * @param newRelationshipType The new relation type to cache in the role.
      */
-    void addCachedRelationType(RelationType newRelationshipType){
+    void addCachedRelationType(RelationType newRelationshipType) {
         cachedRelationTypes.ifPresent(set -> set.add(newRelationshipType));
     }
 
@@ -90,12 +83,11 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      *
      * @param oldRelationshipType The new relation type to cache in the role.
      */
-    void deleteCachedRelationType(RelationType oldRelationshipType){
+    void deleteCachedRelationType(RelationType oldRelationshipType) {
         cachedRelationTypes.ifPresent(set -> set.remove(oldRelationshipType));
     }
 
     /**
-     *
      * @return A list of all the Concept Types which can play this role.
      */
     @Override
@@ -103,20 +95,19 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
         return cachedDirectPlayedByTypes.get().stream().flatMap(Type::subs);
     }
 
-    void addCachedDirectPlaysByType(Type newType){
+    void addCachedDirectPlaysByType(Type newType) {
         cachedDirectPlayedByTypes.ifPresent(set -> set.add(newType));
     }
 
-    void deleteCachedDirectPlaysByType(Type oldType){
+    void deleteCachedDirectPlaysByType(Type oldType) {
         cachedDirectPlayedByTypes.ifPresent(set -> set.remove(oldType));
     }
 
     /**
-     *
      * @return Get all the roleplayers of this role type
      */
-    public Stream<Casting> rolePlayers(){
-        return relationships().
+    public Stream<Casting> rolePlayers() {
+        return relations().
                 flatMap(RelationType::instances).
                 map(relation -> RelationImpl.from(relation).reified()).
                 flatMap(CommonUtil::optionalToStream).
@@ -124,7 +115,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     }
 
     @Override
-    boolean deletionAllowed(){
+    boolean deletionAllowed() {
         return super.deletionAllowed() &&
                 !neighbours(Direction.IN, Schema.EdgeLabel.RELATES).findAny().isPresent() && // This role is not linked t any relation type
                 !neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).findAny().isPresent() && // Nothing can play this role

@@ -77,7 +77,7 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
 
 /**
  * Entry-point which communicates with a running Grakn server using gRPC.
- * For now, only a subset of {@link grakn.core.server.Session} and {@link grakn.core.server.Transaction} features are supported.
+ * For now, only a subset of grakn.core.server.Session and grakn.core.server.Transaction features are supported.
  */
 public final class GraknClient {
 
@@ -121,7 +121,7 @@ public final class GraknClient {
     }
 
     /**
-     * Remote implementation of {@link grakn.core.server.Session} that communicates with a Grakn server using gRPC.
+     * Remote implementation of grakn.core.server.Session that communicates with a Grakn server using gRPC.
      *
      * @see Transaction
      * @see GraknClient
@@ -181,7 +181,7 @@ public final class GraknClient {
     }
 
     /**
-     * Remote implementation of {@link grakn.core.server.Transaction} that communicates with a Grakn server using gRPC.
+     * Remote implementation of grakn.core.server.Transaction that communicates with a Grakn server using gRPC.
      */
     public final class Transaction implements grakn.core.server.Transaction {
 
@@ -311,10 +311,10 @@ public final class GraknClient {
 
         @Nullable
         @Override
-        public RelationType getRelationshipType(String label) {
+        public RelationType getRelationType(String label) {
             SchemaConcept concept = getSchemaConcept(Label.of(label));
-            if (concept == null || !concept.isRelationshipType()) return null;
-            return concept.asRelationshipType();
+            if (concept == null || !concept.isRelationType()) return null;
+            return concept.asRelationType();
         }
 
         @Nullable
@@ -391,9 +391,9 @@ public final class GraknClient {
         }
 
         @Override
-        public RelationType putRelationshipType(Label label) {
-            transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
-            return RemoteConcept.of(responseOrThrow().getPutRelationTypeRes().getRelationType(), this).asRelationshipType();
+        public RelationType putRelationType(Label label) {
+            transceiver.send(RequestBuilder.Transaction.putRelationType(label));
+            return RemoteConcept.of(responseOrThrow().getPutRelationTypeRes().getRelationType(), this).asRelationType();
         }
 
         @Override
@@ -485,8 +485,8 @@ public final class GraknClient {
         }
 
         /**
-         * A client-side iterator over gRPC messages. Will send {@link SessionProto.Transaction.Iter.Req} messages until
-         * {@link SessionProto.Transaction.Iter.Res} returns done as a message.
+         * A client-side iterator over gRPC messages. Will send SessionProto.Transaction.Iter.Req messages until
+         * SessionProto.Transaction.Iter.Res returns done as a message.
          *
          * @param <T> class type of objects being iterated
          */

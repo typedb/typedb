@@ -32,7 +32,7 @@ import java.util.stream.Stream;
  * Represent a literal resource in the graph.
  * Acts as an Thing when relating to other instances except it has the added functionality of:
  * 1. It is unique to its AttributeType based on it's value.
- * 2. It has a {@link AttributeType.DataType} associated with it which constrains the allowed values.
+ * 2. It has a AttributeType.DataType associated with it which constrains the allowed values.
  *
  * @param <D> The data type of this resource type.
  *            Supported Types include: String, Long, Double, and Boolean
@@ -89,6 +89,10 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
         }
     }
 
+    public static AttributeImpl from(Attribute attribute) {
+        return (AttributeImpl) attribute;
+    }
+
     /**
      * @return The data type of this Attribute's AttributeType.
      */
@@ -130,9 +134,5 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     @Override
     public String innerToString() {
         return super.innerToString() + "- Value [" + value() + "] ";
-    }
-
-    public static AttributeImpl from(Attribute attribute) {
-        return (AttributeImpl) attribute;
     }
 }

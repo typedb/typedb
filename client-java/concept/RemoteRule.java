@@ -33,7 +33,7 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link Rule}
+ * Client implementation of Rule
  */
 public class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
 

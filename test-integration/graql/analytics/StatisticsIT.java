@@ -520,7 +520,7 @@ public class StatisticsIT {
             Attribute power1 = power.create(1L);
             Attribute power2 = power.create(2L);
             Attribute power3 = power.create(3L);
-            RelationType relationType = tx.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
+            RelationType relationType = tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
                     .relates(resourceOwner).relates(resourceValue);
 
             relationType.create()
@@ -574,7 +574,7 @@ public class StatisticsIT {
             Role relation2 = tx.putRole("relation2");
             entityType1.plays(relation1).plays(relation2);
             entityType2.plays(relation1).plays(relation2);
-            RelationType related = tx.putRelationshipType("related").relates(relation1).relates(relation2);
+            RelationType related = tx.putRelationType("related").relates(relation1).relates(relation2);
 
             related.create()
                     .assign(relation1, entity1)

@@ -132,8 +132,8 @@ public class TransactionCache {
             modifiedThings.add(concept.asThing());
         } else if (concept.isRole()) {
             modifiedRoles.add(concept.asRole());
-        } else if (concept.isRelationshipType()) {
-            modifiedRelationshipTypes.add(concept.asRelationshipType());
+        } else if (concept.isRelationType()) {
+            modifiedRelationshipTypes.add(concept.asRelationType());
         } else if (concept.isRule()) {
             modifiedRules.add(concept.asRule());
         }
@@ -144,8 +144,8 @@ public class TransactionCache {
     }
 
     public void removeFromValidation(Type type) {
-        if (type.isRelationshipType()) {
-            modifiedRelationshipTypes.remove(type.asRelationshipType());
+        if (type.isRelationType()) {
+            modifiedRelationshipTypes.remove(type.asRelationType());
         }
     }
 
@@ -191,7 +191,7 @@ public class TransactionCache {
             newAttributes.removeAll(AttributeImpl.from(concept.asAttribute()).getIndex());
         }
 
-        if (concept.isRelationship()) {
+        if (concept.isRelation()) {
             newRelationships.remove(concept.asRelation());
         }
 

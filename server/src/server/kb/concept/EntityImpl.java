@@ -23,16 +23,10 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.server.kb.structure.VertexElement;
 
 /**
- * <p>
- *     An instance of Entity Type EntityType
- * </p>
- *
- * <p>
- *     This represents an entity in the graph.
- *     Entities are objects which are defined by their Attribute and their links to
- *     other entities via Relation
- * </p>
- *
+ * An instance of Entity Type EntityType
+ * This represents an entity in the graph.
+ * Entities are objects which are defined by their Attribute and their links to
+ * other entities via Relation
  */
 public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
     private EntityImpl(VertexElement vertexElement) {
@@ -43,15 +37,15 @@ public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity 
         super(vertexElement, type);
     }
 
-    public static EntityImpl get(VertexElement vertexElement){
+    public static EntityImpl get(VertexElement vertexElement) {
         return new EntityImpl(vertexElement);
     }
 
-    public static EntityImpl create(VertexElement vertexElement, EntityType type){
+    public static EntityImpl create(VertexElement vertexElement, EntityType type) {
         return new EntityImpl(vertexElement, type);
     }
 
-    public static EntityImpl from(Entity entity){
+    public static EntityImpl from(Entity entity) {
         return (EntityImpl) entity;
     }
 }

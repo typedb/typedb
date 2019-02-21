@@ -114,7 +114,7 @@ public class ReasoningIT {
                 List<ConceptMap> attributeRelationSubs = tx.execute(Graql.<GraqlGet>parse("match $x sub @has-attribute; get;"));
 
                 assertEquals(attributeSubs.size(), attributeRelationSubs.size());
-                assertTrue(attributeRelationSubs.stream().map(ans -> ans.get("x")).map(Concept::asRelationshipType).allMatch(relTypes::contains));
+                assertTrue(attributeRelationSubs.stream().map(ans -> ans.get("x")).map(Concept::asRelationType).allMatch(relTypes::contains));
 
                 List<ConceptMap> baseResourceSubs = tx.execute(Graql.parse("match $x sub baseResource; get;").asGet());
                 List<ConceptMap> baseResourceRelationSubs = tx.execute(Graql.<GraqlGet>parse("match $x sub @has-baseResource; get;"));

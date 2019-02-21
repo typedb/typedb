@@ -31,38 +31,29 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * <p>
- *     Ensures each concept undergoes the correct type of validation.
- * </p>
- *
- * <p>
- *      Handles calling the relevant validation defined in {@link ValidateGlobalRules} depending on the
- *      type of the concept.
- * </p>
- *
- *
+ * Ensures each concept undergoes the correct type of validation.
+ * Handles calling the relevant validation defined in ValidateGlobalRules depending on the
+ * type of the concept.
  */
 public class Validator {
     private final TransactionOLTP graknGraph;
     private final List<String> errorsFound = new ArrayList<>();
 
-    public Validator(TransactionOLTP graknGraph){
+    public Validator(TransactionOLTP graknGraph) {
         this.graknGraph = graknGraph;
     }
 
     /**
-     *
      * @return Any errors found during validation
      */
-    public List<String> getErrorsFound(){
+    public List<String> getErrorsFound() {
         return errorsFound;
     }
 
     /**
-     *
      * @return True if the data and schema conforms to our concept.
      */
-    public boolean validate(){
+    public boolean validate() {
         //Validate Things
         graknGraph.cache().getModifiedThings().forEach(this::validateThing);
 
@@ -93,10 +84,11 @@ public class Validator {
      * Validation rules exclusive to rules
      * the precedence of validation is: labelValidation -> ontologicalValidation -> clauseValidation
      * each of the validation happens only if the preceding validation yields no errors
+     *
      * @param graph the graph to query against
-     * @param rule the rule which needs to be validated
+     * @param rule  the rule which needs to be validated
      */
-    private void validateRule(TransactionOLTP graph, Rule rule){
+    private void validateRule(TransactionOLTP graph, Rule rule) {
         Set<String> labelErrors = ValidateGlobalRules.validateRuleSchemaConceptExist(graph, rule);
         errorsFound.addAll(labelErrors);
         if (labelErrors.isEmpty()) {
@@ -110,42 +102,47 @@ public class Validator {
 
     /**
      * Validation rules exclusive to role players
+     *
      * @param casting The Role player to validate
      */
-    private void validateCasting(Casting casting){
+    private void validateCasting(Casting casting) {
         errorsFound.addAll(ValidateGlobalRules.validatePlaysAndRelatesStructure(casting));
     }
 
     /**
      * Validation rules exclusive to role
-     * @param role The {@link Role} to validate
+     *
+     * @param role The Role to validate
      */
-    private void validateRole(Role role){
+    private void validateRole(Role role) {
         ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(role).ifPresent(errorsFound::add);
     }
 
     /**
      * Validation rules exclusive to relation types
+     *
      * @param relationshipType The relationTypes to validate
      */
-    private void validateRelationType(RelationType relationshipType){
+    private void validateRelationType(RelationType relationshipType) {
         ValidateGlobalRules.validateHasMinimumRoles(relationshipType).ifPresent(errorsFound::add);
         errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationshipType));
     }
 
     /**
      * Validation rules exclusive to instances
-     * @param thing The {@link Thing} to validate
+     *
+     * @param thing The Thing to validate
      */
     private void validateThing(Thing thing) {
         ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(thing).ifPresent(errorsFound::add);
     }
 
     /**
-     * Validates that {@link Relation}s can be committed.
-     * @param relationship The {@link Relation} to validate
+     * Validates that Relations can be committed.
+     *
+     * @param relationship The Relation to validate
      */
-    private void validateRelationship(Relation relationship){
+    private void validateRelationship(Relation relationship) {
         ValidateGlobalRules.validateRelationshipHasRolePlayers(relationship).ifPresent(errorsFound::add);
     }
 }

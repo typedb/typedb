@@ -24,10 +24,10 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Encapsulates relationships between Thing
+ * Encapsulates relations between Thing
  * A relation which is an instance of a RelationType defines how instances may relate to one another.
  * It represents how different entities relate to one another.
- * Relation are used to model n-ary relationships between instances.
+ * Relation are used to model n-ary relations between instances.
  */
 public interface Relation extends Thing {
     //------------------------------------- Modifiers ----------------------------------
@@ -35,7 +35,7 @@ public interface Relation extends Thing {
     /**
      * Creates a relation from this instance to the provided Attribute.
      *
-     * @param attribute The Attribute to which a relationship is created
+     * @param attribute The Attribute to which a relation is created
      * @return The instance itself
      */
     @Override
@@ -109,7 +109,7 @@ public interface Relation extends Thing {
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isRelationship() {
+    default boolean isRelation() {
         return true;
     }
 }

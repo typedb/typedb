@@ -85,6 +85,6 @@ abstract class IsaFragmentSet extends EquivalentFragmentSet {
     };
 
     private static boolean mayHaveEdgeInstances(SchemaConcept concept) {
-        return concept.isRelationshipType() && concept.isImplicit();
+        return concept.isRelationType() && concept.isImplicit();
     }
 }

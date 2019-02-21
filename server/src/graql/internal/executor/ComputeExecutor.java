@@ -436,7 +436,7 @@ class ComputeExecutor {
                         Label typeLabel = Label.of(t);
                         Type type = tx.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
-                        if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
+                        if (type.isRelationType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
                         return type.subs();
                     })
                     .map(SchemaConcept::label)
@@ -626,8 +626,8 @@ class ComputeExecutor {
      */
     private Set<Label> scopeTypeLabelsImplicitPlayers(GraqlCompute query) {
         return scopeTypes(query)
-                .filter(Concept::isRelationshipType)
-                .map(Concept::asRelationshipType)
+                .filter(Concept::isRelationType)
+                .map(Concept::asRelationType)
                 .filter(RelationType::isImplicit)
                 .flatMap(RelationType::roles)
                 .flatMap(Role::players)

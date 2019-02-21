@@ -55,6 +55,10 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
         return new RelationImpl(relationshipStructure);
     }
 
+    public static RelationImpl from(Relation relationship) {
+        return (RelationImpl) relationship;
+    }
+
     /**
      * Gets the RelationReified if the Relation has been reified.
      * To reify the Relation you use RelationImpl.reify().
@@ -119,8 +123,8 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
     }
 
     @Override
-    public Stream<Relation> relationships(Role... roles) {
-        return readFromReified((relationReified) -> relationReified.relationships(roles));
+    public Stream<Relation> relations(Role... roles) {
+        return readFromReified((relationReified) -> relationReified.relations(roles));
     }
 
     @Override
@@ -225,10 +229,6 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
     @Override
     public VertexElement vertex() {
         return reify().vertex();
-    }
-
-    public static RelationImpl from(Relation relationship) {
-        return (RelationImpl) relationship;
     }
 
     @Override
