@@ -88,7 +88,7 @@ public interface RelationType extends Type {
     /**
      * Sets a new Role for this RelationType.
      *
-     * @param role A new role which is part of this relationship.
+     * @param role A new role which is part of this relation.
      * @return The RelationType itself.
      * @see Role
      */
