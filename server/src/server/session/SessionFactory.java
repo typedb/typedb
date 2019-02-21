@@ -98,7 +98,7 @@ public class SessionFactory {
 
         // handle two concurrent opening sessions to a new/prexisting keyspace with no active sessions
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
-        // WARNING this MUST be a re-entrant lock otherwise we deadlock right here!
+        // WARNING this MUST be a re-entrant lock otherwise we deadlock right here after !
         lock.lock();
         try {
             if (!keyspaceCacheMap.containsKey(keyspace)) {

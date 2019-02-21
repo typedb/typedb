@@ -63,6 +63,8 @@ public class SessionImpl implements Session {
     private final KeyspaceCache keyspaceCache;
     private final Runnable onClose;
 
+    private boolean isClosed;
+
     /**
      * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
      * using provided Grakn configuration
@@ -189,6 +191,10 @@ public class SessionImpl implements Session {
      */
     @Override
     public void close() {
+        if (isClosed) {
+            return;
+        }
+
         TransactionOLTP localTx = localOLTPTransactionContainer.get();
         if (localTx != null) {
             localTx.close(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
@@ -199,6 +205,7 @@ public class SessionImpl implements Session {
         graph.close();
 
         this.onClose.run();
+        isClosed = true;
     }
 
     @Override
