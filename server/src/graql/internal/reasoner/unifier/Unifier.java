@@ -94,7 +94,4 @@ public interface Unifier{
     @CheckReturnValue
     Unifier inverse();
 
-    @CheckReturnValue
-    ConceptMap unify(ConceptMap answer);
-
 }

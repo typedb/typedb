@@ -129,31 +129,4 @@ public class UnifierImpl implements Unifier {
                         .collect(Collectors.toSet())
         );
     }
-
-    /**
-     * @return unified answer
-     */
-    @CheckReturnValue
-    public ConceptMap unify(ConceptMap answer) {
-        if (this.isEmpty()) return answer;
-        Map<Variable, Concept> unified = new HashMap<>();
-
-        for (Map.Entry<Variable, Concept> e : answer.map().entrySet()) {
-            Variable var = e.getKey();
-            Concept con = e.getValue();
-            Collection<Variable> uvars = unifier.get(var);
-            if (uvars.isEmpty() && !unifier.values().contains(var)) {
-                Concept put = unified.put(var, con);
-                if (put != null && !put.equals(con)) return new ConceptMap();
-            } else {
-                for (Variable uv : uvars) {
-                    Concept put = unified.put(uv, con);
-                    if (put != null && !put.equals(con)) return new ConceptMap();
-                }
-            }
-        }
-        return new ConceptMap(unified, answer.explanation());
-    }
-
-
 }
