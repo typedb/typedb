@@ -61,7 +61,7 @@ public interface Thing extends Concept {
 
     /**
      * Creates a Relation from this Thing to the provided Attribute.
-     * This has the same effect as {@link #relhas(Attribute)}, but returns the instance itself to allow
+     * This has the same effect as #relhas(Attribute), but returns the instance itself to allow
      * method chaining.
      *
      * @param attribute The Attribute to which a Relation is created
@@ -71,7 +71,7 @@ public interface Thing extends Concept {
 
     /**
      * Creates a Relation from this instance to the provided Attribute.
-     * This has the same effect as {@link #has(Attribute)}, but returns the new Relation.
+     * This has the same effect as #has(Attribute), but returns the new Relation.
      *
      * @param attribute The Attribute to which a Relation is created
      * @return The Relation connecting the Thing and the Attribute

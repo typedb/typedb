@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Client implementation of {@link Concept}
+ * Client implementation of Concept
  *
  * @param <SomeConcept> represents the actual class of object to downcast to
  */

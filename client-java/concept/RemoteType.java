@@ -33,7 +33,7 @@ import grakn.core.server.exception.TransactionException;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link Type}
+ * Client implementation of Type
  *
  * @param <SomeType>  The exact type of this class
  * @param <SomeThing> the exact type of instances of this class

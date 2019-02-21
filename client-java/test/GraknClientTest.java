@@ -73,7 +73,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
- * Unit Tests for {@link GraknClient.Transaction}
+ * Unit Tests for GraknClient.Transaction
  */
 @SuppressWarnings("Duplicates")
 public class GraknClientTest {
@@ -85,7 +85,7 @@ public class GraknClientTest {
     private static final int ITERATOR = 100;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    // The gRPC server itself is "real" and can be connected to using the {@link #channel()}
+    // The gRPC server itself is "real" and can be connected to using the #channel()
     @Rule
     public final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
     @Rule

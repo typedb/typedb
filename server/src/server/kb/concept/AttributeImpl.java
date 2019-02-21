@@ -32,7 +32,7 @@ import java.util.stream.Stream;
  * Represent a literal resource in the graph.
  * Acts as an Thing when relating to other instances except it has the added functionality of:
  * 1. It is unique to its AttributeType based on it's value.
- * 2. It has a {@link AttributeType.DataType} associated with it which constrains the allowed values.
+ * 2. It has a AttributeType.DataType associated with it which constrains the allowed values.
  *
  * @param <D> The data type of this resource type.
  *            Supported Types include: String, Long, Double, and Boolean

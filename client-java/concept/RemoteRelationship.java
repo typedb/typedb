@@ -38,7 +38,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link Relation}
+ * Client implementation of Relation
  */
 public class RemoteRelationship extends RemoteThing<Relation, RelationType> implements Relation {
 

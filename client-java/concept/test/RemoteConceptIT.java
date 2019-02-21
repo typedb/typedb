@@ -60,7 +60,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Integration Tests for testing methods of all subclasses of {@link grakn.core.client.concept.RemoteConcept}.
+ * Integration Tests for testing methods of all subclasses of grakn.core.client.concept.RemoteConcept.
  */
 public class RemoteConceptIT {
 

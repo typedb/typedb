@@ -106,7 +106,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     }
 
     /**
-     * If the edge does not exist then it adds a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from
+     * If the edge does not exist then it adds a Schema.EdgeLabel#ROLE_PLAYER edge from
      * this Relation to a target Thing which is playing some Role.
          * If the edge does exist nothing is done.
      *

@@ -35,7 +35,7 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link Thing}
+ * Client implementation of Thing
  *
  * @param <SomeThing> The exact type of this class
  * @param <SomeType>  the type of an instance of this class

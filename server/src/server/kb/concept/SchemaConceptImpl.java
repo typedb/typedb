@@ -180,7 +180,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     /**
      * @param root The current SchemaConcept
-     * @return All the sub children of the root. Effectively calls  the cache {@link SchemaConceptImpl#cachedDirectSubTypes} recursively
+     * @return All the sub children of the root. Effectively calls  the cache SchemaConceptImpl#cachedDirectSubTypes recursively
      */
     @SuppressWarnings("unchecked")
     private Stream<T> nextSubLevel(T root) {

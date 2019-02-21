@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * An ontological element which models and categorises the various Attribute in the graph.
  * This ontological element behaves similarly to Type when defining how it relates to other
  * types. It has two additional functions to be aware of:
- * 1. It has a {@link AttributeType.DataType} constraining the data types of the values it's instances may take.
+ * 1. It has a AttributeType.DataType constraining the data types of the values it's instances may take.
  * 2. Any of it's instances are unique to the type.
  * For example if you have a AttributeType modelling month throughout the year there can only be one January.
  *

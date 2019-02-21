@@ -48,11 +48,11 @@ import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
 
 /**
  * Constructs Concepts And Edges
- * This class turns Tinkerpop Vertex and {@link org.apache.tinkerpop.gremlin.structure.Edge}
+ * This class turns Tinkerpop Vertex and org.apache.tinkerpop.gremlin.structure.Edge
  * into Grakn Concept and EdgeElement.
  * Construction is only successful if the vertex and edge properties contain the needed information.
- * A concept must include a label which is a {@link Schema.BaseType}.
- * An edge must include a label which is a {@link Schema.EdgeLabel}.
+ * A concept must include a label which is a Schema.BaseType.
+ * An edge must include a label which is a Schema.EdgeLabel.
  */
 public final class ElementFactory {
     private final TransactionOLTP tx;
@@ -283,7 +283,7 @@ public final class ElementFactory {
     /**
      * Creates a new VertexElement with a ConceptId which can optionally be set.
      *
-     * @param baseType   The {@link Schema.BaseType}
+     * @param baseType   The Schema.BaseType
      * @param conceptIds the optional ConceptId to set as the new ConceptId
      * @return a new VertexElement
      */

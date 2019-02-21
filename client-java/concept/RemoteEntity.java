@@ -26,7 +26,7 @@ import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
 
 /**
- * Client implementation of {@link Entity}
+ * Client implementation of Entity
  */
 public class RemoteEntity extends RemoteThing<Entity, EntityType> implements Entity {
 

@@ -31,7 +31,7 @@ import grakn.core.protocol.ConceptProto;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link RelationType}
+ * Client implementation of RelationType
  */
 public class RemoteRelationshipType extends RemoteType<RelationType, Relation> implements RelationType {
 

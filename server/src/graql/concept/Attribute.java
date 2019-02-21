@@ -27,7 +27,7 @@ import java.util.stream.Stream;
  * Represent a literal Attribute in the graph.
  * Acts as an Thing when relating to other instances except it has the added functionality of:
  * 1. It is unique to its AttributeType based on it's value.
- * 2. It has an {@link AttributeType.DataType} associated with it which constrains the allowed values.
+ * 2. It has an AttributeType.DataType associated with it which constrains the allowed values.
  *
  * @param <D> The data type of this resource type.
  *            Supported Types include: String, Long, Double, and Boolean
@@ -46,7 +46,7 @@ public interface Attribute<D> extends Thing {
     /**
      * Retrieves the type of the Attribute, that is, the AttributeType of which this resource is an Thing.
      *
-     * @return The {@link AttributeType of which this resource is an Thing.
+     * @return The AttributeType of which this resource is an Thing.
      */
     @Override
     AttributeType<D> type();

@@ -68,9 +68,9 @@ public interface SchemaConcept extends Concept {
     SchemaConcept sup();
 
     /**
-     * @return All super-concepts of this {@link SchemaConcept } including itself and excluding the meta
-     * {@link Schema.MetaSchema#THING}.
-     * If you want to include {@link Schema.MetaSchema#THING}, use Transaction.sups().
+     * @return All super-concepts of this SchemaConcept  including itself and excluding the meta
+     * Schema.MetaSchema#THING.
+     * If you want to include Schema.MetaSchema#THING, use Transaction.sups().
      * @see Schema.MetaSchema#THING
      */
     Stream<? extends SchemaConcept> sups();

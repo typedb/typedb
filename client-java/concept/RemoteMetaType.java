@@ -26,7 +26,7 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 
 /**
- * Client implementation of {@link Type}
+ * Client implementation of Type
  */
 public class RemoteMetaType extends RemoteType<Type, Thing> {
 

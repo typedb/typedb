@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link SchemaConcept}
+ * Client implementation of SchemaConcept
  *
  * @param <SomeSchemaConcept> The exact type of this class
  */

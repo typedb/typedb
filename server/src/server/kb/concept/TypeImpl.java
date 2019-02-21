@@ -108,7 +108,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     /**
      * Checks if an Thing is allowed to be created and linked to this Type.
-     * This can fail is the {@link Transaction.Type} is read only.
+     * This can fail is the Transaction.Type is read only.
      * It can also fail when attempting to attach an Attribute to a meta type
      */
     private void preCheckForInstanceCreation() {
@@ -240,7 +240,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     /**
      * This is a temporary patch to prevent accidentally disconnecting implicit RelationTypes from their
      * RelationEdges. This Disconnection happens because RelationType.instances() depends on the
-     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the Type and the implicit RelationType.
+     * presence of a direct Schema.EdgeLabel#PLAYS edge between the Type and the implicit RelationType.
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.
      */
     //TODO: Remove this when traversing to the instances of an implicit Relationship Type is no longer done via plays edges

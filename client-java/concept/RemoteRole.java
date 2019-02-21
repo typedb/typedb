@@ -30,7 +30,7 @@ import grakn.core.protocol.ConceptProto;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link Role}
+ * Client implementation of Role
  */
 public class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
 

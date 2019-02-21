@@ -43,7 +43,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * An RPC Response reader class to convert {@link AnswerProto} messages into Graql {@link Answer}s.
+ * An RPC Response reader class to convert AnswerProto messages into Graql Answers.
  */
 public class ResponseReader {
 
