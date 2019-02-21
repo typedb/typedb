@@ -293,7 +293,10 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      */
     @Override
     public Stream<Rule> whenRules() {
-        return neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS);
+        return Stream.concat(
+                neighbours(Direction.IN, Schema.EdgeLabel.POSITIVE_HYPOTHESIS),
+                neighbours(Direction.IN, Schema.EdgeLabel.NEGATIVE_HYPOTHESIS)
+        );
     }
 
     /**

@@ -77,7 +77,20 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
 
     @Override
     public Stream<Type> whenTypes() {
-        return neighbours(Direction.OUT, Schema.EdgeLabel.HYPOTHESIS);
+        return Stream.concat(
+                whenPositiveTypes(),
+                whenNegativeTypes()
+        );
+    }
+
+    @Override
+    public Stream<Type> whenPositiveTypes() {
+        return neighbours(Direction.OUT, Schema.EdgeLabel.POSITIVE_HYPOTHESIS);
+    }
+
+    @Override
+    public Stream<Type> whenNegativeTypes() {
+        return neighbours(Direction.OUT, Schema.EdgeLabel.NEGATIVE_HYPOTHESIS);
     }
 
     @Override
@@ -89,8 +102,16 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
      *
      * @param type The Type which this Rule applies to.
      */
-    public void addHypothesis(Type type) {
-        putEdge(ConceptVertex.from(type), Schema.EdgeLabel.HYPOTHESIS);
+    public void addPositiveHypothesis(Type type) {
+        putEdge(ConceptVertex.from(type), Schema.EdgeLabel.POSITIVE_HYPOTHESIS);
+    }
+
+    /**
+     *
+     * @param type
+     */
+    public void addNegativeHypothesis(Type type) {
+        putEdge(ConceptVertex.from(type), Schema.EdgeLabel.NEGATIVE_HYPOTHESIS);
     }
 
     /**

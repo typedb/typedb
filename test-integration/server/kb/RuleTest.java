@@ -19,6 +19,7 @@
 package grakn.core.server.kb;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -491,6 +492,89 @@ public class RuleTest {
     }
 
     @Test
+    public void whenAdditionOfRuleWithMetaTypeMakesRulesNonstratifiable_Throw() throws InvalidKBException{
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.putEntityType("p");
+            tx.putEntityType("q");
+            tx.putEntityType("r");
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x isa p;"),
+                    Graql.parsePattern("$x isa q;"));
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x isa q;"),
+                    Graql.parsePattern("$x isa r;"));
+
+            tx.commit();
+        }
+
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            EntityType p = tx.putEntityType("p");
+            EntityType q = tx.putEntityType("q");
+            EntityType r = tx.putEntityType("r");
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("{$x isa entity;not{ $x isa r;};};"),
+                    Graql.parsePattern("$x isa p;"));
+
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(allOf(
+                containsString("The rule graph is not stratifiable"),
+                containsString(p.toString()),
+                containsString(q.toString()),
+                containsString(r.toString()))
+            );
+
+            tx.commit();
+        }
+
+        session.clearGraph();
+    }
+
+    @Test
+    public void whenAdditionOfRuleMakesRulesNonstratifiable_Throw() throws InvalidKBException{
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.putEntityType("p");
+            tx.putEntityType("q");
+            tx.putEntityType("r");
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x isa p;"),
+                    Graql.parsePattern("$x isa q;"));
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x isa q;"),
+                    Graql.parsePattern("$x isa r;"));
+
+            tx.commit();
+        }
+
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            EntityType p = tx.putEntityType("p");
+            EntityType q = tx.putEntityType("q");
+            EntityType r = tx.putEntityType("r");
+            EntityType z = tx.putEntityType("z");
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("{$x isa z;not{ $x isa r;};};"),
+                    Graql.parsePattern("$x isa p;"));
+
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(allOf(
+                    containsString("The rule graph is not stratifiable"),
+                    containsString(p.toString()),
+                    containsString(q.toString()),
+                    containsString(r.toString()))
+            );
+
+            tx.commit();
+        }
+
+        session.clearGraph();
+    }
+
+    @Test
     public void whenAddingAddingStratifiableRules_correctStratificationIsProduced(){
         List<Rule> expected1;
         List<Rule> expected2;
@@ -527,6 +611,67 @@ public class RuleTest {
                     .map(InferenceRule::getRule).collect(Collectors.toList());
             assertTrue(rules.equals(expected1) || rules.equals(expected2));
             expected1.forEach(Concept::delete);
+            tx.commit();
+        }
+        session.clearGraph();
+    }
+
+    @Test
+    public void whenAddingRulesWithSimpleContradiction_Throw() throws InvalidKBException {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            EntityType p = tx.putEntityType("p");
+            EntityType q = tx.putEntityType("q");
+
+            tx.putRule("Rule",
+                    Graql.parsePattern("{$x isa entity; not{ $x isa q;};};"),
+                    Graql.parsePattern("$x isa p;"));
+            tx.putRule("Rule2",
+                    Graql.parsePattern("$x isa q;"),
+                    Graql.parsePattern("$x isa p;"));
+
+            expectedException.expect(InvalidKBException.class);
+
+            expectedException.expectMessage(allOf(
+                    containsString("The rule graph contains a contradiction"),
+                    containsString(p.toString()),
+                    containsString(q.toString())
+            ));
+
+            tx.commit();
+        }
+    }
+
+    @Test
+    public void whenAddingRulesWithNonTrivialContradiction_Throw() throws InvalidKBException {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            EntityType p = tx.putEntityType("p");
+            EntityType q = tx.putEntityType("q");
+            EntityType r = tx.putEntityType("r");
+            EntityType s = tx.putEntityType("s");
+            EntityType t = tx.putEntityType("t");
+
+            //negative path to r
+            tx.putRule("Rule1",
+                    Graql.parsePattern("{$x isa p; not{ $x isa q;};};"),
+                    Graql.parsePattern("$x isa r;"));
+
+            //positive path to r
+            tx.putRule("Rule2",
+                    Graql.parsePattern("{$x isa q;};"),
+                    Graql.parsePattern("$x isa t;"));
+
+            tx.putRule("Rule3",
+                    Graql.parsePattern("{$x isa t;};"),
+                    Graql.parsePattern("$x isa r;"));
+
+            expectedException.expect(InvalidKBException.class);
+
+            expectedException.expectMessage(allOf(
+                    containsString("The rule graph contains a contradiction"),
+                    containsString(q.toString()),
+                    containsString(r.toString())
+            ));
+
             tx.commit();
         }
     }
@@ -614,6 +759,88 @@ public class RuleTest {
             assertThat(rule.whenTypes().collect(Collectors.toSet()), containsInAnyOrder(t1));
             assertThat(rule.thenTypes().collect(Collectors.toSet()), containsInAnyOrder(t2));
         }
+
+        session.clearGraph();
+    }
+
+    @Test
+    public void whenCreatingRules_EnsureWhenTypesAndSignAreLinkedCorrectlyOnCommit() throws InvalidKBException {
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            Type p = tx.putEntityType("p");
+            Type q = tx.putEntityType("q");
+            Type r = tx.putEntityType("r");
+            Type s = tx.putEntityType("s");
+            Type t = tx.putEntityType("t");
+
+            Rule rule = tx.putRule("Rule",
+                    Graql.parsePattern("{" +
+                            "$x isa p;" +
+                            "$x isa q;" +
+                            "not{ " +
+                            "$x isa r;" +
+                            "$x isa s;" +
+                            "};" +
+                            "};"),
+                    Graql.parsePattern("$x isa t;"));
+
+            assertThat(rule.whenTypes().collect(Collectors.toSet()), empty());
+            assertThat(rule.thenTypes().collect(Collectors.toSet()), empty());
+
+            tx.commit();
+
+            assertEquals(rule.whenTypes().collect(Collectors.toSet()), Sets.newHashSet(p, q, r, s));
+            assertEquals(rule.whenPositiveTypes().collect(Collectors.toSet()), Sets.newHashSet(p, q));
+            assertEquals(rule.whenNegativeTypes().collect(Collectors.toSet()), Sets.newHashSet(r, s));
+            assertThat(rule.thenTypes().collect(Collectors.toSet()), containsInAnyOrder(t));
+        }
+
+        session.clearGraph();
+    }
+
+    @Test
+    public void whenCreatingRules_EnsureTypesAreCorrectlyConnectedToRulesOnCommit() throws InvalidKBException {
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            Type p = tx.putEntityType("p");
+            Type q = tx.putEntityType("q");
+            Type r = tx.putEntityType("r");
+            Type s = tx.putEntityType("s");
+            Type t = tx.putEntityType("t");
+
+            Rule rule = tx.putRule("Rule1",
+                    Graql.parsePattern("{" +
+                            "$x isa p;" +
+                            "$x isa q;" +
+                            "not{$x isa r;};" +
+                            "};"),
+                    Graql.parsePattern("$x isa s;"));
+
+            Rule rule2 = tx.putRule("Rule2",
+                    Graql.parsePattern("{" +
+                            "$x isa q;" +
+                            "$x isa r;" +
+                            "not{$x isa s;};" +
+                            "};"),
+                    Graql.parsePattern("$x isa t;"));
+
+            Sets.newHashSet(p, q, r, s, t).forEach(type -> {
+                assertTrue(!type.whenRules().findFirst().isPresent());
+                assertTrue(!type.thenRules().findFirst().isPresent());
+            });
+
+            tx.commit();
+
+            assertEquals(p.whenRules().collect(Collectors.toSet()), Sets.newHashSet(rule));
+            assertEquals(q.whenRules().collect(Collectors.toSet()), Sets.newHashSet(rule, rule2));
+            assertEquals(r.whenRules().collect(Collectors.toSet()), Sets.newHashSet(rule, rule2));
+            assertEquals(s.whenRules().collect(Collectors.toSet()), Sets.newHashSet(rule2));
+            assertThat(t.whenRules().collect(Collectors.toSet()), empty());
+
+            Sets.newHashSet(p, q, r).forEach(type -> assertTrue(!type.thenRules().findFirst().isPresent()));
+            assertEquals(s.thenRules().collect(Collectors.toSet()), Sets.newHashSet(rule));
+            assertEquals(t.thenRules().collect(Collectors.toSet()), Sets.newHashSet(rule2));
+        }
+
+        session.clearGraph();
     }
 
     @Test
@@ -685,6 +912,7 @@ public class RuleTest {
             tx.putRule(UUID.randomUUID().toString(), when, then);
             tx.commit();
         }
+        session.clearGraph();
     }
 
     private void initTx(Transaction tx){
