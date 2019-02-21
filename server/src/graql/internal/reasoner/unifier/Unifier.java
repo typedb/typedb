@@ -19,6 +19,7 @@
 package grakn.core.graql.internal.reasoner.unifier;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.answer.ConceptMap;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
@@ -92,5 +93,8 @@ public interface Unifier{
      */
     @CheckReturnValue
     Unifier inverse();
+
+    @CheckReturnValue
+    ConceptMap unify(ConceptMap answer);
 
 }

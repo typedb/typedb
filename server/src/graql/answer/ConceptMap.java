@@ -23,20 +23,14 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import graql.lang.exception.GraqlException;
 import graql.lang.statement.Variable;
-
-import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,6 +42,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.CheckReturnValue;
 
 
 /**
@@ -243,26 +238,6 @@ public class ConceptMap extends Answer {
     public ConceptMap merge(ConceptMap a2) { return this.merge(a2, false);}
 
     /**
-     * @param partialSub partial child substitution that needs to be incorporated
-     * @param vars       child vars
-     * @param unifier    parent-child unifier
-     * @param diff       parent-child semantic difference
-     * @return projected answer (empty if semantic difference not satisfied)
-     */
-    @CheckReturnValue
-    public ConceptMap projectToChild(ConceptMap partialSub, Set<Variable> vars, Unifier unifier, SemanticDifference diff) {
-        ConceptMap unified = this.unify(unifier);
-        if (unified.isEmpty()) return unified;
-        Set<Variable> varsToRetain = Sets.difference(unified.vars(), partialSub.vars());
-        return diff.satisfiedBy(unified) ?
-                unified
-                        .project(varsToRetain)
-                        .merge(partialSub)
-                        .project(vars) :
-                new ConceptMap();
-    }
-
-    /**
      * @param unifier set of mappings between variables
      * @return unified answer
      */
@@ -321,18 +296,5 @@ public class ConceptMap extends Answer {
         return Sets.cartesianProduct(entryOptions).stream()
                 .map(mappingList -> new ConceptMap(mappingList.stream().collect(Collectors.toMap(Pair::getKey, Pair::getValue)), this.explanation()))
                 .map(ans -> ans.explain(explanation()));
-    }
-
-    /**
-     * @param parent query context
-     * @return (partial) set of predicates corresponding to this answer
-     */
-    @CheckReturnValue
-    public Set<Atomic> toPredicates(ReasonerQuery parent) {
-        Set<Variable> varNames = parent.getVarNames();
-        return map.entrySet().stream()
-                .filter(e -> varNames.contains(e.getKey()))
-                .map(e -> IdPredicate.create(e.getKey(), e.getValue().id(), parent))
-                .collect(Collectors.toSet());
     }
 }

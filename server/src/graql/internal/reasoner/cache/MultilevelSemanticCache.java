@@ -104,8 +104,8 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
 
         parentAnswersToPropagate.stream()
                 .flatMap(ans -> parentToChildUnifierDelta.stream()
-                                .map(unifierDelta ->
-                                        ans.projectToChild(partialSub, childVars, unifierDelta.getKey(), unifierDelta.getValue()))
+                                .map(unifierDelta -> unifierDelta.getValue()
+                                        .applyToAnswer(ans, partialSub, childVars, unifierDelta.getKey()))
                 )
                 .filter(ans -> !ans.isEmpty())
                 .peek(ans -> {

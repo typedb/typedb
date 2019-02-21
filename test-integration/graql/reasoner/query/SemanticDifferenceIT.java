@@ -309,7 +309,7 @@ public class SemanticDifferenceIT {
 
     private Set<ConceptMap> projectAnswersToChild(ReasonerAtomicQuery child, ReasonerAtomicQuery parent, Unifier parentToChildUnifier, SemanticDifference diff){
         return parent.tx().stream(parent.getQuery(), false)
-                .map(ans -> ans.projectToChild(child.getRoleSubstitution(), child.getVarNames(), parentToChildUnifier, diff))
+                .map(ans -> diff.applyToAnswer(ans, child.getRoleSubstitution(), child.getVarNames(), parentToChildUnifier))
                 .filter(ans -> !ans.isEmpty())
                 .collect(Collectors.toSet());
     }

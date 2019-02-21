@@ -138,7 +138,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public ReasonerQueryImpl withSubstitution(ConceptMap sub){
-        return new ReasonerQueryImpl(Sets.union(this.getAtoms(), sub.toPredicates(this)), this.tx());
+        return new ReasonerQueryImpl(Sets.union(this.getAtoms(), AtomicFactory.answerToPredicates(sub,this)), this.tx());
     }
 
     @Override
@@ -322,7 +322,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         Set<Variable> typedVars = getAtoms(IsaAtomBase.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
         return Stream.concat(
                 getAtoms(IdPredicate.class),
-                sub.toPredicates(this).stream().map(IdPredicate.class::cast)
+                AtomicFactory.answerToPredicates(sub, this).stream().map(IdPredicate.class::cast)
         )
                 .filter(p -> !typedVars.contains(p.getVarName()))
                 .map(p -> new Pair<>(p, tx().<Concept>getConcept(p.getPredicate())))
