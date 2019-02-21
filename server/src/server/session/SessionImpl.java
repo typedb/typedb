@@ -63,7 +63,7 @@ public class SessionImpl implements Session {
     private final KeyspaceCache keyspaceCache;
     private final Runnable onClose;
 
-    private boolean isClosed;
+    private boolean isClosed = false;
 
     /**
      * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),

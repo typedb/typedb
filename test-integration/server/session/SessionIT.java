@@ -137,8 +137,6 @@ public class SessionIT {
         tx1.commit();
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        // shared KeyspaceCache
-
         executor.submit(() -> {
             SessionImpl localSession = server.sessionFactory().session(session.keyspace());
             Transaction tx2 = localSession.transaction(WRITE);
