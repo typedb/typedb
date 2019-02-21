@@ -120,7 +120,7 @@ public class TransactionCache {
      * This method performs this operation whilst making a deep clone of the cached concepts to ensure transactions
      * do not accidentally break the central schema cache.
      */
-    public void refreshSchemaCache() {
+    public void updateSchemaCacheFromKeyspaceCache() {
         keyspaceCache.populateSchemaTxCache(this);
     }
 

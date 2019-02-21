@@ -143,6 +143,14 @@ public class SessionImpl implements Session {
         copyToCache(tx.getMetaRule());
     }
 
+
+    /**
+     * @return The graph cache which contains all the data cached and accessible by all transactions.
+     */
+    public KeyspaceCache getKeyspaceCache() {
+        return keyspaceCache;
+    }
+
     private void copyToCache(SchemaConcept schemaConcept) {
         schemaConcept.subs().forEach(concept -> {
             keyspaceCache.cacheLabel(concept.label(), concept.labelId());

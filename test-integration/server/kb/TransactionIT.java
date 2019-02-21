@@ -177,14 +177,14 @@ public class TransactionIT {
 
         tx.abort();
 
-        for (SchemaConcept type : tx.getKeyspaceCache().getCachedTypes().values()) {
+        for (SchemaConcept type : session.getKeyspaceCache().getCachedTypes().values()) {
             assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", finalTypes.contains(type));
         }
     }
 
     private void assertCacheOnlyContainsMetaTypes() {
         Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(toSet());
-        tx.getKeyspaceCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
+        session.getKeyspaceCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
     }
 
     @Test

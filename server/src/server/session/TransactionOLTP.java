@@ -111,7 +111,6 @@ public class TransactionOLTP implements Transaction {
     private final SessionImpl session;
     private final JanusGraph janusGraph;
     private final ElementFactory elementFactory;
-    private final KeyspaceCache keyspaceCache;
     //----------------------------- Transaction Specific
     private final RuleCache ruleCache;
     private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
@@ -142,12 +141,7 @@ public class TransactionOLTP implements Transaction {
         if (span != null) span.annotate("Creating RuleCache");
         this.ruleCache = new RuleCache(this);
 
-        this.keyspaceCache = keyspaceCache;
         this.transactionCache = new TransactionCache(keyspaceCache);
-
-        //Initialise Graph
-//        if (span != null) span.annotate("Opening `cache` with WRITE type");
-//        cache().open(Type.WRITE);
 
         if (span != null) span.finish();
     }
@@ -296,12 +290,6 @@ public class TransactionOLTP implements Transaction {
         return LabelId.of(currentValue);
     }
 
-    /**
-     * @return The graph cache which contains all the data cached and accessible by all transactions.
-     */
-    public KeyspaceCache getKeyspaceCache() {
-        return keyspaceCache;
-    }
 
     /**
      * Gets the config option which determines the number of instances a {@link grakn.core.graql.concept.Type} must have before the {@link grakn.core.graql.concept.Type}
@@ -315,7 +303,7 @@ public class TransactionOLTP implements Transaction {
 
     public TransactionCache cache() {
         if (transactionCache.isTxOpen() && transactionCache.schemaNotCached()) {
-            transactionCache.refreshSchemaCache();
+            transactionCache.updateSchemaCacheFromKeyspaceCache();
         }
         return transactionCache;
     }
