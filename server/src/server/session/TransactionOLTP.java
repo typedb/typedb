@@ -102,21 +102,27 @@ import java.util.stream.Stream;
  * Wraps a TinkerPop transaction (the graph is still needed as we use to retrieve tinker traversals)
  *
  * With this vendor some issues to be aware of:
- * 1. Whenever a transaction is closed if none remain open then the connection to the graph is closed permanently.
  * 2. Clearing the graph explicitly closes the connection as well.
  */
 public class TransactionOLTP implements Transaction {
     final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
-    //----------------------------- Shared Variables
+    // Shared Variables
     private final SessionImpl session;
     private final JanusGraph janusGraph;
     private final ElementFactory elementFactory;
-    //----------------------------- Transaction Specific
+
+    // Caches
     private final RuleCache ruleCache;
-    private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
     private final KeyspaceCache keyspaceCache;
     private final TransactionCache transactionCache;
 
+    // Transaction Specific
+    private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
+    private Transaction.Type txType;
+    private String closedReason = null;
+    private boolean isTxOpen;
+
+    // Thread-local boolean which is set to true in the constructor. Used to check if current Tx is created in current Thread.
     private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     @Nullable
@@ -149,8 +155,10 @@ public class TransactionOLTP implements Transaction {
     }
 
     void open(Type type) {
-        cache().open(type);
-        if (!janusTransaction.isOpen()) janusTransaction.open();
+        this.txType = type;
+        this.isTxOpen = true;
+        this.janusTransaction.open();
+        this.transactionCache.updateSchemaCacheFromKeyspaceCache();
     }
 
 
@@ -304,20 +312,17 @@ public class TransactionOLTP implements Transaction {
     }
 
     public TransactionCache cache() {
-        if (transactionCache.isTxOpen() && transactionCache.schemaNotCached()) {
-            transactionCache.updateSchemaCacheFromKeyspaceCache();
-        }
         return transactionCache;
     }
 
     @Override
     public boolean isClosed() {
-        return !cache().isTxOpen();
+        return !isTxOpen;
     }
 
     @Override
     public Type type() {
-        return cache().txType();
+        return this.txType;
     }
 
     /**
@@ -421,7 +426,7 @@ public class TransactionOLTP implements Transaction {
      * @throws TransactionException if the graph is closed.
      */
     private <X> X operateOnOpenGraph(Supplier<X> supplier) {
-        if (!isLocal() || isClosed()) throw TransactionException.transactionClosed(this, cache().getClosedReason());
+        if (!isLocal() || isClosed()) throw TransactionException.transactionClosed(this, this.closedReason);
         return supplier.get();
     }
 
@@ -730,7 +735,9 @@ public class TransactionOLTP implements Transaction {
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         } finally {
-            cache().closeTx(closedReason);
+            cache().closeTx();
+            this.closedReason = closedReason;
+            this.isTxOpen = false;
             ruleCache().clear();
         }
     }

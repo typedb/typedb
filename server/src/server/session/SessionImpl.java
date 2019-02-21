@@ -19,6 +19,7 @@
 package grakn.core.server.session;
 
 import brave.ScopedSpan;
+import com.google.common.annotations.VisibleForTesting;
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
@@ -150,6 +151,7 @@ public class SessionImpl implements Session {
     /**
      * @return The graph cache which contains all the data cached and accessible by all transactions.
      */
+    @VisibleForTesting
     public KeyspaceCache getKeyspaceCache() {
         return keyspaceCache;
     }
@@ -165,6 +167,9 @@ public class SessionImpl implements Session {
         return tx.getMetaConcept() != null;
     }
 
+    /**
+     * NOTE: Clearing the graph explicitly closes the connection as well.
+     */
     public void clearGraph() {
         try {
             JanusGraphCleanup.clear(graph);
@@ -186,7 +191,8 @@ public class SessionImpl implements Session {
 
     /**
      * Close JanusGraph, it will not be possible to create new transactions using current instance of Session.
-     * If there is a transaction open, close it before closing the graph.
+     * This closes local transaction before closing the graph.
+     *
      * @throws TransactionException
      */
     @Override

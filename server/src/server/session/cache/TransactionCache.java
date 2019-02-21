@@ -31,7 +31,6 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.server.Transaction;
 import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
@@ -78,10 +77,7 @@ public class TransactionCache {
     private Multimap<String, ConceptId> newAttributes = ArrayListMultimap.create();
 
     //Transaction Specific Meta Data
-    private boolean isTxOpen = false;
     private boolean writeOccurred = false;
-    private Transaction.Type txType;
-    private String closedReason = null;
 
     public TransactionCache(KeyspaceCache keyspaceCache) {
         this.keyspaceCache = keyspaceCache;
@@ -112,14 +108,7 @@ public class TransactionCache {
     }
 
     /**
-     * @return true if ths schema labels have been cached. The graph cannot operate if this is false.
-     */
-    public boolean schemaNotCached() {
-        return labelCache.isEmpty();
-    }
-
-    /**
-     * Refreshes the transaction schema cache by reading the central schema cache is read into this transaction cache.
+     * Refreshes the transaction schema cache by reading the keyspace schema cache into this transaction cache.
      * This method performs this operation whilst making a deep clone of the cached concepts to ensure transactions
      * do not accidentally break the central schema cache.
      */
@@ -173,12 +162,6 @@ public class TransactionCache {
         return labelCache;
     }
 
-    /**
-     * @return All the concepts which have been accessed in this transaction
-     */
-    Map<ConceptId, Concept> getConceptCache() {
-        return conceptCache;
-    }
 
     /**
      * @param concept The concept to no longer track
@@ -344,10 +327,7 @@ public class TransactionCache {
     }
 
     //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
-    public void closeTx(String closedReason) {
-        isTxOpen = false;
-        this.closedReason = closedReason;
-
+    public void closeTx() {
         //Clear Concept Caches
         conceptCache.values().forEach(concept -> CacheOwner.from(concept).txCacheClear());
 
@@ -363,24 +343,6 @@ public class TransactionCache {
         conceptCache.clear();
         schemaConceptCache.clear();
         labelCache.clear();
-    }
-
-    public void open(Transaction.Type type) {
-        isTxOpen = true;
-        this.txType = type;
-        closedReason = null;
-    }
-
-    public boolean isTxOpen() {
-        return isTxOpen;
-    }
-
-    public Transaction.Type txType() {
-        return txType;
-    }
-
-    public String getClosedReason() {
-        return closedReason;
     }
 
 }
