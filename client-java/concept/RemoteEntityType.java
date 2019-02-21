@@ -29,7 +29,6 @@ import grakn.core.protocol.ConceptProto;
 
 /**
  * Client implementation of a MetaType, a special type of {@link Type}
- * <p>
  * TODO: This class is not defined in Concept API, and at server side implementation.
  * TODO: we should remove this class, or implement properly on server side.
  */

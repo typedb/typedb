@@ -35,10 +35,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Wrapper making transaction calls to the Grakn RPC Server - handles sending a stream of {@link Transaction.Req} and
  * receiving a stream of {@link Transaction.Res}.
- * <p>
  * A request is sent with the {@link #send(Transaction.Req)}} method, and you can block for a response with the
  * {@link #receive()} method.
- * <p>
  * {@code
  * try (Transceiver tx = Transceiver.create(stub) {
  * tx.send(openMessage);
@@ -66,8 +64,7 @@ public class Transceiver implements AutoCloseable {
 
     /**
      * Send a request and return immediately.
-     * <p>
-     * This method is non-blocking - it returns immediately.
+         * This method is non-blocking - it returns immediately.
      */
     public void send(Transaction.Req request) {
         if (responseListener.terminated.get()) {
@@ -107,8 +104,7 @@ public class Transceiver implements AutoCloseable {
 
     /**
      * A {@link StreamObserver} that stores all responses in a blocking queue.
-     * <p>
-     * A response can be polled with the {@link #poll()} method.
+         * A response can be polled with the {@link #poll()} method.
      */
     private static class ResponseListener implements StreamObserver<Transaction.Res>, AutoCloseable {
 

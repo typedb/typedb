@@ -79,6 +79,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         createShard();
     }
 
+    public static <X extends Type, Y extends Thing> TypeImpl<X, Y> from(Type type) {
+        //noinspection unchecked
+        return (TypeImpl<X, Y>) type;
+    }
+
     /**
      * Utility method used to create an instance of this type
      *
@@ -193,7 +198,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
                 map(EdgeElement::source).
                 map(source -> vertex().tx().factory().buildShard(source)).
-                flatMap(Shard::<V>links);
+                flatMap(Shard::links);
     }
 
     @Override
@@ -236,7 +241,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * This is a temporary patch to prevent accidentally disconnecting implicit RelationTypes from their
      * RelationEdges. This Disconnection happens because RelationType.instances() depends on the
      * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the Type and the implicit RelationType.
-     * <p>
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.
      */
     //TODO: Remove this when traversing to the instances of an implicit Relationship Type is no longer done via plays edges
@@ -285,7 +289,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     public T unkey(AttributeType attributeType) {
         return unlinkAttribute(attributeType, true);
     }
-
 
     /**
      * Helper method to delete a AttributeType which is possible linked to this Type.
@@ -452,10 +455,5 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         if (attributes(implicitType).anyMatch(rt -> rt.equals(attributeType))) {
             throw TransactionException.duplicateHas(this, attributeType);
         }
-    }
-
-    public static <X extends Type, Y extends Thing> TypeImpl<X, Y> from(Type type) {
-        //noinspection unchecked
-        return (TypeImpl<X, Y>) type;
     }
 }

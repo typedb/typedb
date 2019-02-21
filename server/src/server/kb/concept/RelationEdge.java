@@ -41,16 +41,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     Encapsulates The Relation as a EdgeElement
- * </p>
- *
- * <p>
- *     This wraps up a Relation as a EdgeElement. It is used to represent any binary Relation.
- *     This also includes the ability to automatically reify a RelationEdge into a RelationReified.
- * </p>
- *
- *
+ * Encapsulates The Relation as a EdgeElement
+ * This wraps up a Relation as a EdgeElement. It is used to represent any binary Relation.
+ * This also includes the ability to automatically reify a RelationEdge into a RelationReified.
  */
 public class RelationEdge implements RelationStructure, CacheOwner {
     private final Set<Cache> registeredCaches = new HashSet<>();
@@ -90,7 +83,7 @@ public class RelationEdge implements RelationStructure, CacheOwner {
         this.valueRole.set(valueRole);
     }
 
-    public static RelationEdge get(EdgeElement edgeElement){
+    public static RelationEdge get(EdgeElement edgeElement) {
         return new RelationEdge(edgeElement);
     }
 
@@ -98,7 +91,7 @@ public class RelationEdge implements RelationStructure, CacheOwner {
         return new RelationEdge(relationshipType, ownerRole, valueRole, edgeElement);
     }
 
-    private EdgeElement edge(){
+    private EdgeElement edge() {
         return edgeElement;
     }
 
@@ -140,13 +133,13 @@ public class RelationEdge implements RelationStructure, CacheOwner {
 
     @Override
     public Stream<Thing> rolePlayers(Role... roles) {
-        if(roles.length == 0){
+        if (roles.length == 0) {
             return Stream.of(owner(), value());
         }
 
         HashSet<Thing> result = new HashSet<>();
         for (Role role : roles) {
-            if(role.equals(ownerRole())) {
+            if (role.equals(ownerRole())) {
                 result.add(owner());
             } else if (role.equals(valueRole())) {
                 result.add(value());
@@ -155,17 +148,19 @@ public class RelationEdge implements RelationStructure, CacheOwner {
         return result.stream();
     }
 
-    public Role ownerRole(){
+    public Role ownerRole() {
         return ownerRole.get();
     }
-    public Thing owner(){
+
+    public Thing owner() {
         return owner.get();
     }
 
-    public Role valueRole(){
+    public Role valueRole() {
         return valueRole.get();
     }
-    public Thing value(){
+
+    public Thing value() {
         return value.get();
     }
 
@@ -185,7 +180,7 @@ public class RelationEdge implements RelationStructure, CacheOwner {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "ID [" + id() + "] Type [" + type().label() + "] Roles and Role Players: \n" +
                 "Role [" + ownerRole().label() + "] played by [" + owner().id() + "] \n" +
                 "Role [" + valueRole().label() + "] played by [" + value().id() + "] \n";

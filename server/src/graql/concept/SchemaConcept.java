@@ -77,7 +77,6 @@ public interface SchemaConcept extends Concept {
 
     /**
      * Get all indirect subs of this concept.
-     * <p>
      * The indirect subs are the concept itself and all indirect subs of direct subs.
      *
      * @return All the indirect sub-types of this SchemaConcept
@@ -87,7 +86,6 @@ public interface SchemaConcept extends Concept {
 
     /**
      * Return whether the SchemaConcept was created implicitly.
-     * <p>
      * By default, SchemaConcept are not implicit.
      *
      * @return returns true if the type was created implicitly through the Attribute syntax

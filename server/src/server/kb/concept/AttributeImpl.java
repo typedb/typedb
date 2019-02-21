@@ -89,6 +89,10 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
         }
     }
 
+    public static AttributeImpl from(Attribute attribute) {
+        return (AttributeImpl) attribute;
+    }
+
     /**
      * @return The data type of this Attribute's AttributeType.
      */
@@ -130,9 +134,5 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     @Override
     public String innerToString() {
         return super.innerToString() + "- Value [" + value() + "] ";
-    }
-
-    public static AttributeImpl from(Attribute attribute) {
-        return (AttributeImpl) attribute;
     }
 }

@@ -55,6 +55,10 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
         return new RelationImpl(relationshipStructure);
     }
 
+    public static RelationImpl from(Relation relationship) {
+        return (RelationImpl) relationship;
+    }
+
     /**
      * Gets the RelationReified if the Relation has been reified.
      * To reify the Relation you use RelationImpl.reify().
@@ -225,10 +229,6 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
     @Override
     public VertexElement vertex() {
         return reify().vertex();
-    }
-
-    public static RelationImpl from(Relation relationship) {
-        return (RelationImpl) relationship;
     }
 
     @Override
