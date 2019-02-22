@@ -744,7 +744,7 @@ public class AtomicQueryUnificationIT {
 
         List<ConceptMap> childAnswers = tx.execute(child.getQuery(), false);
         List<ConceptMap> unifiedAnswers = childAnswers.stream()
-                .map(a -> a.unify(unifier))
+                .map(unifier::apply)
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
         List<ConceptMap> parentAnswers = tx.execute(parent.getQuery(), false);
@@ -773,7 +773,7 @@ public class AtomicQueryUnificationIT {
             Unifier inverse = unifier.inverse();
             if(!ignoreTypes) {
                 assertCollectionsNonTriviallyEqual(parentAnswers, unifiedAnswers);
-                List<ConceptMap> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
+                List<ConceptMap> parentToChild = parentAnswers.stream().map(inverse::apply).collect(Collectors.toList());
                 assertCollectionsNonTriviallyEqual(parentToChild, childAnswers);
             } else {
                 Set<Variable> childNonTypeVariables = Sets.difference(child.getAtom().getVarNames(), Sets.newHashSet(child.getAtom().getPredicateVariable()));
@@ -783,7 +783,7 @@ public class AtomicQueryUnificationIT {
 
                 assertCollectionsNonTriviallyEqual(projectedParentAnswers, projectedUnified);
                 List<ConceptMap> projectedParentToChild = projectedParentAnswers.stream()
-                        .map(a -> a.unify(inverse))
+                        .map(inverse::apply)
                         .map(ans -> ans.project(childNonTypeVariables))
                         .collect(Collectors.toList());
                 assertCollectionsNonTriviallyEqual(projectedParentToChild, projectedChild);
