@@ -1,0 +1,88 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package grakn.core.graql.concept;
+
+import com.google.common.collect.Sets;
+import grakn.core.graql.internal.Schema;
+import java.util.Collections;
+import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
+
+public class ConceptUtils {
+    /**
+     * @param schemaConcepts entry {@link SchemaConcept} set
+     * @return top non-meta {@link SchemaConcept}s from within the provided set
+     */
+    public static <T extends SchemaConcept> Set<T> top(Set<T> schemaConcepts) {
+        return schemaConcepts.stream()
+                .filter(t -> t.sups().noneMatch(schemaConcepts::contains))
+                .collect(toSet());
+    }
+
+    /**
+     * @param schemaConcepts entry {@link SchemaConcept} set
+     * @return bottom non-meta {@link SchemaConcept}s from within the provided set
+     */
+    public static <T extends SchemaConcept> Set<T> bottom(Set<T> schemaConcepts) {
+        return schemaConcepts.stream()
+                .filter(t -> Sets.intersection(t.subs().filter(t2 -> !t.equals(t2)).collect(toSet()), schemaConcepts).isEmpty())
+                .collect(toSet());
+    }
+
+    /**
+     * @param schemaConcepts entry {@link SchemaConcept} set
+     * @return top {@link SchemaConcept}s from within the provided set or meta concept if it exists
+     */
+    public static <T extends SchemaConcept> Set<T> topOrMeta(Set<T> schemaConcepts) {
+        Set<T> concepts = top(schemaConcepts);
+        T meta = concepts.stream()
+                .filter(c -> Schema.MetaSchema.isMetaLabel(c.label()))
+                .findFirst().orElse(null);
+        return meta != null ? Collections.singleton(meta) : concepts;
+    }
+
+    /**
+     * @param parent type
+     * @param child type
+     * @param direct flag indicating whether only direct types should be considered
+     * @return true if child is a subtype of parent
+     */
+    public static boolean typesCompatible(SchemaConcept parent, SchemaConcept child, boolean direct) {
+        if (parent == null ) return true;
+        if (child == null) return false;
+        if (direct) return parent.equals(child);
+        if (Schema.MetaSchema.isMetaLabel(parent.label())) return true;
+        SchemaConcept superType = child;
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())){
+            if (superType.equals(parent)) return true;
+            superType = superType.sup();
+        }
+        return false;
+    }
+
+    /** determines disjointness of parent-child types, parent defines the bound on the child
+     * @param parent {@link SchemaConcept}
+     * @param child {@link SchemaConcept}
+     * @return true if types do not belong to the same type hierarchy, also true if parent is null and false if parent non-null and child null
+     */
+    public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child, boolean direct) {
+        return parent != null && child == null || !typesCompatible(parent, child, direct) && !typesCompatible(child, parent, direct);
+    }
+}

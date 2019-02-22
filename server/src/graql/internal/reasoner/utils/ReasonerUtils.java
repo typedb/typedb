@@ -45,19 +45,16 @@ import graql.lang.property.TypeProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -163,34 +160,6 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param schemaConcept input type
-     * @return set of all non-meta super types of the role
-     */
-    public static Set<SchemaConcept> supers(SchemaConcept schemaConcept){
-        Set<SchemaConcept> superTypes = new HashSet<>();
-        SchemaConcept superType = schemaConcept.sup();
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())) {
-            superTypes.add(superType);
-            superType = superType.sup();
-        }
-        return superTypes;
-    }
-
-    /**
-     * @param concept which hierarchy should be considered
-     * @return set of {@link SchemaConcept}s consisting of the provided {@link SchemaConcept} and all its supers including meta
-     */
-    public static Set<SchemaConcept> upstreamHierarchy(SchemaConcept concept){
-        Set<SchemaConcept> concepts = new HashSet<>();
-        SchemaConcept superType = concept;
-        while(superType != null) {
-            concepts.add(superType);
-            superType = superType.sup();
-        }
-        return concepts;
-    }
-
-    /**
      * calculates map intersection by doing an intersection on key sets and accumulating the keys
      * @param m1 first operand
      * @param m2 second operand
@@ -265,37 +234,6 @@ public class ReasonerUtils {
         return compatibleRoles(null, type, relRoles);
     }
 
-    /**
-     * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return top non-meta {@link SchemaConcept}s from within the provided set
-     */
-    public static <T extends SchemaConcept> Set<T> top(Set<T> schemaConcepts) {
-        return schemaConcepts.stream()
-                .filter(rt -> Sets.intersection(supers(rt), schemaConcepts).isEmpty())
-                .collect(toSet());
-    }
-
-    /**
-     * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return bottom non-meta {@link SchemaConcept}s from within the provided set
-     */
-    public static <T extends SchemaConcept> Set<T> bottom(Set<T> schemaConcepts) {
-        return schemaConcepts.stream()
-                .filter(t -> Sets.intersection(t.subs().filter(t2 -> !t.equals(t2)).collect(toSet()), schemaConcepts).isEmpty())
-                .collect(toSet());
-    }
-
-    /**
-     * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return top {@link SchemaConcept}s from within the provided set or meta concept if it exists
-     */
-    public static <T extends SchemaConcept> Set<T> topOrMeta(Set<T> schemaConcepts) {
-        Set<T> concepts = top(schemaConcepts);
-        T meta = concepts.stream()
-                .filter(c -> Schema.MetaSchema.isMetaLabel(c.label()))
-                .findFirst().orElse(null);
-        return meta != null ? Collections.singleton(meta) : concepts;
-    }
 
     /**
      * @param childTypes type atoms of child query
@@ -317,34 +255,6 @@ public class ReasonerUtils {
             }
         }
         return unifier;
-    }
-
-    /**
-     * @param parent type
-     * @param child type
-     * @param direct flag indicating whether only direct types should be considered
-     * @return true if child is a subtype of parent
-     */
-    public static boolean typesCompatible(SchemaConcept parent, SchemaConcept child, boolean direct) {
-        if (parent == null ) return true;
-        if (child == null) return false;
-        if (direct) return parent.equals(child);
-        if (Schema.MetaSchema.isMetaLabel(parent.label())) return true;
-        SchemaConcept superType = child;
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())){
-            if (superType.equals(parent)) return true;
-            superType = superType.sup();
-        }
-        return false;
-    }
-
-    /** determines disjointness of parent-child types, parent defines the bound on the child
-     * @param parent {@link SchemaConcept}
-     * @param child {@link SchemaConcept}
-     * @return true if types do not belong to the same type hierarchy, also true if parent is null and false if parent non-null and child null
-     */
-    public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child, boolean direct) {
-        return parent != null && child == null || !typesCompatible(parent, child, direct) && !typesCompatible(child, parent, direct);
     }
 
     /**

@@ -21,14 +21,14 @@ package grakn.core.graql.answer;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptUtils;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import graql.lang.exception.GraqlException;
 import graql.lang.statement.Variable;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -195,10 +195,10 @@ public class ConceptMap extends Answer {
                     else {
                         if (concept.isSchemaConcept()
                                 && otherConcept.isSchemaConcept()
-                                && !ReasonerUtils.areDisjointTypes(concept.asSchemaConcept(), otherConcept.asSchemaConcept(), false)) {
+                                && !ConceptUtils.areDisjointTypes(concept.asSchemaConcept(), otherConcept.asSchemaConcept(), false)) {
                             entryMap.put(
                                     var,
-                                    Iterables.getOnlyElement(ReasonerUtils.topOrMeta(
+                                    Iterables.getOnlyElement(ConceptUtils.topOrMeta(
                                             Sets.newHashSet(
                                                     concept.asSchemaConcept(),
                                                     otherConcept.asSchemaConcept())
@@ -277,22 +277,23 @@ public class ConceptMap extends Answer {
     @CheckReturnValue
     public Stream<ConceptMap> expandHierarchies(Set<Variable> toExpand) {
         if (toExpand.isEmpty()) return Stream.of(this);
-        List<Set<Pair<Variable, Concept>>> entryOptions = map.entrySet().stream()
+        List<Set<AbstractMap.SimpleImmutableEntry<Variable, Concept>>> entryOptions = map.entrySet().stream()
                 .map(e -> {
                     Variable var = e.getKey();
+                    Concept concept = get(var);
                     if (toExpand.contains(var)) {
-                        Concept c = get(var);
-                        if (c.isSchemaConcept()) {
-                            return ReasonerUtils.upstreamHierarchy(c.asSchemaConcept()).stream()
-                                    .map(r -> new Pair<Variable, Concept>(var, r))
+                        if (concept.isSchemaConcept()) {
+                            return concept.asSchemaConcept().sups()
+                                    .map(sup -> new AbstractMap.SimpleImmutableEntry<>(var, (Concept) sup))
                                     .collect(Collectors.toSet());
                         }
                     }
-                    return Collections.singleton(new Pair<>(var, get(var)));
+                    return Collections.singleton(new AbstractMap.SimpleImmutableEntry<>(var, concept));
                 }).collect(Collectors.toList());
 
         return Sets.cartesianProduct(entryOptions).stream()
-                .map(mappingList -> new ConceptMap(mappingList.stream().collect(Collectors.toMap(Pair::getKey, Pair::getValue)), this.explanation()))
+                .map(mappingList -> new ConceptMap(
+                        mappingList.stream().collect(Collectors.toMap(AbstractMap.SimpleImmutableEntry::getKey, AbstractMap.SimpleImmutableEntry::getValue)), this.explanation()))
                 .map(ans -> ans.explain(explanation()));
     }
 }
