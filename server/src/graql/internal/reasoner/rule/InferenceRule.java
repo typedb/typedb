@@ -256,7 +256,7 @@ public class InferenceRule {
                     SchemaConcept subType = allTypes.stream()
                             .map(Atom::getSchemaConcept)
                             .filter(Objects::nonNull)
-                            .filter(t -> t.sups().anyMatch(sup -> sup.equals(schemaConcept)))
+                            .filter(t -> ConceptUtils.nonMetaSups(t).contains(schemaConcept))
                             .findFirst().orElse(null);
                     return schemaConcept == null || subType == null;
                 }).forEach(t -> bodyConjunctionAtoms.add(t.copy(body)));
