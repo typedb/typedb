@@ -226,12 +226,12 @@ public class AtomicQueryIT {
 
         MultiUnifier multiUnifier = childAtom.getMultiUnifier(childAtom, UnifierType.RULE);
         Set<ConceptMap> permutedAnswers = answers.stream()
-                .flatMap(a -> multiUnifier.stream().map(a::unify))
+                .flatMap(multiUnifier::apply)
                 .collect(Collectors.toSet());
 
         MultiUnifier multiUnifier2 = childAtom.getMultiUnifier(parentAtom, UnifierType.RULE);
         Set<ConceptMap> permutedAnswers2 = answers.stream()
-                .flatMap(a -> multiUnifier2.stream().map(a::unify))
+                .flatMap(multiUnifier2::apply)
                 .collect(Collectors.toSet());
 
         assertEquals(fullAnswers, permutedAnswers2);
