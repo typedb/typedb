@@ -51,8 +51,6 @@ import grakn.core.graql.printer.Printer;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.cache.KeyspaceCache;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDelete;

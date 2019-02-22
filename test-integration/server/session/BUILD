@@ -26,6 +26,14 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
+java_test(
+    name = "session-cache-it",
+    test_class = "grakn.core.server.session.SessionCacheIT",
+    srcs = ["SessionCacheIT.java"],
+    deps = ["//server", "//test-integration/rule:grakn-test-server", "//client-java"],
+    classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
 checkstyle_test(
     name = "checkstyle",
     targets = [
