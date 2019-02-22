@@ -18,17 +18,15 @@
 
 package grakn.core.graql.answer;
 
-import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import graql.lang.pattern.Pattern;
-
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 
 /**
  * Reasoner explanation for inferred answers
@@ -135,12 +133,4 @@ public class Explanation {
      */
     public boolean isEmpty() { return !isLookupExplanation() && !isRuleExplanation() && getAnswers().isEmpty();}
 
-    public static Explanation mergeExplanations(ConceptMap base, ConceptMap toMerge) {
-        List<ConceptMap> partialAnswers = new ArrayList<>();
-        if (base.explanation().isJoinExplanation()) partialAnswers.addAll(base.explanation().getAnswers());
-        else partialAnswers.add(base);
-        if (toMerge.explanation().isJoinExplanation()) partialAnswers.addAll(toMerge.explanation().getAnswers());
-        else partialAnswers.add(toMerge);
-        return new JoinExplanation(partialAnswers);
-    }
 }
