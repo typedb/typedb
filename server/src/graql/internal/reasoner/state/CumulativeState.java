@@ -76,9 +76,9 @@ public class CumulativeState extends QueryStateBase{
     public ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap accumulatedAnswer = getSubstitution();
         ConceptMap toMerge = state.getSubstitution();
-        ConceptMap answer = accumulatedAnswer
-                .merge(toMerge)
-                .explain(mergeExplanations(accumulatedAnswer, toMerge));
+        ConceptMap answer = new ConceptMap(
+                accumulatedAnswer.merge(toMerge).map(),
+                mergeExplanations(accumulatedAnswer, toMerge));
 
         if (answer.isEmpty()) return null;
         if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());
