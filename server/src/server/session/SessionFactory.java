@@ -61,10 +61,11 @@ public class SessionFactory {
      */
     public SessionImpl session(Keyspace keyspace) {
         if (!keyspaceStore.containsKeyspace(keyspace)) {
-            initialiseNewKeyspace(keyspace);
+            return initialiseNewKeyspace(keyspace);
             // TODO could return new session directly here so we don't close and re-open right away
+        } else {
+            return newSessionImpl(keyspace, config);
         }
-        return newSessionImpl(keyspace, config);
     }
 
     public void deleteKeyspace(Keyspace keyspace) {
@@ -100,19 +101,20 @@ public class SessionFactory {
      *
      * @param keyspace the new {@link Keyspace} we want to create
      */
-    private void initialiseNewKeyspace(Keyspace keyspace) {
+    private SessionImpl initialiseNewKeyspace(Keyspace keyspace) {
         //If the keyspace does not exist lock and create it
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
         lock.lock();
+        SessionImpl session;
         try {
-            // opening a session initialises the keyspace with meta concepts
-            SessionImpl session = newSessionImpl(keyspace, config);
-            session.close();
+            // opening a session initialises the keyspace with meta concepts, protect with lock so doesn't get initialised twice
+            session = newSessionImpl(keyspace, config);
             // Add current keyspace to list of available Grakn keyspaces
             keyspaceStore.addKeyspace(keyspace);
         } finally {
             lock.unlock();
         }
+        return session;
     }
 
     /**
