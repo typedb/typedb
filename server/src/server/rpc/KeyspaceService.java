@@ -22,6 +22,7 @@ import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
+import grakn.core.server.session.SessionFactory;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -34,9 +35,11 @@ import java.util.stream.Collectors;
 public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase {
 
     private final KeyspaceManager keyspaceStore;
+    private SessionFactory sessionFactory;
 
-    public KeyspaceService(KeyspaceManager keyspaceStore) {
+    public KeyspaceService(KeyspaceManager keyspaceStore, SessionFactory sessionFactory) {
         this.keyspaceStore = keyspaceStore;
+        this.sessionFactory = sessionFactory;
     }
 
     @Override
@@ -59,7 +62,9 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     @Override
     public void delete(KeyspaceProto.Keyspace.Delete.Req request, StreamObserver<KeyspaceProto.Keyspace.Delete.Res> response) {
         try {
-            keyspaceStore.deleteKeyspace(Keyspace.of(request.getName()));
+            Keyspace keyspace = Keyspace.of(request.getName());
+            sessionFactory.deleteKeyspace(keyspace);
+            keyspaceStore.deleteKeyspace(keyspace);
 
             response.onNext(KeyspaceProto.Keyspace.Delete.Res.getDefaultInstance());
             response.onCompleted();

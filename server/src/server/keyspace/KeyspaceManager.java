@@ -33,6 +33,8 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.session.cache.KeyspaceCache;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.util.JanusGraphCleanup;
+import org.janusgraph.diskstorage.BackendException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,12 +116,6 @@ public class KeyspaceManager {
         if(keyspace.equals(SYSTEM_KB_KEYSPACE)){
            return false;
         }
-
-        KeyspaceCache keyspaceCache = new KeyspaceCache(config);
-        JanusGraph graph = JanusGraphFactory.openGraph(keyspace.getName(), config);
-        SessionImpl session = new SessionImpl(keyspace, config, keyspaceCache, graph, () -> {graph.close();});
-        session.clearGraph();
-        session.close();
         return deleteReferenceInSystemKeyspace(keyspace);
     }
 

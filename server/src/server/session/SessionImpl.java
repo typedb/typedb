@@ -167,16 +167,6 @@ public class SessionImpl implements Session {
         return tx.getMetaConcept() != null;
     }
 
-    /**
-     * NOTE: Clearing the graph explicitly closes the connection as well.
-     */
-    public void clearGraph() {
-        try {
-            JanusGraphCleanup.clear(graph);
-        } catch (BackendException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     /**
      * Get a new or existing TransactionOLAP.

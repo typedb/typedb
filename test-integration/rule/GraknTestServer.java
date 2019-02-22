@@ -202,7 +202,7 @@ public class GraknTestServer extends ExternalResource {
 
         io.grpc.Server serverRPC = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))
-                .addService(new KeyspaceService(keyspaceStore))
+                .addService(new KeyspaceService(keyspaceStore, sessionFactory))
                 .build();
 
         return ServerFactory.createServer(id, serverRPC,
