@@ -21,6 +21,7 @@ package grakn.core.graql.concept;
 import com.google.common.collect.Sets;
 import grakn.core.graql.internal.Schema;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
@@ -32,7 +33,7 @@ public class ConceptUtils {
      */
     public static <T extends SchemaConcept> Set<T> top(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
-                .filter(t -> t.sups().noneMatch(schemaConcepts::contains))
+                .filter(t -> Sets.intersection(nonMetaSups(t), schemaConcepts).isEmpty())
                 .collect(toSet());
     }
 
@@ -56,6 +57,20 @@ public class ConceptUtils {
                 .filter(c -> Schema.MetaSchema.isMetaLabel(c.label()))
                 .findFirst().orElse(null);
         return meta != null ? Collections.singleton(meta) : concepts;
+    }
+
+    /**
+     * @param schemaConcept input type
+     * @return set of all non-meta super types of the role
+     */
+    public static Set<? extends SchemaConcept> nonMetaSups(SchemaConcept schemaConcept){
+        Set<SchemaConcept> superTypes = new HashSet<>();
+        SchemaConcept superType = schemaConcept.sup();
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())) {
+            superTypes.add(superType);
+            superType = superType.sup();
+        }
+        return superTypes;
     }
 
     /**

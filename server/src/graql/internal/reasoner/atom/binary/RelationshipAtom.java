@@ -33,6 +33,7 @@ import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.ConceptUtils;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relation;
@@ -658,7 +659,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     .sorted(Comparator.comparing(e -> e.getKey().isImplicit()))
                     .map(Pair::getKey)
                     //retain super types only
-                    .filter(t -> t.sups().noneMatch(sup -> compatibleConfigurations.keySet().contains(sup)))
+                    .filter(t -> Sets.intersection(ConceptUtils.nonMetaSups(t), compatibleConfigurations.keySet()).isEmpty())
                     .forEach(builder::add);
 
             //TODO need to add THING and meta relation type as well to make it complete
