@@ -13,7 +13,7 @@ java_test(
             "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
             "//dependencies/maven/artifacts/com/google/guava:guava",
         ],
-    size = "large",
+    size = "enormous",
     data = [
            "//test-integration/graql/reasoner/resources:multi-join",
            "//test-integration/graql/reasoner/resources:linear-transivity"
