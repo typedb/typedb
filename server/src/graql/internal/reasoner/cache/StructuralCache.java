@@ -72,7 +72,7 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
             ReasonerQueryImpl transformedQuery = equivalentQuery.transformIds(idTransform);
 
             return tx.executor().traversal(transformedQuery.getPattern().variables(), traversal.transform(idTransform))
-                    .map(ans -> ans.unify(unifier))
+                    .map(unifier::apply)
                     .map(a -> a.explain(new LookupExplanation(query.getPattern())));
         }
 

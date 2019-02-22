@@ -107,9 +107,9 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
 
     private ConceptMap ruleAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
         ReasonerAtomicQuery query = getQuery();
-        ConceptMap answer = baseAnswer
-                .merge(rule.getHead().getRoleSubstitution())
-                .unify(unifier);
+        ConceptMap answer = unifier.apply(
+                baseAnswer.merge(rule.getHead().getRoleSubstitution())
+        );
         if (answer.isEmpty()) return answer;
 
         return answer
@@ -133,10 +133,11 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         boolean queryEquivalentToHead = subbedQuery.isEquivalent(ruleHead);
 
         //check if the specific answer to ruleHead already in cache/db
-        ConceptMap headAnswer = cache
-                .findAnswer(ruleHead, answer)
-                .project(queryVars)
-                .unify(unifier);
+        ConceptMap headAnswer = unifier.apply(
+                cache
+                        .findAnswer(ruleHead, answer)
+                        .project(queryVars)
+        );
 
         //if not and query different than rule head do the same with the query
         ConceptMap queryAnswer = headAnswer.isEmpty() && queryEquivalentToHead ?
@@ -148,9 +149,9 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
                 && queryAnswer.isEmpty()) {
             ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
             if (!queryEquivalentToHead) cache.record(ruleHead, materialisedSub);
-            answer = materialisedSub
-                    .project(queryVars)
-                    .unify(unifier);
+            answer = unifier.apply(
+                    materialisedSub.project(queryVars)
+            );
         } else {
             answer = headAnswer.isEmpty() ? queryAnswer : headAnswer;
         }

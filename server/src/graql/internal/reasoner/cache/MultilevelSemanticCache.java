@@ -85,7 +85,8 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                 .map(unifierDelta -> new Pair<>(unifierDelta.getKey().inverse(), unifierDelta.getValue()))
                 .collect(toSet());
 
-        Set<ConceptMap> parentAnswersToPropagate = baseAnswerIndex.unify(targetToParentUnifier)
+        Set<ConceptMap> parentAnswersToPropagate = targetToParentUnifier
+                .apply(baseAnswerIndex)
                 .flatMap(sub ->
                         parentAnswers.getAll().stream()
                                 .filter(ans -> inferred || ans.explanation().isLookupExplanation()
@@ -132,9 +133,10 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
         MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query, unifierType());
 
         return new Pair<>(
-                answerIndex.unify(multiUnifier.inverse())
+                multiUnifier.inverse()
+                        .apply(answerIndex)
                         .flatMap(index -> answers.get(index).stream())
-                        .flatMap(ans -> ans.unify(multiUnifier)),
+                        .flatMap(multiUnifier::apply),
                 multiUnifier
         );
     }

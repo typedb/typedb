@@ -21,12 +21,10 @@ package grakn.core.graql.internal.reasoner.query;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
-
-import javax.annotation.Nonnull;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.stream.Stream;
+import javax.annotation.Nonnull;
 
 /**
  *
@@ -60,8 +58,6 @@ public class QueryAnswers implements Iterable<ConceptMap>{
     public Stream<ConceptMap> stream(){ return set.stream();}
 
     public QueryAnswers(){}
-    public QueryAnswers(ConceptMap ans){ set.add(ans);}
-    public QueryAnswers(Collection<ConceptMap> ans){ set.addAll(ans); }
     private QueryAnswers(QueryAnswers ans){ ans.forEach(set::add);}
 
     public boolean add(ConceptMap a){ return set.add(a);}
@@ -81,7 +77,7 @@ public class QueryAnswers implements Iterable<ConceptMap>{
         if (unifier.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
         this.stream()
-            .map(a -> a.unify(unifier))
+            .map(unifier::apply)
             .filter(a -> !a.isEmpty())
             .forEach(unifiedAnswers::add);
         return unifiedAnswers;
@@ -95,8 +91,8 @@ public class QueryAnswers implements Iterable<ConceptMap>{
     public QueryAnswers unify(MultiUnifier multiUnifier){
         QueryAnswers unifiedAnswers = new QueryAnswers();
         this.stream()
-                .flatMap(a -> a.unify(multiUnifier))
-                .filter(a -> !a.isEmpty())
+                .flatMap(multiUnifier::apply)
+                .filter(ans -> !ans.isEmpty())
                 .forEach(unifiedAnswers::add);
         return unifiedAnswers;
     }

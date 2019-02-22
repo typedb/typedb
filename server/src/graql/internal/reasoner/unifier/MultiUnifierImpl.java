@@ -22,9 +22,11 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.UnmodifiableIterator;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import graql.lang.statement.Variable;
 
+import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -146,5 +148,10 @@ public class MultiUnifierImpl implements MultiUnifier{
     @Override
     public int size() {
         return multiUnifier.size();
+    }
+
+    @Override
+    public Stream<ConceptMap> apply(ConceptMap answer) {
+        return this.stream().map(u -> u.apply(answer));
     }
 }

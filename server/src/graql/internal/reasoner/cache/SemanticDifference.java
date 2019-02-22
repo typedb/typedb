@@ -136,7 +136,7 @@ public class SemanticDifference {
      */
     @CheckReturnValue
     public ConceptMap applyToAnswer(ConceptMap answer, ConceptMap partialSub, Set<Variable> vars, Unifier unifier) {
-        ConceptMap unified = answer.unify(unifier);
+        ConceptMap unified = unifier.apply(answer);
         if (unified.isEmpty()) return unified;
         Set<Variable> varsToRetain = Sets.difference(unified.vars(), partialSub.vars());
         return this.satisfiedBy(unified) ?
