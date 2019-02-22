@@ -39,15 +39,13 @@ public class SessionFactory {
     private final KeyspaceManager keyspaceStore;
     private final LockManager lockManager;
 
-    private final ConcurrentHashMap<Keyspace, KeyspaceCache> keyspaceCacheMap;
-    private final ConcurrentHashMap<Keyspace, Integer> keyspaceCacheUseCounts;
+    private final ConcurrentHashMap<Keyspace, KeyspaceCacheContainer> keyspaceCacheMap;
 
     public SessionFactory(LockManager lockManager, Config config, KeyspaceManager keyspaceStore) {
         this.config = config;
         this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
         this.keyspaceCacheMap = new ConcurrentHashMap<>();
-        this.keyspaceCacheUseCounts = new ConcurrentHashMap<>();
     }
 
     /**
@@ -88,6 +86,7 @@ public class SessionFactory {
     /**
      * Obtain a new session to a keyspace, while doing the required accounting
      * for reference counting keyspace cache usage to ensure proper keyspaceCache eviction
+     *
      * @param keyspace
      * @param config
      * @return
@@ -95,59 +94,63 @@ public class SessionFactory {
     private SessionImpl newSessionImpl(Keyspace keyspace, Config config) {
 
         SessionImpl session;
-
-        // handle two concurrent opening sessions to a new/prexisting keyspace with no active sessions
-        Lock lock = lockManager.getLock(getLockingKey(keyspace));
-        // WARNING this MUST be a re-entrant lock otherwise we deadlock right here after !
-        lock.lock();
-        try {
-            if (!keyspaceCacheMap.containsKey(keyspace)) {
-                keyspaceCacheMap.put(keyspace, new KeyspaceCache(config));
-                // do cache reference counting for proper eviction
-                keyspaceCacheUseCounts.put(keyspace, 0);
+        keyspaceCacheMap.compute(keyspace, (ksp, keyspaceCacheContainer) -> {
+            // atomically upsert a new KeyspaceCacheContainer
+            // AND increment the reference count atomically
+            KeyspaceCacheContainer cacheContainer;
+            if (keyspaceCacheContainer == null) {
+                cacheContainer = new KeyspaceCacheContainer(new KeyspaceCache(config));
+            } else {
+                cacheContainer = keyspaceCacheContainer;
             }
+            cacheContainer.incrementReferenceCount();
+            return cacheContainer;
+        });
 
-            // atomic increment of the count
-            keyspaceCacheUseCounts.put(keyspace, keyspaceCacheUseCounts.get(keyspace) + 1);
-
-        } finally {
-            lock.unlock();
-        }
-
-        // These don't need to be locked:
-        // keyspaceCache won't be evicted until the SessionImpl created here is closed
-        // it may be written to before by a thread that interrupts right here, but this is fine
-        KeyspaceCache keyspaceCache = keyspaceCacheMap.get(keyspace);
+        KeyspaceCache keyspaceCache = keyspaceCacheMap.get(keyspace).retrieveCache();
         session = new SessionImpl(keyspace, config, keyspaceCache, () -> onSessionClose(keyspace));
         return session;
     }
 
     private void onSessionClose(Keyspace keyspace) {
-        Lock lock = lockManager.getLock(getLockingKey(keyspace));
-        lock.lock();
-        try {
-            // atomically update the keyspaceCache reference count
-            Integer keyspaceCacheReferenceCount = keyspaceCacheUseCounts.get(keyspace);
-            int newCount = keyspaceCacheReferenceCount - 1;
-
-            if (newCount == 0) {
-                // if this is the last session using the keyspace, evict it the cache and corresponding counter
-                keyspaceCacheMap.remove(keyspace);
-                keyspaceCacheUseCounts.remove(keyspace);
-            } else {
-                // otherwise, just update the count atomically
-                keyspaceCacheUseCounts.put(keyspace, newCount);
-            }
-        } finally {
-            lock.unlock();
+        KeyspaceCacheContainer cacheContainer = keyspaceCacheMap.get(keyspace);
+        cacheContainer.decrementReferenceCount();
+        if (cacheContainer.referenceCount() == 0) {
+            keyspaceCacheMap.remove(keyspace);
         }
-
-        // by the end of this method, the reference count have been atomically updated (or removed)
-        // and the keyspaceCache has been removed is necessary
     }
 
     private static String getLockingKey(Keyspace keyspace) {
         return "/keyspace-lock/" + keyspace.getName();
+    }
+
+
+    private class KeyspaceCacheContainer {
+
+        private KeyspaceCache keyspaceCache;
+        private int references;
+
+        public KeyspaceCacheContainer(KeyspaceCache keyspaceCache) {
+            this.keyspaceCache = keyspaceCache;
+            references = 0;
+        }
+
+        public KeyspaceCache retrieveCache() {
+            return keyspaceCache;
+        }
+
+        public synchronized void incrementReferenceCount() {
+            references++;
+        }
+
+        public synchronized void decrementReferenceCount() {
+            references--;
+        }
+
+        public int referenceCount() {
+            return references;
+        }
+
     }
 
 }
