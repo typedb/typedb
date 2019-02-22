@@ -21,6 +21,7 @@ package grakn.core.graql.internal.reasoner.rule;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.ConceptUtils;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.reasoner.atom.Atom;
@@ -40,14 +41,12 @@ import grakn.core.graql.internal.reasoner.state.RuleState;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -257,7 +256,7 @@ public class InferenceRule {
                     SchemaConcept subType = allTypes.stream()
                             .map(Atom::getSchemaConcept)
                             .filter(Objects::nonNull)
-                            .filter(t -> ReasonerUtils.supers(t).contains(schemaConcept))
+                            .filter(t -> ConceptUtils.nonMetaSups(t).contains(schemaConcept))
                             .findFirst().orElse(null);
                     return schemaConcept == null || subType == null;
                 }).forEach(t -> bodyConjunctionAtoms.add(t.copy(body)));
@@ -319,7 +318,7 @@ public class InferenceRule {
             //NB: only rewriting atoms from the same type hierarchy
             List<Atom> rewrittenBodyConjAtoms = getBody().asComposite().getConjunctiveQuery().getAtoms(Atom.class)
                     .map(at ->
-                            ReasonerUtils.areDisjointTypes(at.getSchemaConcept(), head.getAtom().getSchemaConcept(), false) ?
+                            ConceptUtils.areDisjointTypes(at.getSchemaConcept(), head.getAtom().getSchemaConcept(), false) ?
                                     at : at.rewriteToUserDefined(parentAtom)
                     )
                     .collect(Collectors.toList());

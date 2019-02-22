@@ -33,6 +33,7 @@ import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.ConceptUtils;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relation;
@@ -92,12 +93,11 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.bottom;
+import static grakn.core.graql.concept.ConceptUtils.bottom;
+import static grakn.core.graql.concept.ConceptUtils.top;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.compatibleRelationTypesWithRoles;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.compatibleRoles;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.supers;
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.top;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 
@@ -659,7 +659,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     .sorted(Comparator.comparing(e -> e.getKey().isImplicit()))
                     .map(Pair::getKey)
                     //retain super types only
-                    .filter(t -> Sets.intersection(supers(t), compatibleConfigurations.keySet()).isEmpty())
+                    .filter(t -> Sets.intersection(ConceptUtils.nonMetaSups(t), compatibleConfigurations.keySet()).isEmpty())
                     .forEach(builder::add);
 
             //TODO need to add THING and meta relation type as well to make it complete

@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.ConceptUtils;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
@@ -33,7 +34,6 @@ import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
@@ -177,7 +177,7 @@ public abstract class IsaAtom extends IsaAtomBase {
                 typesFromRoles.isEmpty()? typesFromTypes: Sets.intersection(typesFromRoles, typesFromTypes);
 
         return !types.isEmpty()?
-                ImmutableList.copyOf(ReasonerUtils.top(types)) :
+                ImmutableList.copyOf(ConceptUtils.top(types)) :
                 tx().getMetaConcept().subs().collect(toImmutableList());
     }
 

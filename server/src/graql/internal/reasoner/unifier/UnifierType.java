@@ -18,6 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.unifier;
 
+import grakn.core.graql.concept.ConceptUtils;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
@@ -33,7 +34,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 
 /**
@@ -72,7 +72,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         @Override
         public boolean typeCompatibility(SchemaConcept parent, SchemaConcept child) {
             return (parent == null && child == null)
-                    || (parent != null && !areDisjointTypes(parent, child, true));
+                    || (parent != null && !ConceptUtils.areDisjointTypes(parent, child, true));
         }
 
         @Override
@@ -124,7 +124,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         @Override
         public boolean typeCompatibility(SchemaConcept parent, SchemaConcept child) {
             return (parent == null && child == null)
-                    || (parent != null && !areDisjointTypes(parent, child, true));
+                    || (parent != null && !ConceptUtils.areDisjointTypes(parent, child, true));
         }
 
         @Override
@@ -180,7 +180,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override
         public boolean typeCompatibility(SchemaConcept parent, SchemaConcept child) {
-            return child == null || !areDisjointTypes(parent, child, false);
+            return child == null || !ConceptUtils.areDisjointTypes(parent, child, false);
         }
 
         @Override
