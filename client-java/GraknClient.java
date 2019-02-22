@@ -79,7 +79,7 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
  * Entry-point which communicates with a running Grakn server using gRPC.
  * For now, only a subset of {@link grakn.core.server.Session} and {@link grakn.core.server.Transaction} features are supported.
  */
-public final class GraknClient {
+public final class GraknClient implements AutoCloseable {
 
     public static final String DEFAULT_URI = "localhost:48555";
 
@@ -108,6 +108,11 @@ public final class GraknClient {
         keyspaces = new Keyspaces();
     }
 
+    @Override
+    public void close() {
+        channel.shutdown();
+    }
+
     public Session session(String keyspace) {
         return new Session(keyspace);
     }
@@ -127,6 +132,7 @@ public final class GraknClient {
         private final String keyspace;
         private final SessionServiceGrpc.SessionServiceBlockingStub sessionStub;
         private final String sessionId;
+        private boolean isOpen = false;
 
         private Session(String keyspace) {
             if (!Validator.isValidKeyspaceName(keyspace)) {
@@ -136,6 +142,7 @@ public final class GraknClient {
             sessionStub = SessionServiceGrpc.newBlockingStub(channel);
             SessionProto.Session.Open.Res response = sessionStub.open(RequestBuilder.Session.open(keyspace));
             sessionId = response.getSessionId();
+            isOpen = true;
         }
 
         @Override
@@ -145,8 +152,9 @@ public final class GraknClient {
 
         @Override
         public void close() throws TransactionException {
+            if (!isOpen) return;
             sessionStub.close(RequestBuilder.Session.close(sessionId));
-            channel.shutdown();
+            isOpen = false;
         }
 
         @Override // TODO: remove this method once we no longer implement grakn.core.server.Session
