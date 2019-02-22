@@ -23,13 +23,11 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptUtils;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import graql.lang.exception.GraqlException;
 import graql.lang.statement.Variable;
 import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -170,11 +168,10 @@ public class ConceptMap extends Answer {
      * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
      *
      * @param map              answer to be merged with
-     * @param mergeExplanation flag for providing explanation
      * @return merged answer
      */
     @CheckReturnValue
-    public ConceptMap merge(ConceptMap map, boolean mergeExplanation) {
+    public ConceptMap merge(ConceptMap map) {
         if (map.isEmpty()) return this;
         if (this.isEmpty()) return map;
 
@@ -209,31 +206,8 @@ public class ConceptMap extends Answer {
                     }
                 });
         if (!entryMap.keySet().equals(varUnion)) return new ConceptMap();
-
-        return new ConceptMap(
-                entryMap,
-                mergeExplanation ? this.mergeExplanation(map) : this.explanation()
-        );
+        return new ConceptMap(entryMap, this.explanation());
     }
-
-    private Explanation mergeExplanation(ConceptMap toMerge) {
-        List<ConceptMap> partialAnswers = new ArrayList<>();
-        if (this.explanation().isJoinExplanation()) partialAnswers.addAll(this.explanation().getAnswers());
-        else partialAnswers.add(this);
-        if (toMerge.explanation().isJoinExplanation()) partialAnswers.addAll(toMerge.explanation().getAnswers());
-        else partialAnswers.add(toMerge);
-        return new JoinExplanation(partialAnswers);
-    }
-
-    /**
-     * perform an answer merge without explanation
-     * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
-     *
-     * @param a2 answer to be merged with
-     * @return merged answer
-     */
-    @CheckReturnValue
-    public ConceptMap merge(ConceptMap a2) { return this.merge(a2, false);}
 
     /**
      * @param unifier set of mappings between variables

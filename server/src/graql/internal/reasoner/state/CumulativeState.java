@@ -19,11 +19,14 @@
 package grakn.core.graql.internal.reasoner.state;
 
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -71,7 +74,12 @@ public class CumulativeState extends QueryStateBase{
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        ConceptMap answer = getSubstitution().merge(state.getSubstitution(), true);
+        ConceptMap accumulatedAnswer = getSubstitution();
+        ConceptMap toMerge = state.getSubstitution();
+        ConceptMap answer = new ConceptMap(
+                accumulatedAnswer.merge(toMerge).map(),
+                mergeExplanations(accumulatedAnswer, toMerge));
+
         if (answer.isEmpty()) return null;
         if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());
         return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals(), getCache());
@@ -86,4 +94,17 @@ public class CumulativeState extends QueryStateBase{
     ConceptMap consumeAnswer(AnswerState state) {
         return state.getSubstitution();
     }
+
+    private static Explanation mergeExplanations(ConceptMap base, ConceptMap toMerge) {
+        if (toMerge.isEmpty()) return base.explanation();
+        if (base.isEmpty()) return toMerge.explanation();
+
+        List<ConceptMap> partialAnswers = new ArrayList<>();
+        if (base.explanation().isJoinExplanation()) partialAnswers.addAll(base.explanation().getAnswers());
+        else partialAnswers.add(base);
+        if (toMerge.explanation().isJoinExplanation()) partialAnswers.addAll(toMerge.explanation().getAnswers());
+        else partialAnswers.add(toMerge);
+        return new JoinExplanation(partialAnswers);
+    }
+
 }
