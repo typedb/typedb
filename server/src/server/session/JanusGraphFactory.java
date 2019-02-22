@@ -19,6 +19,7 @@
 package grakn.core.server.session;
 
 import com.google.common.collect.ImmutableMap;
+import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
@@ -95,8 +96,8 @@ final public class JanusGraphFactory {
     private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
 
 
-    public static synchronized JanusGraph openGraph(SessionImpl session) {
-        JanusGraph JanusGraph = configureGraph(session);
+    public static synchronized JanusGraph openGraph(String keyspace, Config config) {
+        JanusGraph JanusGraph = configureGraph(keyspace, config);
         buildJanusIndexes(JanusGraph);
         JanusGraph.tx().onClose(org.apache.tinkerpop.gremlin.structure.Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         if (!strategiesApplied.getAndSet(true)) {
@@ -112,17 +113,17 @@ final public class JanusGraphFactory {
     }
 
 
-    private static JanusGraph configureGraph(SessionImpl session) {
+    private static JanusGraph configureGraph(String keyspace, Config config) {
         org.janusgraph.core.JanusGraphFactory.Builder builder = org.janusgraph.core.JanusGraphFactory.build().
-                set(STORAGE_HOSTNAME, session.config().getProperty(ConfigKey.STORAGE_HOSTNAME)).
-                set(STORAGE_KEYSPACE, session.keyspace().getName()).
+                set(STORAGE_HOSTNAME, config.getProperty(ConfigKey.STORAGE_HOSTNAME)).
+                set(STORAGE_KEYSPACE, keyspace).
                 set(STORAGE_BATCH_LOADING, false);
 
         //Load Defaults
         DEFAULT_PROPERTIES.forEach((key, value) -> builder.set(key.toString(), value));
 
         //Load Passed in properties
-        session.config().properties().forEach((key, value) -> {
+        config.properties().forEach((key, value) -> {
 
             //Overwrite storage
             if (key.equals(STORAGE_BACKEND)) {
@@ -137,7 +138,7 @@ final public class JanusGraphFactory {
             builder.set(key.toString(), value);
         });
 
-        LOG.debug("Opening graph {}", session.keyspace().getName());
+        LOG.debug("Opening graph {}", keyspace);
         return builder.open();
     }
 

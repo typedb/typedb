@@ -28,9 +28,11 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.session.cache.KeyspaceCache;
+import org.janusgraph.core.JanusGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +62,8 @@ public class KeyspaceManager {
         this.config = config;
 
         KeyspaceCache keyspaceCache = new KeyspaceCache(config);
-        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, () -> {});
+        JanusGraph graph = JanusGraphFactory.openGraph(SYSTEM_KB_KEYSPACE.getName(), config);
+        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, graph, () -> {graph.close();});
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 
@@ -113,7 +116,8 @@ public class KeyspaceManager {
         }
 
         KeyspaceCache keyspaceCache = new KeyspaceCache(config);
-        SessionImpl session = new SessionImpl(keyspace, config, keyspaceCache, () -> {});
+        JanusGraph graph = JanusGraphFactory.openGraph(keyspace.getName(), config);
+        SessionImpl session = new SessionImpl(keyspace, config, keyspaceCache, graph, () -> {graph.close();});
         session.clearGraph();
         session.close();
         return deleteReferenceInSystemKeyspace(keyspace);

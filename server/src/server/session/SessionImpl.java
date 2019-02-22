@@ -73,14 +73,14 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(Keyspace keyspace, Config config, KeyspaceCache keyspaceCache, Runnable onClose) {
+    public SessionImpl(Keyspace keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, Runnable onClose) {
         this.keyspace = keyspace;
         this.config = config;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
         // be an expensive operation TODO: refactor in the future
         this.hadoopGraphFactory = new HadoopGraphFactory(this);
         // Open Janus Graph
-        this.graph = JanusGraphFactory.openGraph(this);
+        this.graph = graph;
 
         this.keyspaceCache = keyspaceCache;
         this.onClose = onClose;
@@ -207,8 +207,6 @@ public class SessionImpl implements Session {
             localOLTPTransactionContainer.set(null);
         }
 
-        ((StandardJanusGraph) graph).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close);
-        graph.close();
 
         this.onClose.run();
         isClosed = true;

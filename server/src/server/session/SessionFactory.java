@@ -25,6 +25,8 @@ import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.util.LockManager;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -99,7 +101,8 @@ public class SessionFactory {
             // AND increment the reference count atomically
             KeyspaceCacheContainer cacheContainer;
             if (keyspaceCacheContainer == null) {
-                cacheContainer = new KeyspaceCacheContainer(new KeyspaceCache(config));
+                JanusGraph graph = JanusGraphFactory.openGraph(keyspace.getName(), config);
+                cacheContainer = new KeyspaceCacheContainer(new KeyspaceCache(config), graph);
             } else {
                 cacheContainer = keyspaceCacheContainer;
             }
@@ -107,8 +110,8 @@ public class SessionFactory {
             return cacheContainer;
         });
 
-        KeyspaceCache keyspaceCache = keyspaceCacheMap.get(keyspace).retrieveCache();
-        session = new SessionImpl(keyspace, config, keyspaceCache, () -> onSessionClose(keyspace));
+        KeyspaceCacheContainer keyspaceCacheContainer= keyspaceCacheMap.get(keyspace);
+        session = new SessionImpl(keyspace, config, keyspaceCacheContainer.retrieveCache(), keyspaceCacheContainer.retrieveGraph(), () -> onSessionClose(keyspace));
         return session;
     }
 
@@ -116,7 +119,10 @@ public class SessionFactory {
         KeyspaceCacheContainer cacheContainer = keyspaceCacheMap.get(keyspace);
         cacheContainer.decrementReferenceCount();
         if (cacheContainer.referenceCount() == 0) {
-            keyspaceCacheMap.remove(keyspace);
+            JanusGraph graph = cacheContainer.retrieveGraph();
+            ((StandardJanusGraph) graph).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close);
+            graph.close();
+            keyspaceCacheMap.remove(keyspace); // remove container from map
         }
     }
 
@@ -128,10 +134,12 @@ public class SessionFactory {
     private class KeyspaceCacheContainer {
 
         private KeyspaceCache keyspaceCache;
+        private JanusGraph graph; // cached here because concurrently created sessions don't see writes to JanusGraph DB cache
         private int references;
 
-        public KeyspaceCacheContainer(KeyspaceCache keyspaceCache) {
+        public KeyspaceCacheContainer(KeyspaceCache keyspaceCache, JanusGraph graph) {
             this.keyspaceCache = keyspaceCache;
+            this.graph = graph;
             references = 0;
         }
 
@@ -150,6 +158,7 @@ public class SessionFactory {
         public int referenceCount() {
             return references;
         }
+        public JanusGraph retrieveGraph() { return graph; }
 
     }
 

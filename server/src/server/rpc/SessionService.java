@@ -72,13 +72,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private final Map<String, SessionImpl> openSessions;
     private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
 
-    private final RoundRobinThreadPools transactionThreadPool;
+    private final RoundRobinThreadPool transactionThreadPool;
 
-    private class RoundRobinThreadPools {
-
+    private class RoundRobinThreadPool {
         private ArrayList<ExecutorService> threadPools;
         private int next = 0;
-        public RoundRobinThreadPools(int size) {
+        public RoundRobinThreadPool(int size) {
             threadPools = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 threadPools.add(i, Executors.newSingleThreadExecutor());
@@ -98,7 +97,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         this.openSessions = new HashMap<>();
 
         int cores = Runtime.getRuntime().availableProcessors();
-        transactionThreadPool = new RoundRobinThreadPools(cores);
+        transactionThreadPool = new RoundRobinThreadPool(cores);
     }
 
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
@@ -150,8 +149,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         public TransactionListener(StreamObserver<Transaction.Res> responseSender, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, Map<String, SessionImpl> openSessions, ExecutorService transactionThreadPool) {
             this.responseSender = responseSender;
-//            ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
-//            this.threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
             this.threadExecutor = transactionThreadPool;
             this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
             this.openSessions = openSessions;
@@ -270,8 +267,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     responseSender.onCompleted();
                 }
             }
-
-//            threadExecutor.shutdown();
         }
 
         private void submit(Runnable runnable) {
