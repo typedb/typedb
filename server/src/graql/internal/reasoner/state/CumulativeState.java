@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.reasoner.state;
 
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
@@ -76,7 +76,7 @@ public class CumulativeState extends QueryStateBase{
         ConceptMap toMerge = state.getSubstitution();
         ConceptMap answer = accumulatedAnswer
                 .merge(toMerge)
-                .explain(QueryExplanation.mergeExplanations(accumulatedAnswer, toMerge));
+                .explain(Explanation.mergeExplanations(accumulatedAnswer, toMerge));
         if (answer.isEmpty()) return null;
         if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());
         return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals(), getCache());

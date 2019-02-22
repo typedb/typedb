@@ -18,6 +18,7 @@
 
 package grakn.core.graql.answer;
 
+import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import graql.lang.pattern.Pattern;
 
 import javax.annotation.CheckReturnValue;
@@ -133,4 +134,13 @@ public class Explanation {
      * @return true if this is an empty explanation (explanation wasn't recorded)
      */
     public boolean isEmpty() { return !isLookupExplanation() && !isRuleExplanation() && getAnswers().isEmpty();}
+
+    public static Explanation mergeExplanations(ConceptMap base, ConceptMap toMerge) {
+        List<ConceptMap> partialAnswers = new ArrayList<>();
+        if (base.explanation().isJoinExplanation()) partialAnswers.addAll(base.explanation().getAnswers());
+        else partialAnswers.add(base);
+        if (toMerge.explanation().isJoinExplanation()) partialAnswers.addAll(toMerge.explanation().getAnswers());
+        else partialAnswers.add(toMerge);
+        return new JoinExplanation(partialAnswers);
+    }
 }
