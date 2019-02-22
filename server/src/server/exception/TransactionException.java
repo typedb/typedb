@@ -147,13 +147,6 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when casting Grakn concepts/answers incorrectly.
-     */
-    public static TransactionException invalidCasting(Object concept, Class type) {
-        return create(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
-    }
-
-    /**
      * Thrown when creating an Attribute whose value {@link Object} does not match attribute data type
      */
     public static TransactionException invalidAttributeValue(Object object, AttributeType.DataType dataType) {

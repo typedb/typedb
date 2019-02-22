@@ -35,6 +35,7 @@ java_library(
     deps = [
         # Grakn Core dependencies
         "//common:common",
+        "//concept:concept",
         "@graknlabs_graql//java:graql",
         "//protocol:protocol-java",
 

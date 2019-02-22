@@ -32,6 +32,7 @@ java_test(
      srcs = ["ConceptIT.java"],
      test_class = "grakn.core.server.kb.concept.ConceptIT",
      deps = [
+         "//concept:concept",
          "//server:server",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

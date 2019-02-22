@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.concept;
 
+import grakn.core.concept.exception.GraknConceptException;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
@@ -134,8 +135,8 @@ public class ConceptIT {
         EntityType thingType = tx.putEntityType("thing type");
         Entity thing = thingType.create();
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.invalidCasting(thing, Type.class).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.invalidCasting(thing, Type.class).getMessage());
 
         //noinspection ResultOfMethodCallIgnored
         thing.asType();

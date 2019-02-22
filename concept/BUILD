@@ -21,25 +21,26 @@ package(default_visibility = ["//visibility:public"])
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
-#java_library(
-#    name = "concept",
-#    srcs = glob(["**/*.java"]),
-#    deps = [
-#
-#    ],
-#    tags = ["maven_coordinates=grakn.core:concept:{pom_version}"],
-#)
-#
-#
-#deploy_maven_jar(
-#    name = "deploy-maven-jar",
-#    target = ":concept",
-#    package = "concept",
-#)
-#
-#checkstyle_test(
-#    name = "checkstyle",
-#    targets = [
-#        ":concept"
-#    ],
-#)
+java_library(
+    name = "concept",
+    srcs = glob(["**/*.java"]),
+    deps = [
+        # Internal dependencies
+        "//common:common",
+    ],
+    tags = ["maven_coordinates=grakn.core:concept:{pom_version}"],
+)
+
+
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    target = ":concept",
+    package = "concept",
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":concept"
+    ],
+)
