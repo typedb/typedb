@@ -31,6 +31,7 @@ import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -46,14 +47,12 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.printer.Printer;
+import grakn.core.graql.printer.StringPrinter;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDelete;
@@ -82,6 +81,8 @@ import java.util.stream.Stream;
 import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
 import static graql.lang.Graql.Token.Compute.Algorithm.K_CORE;
+import static graql.lang.Graql.and;
+import static graql.lang.Graql.rel;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
@@ -231,50 +232,53 @@ public class GraknClientIT {
     }
 
     @Test
-    @Ignore
     public void testExecutingAQuery_ExplanationsAreReturned() {
-        SessionImpl reasonerLocalSession = server.sessionWithNewKeyspace();
-        try (Transaction tx = reasonerLocalSession.transaction(Transaction.Type.WRITE)) {
-//            GenealogyKB.get().accept(tx);
+        try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.define(
+                    type("name").sub("attribute").datatype("string"),
+                    type("content").sub("entity").has("name").plays("contained").plays("container"),
+                    type("contains").sub("relationship").relates("contained").relates("container"),
+                    type("transitive-location").sub("rule")
+                    .when(and(
+                            rel("contained", "x").rel("container", "y").isa("contains"),
+                            rel("contained", "y").rel("container", "z").isa("contains")
+                    ))
+                    .then(rel("contained", "x").rel("container", "z").isa("contains"))
+            ));
+            tx.execute(Graql.insert(
+                    var("x").isa("content").has("name", "x"),
+                    var("y").isa("content").has("name", "y"),
+                    var("z").isa("content").has("name", "z"),
+                    rel("contained", "x").rel("container", "y").isa("contains"),
+                    rel("contained", "y").rel("container", "z").isa("contains")
+            ));
             tx.commit();
         }
+        try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
+            List<ConceptMap> answers = tx.execute(Graql.match(
+                    var("x").isa("content").has("name", "x"),
+                    var("z").isa("content").has("name", "z"),
+                    var("infer").rel("x").rel("z").isa("contains")
+            ).get());
 
-        GraknClient.Session reasonerRemoteSession = new GraknClient(server.grpcUri().toString()).session(reasonerLocalSession.keyspace().getName());
+            StringPrinter printer = Printer.stringPrinter(false);
+            System.out.println("=======================> ");
 
-        List<ConceptMap> remoteAnswers;
-        List<ConceptMap> localAnswers;
+            assertEquals(1, answers.size());
+            System.out.println(printer.toString(answers.get(0)));
 
-        final long limit = 3;
-        String queryString = "match " +
-                "($x, $y) isa cousins;" +
-                "limit " + limit + ";" +
-                "get;";
+            assertFalse(answers.get(0).explanation().isEmpty());
+            Explanation explanation = answers.get(0).explanation();
+            System.out.println("pattern: " + explanation.getPattern());
+            System.out.println("answers: " + printer.toString(explanation.getAnswers()));
 
-        try (GraknClient.Transaction tx = reasonerRemoteSession.transaction(Transaction.Type.READ)) {
-            remoteAnswers = tx.execute(Graql.parse(queryString).asGet());
+            assertFalse(explanation.getAnswers().get(1).explanation().isEmpty());
+            explanation = explanation.getAnswers().get(1).explanation();
+            System.out.println("pattern: " + explanation.getPattern());
+            System.out.println("answers: " + printer.toString(explanation.getAnswers()));
+
+            // TODO: test the explanation object testExplanation(answer) below, and remove prints above
         }
-
-        try (Transaction tx = reasonerLocalSession.transaction(Transaction.Type.READ)) {
-            localAnswers = tx.execute(Graql.parse(queryString).asGet());
-        }
-
-        assertEquals(remoteAnswers.size(), limit);
-        remoteAnswers.forEach(answer -> {
-            testExplanation(answer);
-
-            String specificQuery = "match " +
-                    "$x id '" + answer.get("x").id().getValue() + "';" +
-                    "$y id '" + answer.get("y").id().getValue() + "';" +
-                    "(cousin: $x, cousin: $y) isa cousins;" +
-                    "limit 1; get;";
-
-            ConceptMap specificAnswer;
-            try (GraknClient.Transaction tx = reasonerRemoteSession.transaction(Transaction.Type.READ)) {
-                specificAnswer = Iterables.getOnlyElement(tx.execute(Graql.parse(specificQuery).asGet()));
-            }
-            assertEquals(answer, specificAnswer);
-            testExplanation(specificAnswer);
-        });
     }
 
     private void testExplanation(ConceptMap answer) {
@@ -312,10 +316,10 @@ public class GraknClientIT {
     }
 
     private boolean explanationConsistentWithAnswer(ConceptMap ans){
-        String queryPattern = ans.explanation().getQueryPattern();
+        Pattern queryPattern = ans.explanation().getPattern();
         Set<Variable> vars = new HashSet<>();
         if (queryPattern != null){
-            Graql.parsePattern(queryPattern).statements().forEach(s -> vars.addAll(s.variables()));
+            queryPattern.statements().forEach(s -> vars.addAll(s.variables()));
         }
         return vars.containsAll(ans.map().keySet());
     }

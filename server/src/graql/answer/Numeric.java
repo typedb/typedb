@@ -19,7 +19,7 @@
 package grakn.core.graql.answer;
 
 /**
- * A type of {@link Answer} object that contains a {@link Number}.
+ * A type of Answer object that contains a Number.
  */
 public class Numeric extends Answer {
 
@@ -27,7 +27,7 @@ public class Numeric extends Answer {
     private final Explanation explanation;
 
     public Numeric(Number number) {
-        this(number, null);
+        this(number, new Explanation());
     }
 
     public Numeric(Number number, Explanation explanation) {

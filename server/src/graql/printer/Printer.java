@@ -51,7 +51,7 @@ public abstract class Printer<Builder> {
      * @param attributeTypes list of attribute types that should be included in the String output
      * @return a new StringPrinter object
      */
-    public static Printer<StringBuilder> stringPrinter(boolean colorize, AttributeType... attributeTypes) {
+    public static StringPrinter stringPrinter(boolean colorize, AttributeType... attributeTypes) {
         return new StringPrinter(colorize, attributeTypes);
     }
 

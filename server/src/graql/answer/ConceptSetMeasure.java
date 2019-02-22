@@ -23,14 +23,14 @@ import grakn.core.graql.concept.ConceptId;
 import java.util.Set;
 
 /**
- * A type of {@link Answer} object that contains a {@link Set} and {@link Number}, by extending {@link ConceptSet}.
+ * A type of Answer object that contains a Set and Number, by extending ConceptSet.
  */
 public class ConceptSetMeasure extends ConceptSet {
 
     private final Number measurement;
 
     public ConceptSetMeasure(Set<ConceptId> set, Number measurement) {
-        this(set, measurement, null);
+        this(set, measurement, new Explanation());
     }
 
     public ConceptSetMeasure(Set<ConceptId> set, Number measurement, Explanation explanation) {

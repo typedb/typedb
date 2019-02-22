@@ -20,31 +20,31 @@ package grakn.core.graql.internal.reasoner.explanation;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
+import graql.lang.pattern.Pattern;
+
 import java.util.List;
 
 /**
- *
- * <p>
  * Explanation class for db lookup.
- * </p>
- *
- *
  */
-public class LookupExplanation extends QueryExplanation {
+public class LookupExplanation extends Explanation {
 
-    public LookupExplanation(String queryPattern){ super(queryPattern);}
-    private LookupExplanation(String queryPattern, List<ConceptMap> answers){
-        super(queryPattern, answers);
+    public LookupExplanation(Pattern pattern){
+        super(pattern);
+    }
+
+    private LookupExplanation(Pattern pattern, List<ConceptMap> answers){
+        super(pattern, answers);
     }
 
     @Override
-    public Explanation setQueryPattern(String queryPattern){
-        return new LookupExplanation(queryPattern);
+    public LookupExplanation setPattern(Pattern pattern){
+        return new LookupExplanation(pattern);
     }
 
     @Override
-    public Explanation childOf(ConceptMap ans) {
-        return new LookupExplanation(getQueryPattern(), ans.explanation().getAnswers());
+    public LookupExplanation childOf(ConceptMap ans) {
+        return new LookupExplanation(getPattern(), ans.explanation().getAnswers());
     }
 
     @Override

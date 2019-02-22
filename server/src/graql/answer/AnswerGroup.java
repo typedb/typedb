@@ -24,10 +24,10 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 /**
- * A type of {@link Answer} object that contains a {@link List} of {@link Answer}s as the members and a {@link Concept}
+ * A type of Answer object that contains a List of Answers as the members and a Concept
  * as the owner.
  *
- * @param <T> the type of {@link Answer} being grouped
+ * @param <T> the type of Answer being grouped
  */
 public class AnswerGroup<T extends Answer> extends Answer {
 
@@ -36,7 +36,7 @@ public class AnswerGroup<T extends Answer> extends Answer {
     private final Explanation explanation;
 
     public AnswerGroup(Concept owner, List<T> answers) {
-        this(owner, answers, null);
+        this(owner, answers, new Explanation());
     }
 
     public AnswerGroup(Concept owner, List<T> answers, Explanation explanation) {

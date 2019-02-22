@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * A type of {@link Answer} object that contains a {@link List} of Concepts.
+ * A type of Answer object that contains a List of Concepts.
  */
 public class ConceptList extends Answer {
 
@@ -33,7 +33,7 @@ public class ConceptList extends Answer {
     private final Explanation explanation;
 
     public ConceptList(List<ConceptId> list) {
-        this(list, null);
+        this(list, new Explanation());
     }
 
     public ConceptList(List<ConceptId> list, Explanation explanation) {

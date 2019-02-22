@@ -20,38 +20,35 @@ package grakn.core.graql.internal.reasoner.explanation;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
+import graql.lang.pattern.Pattern;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- *
- * <p>
  * Explanation class for rule application.
- * </p>
- *
- *
  */
-public class RuleExplanation extends QueryExplanation {
+public class RuleExplanation extends Explanation {
 
     private final String ruleId;
 
-    public RuleExplanation(String queryPattern, String ruleId){
-        super(queryPattern);
+    public RuleExplanation(Pattern pattern, String ruleId){
+        super(pattern);
         this.ruleId = ruleId;
     }
-    private RuleExplanation(String queryPattern, List<ConceptMap> answers, String ruleId){
+    private RuleExplanation(Pattern queryPattern, List<ConceptMap> answers, String ruleId){
         super(queryPattern, answers);
         this.ruleId = ruleId;
     }
 
     @Override
-    public Explanation setQueryPattern(String queryPattern){
-        return new RuleExplanation(queryPattern, getRuleId());
+    public RuleExplanation setPattern(Pattern pattern){
+        return new RuleExplanation(pattern, getRuleId());
     }
 
     @Override
-    public Explanation childOf(ConceptMap ans) {
+    public RuleExplanation childOf(ConceptMap ans) {
         Explanation explanation = ans.explanation();
         List<ConceptMap> answerList = new ArrayList<>(this.getAnswers());
         answerList.addAll(
@@ -59,7 +56,7 @@ public class RuleExplanation extends QueryExplanation {
                         Collections.singletonList(ans) :
                         explanation.getAnswers()
         );
-        return new RuleExplanation(getQueryPattern(), answerList, getRuleId());
+        return new RuleExplanation(getPattern(), answerList, getRuleId());
     }
 
     @Override

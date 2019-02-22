@@ -21,25 +21,22 @@ package grakn.core.graql.internal.reasoner.explanation;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
+import graql.lang.pattern.Pattern;
+
 import java.util.List;
 
 /**
- *
- * <p>
  * Explanation class for a join explanation - resulting from merging atoms in a conjunction.
- * </p>
- *
- *
  */
-public class JoinExplanation extends QueryExplanation {
+public class JoinExplanation extends Explanation {
 
     public JoinExplanation(List<ConceptMap> answers){ super(answers);}
-    public JoinExplanation(String queryPattern, List<ConceptMap> partialAnswers){
+    public JoinExplanation(Pattern queryPattern, List<ConceptMap> partialAnswers){
         super(queryPattern, partialAnswers);
     }
 
     @Override
-    public Explanation childOf(ConceptMap ans) {
+    public JoinExplanation childOf(ConceptMap ans) {
         return new JoinExplanation(ReasonerUtils.listUnion(this.getAnswers(), ans.explanation().getAnswers()));
     }
 
