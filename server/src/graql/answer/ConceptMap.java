@@ -21,7 +21,7 @@ package grakn.core.graql.answer;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptUtils;
+import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.graql.exception.GraqlQueryException;
 import graql.lang.exception.GraqlException;
 import graql.lang.statement.Variable;

@@ -18,8 +18,6 @@
 
 package grakn.core.graql.concept;
 
-import grakn.core.graql.internal.Schema;
-
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
@@ -71,7 +69,6 @@ public interface SchemaConcept extends Concept {
      * @return All super-concepts of this SchemaConcept  including itself and excluding the meta
      * Schema.MetaSchema#THING.
      * If you want to include Schema.MetaSchema#THING, use Transaction.sups().
-     * @see Schema.MetaSchema#THING
      */
     Stream<? extends SchemaConcept> sups();
 

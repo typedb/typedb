@@ -21,7 +21,7 @@ package grakn.core.graql.internal.reasoner.rule;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.ConceptUtils;
+import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.reasoner.atom.Atom;

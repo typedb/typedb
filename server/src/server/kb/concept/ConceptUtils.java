@@ -16,9 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.concept;
+package grakn.core.server.kb.concept;
 
 import com.google.common.collect.Sets;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import java.util.Collections;
 import java.util.HashSet;

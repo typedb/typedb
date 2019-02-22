@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.unifier;
 
-import grakn.core.graql.concept.ConceptUtils;
+import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.Atomic;

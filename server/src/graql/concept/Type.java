@@ -18,8 +18,6 @@
 
 package grakn.core.graql.concept;
 
-import grakn.core.server.exception.TransactionException;
-
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
@@ -45,34 +43,30 @@ public interface Type extends SchemaConcept {
      *
      * @param isAbstract Specifies if the concept is to be abstract (true) or not (false).
      * @return The concept itself
-     * @throws TransactionException if this is a meta-type
      */
-    Type isAbstract(Boolean isAbstract) throws TransactionException;
+    Type isAbstract(Boolean isAbstract);
 
     /**
      * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
-     * @throws TransactionException if this is a meta-type
      */
-    Type plays(Role role) throws TransactionException;
+    Type plays(Role role);
 
     /**
      * Creates a RelationType which allows this type and a AttributeType to be linked in a strictly one-to-one mapping.
      *
      * @param attributeType The AttributeType which instances of this type should be allowed to play.
      * @return The Type itself.
-     * @throws TransactionException if this is a meta-type
      */
-    Type key(AttributeType attributeType) throws TransactionException;
+    Type key(AttributeType attributeType);
 
     /**
      * Creates a RelationType which allows this type and a AttributeType  to be linked.
      *
      * @param attributeType The AttributeType  which instances of this type should be allowed to play.
      * @return The Type itself.
-     * @throws TransactionException if this is a meta-type
      */
-    Type has(AttributeType attributeType) throws TransactionException;
+    Type has(AttributeType attributeType);
 
     //------------------------------------- Accessors ---------------------------------
 
