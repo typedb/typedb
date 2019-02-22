@@ -23,15 +23,12 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptUtils;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import graql.lang.exception.GraqlException;
 import graql.lang.statement.Variable;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -207,41 +204,6 @@ public class ConceptMap extends Answer {
                 });
         if (!entryMap.keySet().equals(varUnion)) return new ConceptMap();
         return new ConceptMap(entryMap, this.explanation());
-    }
-
-    /**
-     * @param unifier set of mappings between variables
-     * @return unified answer
-     */
-    @CheckReturnValue
-    public ConceptMap unify(Unifier unifier) {
-        if (unifier.isEmpty()) return this;
-        Map<Variable, Concept> unified = new HashMap<>();
-
-        for (Map.Entry<Variable, Concept> e : this.map.entrySet()) {
-            Variable var = e.getKey();
-            Concept con = e.getValue();
-            Collection<Variable> uvars = unifier.get(var);
-            if (uvars.isEmpty() && !unifier.values().contains(var)) {
-                Concept put = unified.put(var, con);
-                if (put != null && !put.equals(con)) return new ConceptMap();
-            } else {
-                for (Variable uv : uvars) {
-                    Concept put = unified.put(uv, con);
-                    if (put != null && !put.equals(con)) return new ConceptMap();
-                }
-            }
-        }
-        return new ConceptMap(unified, this.explanation());
-    }
-
-    /**
-     * @param multiUnifier set of unifiers defining variable mappings
-     * @return stream of unified answers
-     */
-    @CheckReturnValue
-    public Stream<ConceptMap> unify(MultiUnifier multiUnifier) {
-        return multiUnifier.stream().map(this::unify);
     }
 
     /**

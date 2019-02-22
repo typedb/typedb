@@ -20,6 +20,7 @@ package grakn.core.graql.internal.reasoner.unifier;
 
 import com.google.common.collect.ImmutableSet;
 
+import grakn.core.graql.answer.ConceptMap;
 import javax.annotation.CheckReturnValue;
 import java.util.Iterator;
 import java.util.stream.Stream;
@@ -96,4 +97,11 @@ public interface MultiUnifier extends Iterable<Unifier> {
      */
     @CheckReturnValue
     int size();
+
+    /**
+     * @param answer to apply this unifier on
+     * @return stream of unified answers
+     */
+    @CheckReturnValue
+    Stream<ConceptMap> apply(ConceptMap answer);
 }

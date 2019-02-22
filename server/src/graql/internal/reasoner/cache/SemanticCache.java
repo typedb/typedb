@@ -201,8 +201,8 @@ public abstract class SemanticCache<
             MultiUnifier multiUnifier = unifier == null? query.getMultiUnifier(equivalentQuery, unifierType()) : unifier;
             Set<Variable> cacheVars = equivalentQuery.getVarNames();
             //NB: this indexes answer according to all indices in the set
-            multiUnifier.stream()
-                    .map(answer::unify)
+            multiUnifier
+                    .apply(answer)
                     .peek(ans -> {
                         if (!ans.vars().equals(cacheVars)){
                             throw GraqlQueryException.invalidQueryCacheEntry(equivalentQuery, ans);

@@ -94,4 +94,11 @@ public interface Unifier{
     @CheckReturnValue
     Unifier inverse();
 
+    /**
+     * @param answer to apply the unifier to
+     * @return unified answer
+     */
+    @CheckReturnValue
+    ConceptMap apply(ConceptMap answer);
+
 }

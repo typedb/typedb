@@ -56,7 +56,7 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCa
         if (match != null) {
             Q equivalentQuery = match.query();
             MultiUnifier multiUnifier = query.getMultiUnifier(equivalentQuery, unifierType());
-            Set<ConceptMap> unifiedAnswers = answers.stream().flatMap(ans -> ans.unify(multiUnifier)).collect(toSet());
+            Set<ConceptMap> unifiedAnswers = answers.stream().flatMap(multiUnifier::apply).collect(toSet());
             this.getEntry(query).cachedElement().addAll(unifiedAnswers);
             return match;
         }
@@ -86,8 +86,8 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCa
             MultiUnifier multiUnifier = unifier == null ? query.getMultiUnifier(equivalentQuery, unifierType()) : unifier;
 
             Set<Variable> cacheVars = answers.isEmpty() ? new HashSet<>() : answers.iterator().next().vars();
-            multiUnifier.stream()
-                    .map(answer::unify)
+            multiUnifier
+                    .apply(answer)
                     .peek(ans -> {
                         if (!ans.vars().containsAll(cacheVars)) {
                             throw GraqlQueryException.invalidQueryCacheEntry(equivalentQuery, ans);
@@ -133,7 +133,9 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCa
             //NB: this is not lazy
             //lazy version would be answers.stream().flatMap(ans -> ans.unify(multiUnifier))
             //NB: Concurrent modification exception if lazy
-            return new Pair<>(answers.stream().flatMap(ans -> ans.unify(multiUnifier)).collect(toSet()).stream(), multiUnifier);
+            return new Pair<>(
+                    answers.stream().flatMap(multiUnifier::apply).collect(toSet()).stream(),
+                    multiUnifier);
         }
         return new Pair<>(
                 structuralCache().get(query),
@@ -151,7 +153,7 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCa
 
             //NB: only used when checking for materialised answer duplicates
             ConceptMap answer = match.cachedElement().stream()
-                    .flatMap(a -> a.unify(multiUnifier))
+                    .flatMap(multiUnifier::apply)
                     .filter(a -> a.containsAll(ans))
                     .findFirst().orElse(null);
             if (answer != null) return answer;

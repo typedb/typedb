@@ -383,9 +383,9 @@ public class InferenceRule {
         Unifier ruleUnifierInverse = ruleUnifier.inverse();
 
         //delta' = theta . thetaP . delta
-        ConceptMap partialSubPrime = parentAtom.getParentQuery()
-                .getSubstitution()
-                .unify(ruleUnifierInverse);
+        ConceptMap partialSubPrime = ruleUnifierInverse.apply(
+                parentAtom.getParentQuery().getSubstitution()
+        );
 
         return new RuleState(this.propagateConstraints(parentAtom, ruleUnifierInverse), partialSubPrime, ruleUnifier, parent, visitedSubGoals, cache);
     }
