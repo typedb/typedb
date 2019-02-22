@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.client.GraknClient;
 import grakn.core.graql.answer.AnswerGroup;
@@ -31,7 +32,6 @@ import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.answer.Numeric;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -48,7 +48,6 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.printer.Printer;
-import grakn.core.graql.printer.StringPrinter;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -59,15 +58,6 @@ import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import junit.framework.TestCase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
@@ -77,6 +67,14 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
@@ -255,45 +253,26 @@ public class GraknClientIT {
             tx.commit();
         }
         try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(
-                    var("x").isa("content").has("name", "x"),
+            List<Pattern> patterns = Lists.newArrayList(
+                    Graql.var("x").isa("content").has("name", "x"),
                     var("z").isa("content").has("name", "z"),
                     var("infer").rel("x").rel("z").isa("contains")
-            ).get());
+            );
+            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
+            final int ruleStatements = tx.getRule("transitive-location").when().statements().size();
 
-            StringPrinter printer = Printer.stringPrinter(false);
-            System.out.println("=======================> ");
-
-            assertEquals(1, answers.size());
-            System.out.println(printer.toString(answers.get(0)));
-
-            assertFalse(answers.get(0).explanation().isEmpty());
-            Explanation explanation = answers.get(0).explanation();
-            System.out.println("pattern: " + explanation.getPattern());
-            System.out.println("answers: " + printer.toString(explanation.getAnswers()));
-
-            assertFalse(explanation.getAnswers().get(1).explanation().isEmpty());
-            explanation = explanation.getAnswers().get(1).explanation();
-            System.out.println("pattern: " + explanation.getPattern());
-            System.out.println("answers: " + printer.toString(explanation.getAnswers()));
-
-            // TODO: test the explanation object testExplanation(answer) below, and remove prints above
+            assertEquals(patterns.size() + ruleStatements, answer.explanation().deductions().size());
+            assertEquals(patterns.size(), answer.explanation().getAnswers().size());
+            answer.explanation().getAnswers().stream()
+                    .filter(a -> a.containsVar(var("infer").var()))
+                    .forEach(a -> assertEquals(ruleStatements, a.explanation().getAnswers().size()));
+            testExplanation(answer);
         }
     }
 
     private void testExplanation(ConceptMap answer) {
         answerHasConsistentExplanations(answer);
-        checkExplanationCompleteness(answer);
         checkAnswerConnectedness(answer);
-    }
-
-    //ensures that each branch ends up with an lookup explanation
-    private void checkExplanationCompleteness(ConceptMap answer) {
-        assertFalse("Non-lookup explanation misses children",
-                    answer.explanations().stream()
-                            .filter(e -> !e.isLookupExplanation())
-                            .anyMatch(e -> e.getAnswers().isEmpty())
-        );
     }
 
     private void checkAnswerConnectedness(ConceptMap answer) {
@@ -309,7 +288,7 @@ public class GraknClientIT {
 
     private void answerHasConsistentExplanations(ConceptMap answer) {
         Set<ConceptMap> answers = answer.explanation().deductions().stream()
-                .filter(a -> !a.explanation().isJoinExplanation())
+                .filter(a -> a.explanation().getPattern() != null)
                 .collect(Collectors.toSet());
 
         answers.forEach(a -> TestCase.assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
