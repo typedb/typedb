@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
@@ -34,7 +34,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.graql.internal.Schema.EdgeLabel.PLAYS;
+import static grakn.core.server.kb.Schema.EdgeLabel.PLAYS;
 
 @AutoValue
 abstract class InPlaysFragment extends Fragment {

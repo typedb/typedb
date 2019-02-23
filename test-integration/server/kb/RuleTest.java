@@ -26,7 +26,6 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.rule.GraknTestServer;

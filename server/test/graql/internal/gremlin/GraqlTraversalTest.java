@@ -25,7 +25,7 @@ import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;

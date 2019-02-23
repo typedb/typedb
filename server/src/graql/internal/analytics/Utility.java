@@ -23,7 +23,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.Transaction;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;

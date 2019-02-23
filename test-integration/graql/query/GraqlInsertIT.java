@@ -34,7 +34,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
@@ -65,7 +65,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.graql.internal.Schema.MetaSchema.ENTITY;
+import static grakn.core.server.kb.Schema.MetaSchema.ENTITY;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static graql.lang.Graql.type;

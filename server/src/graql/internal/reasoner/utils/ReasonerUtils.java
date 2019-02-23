@@ -29,7 +29,7 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;

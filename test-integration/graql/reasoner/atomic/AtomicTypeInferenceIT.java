@@ -28,7 +28,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;

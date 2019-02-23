@@ -19,7 +19,7 @@
 package grakn.core.server.kb.structure;
 
 import grakn.core.graql.concept.Entity;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.EntityImpl;

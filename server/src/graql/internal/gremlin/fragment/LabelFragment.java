@@ -34,7 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Set;
 
-import static grakn.core.graql.internal.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.server.kb.Schema.VertexProperty.LABEL_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 

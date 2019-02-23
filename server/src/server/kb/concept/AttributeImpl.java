@@ -21,8 +21,8 @@ package grakn.core.server.kb.concept;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Thing;
-import grakn.core.graql.internal.Schema;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 

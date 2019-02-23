@@ -27,7 +27,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.query.CompositeQuery;

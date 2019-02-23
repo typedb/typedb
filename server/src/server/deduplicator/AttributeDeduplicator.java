@@ -19,7 +19,7 @@
 package grakn.core.server.deduplicator;
 
 import com.google.common.collect.Lists;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.SessionStore;

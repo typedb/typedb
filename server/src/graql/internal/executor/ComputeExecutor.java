@@ -39,7 +39,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.graql.internal.analytics.ClusterMemberMapReduce;
 import grakn.core.graql.internal.analytics.ConnectedComponentVertexProgram;
 import grakn.core.graql.internal.analytics.ConnectedComponentsVertexProgram;

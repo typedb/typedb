@@ -35,7 +35,7 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.keyspace.Keyspace;

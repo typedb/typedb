@@ -19,16 +19,16 @@
 package grakn.core.graql.internal.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
-import static grakn.core.graql.internal.Schema.EdgeLabel.PLAYS;
-import static grakn.core.graql.internal.Schema.EdgeLabel.SUB;
-import static grakn.core.graql.internal.Schema.VertexProperty.THING_TYPE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeLabel.PLAYS;
+import static grakn.core.server.kb.Schema.EdgeLabel.SUB;
+import static grakn.core.server.kb.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 

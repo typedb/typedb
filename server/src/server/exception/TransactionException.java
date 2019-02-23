@@ -31,7 +31,7 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.Transaction;
 import grakn.core.server.keyspace.Keyspace;
 import org.apache.tinkerpop.gremlin.structure.Direction;

@@ -30,7 +30,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.exception.InvalidKBException;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;

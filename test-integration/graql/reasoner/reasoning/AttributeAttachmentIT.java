@@ -36,9 +36,9 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS_OWNER;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS_VALUE;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;

@@ -25,9 +25,9 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
-import grakn.core.graql.internal.Schema;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.AbstractElement;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
@@ -44,7 +44,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
+import static grakn.core.server.kb.Schema.BaseType.RELATIONSHIP_TYPE;
 
 /**
  * Constructs Concepts And Edges

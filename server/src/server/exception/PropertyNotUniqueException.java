@@ -23,7 +23,7 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 

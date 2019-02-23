@@ -31,8 +31,8 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.Casting;
@@ -51,7 +51,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.Schema.EdgeProperty.ROLE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
 import static java.util.stream.Collectors.toSet;
 
 /**

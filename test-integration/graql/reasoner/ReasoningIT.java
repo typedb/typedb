@@ -39,9 +39,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS_OWNER;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS_VALUE;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
