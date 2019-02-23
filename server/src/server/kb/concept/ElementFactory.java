@@ -87,7 +87,7 @@ public final class ElementFactory {
     }
 
     // ------------------------------------------ Building Attribute
-    <V> AttributeImpl<V> buildAttribute(VertexElement vertex, AttributeType<V> type, Object persitedValue) {
+    <V> AttributeImpl<V> buildAttribute(VertexElement vertex, AttributeType<V> type, V persitedValue) {
         return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persitedValue));
     }
 

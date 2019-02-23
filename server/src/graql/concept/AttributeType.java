@@ -278,12 +278,12 @@ public interface AttributeType<D> extends Type {
                 .put(DATE.getValueClass(), DATE)
                 .build();
 
-        private final Class<?> dataType;
+        private final Class<D> dataType;
         private final Function<D, Object> persistedValue;
         private final Function<Object, D> presentedValue;
 
 
-        private DataType(Class<?> dataType, Function<D, Object> persistedValue, Function<Object, D> presentedValue) {
+        private DataType(Class<D> dataType, Function<D, Object> persistedValue, Function<Object, D> presentedValue) {
             this.dataType = dataType;
             this.persistedValue = persistedValue;
             this.presentedValue = presentedValue;
@@ -300,7 +300,7 @@ public interface AttributeType<D> extends Type {
             }
         }
 
-        public Class<?> getValueClass() {
+        public Class<D> getValueClass() {
             return dataType;
         }
 
