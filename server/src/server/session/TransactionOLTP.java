@@ -657,18 +657,15 @@ public class TransactionOLTP implements Transaction {
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
         if (value == null) return Collections.emptySet();
 
-        //Make sure you trying to retrieve supported data type
-        if (!AttributeType.DataType.SUPPORTED_TYPES.containsKey(value.getClass())) {
+        AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value.getClass());
+        if (dataType == null) {
             throw TransactionException.unsupportedDataType(value);
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
-        AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value.getClass());
-
         //noinspection unchecked
         getConcepts(dataType.getVertexProperty(), dataType.getPersistedValue(value)).forEach(concept -> {
             if (concept != null && concept.isAttribute()) {
-                //noinspection unchecked
                 attributes.add(concept.asAttribute());
             }
         });
