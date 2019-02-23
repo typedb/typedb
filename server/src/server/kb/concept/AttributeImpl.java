@@ -118,8 +118,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      * @param value The value to store on the resource
      */
     private void setValue(Object value) {
-        Schema.VertexProperty property = dataType().getVertexProperty();
-        //noinspection unchecked
+        Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType());
         vertex().propertyImmutable(property, value, vertex().property(property));
     }
 
@@ -128,7 +127,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      */
     @Override
     public D value() {
-        return dataType().getValue(vertex().property(dataType().getVertexProperty()));
+        return dataType().getValue(vertex().property(Schema.VertexProperty.ofDataType(dataType())));
     }
 
     @Override

@@ -160,7 +160,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
             // Compare to a given value
             AttributeType.DataType<?> dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass());
-            Schema.VertexProperty property = dataType.getVertexProperty();
+            Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
             traversal.has(property.name(), predicate());
             return traversal;
         }
@@ -461,7 +461,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 private static final Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> PREDICATES_VAR = varPredicates();
                 private static final java.lang.String[] VALUE_PROPERTIES = AttributeType.DataType.SUPPORTED_TYPES.values().stream()
-                        .map(AttributeType.DataType::getVertexProperty).distinct()
+                        .map(dataType -> Schema.VertexProperty.ofDataType(dataType)).distinct()
                         .map(Enum::name).toArray(java.lang.String[]::new);
 
                 Variable(Graql.Token.Comparator comparator, Statement value) {

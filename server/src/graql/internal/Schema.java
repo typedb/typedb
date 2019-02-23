@@ -18,6 +18,7 @@
 
 package grakn.core.graql.internal;
 
+import grakn.core.common.util.Collections;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -36,7 +37,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
+import java.util.Map;
+
 import static grakn.core.common.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;
+import static grakn.core.common.util.Collections.map;
+import static grakn.core.common.util.Collections.tuple;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created
@@ -175,6 +180,16 @@ public final class Schema {
 
         private final Class dataType;
 
+        private static Map<AttributeType.DataType, VertexProperty> dataTypeVertexProperty = map(
+                tuple(AttributeType.DataType.BOOLEAN, VertexProperty.VALUE_BOOLEAN),
+                tuple(AttributeType.DataType.DATE, VertexProperty.VALUE_DATE),
+                tuple(AttributeType.DataType.DOUBLE, VertexProperty.VALUE_DOUBLE),
+                tuple(AttributeType.DataType.FLOAT, VertexProperty.VALUE_FLOAT),
+                tuple(AttributeType.DataType.INTEGER, VertexProperty.VALUE_INTEGER),
+                tuple(AttributeType.DataType.LONG, VertexProperty.VALUE_LONG),
+                tuple(AttributeType.DataType.STRING, VertexProperty.VALUE_STRING)
+        );
+
         VertexProperty(Class dataType) {
             this.dataType = dataType;
         }
@@ -182,6 +197,11 @@ public final class Schema {
         @CheckReturnValue
         public Class getPropertyClass() {
             return dataType;
+        }
+
+        // TODO: This method feels out of place
+        public static VertexProperty ofDataType(AttributeType.DataType dataType) {
+            return dataTypeVertexProperty.get(dataType);
         }
     }
 

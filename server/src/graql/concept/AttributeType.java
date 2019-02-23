@@ -19,7 +19,6 @@
 package grakn.core.graql.concept;
 
 import com.google.common.collect.ImmutableMap;
-import grakn.core.graql.internal.Schema;
 import grakn.core.server.exception.TransactionException;
 
 import javax.annotation.CheckReturnValue;
@@ -230,43 +229,36 @@ public interface AttributeType<D> extends Type {
     class DataType<D> {
         public static final DataType<String> STRING = new DataType<>(
                 String.class,
-                Schema.VertexProperty.VALUE_STRING,
                 (v) -> v,
                 o -> defaultConverter(o, String.class, Object::toString));
 
         public static final DataType<Boolean> BOOLEAN = new DataType<>(
                 Boolean.class,
-                Schema.VertexProperty.VALUE_BOOLEAN,
                 (v) -> v,
                 o -> defaultConverter(o, Boolean.class, (v) -> Boolean.parseBoolean(v.toString())));
 
         public static final DataType<Integer> INTEGER = new DataType<>(
                 Integer.class,
-                Schema.VertexProperty.VALUE_INTEGER,
                 (v) -> v,
                 o -> defaultConverter(o, Integer.class, (v) -> Integer.parseInt(v.toString())));
 
         public static final DataType<Long> LONG = new DataType<>(
                 Long.class,
-                Schema.VertexProperty.VALUE_LONG,
                 (v) -> v,
                 o -> defaultConverter(o, Long.class, (v) -> Long.parseLong(v.toString())));
 
         public static final DataType<Double> DOUBLE = new DataType<>(
                 Double.class,
-                Schema.VertexProperty.VALUE_DOUBLE,
                 (v) -> v,
                 o -> defaultConverter(o, Double.class, (v) -> Double.parseDouble(v.toString())));
 
         public static final DataType<Float> FLOAT = new DataType<>(
                 Float.class,
-                Schema.VertexProperty.VALUE_FLOAT,
                 (v) -> v,
                 o -> defaultConverter(o, Float.class, (v) -> Float.parseFloat(v.toString())));
 
         public static final DataType<LocalDateTime> DATE = new DataType<>(
                 LocalDateTime.class,
-                Schema.VertexProperty.VALUE_DATE,
                 (d) -> d.atZone(ZoneId.of("Z")).toInstant().toEpochMilli(),
                 (o) -> {
                     if (o == null) return null;
@@ -287,14 +279,12 @@ public interface AttributeType<D> extends Type {
                 .build();
 
         private final Class<?> dataType;
-        private final Schema.VertexProperty vertexProperty;
         private final Function<D, Object> persistedValue;
         private final Function<Object, D> presentedValue;
 
 
-        private DataType(Class<?> dataType, Schema.VertexProperty vertexProperty, Function<D, Object> persistedValue, Function<Object, D> presentedValue) {
+        private DataType(Class<?> dataType, Function<D, Object> persistedValue, Function<Object, D> presentedValue) {
             this.dataType = dataType;
-            this.vertexProperty = vertexProperty;
             this.persistedValue = persistedValue;
             this.presentedValue = presentedValue;
         }
@@ -317,11 +307,6 @@ public interface AttributeType<D> extends Type {
         @CheckReturnValue
         public String getName() {
             return dataType.getName();
-        }
-
-        @CheckReturnValue
-        public Schema.VertexProperty getVertexProperty() {
-            return vertexProperty;
         }
 
         @Override

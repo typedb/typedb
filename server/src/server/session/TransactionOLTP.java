@@ -664,7 +664,7 @@ public class TransactionOLTP implements Transaction {
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
         //noinspection unchecked
-        getConcepts(dataType.getVertexProperty(), dataType.getPersistedValue(value)).forEach(concept -> {
+        getConcepts(Schema.VertexProperty.ofDataType(dataType), dataType.getPersistedValue(value)).forEach(concept -> {
             if (concept != null && concept.isAttribute()) {
                 attributes.add(concept.asAttribute());
             }
