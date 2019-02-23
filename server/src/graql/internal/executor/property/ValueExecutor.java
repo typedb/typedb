@@ -149,7 +149,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         }
 
         protected U persistedValue() {
-            AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass().getName());
+            AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass());
             return (U) dataType.getPersistedValue(value());
             // TODO: this should be a safe cast once we fix the return type of
             //       AttributeType.DataType.getPersistedValue with generics
@@ -159,7 +159,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
         public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
             // Compare to a given value
-            AttributeType.DataType<?> dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass().getTypeName());
+            AttributeType.DataType<?> dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass());
             Schema.VertexProperty property = dataType.getVertexProperty();
             traversal.has(property.name(), predicate());
             return traversal;
@@ -167,7 +167,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
         public boolean test(Object otherValue) {
             if (this.value().getClass().isInstance(otherValue)) {
-                AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass().getName());
+                AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass());
                 return predicate().test((U) dataType.getPersistedValue(otherValue));
             } else {
                 return false;

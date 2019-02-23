@@ -175,10 +175,18 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      * @return The data type which instances of this resource must conform to.
      */
     //This unsafe cast is suppressed because at this stage we do not know what the type is when reading from the rootGraph.
-    @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
+    @SuppressWarnings({"unchecked"})
+    @Nullable
     @Override
     public DataType<D> dataType() {
-        return (DataType<D>) DataType.SUPPORTED_TYPES.get(vertex().property(Schema.VertexProperty.DATA_TYPE));
+        String className = vertex().property(Schema.VertexProperty.DATA_TYPE);
+        if (className == null) return null;
+
+        try {
+            return (DataType<D>) DataType.SUPPORTED_TYPES.get(Class.forName(className));
+        } catch (ClassNotFoundException e) {
+            throw TransactionException.unsupportedDataType(className);
+        }
     }
 
     /**

@@ -157,8 +157,16 @@ public class TransactionException extends GraknException {
      * Thrown when using an unsupported datatype with resources
      */
     public static TransactionException unsupportedDataType(Object value) {
-        String supported = AttributeType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
-        return create(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
+        return unsupportedDataType(value.getClass());
+    }
+
+    public static TransactionException unsupportedDataType(Class<?> clazz) {
+        return unsupportedDataType(clazz.getName());
+    }
+
+    public static TransactionException unsupportedDataType(String name) {
+        String supported = AttributeType.DataType.SUPPORTED_TYPES.keySet().stream().map(Class::getName).collect(Collectors.joining(","));
+        return create(ErrorMessage.INVALID_DATATYPE.getMessage(name, supported));
     }
 
     /**

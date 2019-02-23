@@ -180,7 +180,7 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public Class getDataType() {
+        public Class getPropertyClass() {
             return dataType;
         }
     }
@@ -203,7 +203,7 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public Class getDataType() {
+        public Class getPropertyClass() {
             return dataType;
         }
     }

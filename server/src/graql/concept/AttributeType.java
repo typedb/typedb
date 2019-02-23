@@ -229,43 +229,43 @@ public interface AttributeType<D> extends Type {
      */
     class DataType<D> {
         public static final DataType<String> STRING = new DataType<>(
-                String.class.getName(),
+                String.class,
                 Schema.VertexProperty.VALUE_STRING,
                 (v) -> v,
                 o -> defaultConverter(o, String.class, Object::toString));
 
         public static final DataType<Boolean> BOOLEAN = new DataType<>(
-                Boolean.class.getName(),
+                Boolean.class,
                 Schema.VertexProperty.VALUE_BOOLEAN,
                 (v) -> v,
                 o -> defaultConverter(o, Boolean.class, (v) -> Boolean.parseBoolean(v.toString())));
 
         public static final DataType<Integer> INTEGER = new DataType<>(
-                Integer.class.getName(),
+                Integer.class,
                 Schema.VertexProperty.VALUE_INTEGER,
                 (v) -> v,
                 o -> defaultConverter(o, Integer.class, (v) -> Integer.parseInt(v.toString())));
 
         public static final DataType<Long> LONG = new DataType<>(
-                Long.class.getName(),
+                Long.class,
                 Schema.VertexProperty.VALUE_LONG,
                 (v) -> v,
                 o -> defaultConverter(o, Long.class, (v) -> Long.parseLong(v.toString())));
 
         public static final DataType<Double> DOUBLE = new DataType<>(
-                Double.class.getName(),
+                Double.class,
                 Schema.VertexProperty.VALUE_DOUBLE,
                 (v) -> v,
                 o -> defaultConverter(o, Double.class, (v) -> Double.parseDouble(v.toString())));
 
         public static final DataType<Float> FLOAT = new DataType<>(
-                Float.class.getName(),
+                Float.class,
                 Schema.VertexProperty.VALUE_FLOAT,
                 (v) -> v,
                 o -> defaultConverter(o, Float.class, (v) -> Float.parseFloat(v.toString())));
 
         public static final DataType<LocalDateTime> DATE = new DataType<>(
-                LocalDateTime.class.getName(),
+                LocalDateTime.class,
                 Schema.VertexProperty.VALUE_DATE,
                 (d) -> d.atZone(ZoneId.of("Z")).toInstant().toEpochMilli(),
                 (o) -> {
@@ -276,23 +276,23 @@ public interface AttributeType<D> extends Type {
                     return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.of("Z"));
                 });
 
-        public static final ImmutableMap<String, DataType<?>> SUPPORTED_TYPES = ImmutableMap.<String, DataType<?>>builder()
-                .put(STRING.getName(), STRING)
-                .put(BOOLEAN.getName(), BOOLEAN)
-                .put(LONG.getName(), LONG)
-                .put(DOUBLE.getName(), DOUBLE)
-                .put(INTEGER.getName(), INTEGER)
-                .put(FLOAT.getName(), FLOAT)
-                .put(DATE.getName(), DATE)
+        public static final ImmutableMap<Class, DataType<?>> SUPPORTED_TYPES = ImmutableMap.<Class, DataType<?>>builder()
+                .put(STRING.getValueClass(), STRING)
+                .put(BOOLEAN.getValueClass(), BOOLEAN)
+                .put(LONG.getValueClass(), LONG)
+                .put(DOUBLE.getValueClass(), DOUBLE)
+                .put(INTEGER.getValueClass(), INTEGER)
+                .put(FLOAT.getValueClass(), FLOAT)
+                .put(DATE.getValueClass(), DATE)
                 .build();
 
-        private final String dataType;
+        private final Class<?> dataType;
         private final Schema.VertexProperty vertexProperty;
         private final Function<D, Object> persistedValue;
         private final Function<Object, D> presentedValue;
 
 
-        private DataType(String dataType, Schema.VertexProperty vertexProperty, Function<D, Object> persistedValue, Function<Object, D> presentedValue) {
+        private DataType(Class<?> dataType, Schema.VertexProperty vertexProperty, Function<D, Object> persistedValue, Function<Object, D> presentedValue) {
             this.dataType = dataType;
             this.vertexProperty = vertexProperty;
             this.persistedValue = persistedValue;
@@ -310,9 +310,13 @@ public interface AttributeType<D> extends Type {
             }
         }
 
+        public Class<?> getValueClass() {
+            return dataType;
+        }
+
         @CheckReturnValue
         public String getName() {
-            return dataType;
+            return dataType.getName();
         }
 
         @CheckReturnValue

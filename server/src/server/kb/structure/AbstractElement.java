@@ -155,12 +155,11 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
     public <X> void propertyImmutable(P property, X newValue, @Nullable X foundValue, Function<X, Object> converter) {
         Objects.requireNonNull(property);
 
-        if (foundValue != null) {
-            if (!foundValue.equals(newValue)) {
-                throw TransactionException.immutableProperty(foundValue, newValue, property);
-            }
-        } else {
+        if (foundValue == null) {
             property(property, converter.apply(newValue));
+
+        } else if (!foundValue.equals(newValue)) {
+            throw TransactionException.immutableProperty(foundValue, newValue, property);
         }
     }
 

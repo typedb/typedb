@@ -210,10 +210,10 @@ final public class JanusGraphFactory {
 
     private static void makePropertyKeys(JanusGraphManagement management) {
         stream(Schema.VertexProperty.values()).forEach(property ->
-                                                               makePropertyKey(management, property.name(), property.getDataType()));
+                                                               makePropertyKey(management, property.name(), property.getPropertyClass()));
 
         stream(Schema.EdgeProperty.values()).forEach(property ->
-                                                             makePropertyKey(management, property.name(), property.getDataType()));
+                                                             makePropertyKey(management, property.name(), property.getPropertyClass()));
     }
 
     private static void makePropertyKey(JanusGraphManagement management, String propertyKey, Class type) {
