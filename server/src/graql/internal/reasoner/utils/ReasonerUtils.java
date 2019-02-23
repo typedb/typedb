@@ -29,7 +29,6 @@ import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
-import grakn.core.server.kb.Schema;
 import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -40,11 +39,14 @@ import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
+import grakn.core.server.kb.Schema;
 import graql.lang.property.IdProperty;
 import graql.lang.property.TypeProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -54,7 +56,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toSet;
 

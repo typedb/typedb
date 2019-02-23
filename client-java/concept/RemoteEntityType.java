@@ -24,7 +24,6 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Type;
 import grakn.core.protocol.ConceptProto;
 
 /**

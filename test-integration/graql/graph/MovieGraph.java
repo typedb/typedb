@@ -25,9 +25,9 @@ import grakn.core.graql.concept.Relation;
 import grakn.core.graql.concept.RelationType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 

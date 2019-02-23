@@ -19,14 +19,15 @@
 package grakn.core.graql.answer;
 
 import graql.lang.pattern.Pattern;
+
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 
 /**
  * Reasoner explanation for inferred answers

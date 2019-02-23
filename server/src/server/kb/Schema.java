@@ -35,7 +35,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-
 import java.util.Map;
 
 import static grakn.core.common.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;

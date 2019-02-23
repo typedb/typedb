@@ -26,7 +26,6 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import graql.lang.statement.Variable;
 
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.Iterator;

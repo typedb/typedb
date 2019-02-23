@@ -31,12 +31,12 @@ import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import graql.lang.statement.Variable;
 
+import javax.annotation.CheckReturnValue;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.CheckReturnValue;
 
 /**
  * Quantifies semantic difference between two queries provided they are in a subsumption relation, i. e. there exists

@@ -21,10 +21,12 @@ package grakn.core.graql.answer;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Concept;
-import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.exception.GraqlException;
 import graql.lang.statement.Variable;
+
+import javax.annotation.CheckReturnValue;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,7 +37,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.CheckReturnValue;
 
 
 /**
