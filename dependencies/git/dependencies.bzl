@@ -21,6 +21,6 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 def graknlabs_graql():
     git_repository(
         name = "graknlabs_graql",
-        remote = "https://github.com/haikalpribadi/graql",
-        commit = "3a282de61836390498a317364c0087e317fea2fe"
+        remote = "https://github.com/graknlabs/graql",
+        commit = "681f36b22a3920b66ace5da3a7d378362fe27ce4"
     )
