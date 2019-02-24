@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Concept;
+import grakn.core.concept.Concept;
 import graql.lang.statement.Variable;
 
 import java.util.AbstractMap;

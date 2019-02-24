@@ -20,10 +20,10 @@
 package grakn.core.client.concept;
 
 import grakn.core.client.GraknClient;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
 
 /**
  * Client implementation of Entity

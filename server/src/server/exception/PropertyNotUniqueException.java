@@ -18,11 +18,11 @@
 
 package grakn.core.server.exception;
 
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.concept.Concept;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationType;
+import grakn.core.concept.SchemaConcept;
 import grakn.core.server.kb.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

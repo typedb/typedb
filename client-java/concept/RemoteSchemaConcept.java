@@ -22,12 +22,12 @@ package grakn.core.client.concept;
 import grakn.core.client.GraknClient;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
 import grakn.core.protocol.ConceptProto;
 
 import javax.annotation.Nullable;

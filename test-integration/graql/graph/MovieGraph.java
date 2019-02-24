@@ -18,13 +18,13 @@
 
 package grakn.core.graql.graph;
 
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Relation;
+import grakn.core.concept.RelationType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Thing;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;

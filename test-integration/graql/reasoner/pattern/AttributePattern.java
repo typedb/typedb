@@ -19,8 +19,8 @@
 package grakn.core.graql.reasoner.pattern;
 
 import com.google.common.collect.Lists;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 
 import java.util.List;
 

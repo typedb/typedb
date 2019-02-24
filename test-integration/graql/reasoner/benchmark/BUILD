@@ -12,12 +12,15 @@ java_test(
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkBigIT",
     deps = [
         "//client-java",
+        "//concept:concept",
+        "//server:server",
+        "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
+
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//server",
-        "//test-integration/rule:grakn-test-server",
-        "@graknlabs_graql//java:graql",
     ],
 )
 
@@ -32,16 +35,19 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkSmallIT",
     deps = [
-        "//client-java",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//server",
+        "//client-java:client-java",
+        "//concept:concept",
+        "//server:server",
         "//test-integration/graql/reasoner/graph:diagonal-graph",
         "//test-integration/graql/reasoner/graph:linear-transitivity-matrix-graph",
         "//test-integration/graql/reasoner/graph:path-tree-graph",
         "//test-integration/graql/reasoner/graph:transitivity-chain-graph",
         "//test-integration/graql/reasoner/graph:transitivity-matrix-graph",
         "//test-integration/rule:grakn-test-server",
+
         "@graknlabs_graql//java:graql",
+
+        "//dependencies/maven/artifacts/com/google/guava",
     ],
 )
 

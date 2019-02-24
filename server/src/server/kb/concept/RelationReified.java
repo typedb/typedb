@@ -18,10 +18,10 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.Relation;
+import grakn.core.concept.RelationType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Thing;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Casting;

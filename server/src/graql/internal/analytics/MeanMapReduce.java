@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.analytics;
 
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.LabelId;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.LabelId;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 

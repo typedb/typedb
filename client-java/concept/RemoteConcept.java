@@ -20,8 +20,8 @@
 package grakn.core.client.concept;
 
 import grakn.core.client.GraknClient;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.server.exception.TransactionException;
 

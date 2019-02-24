@@ -18,7 +18,7 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.AttributeType;
+import grakn.core.concept.AttributeType;
 
 import java.time.Instant;
 import java.time.LocalDateTime;

@@ -19,7 +19,7 @@
 package grakn.core.server.kb.concept;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.concept.SchemaConcept;
 import grakn.core.server.kb.Schema;
 
 import java.util.Collections;

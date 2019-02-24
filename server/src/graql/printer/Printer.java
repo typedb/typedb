@@ -24,8 +24,8 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;

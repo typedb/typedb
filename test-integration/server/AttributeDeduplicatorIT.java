@@ -19,7 +19,7 @@
 package grakn.core.server;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Label;
+import grakn.core.concept.Label;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.deduplicator.AttributeDeduplicator;
 import grakn.core.server.deduplicator.KeyspaceIndexPair;

@@ -27,6 +27,12 @@ java_library(
     deps = [
         # Internal dependencies
         "//common:common",
+
+        # External dependenicies from @graknlabs
+        "@graknlabs_graql//java:graql",
+
+        # External dependencies from Maven
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
     ],
     tags = ["maven_coordinates=grakn.core:concept:{pom_version}"],
 )

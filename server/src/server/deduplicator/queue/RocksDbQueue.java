@@ -18,7 +18,7 @@
 
 package grakn.core.server.deduplicator.queue;
 
-import grakn.core.graql.concept.ConceptId;
+import grakn.core.concept.ConceptId;
 import grakn.core.server.keyspace.Keyspace;
 import mjson.Json;
 import org.rocksdb.Options;

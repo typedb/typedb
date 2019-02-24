@@ -27,6 +27,7 @@ java_library(
     deps = [
         # Internal dependencies
         "//common:common",
+        "//concept:concept",
         "//protocol:protocol-java",
         "//server:server",
 

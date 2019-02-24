@@ -20,7 +20,7 @@ package grakn.core.graql.answer;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.graql.concept.Concept;
+import grakn.core.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.exception.GraqlException;

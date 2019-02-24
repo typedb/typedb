@@ -19,10 +19,10 @@
 package grakn.core.graql.query;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Label;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;

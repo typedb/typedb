@@ -24,10 +24,12 @@ java_test(
     srcs = ["GraqlGetIT.java"],
     deps = [
         "//common:common",
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
     ],
     size = "medium"
 )
@@ -38,11 +40,13 @@ java_test(
     srcs = ["GraqlDefineIT.java"],
     deps = [
         "//common:common",
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
 
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
@@ -55,11 +59,13 @@ java_test(
     srcs = ["GraqlDeleteIT.java"],
     deps = [
         "//common:common",
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
     ],
     size = "medium"
 )
@@ -70,11 +76,13 @@ java_test(
     srcs = ["GraqlInsertIT.java"],
     deps = [
         "//common:common",
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
 
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -88,11 +96,13 @@ java_test(
     test_class = "grakn.core.graql.query.GraqlUndefineIT",
     srcs = ["GraqlUndefineIT.java"],
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
 
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -136,10 +146,12 @@ java_test(
     srcs = ["QueryErrorIT.java"],
     deps = [
         "//common:common",
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
 
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
 
@@ -152,10 +164,12 @@ java_test(
     test_class = "grakn.core.graql.query.QueryPlannerIT",
     srcs = ["QueryPlannerIT.java"],
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
 
         "//dependencies/maven/artifacts/com/google/guava:guava",
 

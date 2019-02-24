@@ -19,7 +19,7 @@
 package grakn.core.server.deduplicator.queue;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.graql.concept.ConceptId;
+import grakn.core.concept.ConceptId;
 import grakn.core.server.keyspace.Keyspace;
 
 /**

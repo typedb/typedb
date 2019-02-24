@@ -21,10 +21,10 @@ package grakn.core.client.concept;
 
 import grakn.core.client.GraknClient;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Rule;
+import grakn.core.concept.Type;
 import grakn.core.protocol.ConceptProto;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;

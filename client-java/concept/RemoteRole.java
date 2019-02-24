@@ -20,11 +20,11 @@
 package grakn.core.client.concept;
 
 import grakn.core.client.GraknClient;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.RelationType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Type;
 import grakn.core.protocol.ConceptProto;
 
 import java.util.stream.Stream;
