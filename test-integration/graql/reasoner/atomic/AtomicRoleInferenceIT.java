@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.atomic;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
-import grakn.core.concept.Role;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;

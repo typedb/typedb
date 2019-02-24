@@ -20,8 +20,8 @@ package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.ConceptId;
-import grakn.core.concept.RelationType;
-import grakn.core.concept.Role;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.Atomic;

@@ -18,8 +18,8 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.EntityType;
 import grakn.core.server.kb.structure.VertexElement;
 
 /**

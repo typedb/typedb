@@ -18,7 +18,7 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.concept.Entity;
+import grakn.core.concept.thing.Entity;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;

@@ -23,7 +23,7 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
-import grakn.core.concept.Type;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.plan.ResolutionPlan;

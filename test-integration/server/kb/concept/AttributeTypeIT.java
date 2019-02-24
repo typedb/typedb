@@ -18,8 +18,8 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;

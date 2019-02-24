@@ -24,7 +24,7 @@ import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
-import grakn.core.concept.Role;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;

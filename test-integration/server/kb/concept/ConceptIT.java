@@ -20,10 +20,10 @@ package grakn.core.server.kb.concept;
 
 import grakn.core.concept.exception.GraknConceptException;
 import grakn.core.concept.Concept;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Thing;
-import grakn.core.concept.Type;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.Type;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;

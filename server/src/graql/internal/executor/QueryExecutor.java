@@ -31,7 +31,7 @@ import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Numeric;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;

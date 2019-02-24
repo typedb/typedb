@@ -20,7 +20,7 @@
 package grakn.core.client.rpc;
 
 import grakn.core.common.util.CommonUtil;
-import grakn.core.concept.AttributeType;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.protocol.ConceptProto;

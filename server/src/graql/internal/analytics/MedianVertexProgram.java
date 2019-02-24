@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.AttributeType;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.LabelId;
 import grakn.core.server.kb.Schema;
 import org.apache.commons.configuration.Configuration;

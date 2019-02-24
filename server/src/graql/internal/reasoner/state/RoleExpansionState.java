@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.state;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.concept.Role;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;

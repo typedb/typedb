@@ -26,17 +26,17 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Numeric;
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
-import grakn.core.concept.EntityType;
+import grakn.core.concept.type.EntityType;
 import grakn.core.concept.Label;
 import grakn.core.concept.LabelId;
-import grakn.core.concept.RelationType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Rule;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.internal.executor.QueryExecutor;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -289,10 +289,10 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Gets the config option which determines the number of instances a {@link grakn.core.concept.Type} must have before the {@link grakn.core.concept.Type}
+     * Gets the config option which determines the number of instances a {@link grakn.core.concept.type.Type} must have before the {@link grakn.core.concept.type.Type}
      * if automatically sharded.
      *
-     * @return the number of instances a {@link grakn.core.concept.Type} must have before it is shareded
+     * @return the number of instances a {@link grakn.core.concept.type.Type} must have before it is shareded
      */
     public long shardingThreshold() {
         return session().config().getProperty(ConfigKey.SHARDING_THRESHOLD);
@@ -495,7 +495,7 @@ public class TransactionOLTP implements Transaction {
      *
      * @param label             The {@link Label} of the {@link SchemaConcept} to find or create
      * @param baseType          The {@link Schema.BaseType} of the {@link SchemaConcept} to find or create
-     * @param isImplicit        a flag indicating if the label we are creating is for an implicit {@link grakn.core.concept.Type} or not
+     * @param isImplicit        a flag indicating if the label we are creating is for an implicit {@link grakn.core.concept.type.Type} or not
      * @param newConceptFactory the factory to be using when creating a new {@link SchemaConcept}
      * @param <T>               The type of {@link SchemaConcept} to return
      * @return a new or existing {@link SchemaConcept}
@@ -685,7 +685,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public <T extends grakn.core.concept.Type> T getType(Label label) {
+    public <T extends grakn.core.concept.type.Type> T getType(Label label) {
         return getSchemaConcept(label, Schema.BaseType.TYPE);
     }
 
@@ -825,13 +825,13 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Returns the current number of shards the provided {@link grakn.core.concept.Type} has. This is used in creating more
+     * Returns the current number of shards the provided {@link grakn.core.concept.type.Type} has. This is used in creating more
      * efficient query plans.
      *
-     * @param concept The {@link grakn.core.concept.Type} which may contain some shards.
-     * @return the number of Shards the {@link grakn.core.concept.Type} currently has.
+     * @param concept The {@link grakn.core.concept.type.Type} which may contain some shards.
+     * @return the number of Shards the {@link grakn.core.concept.type.Type} currently has.
      */
-    public long getShardCount(grakn.core.concept.Type concept) {
+    public long getShardCount(grakn.core.concept.type.Type concept) {
         return TypeImpl.from(concept).shardCount();
     }
 

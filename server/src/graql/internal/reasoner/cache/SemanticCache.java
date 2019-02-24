@@ -21,7 +21,7 @@ package grakn.core.graql.internal.reasoner.cache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;

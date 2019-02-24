@@ -16,7 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.concept;
+package grakn.core.concept.type;
+
+import grakn.core.concept.Concept;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

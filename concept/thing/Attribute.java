@@ -16,7 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.concept;
+package grakn.core.concept.thing;
+
+import grakn.core.concept.type.AttributeType;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

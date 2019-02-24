@@ -20,12 +20,12 @@ package grakn.core.server.kb;
 
 import com.google.common.collect.Lists;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.AttributeType;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.Concept;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Rule;
-import grakn.core.concept.Type;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.rule.GraknTestServer;

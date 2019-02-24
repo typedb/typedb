@@ -18,9 +18,9 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.concept.Rule;
-import grakn.core.concept.Thing;
-import grakn.core.concept.Type;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.Type;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 import graql.lang.Graql;

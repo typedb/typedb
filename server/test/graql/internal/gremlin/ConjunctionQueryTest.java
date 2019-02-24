@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.gremlin;
 
 import grakn.core.concept.Label;
-import grakn.core.concept.Type;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import grakn.core.server.Transaction;

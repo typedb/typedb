@@ -20,9 +20,9 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.concept.EntityType;
+import grakn.core.concept.type.EntityType;
 import grakn.core.concept.Label;
-import grakn.core.concept.RelationType;
+import grakn.core.concept.type.RelationType;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;

@@ -27,7 +27,7 @@ import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Explanation;
 import grakn.core.graql.answer.Numeric;
-import grakn.core.concept.AttributeType;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.protocol.AnswerProto;

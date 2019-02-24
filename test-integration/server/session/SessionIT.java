@@ -20,7 +20,7 @@ package grakn.core.server.session;
 
 import grakn.core.common.config.Config;
 import grakn.core.concept.Label;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.SessionException;

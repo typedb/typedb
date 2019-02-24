@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.concept.Attribute;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.Atom;
