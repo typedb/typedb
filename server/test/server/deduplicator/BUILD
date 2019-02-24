@@ -23,7 +23,9 @@ java_test(
     test_class = "grakn.core.server.deduplicator.RocksDbQueueTest",
     srcs = ["RocksDbQueueTest.java"],
     deps = [
-        "//server",
+        "//concept:concept",
+        "//server:server",
+
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],

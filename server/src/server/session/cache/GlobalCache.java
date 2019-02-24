@@ -23,9 +23,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 
 import java.util.Map;

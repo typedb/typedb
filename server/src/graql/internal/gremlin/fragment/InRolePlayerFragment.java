@@ -20,7 +20,7 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
@@ -33,11 +33,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static grakn.core.graql.internal.Schema.EdgeLabel.ROLE_PLAYER;
-import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
-import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
-import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
-import static grakn.core.graql.internal.Schema.EdgeProperty.ROLE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeLabel.ROLE_PLAYER;
+import static grakn.core.server.kb.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
  * A fragment representing traversing a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from the role-player to

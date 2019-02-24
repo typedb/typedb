@@ -19,10 +19,10 @@
 package grakn.core.server.kb.concept;
 
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Type;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.Casting;

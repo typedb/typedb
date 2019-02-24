@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.reasoner.utils.conversion;
 
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Type;
 
 import java.util.stream.Stream;
 

@@ -16,9 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.concept;
+package grakn.core.concept;
 
-import grakn.core.server.exception.TransactionException;
+import grakn.core.concept.exception.GraknConceptException;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
 
 import javax.annotation.CheckReturnValue;
 
@@ -51,7 +62,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default SchemaConcept asSchemaConcept() {
-        throw TransactionException.invalidCasting(this, SchemaConcept.class);
+        throw GraknConceptException.invalidCasting(this, SchemaConcept.class);
     }
 
     /**
@@ -61,7 +72,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default Type asType() {
-        throw TransactionException.invalidCasting(this, Type.class);
+        throw GraknConceptException.invalidCasting(this, Type.class);
     }
 
     /**
@@ -71,7 +82,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default Thing asThing() {
-        throw TransactionException.invalidCasting(this, Thing.class);
+        throw GraknConceptException.invalidCasting(this, Thing.class);
     }
 
     /**
@@ -81,7 +92,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default EntityType asEntityType() {
-        throw TransactionException.invalidCasting(this, EntityType.class);
+        throw GraknConceptException.invalidCasting(this, EntityType.class);
     }
 
     /**
@@ -91,7 +102,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default Role asRole() {
-        throw TransactionException.invalidCasting(this, Role.class);
+        throw GraknConceptException.invalidCasting(this, Role.class);
     }
 
     /**
@@ -101,7 +112,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default RelationType asRelationType() {
-        throw TransactionException.invalidCasting(this, RelationType.class);
+        throw GraknConceptException.invalidCasting(this, RelationType.class);
     }
 
     /**
@@ -111,7 +122,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default <D> AttributeType<D> asAttributeType() {
-        throw TransactionException.invalidCasting(this, AttributeType.class);
+        throw GraknConceptException.invalidCasting(this, AttributeType.class);
     }
 
     /**
@@ -121,7 +132,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default Rule asRule() {
-        throw TransactionException.invalidCasting(this, Rule.class);
+        throw GraknConceptException.invalidCasting(this, Rule.class);
     }
 
     /**
@@ -131,7 +142,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default Entity asEntity() {
-        throw TransactionException.invalidCasting(this, Entity.class);
+        throw GraknConceptException.invalidCasting(this, Entity.class);
     }
 
     /**
@@ -141,7 +152,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default Relation asRelation() {
-        throw TransactionException.invalidCasting(this, Relation.class);
+        throw GraknConceptException.invalidCasting(this, Relation.class);
     }
 
     /**
@@ -151,7 +162,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default <D> Attribute<D> asAttribute() {
-        throw TransactionException.invalidCasting(this, Attribute.class);
+        throw GraknConceptException.invalidCasting(this, Attribute.class);
     }
 
     /**

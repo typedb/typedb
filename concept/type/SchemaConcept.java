@@ -16,9 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.concept;
+package grakn.core.concept.type;
 
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -71,7 +73,6 @@ public interface SchemaConcept extends Concept {
      * @return All super-concepts of this SchemaConcept  including itself and excluding the meta
      * Schema.MetaSchema#THING.
      * If you want to include Schema.MetaSchema#THING, use Transaction.sups().
-     * @see Schema.MetaSchema#THING
      */
     Stream<? extends SchemaConcept> sups();
 

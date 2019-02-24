@@ -20,10 +20,9 @@ package grakn.core.graql.internal.reasoner.rule;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.ConceptUtils;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
@@ -41,12 +40,14 @@ import grakn.core.graql.internal.reasoner.state.RuleState;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;

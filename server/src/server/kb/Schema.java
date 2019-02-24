@@ -16,27 +16,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal;
+package grakn.core.server.kb;
 
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.Map;
 
 import static grakn.core.common.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;
+import static grakn.core.common.util.Collections.map;
+import static grakn.core.common.util.Collections.tuple;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created
@@ -175,13 +178,28 @@ public final class Schema {
 
         private final Class dataType;
 
+        private static Map<AttributeType.DataType, VertexProperty> dataTypeVertexProperty = map(
+                tuple(AttributeType.DataType.BOOLEAN, VertexProperty.VALUE_BOOLEAN),
+                tuple(AttributeType.DataType.DATE, VertexProperty.VALUE_DATE),
+                tuple(AttributeType.DataType.DOUBLE, VertexProperty.VALUE_DOUBLE),
+                tuple(AttributeType.DataType.FLOAT, VertexProperty.VALUE_FLOAT),
+                tuple(AttributeType.DataType.INTEGER, VertexProperty.VALUE_INTEGER),
+                tuple(AttributeType.DataType.LONG, VertexProperty.VALUE_LONG),
+                tuple(AttributeType.DataType.STRING, VertexProperty.VALUE_STRING)
+        );
+
         VertexProperty(Class dataType) {
             this.dataType = dataType;
         }
 
         @CheckReturnValue
-        public Class getDataType() {
+        public Class getPropertyClass() {
             return dataType;
+        }
+
+        // TODO: This method feels out of place
+        public static VertexProperty ofDataType(AttributeType.DataType dataType) {
+            return dataTypeVertexProperty.get(dataType);
         }
     }
 
@@ -203,7 +221,7 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public Class getDataType() {
+        public Class getPropertyClass() {
             return dataType;
         }
     }

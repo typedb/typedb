@@ -16,46 +16,50 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.answer;
+package grakn.core.concept.answer;
 
-import grakn.core.graql.concept.ConceptId;
+import grakn.core.concept.ConceptId;
 
+import java.util.Collections;
 import java.util.Set;
 
 /**
- * A type of Answer object that contains a Set and Number, by extending ConceptSet.
+ * A type of Answer object that contains a Set.
  */
-public class ConceptSetMeasure extends ConceptSet {
+public class ConceptSet extends Answer {
 
-    private final Number measurement;
+    // TODO: change to store Set<Concept> once we are able to construct Concept without a database look up
+    private final Set<ConceptId> set;
+    private final Explanation explanation;
 
-    public ConceptSetMeasure(Set<ConceptId> set, Number measurement) {
-        this(set, measurement, new Explanation());
+    public ConceptSet(Set<ConceptId> set) {
+        this(set, new Explanation());
     }
 
-    public ConceptSetMeasure(Set<ConceptId> set, Number measurement, Explanation explanation) {
-        super(set, explanation);
-        this.measurement = measurement;
+    public ConceptSet(Set<ConceptId> set, Explanation explanation) {
+        this.set = Collections.unmodifiableSet(set);
+        this.explanation = explanation;
     }
 
-    public Number measurement() {
-        return measurement;
+    @Override
+    public Explanation explanation() {
+        return explanation;
+    }
+
+    public Set<ConceptId> set() {
+        return set;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        ConceptSetMeasure a2 = (ConceptSetMeasure) obj;
-        return this.set().equals(a2.set())
-                && measurement.toString().equals(a2.measurement.toString());
+        ConceptSet a2 = (ConceptSet) obj;
+        return this.set.equals(a2.set);
     }
 
     @Override
     public int hashCode() {
-        int hash = super.hashCode();
-        hash = 31 * hash + measurement.hashCode();
-
-        return hash;
+        return set.hashCode();
     }
 }

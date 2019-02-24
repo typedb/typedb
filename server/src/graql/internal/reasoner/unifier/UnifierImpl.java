@@ -23,8 +23,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.Concept;
 import graql.lang.statement.Variable;
 
 import java.util.AbstractMap;
@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.CheckReturnValue;
 
 /**
  *

@@ -18,13 +18,13 @@
 
 package grakn.core.graql.internal.analytics;
 
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.Transaction;
+import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

@@ -16,22 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.concept;
+package grakn.core.concept;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
+import java.util.function.Function;
 
 /**
- * A Type Id
- * A class which represents an id of any SchemaConcept.
- * Also contains a static method for producing IDs from Integers.
+ * A Label
+ * A class which represents the unique label of any SchemaConcept
+ * Also contains a static method for producing Labels from Strings.
  */
-public class LabelId implements Comparable<LabelId>, Serializable {
-    private static final long serialVersionUID = -1676610785035926909L;
+public class Label implements Comparable<Label>, Serializable {
+    private static final long serialVersionUID = 2051578406740868932L;
 
-    private final Integer value;
+    private final String value;
 
-    public LabelId(Integer value) {
+    public Label(String value) {
         if (value == null) {
             throw new NullPointerException("Null value");
         }
@@ -39,40 +40,37 @@ public class LabelId implements Comparable<LabelId>, Serializable {
     }
 
     /**
-     * @param value The integer which potentially represents a Type
-     * @return The matching type ID
-     */
-    public static LabelId of(Integer value) {
-        return new LabelId(value);
-    }
-
-    /**
-     * @return a type id which does not match any type
-     */
-    public static LabelId invalid() {
-        return new LabelId(-1);
-    }
-
-    /**
-     * @return Used for indexing purposes and for graql traversals
+     * @param value The string which potentially represents a Type
+     * @return The matching Type Label
      */
     @CheckReturnValue
-    public Integer getValue() {
+    public static Label of(String value) {
+        return new Label(value);
+    }
+
+    public String getValue() {
         return value;
     }
 
+    /**
+     * Rename a Label (does not modify the original Label)
+     *
+     * @param mapper a function to apply to the underlying type label
+     * @return the new type label
+     */
+    @CheckReturnValue
+    public Label map(Function<String, String> mapper) {
+        return Label.of(mapper.apply(getValue()));
+    }
+
     @Override
-    public int compareTo(LabelId o) {
+    public int compareTo(Label o) {
         return getValue().compareTo(o.getValue());
     }
 
-    public boolean isValid() {
-        return getValue() != -1;
-    }
-
     @Override
-    public String toString() {
-        return getValue().toString();
+    public final String toString() {
+        return getValue();
     }
 
     @Override
@@ -80,8 +78,8 @@ public class LabelId implements Comparable<LabelId>, Serializable {
         if (o == this) {
             return true;
         }
-        if (o instanceof LabelId) {
-            LabelId that = (LabelId) o;
+        if (o instanceof Label) {
+            Label that = (Label) o;
             return (this.value.equals(that.getValue()));
         }
         return false;

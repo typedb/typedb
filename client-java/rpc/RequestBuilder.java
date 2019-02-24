@@ -20,9 +20,9 @@
 package grakn.core.client.rpc;
 
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.SessionProto;
@@ -162,14 +162,14 @@ public class RequestBuilder {
      */
     public static class Concept {
 
-        public static ConceptProto.Concept concept(grakn.core.graql.concept.Concept concept) {
+        public static ConceptProto.Concept concept(grakn.core.concept.Concept concept) {
             return ConceptProto.Concept.newBuilder()
                     .setId(concept.id().getValue())
                     .setBaseType(getBaseType(concept))
                     .build();
         }
 
-        private static ConceptProto.Concept.BASE_TYPE getBaseType(grakn.core.graql.concept.Concept concept) {
+        private static ConceptProto.Concept.BASE_TYPE getBaseType(grakn.core.concept.Concept concept) {
             if (concept.isEntityType()) {
                 return ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE;
             } else if (concept.isRelationType()) {
@@ -193,11 +193,13 @@ public class RequestBuilder {
             }
         }
 
-        public static Collection<ConceptProto.Concept> concepts(Collection<grakn.core.graql.concept.Concept> concepts) {
+        public static Collection<ConceptProto.Concept> concepts(Collection<grakn.core.concept.Concept> concepts) {
             return concepts.stream().map(Concept::concept).collect(toList());
         }
 
         public static ConceptProto.ValueObject attributeValue(Object value) {
+            // TODO: this conversion method should use Serialiser class, once it's moved to grakn.core.common
+
             ConceptProto.ValueObject.Builder builder = ConceptProto.ValueObject.newBuilder();
             if (value instanceof String) {
                 builder.setString((String) value);

@@ -16,22 +16,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.answer;
+package grakn.core.concept.answer;
+
+import grakn.core.concept.ConceptId;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
- * A type of Answer object that contains a Number.
+ * A type of Answer object that contains a List of Concepts.
  */
-public class Numeric extends Answer {
+public class ConceptList extends Answer {
 
-    private final Number number;
+    // TODO: change to store List<Concept> once we are able to construct Concept without a database look up
+    private final List<ConceptId> list;
     private final Explanation explanation;
 
-    public Numeric(Number number) {
-        this(number, new Explanation());
+    public ConceptList(List<ConceptId> list) {
+        this(list, new Explanation());
     }
 
-    public Numeric(Number number, Explanation explanation) {
-        this.number = number;
+    public ConceptList(List<ConceptId> list, Explanation explanation) {
+        this.list = Collections.unmodifiableList(list);
         this.explanation = explanation;
     }
 
@@ -40,20 +46,20 @@ public class Numeric extends Answer {
         return explanation;
     }
 
-    public Number number() {
-        return number;
+    public List<ConceptId> list() {
+        return list;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        Numeric a2 = (Numeric) obj;
-        return this.number.toString().equals(a2.number.toString());
+        ConceptList a2 = (ConceptList) obj;
+        return this.list.equals(a2.list);
     }
 
     @Override
     public int hashCode() {
-        return number.hashCode();
+        return list.hashCode();
     }
 }

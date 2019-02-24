@@ -19,13 +19,14 @@
 package grakn.core.graql.internal.reasoner.state;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
+import grakn.core.server.kb.concept.ConceptUtils;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -69,7 +70,7 @@ public class NeqComplementState extends QueryStateBase {
         super(sub, u, parent, subGoals, cache);
         ResolvableQuery query = ReasonerQueries.resolvable(q, sub);
         this.neqPredicates = q.getAtoms(NeqPredicate.class).collect(Collectors.toSet());
-        this.neqPredicateSub = query.getSubstitution().merge(sub)
+        this.neqPredicateSub = ConceptUtils.mergeAnswers(query.getSubstitution(), sub)
                 .project(this.neqPredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
         this.complementState = query.neqPositive().subGoal(sub, u, this, subGoals, cache);
@@ -77,7 +78,7 @@ public class NeqComplementState extends QueryStateBase {
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        ConceptMap fullAnswer = state.getSubstitution().merge(neqPredicateSub);
+        ConceptMap fullAnswer = ConceptUtils.mergeAnswers(state.getSubstitution(), neqPredicateSub);
 
         boolean isNeqSatisfied = neqPredicates.stream()
                 .allMatch(p -> p.isSatisfied(fullAnswer));

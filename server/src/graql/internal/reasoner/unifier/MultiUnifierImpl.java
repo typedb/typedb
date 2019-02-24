@@ -22,11 +22,10 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.UnmodifiableIterator;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import graql.lang.statement.Variable;
 
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.Iterator;

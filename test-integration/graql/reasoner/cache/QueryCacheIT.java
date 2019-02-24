@@ -2,14 +2,14 @@ package grakn.core.graql.reasoner.cache;
 /*
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.graql.concept.Entity;
+import grakn.core.concept.instance.Entity;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Query;
 import graql.lang.pattern.Conjunction;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.query.pattern.VarPatternAdmin;
 import Patterns;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
 import grakn.core.graql.internal.reasoner.query.QueryAnswers;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;

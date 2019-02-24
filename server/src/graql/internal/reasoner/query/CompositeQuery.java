@@ -22,9 +22,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.ResolutionIterator;
 import grakn.core.graql.internal.reasoner.atom.Atom;
@@ -35,6 +35,7 @@ import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
+import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -309,7 +310,7 @@ public class CompositeQuery implements ResolvableQuery {
     public ConceptMap getSubstitution() {
         ConceptMap sub = getConjunctiveQuery().getSubstitution();
         for (ResolvableQuery comp : getComplementQueries()) {
-            sub = sub.merge(comp.getSubstitution());
+            sub = ConceptUtils.mergeAnswers(sub, comp.getSubstitution());
         }
         return sub;
     }

@@ -20,24 +20,23 @@ package grakn.core.server.session;
 
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptList;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.internal.executor.QueryExecutor;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -46,8 +45,10 @@ import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Validator;
 import grakn.core.server.kb.concept.ConceptImpl;
+import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.RoleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
@@ -104,7 +105,7 @@ import java.util.stream.Stream;
  * 2. Clearing the graph explicitly closes the connection as well.
  */
 public class TransactionOLTP implements Transaction {
-    final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
+    private final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
     //----------------------------- Shared Variables
     private final SessionImpl session;
     private final JanusGraph janusGraph;
@@ -288,10 +289,10 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Gets the config option which determines the number of instances a {@link grakn.core.graql.concept.Type} must have before the {@link grakn.core.graql.concept.Type}
+     * Gets the config option which determines the number of instances a {@link grakn.core.concept.type.Type} must have before the {@link grakn.core.concept.type.Type}
      * if automatically sharded.
      *
-     * @return the number of instances a {@link grakn.core.graql.concept.Type} must have before it is shareded
+     * @return the number of instances a {@link grakn.core.concept.type.Type} must have before it is shareded
      */
     public long shardingThreshold() {
         return session().config().getProperty(ConfigKey.SHARDING_THRESHOLD);
@@ -338,7 +339,8 @@ public class TransactionOLTP implements Transaction {
         return factory().buildConcept(edge);
     }
 
-    @SuppressWarnings("unchecked") // TODO: we shouldn't initialising meta concepts from within a transaction
+    // TODO: We shouldn't initialising meta concepts from within a transaction
+    //       This should be a critical operation that is hidden in deeper
     private boolean initialiseMetaConcepts() {
         boolean schemaInitialised = false;
         if (isMetaSchemaNotInitialised()) {
@@ -493,7 +495,7 @@ public class TransactionOLTP implements Transaction {
      *
      * @param label             The {@link Label} of the {@link SchemaConcept} to find or create
      * @param baseType          The {@link Schema.BaseType} of the {@link SchemaConcept} to find or create
-     * @param isImplicit        a flag indicating if the label we are creating is for an implicit {@link grakn.core.graql.concept.Type} or not
+     * @param isImplicit        a flag indicating if the label we are creating is for an implicit {@link grakn.core.concept.type.Type} or not
      * @param newConceptFactory the factory to be using when creating a new {@link SchemaConcept}
      * @param <T>               The type of {@link SchemaConcept} to return
      * @return a new or existing {@link SchemaConcept}
@@ -657,21 +659,20 @@ public class TransactionOLTP implements Transaction {
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
         if (value == null) return Collections.emptySet();
 
-        //Make sure you trying to retrieve supported data type
-        if (!AttributeType.DataType.SUPPORTED_TYPES.containsKey(value.getClass().getName())) {
+        // TODO: Remove this forced casting once we replace DataType to be Parameterised Generic Enum
+        AttributeType.DataType<V> dataType =
+                (AttributeType.DataType<V>) AttributeType.DataType.of(value.getClass());
+        if (dataType == null) {
             throw TransactionException.unsupportedDataType(value);
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
-        AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
-
-        //noinspection unchecked
-        getConcepts(dataType.getVertexProperty(), dataType.getPersistedValue(value)).forEach(concept -> {
-            if (concept != null && concept.isAttribute()) {
-                //noinspection unchecked
-                attributes.add(concept.asAttribute());
-            }
-        });
+        getConcepts(Schema.VertexProperty.ofDataType(dataType), Serialiser.of(dataType).serialise(value))
+                .forEach(concept -> {
+                    if (concept != null && concept.isAttribute()) {
+                        attributes.add(concept.asAttribute());
+                    }
+                });
 
         return attributes;
     }
@@ -684,7 +685,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public <T extends grakn.core.graql.concept.Type> T getType(Label label) {
+    public <T extends grakn.core.concept.type.Type> T getType(Label label) {
         return getSchemaConcept(label, Schema.BaseType.TYPE);
     }
 
@@ -824,13 +825,13 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Returns the current number of shards the provided {@link grakn.core.graql.concept.Type} has. This is used in creating more
+     * Returns the current number of shards the provided {@link grakn.core.concept.type.Type} has. This is used in creating more
      * efficient query plans.
      *
-     * @param concept The {@link grakn.core.graql.concept.Type} which may contain some shards.
-     * @return the number of Shards the {@link grakn.core.graql.concept.Type} currently has.
+     * @param concept The {@link grakn.core.concept.type.Type} which may contain some shards.
+     * @return the number of Shards the {@link grakn.core.concept.type.Type} currently has.
      */
-    public long getShardCount(grakn.core.graql.concept.Type concept) {
+    public long getShardCount(grakn.core.concept.type.Type concept) {
         return TypeImpl.from(concept).shardCount();
     }
 

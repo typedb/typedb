@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.reasoner.unifier;
 
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Variable;

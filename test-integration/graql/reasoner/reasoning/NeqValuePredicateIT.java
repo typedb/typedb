@@ -20,7 +20,7 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.query.ResolvableQuery;

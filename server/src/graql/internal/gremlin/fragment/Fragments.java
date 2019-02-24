@@ -20,12 +20,12 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.printer.StringPrinter;
+import grakn.core.server.kb.Schema;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -38,9 +38,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.Nullable;
 import java.util.Set;
 
-import static grakn.core.graql.internal.Schema.EdgeLabel.SUB;
-import static grakn.core.graql.internal.Schema.VertexProperty.LABEL_ID;
-import static grakn.core.graql.internal.Schema.VertexProperty.THING_TYPE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeLabel.SUB;
+import static grakn.core.server.kb.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.server.kb.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static java.util.stream.Collectors.joining;
 
 /**

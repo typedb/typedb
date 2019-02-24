@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.ConceptId;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.IdProperty;
 import graql.lang.statement.Variable;

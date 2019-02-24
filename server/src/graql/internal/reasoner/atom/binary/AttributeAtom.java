@@ -22,16 +22,15 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
@@ -44,8 +43,10 @@ import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.server.Transaction;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.concept.AttributeTypeImpl;
+import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.RelationImpl;
 import graql.lang.Graql;
@@ -356,7 +357,7 @@ public abstract class AttributeAtom extends Binary{
 
         if (attribute != null) {
             attachAttribute(owner, attribute);
-            return Stream.of(substitution.merge(new ConceptMap(ImmutableMap.of(resourceVariable, attribute))));
+            return Stream.of(ConceptUtils.mergeAnswers(substitution, new ConceptMap(ImmutableMap.of(resourceVariable, attribute))));
         }
         return Stream.of(new ConceptMap());
     }

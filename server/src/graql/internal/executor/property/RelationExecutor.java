@@ -20,12 +20,12 @@ package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.thing.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;

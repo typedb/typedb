@@ -1,7 +1,7 @@
 package grakn.core.client;
 
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSet;
 import grakn.core.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlCompute;

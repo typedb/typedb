@@ -30,20 +30,18 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.ConceptUtils;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
@@ -66,6 +64,8 @@ import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
 import grakn.core.server.Transaction;
+import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.kb.concept.RelationTypeImpl;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
@@ -93,11 +93,11 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.concept.ConceptUtils.bottom;
-import static grakn.core.graql.concept.ConceptUtils.top;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.compatibleRelationTypesWithRoles;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.compatibleRoles;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
+import static grakn.core.server.kb.concept.ConceptUtils.bottom;
+import static grakn.core.server.kb.concept.ConceptUtils.top;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 
@@ -1056,13 +1056,14 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         roleVarMap.asMap()
                 .forEach((key, value) -> value.forEach(var -> relationship.assign(key, substitution.get(var).asThing())));
 
-        ConceptMap relationSub = getRoleSubstitution().merge(
+        ConceptMap relationSub = ConceptUtils.mergeAnswers(
+                getRoleSubstitution(),
                 getVarName().isUserDefinedName()?
                         new ConceptMap(ImmutableMap.of(getVarName(), relationship)) :
                         new ConceptMap()
         );
 
-        return Stream.of(substitution.merge(relationSub));
+        return Stream.of(ConceptUtils.mergeAnswers(substitution, relationSub));
     }
 
     /**

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.state;
 
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 
 /**
  *

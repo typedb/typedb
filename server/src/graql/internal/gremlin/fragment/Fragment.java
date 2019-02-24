@@ -20,8 +20,8 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.ConceptId;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
@@ -89,7 +89,7 @@ public abstract class Fragment {
     static final double COST_NODE_INDEX_VALUE = -Math.log(NUM_INSTANCES_PER_TYPE / NUM_RESOURCES_PER_VALUE);
 
     static final double COST_NODE_NEQ = -Math.log(2D);
-    static final double COST_NODE_DATA_TYPE = -Math.log(AttributeType.DataType.SUPPORTED_TYPES.size() / 2D);
+    static final double COST_NODE_DATA_TYPE = -Math.log(AttributeType.DataType.values().size() / 2D);
     static final double COST_NODE_UNSPECIFIC_PREDICATE = -Math.log(2D);
     static final double COST_NODE_REGEX = -Math.log(2D);
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);

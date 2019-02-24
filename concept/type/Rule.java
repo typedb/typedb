@@ -16,8 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.concept;
+package grakn.core.concept.type;
 
+import grakn.core.concept.Label;
 import graql.lang.pattern.Pattern;
 
 import javax.annotation.CheckReturnValue;

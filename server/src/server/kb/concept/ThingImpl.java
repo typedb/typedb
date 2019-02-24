@@ -19,20 +19,20 @@
 package grakn.core.server.kb.concept;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.Casting;
@@ -51,7 +51,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.Schema.EdgeProperty.ROLE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
 import static java.util.stream.Collectors.toSet;
 
 /**

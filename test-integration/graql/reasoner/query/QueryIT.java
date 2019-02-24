@@ -18,10 +18,10 @@
 
 package grakn.core.graql.reasoner.query;
 
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
+import grakn.core.concept.Concept;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;

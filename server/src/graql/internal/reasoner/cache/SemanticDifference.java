@@ -20,23 +20,24 @@ package grakn.core.graql.internal.reasoner.cache;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.Concept;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
 
+import javax.annotation.CheckReturnValue;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.CheckReturnValue;
 
 /**
  * Quantifies semantic difference between two queries provided they are in a subsumption relation, i. e. there exists
@@ -139,12 +140,8 @@ public class SemanticDifference {
         ConceptMap unified = unifier.apply(answer);
         if (unified.isEmpty()) return unified;
         Set<Variable> varsToRetain = Sets.difference(unified.vars(), partialSub.vars());
-        return this.satisfiedBy(unified) ?
-                unified
-                        .project(varsToRetain)
-                        .merge(partialSub)
-                        .project(vars) :
-                new ConceptMap();
+        return !this.satisfiedBy(unified) ? new ConceptMap() :
+                ConceptUtils.mergeAnswers(unified.project(varsToRetain), partialSub).project(vars);
     }
 
     boolean isEmpty() { return definition.stream().allMatch(VariableDefinition::isTrivial);}

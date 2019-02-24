@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner;
 
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 
 import java.util.Iterator;
 import java.util.stream.Stream;

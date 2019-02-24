@@ -16,7 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.concept;
+package grakn.core.concept.thing;
+
+import grakn.core.concept.Concept;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.Type;
 
 import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;

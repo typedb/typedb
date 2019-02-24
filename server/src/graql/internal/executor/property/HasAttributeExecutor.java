@@ -19,11 +19,10 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Thing;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
@@ -31,6 +30,7 @@ import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.server.kb.Schema;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;

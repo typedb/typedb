@@ -19,15 +19,16 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.AttributeType;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.Serialiser;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
@@ -132,7 +133,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return comparator().toString() + value();
         }
 
@@ -148,27 +149,24 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
             return comparator.equals(Graql.Token.Comparator.EQV) && !(this instanceof Comparison.Variable);
         }
 
-        protected U persistedValue() {
-            AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass().getName());
-            return (U) dataType.getPersistedValue(value());
-            // TODO: this should be a safe cast once we fix the return type of
-            //       AttributeType.DataType.getPersistedValue with generics
-        }
+        abstract U valueSerialised();
 
         protected abstract P<U> predicate();
 
         public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
             // Compare to a given value
-            AttributeType.DataType<?> dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass().getTypeName());
-            Schema.VertexProperty property = dataType.getVertexProperty();
+            AttributeType.DataType<?> dataType = AttributeType.DataType.of(value().getClass());
+            Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
             traversal.has(property.name(), predicate());
             return traversal;
         }
 
         public boolean test(Object otherValue) {
             if (this.value().getClass().isInstance(otherValue)) {
-                AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass().getName());
-                return predicate().test((U) dataType.getPersistedValue(otherValue));
+                // TODO: Remove this forced casting
+                AttributeType.DataType<T> dataType =
+                        (AttributeType.DataType<T>) AttributeType.DataType.of(value().getClass());
+                return predicate().test((U) Serialiser.of(dataType).serialise((T) otherValue));
             } else {
                 return false;
             }
@@ -216,14 +214,14 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
             if (!other.comparator().equals(Graql.Token.Comparator.EQV)) return false;
 
             return (other instanceof Comparison.Variable ||
-                    other.value() instanceof String && this.predicate().test((U) other.persistedValue()));
+                    other.value() instanceof String && this.predicate().test((U) other.valueSerialised()));
         }
 
         private boolean isCompatibleWithRegex(ValueExecutor.Operation<?, ?> other) {
             if (!other.comparator().equals(Graql.Token.Comparator.EQV)) return false;
 
             return (other instanceof Comparison.Variable ||
-                    this.predicate().test((U) other.persistedValue()));
+                    this.predicate().test((U) other.valueSerialised()));
         }
 
         public boolean isCompatible(ValueExecutor.Operation<?, ?> other) {
@@ -237,12 +235,12 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
             if (this instanceof Comparison.Variable || other instanceof Comparison.Variable) return true;
             //NB this is potentially dangerous e.g. if a user types a long as a char in the query
-            if (!this.persistedValue().getClass().equals(other.persistedValue().getClass())) return false;
+            if (!this.valueSerialised().getClass().equals(other.valueSerialised().getClass())) return false;
 
             ValueExecutor.Operation<?, U> that = (ValueExecutor.Operation<?, U>) other;
-            return this.persistedValue().equals(that.persistedValue()) ?
+            return this.valueSerialised().equals(that.valueSerialised()) ?
                     (this.signum() * that.signum() > 0 || this.containsEquality() && that.containsEquality()) :
-                    (this.predicate().test(that.persistedValue()) || ((that.predicate()).test(this.persistedValue())));
+                    (this.predicate().test(that.valueSerialised()) || ((that.predicate()).test(this.valueSerialised())));
         }
 
         public boolean subsumes(ValueExecutor.Operation<?, ?> other) {
@@ -254,13 +252,13 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
             if (this instanceof Comparison.Variable || other instanceof Comparison.Variable) return true;
             //NB this is potentially dangerous e.g. if a user types a long as a char in the query
-            if (!this.persistedValue().getClass().equals(other.persistedValue().getClass())) return false;
+            if (!this.valueSerialised().getClass().equals(other.valueSerialised().getClass())) return false;
 
             ValueExecutor.Operation<?, U> that = (ValueExecutor.Operation<?, U>) other;
-            return (that.predicate()).test(this.persistedValue()) &&
-                    (this.persistedValue().equals(that.persistedValue()) ?
+            return (that.predicate()).test(this.valueSerialised()) &&
+                    (this.valueSerialised().equals(that.valueSerialised()) ?
                             (this.isValueEquality() || this.isValueEquality() == that.isValueEquality()) :
-                            (!this.predicate().test(that.persistedValue())));
+                            (!this.predicate().test(that.valueSerialised())));
         }
 
         @Override
@@ -309,13 +307,18 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
             @Override
             protected P<U> predicate() {
-                return P.eq(persistedValue());
+                return P.eq(valueSerialised());
             }
 
-            static class Number<N extends java.lang.Number> extends Assignment<N, java.lang.Number> {
+            static class Number<N extends java.lang.Number> extends Assignment<N, N> {
 
                 Number(N value) {
                     super(value);
+                }
+
+                @Override
+                N valueSerialised() {
+                    return new Serialiser.Default<N>().serialise(value());
                 }
             }
 
@@ -324,6 +327,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 Boolean(boolean value) {
                     super(value);
                 }
+
+                @Override
+                java.lang.Boolean valueSerialised() {
+                    return Serialiser.BOOLEAN.serialise(value());
+                }
             }
 
             static class DateTime extends Assignment<LocalDateTime, Long> {
@@ -331,12 +339,22 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 DateTime(LocalDateTime value) {
                     super(value);
                 }
+
+                @Override
+                Long valueSerialised() {
+                    return Serialiser.DATE.serialise(value());
+                }
             }
 
             static class String extends Assignment<java.lang.String, java.lang.String> {
 
                 String(java.lang.String value) {
                     super(value);
+                }
+
+                @Override
+                java.lang.String valueSerialised() {
+                    return Serialiser.STRING.serialise(value());
                 }
             }
         }
@@ -397,7 +415,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 Function<U, P<U>> predicate = PREDICATES_COMPARABLE.get(comparator());
 
                 if (predicate != null) {
-                    return predicate.apply(persistedValue());
+                    return predicate.apply(valueSerialised());
                 } else {
                     throw new UnsupportedOperationException("Unsupported Value Comparison: " + comparator() + " on " + value().getClass());
                 }
@@ -408,6 +426,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 Number(Graql.Token.Comparator comparator, N value) {
                     super(comparator, value);
                 }
+
+                @Override
+                N valueSerialised() {
+                    return new Serialiser.Default<N>().serialise(value());
+                }
             }
 
             static class Boolean extends Comparison<java.lang.Boolean, java.lang.Boolean> {
@@ -415,12 +438,22 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 Boolean(Graql.Token.Comparator comparator, boolean value) {
                     super(comparator, value);
                 }
+
+                @Override
+                java.lang.Boolean valueSerialised() {
+                    return Serialiser.BOOLEAN.serialise(value());
+                }
             }
 
             static class DateTime extends Comparison<LocalDateTime, Long> {
 
                 DateTime(Graql.Token.Comparator comparator, LocalDateTime value) {
                     super(comparator, value);
+                }
+
+                @Override
+                Long valueSerialised() {
+                    return Serialiser.DATE.serialise(value());
                 }
             }
 
@@ -430,6 +463,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 public String(Graql.Token.Comparator comparator, java.lang.String value) {
                     super(comparator, value);
+                }
+
+                @Override
+                java.lang.String valueSerialised() {
+                    return Serialiser.STRING.serialise(value());
                 }
 
                 private static Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> stringPredicates() {
@@ -460,8 +498,8 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 private final java.lang.String gremlinVariable;
 
                 private static final Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> PREDICATES_VAR = varPredicates();
-                private static final java.lang.String[] VALUE_PROPERTIES = AttributeType.DataType.SUPPORTED_TYPES.values().stream()
-                        .map(AttributeType.DataType::getVertexProperty).distinct()
+                private static final java.lang.String[] VALUE_PROPERTIES = AttributeType.DataType.values().stream()
+                        .map(Schema.VertexProperty::ofDataType).distinct()
                         .map(Enum::name).toArray(java.lang.String[]::new);
 
                 Variable(Graql.Token.Comparator comparator, Statement value) {
@@ -479,7 +517,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 }
 
                 @Override
-                protected java.lang.String persistedValue() {
+                protected java.lang.String valueSerialised() {
                     return null;
                 }
 

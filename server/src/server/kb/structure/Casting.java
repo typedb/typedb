@@ -18,12 +18,12 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.thing.Thing;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.cache.Cacheable;

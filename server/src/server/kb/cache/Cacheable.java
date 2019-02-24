@@ -19,10 +19,10 @@
 package grakn.core.server.kb.cache;
 
 
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.LabelId;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
 import grakn.core.server.kb.structure.Shard;
 
 import java.util.HashMap;

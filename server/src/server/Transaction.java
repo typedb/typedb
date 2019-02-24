@@ -18,26 +18,26 @@
 
 package grakn.core.server;
 
-import grakn.core.graql.answer.Answer;
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.answer.Answer;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptList;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.keyspace.Keyspace;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
@@ -331,7 +331,7 @@ public interface Transaction extends AutoCloseable {
      * @return The meta type -> type.
      */
     @CheckReturnValue
-    default grakn.core.graql.concept.Type getMetaConcept() {
+    default grakn.core.concept.type.Type getMetaConcept() {
         return getSchemaConcept(Schema.MetaSchema.THING.getLabel());
     }
 
@@ -560,16 +560,16 @@ public interface Transaction extends AutoCloseable {
     <T extends SchemaConcept> T getSchemaConcept(Label label);
 
     /**
-     * Get the grakn.core.graql.concept.Type with the label provided, if it exists.
+     * Get the grakn.core.concept.type.Type with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the grakn.core.graql.concept.Type in the graph.
-     * @return The grakn.core.graql.concept.Type with the provided label or null if no such grakn.core.graql.concept.Type exists.
+     * @param label A unique label which identifies the grakn.core.concept.type.Type in the graph.
+     * @return The grakn.core.concept.type.Type with the provided label or null if no such grakn.core.concept.type.Type exists.
      * @throws TransactionException if the graph is closed
      * @throws ClassCastException   if the type is not an instance of T
      */
     @CheckReturnValue
     @Nullable
-    <T extends grakn.core.graql.concept.Type> T getType(Label label);
+    <T extends grakn.core.concept.type.Type> T getType(Label label);
 
     /**
      * Get all Attribute holding the value provided, if they exist.

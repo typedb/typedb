@@ -19,9 +19,9 @@
 package grakn.core.graql.internal.analytics;
 
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.LabelId;
+import grakn.core.server.kb.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -55,7 +55,7 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
 
     GraknMapReduce(Set<LabelId> selectedTypes, AttributeType.DataType resourceDataType) {
         this(selectedTypes);
-        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType.getName());
+        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType.name());
     }
 
     // Needed internally for OLAP tasks
@@ -138,6 +138,6 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
     }
 
     final boolean usingLong() {
-        return persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(AttributeType.DataType.LONG.getName());
+        return persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(AttributeType.DataType.LONG.name());
     }
 }

@@ -19,18 +19,18 @@
 package grakn.core.graql.internal.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.WriteExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
 import graql.lang.property.HasAttributeTypeProperty;
 import graql.lang.property.NeqProperty;
@@ -44,9 +44,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.Schema.ImplicitType.KEY;
-import static grakn.core.graql.internal.Schema.ImplicitType.KEY_OWNER;
-import static grakn.core.graql.internal.Schema.ImplicitType.KEY_VALUE;
+import static grakn.core.server.kb.Schema.ImplicitType.KEY;
+import static grakn.core.server.kb.Schema.ImplicitType.KEY_OWNER;
+import static grakn.core.server.kb.Schema.ImplicitType.KEY_VALUE;
 import static graql.lang.Graql.var;
 
 public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {

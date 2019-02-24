@@ -18,10 +18,10 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.thing.Entity;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.session.SessionImpl;

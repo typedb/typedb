@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.reasoner.cache;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import graql.lang.statement.Variable;
 

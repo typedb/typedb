@@ -35,9 +35,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.graql.internal.Schema.EdgeLabel.ISA;
-import static grakn.core.graql.internal.Schema.EdgeLabel.SHARD;
-import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeLabel.ISA;
+import static grakn.core.server.kb.Schema.EdgeLabel.SHARD;
+import static grakn.core.server.kb.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 
 /**
  * A fragment representing traversing an isa edge from instance to type.

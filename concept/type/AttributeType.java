@@ -16,19 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.concept;
+package grakn.core.concept.type;
 
-import com.google.common.collect.ImmutableMap;
-import grakn.core.graql.internal.Schema;
-import grakn.core.server.exception.TransactionException;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.function.Function;
+import java.util.List;
 import java.util.stream.Stream;
+
+import static grakn.core.common.util.Collections.list;
 
 /**
  * An ontological element which models and categorises the various Attribute in the graph.
@@ -228,123 +227,69 @@ public interface AttributeType<D> extends Type {
      * @param <D> The data type.
      */
     class DataType<D> {
-        public static final DataType<String> STRING = new DataType<>(
-                String.class.getName(),
-                Schema.VertexProperty.VALUE_STRING,
-                (v) -> v,
-                o -> defaultConverter(o, String.class, Object::toString));
+        public static final DataType<Boolean> BOOLEAN = new DataType<>(Boolean.class);
+        public static final DataType<LocalDateTime> DATE = new DataType<>(LocalDateTime.class);
+        public static final DataType<Double> DOUBLE = new DataType<>(Double.class);
+        public static final DataType<Float> FLOAT = new DataType<>(Float.class);
+        public static final DataType<Integer> INTEGER = new DataType<>(Integer.class);
+        public static final DataType<Long> LONG = new DataType<>(Long.class);
+        public static final DataType<String> STRING = new DataType<>(String.class);
 
-        public static final DataType<Boolean> BOOLEAN = new DataType<>(
-                Boolean.class.getName(),
-                Schema.VertexProperty.VALUE_BOOLEAN,
-                (v) -> v,
-                o -> defaultConverter(o, Boolean.class, (v) -> Boolean.parseBoolean(v.toString())));
+        private static final List<DataType<?>> values = list(BOOLEAN, DATE, DOUBLE, FLOAT, INTEGER, LONG, STRING);
 
-        public static final DataType<Integer> INTEGER = new DataType<>(
-                Integer.class.getName(),
-                Schema.VertexProperty.VALUE_INTEGER,
-                (v) -> v,
-                o -> defaultConverter(o, Integer.class, (v) -> Integer.parseInt(v.toString())));
+        private final Class<D> dataClass;
 
-        public static final DataType<Long> LONG = new DataType<>(
-                Long.class.getName(),
-                Schema.VertexProperty.VALUE_LONG,
-                (v) -> v,
-                o -> defaultConverter(o, Long.class, (v) -> Long.parseLong(v.toString())));
-
-        public static final DataType<Double> DOUBLE = new DataType<>(
-                Double.class.getName(),
-                Schema.VertexProperty.VALUE_DOUBLE,
-                (v) -> v,
-                o -> defaultConverter(o, Double.class, (v) -> Double.parseDouble(v.toString())));
-
-        public static final DataType<Float> FLOAT = new DataType<>(
-                Float.class.getName(),
-                Schema.VertexProperty.VALUE_FLOAT,
-                (v) -> v,
-                o -> defaultConverter(o, Float.class, (v) -> Float.parseFloat(v.toString())));
-
-        public static final DataType<LocalDateTime> DATE = new DataType<>(
-                LocalDateTime.class.getName(),
-                Schema.VertexProperty.VALUE_DATE,
-                (d) -> d.atZone(ZoneId.of("Z")).toInstant().toEpochMilli(),
-                (o) -> {
-                    if (o == null) return null;
-                    if (!(o instanceof Long)) {
-                        throw TransactionException.invalidAttributeValue(o, LONG);
-                    }
-                    return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.of("Z"));
-                });
-
-        public static final ImmutableMap<String, DataType<?>> SUPPORTED_TYPES = ImmutableMap.<String, DataType<?>>builder()
-                .put(STRING.getName(), STRING)
-                .put(BOOLEAN.getName(), BOOLEAN)
-                .put(LONG.getName(), LONG)
-                .put(DOUBLE.getName(), DOUBLE)
-                .put(INTEGER.getName(), INTEGER)
-                .put(FLOAT.getName(), FLOAT)
-                .put(DATE.getName(), DATE)
-                .build();
-
-        private final String dataType;
-        private final Schema.VertexProperty vertexProperty;
-        private final Function<D, Object> persistedValue;
-        private final Function<Object, D> presentedValue;
-
-
-        private DataType(String dataType, Schema.VertexProperty vertexProperty, Function<D, Object> persistedValue, Function<Object, D> presentedValue) {
-            this.dataType = dataType;
-            this.vertexProperty = vertexProperty;
-            this.persistedValue = persistedValue;
-            this.presentedValue = presentedValue;
-        }
-
-        private static <X> X defaultConverter(Object o, Class clazz, Function<Object, X> converter) {
-            if (o == null) {
-                return null;
-            } else if (clazz.isInstance(o)) {
-                //noinspection unchecked
-                return (X) o;
-            } else {
-                return converter.apply(o);
-            }
+        private DataType(Class<D> dataClass) {
+            this.dataClass = dataClass;
         }
 
         @CheckReturnValue
-        public String getName() {
-            return dataType;
+        public Class<D> dataClass() {
+            return dataClass;
         }
 
         @CheckReturnValue
-        public Schema.VertexProperty getVertexProperty() {
-            return vertexProperty;
+        public String name() {
+            return dataClass.getName();
         }
 
         @Override
         public String toString() {
-            return getName();
+            return name();
         }
 
-        /**
-         * Converts the provided value into the data type and format which it will be saved in.
-         *
-         * @param value The value to be converted
-         * @return The String representation of the value
-         */
         @CheckReturnValue
-        public Object getPersistedValue(D value) {
-            return persistedValue.apply(value);
+        public static List<DataType<?>> values() {
+            return values;
         }
 
-        /**
-         * Converts the provided value into it's correct data type
-         *
-         * @param object The object to be converted into the value
-         * @return The value of the string
-         */
+        @SuppressWarnings("unchecked")
         @CheckReturnValue
-        public D getValue(Object object) {
-            return presentedValue.apply(object);
+        public static <D> DataType<D> of(Class<D> name) {
+            for (DataType<?> dc : DataType.values()) {
+                if (dc.dataClass.equals(name)) {
+                    return (DataType<D>) dc;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            DataType<?> that = (DataType<?>) o;
+
+            return (this.dataClass().equals(that.dataClass()));
+        }
+
+        @Override
+        public int hashCode() {
+            int h = 1;
+            h *= 1000003;
+            h ^=  dataClass.hashCode();
+            return h;
         }
     }
 }

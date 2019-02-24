@@ -18,13 +18,14 @@
 
 package grakn.core.graql.internal.reasoner.state;
 
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.Explanation;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
+import grakn.core.server.kb.concept.ConceptUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,12 +36,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- *
- * <p>
  * Query state corresponding to a an intermediate state obtained from decomposing a conjunctive query ({@link ReasonerQueryImpl}) in the resolution tree.
- * </p>
- *
- *
  */
 public class CumulativeState extends QueryStateBase{
 
@@ -77,7 +73,7 @@ public class CumulativeState extends QueryStateBase{
         ConceptMap accumulatedAnswer = getSubstitution();
         ConceptMap toMerge = state.getSubstitution();
         ConceptMap answer = new ConceptMap(
-                accumulatedAnswer.merge(toMerge).map(),
+                ConceptUtils.mergeAnswers(accumulatedAnswer, toMerge).map(),
                 mergeExplanations(accumulatedAnswer, toMerge));
 
         if (answer.isEmpty()) return null;

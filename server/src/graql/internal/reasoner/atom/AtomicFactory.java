@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom;
 
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.internal.executor.property.PropertyExecutor;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqValuePredicate;
@@ -31,11 +31,11 @@ import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.CheckReturnValue;
 
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.findValuePropertyOp;
 

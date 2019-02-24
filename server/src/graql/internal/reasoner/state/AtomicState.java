@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.state;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.cache.CacheEntry;
 import grakn.core.graql.internal.reasoner.cache.IndexedAnswerSet;
 import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
@@ -29,6 +29,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
+import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
@@ -76,8 +77,7 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         InferenceRule rule = state.getRule();
         Unifier unifier = state.getUnifier();
         if (rule == null) {
-            answer = baseAnswer
-                    .merge(query.getSubstitution())
+            answer = ConceptUtils.mergeAnswers(baseAnswer, query.getSubstitution())
                     .project(query.getVarNames());
         } else {
             answer = rule.requiresMaterialisation(query.getAtom()) ?
@@ -107,13 +107,12 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
 
     private ConceptMap ruleAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
         ReasonerAtomicQuery query = getQuery();
-        ConceptMap answer = unifier.apply(
-                baseAnswer.merge(rule.getHead().getRoleSubstitution())
+        ConceptMap answer = unifier.apply(ConceptUtils.mergeAnswers(
+                baseAnswer, rule.getHead().getRoleSubstitution())
         );
         if (answer.isEmpty()) return answer;
 
-        return answer
-                .merge(query.getSubstitution())
+        return ConceptUtils.mergeAnswers(answer, query.getSubstitution())
                 .project(query.getVarNames())
                 .explain(new RuleExplanation(query.getPattern(), rule.getRule().id().getValue()));
     }
@@ -158,7 +157,7 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
 
         if (answer.isEmpty()) return answer;
 
-        return answer.merge(query.getSubstitution())
+        return ConceptUtils.mergeAnswers(answer, query.getSubstitution())
                 .explain(new RuleExplanation(query.getPattern(), rule.getRule().id().getValue()));
     }
 }

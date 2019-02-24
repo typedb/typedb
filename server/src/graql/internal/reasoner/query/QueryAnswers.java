@@ -18,13 +18,14 @@
 
 package grakn.core.graql.internal.reasoner.query;
 
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
+
+import javax.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 /**
  *

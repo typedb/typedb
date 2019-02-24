@@ -21,18 +21,18 @@ package grakn.core.server.exception;
 import com.google.common.base.Preconditions;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.Type;
 import grakn.core.server.Transaction;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.keyspace.Keyspace;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -147,25 +147,26 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when casting Grakn concepts/answers incorrectly.
-     */
-    public static TransactionException invalidCasting(Object concept, Class type) {
-        return create(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
-    }
-
-    /**
      * Thrown when creating an Attribute whose value {@link Object} does not match attribute data type
      */
     public static TransactionException invalidAttributeValue(Object object, AttributeType.DataType dataType) {
-        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.getName()));
+        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.name()));
     }
 
     /**
      * Thrown when using an unsupported datatype with resources
      */
     public static TransactionException unsupportedDataType(Object value) {
-        String supported = AttributeType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
-        return create(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
+        return unsupportedDataType(value.getClass());
+    }
+
+    public static TransactionException unsupportedDataType(Class<?> clazz) {
+        return unsupportedDataType(clazz.getName());
+    }
+
+    public static TransactionException unsupportedDataType(String name) {
+        String supported = AttributeType.DataType.values().stream().map(AttributeType.DataType::name).collect(Collectors.joining(","));
+        return create(ErrorMessage.INVALID_DATATYPE.getMessage(name, supported));
     }
 
     /**
