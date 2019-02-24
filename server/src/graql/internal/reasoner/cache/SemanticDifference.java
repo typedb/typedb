@@ -25,7 +25,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.internal.executor.property.ValueExecutor;
+import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;

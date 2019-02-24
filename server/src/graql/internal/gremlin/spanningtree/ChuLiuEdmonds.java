@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
-import grakn.core.graql.internal.util.Partition;
+import grakn.core.graql.util.Partition;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

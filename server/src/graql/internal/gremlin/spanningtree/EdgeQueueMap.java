@@ -24,7 +24,7 @@ import com.google.common.collect.Maps;
 import grakn.core.graql.internal.gremlin.spanningtree.datastructure.FibonacciQueue;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
-import grakn.core.graql.internal.util.Partition;
+import grakn.core.graql.util.Partition;
 
 import java.util.Collections;
 import java.util.LinkedList;

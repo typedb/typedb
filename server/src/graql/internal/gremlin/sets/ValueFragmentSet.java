@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.internal.executor.property.ValueExecutor;
+import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;

@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.executor.property.ValueExecutor;
+import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;

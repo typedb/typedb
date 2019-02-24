@@ -21,7 +21,7 @@ package grakn.core.graql.internal.gremlin;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.graql.internal.executor.property.PropertyExecutor;
+import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.server.Transaction;

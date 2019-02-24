@@ -37,7 +37,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.graql.internal.executor.QueryExecutor;
+import grakn.core.graql.executor.QueryExecutor;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;

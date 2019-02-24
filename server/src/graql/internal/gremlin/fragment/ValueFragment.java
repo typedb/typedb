@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.internal.executor.property.ValueExecutor;
-import grakn.core.graql.internal.executor.property.ValueExecutor.Operation.Comparison;
+import grakn.core.graql.executor.property.ValueExecutor;
+import grakn.core.graql.executor.property.ValueExecutor.Operation.Comparison;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;

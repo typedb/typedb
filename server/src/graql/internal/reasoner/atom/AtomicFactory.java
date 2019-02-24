@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.atom;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.internal.executor.property.PropertyExecutor;
+import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqValuePredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
