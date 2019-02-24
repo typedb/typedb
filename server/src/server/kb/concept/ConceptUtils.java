@@ -22,7 +22,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.server.kb.Schema;
 import graql.lang.statement.Variable;
 

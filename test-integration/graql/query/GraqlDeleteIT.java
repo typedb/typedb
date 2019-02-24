@@ -18,8 +18,8 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;

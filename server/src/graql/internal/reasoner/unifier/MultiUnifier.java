@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.unifier;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Iterator;

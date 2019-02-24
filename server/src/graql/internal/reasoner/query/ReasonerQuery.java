@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;

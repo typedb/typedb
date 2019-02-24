@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.Concept;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;

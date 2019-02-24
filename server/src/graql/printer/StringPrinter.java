@@ -18,9 +18,9 @@
 
 package grakn.core.graql.printer;
 
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;

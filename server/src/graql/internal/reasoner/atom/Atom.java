@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;

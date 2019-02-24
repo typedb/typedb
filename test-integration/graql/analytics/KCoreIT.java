@@ -18,7 +18,7 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.graql.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.ConceptId;

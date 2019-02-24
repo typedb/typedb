@@ -18,13 +18,13 @@
 
 package grakn.core.server;
 
-import grakn.core.graql.answer.Answer;
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Numeric;
+import grakn.core.concept.answer.Answer;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptList;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.Concept;

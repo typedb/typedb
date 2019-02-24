@@ -20,6 +20,8 @@ package grakn.core.graql.answer;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.exception.GraknConceptException;
 import graql.lang.exception.GraqlException;
 import graql.lang.statement.Variable;
 import org.junit.Rule;
@@ -49,8 +51,8 @@ public class ConceptMapTest {
     public void whenGettingAConceptThatIsNotInTheAnswer_Throw() {
         Variable varNotInAnswer = new Variable("y");
 
-        exception.expect(GraqlException.class);
-        exception.expectMessage(GraqlException.variableOutOfScope(varNotInAnswer.toString()).getMessage());
+        exception.expect(GraknConceptException.class);
+        exception.expectMessage(GraknConceptException.variableDoesNotExist(varNotInAnswer.toString()).getMessage());
 
         answer.get(varNotInAnswer);
     }

@@ -16,63 +16,50 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.answer;
+package grakn.core.concept.answer;
 
-import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
 
-import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * A type of Answer object that contains a List of Answers as the members and a Concept
- * as the owner.
- *
- * @param <T> the type of Answer being grouped
+ * A type of Answer object that contains a List of Concepts.
  */
-public class AnswerGroup<T extends Answer> extends Answer {
+public class ConceptList extends Answer {
 
-    private final Concept owner;
-    private final List<T> answers;
+    // TODO: change to store List<Concept> once we are able to construct Concept without a database look up
+    private final List<ConceptId> list;
     private final Explanation explanation;
 
-    public AnswerGroup(Concept owner, List<T> answers) {
-        this(owner, answers, new Explanation());
+    public ConceptList(List<ConceptId> list) {
+        this(list, new Explanation());
     }
 
-    public AnswerGroup(Concept owner, List<T> answers, Explanation explanation) {
-        this.owner = owner;
-        this.answers = answers;
+    public ConceptList(List<ConceptId> list, Explanation explanation) {
+        this.list = Collections.unmodifiableList(list);
         this.explanation = explanation;
     }
 
-    @Nullable
     @Override
     public Explanation explanation() {
         return explanation;
     }
 
-    public Concept owner() {
-        return this.owner;
-    }
-
-    public List<T> answers() {
-        return this.answers;
+    public List<ConceptId> list() {
+        return list;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        AnswerGroup a2 = (AnswerGroup) obj;
-        return this.owner.equals(a2.owner) &&
-                this.answers.equals(a2.answers);
+        ConceptList a2 = (ConceptList) obj;
+        return this.list.equals(a2.list);
     }
 
     @Override
     public int hashCode() {
-        int hash = owner.hashCode();
-        hash = 31 * hash + answers.hashCode();
-
-        return hash;
+        return list.hashCode();
     }
 }

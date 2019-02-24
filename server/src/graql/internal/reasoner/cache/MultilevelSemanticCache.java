@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.cache;
 
 import com.google.common.base.Equivalence;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;

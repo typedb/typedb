@@ -18,7 +18,7 @@
 
 package grakn.core.graql.reasoner.benchmark;
 
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.Concept;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.EntityType;

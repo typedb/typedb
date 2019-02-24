@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.executor;
 
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.Numeric;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Numeric;
 import graql.lang.Graql;
 import graql.lang.statement.Variable;
 

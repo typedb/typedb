@@ -19,7 +19,7 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.Numeric;
+import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.ConceptId;

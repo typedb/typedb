@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.Concept;

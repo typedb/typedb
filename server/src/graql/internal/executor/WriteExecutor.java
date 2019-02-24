@@ -28,7 +28,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.executor.property.PropertyExecutor.Writer;

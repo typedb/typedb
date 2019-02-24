@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.answer;
+package grakn.core.concept.answer;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.exception.GraknConceptException;

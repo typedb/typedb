@@ -21,7 +21,7 @@ package grakn.core.graql.internal.reasoner.cache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 
 import java.util.Collection;
 import java.util.HashSet;
