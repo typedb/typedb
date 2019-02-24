@@ -220,7 +220,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException attributeMustBeANumber(AttributeType.DataType dataType, Label attributeType) {
-        return new GraqlQueryException(attributeType + " must have data type of `long` or `double`, but was " + dataType.getName());
+        return new GraqlQueryException(attributeType + " must have data type of `long` or `double`, but was " + dataType.name());
     }
 
     public static GraqlQueryException attributesWithDifferentDataTypes(Collection<String> attributeTypes) {

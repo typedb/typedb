@@ -38,12 +38,12 @@ abstract class DataTypeFragment extends Fragment {
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
-        return traversal.has(DATA_TYPE.name(), dataType().getName());
+        return traversal.has(DATA_TYPE.name(), dataType().name());
     }
 
     @Override
     public String name() {
-        return "[datatype:" + dataType().getName() + "]";
+        return "[datatype:" + dataType().name() + "]";
     }
 
     @Override

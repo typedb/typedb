@@ -18,12 +18,13 @@
 
 package grakn.core.graql.concept;
 
-import com.google.common.collect.ImmutableMap;
-
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.stream.Stream;
+
+import static grakn.core.common.util.Collections.list;
 
 /**
  * An ontological element which models and categorises the various Attribute in the graph.
@@ -223,63 +224,69 @@ public interface AttributeType<D> extends Type {
      * @param <D> The data type.
      */
     class DataType<D> {
-        public static final DataType<String> STRING = new DataType<>(
-                String.class
-        );
+        public static final DataType<Boolean> BOOLEAN = new DataType<>(Boolean.class);
+        public static final DataType<LocalDateTime> DATE = new DataType<>(LocalDateTime.class);
+        public static final DataType<Double> DOUBLE = new DataType<>(Double.class);
+        public static final DataType<Float> FLOAT = new DataType<>(Float.class);
+        public static final DataType<Integer> INTEGER = new DataType<>(Integer.class);
+        public static final DataType<Long> LONG = new DataType<>(Long.class);
+        public static final DataType<String> STRING = new DataType<>(String.class);
 
-        public static final DataType<Boolean> BOOLEAN = new DataType<>(
-                Boolean.class
-        );
+        private static final List<DataType<?>> values = list(BOOLEAN, DATE, DOUBLE, FLOAT, INTEGER, LONG, STRING);
 
-        public static final DataType<Integer> INTEGER = new DataType<>(
-                Integer.class
-        );
+        private final Class<D> dataClass;
 
-        public static final DataType<Long> LONG = new DataType<>(
-                Long.class
-        );
-
-        public static final DataType<Double> DOUBLE = new DataType<>(
-                Double.class
-        );
-
-        public static final DataType<Float> FLOAT = new DataType<>(
-                Float.class
-        );
-
-        public static final DataType<LocalDateTime> DATE = new DataType<>(
-                LocalDateTime.class
-        );
-
-        public static final ImmutableMap<Class, DataType<?>> SUPPORTED_TYPES = ImmutableMap.<Class, DataType<?>>builder()
-                .put(STRING.getValueClass(), STRING)
-                .put(BOOLEAN.getValueClass(), BOOLEAN)
-                .put(LONG.getValueClass(), LONG)
-                .put(DOUBLE.getValueClass(), DOUBLE)
-                .put(INTEGER.getValueClass(), INTEGER)
-                .put(FLOAT.getValueClass(), FLOAT)
-                .put(DATE.getValueClass(), DATE)
-                .build();
-
-        private final Class<D> dataType;
-
-
-        private DataType(Class<D> dataType) {
-            this.dataType = dataType;
-        }
-
-        public Class<D> getValueClass() {
-            return dataType;
+        private DataType(Class<D> dataClass) {
+            this.dataClass = dataClass;
         }
 
         @CheckReturnValue
-        public String getName() {
-            return dataType.getName();
+        public Class<D> dataClass() {
+            return dataClass;
+        }
+
+        @CheckReturnValue
+        public String name() {
+            return dataClass.getName();
         }
 
         @Override
         public String toString() {
-            return getName();
+            return name();
+        }
+
+        @CheckReturnValue
+        public static List<DataType<?>> values() {
+            return values;
+        }
+
+        @SuppressWarnings("unchecked")
+        @CheckReturnValue
+        public static <D> DataType<D> of(Class<D> name) {
+            for (DataType<?> dc : DataType.values()) {
+                if (dc.dataClass.equals(name)) {
+                    return (DataType<D>) dc;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            DataType<?> that = (DataType<?>) o;
+
+            return (this.dataClass().equals(that.dataClass()));
+        }
+
+        @Override
+        public int hashCode() {
+            int h = 1;
+            h *= 1000003;
+            h ^=  dataClass.hashCode();
+            return h;
         }
     }
 }

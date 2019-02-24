@@ -150,7 +150,7 @@ public class TransactionException extends GraknException {
      * Thrown when creating an Attribute whose value {@link Object} does not match attribute data type
      */
     public static TransactionException invalidAttributeValue(Object object, AttributeType.DataType dataType) {
-        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.getName()));
+        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.name()));
     }
 
     /**
@@ -165,7 +165,7 @@ public class TransactionException extends GraknException {
     }
 
     public static TransactionException unsupportedDataType(String name) {
-        String supported = AttributeType.DataType.SUPPORTED_TYPES.keySet().stream().map(Class::getName).collect(Collectors.joining(","));
+        String supported = AttributeType.DataType.values().stream().map(AttributeType.DataType::name).collect(Collectors.joining(","));
         return create(ErrorMessage.INVALID_DATATYPE.getMessage(name, supported));
     }
 

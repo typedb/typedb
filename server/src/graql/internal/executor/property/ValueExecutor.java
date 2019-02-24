@@ -155,7 +155,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
         public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
             // Compare to a given value
-            AttributeType.DataType<?> dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass());
+            AttributeType.DataType<?> dataType = AttributeType.DataType.of(value().getClass());
             Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
             traversal.has(property.name(), predicate());
             return traversal;
@@ -163,9 +163,9 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
         public boolean test(Object otherValue) {
             if (this.value().getClass().isInstance(otherValue)) {
-                // TODO: Remove this forced casting once we replace DataType to be Parameterised Generic Enum
+                // TODO: Remove this forced casting
                 AttributeType.DataType<T> dataType =
-                        (AttributeType.DataType<T>) AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass());
+                        (AttributeType.DataType<T>) AttributeType.DataType.of(value().getClass());
                 return predicate().test((U) Serialiser.of(dataType).serialise((T) otherValue));
             } else {
                 return false;
@@ -498,8 +498,8 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 private final java.lang.String gremlinVariable;
 
                 private static final Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> PREDICATES_VAR = varPredicates();
-                private static final java.lang.String[] VALUE_PROPERTIES = AttributeType.DataType.SUPPORTED_TYPES.values().stream()
-                        .map(dataType -> Schema.VertexProperty.ofDataType(dataType)).distinct()
+                private static final java.lang.String[] VALUE_PROPERTIES = AttributeType.DataType.values().stream()
+                        .map(Schema.VertexProperty::ofDataType).distinct()
                         .map(Enum::name).toArray(java.lang.String[]::new);
 
                 Variable(Graql.Token.Comparator comparator, Statement value) {

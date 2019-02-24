@@ -52,7 +52,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, D value) {
-        if (!type.dataType().getValueClass().isInstance(value)) {
+        if (!type.dataType().dataClass().isInstance(value)) {
             throw TransactionException.invalidAttributeValue(value, type.dataType());
         }
 

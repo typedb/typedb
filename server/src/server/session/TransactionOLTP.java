@@ -661,7 +661,7 @@ public class TransactionOLTP implements Transaction {
 
         // TODO: Remove this forced casting once we replace DataType to be Parameterised Generic Enum
         AttributeType.DataType<V> dataType =
-                (AttributeType.DataType<V>) AttributeType.DataType.SUPPORTED_TYPES.get(value.getClass());
+                (AttributeType.DataType<V>) AttributeType.DataType.of(value.getClass());
         if (dataType == null) {
             throw TransactionException.unsupportedDataType(value);
         }

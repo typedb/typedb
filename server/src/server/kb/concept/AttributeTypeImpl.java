@@ -49,7 +49,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
     private AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType) {
         super(vertexElement, type);
-        vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, dataType(), DataType::getName);
+        vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, dataType(), DataType::name);
     }
 
     public static <D> AttributeTypeImpl<D> get(VertexElement vertexElement) {
@@ -182,7 +182,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         if (className == null) return null;
 
         try {
-            return (DataType<D>) DataType.SUPPORTED_TYPES.get(Class.forName(className));
+            return (DataType<D>) DataType.of(Class.forName(className));
         } catch (ClassNotFoundException e) {
             throw TransactionException.unsupportedDataType(className);
         }

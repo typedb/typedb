@@ -89,7 +89,7 @@ public abstract class Fragment {
     static final double COST_NODE_INDEX_VALUE = -Math.log(NUM_INSTANCES_PER_TYPE / NUM_RESOURCES_PER_VALUE);
 
     static final double COST_NODE_NEQ = -Math.log(2D);
-    static final double COST_NODE_DATA_TYPE = -Math.log(AttributeType.DataType.SUPPORTED_TYPES.size() / 2D);
+    static final double COST_NODE_DATA_TYPE = -Math.log(AttributeType.DataType.values().size() / 2D);
     static final double COST_NODE_UNSPECIFIC_PREDICATE = -Math.log(2D);
     static final double COST_NODE_REGEX = -Math.log(2D);
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
