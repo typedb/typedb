@@ -19,8 +19,7 @@
 package grakn.core.graql.answer;
 
 import grakn.core.concept.Concept;
-import grakn.core.graql.exception.GraqlQueryException;
-import graql.lang.exception.GraqlException;
+import grakn.core.concept.exception.GraknConceptException;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
@@ -75,25 +74,15 @@ public class ConceptMap extends Answer {
     @CheckReturnValue
     public Collection<Concept> concepts() { return map.values(); }
 
-    /**
-     * Return the Concept bound to the given variable name.
-     *
-     * @throws GraqlQueryException if the Variable is not in this ConceptMap
-     */
     @CheckReturnValue
     public Concept get(String var) {
         return get(new Variable(var));
     }
 
-    /**
-     * Return the Concept bound to the given Variable.
-     *
-     * @throws GraqlQueryException if the Variable is not in this ConceptMap
-     */
     @CheckReturnValue
     public Concept get(Variable var) {
         Concept concept = map.get(var);
-        if (concept == null) throw GraqlException.variableOutOfScope(var.toString());
+        if (concept == null) throw GraknConceptException.variableDoesNotExist(var.toString());
         return concept;
     }
 

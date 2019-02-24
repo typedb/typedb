@@ -47,4 +47,8 @@ public class GraknConceptException extends GraknException {
     public static GraknConceptException invalidCasting(Object concept, Class type) {
         return GraknConceptException.create(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
     }
+
+    public static GraknConceptException variableDoesNotExist(String var) {
+        return new GraknConceptException(ErrorMessage.VARIABLE_DOES_NOT_EXIST.getMessage(var));
+    }
 }
