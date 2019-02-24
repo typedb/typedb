@@ -28,6 +28,7 @@ import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.kb.concept.DataValue;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Pattern;
 
@@ -626,8 +627,28 @@ public class ConceptMethod {
         private class AttributeType {
 
             private Transaction.Res create(ConceptProto.ValueObject protoValue) {
-                Object value = protoValue.getAllFields().values().iterator().next();
-                grakn.core.graql.concept.Attribute<?> attribute = concept.asAttributeType().create(value);
+                switch (protoValue.getValueCase()) {
+                    case BOOLEAN:
+                        return create(DataValue.BOOLEAN.presented(protoValue.getBoolean()));
+                    case DATE:
+                        return create(DataValue.DATE.presented(protoValue.getDate()));
+                    case DOUBLE:
+                        return create(DataValue.DOUBLE.presented(protoValue.getDouble()));
+                    case FLOAT:
+                        return create(DataValue.FLOAT.presented(protoValue.getFloat()));
+                    case INTEGER:
+                        return create(DataValue.INTEGER.presented(protoValue.getInteger()));
+                    case LONG:
+                        return create(DataValue.LONG.presented(protoValue.getLong()));
+                    case STRING:
+                        return create(DataValue.STRING.presented(protoValue.getString()));
+                    default:
+                        return null;
+                }
+            }
+
+            private <D> Transaction.Res create(D value) {
+                grakn.core.graql.concept.Attribute<D> attribute = concept.<D>asAttributeType().create(value);
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setAttributeTypeCreateRes(ConceptProto.AttributeType.Create.Res.newBuilder()
