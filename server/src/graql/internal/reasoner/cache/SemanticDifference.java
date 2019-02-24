@@ -29,6 +29,7 @@ import grakn.core.graql.internal.executor.property.ValueExecutor;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.unifier.Unifier;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
@@ -139,12 +140,8 @@ public class SemanticDifference {
         ConceptMap unified = unifier.apply(answer);
         if (unified.isEmpty()) return unified;
         Set<Variable> varsToRetain = Sets.difference(unified.vars(), partialSub.vars());
-        return this.satisfiedBy(unified) ?
-                unified
-                        .project(varsToRetain)
-                        .merge(partialSub)
-                        .project(vars) :
-                new ConceptMap();
+        return !this.satisfiedBy(unified) ? new ConceptMap() :
+                ConceptUtils.mergeAnswers(unified.project(varsToRetain), partialSub).project(vars);
     }
 
     boolean isEmpty() { return definition.stream().allMatch(VariableDefinition::isTrivial);}

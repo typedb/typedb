@@ -201,10 +201,10 @@ public abstract class IsaAtom extends IsaAtomBase {
     @Override
     public Stream<ConceptMap> materialise(){
         EntityType entityType = getSchemaConcept().asEntityType();
-        return Stream.of(
-                getParentQuery().getSubstitution()
-                        .merge(new ConceptMap(ImmutableMap.of(getVarName(), EntityTypeImpl.from(entityType).addEntityInferred())))
-        );
+        return Stream.of(ConceptUtils.mergeAnswers(
+                getParentQuery().getSubstitution(),
+                new ConceptMap(ImmutableMap.of(getVarName(), EntityTypeImpl.from(entityType).addEntityInferred()))
+        ));
     }
 
     @Override

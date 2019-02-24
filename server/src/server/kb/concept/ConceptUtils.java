@@ -18,13 +18,19 @@
 
 package grakn.core.server.kb.concept;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import grakn.core.concept.Concept;
 import grakn.core.concept.type.SchemaConcept;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.server.kb.Schema;
+import graql.lang.statement.Variable;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -101,5 +107,49 @@ public class ConceptUtils {
      */
     public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child, boolean direct) {
         return parent != null && child == null || !typesCompatible(parent, child, direct) && !typesCompatible(child, parent, direct);
+    }
+
+    /**
+     * perform an answer merge with optional explanation
+     * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
+     *
+     * @return merged answer
+     */
+    public static ConceptMap mergeAnswers(ConceptMap answerA, ConceptMap answerB) {
+        if (answerB.isEmpty()) return answerA;
+        if (answerA.isEmpty()) return answerB;
+
+        Sets.SetView<Variable> varUnion = Sets.union(answerA.vars(), answerB.vars());
+        Set<Variable> varIntersection = Sets.intersection(answerA.vars(), answerB.vars());
+        Map<Variable, Concept> entryMap = Sets.union(
+                answerA.map().entrySet(),
+                answerB.map().entrySet()
+        )
+                .stream()
+                .filter(e -> !varIntersection.contains(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        varIntersection
+                .forEach(var -> {
+                    Concept concept = answerA.get(var);
+                    Concept otherConcept = answerB.get(var);
+                    if (concept.equals(otherConcept)) entryMap.put(var, concept);
+                    else {
+                        if (concept.isSchemaConcept()
+                                && otherConcept.isSchemaConcept()
+                                && !ConceptUtils.areDisjointTypes(concept.asSchemaConcept(), otherConcept.asSchemaConcept(), false)) {
+                            entryMap.put(
+                                    var,
+                                    Iterables.getOnlyElement(ConceptUtils.topOrMeta(
+                                            Sets.newHashSet(
+                                                    concept.asSchemaConcept(),
+                                                    otherConcept.asSchemaConcept())
+                                                             )
+                                    )
+                            );
+                        }
+                    }
+                });
+        if (!entryMap.keySet().equals(varUnion)) return new ConceptMap();
+        return new ConceptMap(entryMap, answerA.explanation());
     }
 }

@@ -46,6 +46,7 @@ import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.concept.AttributeTypeImpl;
+import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.RelationImpl;
 import graql.lang.Graql;
@@ -356,7 +357,7 @@ public abstract class AttributeAtom extends Binary{
 
         if (attribute != null) {
             attachAttribute(owner, attribute);
-            return Stream.of(substitution.merge(new ConceptMap(ImmutableMap.of(resourceVariable, attribute))));
+            return Stream.of(ConceptUtils.mergeAnswers(substitution, new ConceptMap(ImmutableMap.of(resourceVariable, attribute))));
         }
         return Stream.of(new ConceptMap());
     }

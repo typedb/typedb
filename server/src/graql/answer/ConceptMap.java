@@ -18,25 +18,19 @@
 
 package grakn.core.graql.answer;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.exception.GraqlException;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
-import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 /**
@@ -53,7 +47,7 @@ public class ConceptMap extends Answer {
     }
 
     public ConceptMap(ConceptMap map) {
-        this(map.map(), map.explanation());
+        this(map.map, map.explanation);
     }
 
     public ConceptMap(Map<Variable, Concept> map, Explanation exp) {
@@ -159,78 +153,5 @@ public class ConceptMap extends Answer {
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
                 this.explanation()
         );
-    }
-
-    /**
-     * perform an answer merge with optional explanation
-     * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
-     *
-     * @param map              answer to be merged with
-     * @return merged answer
-     */
-    @CheckReturnValue
-    public ConceptMap merge(ConceptMap map) {
-        if (map.isEmpty()) return this;
-        if (this.isEmpty()) return map;
-
-        Sets.SetView<Variable> varUnion = Sets.union(this.vars(), map.vars());
-        Set<Variable> varIntersection = Sets.intersection(this.vars(), map.vars());
-        Map<Variable, Concept> entryMap = Sets.union(
-                this.map.entrySet(),
-                map.map().entrySet()
-        )
-                .stream()
-                .filter(e -> !varIntersection.contains(e.getKey()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        varIntersection
-                .forEach(var -> {
-                    Concept concept = this.get(var);
-                    Concept otherConcept = map.get(var);
-                    if (concept.equals(otherConcept)) entryMap.put(var, concept);
-                    else {
-                        if (concept.isSchemaConcept()
-                                && otherConcept.isSchemaConcept()
-                                && !ConceptUtils.areDisjointTypes(concept.asSchemaConcept(), otherConcept.asSchemaConcept(), false)) {
-                            entryMap.put(
-                                    var,
-                                    Iterables.getOnlyElement(ConceptUtils.topOrMeta(
-                                            Sets.newHashSet(
-                                                    concept.asSchemaConcept(),
-                                                    otherConcept.asSchemaConcept())
-                                                             )
-                                    )
-                            );
-                        }
-                    }
-                });
-        if (!entryMap.keySet().equals(varUnion)) return new ConceptMap();
-        return new ConceptMap(entryMap, this.explanation());
-    }
-
-    /**
-     * @param toExpand set of variables for which Role hierarchy should be expanded
-     * @return stream of answers with expanded role hierarchy
-     */
-    @CheckReturnValue
-    public Stream<ConceptMap> expandHierarchies(Set<Variable> toExpand) {
-        if (toExpand.isEmpty()) return Stream.of(this);
-        List<Set<AbstractMap.SimpleImmutableEntry<Variable, Concept>>> entryOptions = map.entrySet().stream()
-                .map(e -> {
-                    Variable var = e.getKey();
-                    Concept concept = get(var);
-                    if (toExpand.contains(var)) {
-                        if (concept.isSchemaConcept()) {
-                            return concept.asSchemaConcept().sups()
-                                    .map(sup -> new AbstractMap.SimpleImmutableEntry<>(var, (Concept) sup))
-                                    .collect(Collectors.toSet());
-                        }
-                    }
-                    return Collections.singleton(new AbstractMap.SimpleImmutableEntry<>(var, concept));
-                }).collect(Collectors.toList());
-
-        return Sets.cartesianProduct(entryOptions).stream()
-                .map(mappingList -> new ConceptMap(
-                        mappingList.stream().collect(Collectors.toMap(AbstractMap.SimpleImmutableEntry::getKey, AbstractMap.SimpleImmutableEntry::getValue)), this.explanation()))
-                .map(ans -> ans.explain(explanation()));
     }
 }

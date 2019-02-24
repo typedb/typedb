@@ -30,17 +30,17 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
-import grakn.core.concept.type.EntityType;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
@@ -1056,13 +1056,14 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         roleVarMap.asMap()
                 .forEach((key, value) -> value.forEach(var -> relationship.assign(key, substitution.get(var).asThing())));
 
-        ConceptMap relationSub = getRoleSubstitution().merge(
+        ConceptMap relationSub = ConceptUtils.mergeAnswers(
+                getRoleSubstitution(),
                 getVarName().isUserDefinedName()?
                         new ConceptMap(ImmutableMap.of(getVarName(), relationship)) :
                         new ConceptMap()
         );
 
-        return Stream.of(substitution.merge(relationSub));
+        return Stream.of(ConceptUtils.mergeAnswers(substitution, relationSub));
     }
 
     /**
