@@ -24,77 +24,77 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-public abstract class Serialise<DESERIALISED, SERIALISED> {
+public abstract class Serialiser<DESERIALISED, SERIALISED> {
 
-    public static final Serialise<java.lang.Boolean, java.lang.Boolean> BOOLEAN = new Default<>();
-    public static final Serialise<java.lang.Double, java.lang.Double> DOUBLE = new Default<>();
-    public static final Serialise<java.lang.Float, java.lang.Float> FLOAT = new Default<>();
-    public static final Serialise<java.lang.Integer, java.lang.Integer> INTEGER = new Default<>();
-    public static final Serialise<java.lang.Long, java.lang.Long> LONG = new Default<>();
-    public static final Serialise<java.lang.String, java.lang.String> STRING = new Default<>();
-    public static final Serialise<LocalDateTime, java.lang.Long> DATE = new Serialise.Date();
+    public static final Serialiser<Boolean, Boolean> BOOLEAN = new Default<>();
+    public static final Serialiser<Double, Double> DOUBLE = new Default<>();
+    public static final Serialiser<Float, Float> FLOAT = new Default<>();
+    public static final Serialiser<Integer, Integer> INTEGER = new Default<>();
+    public static final Serialiser<Long, Long> LONG = new Default<>();
+    public static final Serialiser<String, String> STRING = new Default<>();
+    public static final Serialiser<LocalDateTime, Long> DATE = new Serialiser.Date();
 
-    Serialise() {}
+    Serialiser() {}
 
-    public abstract SERIALISED serialised(DESERIALISED value);
+    public abstract SERIALISED serialise(DESERIALISED value);
 
-    public abstract DESERIALISED deserialised(SERIALISED value);
+    public abstract DESERIALISED deserialise(SERIALISED value);
 
     // TODO: This method should not be needed if all usage of this class is
     //       accessed via the constant properties defined above.
-    public static <DESERIALISED> Serialise<DESERIALISED, ?> of(AttributeType.DataType<DESERIALISED> dataType) {
+    public static <DESERIALISED> Serialiser<DESERIALISED, ?> of(AttributeType.DataType<DESERIALISED> dataType) {
         if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
-            return (Serialise<DESERIALISED, ?>) new Default<java.lang.Boolean>();
+            return (Serialiser<DESERIALISED, ?>) new Default<java.lang.Boolean>();
 
         } else if (dataType.equals(AttributeType.DataType.DATE)) {
-            return (Serialise<DESERIALISED, ?>) new Serialise.Date();
+            return (Serialiser<DESERIALISED, ?>) new Serialiser.Date();
 
         } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-            return (Serialise<DESERIALISED, ?>) new Default<java.lang.Double>();
+            return (Serialiser<DESERIALISED, ?>) new Default<java.lang.Double>();
 
         } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
-            return (Serialise<DESERIALISED, ?>) new Default<java.lang.Double>();
+            return (Serialiser<DESERIALISED, ?>) new Default<java.lang.Double>();
 
         } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
-            return (Serialise<DESERIALISED, ?>) new Default<java.lang.Integer>();
+            return (Serialiser<DESERIALISED, ?>) new Default<java.lang.Integer>();
 
         } else if (dataType.equals(AttributeType.DataType.LONG)) {
-            return (Serialise<DESERIALISED, ?>) new Default<java.lang.Long>();
+            return (Serialiser<DESERIALISED, ?>) new Default<java.lang.Long>();
 
         } else if (dataType.equals(AttributeType.DataType.STRING)) {
-            return (Serialise<DESERIALISED, ?>) new Default<java.lang.String>();
+            return (Serialiser<DESERIALISED, ?>) new Default<java.lang.String>();
 
         } else {
             throw new UnsupportedOperationException("Unsupported DataType: " + dataType.toString());
         }
     }
 
-    public static class Default<VALUE> extends Serialise<VALUE, VALUE> {
+    public static class Default<VALUE> extends Serialiser<VALUE, VALUE> {
 
         @Override
-        public VALUE serialised(VALUE value) {
+        public VALUE serialise(VALUE value) {
             return value;
         }
 
         @Override
-        public VALUE deserialised(VALUE value) {
+        public VALUE deserialise(VALUE value) {
             return value;
         }
     }
 
-    public static class Date extends Serialise<LocalDateTime, java.lang.Long> {
+    public static class Date extends Serialiser<LocalDateTime, Long> {
 
         Date() {
             super();
         }
 
         @Override
-        public java.lang.Long serialised(LocalDateTime value) {
+        public java.lang.Long serialise(LocalDateTime value) {
             return value.atZone(ZoneId.of("Z")).toInstant().toEpochMilli();
         }
 
         @Override
-        public LocalDateTime deserialised(java.lang.Long value) {
+        public LocalDateTime deserialise(java.lang.Long value) {
             if (value == null) return null;
             return LocalDateTime.ofInstant(Instant.ofEpochMilli(value), ZoneId.of("Z"));
         }

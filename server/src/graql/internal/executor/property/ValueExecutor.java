@@ -28,7 +28,7 @@ import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.concept.Serialise;
+import grakn.core.server.kb.concept.Serialiser;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
@@ -166,7 +166,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 // TODO: Remove this forced casting once we replace DataType to be Parameterised Generic Enum
                 AttributeType.DataType<T> dataType =
                         (AttributeType.DataType<T>) AttributeType.DataType.SUPPORTED_TYPES.get(value().getClass());
-                return predicate().test((U) Serialise.of(dataType).serialised((T) otherValue));
+                return predicate().test((U) Serialiser.of(dataType).serialise((T) otherValue));
             } else {
                 return false;
             }
@@ -318,7 +318,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 @Override
                 N valueSerialised() {
-                    return new Serialise.Default<N>().serialised(value());
+                    return new Serialiser.Default<N>().serialise(value());
                 }
             }
 
@@ -330,7 +330,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 @Override
                 java.lang.Boolean valueSerialised() {
-                    return Serialise.BOOLEAN.serialised(value());
+                    return Serialiser.BOOLEAN.serialise(value());
                 }
             }
 
@@ -342,7 +342,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 @Override
                 Long valueSerialised() {
-                    return Serialise.DATE.serialised(value());
+                    return Serialiser.DATE.serialise(value());
                 }
             }
 
@@ -354,7 +354,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 @Override
                 java.lang.String valueSerialised() {
-                    return Serialise.STRING.serialised(value());
+                    return Serialiser.STRING.serialise(value());
                 }
             }
         }
@@ -429,7 +429,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 @Override
                 N valueSerialised() {
-                    return new Serialise.Default<N>().serialised(value());
+                    return new Serialiser.Default<N>().serialise(value());
                 }
             }
 
@@ -441,7 +441,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 @Override
                 java.lang.Boolean valueSerialised() {
-                    return Serialise.BOOLEAN.serialised(value());
+                    return Serialiser.BOOLEAN.serialise(value());
                 }
             }
 
@@ -453,7 +453,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 @Override
                 Long valueSerialised() {
-                    return Serialise.DATE.serialised(value());
+                    return Serialiser.DATE.serialise(value());
                 }
             }
 
@@ -467,7 +467,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 @Override
                 java.lang.String valueSerialised() {
-                    return Serialise.STRING.serialised(value());
+                    return Serialiser.STRING.serialise(value());
                 }
 
                 private static Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> stringPredicates() {

@@ -48,7 +48,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Validator;
 import grakn.core.server.kb.concept.ConceptImpl;
-import grakn.core.server.kb.concept.Serialise;
+import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.RoleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
@@ -667,7 +667,7 @@ public class TransactionOLTP implements Transaction {
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
-        getConcepts(Schema.VertexProperty.ofDataType(dataType), Serialise.of(dataType).serialised(value))
+        getConcepts(Schema.VertexProperty.ofDataType(dataType), Serialiser.of(dataType).serialise(value))
                 .forEach(concept -> {
                     if (concept != null && concept.isAttribute()) {
                         attributes.add(concept.asAttribute());

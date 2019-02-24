@@ -198,6 +198,8 @@ public class RequestBuilder {
         }
 
         public static ConceptProto.ValueObject attributeValue(Object value) {
+            // TODO: this conversion method should use Serialiser class, once it's moved to grakn.core.common
+
             ConceptProto.ValueObject.Builder builder = ConceptProto.ValueObject.newBuilder();
             if (value instanceof String) {
                 builder.setString((String) value);
