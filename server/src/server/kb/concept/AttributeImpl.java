@@ -96,7 +96,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      * @param value The value to store on the resource
      */
     private void setValue(D value) {
-        Object valueToPersist = DataValue.of(dataType()).persisted(value);
+        Object valueToPersist = Serialise.of(dataType()).serialised(value);
         Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType());
         vertex().propertyImmutable(property, valueToPersist, vertex().property(property));
     }
@@ -106,7 +106,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      */
     @Override
     public D value() {
-        return DataValue.of(dataType()).presented(
+        return Serialise.of(dataType()).deserialised(
                 vertex().property(Schema.VertexProperty.ofDataType(dataType()))
         );
     }

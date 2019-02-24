@@ -23,8 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -226,38 +224,31 @@ public interface AttributeType<D> extends Type {
      */
     class DataType<D> {
         public static final DataType<String> STRING = new DataType<>(
-                String.class,
-                (v) -> v
+                String.class
         );
 
         public static final DataType<Boolean> BOOLEAN = new DataType<>(
-                Boolean.class,
-                (v) -> v
+                Boolean.class
         );
 
         public static final DataType<Integer> INTEGER = new DataType<>(
-                Integer.class,
-                (v) -> v
+                Integer.class
         );
 
         public static final DataType<Long> LONG = new DataType<>(
-                Long.class,
-                (v) -> v
+                Long.class
         );
 
         public static final DataType<Double> DOUBLE = new DataType<>(
-                Double.class,
-                (v) -> v
+                Double.class
         );
 
         public static final DataType<Float> FLOAT = new DataType<>(
-                Float.class,
-                (v) -> v
+                Float.class
         );
 
         public static final DataType<LocalDateTime> DATE = new DataType<>(
-                LocalDateTime.class,
-                (d) -> d.atZone(ZoneId.of("Z")).toInstant().toEpochMilli()
+                LocalDateTime.class
         );
 
         public static final ImmutableMap<Class, DataType<?>> SUPPORTED_TYPES = ImmutableMap.<Class, DataType<?>>builder()
@@ -271,12 +262,10 @@ public interface AttributeType<D> extends Type {
                 .build();
 
         private final Class<D> dataType;
-        private final Function<D, Object> persistedValue;
 
 
-        private DataType(Class<D> dataType, Function<D, Object> persistedValue) {
+        private DataType(Class<D> dataType) {
             this.dataType = dataType;
-            this.persistedValue = persistedValue;
         }
 
         public Class<D> getValueClass() {
@@ -291,17 +280,6 @@ public interface AttributeType<D> extends Type {
         @Override
         public String toString() {
             return getName();
-        }
-
-        /**
-         * Converts the provided value into the data type and format which it will be saved in.
-         *
-         * @param value The value to be converted
-         * @return The String representation of the value
-         */
-        @CheckReturnValue
-        public Object getPersistedValue(D value) {
-            return persistedValue.apply(value);
         }
     }
 }

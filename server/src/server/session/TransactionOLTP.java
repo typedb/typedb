@@ -48,7 +48,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Validator;
 import grakn.core.server.kb.concept.ConceptImpl;
-import grakn.core.server.kb.concept.DataValue;
+import grakn.core.server.kb.concept.Serialise;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.RoleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
@@ -659,7 +659,7 @@ public class TransactionOLTP implements Transaction {
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
         if (value == null) return Collections.emptySet();
 
-        // TODO: Remove this casting once we replace DataType to be Parameterised Generic Enum
+        // TODO: Remove this forced casting once we replace DataType to be Parameterised Generic Enum
         AttributeType.DataType<V> dataType =
                 (AttributeType.DataType<V>) AttributeType.DataType.SUPPORTED_TYPES.get(value.getClass());
         if (dataType == null) {
@@ -667,7 +667,7 @@ public class TransactionOLTP implements Transaction {
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
-        getConcepts(Schema.VertexProperty.ofDataType(dataType), DataValue.of(dataType).persisted(value))
+        getConcepts(Schema.VertexProperty.ofDataType(dataType), Serialise.of(dataType).serialised(value))
                 .forEach(concept -> {
                     if (concept != null && concept.isAttribute()) {
                         attributes.add(concept.asAttribute());

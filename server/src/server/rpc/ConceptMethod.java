@@ -28,7 +28,7 @@ import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.kb.concept.DataValue;
+import grakn.core.server.kb.concept.Serialise;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Pattern;
 
@@ -629,19 +629,19 @@ public class ConceptMethod {
             private Transaction.Res create(ConceptProto.ValueObject protoValue) {
                 switch (protoValue.getValueCase()) {
                     case BOOLEAN:
-                        return create(DataValue.BOOLEAN.presented(protoValue.getBoolean()));
+                        return create(Serialise.BOOLEAN.deserialised(protoValue.getBoolean()));
                     case DATE:
-                        return create(DataValue.DATE.presented(protoValue.getDate()));
+                        return create(Serialise.DATE.deserialised(protoValue.getDate()));
                     case DOUBLE:
-                        return create(DataValue.DOUBLE.presented(protoValue.getDouble()));
+                        return create(Serialise.DOUBLE.deserialised(protoValue.getDouble()));
                     case FLOAT:
-                        return create(DataValue.FLOAT.presented(protoValue.getFloat()));
+                        return create(Serialise.FLOAT.deserialised(protoValue.getFloat()));
                     case INTEGER:
-                        return create(DataValue.INTEGER.presented(protoValue.getInteger()));
+                        return create(Serialise.INTEGER.deserialised(protoValue.getInteger()));
                     case LONG:
-                        return create(DataValue.LONG.presented(protoValue.getLong()));
+                        return create(Serialise.LONG.deserialised(protoValue.getLong()));
                     case STRING:
-                        return create(DataValue.STRING.presented(protoValue.getString()));
+                        return create(Serialise.STRING.deserialised(protoValue.getString()));
                     default:
                         return null;
                 }
