@@ -87,8 +87,8 @@ public final class ElementFactory {
     }
 
     // ------------------------------------------ Building Attribute
-    <V> AttributeImpl<V> buildAttribute(VertexElement vertex, AttributeType<V> type, V persitedValue) {
-        return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persitedValue));
+    <V> AttributeImpl<V> buildAttribute(VertexElement vertex, AttributeType<V> type, V persistedValue) {
+        return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persistedValue));
     }
 
     // ---------------------------------------- Building Relationship Types  -----------------------------------------------

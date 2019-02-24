@@ -19,11 +19,9 @@
 package grakn.core.graql.concept;
 
 import com.google.common.collect.ImmutableMap;
-import grakn.core.server.exception.TransactionException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.function.Function;
@@ -229,44 +227,38 @@ public interface AttributeType<D> extends Type {
     class DataType<D> {
         public static final DataType<String> STRING = new DataType<>(
                 String.class,
-                (v) -> v,
-                o -> defaultConverter(o, String.class, Object::toString));
+                (v) -> v
+        );
 
         public static final DataType<Boolean> BOOLEAN = new DataType<>(
                 Boolean.class,
-                (v) -> v,
-                o -> defaultConverter(o, Boolean.class, (v) -> Boolean.parseBoolean(v.toString())));
+                (v) -> v
+        );
 
         public static final DataType<Integer> INTEGER = new DataType<>(
                 Integer.class,
-                (v) -> v,
-                o -> defaultConverter(o, Integer.class, (v) -> Integer.parseInt(v.toString())));
+                (v) -> v
+        );
 
         public static final DataType<Long> LONG = new DataType<>(
                 Long.class,
-                (v) -> v,
-                o -> defaultConverter(o, Long.class, (v) -> Long.parseLong(v.toString())));
+                (v) -> v
+        );
 
         public static final DataType<Double> DOUBLE = new DataType<>(
                 Double.class,
-                (v) -> v,
-                o -> defaultConverter(o, Double.class, (v) -> Double.parseDouble(v.toString())));
+                (v) -> v
+        );
 
         public static final DataType<Float> FLOAT = new DataType<>(
                 Float.class,
-                (v) -> v,
-                o -> defaultConverter(o, Float.class, (v) -> Float.parseFloat(v.toString())));
+                (v) -> v
+        );
 
         public static final DataType<LocalDateTime> DATE = new DataType<>(
                 LocalDateTime.class,
-                (d) -> d.atZone(ZoneId.of("Z")).toInstant().toEpochMilli(),
-                (o) -> {
-                    if (o == null) return null;
-                    if (!(o instanceof Long)) {
-                        throw TransactionException.invalidAttributeValue(o, LONG);
-                    }
-                    return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.of("Z"));
-                });
+                (d) -> d.atZone(ZoneId.of("Z")).toInstant().toEpochMilli()
+        );
 
         public static final ImmutableMap<Class, DataType<?>> SUPPORTED_TYPES = ImmutableMap.<Class, DataType<?>>builder()
                 .put(STRING.getValueClass(), STRING)
@@ -280,24 +272,11 @@ public interface AttributeType<D> extends Type {
 
         private final Class<D> dataType;
         private final Function<D, Object> persistedValue;
-        private final Function<Object, D> presentedValue;
 
 
-        private DataType(Class<D> dataType, Function<D, Object> persistedValue, Function<Object, D> presentedValue) {
+        private DataType(Class<D> dataType, Function<D, Object> persistedValue) {
             this.dataType = dataType;
             this.persistedValue = persistedValue;
-            this.presentedValue = presentedValue;
-        }
-
-        private static <X> X defaultConverter(Object o, Class clazz, Function<Object, X> converter) {
-            if (o == null) {
-                return null;
-            } else if (clazz.isInstance(o)) {
-                //noinspection unchecked
-                return (X) o;
-            } else {
-                return converter.apply(o);
-            }
         }
 
         public Class<D> getValueClass() {
@@ -323,17 +302,6 @@ public interface AttributeType<D> extends Type {
         @CheckReturnValue
         public Object getPersistedValue(D value) {
             return persistedValue.apply(value);
-        }
-
-        /**
-         * Converts the provided value into it's correct data type
-         *
-         * @param object The object to be converted into the value
-         * @return The value of the string
-         */
-        @CheckReturnValue
-        public D getValue(Object object) {
-            return presentedValue.apply(object);
         }
     }
 }

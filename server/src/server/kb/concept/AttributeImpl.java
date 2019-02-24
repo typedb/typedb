@@ -21,6 +21,7 @@ package grakn.core.server.kb.concept;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Thing;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -51,6 +52,10 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, D value) {
+        if (!type.dataType().getValueClass().isInstance(value)) {
+            throw TransactionException.invalidAttributeValue(value, type.dataType());
+        }
+
         AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, value);
 
         //Generate the index again. Faster than reading
@@ -91,8 +96,9 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      * @param value The value to store on the resource
      */
     private void setValue(D value) {
+        Object valueToPersist = DataValue.of(dataType()).persisted(value);
         Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType());
-        vertex().propertyImmutable(property, value, vertex().property(property));
+        vertex().propertyImmutable(property, valueToPersist, vertex().property(property));
     }
 
     /**
@@ -100,7 +106,9 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      */
     @Override
     public D value() {
-        return dataType().getValue(vertex().property(Schema.VertexProperty.ofDataType(dataType())));
+        return DataValue.of(dataType()).presented(
+                vertex().property(Schema.VertexProperty.ofDataType(dataType()))
+        );
     }
 
     @Override

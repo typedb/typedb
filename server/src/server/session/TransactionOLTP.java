@@ -48,6 +48,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Validator;
 import grakn.core.server.kb.concept.ConceptImpl;
+import grakn.core.server.kb.concept.DataValue;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.RoleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
@@ -104,7 +105,7 @@ import java.util.stream.Stream;
  * 2. Clearing the graph explicitly closes the connection as well.
  */
 public class TransactionOLTP implements Transaction {
-    final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
+    private final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
     //----------------------------- Shared Variables
     private final SessionImpl session;
     private final JanusGraph janusGraph;
@@ -338,7 +339,8 @@ public class TransactionOLTP implements Transaction {
         return factory().buildConcept(edge);
     }
 
-    @SuppressWarnings("unchecked") // TODO: we shouldn't initialising meta concepts from within a transaction
+    // TODO: We shouldn't initialising meta concepts from within a transaction
+    //       This should be a critical operation that is hidden in deeper
     private boolean initialiseMetaConcepts() {
         boolean schemaInitialised = false;
         if (isMetaSchemaNotInitialised()) {
@@ -657,18 +659,20 @@ public class TransactionOLTP implements Transaction {
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
         if (value == null) return Collections.emptySet();
 
-        AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value.getClass());
+        // TODO: Remove this casting once we replace DataType to be Parameterised Generic Enum
+        AttributeType.DataType<V> dataType =
+                (AttributeType.DataType<V>) AttributeType.DataType.SUPPORTED_TYPES.get(value.getClass());
         if (dataType == null) {
             throw TransactionException.unsupportedDataType(value);
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
-        //noinspection unchecked
-        getConcepts(Schema.VertexProperty.ofDataType(dataType), dataType.getPersistedValue(value)).forEach(concept -> {
-            if (concept != null && concept.isAttribute()) {
-                attributes.add(concept.asAttribute());
-            }
-        });
+        getConcepts(Schema.VertexProperty.ofDataType(dataType), DataValue.of(dataType).persisted(value))
+                .forEach(concept -> {
+                    if (concept != null && concept.isAttribute()) {
+                        attributes.add(concept.asAttribute());
+                    }
+                });
 
         return attributes;
     }

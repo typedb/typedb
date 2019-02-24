@@ -108,7 +108,6 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Attribute<D> create(D value) {
         return putAttribute(value, false);
@@ -122,7 +121,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         Objects.requireNonNull(value);
 
         BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
-            if (dataType().equals(DataType.STRING)) checkConformsToRegexes(value);
+            if (dataType().equals(DataType.STRING)) checkConformsToRegexes((String) value);
             return vertex().tx().factory().buildAttribute(vertex, type, value);
         };
 
@@ -155,12 +154,12 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      * @param value The value to check the regexes against.
      * @throws TransactionException when the value does not conform to the regex of its types
      */
-    private void checkConformsToRegexes(D value) {
+    private void checkConformsToRegexes(String value) {
         //Not checking the datatype because the regex will always be null for non strings.
         this.sups().forEach(sup -> {
             String regex = sup.regex();
-            if (regex != null && !Pattern.matches(regex, (String) value)) {
-                throw TransactionException.regexFailure(this, (String) value, regex);
+            if (regex != null && !Pattern.matches(regex, value)) {
+                throw TransactionException.regexFailure(this, value, regex);
             }
         });
     }
