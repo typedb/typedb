@@ -47,11 +47,11 @@ java_test(
 )
 
 java_test(
-    name = "rule-test-it",
+    name = "rule-it",
     size = "large",
-    srcs = ["RuleTest.java"],
+    srcs = ["RuleIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.server.kb.RuleTest",
+    test_class = "grakn.core.server.kb.RuleIT",
     deps = [
         "//common:common",
         "//concept:concept",
@@ -71,6 +71,6 @@ checkstyle_test(
         ":validator-it",
         ":validate-global-rules-it",
         ":grakn-tx-it",
-        ":rule-test-it",
+        ":rule-it",
     ],
 )

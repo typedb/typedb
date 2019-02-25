@@ -271,7 +271,7 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type("owner").sub("relationship").relates("entity-role-player").relates("attribute-role-player"),
+                    type("owner").sub("relation").relates("entity-role-player").relates("attribute-role-player"),
                     type("owned-entity").sub("entity").plays("entity-role-player"),
                     type(ownedAttributeLabel).sub("attribute").plays("attribute-role-player").datatype(Graql.Token.DataType.STRING)
             ));
