@@ -3,7 +3,7 @@ load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 java_test(
     name = "in-plays-fragment-test",
     srcs = ["InPlaysFragmentTest.java"],
-    test_class = "grakn.core.graql.internal.gremlin.fragment.InPlaysFragmentTest",
+    test_class = "grakn.core.graql.gremlin.fragment.InPlaysFragmentTest",
     deps = [
         "@graknlabs_graql//java:graql",
         "//server:server",
@@ -16,7 +16,7 @@ java_test(
 java_test(
     name = "isa-explicit-test",
     srcs = ["IsaExplicitTest.java"],
-    test_class = "grakn.core.graql.internal.gremlin.fragment.IsaExplicitTest",
+    test_class = "grakn.core.graql.gremlin.fragment.IsaExplicitTest",
     deps = [
         "@graknlabs_graql//java:graql",
         "//server:server",
@@ -27,7 +27,7 @@ java_test(
 java_test(
      name = "out-plays-fragment-test",
      srcs = ["OutPlaysFragmentTest.java"],
-     test_class = "grakn.core.graql.internal.gremlin.fragment.OutPlaysFragmentTest",
+     test_class = "grakn.core.graql.gremlin.fragment.OutPlaysFragmentTest",
      deps = [
          "@graknlabs_graql//java:graql",
          "//server:server",
