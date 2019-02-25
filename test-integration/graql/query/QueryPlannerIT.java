@@ -19,17 +19,17 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
-import grakn.core.graql.internal.gremlin.fragment.Fragment;
-import grakn.core.graql.internal.gremlin.fragment.InIsaFragment;
-import grakn.core.graql.internal.gremlin.fragment.LabelFragment;
-import grakn.core.graql.internal.gremlin.fragment.NeqFragment;
-import grakn.core.graql.internal.gremlin.fragment.OutIsaFragment;
+import grakn.core.graql.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.fragment.InIsaFragment;
+import grakn.core.graql.gremlin.fragment.LabelFragment;
+import grakn.core.graql.gremlin.fragment.NeqFragment;
+import grakn.core.graql.gremlin.fragment.OutIsaFragment;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;

@@ -19,15 +19,15 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Lists;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.ConceptId;
 import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
-import grakn.core.concept.Label;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;

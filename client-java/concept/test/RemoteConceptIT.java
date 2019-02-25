@@ -20,17 +20,17 @@
 package grakn.core.client.concept.test;
 
 import grakn.core.client.GraknClient;
+import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.AttributeType.DataType;
-import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.EntityType;
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
-import grakn.core.concept.thing.Thing;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.pattern.Pattern;
 import org.junit.After;

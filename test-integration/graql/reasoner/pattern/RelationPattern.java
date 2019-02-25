@@ -24,7 +24,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
-import grakn.core.graql.internal.reasoner.utils.Pair;
+import grakn.core.graql.reasoner.utils.Pair;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;

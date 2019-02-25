@@ -20,9 +20,9 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
-import grakn.core.concept.Concept;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;

@@ -20,11 +20,11 @@ package grakn.core.server.keyspace;
 
 import com.google.common.base.Stopwatch;
 import grakn.core.common.config.Config;
+import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Thing;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;

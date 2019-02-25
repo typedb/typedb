@@ -19,10 +19,10 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.Concept;
-import grakn.core.concept.type.EntityType;
 import grakn.core.concept.Label;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;

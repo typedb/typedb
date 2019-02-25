@@ -19,8 +19,8 @@
 package grakn.core.server.exception;
 
 import grakn.core.concept.Concept;
-import grakn.core.concept.type.EntityType;
 import grakn.core.concept.Label;
+import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.kb.Schema;

@@ -20,6 +20,7 @@ package grakn.core.server.rpc;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.util.CommonUtil;
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptMap;
@@ -28,7 +29,6 @@ import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.ConceptId;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;

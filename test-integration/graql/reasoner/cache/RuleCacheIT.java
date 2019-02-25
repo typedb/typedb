@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;

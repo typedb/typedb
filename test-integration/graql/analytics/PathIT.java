@@ -19,13 +19,13 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Lists;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.ConceptId;
 import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
-import grakn.core.concept.Label;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.internal.analytics.Utility.getResourceEdgeId;
+import static grakn.core.graql.analytics.Utility.getResourceEdgeId;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
