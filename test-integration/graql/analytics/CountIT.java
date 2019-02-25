@@ -213,10 +213,10 @@ public class CountIT {
             count = tx.execute(Graql.compute().count().in("@has-name", "name")).get(0);
             assertEquals(3, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship")).get(0);
+            count = tx.execute(Graql.compute().count().in("relation")).get(0);
             assertEquals(0, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship").attributes(true)).get(0);
+            count = tx.execute(Graql.compute().count().in("relation").attributes(true)).get(0);
             assertEquals(2, count.number().intValue());
         }
     }
@@ -241,7 +241,7 @@ public class CountIT {
             RelationType relationshipType =
                     tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                             .relates(resourceOwner).relates(resourceValue);
-            // here relationship type is still implicit
+            // here relation type is still implicit
             relationshipType.create()
                     .assign(resourceOwner, aPerson)
                     .assign(resourceValue, jason);
@@ -266,10 +266,10 @@ public class CountIT {
             count = tx.execute(Graql.compute().count().in("@has-name", "name")).get(0);
             assertEquals(2, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship")).get(0);
+            count = tx.execute(Graql.compute().count().in("relation")).get(0);
             assertEquals(0, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship").attributes(true)).get(0);
+            count = tx.execute(Graql.compute().count().in("relation").attributes(true)).get(0);
             assertEquals(1, count.number().intValue());
         }
 
@@ -294,10 +294,10 @@ public class CountIT {
             count = tx.execute(Graql.compute().count().in("@has-name", "name")).get(0);
             assertEquals(3, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship")).get(0);
+            count = tx.execute(Graql.compute().count().in("relation")).get(0);
             assertEquals(0, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship").attributes(true)).get(0);
+            count = tx.execute(Graql.compute().count().in("relation").attributes(true)).get(0);
             assertEquals(2, count.number().intValue());
         }
     }
