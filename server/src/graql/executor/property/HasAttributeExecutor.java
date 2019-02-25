@@ -25,11 +25,11 @@ import grakn.core.concept.Label;
 import grakn.core.concept.thing.Thing;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.graql.reasoner.atom.Atomic;
+import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
+import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.server.kb.Schema;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.IsaProperty;
@@ -44,8 +44,8 @@ import java.util.stream.Collectors;
 
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.neq;
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
+import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
+import static grakn.core.graql.reasoner.utils.ReasonerUtils.getValuePredicates;
 
 public class HasAttributeExecutor implements PropertyExecutor.Insertable {
 

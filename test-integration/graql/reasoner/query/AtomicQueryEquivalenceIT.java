@@ -20,11 +20,8 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
-import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.reasoner.atom.Atomic;
+import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;
