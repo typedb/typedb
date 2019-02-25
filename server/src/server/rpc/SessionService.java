@@ -48,7 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -72,36 +71,14 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private final Map<String, SessionImpl> openSessions;
     private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
 
-    private final RoundRobinThreadPool transactionThreadPool;
-
-    private class RoundRobinThreadPool {
-        private ArrayList<ExecutorService> threadPools;
-        private int next = 0;
-        public RoundRobinThreadPool(int size) {
-            threadPools = new ArrayList<>(size);
-            for (int i = 0; i < size; i++) {
-                threadPools.add(i, Executors.newSingleThreadExecutor());
-            }
-        }
-
-        public ExecutorService next() {
-            int index = next;
-            next = (next + 1) % threadPools.size();
-            return threadPools.get(index);
-        }
-    }
-
     public SessionService(OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
         this.requestOpener = requestOpener;
         this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
         this.openSessions = new HashMap<>();
-
-        int cores = Runtime.getRuntime().availableProcessors();
-        transactionThreadPool = new RoundRobinThreadPool(cores);
     }
 
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
-        return new TransactionListener(responseSender, attributeDeduplicatorDaemon, openSessions, transactionThreadPool.next());
+        return new TransactionListener(responseSender, attributeDeduplicatorDaemon, openSessions);
     }
 
     @Override
@@ -144,12 +121,16 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final Map<String, SessionImpl> openSessions;
         private final Iterators iterators = Iterators.create();
 
+        private TraceContext receivedTraceContext;
+
         @Nullable
         private TransactionOLTP tx = null;
 
-        public TransactionListener(StreamObserver<Transaction.Res> responseSender, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, Map<String, SessionImpl> openSessions, ExecutorService transactionThreadPool) {
+        public TransactionListener(StreamObserver<Transaction.Res> responseSender, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, Map<String, SessionImpl> openSessions) {
             this.responseSender = responseSender;
-            this.threadExecutor = transactionThreadPool;
+
+            ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
+            this.threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
             this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
             this.openSessions = openSessions;
         }
@@ -267,6 +248,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     responseSender.onCompleted();
                 }
             }
+
+            threadExecutor.shutdown();
         }
 
         private void submit(Runnable runnable) {
