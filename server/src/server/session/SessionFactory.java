@@ -26,8 +26,6 @@ import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.util.LockManager;
 import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.util.JanusGraphCleanup;
-import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,7 +69,7 @@ public class SessionFactory {
     public void deleteKeyspace(Keyspace keyspace) {
 
         // problem on how to implement this in a thread-safe way:
-        // two tasks: close JanusGraph, and remove entry from the keypsace cache map
+        // two tasks: close JanusGraph, and remove entry from the keyspace cache map
 
         // option 1: atomically [close JanusGraph, null value in map], [delete null entry in map]
         // option 2: atomically [remove valid entry from map], [close JanusGraph]
@@ -82,18 +80,21 @@ public class SessionFactory {
         // problem option 2: remove entry from map, second thread creates a new entry and tries to open a new JanusGraph with
         // the same name before we are able to delete the close/delete the old JanusGraph
 
-        // leave the nulled out value for now, further problems exist higher up the stack eg. possibly two concurrent hits on KeyspaceService.delete()?
 
-        KeyspaceCacheContainer keyspaceCacheContainer = keyspaceCacheMap.remove(keyspace);
+        // just null out value for now, allow nulls to accumulate
+        keyspaceCacheMap.compute(keyspace, (ksp, keyspaceCacheContainer) -> {
+            // if a concurrent delete has not occurred already
+            if (keyspaceCacheContainer != null) {
+                // atomically clear the graph, blocking concurrent users from creating
+                JanusGraph graph = keyspaceCacheContainer.retrieveGraph();
+                graph.close();
+                JanusGraphFactory.drop(graph);
+            }
+            // null out the value so others can re-create keyspace
+            return null;
+        });
 
-        try {
-            JanusGraph graph = keyspaceCacheContainer.retrieveGraph();
-            graph.close();
-            JanusGraphCleanup.clear(graph);
-        } catch (BackendException e) {
-            throw new RuntimeException(e);
-        }
-
+        // don't delete the entry, in case it has already been recreated meanwhile, see comments above
     }
 
     /**
@@ -142,7 +143,7 @@ public class SessionFactory {
             return cacheContainer;
         });
 
-        KeyspaceCacheContainer keyspaceCacheContainer= keyspaceCacheMap.get(keyspace);
+        KeyspaceCacheContainer keyspaceCacheContainer = keyspaceCacheMap.get(keyspace);
         session = new SessionImpl(keyspace, config, keyspaceCacheContainer.retrieveCache(), keyspaceCacheContainer.retrieveGraph(), () -> onSessionClose(keyspace));
         return session;
     }
@@ -190,7 +191,10 @@ public class SessionFactory {
         public int referenceCount() {
             return references;
         }
-        public JanusGraph retrieveGraph() { return graph; }
+
+        public JanusGraph retrieveGraph() {
+            return graph;
+        }
 
 
     }

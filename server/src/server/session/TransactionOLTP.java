@@ -277,8 +277,8 @@ public class TransactionOLTP implements Transaction {
      * @return The matching type id
      */
     public LabelId convertToId(Label label) {
-        if (cache().isLabelCached(label)) {
-            return cache().convertLabelToId(label);
+        if (transactionCache.isLabelCached(label)) {
+            return transactionCache.convertLabelToId(label);
         }
         return LabelId.invalid();
     }
@@ -512,8 +512,8 @@ public class TransactionOLTP implements Transaction {
      * @return The {@link SchemaConcept} which was either cached or built via a DB read or write
      */
     private SchemaConcept buildSchemaConcept(Label label, Supplier<SchemaConcept> dbBuilder) {
-//        if (cache().isTypeCached(label)) {
-//            return cache().getCachedSchemaConcept(label);
+//        if (transactionCache.isTypeCached(label)) {
+//            return transactionCache.getCachedSchemaConcept(label);
 //        } else {
             return dbBuilder.get();
 //        }
@@ -580,8 +580,8 @@ public class TransactionOLTP implements Transaction {
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
         return operateOnOpenGraph(() -> {
-            if (cache().isConceptCached(id)) {
-                return cache().getCachedConcept(id);
+            if (transactionCache.isConceptCached(id)) {
+                return transactionCache.getCachedConcept(id);
             } else {
                 if (id.getValue().startsWith(Schema.PREFIX_EDGE)) {
                     Optional<T> concept = getConceptEdge(id);
@@ -685,7 +685,7 @@ public class TransactionOLTP implements Transaction {
         if (isClosed()) {
             return;
         }
-        cache().refreshKeyspaceCache();
+        transactionCache.refreshKeyspaceCache();
         closeTransaction(closeMessage);
     }
 
@@ -701,9 +701,11 @@ public class TransactionOLTP implements Transaction {
         }
         try {
             validateGraph();
+            // lock on the keyspace cache shared between concurrent tx's to the same keyspace
+            // force serialization & atomic updates, keeping Janus and our KeyspaceCache in sync
             synchronized (keyspaceCache) {
                 commitTransactionInternal();
-                cache().flushToKeyspaceCache();
+                transactionCache.flushToKeyspaceCache();
             }
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
@@ -735,7 +737,7 @@ public class TransactionOLTP implements Transaction {
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         } finally {
-            cache().closeTx();
+            transactionCache.closeTx();
             this.closedReason = closedReason;
             this.isTxOpen = false;
             ruleCache().clear();
@@ -745,13 +747,15 @@ public class TransactionOLTP implements Transaction {
     private Optional<CommitLog> commitWithLogs() throws InvalidKBException {
         validateGraph();
 
-        Map<ConceptId, Long> newInstances = cache().getShardingCount();
-        Map<String, Set<ConceptId>> newAttributes = cache().getNewAttributes();
+        Map<ConceptId, Long> newInstances = transactionCache.getShardingCount();
+        Map<String, Set<ConceptId>> newAttributes = transactionCache.getNewAttributes();
         boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
+        // lock on the keyspace cache shared between concurrent tx's to the same keyspace
+        // force serialization & atomic updates, keeping Janus and our KeyspaceCache in sync
         synchronized (keyspaceCache) {
             commitTransactionInternal();
-            cache().flushToKeyspaceCache();
+            transactionCache.flushToKeyspaceCache();
         }
 
         //If we have logs to commit get them and add them

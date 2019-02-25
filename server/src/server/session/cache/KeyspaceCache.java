@@ -34,30 +34,24 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * <p>
- *     Tracks Knowledge Base Specific Variables
- * </p>
  *
- * <p>
- *     Caches Knowledge Base or Session specific data which is shared across transactions:
- *     <ol>
- *         <li>Schema Cache - All the types which make up the schema. This cache expires</li>
- *         <li>
- *             Label Cache - All the labels which make up the schema. This can never expire and is needed in order
- *             to perform fast lookups. Essentially it is used for mapping labels to ids.
- *         </li>
- *     <ol/>
- * </p>
+ * Keyspace cache contains two caches:
+ *   - Schema Cache - An expiring cache that stores Concept objects across transactions
+ *      (currently disabled, shared concepts are not allowed)
+ *   - Label Cache - Map labels to IDs for fast lookups
+ *
+ * These are shared across sessions and transactions to the same keyspace, and kept in sync
+ * on commit.
  *
  *
  */
 public class KeyspaceCache {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    //Caches
+    // Concept cache
     private final Cache<Label, SchemaConcept> cachedTypes;
 
-    // label cache
+    // Label cache
     private final Map<Label, LabelId> cachedLabels;
 
     public KeyspaceCache(Config config) {
@@ -70,26 +64,10 @@ public class KeyspaceCache {
                 .build();
     }
 
-    public KeyspaceCache(Map<Label, LabelId> cachedLabels, Cache<Label, SchemaConcept> cachedTypes) {
-        this.cachedLabels = cachedLabels;
-        this.cachedTypes =  cachedTypes;
-    }
-
-    public KeyspaceCache copy(int cacheTimeout) {
-
-        Cache<Label, SchemaConcept> cachedTypesCopy = CacheBuilder.newBuilder()
-                .maximumSize(1000)
-                .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
-                .build();
-
-        cachedTypesCopy.putAll(this.getCachedTypes());
-
-        Map<Label, LabelId> cachedLabels = new ConcurrentHashMap<>();
-        cachedLabels.putAll(this.getCachedLabels());
-        KeyspaceCache copiedCache = new KeyspaceCache(cachedLabels, cachedTypes);
-        return copiedCache;
-    }
-
+    /**
+     * Copy the contents of the Keyspace cache into a Transaction Cache
+     * @param transactionCache
+     */
     void populateSchemaTxCache(TransactionCache transactionCache){
         try {
             lock.writeLock().lock();
@@ -132,7 +110,7 @@ public class KeyspaceCache {
 
     /**
      * Reads the {@link SchemaConcept} and their {@link Label} currently in the transaction cache
-     * into the graph cache. This usually happens when a commit occurs and allows us to track schema
+     * into the keyspace cache. This happens when a commit occurs and allows us to track schema
      * mutations without having to read the graph.
      *
      * @param transactionCache The transaction cache

@@ -38,6 +38,7 @@ import org.janusgraph.core.RelationType;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.slf4j.Logger;
@@ -110,6 +111,14 @@ final public class JanusGraphFactory {
         }
 
         return JanusGraph;
+    }
+
+    public static void drop(JanusGraph graph) {
+        try {
+            org.janusgraph.core.JanusGraphFactory.drop(graph);
+        } catch (BackendException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

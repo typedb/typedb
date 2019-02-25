@@ -151,14 +151,14 @@ public class TransactionCache {
     /**
      * @return All the types currently cached in the transaction. Used for
      */
-    Map<Label, SchemaConcept> getSchemaConceptCache() {
+    public Map<Label, SchemaConcept> getSchemaConceptCache() {
         return schemaConceptCache;
     }
 
     /**
      * @return All the types labels currently cached in the transaction.
      */
-    Map<Label, LabelId> getLabelCache() {
+    public Map<Label, LabelId> getLabelCache() {
         return labelCache;
     }
 
