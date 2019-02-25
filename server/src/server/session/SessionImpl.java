@@ -23,19 +23,16 @@ import com.google.common.annotations.VisibleForTesting;
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.cache.KeyspaceCache;
 import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.util.JanusGraphCleanup;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
 

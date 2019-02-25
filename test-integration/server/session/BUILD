@@ -34,7 +34,7 @@ java_test(
     name = "session-cache-it",
     test_class = "grakn.core.server.session.SessionCacheIT",
     srcs = ["SessionCacheIT.java"],
-    deps = ["//server", "//test-integration/rule:grakn-test-server", "//client-java"],
+    deps = ["//server", "//test-integration/rule:grakn-test-server", "//client-java", "//concept"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 

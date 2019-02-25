@@ -19,7 +19,7 @@
 package grakn.core.server.session;
 
 import grakn.core.client.GraknClient;
-import grakn.core.graql.concept.Role;
+import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import org.junit.After;
@@ -60,7 +60,7 @@ public class SessionCacheIT {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            tx.putRelationshipType("test-relationship").relates(role1).relates(role2);
+            tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
         try (Transaction tx = localSession.transaction(Transaction.Type.READ)) {
@@ -82,7 +82,7 @@ public class SessionCacheIT {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            tx.putRelationshipType("test-relationship").relates(role1).relates(role2);
+            tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
         SessionImpl testSession = server.sessionFactory().session(localSession.keyspace());
@@ -106,7 +106,7 @@ public class SessionCacheIT {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            tx.putRelationshipType("test-relationship").relates(role1).relates(role2);
+            tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
         try (Transaction tx = testSession.transaction(Transaction.Type.READ)) {
@@ -124,7 +124,7 @@ public class SessionCacheIT {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            tx.putRelationshipType("test-relationship").relates(role1).relates(role2);
+            tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
         localSession.close();
@@ -144,7 +144,7 @@ public class SessionCacheIT {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            tx.putRelationshipType("test-relationship").relates(role1).relates(role2);
+            tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
         try (Transaction tx = remoteSession.transaction(Transaction.Type.READ)) {
@@ -161,7 +161,7 @@ public class SessionCacheIT {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            tx.putRelationshipType("test-relationship").relates(role1).relates(role2);
+            tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
         GraknClient.Session testSession = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().getName());
@@ -180,7 +180,7 @@ public class SessionCacheIT {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            tx.putRelationshipType("test-relationship").relates(role1).relates(role2);
+            tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
         remoteSession.close();
