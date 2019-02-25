@@ -51,7 +51,6 @@ import grakn.core.graql.printer.Printer;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.SessionImpl;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDelete;
@@ -956,7 +955,7 @@ public class GraknClientIT {
             client.keyspaces().delete(tx.keyspace().getName());
         }
 
-        Session newLocalSession = new SessionImpl(localSession.keyspace(), server.config());
+        Session newLocalSession = server.session(localSession.keyspace());
         try (Transaction tx = newLocalSession.transaction(Transaction.Type.READ)) {
             assertNull(tx.getEntityType("easter"));
         }

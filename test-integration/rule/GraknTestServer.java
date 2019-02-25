@@ -134,6 +134,14 @@ public class GraknTestServer extends ExternalResource {
         return new SessionImpl(randomKeyspace, serverConfig);
     }
 
+    public SessionImpl session(String keyspace){
+        return session(Keyspace.of(keyspace));
+    }
+
+    public SessionImpl session(Keyspace keyspace) {
+        return new SessionImpl(keyspace, serverConfig);
+    }
+
     public SessionStore txFactory(){
         return sessionStore;
     }

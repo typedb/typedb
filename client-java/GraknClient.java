@@ -51,8 +51,6 @@ import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.KeyspaceServiceGrpc.KeyspaceServiceBlockingStub;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.exception.TransactionException;
 import grakn.core.server.keyspace.Keyspace;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
@@ -67,13 +65,15 @@ import io.grpc.ManagedChannelBuilder;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Entry-point which communicates with a running Grakn server using gRPC.
@@ -148,7 +148,7 @@ public final class GraknClient {
         }
 
         @Override
-        public void close() throws TransactionException {
+        public void close() {
             sessionStub.close(RequestBuilder.Session.close(sessionId));
             channel.shutdown();
         }
@@ -287,7 +287,7 @@ public final class GraknClient {
         }
 
         @Override
-        public void commit() throws InvalidKBException {
+        public void commit() {
             transceiver.send(RequestBuilder.Transaction.commit());
             responseOrThrow();
             close();
@@ -375,7 +375,8 @@ public final class GraknClient {
                     this, iteratorId, response -> RemoteConcept.of(response.getGetAttributesIterRes().getAttribute(), this)
             );
 
-            return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute).collect(toImmutableSet());
+            return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute)
+                    .collect(collectingAndThen(toSet(), Collections::unmodifiableSet));
         }
 
         @Override

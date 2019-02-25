@@ -21,8 +21,10 @@ package grakn.core.client.test;
 
 import grakn.core.client.GraknClient;
 import grakn.core.client.concept.RemoteConcept;
+import grakn.core.client.exception.GraknClientException;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.common.exception.GraknException;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
@@ -35,7 +37,6 @@ import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
-import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
@@ -208,7 +209,7 @@ public class GraknClientTest {
 
     @Test
     public void whenCommittingATxFails_Throw() {
-        GraknException expectedException = InvalidKBException.create("do it better next time");
+        GraknException expectedException = GraknClientException.create("do it better next time");
         throwOn(RequestBuilder.Transaction.commit(), expectedException);
 
         try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
@@ -240,7 +241,6 @@ public class GraknClientTest {
         }
     }
 
-    @SuppressWarnings("CheckReturnValue")
     @Test
     public void whenAnErrorOccurs_AllFutureActionsThrow() {
         GraqlGet query = match(var("x").isa("thing")).get();
@@ -257,9 +257,9 @@ public class GraknClientTest {
                 assertTrue(e.getMessage().contains(expectedException.getName()));
             }
 
-            exception.expect(TransactionException.class);
-            exception.expectMessage(TransactionException.transactionClosed(null, "The gRPC connection closed").getMessage());
-            tx.getMetaConcept();
+            exception.expect(GraknClientException.class);
+            exception.expectMessage(GraknClientException.connectionClosed().getMessage());
+            Concept concept = tx.getMetaConcept();
         }
     }
 
@@ -487,7 +487,7 @@ public class GraknClientTest {
             exception = error(Status.INTERNAL, e);
         } else if (e instanceof PropertyNotUniqueException) {
             exception = error(Status.ALREADY_EXISTS, e);
-        } else if (e instanceof TransactionException || e instanceof GraqlQueryException || e instanceof InvalidKBException) {
+        } else if (e instanceof TransactionException || e instanceof GraqlQueryException) {
             exception = error(Status.INVALID_ARGUMENT, e);
         } else {
             exception = error(Status.UNKNOWN, e);
