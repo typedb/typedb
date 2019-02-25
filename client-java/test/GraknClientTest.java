@@ -23,10 +23,10 @@ import grakn.core.client.GraknClient;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.common.exception.GraknException;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
@@ -73,7 +73,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
- * Unit Tests for {@link GraknClient.Transaction}
+ * Unit Tests for GraknClient.Transaction
  */
 @SuppressWarnings("Duplicates")
 public class GraknClientTest {
@@ -85,7 +85,7 @@ public class GraknClientTest {
     private static final int ITERATOR = 100;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    // The gRPC server itself is "real" and can be connected to using the {@link #channel()}
+    // The gRPC server itself is "real" and can be connected to using the #channel()
     @Rule
     public final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
     @Rule
@@ -100,7 +100,7 @@ public class GraknClientTest {
     public void setUp() {
         serverRule.getServiceRegistry().addService(sessionService);
         serverRule.getServiceRegistry().addService(keyspaceService);
-        session = new GraknClient(serverRule.getChannel()).session(KEYSPACE.getName());
+        session = new GraknClient().overrideChannel(serverRule.getChannel()).session(KEYSPACE.getName());
     }
 
     @Test
@@ -283,7 +283,7 @@ public class GraknClientTest {
     }
 
     @Test
-    public void whenPuttingRelationshipType_EnsureCorrectRequestIsSent() {
+    public void whenPuttingRelationType_EnsureCorrectRequestIsSent() {
         ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
 
@@ -296,9 +296,9 @@ public class GraknClientTest {
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setPutRelationTypeRes(SessionProto.Transaction.PutRelationType.Res.newBuilder()
                                                    .setRelationType(protoConcept)).build();
-            server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response);
+            server.setResponse(RequestBuilder.Transaction.putRelationType(label), response);
 
-            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRelationshipType(label));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRelationType(label));
         }
     }
 

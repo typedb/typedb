@@ -18,11 +18,11 @@
 
 package grakn.core.server.kb;
 
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -67,7 +67,7 @@ public class ValidateGlobalRulesIT {
         EntityTypeImpl wolf = (EntityTypeImpl) tx.putEntityType("wolf");
         EntityTypeImpl creature = (EntityTypeImpl) tx.putEntityType("creature");
         EntityTypeImpl hunter = (EntityTypeImpl) tx.putEntityType("hunter");
-        RelationType hunts = tx.putRelationshipType("hunts");
+        RelationType hunts = tx.putRelationType("hunts");
         RoleImpl witcher = (RoleImpl) tx.putRole("witcher");
         RoleImpl monster = (RoleImpl) tx.putRole("monster");
         Thing geralt = hunter.create();
@@ -101,7 +101,7 @@ public class ValidateGlobalRulesIT {
     public void testValidatePlaysStructureUnique() {
         Role role1 = tx.putRole("role1");
         Role role2 = tx.putRole("role2");
-        RelationType relationshipType = tx.putRelationshipType("rt").relates(role1).relates(role2);
+        RelationType relationshipType = tx.putRelationType("rt").relates(role1).relates(role2);
 
         EntityType entityType = tx.putEntityType("et");
 
@@ -139,7 +139,7 @@ public class ValidateGlobalRulesIT {
     @Test
     public void testValidateRelationTypeRelates() {
         Role hunter = tx.putRole("hunter");
-        RelationType kills = tx.putRelationshipType("kills");
+        RelationType kills = tx.putRelationType("kills");
 
         assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
         kills.relates(hunter);
@@ -150,7 +150,7 @@ public class ValidateGlobalRulesIT {
     @Test
     public void testAbstractConceptValidation(){
         Role role = tx.putRole("relates");
-        RelationType relationshipType = tx.putRelationshipType("relationTypes");
+        RelationType relationshipType = tx.putRelationType("relationTypes");
 
         assertTrue(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(role).isPresent());
         assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationshipType).isPresent());

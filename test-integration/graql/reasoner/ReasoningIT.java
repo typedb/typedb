@@ -20,11 +20,11 @@ package grakn.core.graql.reasoner;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.RelationType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RelationType;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -39,9 +39,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS_OWNER;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS_VALUE;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -114,7 +114,7 @@ public class ReasoningIT {
                 List<ConceptMap> attributeRelationSubs = tx.execute(Graql.<GraqlGet>parse("match $x sub @has-attribute; get;"));
 
                 assertEquals(attributeSubs.size(), attributeRelationSubs.size());
-                assertTrue(attributeRelationSubs.stream().map(ans -> ans.get("x")).map(Concept::asRelationshipType).allMatch(relTypes::contains));
+                assertTrue(attributeRelationSubs.stream().map(ans -> ans.get("x")).map(Concept::asRelationType).allMatch(relTypes::contains));
 
                 List<ConceptMap> baseResourceSubs = tx.execute(Graql.parse("match $x sub baseResource; get;").asGet());
                 List<ConceptMap> baseResourceRelationSubs = tx.execute(Graql.<GraqlGet>parse("match $x sub @has-baseResource; get;"));

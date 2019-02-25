@@ -19,13 +19,13 @@ package grakn.core.graql.reasoner.graph;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
 import grakn.core.graql.reasoner.pattern.AttributePattern;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.pattern.RelationPattern;
@@ -62,8 +62,8 @@ public class GenericSchemaGraph {
         EntityType anotherEntityType = tx.getEntityType("anotherBaseRoleEntity");
         AttributeType<Object> resourceType = tx.getAttributeType("resource");
         AttributeType<Object> anotherResourceType = tx.getAttributeType("resource-long");
-        RelationType binary = tx.getRelationshipType("binary");
-        RelationType ternary = tx.getRelationshipType("ternary");
+        RelationType binary = tx.getRelationType("binary");
+        RelationType ternary = tx.getRelationType("ternary");
 
         Iterator<Entity> entities = entityType.instances()
                 .filter(et -> !et.type().equals(subRoleEntityType) )

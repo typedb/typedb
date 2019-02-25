@@ -18,21 +18,21 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -88,7 +88,7 @@ public class EntityIT {
     public void whenDeletingInstanceInRelationShip_TheInstanceAndCastingsAreDeletedAndTheRelationRemains() throws TransactionException {
         //Schema
         EntityType type = tx.putEntityType("Concept Type");
-        RelationType relationshipType = tx.putRelationshipType("relationTypes");
+        RelationType relationshipType = tx.putRelationType("relationTypes");
         Role role1 = tx.putRole("role1");
         Role role2 = tx.putRole("role2");
         Role role3 = tx.putRole("role3");
@@ -125,7 +125,7 @@ public class EntityIT {
     @Test
     public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws TransactionException {
         EntityType type = tx.putEntityType("Concept Type");
-        RelationType relationshipType = tx.putRelationshipType("relationTypes");
+        RelationType relationshipType = tx.putRelationType("relationTypes");
         Role role1 = tx.putRole("role1");
         Thing rolePlayer1 = type.create();
 
@@ -150,7 +150,7 @@ public class EntityIT {
         Attribute attribute = attributeType.create("A attribute thing");
 
         entity.has(attribute);
-        Relation relationship = entity.relationships().iterator().next();
+        Relation relationship = entity.relations().iterator().next();
 
         checkImplicitStructure(attributeType, relationship, entity, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_OWNER, Schema.ImplicitType.HAS_VALUE);
     }
@@ -180,11 +180,11 @@ public class EntityIT {
         Attribute attribute1 = attributeType.create("A resource thing");
         Attribute attribute2 = attributeType.create("Another resource thing");
 
-        assertEquals(0, entity.relationships().count());
+        assertEquals(0, entity.relations().count());
         entity.has(attribute1);
-        assertEquals(1, entity.relationships().count());
+        assertEquals(1, entity.relations().count());
         entity.has(attribute2);
-        assertEquals(2, entity.relationships().count());
+        assertEquals(2, entity.relations().count());
 
         tx.commit();
     }
@@ -200,7 +200,7 @@ public class EntityIT {
         Attribute attribute = attributeType.create("A attribute thing");
 
         entity.has(attribute);
-        Relation relationship = entity.relationships().iterator().next();
+        Relation relationship = entity.relations().iterator().next();
 
         checkImplicitStructure(attributeType, relationship, entity, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_OWNER, Schema.ImplicitType.KEY_VALUE);
     }
@@ -297,7 +297,7 @@ public class EntityIT {
         e.has(attribute1);
         EntityImpl.from(e).attributeInferred(attribute2);
 
-        e.relationships().forEach(relationship -> {
+        e.relations().forEach(relationship -> {
             relationship.rolePlayers().forEach(roleplayer ->{
                 if(roleplayer.equals(attribute1)){
                     assertFalse(relationship.isInferred());

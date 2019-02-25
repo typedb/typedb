@@ -20,15 +20,15 @@ package grakn.core.server.rpc;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Explanation;
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptList;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Explanation;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
@@ -76,7 +76,7 @@ public class ResponseBuilder {
                     .build();
         }
 
-        static SessionProto.Transaction.Res getSchemaConcept(@Nullable grakn.core.graql.concept.Concept concept) {
+        static SessionProto.Transaction.Res getSchemaConcept(@Nullable grakn.core.concept.Concept concept) {
             SessionProto.Transaction.GetSchemaConcept.Res.Builder res = SessionProto.Transaction.GetSchemaConcept.Res.newBuilder();
             if (concept == null) {
                 res.setNull(ConceptProto.Null.getDefaultInstance());
@@ -86,7 +86,7 @@ public class ResponseBuilder {
             return SessionProto.Transaction.Res.newBuilder().setGetSchemaConceptRes(res).build();
         }
 
-        static SessionProto.Transaction.Res getConcept(@Nullable grakn.core.graql.concept.Concept concept) {
+        static SessionProto.Transaction.Res getConcept(@Nullable grakn.core.concept.Concept concept) {
             SessionProto.Transaction.GetConcept.Res.Builder res = SessionProto.Transaction.GetConcept.Res.newBuilder();
             if (concept == null) {
                 res.setNull(ConceptProto.Null.getDefaultInstance());
@@ -102,31 +102,31 @@ public class ResponseBuilder {
             return SessionProto.Transaction.Res.newBuilder().setGetAttributesIter(res).build();
         }
 
-        static SessionProto.Transaction.Res putEntityType(grakn.core.graql.concept.Concept concept) {
+        static SessionProto.Transaction.Res putEntityType(grakn.core.concept.Concept concept) {
             SessionProto.Transaction.PutEntityType.Res.Builder res = SessionProto.Transaction.PutEntityType.Res.newBuilder()
                     .setEntityType(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutEntityTypeRes(res).build();
         }
 
-        static SessionProto.Transaction.Res putAttributeType(grakn.core.graql.concept.Concept concept) {
+        static SessionProto.Transaction.Res putAttributeType(grakn.core.concept.Concept concept) {
             SessionProto.Transaction.PutAttributeType.Res.Builder res = SessionProto.Transaction.PutAttributeType.Res.newBuilder()
                     .setAttributeType(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutAttributeTypeRes(res).build();
         }
 
-        static SessionProto.Transaction.Res putRelationshipType(grakn.core.graql.concept.Concept concept) {
+        static SessionProto.Transaction.Res putRelationshipType(grakn.core.concept.Concept concept) {
             SessionProto.Transaction.PutRelationType.Res.Builder res = SessionProto.Transaction.PutRelationType.Res.newBuilder()
                     .setRelationType(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRelationTypeRes(res).build();
         }
 
-        static SessionProto.Transaction.Res putRole(grakn.core.graql.concept.Concept concept) {
+        static SessionProto.Transaction.Res putRole(grakn.core.concept.Concept concept) {
             SessionProto.Transaction.PutRole.Res.Builder res = SessionProto.Transaction.PutRole.Res.newBuilder()
                     .setRole(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRoleRes(res).build();
         }
 
-        static SessionProto.Transaction.Res putRule(grakn.core.graql.concept.Concept concept) {
+        static SessionProto.Transaction.Res putRule(grakn.core.concept.Concept concept) {
             SessionProto.Transaction.PutRule.Res.Builder res = SessionProto.Transaction.PutRule.Res.newBuilder()
                     .setRule(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRuleRes(res).build();
@@ -144,7 +144,7 @@ public class ResponseBuilder {
                                         .setAnswer(Answer.answer(object)))).build();
             }
 
-            static SessionProto.Transaction.Res getAttributes(grakn.core.graql.concept.Concept concept) {
+            static SessionProto.Transaction.Res getAttributes(grakn.core.concept.Concept concept) {
                 return SessionProto.Transaction.Res.newBuilder()
                         .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
                                 .setGetAttributesIterRes(SessionProto.Transaction.GetAttributes.Iter.Res.newBuilder()
@@ -164,23 +164,23 @@ public class ResponseBuilder {
      */
     public static class Concept {
 
-        public static ConceptProto.Concept concept(grakn.core.graql.concept.Concept concept) {
+        public static ConceptProto.Concept concept(grakn.core.concept.Concept concept) {
             return ConceptProto.Concept.newBuilder()
                     .setId(concept.id().getValue())
                     .setBaseType(getBaseType(concept))
                     .build();
         }
 
-        private static ConceptProto.Concept.BASE_TYPE getBaseType(grakn.core.graql.concept.Concept concept) {
+        private static ConceptProto.Concept.BASE_TYPE getBaseType(grakn.core.concept.Concept concept) {
             if (concept.isEntityType()) {
                 return ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE;
-            } else if (concept.isRelationshipType()) {
+            } else if (concept.isRelationType()) {
                 return ConceptProto.Concept.BASE_TYPE.RELATION_TYPE;
             } else if (concept.isAttributeType()) {
                 return ConceptProto.Concept.BASE_TYPE.ATTRIBUTE_TYPE;
             } else if (concept.isEntity()) {
                 return ConceptProto.Concept.BASE_TYPE.ENTITY;
-            } else if (concept.isRelationship()) {
+            } else if (concept.isRelation()) {
                 return ConceptProto.Concept.BASE_TYPE.RELATION;
             } else if (concept.isAttribute()) {
                 return ConceptProto.Concept.BASE_TYPE.ATTRIBUTE;
@@ -290,7 +290,7 @@ public class ResponseBuilder {
             AnswerProto.Explanation.Builder builder = AnswerProto.Explanation.newBuilder()
                     .addAllAnswers(explanation.getAnswers().stream().map(Answer::conceptMap)
                             .collect(Collectors.toList()));
-            if (explanation.getQuery() != null) builder.setPattern(explanation.getQuery().getPattern().toString());
+            if (explanation.getPattern() != null) builder.setPattern(explanation.getPattern().toString());
             return builder.build();
         }
 

@@ -18,18 +18,18 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.Label;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -183,7 +183,7 @@ public class CountIT {
             name.plays(resourceValue);
 
             RelationType relationshipType =
-                    tx.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
+                    tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                             .relates(resourceOwner).relates(resourceValue);
             relationshipType.create()
                     .assign(resourceOwner, aPerson)
@@ -239,7 +239,7 @@ public class CountIT {
             name.plays(resourceValue);
 
             RelationType relationshipType =
-                    tx.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
+                    tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                             .relates(resourceOwner).relates(resourceValue);
             // here relationship type is still implicit
             relationshipType.create()

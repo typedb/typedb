@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.optimisation.JanusPreviousPropertyStepStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
@@ -211,10 +211,10 @@ final public class JanusGraphFactory {
 
     private static void makePropertyKeys(JanusGraphManagement management) {
         stream(Schema.VertexProperty.values()).forEach(property ->
-                                                               makePropertyKey(management, property.name(), property.getDataType()));
+                                                               makePropertyKey(management, property.name(), property.getPropertyClass()));
 
         stream(Schema.EdgeProperty.values()).forEach(property ->
-                                                             makePropertyKey(management, property.name(), property.getDataType()));
+                                                             makePropertyKey(management, property.name(), property.getPropertyClass()));
     }
 
     private static void makePropertyKey(JanusGraphManagement management, String propertyKey, Class type) {

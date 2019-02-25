@@ -18,12 +18,12 @@
 
 package grakn.core.graql.reasoner.benchmark;
 
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
+import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.reasoner.graph.DiagonalGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.PathTreeGraph;
@@ -69,12 +69,12 @@ public class BenchmarkSmallIT {
             Role fromRole = tx.putRole("fromRole");
             Role toRole = tx.putRole("toRole");
 
-            RelationType relation0 = tx.putRelationshipType("relation0")
+            RelationType relation0 = tx.putRelationType("relation0")
                     .relates(fromRole)
                     .relates(toRole);
 
             for (int i = 1; i <= N; i++) {
-                tx.putRelationshipType("relation" + i)
+                tx.putRelationType("relation" + i)
                         .relates(fromRole)
                         .relates(toRole);
             }

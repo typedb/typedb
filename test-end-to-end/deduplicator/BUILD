@@ -5,10 +5,16 @@ java_test(
     test_class = "grakn.core.deduplicator.AttributeDeduplicatorE2E",
     srcs = ["AttributeDeduplicatorE2E.java", "AttributeDeduplicatorE2EConstants.java"],
     deps = [
+        # Internal dependencies
         "//client-java:client-java",
         "//common:common",
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
+
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java:graql",
+
+        # External dependencies from Maven
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",

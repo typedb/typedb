@@ -24,18 +24,18 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.internal.reasoner.atom.Atom;
-import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
-import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.type.Role;
+import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.graql.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.reasoner.unifier.Unifier;
+import grakn.core.graql.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -293,7 +293,7 @@ public class AtomicUnificationIT {
         assertCollectionsNonTriviallyEqual(
                 parentAnswers,
                 childAnswers.stream()
-                        .map(a -> a.unify(unifier))
+                        .map(unifier::apply)
                         .map(a -> a.project(parentQuery.getVarNames()))
                         .distinct()
                         .collect(Collectors.toList())
@@ -301,7 +301,7 @@ public class AtomicUnificationIT {
         assertCollectionsNonTriviallyEqual(
                 parentAnswers2,
                 childAnswers.stream()
-                        .map(a -> a.unify(unifier2))
+                        .map(unifier2::apply)
                         .map(a -> a.project(parentQuery2.getVarNames()))
                         .distinct()
                         .collect(Collectors.toList())
@@ -335,9 +335,9 @@ public class AtomicUnificationIT {
         ConceptMap resourceAnswer2 = tx.execute(resourceQuery2.getQuery(), false).iterator().next();
         ConceptMap resourceAnswer3 = tx.execute(resourceQuery3.getQuery(), false).iterator().next();
 
-        assertEquals(typeAnswer.get("x"), resourceAnswer.unify(unifier).get("x"));
-        assertEquals(typeAnswer.get("x"), resourceAnswer2.unify(unifier2).get("x"));
-        assertEquals(typeAnswer.get("x"), resourceAnswer3.unify(unifier3).get("x"));
+        assertEquals(typeAnswer.get("x"), unifier.apply(resourceAnswer).get("x"));
+        assertEquals(typeAnswer.get("x"), unifier2.apply(resourceAnswer2).get("x"));
+        assertEquals(typeAnswer.get("x"), unifier3.apply(resourceAnswer3).get("x"));
     }
 
     @Test
@@ -485,7 +485,7 @@ public class AtomicUnificationIT {
 
         List<ConceptMap> childAnswers = tx.execute(childQuery.getQuery(), false);
         List<ConceptMap> unifiedAnswers = childAnswers.stream()
-                .map(a -> a.unify(unifier))
+                .map(unifier::apply)
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
         List<ConceptMap> parentAnswers = tx.execute(parentQuery.getQuery(), false);
@@ -505,7 +505,7 @@ public class AtomicUnificationIT {
         } else {
             assertCollectionsNonTriviallyEqual(parentAnswers, unifiedAnswers);
             Unifier inverse = unifier.inverse();
-            List<ConceptMap> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
+            List<ConceptMap> parentToChild = parentAnswers.stream().map(inverse::apply).collect(Collectors.toList());
             assertCollectionsNonTriviallyEqual(parentToChild, childAnswers);
         }
     }

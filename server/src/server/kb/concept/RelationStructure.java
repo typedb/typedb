@@ -18,11 +18,11 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
 import grakn.core.server.kb.cache.CacheOwner;
 
 import java.util.Map;
@@ -30,53 +30,40 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     Encapsulates The structure of a  Relation.
- * </p>
- *
- * <p>
- *     This wraps up the structure of a Relation as either a RelationReified or a
- *     RelationEdge.
- *     It contains methods which can be accessed regardless of the Relation being a represented by a
- *     VertexElement or an EdgeElement
- * </p>
- *
- *
+ * Encapsulates The structure of a  Relation.
+ * This wraps up the structure of a Relation as either a RelationReified or a
+ * RelationEdge.
+ * It contains methods which can be accessed regardless of the Relation being a represented by a
+ * VertexElement or an EdgeElement
  */
 interface RelationStructure extends CacheOwner {
 
     /**
-     *
      * @return The ConceptId of the Relation
      */
     ConceptId id();
 
     /**
-     *
      * @return The relation structure which has been reified
      */
     RelationReified reify();
 
     /**
-     *
      * @return true if the Relation has been reified meaning it can support n-ary relationships
      */
     boolean isReified();
 
     /**
-     *
      * @return The RelationType of the Relation
      */
     RelationType type();
 
     /**
-     *
      * @return All the Roles and the Things which play them
      */
     Map<Role, Set<Thing>> allRolePlayers();
 
     /**
-     *
      * @param roles The Roles which are played in this relation
      * @return The Things which play those Roles
      */
@@ -94,9 +81,9 @@ interface RelationStructure extends CacheOwner {
 
     /**
      * Used to indicate if this Relation has been created as the result of a Rule inference.
-     * @see Rule
      *
      * @return true if this Relation exists due to a rule
+     * @see Rule
      */
     boolean isInferred();
 

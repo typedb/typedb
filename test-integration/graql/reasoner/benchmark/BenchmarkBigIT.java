@@ -22,11 +22,11 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import grakn.core.client.GraknClient;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import graql.lang.Graql;
@@ -97,7 +97,7 @@ public class BenchmarkBigIT {
             assertEquals(instances.length, N);
             Role fromRole = transaction.getRole(fromRoleLabel);
             Role toRole = transaction.getRole(toRoleLabel);
-            RelationType relationType = transaction.getRelationshipType(relationLabel);
+            RelationType relationType = transaction.getRelationType(relationLabel);
 
             Random rand = new Random();
             Multimap<Integer, Integer> assignmentMap = HashMultimap.create();
@@ -164,7 +164,7 @@ public class BenchmarkBigIT {
 
                 //define N relation types
                 for (int i = 1; i <= N; i++) {
-                    transaction.putRelationshipType(genericRelationLabel + i)
+                    transaction.putRelationType(genericRelationLabel + i)
                             .relates(fromRole)
                             .relates(toRole);
                 }
@@ -210,7 +210,7 @@ public class BenchmarkBigIT {
                         .map(ans -> ans.get(entityVar.var()).id())
                         .toArray(ConceptId[]::new);
 
-                RelationType baseRelation = transaction.getRelationshipType(baseRelationLabel);
+                RelationType baseRelation = transaction.getRelationType(baseRelationLabel);
                 Role fromRole = transaction.getRole(fromRoleLabel);
                 Role toRole = transaction.getRole(toRoleLabel);
                 transaction.execute(

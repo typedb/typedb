@@ -18,13 +18,13 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import graql.lang.Graql;
@@ -65,7 +65,7 @@ public class GeoGraph {
 
         geoEntity = tx.putRole("geo-entity");
         entityLocation = tx.putRole("entity-location");
-        isLocatedIn = tx.putRelationshipType("is-located-in")
+        isLocatedIn = tx.putRelationType("is-located-in")
                 .relates(geoEntity).relates(entityLocation);
 
         geographicalObject = tx.putEntityType("geoObject")

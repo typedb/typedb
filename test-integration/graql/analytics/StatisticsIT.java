@@ -19,21 +19,21 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.Schema;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.query.GraqlCompute;
@@ -520,7 +520,7 @@ public class StatisticsIT {
             Attribute power1 = power.create(1L);
             Attribute power2 = power.create(2L);
             Attribute power3 = power.create(3L);
-            RelationType relationType = tx.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
+            RelationType relationType = tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
                     .relates(resourceOwner).relates(resourceValue);
 
             relationType.create()
@@ -574,7 +574,7 @@ public class StatisticsIT {
             Role relation2 = tx.putRole("relation2");
             entityType1.plays(relation1).plays(relation2);
             entityType2.plays(relation1).plays(relation2);
-            RelationType related = tx.putRelationshipType("related").relates(relation1).relates(relation2);
+            RelationType related = tx.putRelationType("related").relates(relation1).relates(relation2);
 
             related.create()
                     .assign(relation1, entity1)

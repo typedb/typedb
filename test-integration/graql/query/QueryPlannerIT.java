@@ -19,17 +19,17 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
-import grakn.core.graql.internal.gremlin.fragment.Fragment;
-import grakn.core.graql.internal.gremlin.fragment.InIsaFragment;
-import grakn.core.graql.internal.gremlin.fragment.LabelFragment;
-import grakn.core.graql.internal.gremlin.fragment.NeqFragment;
-import grakn.core.graql.internal.gremlin.fragment.OutIsaFragment;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.graql.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.fragment.InIsaFragment;
+import grakn.core.graql.gremlin.fragment.LabelFragment;
+import grakn.core.graql.gremlin.fragment.NeqFragment;
+import grakn.core.graql.gremlin.fragment.OutIsaFragment;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -99,9 +99,9 @@ public class QueryPlannerIT {
         superType1.plays(role1).plays(role2).plays(role3);
         entityType2.plays(role1).plays(role2).plays(role3);
         entityType3.plays(role1).plays(role2).plays(role3);
-        RelationType relationshipType1 = graph.putRelationshipType(related)
+        RelationType relationshipType1 = graph.putRelationType(related)
                 .relates(role1).relates(role2).relates(role3);
-        graph.putRelationshipType(sameAsRelated)
+        graph.putRelationType(sameAsRelated)
                 .relates(role1).relates(role2).relates(role3);
 
         Role role4 = graph.putRole("role4");
@@ -109,7 +109,7 @@ public class QueryPlannerIT {
         entityType1.plays(role4).plays(role5);
         entityType2.plays(role4).plays(role5);
         entityType4.plays(role4);
-        graph.putRelationshipType(veryRelated)
+        graph.putRelationType(veryRelated)
                 .relates(role4).relates(role5);
 
         Entity entity1 = entityType1.create();

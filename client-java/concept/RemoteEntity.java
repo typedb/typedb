@@ -20,13 +20,13 @@
 package grakn.core.client.concept;
 
 import grakn.core.client.GraknClient;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.EntityType;
 
 /**
- * Client implementation of {@link Entity}
+ * Client implementation of Entity
  */
 public class RemoteEntity extends RemoteThing<Entity, EntityType> implements Entity {
 

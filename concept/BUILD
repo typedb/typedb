@@ -16,30 +16,37 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 #
-#package(default_visibility = ["//visibility:public"])
-#
-#load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
-#load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
-#
-#java_library(
-#    name = "concept",
-#    srcs = glob(["**/*.java"]),
-#    deps = [
-#
-#    ],
-#    tags = ["maven_coordinates=grakn.core:concept:{pom_version}"],
-#)
-#
-#
-#deploy_maven_jar(
-#    name = "deploy-maven-jar",
-#    target = ":concept",
-#    package = "concept",
-#)
-#
-#checkstyle_test(
-#    name = "checkstyle",
-#    targets = [
-#        ":concept"
-#    ],
-#)
+package(default_visibility = ["//visibility:public"])
+
+load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
+load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+
+java_library(
+    name = "concept",
+    srcs = glob(["**/*.java"]),
+    deps = [
+        # Internal dependencies
+        "//common:common",
+
+        # External dependenicies from @graknlabs
+        "@graknlabs_graql//java:graql",
+
+        # External dependencies from Maven
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+    ],
+    tags = ["maven_coordinates=grakn.core:concept:{pom_version}"],
+)
+
+
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    target = ":concept",
+    package = "concept",
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":concept"
+    ],
+)

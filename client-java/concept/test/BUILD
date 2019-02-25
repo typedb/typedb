@@ -27,6 +27,7 @@ java_test(
     deps = [
         # Grakn Core dependencies
         "//client-java",
+        "//concept:concept",
         "//server:server", # NEEDS TO GO
         "//test-integration/rule:grakn-test-server",
 

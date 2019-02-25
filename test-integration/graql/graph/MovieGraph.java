@@ -18,16 +18,16 @@
 
 package grakn.core.graql.graph;
 
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 
@@ -77,27 +77,27 @@ public class MovieGraph {
     private static void buildSchema(Transaction tx) {
         work = tx.putRole("work");
         author = tx.putRole("author");
-        authoredBy = tx.putRelationshipType("authored-by").relates(work).relates(author);
+        authoredBy = tx.putRelationType("authored-by").relates(work).relates(author);
 
         productionBeingDirected = tx.putRole("production-being-directed").sup(work);
         director = tx.putRole("director").sup(author);
-        directedBy = tx.putRelationshipType("directed-by").sup(authoredBy)
+        directedBy = tx.putRelationType("directed-by").sup(authoredBy)
                 .relates(productionBeingDirected).relates(director);
 
         productionWithCast = tx.putRole("production-with-cast");
         actor = tx.putRole("actor");
         characterBeingPlayed = tx.putRole("character-being-played");
-        hasCast = tx.putRelationshipType("has-cast")
+        hasCast = tx.putRelationType("has-cast")
                 .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
 
         genreOfProduction = tx.putRole("genre-of-production");
         productionWithGenre = tx.putRole("production-with-genre");
-        hasGenre = tx.putRelationshipType("has-genre")
+        hasGenre = tx.putRelationType("has-genre")
                 .relates(genreOfProduction).relates(productionWithGenre);
 
         clusterOfProduction = tx.putRole("cluster-of-production");
         productionWithCluster = tx.putRole("production-with-cluster");
-        hasCluster = tx.putRelationshipType("has-cluster")
+        hasCluster = tx.putRelationType("has-cluster")
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
         title = tx.putAttributeType("title", AttributeType.DataType.STRING);

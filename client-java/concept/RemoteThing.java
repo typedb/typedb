@@ -21,21 +21,21 @@ package grakn.core.client.concept;
 
 import grakn.core.client.GraknClient;
 import grakn.core.client.rpc.RequestBuilder;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Type;
 import grakn.core.protocol.ConceptProto;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link Thing}
+ * Client implementation of Thing
  *
  * @param <SomeThing> The exact type of this class
  * @param <SomeType>  the type of an instance of this class
@@ -84,7 +84,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     }
 
     @Override
-    public final Stream<Relation> relationships(Role... roles) {
+    public final Stream<Relation> relations(Role... roles) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingRelationsReq(ConceptProto.Thing.Relations.Req.newBuilder()
                                               .addAllRoles(RequestBuilder.Concept.concepts(Arrays.asList(roles)))).build();
@@ -111,7 +111,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     @Override
     @Deprecated
     public final Relation relhas(Attribute attribute) {
-        // TODO: replace usage of this method as a getter, with relationships(Attribute attribute)
+        // TODO: replace usage of this method as a getter, with relations(Attribute attribute)
         // TODO: then remove this method altogether and just use has(Attribute attribute)
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingRelhasReq(ConceptProto.Thing.Relhas.Req.newBuilder()

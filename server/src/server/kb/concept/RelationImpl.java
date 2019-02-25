@@ -19,13 +19,13 @@
 package grakn.core.server.kb.concept;
 
 import com.google.common.collect.Iterables;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.structure.VertexElement;
@@ -53,6 +53,10 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
 
     public static RelationImpl create(RelationStructure relationshipStructure) {
         return new RelationImpl(relationshipStructure);
+    }
+
+    public static RelationImpl from(Relation relationship) {
+        return (RelationImpl) relationship;
     }
 
     /**
@@ -119,8 +123,8 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
     }
 
     @Override
-    public Stream<Relation> relationships(Role... roles) {
-        return readFromReified((relationReified) -> relationReified.relationships(roles));
+    public Stream<Relation> relations(Role... roles) {
+        return readFromReified((relationReified) -> relationReified.relations(roles));
     }
 
     @Override
@@ -225,10 +229,6 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
     @Override
     public VertexElement vertex() {
         return reify().vertex();
-    }
-
-    public static RelationImpl from(Relation relationship) {
-        return (RelationImpl) relationship;
     }
 
     @Override

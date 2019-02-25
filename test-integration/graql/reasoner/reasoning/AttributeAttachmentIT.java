@@ -19,7 +19,7 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -36,9 +36,9 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS_OWNER;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS_VALUE;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
@@ -193,7 +193,7 @@ public class AttributeAttachmentIT {
                     {
                         assertTrue(ans.get("x").isEntity());
                         assertTrue(ans.get("y").isAttribute());
-                        assertTrue(ans.get("z").isRelationship());
+                        assertTrue(ans.get("z").isRelation());
                     }
             );
 
@@ -202,7 +202,7 @@ public class AttributeAttachmentIT {
             assertEquals(1, answers2.size());
             answers2.forEach(ans ->
                     {
-                        assertTrue(ans.get("x").isRelationship());
+                        assertTrue(ans.get("x").isRelation());
                         assertTrue(ans.get("y").isAttribute());
                     }
             );

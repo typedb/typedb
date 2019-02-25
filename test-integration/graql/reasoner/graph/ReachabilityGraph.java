@@ -18,10 +18,10 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
+import grakn.core.concept.Label;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 
@@ -58,7 +58,7 @@ public class ReachabilityGraph {
         EntityType node = tx.getEntityType("node");
         Role from = tx.getRole("from");
         Role to = tx.getRole("to");
-        RelationType link = tx.getRelationshipType("link");
+        RelationType link = tx.getRelationType("link");
 
         //basic test variant from Green
         putEntityWithResource(tx, "aa", node, key);

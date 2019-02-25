@@ -18,11 +18,11 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -61,7 +61,7 @@ public class CastingIT {
         role2 = tx.putRole("role2");
         role3 = tx.putRole("role3");
         entityType = tx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
-        relationshipType = tx.putRelationshipType("Relationship Type").relates(role1).relates(role2).relates(role3);
+        relationshipType = tx.putRelationType("Relationship Type").relates(role1).relates(role2).relates(role3);
     }
 
     @After

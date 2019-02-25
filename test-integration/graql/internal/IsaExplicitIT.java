@@ -19,19 +19,19 @@
 package grakn.core.graql.internal;
 
 import com.google.common.collect.ImmutableList;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
-import grakn.core.graql.internal.gremlin.fragment.Fragment;
-import grakn.core.graql.internal.gremlin.fragment.InIsaFragment;
-import grakn.core.graql.internal.gremlin.fragment.InSubFragment;
-import grakn.core.graql.internal.gremlin.fragment.LabelFragment;
-import grakn.core.graql.internal.gremlin.fragment.NeqFragment;
-import grakn.core.graql.internal.gremlin.fragment.OutIsaFragment;
-import grakn.core.graql.internal.gremlin.fragment.OutRolePlayerFragment;
-import grakn.core.graql.internal.gremlin.fragment.OutSubFragment;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.graql.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.fragment.InIsaFragment;
+import grakn.core.graql.gremlin.fragment.InSubFragment;
+import grakn.core.graql.gremlin.fragment.LabelFragment;
+import grakn.core.graql.gremlin.fragment.NeqFragment;
+import grakn.core.graql.gremlin.fragment.OutIsaFragment;
+import grakn.core.graql.gremlin.fragment.OutRolePlayerFragment;
+import grakn.core.graql.gremlin.fragment.OutSubFragment;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
@@ -76,7 +76,7 @@ public class IsaExplicitIT {
         superType1.plays(role1).plays(role2).plays(role3);
         entityType2.plays(role1).plays(role2).plays(role3);
         entityType3.plays(role1).plays(role2).plays(role3);
-        RelationType relationshipType = tx.putRelationshipType("related")
+        RelationType relationshipType = tx.putRelationType("related")
                 .relates(role1).relates(role2).relates(role3);
 
         Entity entity1 = entityType1.create();

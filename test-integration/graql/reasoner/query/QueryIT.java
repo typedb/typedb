@@ -18,17 +18,14 @@
 
 package grakn.core.graql.reasoner.query;
 
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import grakn.core.graql.internal.reasoner.rule.RuleUtils;
+import grakn.core.concept.Concept;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.graql.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.reasoner.graph.GeoGraph;
+import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -84,11 +81,11 @@ public class QueryIT {
             try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
 
                 Role someRole = tx.putRole("someRole");
-                tx.putRelationshipType("relation")
+                tx.putRelationType("relation")
                         .relates(someRole);
-                RelationType inferredBase = tx.putRelationshipType("inferredBase")
+                RelationType inferredBase = tx.putRelationType("inferredBase")
                         .relates(someRole);
-                tx.putRelationshipType("inferred")
+                tx.putRelationType("inferred")
                         .relates(someRole).sup(inferredBase);
                 tx.putEntityType("genericEntity")
                         .plays(someRole);

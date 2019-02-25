@@ -18,14 +18,14 @@
 
 package grakn.core.graql.printer;
 
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
+import grakn.core.concept.Concept;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptList;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.type.AttributeType;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -51,7 +51,7 @@ public abstract class Printer<Builder> {
      * @param attributeTypes list of attribute types that should be included in the String output
      * @return a new StringPrinter object
      */
-    public static Printer<StringBuilder> stringPrinter(boolean colorize, AttributeType... attributeTypes) {
+    public static StringPrinter stringPrinter(boolean colorize, AttributeType... attributeTypes) {
         return new StringPrinter(colorize, attributeTypes);
     }
 

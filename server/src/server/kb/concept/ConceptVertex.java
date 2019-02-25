@@ -18,26 +18,19 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Concept;
+import grakn.core.concept.Concept;
 import grakn.core.server.kb.structure.VertexElement;
 
 /**
- * <p>
- *     A Concept represented as a VertexElement
- * </p>
- *
- * <p>
- *     This class is helper used to ensure that any concept which needs to contain a VertexElement can handle it.
- *     Either by returning an existing one r going through some reification procedure to return a new one.
- * </p>
- *
- *
+ * A Concept represented as a VertexElement
+ * This class is helper used to ensure that any concept which needs to contain a VertexElement can handle it.
+ * Either by returning an existing one r going through some reification procedure to return a new one.
  */
 public interface ConceptVertex {
 
-    VertexElement vertex();
-
-    static ConceptVertex from(Concept concept){
+    static ConceptVertex from(Concept concept) {
         return (ConceptVertex) concept;
     }
+
+    VertexElement vertex();
 }

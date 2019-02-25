@@ -24,29 +24,29 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.client.GraknClient;
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.AttributeType.DataType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptList;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.AttributeType.DataType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.printer.Printer;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
@@ -79,6 +79,8 @@ import java.util.stream.Stream;
 import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
 import static graql.lang.Graql.Token.Compute.Algorithm.K_CORE;
+import static graql.lang.Graql.and;
+import static graql.lang.Graql.rel;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
@@ -219,8 +221,8 @@ public class GraknClientIT {
     }
 
     @Test
-    @Ignore // TODO: complete with richer relationship structures
-    public void testGetQueryForRelationship() {
+    @Ignore // TODO: complete with richer relation structures
+    public void testGetQueryForRelation() {
         try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
             List<ConceptMap> directorships = tx.execute(Graql.match(var("x").isa("directed-by")).get());
 
@@ -231,65 +233,49 @@ public class GraknClientIT {
     }
 
     @Test
-    @Ignore
     public void testExecutingAQuery_ExplanationsAreReturned() {
-        Session reasonerLocalSession = server.sessionWithNewKeyspace();
-        try (Transaction tx = reasonerLocalSession.transaction(Transaction.Type.WRITE)) {
-//            GenealogyKB.get().accept(tx);
+        try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.define(
+                    type("name").sub("attribute").datatype("string"),
+                    type("content").sub("entity").has("name").plays("contained").plays("container"),
+                    type("contains").sub("relationship").relates("contained").relates("container"),
+                    type("transitive-location").sub("rule")
+                    .when(and(
+                            rel("contained", "x").rel("container", "y").isa("contains"),
+                            rel("contained", "y").rel("container", "z").isa("contains")
+                    ))
+                    .then(rel("contained", "x").rel("container", "z").isa("contains"))
+            ));
+            tx.execute(Graql.insert(
+                    var("x").isa("content").has("name", "x"),
+                    var("y").isa("content").has("name", "y"),
+                    var("z").isa("content").has("name", "z"),
+                    rel("contained", "x").rel("container", "y").isa("contains"),
+                    rel("contained", "y").rel("container", "z").isa("contains")
+            ));
             tx.commit();
         }
+        try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
+            List<Pattern> patterns = Lists.newArrayList(
+                    Graql.var("x").isa("content").has("name", "x"),
+                    var("z").isa("content").has("name", "z"),
+                    var("infer").rel("x").rel("z").isa("contains")
+            );
+            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
+            final int ruleStatements = tx.getRule("transitive-location").when().statements().size();
 
-        GraknClient.Session reasonerRemoteSession = graknClient.session(reasonerLocalSession.keyspace().getName());
-
-        List<ConceptMap> remoteAnswers;
-        List<ConceptMap> localAnswers;
-
-        final long limit = 3;
-        String queryString = "match " +
-                "($x, $y) isa cousins;" +
-                "limit " + limit + ";" +
-                "get;";
-
-        try (GraknClient.Transaction tx = reasonerRemoteSession.transaction(Transaction.Type.READ)) {
-            remoteAnswers = tx.execute(Graql.parse(queryString).asGet());
-        }
-
-        try (Transaction tx = reasonerLocalSession.transaction(Transaction.Type.READ)) {
-            localAnswers = tx.execute(Graql.parse(queryString).asGet());
-        }
-
-        assertEquals(remoteAnswers.size(), limit);
-        remoteAnswers.forEach(answer -> {
+            assertEquals(patterns.size() + ruleStatements, answer.explanation().deductions().size());
+            assertEquals(patterns.size(), answer.explanation().getAnswers().size());
+            answer.explanation().getAnswers().stream()
+                    .filter(a -> a.containsVar(var("infer").var()))
+                    .forEach(a -> assertEquals(ruleStatements, a.explanation().getAnswers().size()));
             testExplanation(answer);
-
-            String specificQuery = "match " +
-                    "$x id '" + answer.get("x").id().getValue() + "';" +
-                    "$y id '" + answer.get("y").id().getValue() + "';" +
-                    "(cousin: $x, cousin: $y) isa cousins;" +
-                    "limit 1; get;";
-
-            ConceptMap specificAnswer;
-            try (GraknClient.Transaction tx = reasonerRemoteSession.transaction(Transaction.Type.READ)) {
-                specificAnswer = Iterables.getOnlyElement(tx.execute(Graql.parse(specificQuery).asGet()));
-            }
-            assertEquals(answer, specificAnswer);
-            testExplanation(specificAnswer);
-        });
+        }
     }
 
     private void testExplanation(ConceptMap answer) {
         answerHasConsistentExplanations(answer);
-        checkExplanationCompleteness(answer);
         checkAnswerConnectedness(answer);
-    }
-
-    //ensures that each branch ends up with an lookup explanation
-    private void checkExplanationCompleteness(ConceptMap answer) {
-        assertFalse("Non-lookup explanation misses children",
-                    answer.explanations().stream()
-                            .filter(e -> !e.isLookupExplanation())
-                            .anyMatch(e -> e.getAnswers().isEmpty())
-        );
     }
 
     private void checkAnswerConnectedness(ConceptMap answer) {
@@ -305,15 +291,18 @@ public class GraknClientIT {
 
     private void answerHasConsistentExplanations(ConceptMap answer) {
         Set<ConceptMap> answers = answer.explanation().deductions().stream()
-                .filter(a -> !a.explanation().isJoinExplanation())
+                .filter(a -> a.explanation().getPattern() != null)
                 .collect(Collectors.toSet());
 
         answers.forEach(a -> TestCase.assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
     }
 
-    private boolean explanationConsistentWithAnswer(ConceptMap ans) {
-        ReasonerQuery query = ans.explanation().getQuery();
-        Set<Variable> vars = query != null ? query.getVarNames() : new HashSet<>();
+    private boolean explanationConsistentWithAnswer(ConceptMap ans){
+        Pattern queryPattern = ans.explanation().getPattern();
+        Set<Variable> vars = new HashSet<>();
+        if (queryPattern != null){
+            queryPattern.statements().forEach(s -> vars.addAll(s.variables()));
+        }
         return vars.containsAll(ans.map().keySet());
     }
 
@@ -361,8 +350,8 @@ public class GraknClientIT {
                 assertEquals(localConcept.isAttributeType(), remoteConcept.isAttributeType());
                 assertEquals(localConcept.isEntity(), remoteConcept.isEntity());
                 assertEquals(localConcept.isEntityType(), remoteConcept.isEntityType());
-                assertEquals(localConcept.isRelationship(), remoteConcept.isRelationship());
-                assertEquals(localConcept.isRelationshipType(), remoteConcept.isRelationshipType());
+                assertEquals(localConcept.isRelation(), remoteConcept.isRelation());
+                assertEquals(localConcept.isRelationType(), remoteConcept.isRelationType());
                 assertEquals(localConcept.isRole(), remoteConcept.isRole());
                 assertEquals(localConcept.isRule(), remoteConcept.isRule());
                 assertEquals(localConcept.isSchemaConcept(), remoteConcept.isSchemaConcept());
@@ -382,7 +371,7 @@ public class GraknClientIT {
             AttributeType email = tx.putAttributeType("email", DataType.STRING);
             Role actor = tx.putRole("actor");
             Role characterBeingPlayed = tx.putRole("character-being-played");
-            RelationType hasCast = tx.putRelationshipType("has-cast").relates(actor).relates(characterBeingPlayed);
+            RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
             person.key(email).has(name);
             person.plays(actor).plays(characterBeingPlayed);
 
@@ -404,14 +393,14 @@ public class GraknClientIT {
 
 
     @Test
-    public void testGettingARelationship_TheInformationOnTheRelationshipIsCorrect() {
+    public void testGettingARelation_TheInformationOnTheRelationIsCorrect() {
         try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
             EntityType person = tx.putEntityType("person");
             AttributeType name = tx.putAttributeType("name", DataType.STRING);
             AttributeType email = tx.putAttributeType("email", DataType.STRING);
             Role actor = tx.putRole("actor");
             Role characterBeingPlayed = tx.putRole("character-being-played");
-            RelationType hasCast = tx.putRelationshipType("has-cast").relates(actor).relates(characterBeingPlayed);
+            RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
             person.key(email).has(name);
             person.plays(actor).plays(characterBeingPlayed);
 
@@ -479,7 +468,7 @@ public class GraknClientIT {
             AttributeType email = tx.putAttributeType("email", DataType.STRING);
             Role actor = tx.putRole("actor");
             Role characterBeingPlayed = tx.putRole("character-being-played");
-            RelationType hasCast = tx.putRelationshipType("has-cast").relates(actor).relates(characterBeingPlayed);
+            RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
             person.key(email).has(name);
             person.plays(actor).plays(characterBeingPlayed);
 
@@ -500,7 +489,7 @@ public class GraknClientIT {
             assertEqualConcepts(localConcept, remoteConcept, Thing::attributes);
             assertEqualConcepts(localConcept, remoteConcept, Thing::keys);
 //            assertEqualConcepts(localConcept, remoteConcept, Thing::plays); // TODO: re-enable when #19630 is fixed
-            assertEqualConcepts(localConcept, remoteConcept, Thing::relationships);
+            assertEqualConcepts(localConcept, remoteConcept, Thing::relations);
         }
     }
 
@@ -510,7 +499,7 @@ public class GraknClientIT {
             Role productionWithCast = tx.putRole("production-with-cast");
             Role actor = tx.putRole("actor");
             Role characterBeingPlayed = tx.putRole("character-being-played");
-            tx.putRelationshipType("has-cast").relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
+            tx.putRelationType("has-cast").relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
             EntityType person = tx.putEntityType("person").plays(actor).plays(characterBeingPlayed);
 
             person.has(tx.putAttributeType("gender", DataType.STRING));
@@ -541,7 +530,7 @@ public class GraknClientIT {
             Role productionWithCast = localTx.putRole("production-with-cast");
             Role actor = localTx.putRole("actor");
             Role characterBeingPlayed = localTx.putRole("character-being-played");
-            localTx.putRelationshipType("has-cast")
+            localTx.putRelationType("has-cast")
                     .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
             localTx.commit();
         }
@@ -553,7 +542,7 @@ public class GraknClientIT {
             Role localConcept = localTx.getConcept(remoteConcept.id()).asRole();
 
             assertEqualConcepts(localConcept, remoteConcept, Role::players);
-            assertEqualConcepts(localConcept, remoteConcept, Role::relationships);
+            assertEqualConcepts(localConcept, remoteConcept, Role::relations);
         }
     }
 
@@ -576,8 +565,8 @@ public class GraknClientIT {
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
             GraqlGet query = Graql.match(var("x").type("expectation-rule")).get();
-            grakn.core.graql.concept.Rule remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRule();
-            grakn.core.graql.concept.Rule localConcept = localTx.getConcept(remoteConcept.id()).asRule();
+            grakn.core.concept.type.Rule remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRule();
+            grakn.core.concept.type.Rule localConcept = localTx.getConcept(remoteConcept.id()).asRule();
 
             assertEquals(localConcept.when(), remoteConcept.when());
             assertEquals(localConcept.then(), remoteConcept.then());
@@ -603,12 +592,12 @@ public class GraknClientIT {
     }
 
     @Test
-    public void testGettingARelationshipType_TheInformationOnTheRelationshipTypeIsCorrect() {
+    public void testGettingARelationType_TheInformationOnTheRelationTypeIsCorrect() {
         try (Transaction localTx = localSession.transaction(Transaction.Type.WRITE)) {
             Role productionWithCast = localTx.putRole("production-with-cast");
             Role actor = localTx.putRole("actor");
             Role characterBeingPlayed = localTx.putRole("character-being-played");
-            localTx.putRelationshipType("has-cast")
+            localTx.putRelationType("has-cast")
                     .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
             localTx.commit();
         }
@@ -616,8 +605,8 @@ public class GraknClientIT {
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
             GraqlGet query = Graql.match(var("x").type("has-cast")).get();
-            RelationType remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelationshipType();
-            RelationType localConcept = localTx.getConcept(remoteConcept.id()).asRelationshipType();
+            RelationType remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelationType();
+            RelationType localConcept = localTx.getConcept(remoteConcept.id()).asRelationType();
 
             assertEqualConcepts(localConcept, remoteConcept, RelationType::roles);
         }
@@ -700,7 +689,7 @@ public class GraknClientIT {
             Role owner = tx.putRole("owner");
             EntityType animal = tx.putEntityType("animal").plays(pet);
             EntityType human = tx.putEntityType("human").plays(owner);
-            RelationType petOwnership = tx.putRelationshipType("pet-ownership").relates(pet).relates(owner);
+            RelationType petOwnership = tx.putRelationType("pet-ownership").relates(pet).relates(owner);
             AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
             human.has(age);
 
@@ -869,13 +858,13 @@ public class GraknClientIT {
             dog.isAbstract(true).isAbstract(false);
             cat.isAbstract(true);
 
-            RelationType chases = tx.putRelationshipType("chases");
+            RelationType chases = tx.putRelationType("chases");
             Role chased = tx.putRole("chased");
             Role chaser = tx.putRole("chaser");
             chases.relates(chased).relates(chaser);
 
             Role pointlessRole = tx.putRole("pointless-role");
-            tx.putRelationshipType("pointless").relates(pointlessRole);
+            tx.putRelationType("pointless").relates(pointlessRole);
 
             chases.relates(pointlessRole).unrelate(pointlessRole);
 
@@ -912,7 +901,7 @@ public class GraknClientIT {
             EntityType animal = tx.getEntityType("animal");
             EntityType dog = tx.getEntityType("dog");
             EntityType cat = tx.getEntityType("feline");
-            RelationType chases = tx.getRelationshipType("chases");
+            RelationType chases = tx.getRelationType("chases");
             Role chased = tx.getRole("chased");
             Role chaser = tx.getRole("chaser");
             AttributeType<String> name = tx.getAttributeType("name");

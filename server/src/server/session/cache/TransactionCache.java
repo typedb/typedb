@@ -20,17 +20,17 @@ package grakn.core.server.session.cache;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
 import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
@@ -124,8 +124,8 @@ public class TransactionCache {
             modifiedThings.add(concept.asThing());
         } else if (concept.isRole()) {
             modifiedRoles.add(concept.asRole());
-        } else if (concept.isRelationshipType()) {
-            modifiedRelationshipTypes.add(concept.asRelationshipType());
+        } else if (concept.isRelationType()) {
+            modifiedRelationshipTypes.add(concept.asRelationType());
         } else if (concept.isRule()) {
             modifiedRules.add(concept.asRule());
         }
@@ -136,8 +136,8 @@ public class TransactionCache {
     }
 
     public void removeFromValidation(Type type) {
-        if (type.isRelationshipType()) {
-            modifiedRelationshipTypes.remove(type.asRelationshipType());
+        if (type.isRelationType()) {
+            modifiedRelationshipTypes.remove(type.asRelationType());
         }
     }
 
@@ -177,7 +177,7 @@ public class TransactionCache {
             newAttributes.removeAll(AttributeImpl.from(concept.asAttribute()).getIndex());
         }
 
-        if (concept.isRelationship()) {
+        if (concept.isRelation()) {
             newRelationships.remove(concept.asRelation());
         }
 

@@ -18,38 +18,37 @@
 
 package grakn.core.server.kb.cache;
 
-import grakn.core.graql.concept.Concept;
+import grakn.core.concept.Concept;
 
 import java.util.Collection;
 
 /**
- * <p>
- *     Indicates a {@link Cache} is contained within the class
- * </p>
- *
- * <p>
- *     Wraps up behaviour which needs to be handled whenever a {@link Cache} is used in a class
- * </p>
- *
- *
+ * Indicates a Cache is contained within the class
+ * Wraps up behaviour which needs to be handled whenever a Cache is used in a class
  */
 public interface CacheOwner {
 
     /**
-     *
-     * @return all the caches beloning to the {@link CacheOwner}
+     * Helper method to cast Concept into CacheOwner
+     */
+    static CacheOwner from(Concept concept) {
+        return (CacheOwner) concept;
+    }
+
+    /**
+     * @return all the caches beloning to the CacheOwner
      */
     Collection<Cache> caches();
 
     /**
-     * Clears the internal {@link Cache}
+     * Clears the internal Cache
      */
     default void txCacheClear() {
         caches().forEach(Cache::clear);
     }
 
     /**
-     * Registers a {@link Cache} so that later it can be cleaned up
+     * Registers a Cache so that later it can be cleaned up
      */
     default void registerCache(Cache cache) {
         caches().add(cache);
@@ -58,14 +57,7 @@ public interface CacheOwner {
     /**
      * Flushes the internal transaction caches so they can refresh with persisted graph
      */
-    default void txCacheFlush(){
+    default void txCacheFlush() {
         caches().forEach(Cache::flush);
-    }
-
-    /**
-     * Helper method to cast {@link Concept} into {@link CacheOwner}
-     */
-    static CacheOwner from(Concept concept){
-        return (CacheOwner) concept;
     }
 }

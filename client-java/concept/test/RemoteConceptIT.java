@@ -20,17 +20,17 @@
 package grakn.core.client.concept.test;
 
 import grakn.core.client.GraknClient;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.AttributeType.DataType;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.AttributeType.DataType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.pattern.Pattern;
 import org.junit.After;
@@ -60,7 +60,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Integration Tests for testing methods of all subclasses of {@link grakn.core.client.concept.RemoteConcept}.
+ * Integration Tests for testing methods of all subclasses of grakn.core.client.concept.RemoteConcept.
  */
 public class RemoteConceptIT {
 
@@ -80,7 +80,7 @@ public class RemoteConceptIT {
     private Label MAN = Label.of("man");
     private Label BOY = Label.of("boy");
 
-    // Relationship Type Labels
+    // Relation Type Labels
     private Label HUSBAND = Label.of("husband");
     private Label WIFE = Label.of("wife");
     private Label MARRIAGE = Label.of("marriage");
@@ -163,17 +163,17 @@ public class RemoteConceptIT {
         man = tx.putEntityType(MAN);
         boy = tx.putEntityType(BOY);
 
-        // Relationship Types
+        // Relation Types
         husband = tx.putRole(HUSBAND);
         wife = tx.putRole(WIFE);
-        marriage = tx.putRelationshipType(MARRIAGE).relates(wife).relates(husband);
+        marriage = tx.putRelationType(MARRIAGE).relates(wife).relates(husband);
 
         employer = tx.putRole(EMPLOYER);
         employee = tx.putRole(EMPLOYEE);
-        employment = tx.putRelationshipType(EMPLOYMENT).relates(employee).relates(employer);
+        employment = tx.putRelationType(EMPLOYMENT).relates(employee).relates(employer);
 
         friend = tx.putRole(FRIEND);
-        friendship = tx.putRelationshipType(FRIENDSHIP);
+        friendship = tx.putRelationType(FRIENDSHIP);
 
         person.plays(wife).plays(husband);
 
@@ -194,7 +194,7 @@ public class RemoteConceptIT {
         alice = person.create().has(emailAlice).has(nameAlice).has(age20);
         bob = person.create().has(emailBob).has(nameBob).has(age20);
 
-        // Relationships
+        // Relations
         aliceAndBob = marriage.create().assign(wife, alice).assign(husband, bob);
         selfEmployment = employment.create().assign(employer, alice).assign(employee, alice);
 
@@ -387,21 +387,21 @@ public class RemoteConceptIT {
     }
 
     @Test
-    public void whenCallingRelationshipsWithNoArguments_GetTheExpectedResult() {
-        assertThat(alice.relationships().filter(rel -> !rel.type().isImplicit()).collect(toSet()), containsInAnyOrder(aliceAndBob, selfEmployment));
-        assertThat(bob.relationships().filter(rel -> !rel.type().isImplicit()).collect(toSet()), containsInAnyOrder(aliceAndBob));
+    public void whenCallingRelationsWithNoArguments_GetTheExpectedResult() {
+        assertThat(alice.relations().filter(rel -> !rel.type().isImplicit()).collect(toSet()), containsInAnyOrder(aliceAndBob, selfEmployment));
+        assertThat(bob.relations().filter(rel -> !rel.type().isImplicit()).collect(toSet()), containsInAnyOrder(aliceAndBob));
     }
 
     @Test
-    public void whenCallingRelationshipsWithRoles_GetTheExpectedResult() {
-        assertThat(alice.relationships(wife).collect(toSet()), containsInAnyOrder(aliceAndBob));
-        assertThat(bob.relationships(husband).collect(toSet()), containsInAnyOrder(aliceAndBob));
+    public void whenCallingRelationsWithRoles_GetTheExpectedResult() {
+        assertThat(alice.relations(wife).collect(toSet()), containsInAnyOrder(aliceAndBob));
+        assertThat(bob.relations(husband).collect(toSet()), containsInAnyOrder(aliceAndBob));
     }
 
     @Test
-    public void whenCallingRelationshipTypes_GetTheExpectedResult() {
-        assertThat(wife.relationships().collect(toSet()), containsInAnyOrder(marriage));
-        assertThat(husband.relationships().collect(toSet()), containsInAnyOrder(marriage));
+    public void whenCallingRelationTypes_GetTheExpectedResult() {
+        assertThat(wife.relations().collect(toSet()), containsInAnyOrder(marriage));
+        assertThat(husband.relations().collect(toSet()), containsInAnyOrder(marriage));
     }
 
     @Test
@@ -479,7 +479,7 @@ public class RemoteConceptIT {
     }
 
     @Test
-    public void whenSettingAndDeletingRelationshipRelatesRole_RoleInRelationshipIsSetAndDeleted() {
+    public void whenSettingAndDeletingRelationRelatesRole_RoleInRelationIsSetAndDeleted() {
         friendship.relates(friend);
         assertTrue(friendship.roles().anyMatch(c -> c.equals(friend)));
 
@@ -532,7 +532,7 @@ public class RemoteConceptIT {
     }
 
     @Test
-    public void whenCallingAddRelationship_TypeIsCorrect() {
+    public void whenCallingAddRelation_TypeIsCorrect() {
         Relation newMarriage = marriage.create();
         assertEquals(marriage, newMarriage.type());
     }
@@ -553,7 +553,7 @@ public class RemoteConceptIT {
     }
 
     @Test
-    public void whenCallingAddAttributeRelationshipOnThing_RelationshipIsImplicit() {
+    public void whenCallingAddAttributeRelationOnThing_RelationIsImplicit() {
         assertTrue(alice.relhas(emailAlice).type().isImplicit());
         assertTrue(alice.relhas(nameAlice).type().isImplicit());
         assertTrue(alice.relhas(age20).type().isImplicit());

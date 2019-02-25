@@ -29,22 +29,22 @@ import grakn.core.client.rpc.Transceiver;
 import grakn.core.common.exception.Validator;
 import grakn.core.common.http.SimpleURI;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptList;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
@@ -78,7 +78,7 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
 
 /**
  * Entry-point which communicates with a running Grakn server using gRPC.
- * For now, only a subset of {@link grakn.core.server.Session} and {@link grakn.core.server.Transaction} features are supported.
+ * For now, only a subset of grakn.core.server.Session and grakn.core.server.Transaction features are supported.
  */
 public final class GraknClient implements AutoCloseable {
 
@@ -86,6 +86,10 @@ public final class GraknClient implements AutoCloseable {
 
     private ManagedChannel channel;
     private Keyspaces keyspaces;
+
+    public GraknClient() {
+        this(DEFAULT_URI);
+    }
 
     public GraknClient(String address) {
         this(address, false);
@@ -104,9 +108,9 @@ public final class GraknClient implements AutoCloseable {
         keyspaces = new Keyspaces();
     }
 
-    public GraknClient(ManagedChannel channel) {
+    public GraknClient overrideChannel(ManagedChannel channel) {
         this.channel = channel;
-        keyspaces = new Keyspaces();
+        return this;
     }
 
     @Override
@@ -128,7 +132,7 @@ public final class GraknClient implements AutoCloseable {
     }
 
     /**
-     * Remote implementation of {@link grakn.core.server.Session} that communicates with a Grakn server using gRPC.
+     * Remote implementation of grakn.core.server.Session that communicates with a Grakn server using gRPC.
      *
      * @see Transaction
      * @see GraknClient
@@ -191,7 +195,7 @@ public final class GraknClient implements AutoCloseable {
     }
 
     /**
-     * Remote implementation of {@link grakn.core.server.Transaction} that communicates with a Grakn server using gRPC.
+     * Remote implementation of grakn.core.server.Transaction that communicates with a Grakn server using gRPC.
      */
     public final class Transaction implements grakn.core.server.Transaction {
 
@@ -305,7 +309,7 @@ public final class GraknClient implements AutoCloseable {
 
         @Nullable
         @Override
-        public <T extends grakn.core.graql.concept.Type> T getType(Label label) {
+        public <T extends grakn.core.concept.type.Type> T getType(Label label) {
             SchemaConcept concept = getSchemaConcept(label);
             if (concept == null || !concept.isType()) return null;
             return (T) concept.asType();
@@ -321,10 +325,10 @@ public final class GraknClient implements AutoCloseable {
 
         @Nullable
         @Override
-        public RelationType getRelationshipType(String label) {
+        public RelationType getRelationType(String label) {
             SchemaConcept concept = getSchemaConcept(Label.of(label));
-            if (concept == null || !concept.isRelationshipType()) return null;
-            return concept.asRelationshipType();
+            if (concept == null || !concept.isRelationType()) return null;
+            return concept.asRelationType();
         }
 
         @Nullable
@@ -401,9 +405,9 @@ public final class GraknClient implements AutoCloseable {
         }
 
         @Override
-        public RelationType putRelationshipType(Label label) {
-            transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
-            return RemoteConcept.of(responseOrThrow().getPutRelationTypeRes().getRelationType(), this).asRelationshipType();
+        public RelationType putRelationType(Label label) {
+            transceiver.send(RequestBuilder.Transaction.putRelationType(label));
+            return RemoteConcept.of(responseOrThrow().getPutRelationTypeRes().getRelationType(), this).asRelationType();
         }
 
         @Override
@@ -495,8 +499,8 @@ public final class GraknClient implements AutoCloseable {
         }
 
         /**
-         * A client-side iterator over gRPC messages. Will send {@link SessionProto.Transaction.Iter.Req} messages until
-         * {@link SessionProto.Transaction.Iter.Res} returns done as a message.
+         * A client-side iterator over gRPC messages. Will send SessionProto.Transaction.Iter.Req messages until
+         * SessionProto.Transaction.Iter.Res returns done as a message.
          *
          * @param <T> class type of objects being iterated
          */

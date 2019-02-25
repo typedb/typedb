@@ -18,13 +18,13 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.VertexElement;
@@ -38,23 +38,17 @@ import java.util.stream.Stream;
 import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
 
 /**
- * <p>
- *     Schema Specific Concept
- * </p>
- *
- * <p>
- *     Allows you to create schema or ontological elements.
- *     These differ from normal graph constructs in two ways:
- *     1. They have a unique Label which identifies them
- *     2. You can link them together into a hierarchical structure
- * </p>
- *
+ * Schema Specific Concept
+ * Allows you to create schema or ontological elements.
+ * These differ from normal graph constructs in two ways:
+ * 1. They have a unique Label which identifies them
+ * 2. You can link them together into a hierarchical structure
  *
  * @param <T> The leaf interface of the object concept.
- *           For example an EntityType or RelationType or Role
+ *            For example an EntityType or RelationType or Role
  */
 public abstract class SchemaConceptImpl<T extends SchemaConcept> extends ConceptImpl implements SchemaConcept {
-    private final Cache<Label> cachedLabel = Cache.createPersistentCache(this, Cacheable.label(), () ->  Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
+    private final Cache<Label> cachedLabel = Cache.createPersistentCache(this, Cacheable.label(), () -> Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
     private final Cache<LabelId> cachedLabelId = Cache.createSessionCache(this, Cacheable.labelId(), () -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
     private final Cache<T> cachedSuperType = Cache.createSessionCache(this, Cacheable.concept(), () -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private final Cache<Set<T>> cachedDirectSubTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
@@ -66,33 +60,36 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     SchemaConceptImpl(VertexElement vertexElement, T superType) {
         this(vertexElement);
-        if(sup() == null) sup(superType);
+        if (sup() == null) sup(superType);
     }
 
-    public T label(Label label){
+    public static <X extends SchemaConcept> SchemaConceptImpl<X> from(SchemaConcept schemaConcept) {
+        //noinspection unchecked
+        return (SchemaConceptImpl<X>) schemaConcept;
+    }
+
+    public T label(Label label) {
         try {
             vertex().tx().cache().remove(this);
             vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
             cachedLabel.set(label);
             vertex().tx().cache().cacheConcept(this);
             return getThis();
-        } catch (PropertyNotUniqueException exception){
+        } catch (PropertyNotUniqueException exception) {
             vertex().tx().cache().cacheConcept(this);
             throw TransactionException.labelTaken(label);
         }
     }
 
     /**
-     *
      * @return The internal id which is used for fast lookups
      */
     @Override
-    public LabelId labelId(){
+    public LabelId labelId() {
         return cachedLabelId.get();
     }
 
     /**
-     *
      * @return The label of this ontological element
      */
     @Override
@@ -101,21 +98,19 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     /**
-     *
      * @return The super of this SchemaConcept
      */
     public T sup() {
         return cachedSuperType.get();
     }
 
-
     @Override
     public Stream<T> sups() {
-        Set<T> superSet= new HashSet<>();
+        Set<T> superSet = new HashSet<>();
 
         T superParent = getThis();
 
-        while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.label())){
+        while (superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.label())) {
             superSet.add(superParent);
 
             //noinspection unchecked
@@ -126,11 +121,10 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     /**
-     *
      * @return returns true if the type was created implicitly through the resource syntax
      */
     @Override
-    public Boolean isImplicit(){
+    public Boolean isImplicit() {
         return cachedIsImplicit.get();
     }
 
@@ -138,8 +132,8 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * Deletes the concept as a SchemaConcept
      */
     @Override
-    public void delete(){
-        if(deletionAllowed()){
+    public void delete() {
+        if (deletionAllowed()) {
             //Force load of linked concepts whose caches need to be updated
             T superConcept = cachedSuperType.get();
 
@@ -162,17 +156,16 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         }
     }
 
-    boolean deletionAllowed(){
+    boolean deletionAllowed() {
         checkSchemaMutationAllowed();
         return !neighbours(Direction.IN, Schema.EdgeLabel.SUB).findAny().isPresent();
     }
 
     /**
-     *
      * @return All the subs of this concept including itself
      */
     @Override
-    public Stream<T> subs(){
+    public Stream<T> subs() {
         return nextSubLevel(getThis());
     }
 
@@ -181,19 +174,18 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      *
      * @param newSubType The new subtype
      */
-    private void addCachedDirectSubType(T newSubType){
+    private void addCachedDirectSubType(T newSubType) {
         cachedDirectSubTypes.ifPresent(set -> set.add(newSubType));
     }
 
     /**
-     *
      * @param root The current SchemaConcept
-     * @return All the sub children of the root. Effectively calls  the cache {@link SchemaConceptImpl#cachedDirectSubTypes} recursively
+     * @return All the sub children of the root. Effectively calls  the cache SchemaConceptImpl#cachedDirectSubTypes recursively
      */
     @SuppressWarnings("unchecked")
-    private Stream<T> nextSubLevel(T root){
+    private Stream<T> nextSubLevel(T root) {
         return Stream.concat(Stream.of(root),
-                SchemaConceptImpl.<T>from(root).cachedDirectSubTypes.get().stream().flatMap(this::nextSubLevel));
+                             SchemaConceptImpl.<T>from(root).cachedDirectSubTypes.get().stream().flatMap(this::nextSubLevel));
     }
 
     /**
@@ -201,9 +193,9 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * 1. The SchemaConcept is not a meta-type
      * 2. The graph is not batch loading
      */
-    void checkSchemaMutationAllowed(){
+    void checkSchemaMutationAllowed() {
         vertex().tx().checkSchemaMutationAllowed();
-        if(Schema.MetaSchema.isMetaLabel(label())){
+        if (Schema.MetaSchema.isMetaLabel(label())) {
             throw TransactionException.metaTypeImmutable(label());
         }
     }
@@ -213,23 +205,22 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      *
      * @param oldSubType The old sub type which should not be cached anymore
      */
-    private void deleteCachedDirectedSubType(T oldSubType){
+    private void deleteCachedDirectedSubType(T oldSubType) {
         cachedDirectSubTypes.ifPresent(set -> set.remove(oldSubType));
     }
 
     /**
-     *
      * @param newSuperType This type's super type
      * @return The Type itself
      */
     public T sup(T newSuperType) {
         T oldSuperType = sup();
-        if(changingSuperAllowed(oldSuperType, newSuperType)){
+        if (changingSuperAllowed(oldSuperType, newSuperType)) {
             //Update the super type of this type in cache
             cachedSuperType.set(newSuperType);
 
             //Note the check before the actual construction
-            if(superLoops()){
+            if (superLoops()) {
                 cachedSuperType.set(oldSuperType); //Reset if the new super type causes a loop
                 throw TransactionException.loopCreated(this, newSuperType);
             }
@@ -239,7 +230,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             putEdge(ConceptVertex.from(newSuperType), Schema.EdgeLabel.SUB);
 
             //Update the sub types of the old super type
-            if(oldSuperType != null) {
+            if (oldSuperType != null) {
                 //noinspection unchecked - Casting is needed to access {deleteCachedDirectedSubTypes} method
                 ((SchemaConceptImpl<T>) oldSuperType).deleteCachedDirectedSubType(getThis());
             }
@@ -249,11 +240,10 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             ((SchemaConceptImpl<T>) newSuperType).addCachedDirectSubType(getThis());
 
             //Track any existing data if there is some
-            if(oldSuperType != null) trackRolePlayers();
+            if (oldSuperType != null) trackRolePlayers();
         }
         return getThis();
     }
-
 
     /**
      * Checks if changing the super is allowed. This passed if:
@@ -263,7 +253,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * @param newSuperType the new super
      * @return true if we can set the new super
      */
-    boolean changingSuperAllowed(T oldSuperType, T newSuperType){
+    boolean changingSuperAllowed(T oldSuperType, T newSuperType) {
         checkSchemaMutationAllowed();
         return oldSuperType == null || !oldSuperType.equals(newSuperType);
     }
@@ -273,14 +263,14 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      */
     abstract void trackRolePlayers();
 
-    private boolean superLoops(){
+    private boolean superLoops() {
         //Check For Loop
         HashSet<SchemaConcept> foundTypes = new HashSet<>();
         SchemaConcept currentSuperType = sup();
-        while (currentSuperType != null){
+        while (currentSuperType != null) {
             foundTypes.add(currentSuperType);
             currentSuperType = currentSuperType.sup();
-            if(foundTypes.contains(currentSuperType)){
+            if (foundTypes.contains(currentSuperType)) {
                 return true;
             }
         }
@@ -288,7 +278,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     /**
-     *
      * @return A collection of Rule for which this SchemaConcept serves as a hypothesis
      */
     @Override
@@ -297,7 +286,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     /**
-     *
      * @return A collection of Rule for which this SchemaConcept serves as a conclusion
      */
     @Override
@@ -306,14 +294,9 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     @Override
-    public String innerToString(){
+    public String innerToString() {
         String message = super.innerToString();
         message = message + " - Label [" + label() + "] - Abstract [" + isAbstract() + "] ";
         return message;
-    }
-
-    public static <X extends SchemaConcept> SchemaConceptImpl<X> from(SchemaConcept schemaConcept){
-        //noinspection unchecked
-        return (SchemaConceptImpl<X>) schemaConcept;
     }
 }
