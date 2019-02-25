@@ -34,16 +34,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- *
  * Keyspace cache contains two caches:
- *   - Schema Cache - An expiring cache that stores Concept objects across transactions
- *      (currently disabled, shared concepts are not allowed)
- *   - Label Cache - Map labels to IDs for fast lookups
- *
+ * - Schema Cache - An expiring cache that stores Concept objects across transactions
+ * (currently disabled, shared concepts are not allowed)
+ * - Label Cache - Map labels to IDs for fast lookups
+ * <p>
  * These are shared across sessions and transactions to the same keyspace, and kept in sync
  * on commit.
- *
- *
  */
 public class KeyspaceCache {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -66,9 +63,10 @@ public class KeyspaceCache {
 
     /**
      * Copy the contents of the Keyspace cache into a Transaction Cache
+     *
      * @param transactionCache
      */
-    void populateSchemaTxCache(TransactionCache transactionCache){
+    void populateSchemaTxCache(TransactionCache transactionCache) {
         try {
             lock.writeLock().lock();
 
@@ -91,9 +89,9 @@ public class KeyspaceCache {
      * Caches a type so that we can retrieve ontological concepts without making a DB read.
      *
      * @param label The label of the type to cache
-     * @param type The type to cache
+     * @param type  The type to cache
      */
-    public void cacheType(Label label, SchemaConcept type) {
+    void cacheType(Label label, SchemaConcept type) {
         cachedTypes.put(label, type);
     }
 
@@ -102,7 +100,7 @@ public class KeyspaceCache {
      * indexed lookups.
      *
      * @param label The label of the type to cache
-     * @param id The id of the type to cache
+     * @param id    The id of the type to cache
      */
     public void cacheLabel(Label label, LabelId id) {
         cachedLabels.put(label, id);
@@ -117,7 +115,7 @@ public class KeyspaceCache {
      */
     void readTxCache(TransactionCache transactionCache) {
         //Check if the ontology has been changed and should be flushed into this cache
-        if(!cachedLabels.equals(transactionCache.getLabelCache())) {
+        if (!cachedLabels.equals(transactionCache.getLabelCache())) {
             try {
                 lock.readLock().lock();
 

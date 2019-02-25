@@ -270,15 +270,18 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
 
             ScopedSpan span = null;
-            if (ServerTracingInstrumentation.tracingActive()) span = ServerTracingInstrumentation.createScopedChildSpan("SessionService.open");
+            if (ServerTracingInstrumentation.tracingActive())
+                span = ServerTracingInstrumentation.createScopedChildSpan("SessionService.open");
 
             Span getSession = null;
-            if (span != null) getSession = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting session", span.context()).start();
+            if (span != null)
+                getSession = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting session", span.context()).start();
             SessionImpl sess = openSessions.get(request.getSessionId());
             if (getSession != null) getSession.finish();
 
             Span txSpan = null;
-            if (span != null) txSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting transaction", span.context()).start();
+            if (span != null)
+                txSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting transaction", span.context()).start();
             tx = sess.transaction(Type.of(request.getType().getNumber()));
             if (txSpan != null) txSpan.finish();
 

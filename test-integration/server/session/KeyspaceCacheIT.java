@@ -32,7 +32,11 @@ import java.util.Set;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertTrue;
 
-public class SessionCacheIT {
+/**
+ * Tests expected behavior of shared JanusGraph and caching between sessions to the same keyspace
+ * as well as synchronizing the KeyspaceCache on commits
+ */
+public class KeyspaceCacheIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();

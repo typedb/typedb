@@ -31,6 +31,7 @@ import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
+import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.util.LockManager;
@@ -191,18 +192,19 @@ public class GraknTestServer extends ExternalResource {
 
         // distributed locks
         LockManager lockManager = new ServerLockManager();
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
 
-        keyspaceStore = new KeyspaceManager(serverConfig);
+        keyspaceStore = new KeyspaceManager(janusGraphFactory, serverConfig);
 
         // tx-factory
-        sessionFactory = new SessionFactory(lockManager, serverConfig, keyspaceStore);
+        sessionFactory = new SessionFactory(lockManager, janusGraphFactory, keyspaceStore, serverConfig);
 
         AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(serverConfig, sessionFactory);
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
         io.grpc.Server serverRPC = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))
-                .addService(new KeyspaceService(keyspaceStore, sessionFactory))
+                .addService(new KeyspaceService(keyspaceStore, sessionFactory, janusGraphFactory))
                 .build();
 
         return ServerFactory.createServer(id, serverRPC,
