@@ -51,6 +51,8 @@ import grakn.core.graql.printer.Printer;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.exception.SessionException;
+import grakn.core.server.keyspace.Keyspace;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDelete;
@@ -990,6 +992,57 @@ public class GraknClientIT {
         }
         newLocalSession.close();
     }
+
+
+    @Test
+    public void whenDeletingKeyspace_OpenTransactionFails() {
+        // get open session
+        Keyspace keyspace = localSession.keyspace();
+
+        // Hold on to an open tx
+        Transaction tx = localSession.transaction(Transaction.Type.READ);
+
+        // delete keyspace
+        graknClient.keyspaces().delete(keyspace.getName());
+
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("Graph has been closed");
+
+        // try to operate on an open tx
+        tx.getEntityType("entity");
+
+    }
+
+    @Test
+    public void whenDeletingKeyspace_OpenSessionFails() {
+        // get open session
+        Keyspace keyspace = localSession.keyspace();
+
+        // Hold on to an open tx
+        Transaction tx = localSession.transaction(Transaction.Type.READ);
+
+        // delete keyspace
+        graknClient.keyspaces().delete(keyspace.getName());
+
+        exception.expect(SessionException.class);
+        exception.expectMessage("session for graph");
+        exception.expectMessage("is closed");
+
+        // try to open a new tx
+        Transaction tx2 = localSession.transaction(Transaction.Type.READ);
+    }
+
+    @Test
+    public void whenDeletingSameKeyspaceTwice_NoErrorThrown() {
+        // open a session
+        Keyspace keyspace = localSession.keyspace();
+
+        // delete keyspace twice
+        graknClient.keyspaces().delete(keyspace.getName());
+        graknClient.keyspaces().delete(keyspace.getName());
+
+    }
+
 
     private <T extends Concept> void assertEqualConcepts(
             T concept1, T concept2, Function<T, Stream<? extends Concept>> function
