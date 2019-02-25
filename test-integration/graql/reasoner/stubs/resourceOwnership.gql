@@ -12,7 +12,7 @@ step sub entity,
 module sub entity,
   plays module-role;
 
-relation sub relationship,
+relation0 sub relation,
   relates step-role,
   relates module-role,
   relates applicable-name;
@@ -23,4 +23,4 @@ $name "someName" isa name;
 $step isa step;
 $module isa module;
 
-(step-role: $step, module-role: $module, applicable-name: $name) isa relation;
+(step-role: $step, module-role: $module, applicable-name: $name) isa relation0;

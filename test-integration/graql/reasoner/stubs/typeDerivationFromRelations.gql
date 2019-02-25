@@ -17,7 +17,7 @@ derivedEntity sub entity,
 
 #Relations
 
-baseRelation sub relationship,
+baseRelation sub relation,
     relates role1,
     relates role2;
 

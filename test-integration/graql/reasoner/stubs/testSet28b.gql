@@ -25,11 +25,11 @@ entity3 sub entity,
 
 #Relations
 
-containment sub relationship,
+containment sub relation,
     relates contained,
     relates container;
 
-relation1 sub relationship,
+relation1 sub relation,
     relates role1,
     relates role2;
 

@@ -5,14 +5,14 @@ define
 baseEntity sub entity,
     plays baseRole;
 
-baseRelation sub relationship,
+baseRelation sub relation,
     relates baseRole;
 subRelation sub baseRelation,
     relates baseRole;
 subSubRelation sub subRelation,
     relates baseRole;
 
-derivedRelation sub relationship,
+derivedRelation sub relation,
     relates baseRole;
 directDerivedRelation sub derivedRelation,
     relates baseRole;

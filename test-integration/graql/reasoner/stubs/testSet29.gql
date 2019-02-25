@@ -16,7 +16,7 @@ entity1 sub entity,
 
 #Relations
 
-binary-base sub relationship,
+binary-base sub relation,
     relates role1,
     relates role2;
 
@@ -24,7 +24,7 @@ binary sub binary-base,
     relates role1,
     relates role2;
 
-ternary-base sub relationship,
+ternary-base sub relation,
     relates role1,
     relates role2,
     relates role3;
@@ -34,7 +34,7 @@ ternary sub ternary-base,
     relates role2,
     relates role3;
 
-quaternary-base sub relationship,
+quaternary-base sub relation,
     relates role1,
     relates role2,
     relates role3,
