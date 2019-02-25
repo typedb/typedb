@@ -35,9 +35,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 
 import static grakn.core.server.kb.Schema.EdgeLabel.ROLE_PLAYER;
-import static grakn.core.server.kb.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
-import static grakn.core.server.kb.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
-import static grakn.core.server.kb.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
 import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
@@ -56,8 +56,8 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
 
         return Fragments.union(Fragments.isVertex(traversal), ImmutableSet.of(
                 reifiedRelationTraversal(tx, vars),
-                edgeRelationTraversal(tx, Direction.OUT, RELATIONSHIP_ROLE_OWNER_LABEL_ID, vars),
-                edgeRelationTraversal(tx, Direction.IN, RELATIONSHIP_ROLE_VALUE_LABEL_ID, vars)
+                edgeRelationTraversal(tx, Direction.OUT, RELATION_ROLE_OWNER_LABEL_ID, vars),
+                edgeRelationTraversal(tx, Direction.IN, RELATION_ROLE_VALUE_LABEL_ID, vars)
         ));
     }
 
@@ -66,7 +66,7 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), tx);
-        applyLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), tx);
+        applyLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, relationTypeLabels(), tx);
 
         traverseToRole(edgeTraversal, role(), ROLE_LABEL_ID, vars);
 
@@ -84,7 +84,7 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), tx);
-        applyLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), tx);
+        applyLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, relationTypeLabels(), tx);
 
         traverseToRole(edgeTraversal, role(), roleProperty, vars);
 

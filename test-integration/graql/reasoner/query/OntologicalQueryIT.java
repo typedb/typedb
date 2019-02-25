@@ -143,7 +143,7 @@ public class OntologicalQueryIT {
         assertCollectionsNonTriviallyEqual(answers, answersInferred);
     }
 
-    //TODO need to correctly return THING and RELATIONSHIP mapping for %type
+    //TODO need to correctly return THING and RELATION mapping for %type
     @Ignore
     @Test
     public void allInstancesAndTheirType() {
@@ -161,7 +161,7 @@ public class OntologicalQueryIT {
 
         GraqlGet rolePlayerQuery = Graql.parse(rolePlayerPairString).asGet();
         List<ConceptMap> rolePlayerPairs = tx.execute(rolePlayerQuery);
-        //TODO doesn't include THING and RELATIONSHIP
+        //TODO doesn't include THING and RELATION
         //25 relation variants + 2 x 3 resource relation instances
         assertEquals(31, rolePlayerPairs.size());
 

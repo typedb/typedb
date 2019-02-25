@@ -332,7 +332,7 @@ public class TransactionCache {
         return modifiedCastings;
     }
 
-    public void addNewRelationship(Relation relationship) {
+    public void addNewRelation(Relation relationship) {
         newRelationships.add(relationship);
     }
 

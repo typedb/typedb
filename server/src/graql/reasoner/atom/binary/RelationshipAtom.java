@@ -1048,7 +1048,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         //if the relation already exists, only assign roleplayers, otherwise create a new relation
         Relation relationship = substitution.containsVar(getVarName())?
                 substitution.get(getVarName()).asRelation() :
-                RelationTypeImpl.from(relationType).addRelationshipInferred();
+                RelationTypeImpl.from(relationType).addRelationInferred();
 
         roleVarMap.asMap()
                 .forEach((key, value) -> value.forEach(var -> relationship.assign(key, substitution.get(var).asThing())));

@@ -346,7 +346,7 @@ public class TransactionOLTP implements Transaction {
         if (isMetaSchemaNotInitialised()) {
             VertexElement type = addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
             VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
-            VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATIONSHIP.getId(), Schema.MetaSchema.RELATIONSHIP.getLabel(), Schema.BaseType.RELATIONSHIP_TYPE);
+            VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATIONSHIP.getId(), Schema.MetaSchema.RELATIONSHIP.getLabel(), Schema.BaseType.RELATION_TYPE);
             VertexElement resourceType = addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
             addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
             addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
@@ -562,13 +562,13 @@ public class TransactionOLTP implements Transaction {
 
     @Override
     public RelationType putRelationType(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, false,
-                                v -> factory().buildRelationshipType(v, getMetaRelationType()));
+        return putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false,
+                                v -> factory().buildRelationType(v, getMetaRelationType()));
     }
 
     public RelationType putRelationTypeImplicit(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, true,
-                                v -> factory().buildRelationshipType(v, getMetaRelationType()));
+        return putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, true,
+                                v -> factory().buildRelationType(v, getMetaRelationType()));
     }
 
     @Override
@@ -696,7 +696,7 @@ public class TransactionOLTP implements Transaction {
 
     @Override
     public RelationType getRelationType(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.RELATIONSHIP_TYPE);
+        return getSchemaConcept(Label.of(label), Schema.BaseType.RELATION_TYPE);
     }
 
     @Override

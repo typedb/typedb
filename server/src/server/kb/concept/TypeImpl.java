@@ -242,7 +242,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * presence of a direct Schema.EdgeLabel#PLAYS edge between the Type and the implicit RelationType.
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.
      */
-    //TODO: Remove this when traversing to the instances of an implicit Relationship Type is no longer done via plays edges
+    //TODO: Remove this when traversing to the instances of an implicit RelationType is no longer done via plays edges
     @Override
     boolean changingSuperAllowed(T oldSuperType, T newSuperType) {
         boolean changingSuperAllowed = super.changingSuperAllowed(oldSuperType, newSuperType);
@@ -322,7 +322,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
             unplay(ownerRole);
 
-            // If there are no other Types that own this Attribute, remove the entire implicit relationship
+            // If there are no other Types that own this Attribute, remove the entire implicit relation
             if (!ownerRole.players().iterator().hasNext()) {
                 Label valueLabel = valueSchema.getLabel(attributeToRemove.label());
                 Role valueRole = vertex().tx().getSchemaConcept(valueLabel);
@@ -368,23 +368,23 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     private void updateAttributeRelationHierarchy(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner,
-                                                  Role ownerRole, Role valueRole, RelationType relationshipType) {
+                                                  Role ownerRole, Role valueRole, RelationType relationType) {
         AttributeType attributeTypeSuper = attributeType.sup();
         Label superLabel = attributeTypeSuper.label();
         Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
         Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-        RelationType relationshipTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
+        RelationType relationTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
                 relates(ownerRoleSuper).relates(valueRoleSuper);
 
         //Create the super type edges from sub role/relations to super roles/relation
         ownerRole.sup(ownerRoleSuper);
         valueRole.sup(valueRoleSuper);
-        relationshipType.sup(relationshipTypeSuper);
+        relationType.sup(relationTypeSuper);
 
         if (!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) {
             //Make sure the supertype attribute is linked with the role as well
             ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
-            updateAttributeRelationHierarchy(attributeTypeSuper, has, hasValue, hasOwner, ownerRoleSuper, valueRoleSuper, relationshipTypeSuper);
+            updateAttributeRelationHierarchy(attributeTypeSuper, has, hasValue, hasOwner, ownerRoleSuper, valueRoleSuper, relationTypeSuper);
         }
 
     }
@@ -403,7 +403,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Label attributeLabel = attributeType.label();
         Role ownerRole = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
         Role valueRole = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
-        RelationType relationshipType = vertex().tx().putRelationTypeImplicit(has.getLabel(attributeLabel)).
+        RelationType relationType = vertex().tx().putRelationTypeImplicit(has.getLabel(attributeLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 
@@ -413,7 +413,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         //attributeType plays valueRole;
         ((AttributeTypeImpl) attributeType).play(valueRole, false);
 
-        updateAttributeRelationHierarchy(attributeType, has, hasValue, hasOwner, ownerRole, valueRole, relationshipType);
+        updateAttributeRelationHierarchy(attributeType, has, hasValue, hasOwner, ownerRole, valueRole, relationType);
 
         return getThis();
     }

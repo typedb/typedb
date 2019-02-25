@@ -71,20 +71,20 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      * Caches a new relation type which this role will be part of. This may result in a DB hit if the cache has not been
      * initialised.
      *
-     * @param newRelationshipType The new relation type to cache in the role.
+     * @param newRelationType The new relation type to cache in the role.
      */
-    void addCachedRelationType(RelationType newRelationshipType) {
-        cachedRelationTypes.ifPresent(set -> set.add(newRelationshipType));
+    void addCachedRelationType(RelationType newRelationType) {
+        cachedRelationTypes.ifPresent(set -> set.add(newRelationType));
     }
 
     /**
      * Removes an old relation type which this role is no longer part of. This may result in a DB hit if the cache has
      * not been initialised.
      *
-     * @param oldRelationshipType The new relation type to cache in the role.
+     * @param oldRelationType The new relation type to cache in the role.
      */
-    void deleteCachedRelationType(RelationType oldRelationshipType) {
-        cachedRelationTypes.ifPresent(set -> set.remove(oldRelationshipType));
+    void deleteCachedRelationType(RelationType oldRelationType) {
+        cachedRelationTypes.ifPresent(set -> set.remove(oldRelationType));
     }
 
     /**

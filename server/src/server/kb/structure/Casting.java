@@ -53,7 +53,7 @@ public class Casting implements CacheOwner {
         if (cachedRelationship.isPresent()) {
             return cachedRelationship.get().type();
         } else {
-            return edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID)));
+            return edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID)));
         }
     });
 
@@ -72,7 +72,7 @@ public class Casting implements CacheOwner {
         return new Casting(edgeElement, null, null, thing);
     }
 
-    public static Casting withRelationship(EdgeElement edgeElement, Relation relationship) {
+    public static Casting withRelation(EdgeElement edgeElement, Relation relationship) {
         return new Casting(edgeElement, relationship, null, null);
     }
 
@@ -102,7 +102,7 @@ public class Casting implements CacheOwner {
     /**
      * @return The Relation which is linking the Role and the instance
      */
-    public Relation getRelationship() {
+    public Relation getRelation() {
         return cachedRelationship.get();
     }
 

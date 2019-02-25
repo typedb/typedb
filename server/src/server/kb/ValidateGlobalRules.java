@@ -102,7 +102,7 @@ class ValidateGlobalRules {
         //Gets here to make sure we traverse/read only once
         Thing thing = casting.getRolePlayer();
         Role role = casting.getRole();
-        Relation relationship = casting.getRelationship();
+        Relation relationship = casting.getRelation();
 
         //Actual checks
         roleNotAllowedToBePlayed(role, thing).ifPresent(errors::add);

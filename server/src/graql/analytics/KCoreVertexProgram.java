@@ -111,7 +111,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                     if (messenger.receiveMessages().hasNext()) {
                         if (vertex.property(K_CORE_LABEL).isPresent()) {
                             updateClusterLabel(vertex, messenger, memory);
-                        } else if (vertex.label().equals(Schema.BaseType.RELATIONSHIP.name())) {
+                        } else if (vertex.label().equals(Schema.BaseType.RELATION.name())) {
                             relayClusterLabel(messenger, memory);
                         }
                     }
@@ -149,7 +149,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
 
     static void relayOrSaveMessages(Vertex vertex, Messenger<String> messenger) {
         if (messenger.receiveMessages().hasNext()) {
-            if (vertex.label().equals(Schema.BaseType.RELATIONSHIP.name())) {
+            if (vertex.label().equals(Schema.BaseType.RELATION.name())) {
                 // relay the messages
                 messenger.receiveMessages().forEachRemaining(msg -> sendMessage(messenger, msg));
             } else if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||

@@ -111,19 +111,19 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public void delete() {
-        //Remove links to relationships and return them
-        Set<Relation> relationships = castingsInstance().map(casting -> {
-            Relation relationship = casting.getRelationship();
+        //Remove links to relations and return them
+        Set<Relation> relations = castingsInstance().map(casting -> {
+            Relation relation = casting.getRelation();
             Role role = casting.getRole();
-            relationship.unassign(role, this);
-            return relationship;
+            relation.unassign(role, this);
+            return relation;
         }).collect(toSet());
 
         vertex().tx().cache().removedInstance(type().id());
         deleteNode();
 
-        relationships.forEach(relation -> {
-            if (relation.type().isImplicit()) {//For now implicit relationships die
+        relations.forEach(relation -> {
+            if (relation.type().isImplicit()) {//For now implicit relations die
                 relation.delete();
             } else {
                 RelationImpl rel = (RelationImpl) relation;
@@ -278,7 +278,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         if (!roleSet.isEmpty()) {
             stream = stream.filter(edge -> {
-                Role roleOwner = vertex().tx().getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID)));
+                Role roleOwner = vertex().tx().getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID)));
                 return roleSet.contains(roleOwner);
             });
         }
@@ -298,16 +298,16 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     public T attributeInferred(Attribute attribute) {
-        attributeRelationship(attribute, true);
+        attributeRelation(attribute, true);
         return getThis();
     }
 
     @Override
     public Relation relhas(Attribute attribute) {
-        return attributeRelationship(attribute, false);
+        return attributeRelation(attribute, false);
     }
 
-    private Relation attributeRelationship(Attribute attribute, boolean isInferred) {
+    private Relation attributeRelation(Attribute attribute, boolean isInferred) {
         Schema.ImplicitType has = Schema.ImplicitType.HAS;
         Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_VALUE;
         Schema.ImplicitType hasOwner = Schema.ImplicitType.HAS_OWNER;
@@ -341,9 +341,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Role roleHasValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().label()));
         Role roleKeyValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().label()));
 
-        Stream<Relation> relationships = relations(filterNulls(roleHasOwner, roleKeyOwner));
-        relationships.filter(relationship -> {
-            Stream<Thing> rolePlayers = relationship.rolePlayers(filterNulls(roleHasValue, roleKeyValue));
+        Stream<Relation> relations = relations(filterNulls(roleHasOwner, roleKeyOwner));
+        relations.filter(relation -> {
+            Stream<Thing> rolePlayers = relation.rolePlayers(filterNulls(roleHasValue, roleKeyValue));
             return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));
         }).forEach(Concept::delete);
 

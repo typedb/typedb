@@ -119,7 +119,7 @@ public class RelationIT {
     public void whenCreatingAnInferredRelationship_EnsureMarkedAsInferred(){
         RelationTypeImpl rt = RelationTypeImpl.from(tx.putRelationType("rt"));
         Relation relationship = rt.create();
-        Relation relationshipInferred = rt.addRelationshipInferred();
+        Relation relationshipInferred = rt.addRelationInferred();
         assertFalse(relationship.isInferred());
         assertTrue(relationshipInferred.isInferred());
     }
