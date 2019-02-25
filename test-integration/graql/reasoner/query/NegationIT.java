@@ -326,11 +326,11 @@ public class NegationIT {
     @Test
     public void entitiesNotHavingRolePlayersInRelations(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
-            String connection = "relationship";
+            String connection = "relation";
             List<ConceptMap> fullAnswers = tx.execute(Graql.parse("match $x has attribute $r;get;").asGet());
             List<ConceptMap> answersNotPlayingInRelation = tx.execute(Graql.<GraqlGet>parse("match " +
                     "$x has attribute $r;"+
-                    "not {($x) isa relationship;};" +
+                    "not {($x) isa relation;};" +
                     "get;"
             ));
 

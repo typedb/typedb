@@ -234,7 +234,7 @@ public class AtomicRoleInferenceIT {
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_MetaRelationType(){
         TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
-        String relationString = "{ ($x, $y) isa relationship; };";
+        String relationString = "{ ($x, $y) isa relation; };";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
         tx.close();

@@ -156,7 +156,7 @@ public class OntologicalQueryIT {
     @Test
     @Ignore //TODO: re-enable this test once we figure out why it randomly fails
     public void allRolePlayerPairsAndTheirRelationType() {
-                String relationString = "match $x isa relationship; get;";
+                String relationString = "match $x isa relation; get;";
         String rolePlayerPairString = "match ($u, $v) isa $type; get;";
 
         GraqlGet rolePlayerQuery = Graql.parse(rolePlayerPairString).asGet();
@@ -217,10 +217,10 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfTypesThatAreSubTypeOfGivenType_needInferenceToGetAllResults() {
-                String queryString = "match $x isa $type; $type sub relationship; get;";
+                String queryString = "match $x isa $type; $type sub relation; get;";
         List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
-        assertEquals(tx.getRelationType("relationship").subs().flatMap(RelationType::instances).count(), answers.size());
+        assertEquals(tx.getRelationType("relation").subs().flatMap(RelationType::instances).count(), answers.size());
         assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.parse(queryString).asGet(), false));
     }
 
@@ -233,7 +233,7 @@ public class OntologicalQueryIT {
                 answers.stream().map(ans -> ans.get("x")).collect(Collectors.toSet()),
                 Sets.newHashSet(
                         tx.getSchemaConcept(Label.of("thing")),
-                        tx.getSchemaConcept(Label.of("relationship")),
+                        tx.getSchemaConcept(Label.of("relation")),
                         tx.getSchemaConcept(Label.of("reifiable-relation")),
                         tx.getSchemaConcept(Label.of("binary"))
                 ));
@@ -264,7 +264,7 @@ public class OntologicalQueryIT {
         List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
         assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.parse(queryString).asGet(), false));
-        List<ConceptMap> relations = tx.execute(Graql.parse("match $x isa relationship;get;").asGet(), false);
+        List<ConceptMap> relations = tx.execute(Graql.parse("match $x isa relation;get;").asGet(), false);
         //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
         assertEquals(relations.stream().filter(ans -> !ans.get("x").asRelation().type().isImplicit()).count() + 3, answers.size());
     }
@@ -317,7 +317,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfMetaRelation() {
-                String queryString = "match $x isa relationship;get;";
+                String queryString = "match $x isa relation;get;";
 
         List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
