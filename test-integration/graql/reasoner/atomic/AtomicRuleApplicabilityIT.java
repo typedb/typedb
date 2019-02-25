@@ -483,7 +483,7 @@ public class AtomicRuleApplicabilityIT {
     @Test
     public void testRuleApplicability_OntologicalTypes(){
         TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
-        String typeString = "{ $x sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + "; };";
+        String typeString = "{ $x sub " + Schema.MetaSchema.RELATION.getLabel() + "; };";
         String typeString2 = "{ $x relates someRole; };";
         String typeString3 = "{ $x plays someRole; };";
         String typeString4 = "{ $x has name; };";

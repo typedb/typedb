@@ -87,7 +87,7 @@ public final class Schema {
         ENTITY("entity", 2),
         ROLE("role", 3),
         ATTRIBUTE("attribute", 4),
-        RELATIONSHIP("relationship", 5),
+        RELATION("relation", 5),
         RULE("rule", 6);
 
         private final Label label;
@@ -236,7 +236,7 @@ public final class Schema {
         RESERVED("@"),
 
         /**
-         * The label of the generic has-Attribute relationship, used for attaching Attributes to instances with the 'has' syntax
+         * The label of the generic has-Attribute relation, used for attaching Attributes to instances with the 'has' syntax
          */
         HAS("@has-%s"),
 
@@ -251,7 +251,7 @@ public final class Schema {
         HAS_VALUE("@has-%s-value"),
 
         /**
-         * The label of the generic key relationship, used for attaching Attributes to instances with the 'has' syntax and additionally constraining them to be unique
+         * The label of the generic key relation, used for attaching Attributes to instances with the 'has' syntax and additionally constraining them to be unique
          */
         KEY("@key-%s"),
 

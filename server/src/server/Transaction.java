@@ -342,7 +342,7 @@ public interface Transaction extends AutoCloseable {
      */
     @CheckReturnValue
     default RelationType getMetaRelationType() {
-        return getSchemaConcept(Schema.MetaSchema.RELATIONSHIP.getLabel());
+        return getSchemaConcept(Schema.MetaSchema.RELATION.getLabel());
     }
 
     /**

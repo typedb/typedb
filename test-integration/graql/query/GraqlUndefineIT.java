@@ -70,7 +70,7 @@ public class GraqlUndefineIT {
 
     private static final Statement THING = type(Schema.MetaSchema.THING.getLabel().getValue());
     private static final Statement ENTITY = type(Schema.MetaSchema.ENTITY.getLabel().getValue());
-    private static final Statement RELATIONSHIP = type(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
+    private static final Statement RELATIONSHIP = type(Schema.MetaSchema.RELATION.getLabel().getValue());
     private static final Statement ATTRIBUTE = type(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue());
     private static final Statement ROLE = type(Schema.MetaSchema.ROLE.getLabel().getValue());
     private static final Label NEW_TYPE = Label.of("new-type");

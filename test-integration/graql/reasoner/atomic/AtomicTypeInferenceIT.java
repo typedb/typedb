@@ -432,7 +432,7 @@ public class AtomicTypeInferenceIT {
     }
 
     private List<Type> allRelations(TransactionOLTP tx){
-        RelationType metaType = tx.getRelationType(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
+        RelationType metaType = tx.getRelationType(Schema.MetaSchema.RELATION.getLabel().getValue());
         return metaType.subs().filter(t -> !t.equals(metaType)).collect(Collectors.toList());
     }
 
