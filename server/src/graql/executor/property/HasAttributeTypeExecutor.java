@@ -26,7 +26,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.WriteExecutor;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;

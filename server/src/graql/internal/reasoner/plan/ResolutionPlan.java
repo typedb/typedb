@@ -20,7 +20,7 @@ package grakn.core.graql.internal.reasoner.plan;
 
 import com.google.common.collect.ImmutableList;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.gremlin.GraqlTraversal;
+import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.AtomicBase;

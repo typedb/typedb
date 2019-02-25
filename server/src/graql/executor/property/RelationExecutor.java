@@ -28,8 +28,8 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.thing.Thing;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.WriteExecutor;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
-import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
+import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
 
 public class RelationExecutor implements PropertyExecutor.Insertable {

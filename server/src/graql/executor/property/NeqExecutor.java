@@ -19,8 +19,8 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.Atomic;
 import grakn.core.graql.internal.reasoner.atom.predicate.NeqIdPredicate;
 import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
