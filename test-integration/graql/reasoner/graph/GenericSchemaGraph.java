@@ -19,12 +19,12 @@ package grakn.core.graql.reasoner.graph;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.type.EntityType;
 import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.graql.reasoner.pattern.AttributePattern;
 import grakn.core.graql.reasoner.pattern.QueryPattern;

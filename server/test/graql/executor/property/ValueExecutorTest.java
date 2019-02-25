@@ -18,7 +18,6 @@
 
 package grakn.core.graql.executor.property;
 
-import grakn.core.graql.executor.property.ValueExecutor;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import org.junit.Test;

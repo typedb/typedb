@@ -18,14 +18,14 @@
 
 package grakn.core.server.kb;
 
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.Concept;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.type.EntityType;
 import grakn.core.concept.Label;
 import grakn.core.concept.LabelId;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;

@@ -19,9 +19,9 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;

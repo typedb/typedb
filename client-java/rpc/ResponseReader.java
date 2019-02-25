@@ -21,6 +21,8 @@ package grakn.core.client.rpc;
 
 import grakn.core.client.GraknClient;
 import grakn.core.client.concept.RemoteConcept;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
@@ -29,8 +31,6 @@ import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
 import grakn.core.protocol.AnswerProto;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;

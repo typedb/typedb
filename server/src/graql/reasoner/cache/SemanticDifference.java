@@ -20,8 +20,8 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;

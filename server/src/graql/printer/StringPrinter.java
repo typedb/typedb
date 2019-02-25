@@ -18,16 +18,16 @@
 
 package grakn.core.graql.printer;
 
-import grakn.core.concept.answer.AnswerGroup;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptSetMeasure;
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
 import graql.lang.Graql.Token.Char;
 import graql.lang.Graql.Token.Property;

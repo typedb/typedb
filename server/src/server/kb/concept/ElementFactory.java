@@ -18,9 +18,9 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;

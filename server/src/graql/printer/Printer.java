@@ -18,6 +18,7 @@
 
 package grakn.core.graql.printer;
 
+import grakn.core.concept.Concept;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptMap;
@@ -25,7 +26,6 @@ import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.Concept;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;

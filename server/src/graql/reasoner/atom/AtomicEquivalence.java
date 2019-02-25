@@ -19,8 +19,8 @@
 package grakn.core.graql.reasoner.atom;
 
 import com.google.common.base.Equivalence;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.reasoner.utils.ReasonerUtils;
 
 import java.util.Collection;
 import java.util.SortedSet;

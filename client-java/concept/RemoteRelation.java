@@ -24,9 +24,9 @@ import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.concept.thing.Thing;
 import grakn.core.protocol.ConceptProto;
 
 import java.util.Arrays;

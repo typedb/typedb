@@ -20,8 +20,8 @@ package grakn.core.server.rpc;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
-import grakn.core.concept.thing.Entity;
 import grakn.core.concept.Label;
+import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.RelationType;
 import grakn.core.protocol.ConceptProto;

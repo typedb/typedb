@@ -19,15 +19,15 @@
 package grakn.core.graql.executor;
 
 import grakn.core.common.util.CommonUtil;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.exception.InvalidKBException;

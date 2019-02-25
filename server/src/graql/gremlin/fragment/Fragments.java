@@ -20,9 +20,9 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.printer.StringPrinter;
 import grakn.core.server.kb.Schema;

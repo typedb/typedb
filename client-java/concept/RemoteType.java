@@ -21,11 +21,11 @@ package grakn.core.client.concept;
 
 import grakn.core.client.GraknClient;
 import grakn.core.client.rpc.RequestBuilder;
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
-import grakn.core.concept.type.Role;
 import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.server.exception.TransactionException;

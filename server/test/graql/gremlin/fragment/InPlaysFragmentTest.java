@@ -19,8 +19,6 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.gremlin.fragment.Fragment;
-import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.server.kb.Schema;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

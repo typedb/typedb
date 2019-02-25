@@ -20,8 +20,8 @@ package grakn.core.server.kb;
 
 import com.google.common.collect.Lists;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.Concept;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
