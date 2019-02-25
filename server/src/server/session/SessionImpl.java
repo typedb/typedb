@@ -96,28 +96,28 @@ public class SessionImpl implements Session {
     public TransactionOLTP transaction(Transaction.Type type) {
 
         ScopedSpan span = null;
-        if (ServerTracingInstrumentation.tracingActive()) span = ServerTracingInstrumentation.createScopedChildSpan("SessionImpl.transaction");
+        if (ServerTracingInstrumentation.tracingActive()) { span = ServerTracingInstrumentation.createScopedChildSpan("SessionImpl.transaction"); }
 
         // If graph is closed it means the session was already closed
-        if (graph.isClosed()) throw new SessionException(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
+        if (graph.isClosed()) { throw new SessionException(ErrorMessage.SESSION_CLOSED.getMessage(keyspace())); }
 
-        if (span != null) span.annotate("Getting local thread to see if need to throw exception");
+        if (span != null) { span.annotate("Getting local thread to see if need to throw exception"); }
         TransactionOLTP localTx = localOLTPTransactionContainer.get();
         // If transaction is already open in current thread throw exception
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
-        if (span != null) span.annotate("Getting new tx");
+        if (span != null) { span.annotate("Getting new tx"); }
         // We are passing the graph to Transaction because there is the need to access graph tinkerpop traversal
         TransactionOLTP tx = new TransactionOLTP(this, graph, keyspaceCache);
 
-        if (span != null) span.annotate("Opening tx with type");
+        if (span != null) { span.annotate("Opening tx with type"); }
         tx.open(type);
 
-        if (span != null) span.annotate("Saving tx to local container");
+        if (span != null) { span.annotate("Saving tx to local container"); }
 
         localOLTPTransactionContainer.set(tx);
 
-        if (span != null) span.finish();
+        if (span != null) { span.finish(); }
         return tx;
     }
 
