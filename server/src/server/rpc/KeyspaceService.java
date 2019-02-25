@@ -20,7 +20,7 @@ package grakn.core.server.rpc;
 
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -47,7 +47,7 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     @Override
     public void retrieve(KeyspaceProto.Keyspace.Retrieve.Req request, StreamObserver<KeyspaceProto.Keyspace.Retrieve.Res> response) {
         try {
-            Iterable<String> list = keyspaceStore.keyspaces().stream().map(Keyspace::getName)
+            Iterable<String> list = keyspaceStore.keyspaces().stream().map(KeyspaceImpl::name)
                     .collect(Collectors.toSet());
             response.onNext(KeyspaceProto.Keyspace.Retrieve.Res.newBuilder().addAllNames(list).build());
             response.onCompleted();
@@ -59,7 +59,7 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     @Override
     public void delete(KeyspaceProto.Keyspace.Delete.Req request, StreamObserver<KeyspaceProto.Keyspace.Delete.Res> response) {
         try {
-            keyspaceStore.deleteKeyspace(Keyspace.of(request.getName()));
+            keyspaceStore.deleteKeyspace(KeyspaceImpl.of(request.getName()));
 
             response.onNext(KeyspaceProto.Keyspace.Delete.Res.getDefaultInstance());
             response.onCompleted();

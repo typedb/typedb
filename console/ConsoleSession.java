@@ -85,7 +85,7 @@ public class ConsoleSession implements AutoCloseable {
         this.client = new GraknClient(serverAddress);
         this.session = client.session(keyspace);
         this.consoleReader = new ConsoleReader(System.in, printOut);
-        this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().getName() + ANSI_RESET + "> ");
+        this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().name() + ANSI_RESET + "> ");
         this.printErr = printErr;
 
         File file = new File(HISTORY_FILE);

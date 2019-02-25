@@ -33,7 +33,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
@@ -274,7 +274,7 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when creating an invalid {@link Keyspace}
+     * Thrown when creating an invalid {@link KeyspaceImpl}
      */
     public static TransactionException invalidKeyspaceName(String keyspace) {
         return create(ErrorMessage.INVALID_KEYSPACE_NAME.getMessage(keyspace));

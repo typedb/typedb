@@ -48,10 +48,10 @@ public class KeyspaceManager {
     // If there is a more natural home for this constant, feel free to put it there!
     private static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
     private static final Label KEYSPACE_ENTITY = Label.of("keyspace");
-    private final static Keyspace SYSTEM_KB_KEYSPACE = Keyspace.of("graknsystem");
+    private final static KeyspaceImpl SYSTEM_KB_KEYSPACE = KeyspaceImpl.of("graknsystem");
 
     private static final Logger LOG = LoggerFactory.getLogger(KeyspaceManager.class);
-    private final Set<Keyspace> existingKeyspaces;
+    private final Set<KeyspaceImpl> existingKeyspaces;
     private final SessionImpl systemKeyspaceSession;
     private final Config config;
 
@@ -62,11 +62,11 @@ public class KeyspaceManager {
     }
 
     /**
-     * Logs a new {@link Keyspace} to the {@link KeyspaceManager}.
+     * Logs a new {@link KeyspaceImpl} to the {@link KeyspaceManager}.
      *
-     * @param keyspace The new {@link Keyspace} we have just created
+     * @param keyspace The new {@link KeyspaceImpl} we have just created
      */
-    public void addKeyspace(Keyspace keyspace){
+    public void addKeyspace(KeyspaceImpl keyspace){
         if(containsKeyspace(keyspace)) return;
 
         try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
@@ -74,7 +74,7 @@ public class KeyspaceManager {
             if (keyspaceName == null) {
                 throw GraknServerException.initializationException(keyspace);
             }
-            Attribute<String> attribute = keyspaceName.create(keyspace.getName());
+            Attribute<String> attribute = keyspaceName.create(keyspace.name());
             if (attribute.owner() == null) {
                 tx.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).create().has(attribute);
             }
@@ -91,7 +91,7 @@ public class KeyspaceManager {
         this.systemKeyspaceSession.close();
     }
 
-    public boolean containsKeyspace(Keyspace keyspace){
+    public boolean containsKeyspace(KeyspaceImpl keyspace){
         //Check the local cache to see which keyspaces we already have open
         if(existingKeyspaces.contains(keyspace)){
             return true;
@@ -104,7 +104,7 @@ public class KeyspaceManager {
         }
     }
 
-    public boolean deleteKeyspace(Keyspace keyspace){
+    public boolean deleteKeyspace(KeyspaceImpl keyspace){
         if(keyspace.equals(SYSTEM_KB_KEYSPACE)){
            return false;
         }
@@ -115,10 +115,10 @@ public class KeyspaceManager {
         return deleteReferenceInSystemKeyspace(keyspace);
     }
 
-    private boolean deleteReferenceInSystemKeyspace(Keyspace keyspace){
+    private boolean deleteReferenceInSystemKeyspace(KeyspaceImpl keyspace){
         try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
-            Attribute<String> attribute = keyspaceName.attribute(keyspace.getName());
+            Attribute<String> attribute = keyspaceName.attribute(keyspace.name());
 
             if(attribute == null) return false;
             Thing thing = attribute.owner();
@@ -132,14 +132,14 @@ public class KeyspaceManager {
         return true;
     }
 
-    public Set<Keyspace> keyspaces() {
+    public Set<KeyspaceImpl> keyspaces() {
         try (Transaction graph = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
 
             return graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).instances()
                     .flatMap(keyspace -> keyspace.attributes(keyspaceName))
                     .map(name -> (String) name.value())
-                    .map(Keyspace::of)
+                    .map(KeyspaceImpl::of)
                     .collect(Collectors.toSet());
         }
     }

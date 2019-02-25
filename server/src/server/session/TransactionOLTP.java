@@ -54,7 +54,7 @@ import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.GlobalCache;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
@@ -185,6 +185,11 @@ public class TransactionOLTP implements Transaction {
     @Override
     public SessionImpl session() {
         return session;
+    }
+
+    @Override
+    public KeyspaceImpl keyspace() {
+        return session.keyspace();
     }
 
     @Override
@@ -867,11 +872,11 @@ public class TransactionOLTP implements Transaction {
      */
     public static class CommitLog {
 
-        private final Keyspace keyspace;
+        private final KeyspaceImpl keyspace;
         private final Map<ConceptId, Long> instanceCount;
         private final Map<String, Set<ConceptId>> attributes;
 
-        CommitLog(Keyspace keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> attributes) {
+        CommitLog(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> attributes) {
             if (keyspace == null) {
                 throw new NullPointerException("Null keyspace");
             }
@@ -886,7 +891,7 @@ public class TransactionOLTP implements Transaction {
             this.attributes = attributes;
         }
 
-        public Keyspace keyspace() {
+        public KeyspaceImpl keyspace() {
             return keyspace;
         }
 
@@ -898,7 +903,7 @@ public class TransactionOLTP implements Transaction {
             return attributes;
         }
 
-        public static CommitLog create(Keyspace keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> newAttributes) {
+        public static CommitLog create(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> newAttributes) {
             return new CommitLog(keyspace, instanceCount, newAttributes);
         }
 

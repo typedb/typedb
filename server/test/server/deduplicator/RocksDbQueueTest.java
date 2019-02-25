@@ -21,7 +21,7 @@ package grakn.core.server.deduplicator;
 import grakn.core.concept.ConceptId;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.RocksDbQueue;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
@@ -46,11 +46,11 @@ public class RocksDbQueueTest {
         Path queuePath = Files.createTempDirectory("rocksdb-test-dir");
         try (RocksDbQueue queue = new RocksDbQueue(queuePath)) {
             List<Attribute> attributes = Arrays.asList(
-                    Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
-                    Attribute.create(Keyspace.of("k2"), "v2", ConceptId.of("c2")),
-                    Attribute.create(Keyspace.of("k3"), "v3", ConceptId.of("c3")),
-                    Attribute.create(Keyspace.of("k4"), "v4", ConceptId.of("c4")),
-                    Attribute.create(Keyspace.of("k5"), "v5", ConceptId.of("c5"))
+                    Attribute.create(KeyspaceImpl.of("k1"), "v1", ConceptId.of("c1")),
+                    Attribute.create(KeyspaceImpl.of("k2"), "v2", ConceptId.of("c2")),
+                    Attribute.create(KeyspaceImpl.of("k3"), "v3", ConceptId.of("c3")),
+                    Attribute.create(KeyspaceImpl.of("k4"), "v4", ConceptId.of("c4")),
+                    Attribute.create(KeyspaceImpl.of("k5"), "v5", ConceptId.of("c5"))
             );
 
             for (Attribute attr : attributes) {
@@ -67,11 +67,11 @@ public class RocksDbQueueTest {
         Path queuePath = Files.createTempDirectory("rocksdb-test-dir");
         try (RocksDbQueue queue = new RocksDbQueue(queuePath)) {
             List<Attribute> attributes = Arrays.asList(
-                    Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
-                    Attribute.create(Keyspace.of("k2"), "v2", ConceptId.of("c2")),
-                    Attribute.create(Keyspace.of("k3"), "v3", ConceptId.of("c3")),
-                    Attribute.create(Keyspace.of("k4"), "v4", ConceptId.of("c4")),
-                    Attribute.create(Keyspace.of("k5"), "v5", ConceptId.of("c5"))
+                    Attribute.create(KeyspaceImpl.of("k1"), "v1", ConceptId.of("c1")),
+                    Attribute.create(KeyspaceImpl.of("k2"), "v2", ConceptId.of("c2")),
+                    Attribute.create(KeyspaceImpl.of("k3"), "v3", ConceptId.of("c3")),
+                    Attribute.create(KeyspaceImpl.of("k4"), "v4", ConceptId.of("c4")),
+                    Attribute.create(KeyspaceImpl.of("k5"), "v5", ConceptId.of("c5"))
             );
 
             for (Attribute attr : attributes) {
@@ -90,13 +90,13 @@ public class RocksDbQueueTest {
         Path queuePath = Files.createTempDirectory("rocksdb-test-dir");
         try (RocksDbQueue queue = new RocksDbQueue(queuePath)) {
             List<Attribute> attributes1 = Arrays.asList(
-                    Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
-                    Attribute.create(Keyspace.of("k2"), "v2", ConceptId.of("c2"))
+                    Attribute.create(KeyspaceImpl.of("k1"), "v1", ConceptId.of("c1")),
+                    Attribute.create(KeyspaceImpl.of("k2"), "v2", ConceptId.of("c2"))
             );
             List<Attribute> attributes2 = Arrays.asList(
-                    Attribute.create(Keyspace.of("k3"), "v3", ConceptId.of("c3")),
-                    Attribute.create(Keyspace.of("k4"), "v4", ConceptId.of("c4")),
-                    Attribute.create(Keyspace.of("k5"), "v5", ConceptId.of("c5"))
+                    Attribute.create(KeyspaceImpl.of("k3"), "v3", ConceptId.of("c3")),
+                    Attribute.create(KeyspaceImpl.of("k4"), "v4", ConceptId.of("c4")),
+                    Attribute.create(KeyspaceImpl.of("k5"), "v5", ConceptId.of("c5"))
             );
 
             Stream.concat(attributes1.stream(), attributes2.stream()).forEach(attr -> queue.insert(attr));
@@ -151,7 +151,7 @@ public class RocksDbQueueTest {
         Path queuePath = Files.createTempDirectory("rocksdb-test-dir");
         RocksDbQueue queue = new RocksDbQueue(queuePath);
 
-        Attribute input = Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1"));
+        Attribute input = Attribute.create(KeyspaceImpl.of("k1"), "v1", ConceptId.of("c1"));
         List<Attribute> expectedOutput = Arrays.asList(input);
 
         // perform a read() on the currently empty queue asynchronously.

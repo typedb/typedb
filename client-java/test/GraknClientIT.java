@@ -111,7 +111,7 @@ public class GraknClientIT {
     @Before
     public void setUp() {
         localSession = server.sessionWithNewKeyspace();
-        remoteSession = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().getName());
+        remoteSession = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().name());
     }
 
     @After
@@ -122,21 +122,21 @@ public class GraknClientIT {
 
     @Test
     public void testOpeningASession_ReturnARemoteGraknSession() {
-        try (Session session = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().getName())) {
+        try (Session session = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().name())) {
             assertTrue(GraknClient.Session.class.isAssignableFrom(session.getClass()));
         }
     }
 
     @Test
     public void testOpeningASessionWithAGivenUriAndKeyspace_TheUriAndKeyspaceAreSet() {
-        try (Session session = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().getName())) {
+        try (Session session = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().name())) {
             assertEquals(localSession.keyspace(), session.keyspace());
         }
     }
 
     @Test
     public void testOpeningATransactionFromASession_ReturnATransactionWithParametersSet() {
-        try (Session session = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().getName())) {
+        try (Session session = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().name())) {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 assertEquals(session, tx.session());
                 assertEquals(localSession.keyspace(), tx.keyspace());
@@ -940,7 +940,7 @@ public class GraknClientIT {
     public void testDeletingAKeyspace_TheKeyspaceIsDeleted() {
         GraknClient client = new GraknClient(server.grpcUri().toString());
         Session localSession = server.sessionWithNewKeyspace();
-        String keyspace = localSession.keyspace().getName();
+        String keyspace = localSession.keyspace().name();
         GraknClient.Session remoteSession = client.session(keyspace);
 
         try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
@@ -952,7 +952,7 @@ public class GraknClientIT {
         try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
             assertNotNull(tx.getEntityType("easter"));
 
-            client.keyspaces().delete(tx.keyspace().getName());
+            client.keyspaces().delete(tx.keyspace().name());
         }
 
         Session newLocalSession = server.session(localSession.keyspace());

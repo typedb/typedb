@@ -18,6 +18,7 @@
 
 package grakn.core.server;
 
+import grakn.core.api.Keyspace;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -38,7 +39,6 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.keyspace.Keyspace;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -659,9 +659,7 @@ public interface Transaction extends AutoCloseable {
      * @return The Keyspace of the knowledge base.
      */
     @CheckReturnValue
-    default Keyspace keyspace() {
-        return session().keyspace();
-    }
+    Keyspace keyspace();
 
     /**
      * Utility function to determine whether the graph has been closed.

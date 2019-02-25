@@ -51,7 +51,7 @@ import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.KeyspaceServiceGrpc.KeyspaceServiceBlockingStub;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -154,8 +154,8 @@ public final class GraknClient {
         }
 
         @Override // TODO: remove this method once we no longer implement grakn.core.server.Session
-        public Keyspace keyspace() {
-            return Keyspace.of(keyspace);
+        public KeyspaceImpl keyspace() {
+            return KeyspaceImpl.of(keyspace);
         }
     }
 
@@ -203,8 +203,13 @@ public final class GraknClient {
         }
 
         @Override
-        public grakn.core.server.Session session() {
+        public GraknClient.Session session() {
             return session;
+        }
+
+        @Override
+        public KeyspaceImpl keyspace() {
+            return session.keyspace();
         }
 
         @Override

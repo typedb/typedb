@@ -24,7 +24,7 @@ import grakn.core.common.config.ConfigKey;
 import grakn.core.concept.ConceptId;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.RocksDbQueue;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.SessionStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ import static grakn.core.server.deduplicator.AttributeDeduplicator.deduplicate;
  * This class is responsible for de-duplicating attributes. It is done to ensure that every attribute in Grakn stays unique.
  *
  * Marking an attribute for deduplication:
- * When the {@link TransactionImpl#commit()} is invoked, it will trigger the {@link #markForDeduplication(Keyspace, String, ConceptId)}
+ * When the {@link TransactionImpl#commit()} is invoked, it will trigger the {@link #markForDeduplication(KeyspaceImpl, String, ConceptId)}
  * which inserts the attribute to an internal queue for deduplication.
  *
  * De-duplicating attributes in the de-duplicator daemon:
@@ -88,7 +88,7 @@ public class AttributeDeduplicatorDaemon {
      * @param index the value of the attribute
      * @param conceptId the concept id of the attribute
      */
-    public void markForDeduplication(Keyspace keyspace, String index, ConceptId conceptId) {
+    public void markForDeduplication(KeyspaceImpl keyspace, String index, ConceptId conceptId) {
         Attribute attribute = Attribute.create(keyspace, index, conceptId);
         LOG.trace("insert(" + attribute + ")");
         queue.insert(attribute);

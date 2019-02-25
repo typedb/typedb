@@ -24,7 +24,7 @@ import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.util.JanusGraphCleanup;
 import org.janusgraph.diskstorage.BackendException;
@@ -51,7 +51,7 @@ public class SessionImpl implements Session {
     // Session can have at most 1 transaction per thread, so we keep a local reference here
     private final ThreadLocal<TransactionOLTP> localOLTPTransactionContainer = new ThreadLocal<>();
 
-    private final Keyspace keyspace;
+    private final KeyspaceImpl keyspace;
     private final Config config;
     private final JanusGraph graph;
 
@@ -63,7 +63,7 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used. If null is supplied, it will be created
      */
-    public SessionImpl(Keyspace keyspace, Config config) {
+    public SessionImpl(KeyspaceImpl keyspace, Config config) {
         this.keyspace = keyspace;
         this.config = config;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
@@ -127,7 +127,7 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public Keyspace keyspace() {
+    public KeyspaceImpl keyspace() {
         return keyspace;
     }
 

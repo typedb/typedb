@@ -18,21 +18,24 @@
 
 package grakn.core.server.keyspace;
 
-import grakn.core.common.exception.Validator;
+import grakn.core.api.Keyspace;
 import grakn.core.server.exception.TransactionException;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
+import static grakn.core.api.Keyspace.isValidName;
+
 /**
  * An identifier for an isolated scope of a data in the database.
  */
-public class Keyspace implements Comparable<Keyspace>, Serializable {
+public class KeyspaceImpl implements Keyspace, Serializable {
+
     private static final long serialVersionUID = 2726154016735929123L;
 
     private final String name;
 
-    public Keyspace(String name) {
+    public KeyspaceImpl(String name) {
         if (name == null) {
             throw new NullPointerException("Null name");
         }
@@ -40,26 +43,21 @@ public class Keyspace implements Comparable<Keyspace>, Serializable {
     }
 
     @CheckReturnValue
-    public static Keyspace of(String name) {
-        if (!Validator.isValidKeyspaceName(name)) {
+    public static KeyspaceImpl of(String name) {
+        if (!isValidName(name)) {
             throw TransactionException.invalidKeyspaceName(name);
         }
-        return new Keyspace(name);
+        return new KeyspaceImpl(name);
     }
 
     @CheckReturnValue
-    public String getName() {
+    public String name() {
         return name;
     }
 
     @Override
-    public int compareTo(Keyspace o) {
-        if (equals(o)) return 0;
-        return getName().compareTo(o.getName());
-    }
-    @Override
     public final String toString() {
-        return getName();
+        return name();
     }
 
     @Override
@@ -67,8 +65,8 @@ public class Keyspace implements Comparable<Keyspace>, Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Keyspace that = (Keyspace) o;
-        return this.name.equals(that.getName());
+        KeyspaceImpl that = (KeyspaceImpl) o;
+        return this.name.equals(that.name());
     }
 
     @Override

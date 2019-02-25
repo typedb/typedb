@@ -51,7 +51,7 @@ public class KeyspacesTest {
     private void invalidKeyspace(String keyspace) {
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(TransactionException.invalidKeyspaceName(keyspace).getMessage());
-        Keyspace.of(keyspace);
+        KeyspaceImpl.of(keyspace);
     }
 
 }

@@ -21,7 +21,7 @@ package grakn.core.server.session;
 import grakn.core.common.config.Config;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.util.LockManager;
 
@@ -52,10 +52,10 @@ public class SessionStore {
      * Retrieves the {@link Session} needed to open the {@link Transaction}.
      * This will open a new one {@link Session} if it hasn't been opened before
      *
-     * @param keyspace The {@link Keyspace} of the {@link Session} to retrieve
-     * @return a new or existing {@link Session} connecting to the provided {@link Keyspace}
+     * @param keyspace The {@link KeyspaceImpl} of the {@link Session} to retrieve
+     * @return a new or existing {@link Session} connecting to the provided {@link KeyspaceImpl}
      */
-    public SessionImpl session(Keyspace keyspace) {
+    public SessionImpl session(KeyspaceImpl keyspace) {
         if (!keyspaceStore.containsKeyspace(keyspace)) {
             initialiseNewKeyspace(keyspace);
         }
@@ -63,11 +63,11 @@ public class SessionStore {
     }
 
     /**
-     * Initialise a new {@link Keyspace} by opening and closing a transaction on it.
+     * Initialise a new {@link KeyspaceImpl} by opening and closing a transaction on it.
      *
-     * @param keyspace the new {@link Keyspace} we want to create
+     * @param keyspace the new {@link KeyspaceImpl} we want to create
      */
-    private void initialiseNewKeyspace(Keyspace keyspace) {
+    private void initialiseNewKeyspace(KeyspaceImpl keyspace) {
         //If the keyspace does not exist lock and create it
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
         lock.lock();
@@ -83,8 +83,8 @@ public class SessionStore {
         }
     }
 
-    private static String getLockingKey(Keyspace keyspace) {
-        return "/creating-new-keyspace-lock/" + keyspace.getName();
+    private static String getLockingKey(KeyspaceImpl keyspace) {
+        return "/creating-new-keyspace-lock/" + keyspace.name();
     }
 
 }

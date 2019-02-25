@@ -115,7 +115,7 @@ final public class JanusGraphFactory {
     private static JanusGraph configureGraph(SessionImpl session) {
         org.janusgraph.core.JanusGraphFactory.Builder builder = org.janusgraph.core.JanusGraphFactory.build().
                 set(STORAGE_HOSTNAME, session.config().getProperty(ConfigKey.STORAGE_HOSTNAME)).
-                set(STORAGE_KEYSPACE, session.keyspace().getName()).
+                set(STORAGE_KEYSPACE, session.keyspace().name()).
                 set(STORAGE_BATCH_LOADING, false);
 
         //Load Defaults
@@ -137,7 +137,7 @@ final public class JanusGraphFactory {
             builder.set(key.toString(), value);
         });
 
-        LOG.debug("Opening graph {}", session.keyspace().getName());
+        LOG.debug("Opening graph {}", session.keyspace().name());
         return builder.open();
     }
 

@@ -40,7 +40,7 @@ import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
@@ -81,7 +81,7 @@ public class GraknClientTest {
 
     private final static SessionServiceGrpc.SessionServiceImplBase sessionService = mock(SessionServiceGrpc.SessionServiceImplBase.class);
     private final static KeyspaceServiceGrpc.KeyspaceServiceImplBase keyspaceService = mock(KeyspaceServiceGrpc.KeyspaceServiceImplBase.class);
-    private static final Keyspace KEYSPACE = Keyspace.of("grakn");
+    private static final KeyspaceImpl KEYSPACE = KeyspaceImpl.of("grakn");
     private static final String V123 = "V123";
     private static final int ITERATOR = 100;
     @Rule
@@ -101,7 +101,7 @@ public class GraknClientTest {
     public void setUp() {
         serverRule.getServiceRegistry().addService(sessionService);
         serverRule.getServiceRegistry().addService(keyspaceService);
-        session = new GraknClient().overrideChannel(serverRule.getChannel()).session(KEYSPACE.getName());
+        session = new GraknClient().overrideChannel(serverRule.getChannel()).session(KEYSPACE.name());
     }
 
     @Test
