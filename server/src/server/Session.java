@@ -34,7 +34,6 @@ public interface Session extends AutoCloseable {
      *
      * @param transactionType The type of transaction to open see Transaction.Type for more details
      * @return A new Grakn graph transaction
-     * @see Transaction
      */
     @CheckReturnValue
     Transaction transaction(Transaction.Type transactionType);
