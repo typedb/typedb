@@ -18,6 +18,8 @@
 
 workspace(name = "grakn_core")
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
 
 ####################
 # Load Build Tools #
@@ -88,3 +90,16 @@ github_dependencies_for_deployment()
 load("@com_github_google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
 google_common_workspace_rules()
 
+load("//dependencies/docker:dependencies.bzl", "docker_dependencies")
+docker_dependencies()
+
+load("@io_bazel_rules_docker//repositories:repositories.bzl", container_repositories = "repositories")
+container_repositories()
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
+container_pull(
+  name = "openjdk_image",
+  registry = "index.docker.io",
+  repository = "library/openjdk",
+  tag = "8"
+)
