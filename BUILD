@@ -125,9 +125,9 @@ container_image(
     name = "distribution-docker",
     base = "@openjdk_image//image",
     tars = [":distribution-tgz"],
-    files = [":grakn_docker.sh"],
+    files = [":grakn-docker.sh"],
     ports = ["48555"],
-    cmd = ["./grakn_docker.sh"],
+    cmd = ["./grakn-docker.sh"],
     volumes = ["/server/db"]
 )
 
