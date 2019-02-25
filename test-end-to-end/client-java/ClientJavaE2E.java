@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.hasSize;
  * Performs various queries with the client-java library:
  *  - define a schema with a rule
  *  - match; get;
- *  - match; get of an inferred relationship
+ *  - match; get of an inferred relation
  *  - match; insert;
  *  - match; delete;
  *  - match; aggregate;
@@ -53,8 +53,8 @@ import static org.hamcrest.Matchers.hasSize;
  * and there is a chance that the match; get; test is performed before the define a schema test, which would cause it to fail.
  *
  * The schema describes a lion family which consists of a lion, lioness, and the offspring - three young lions. The mating
- * relationship captures the mating act between the male and female partners (ie., the lion and lioness). The child-bearing
- * relationship captures the child-bearing act which results from the mating act.
+ * relation captures the mating act between the male and female partners (ie., the lion and lioness). The child-bearing
+ * relation captures the child-bearing act which results from the mating act.
  *
  * The rule is one such that if there is an offspring which is the result of a certain child-bearing act, then
  * that offspring is the child of the male and female partners which are involved in the mating act.
@@ -107,9 +107,9 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             GraqlDefine defineQuery = Graql.define(
-                    type("child-bearing").sub("relationship").relates("offspring").relates("child-bearer"),
-                    type("mating").sub("relationship").relates("male-partner").relates("female-partner").plays("child-bearer"),
-                    type("parentship").sub("relationship").relates("parent").relates("child"),
+                    type("child-bearing").sub("relation").relates("offspring").relates("child-bearer"),
+                    type("mating").sub("relation").relates("male-partner").relates("female-partner").plays("child-bearer"),
+                    type("parentship").sub("relation").relates("parent").relates("child"),
 
                     type("name").sub("attribute").datatype(Graql.Token.DataType.STRING),
                     type("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring"),
@@ -136,7 +136,7 @@ public class ClientJavaE2E {
             LOG.info("clientJavaE2E() - '" + getThingQuery + "'");
             List<String> definedSchema = tx.execute(getThingQuery).stream()
                     .map(answer -> answer.get("t").asType().label().getValue()).collect(Collectors.toList());
-            String[] correctSchema = new String[] { "thing", "entity", "relationship", "attribute",
+            String[] correctSchema = new String[] { "thing", "entity", "relation", "attribute",
                     "lion", "mating", "parentship", "child-bearing", "@has-name", "name" };
             assertThat(definedSchema, hasItems(correctSchema));
             LOG.info("clientJavaE2E() - done.");

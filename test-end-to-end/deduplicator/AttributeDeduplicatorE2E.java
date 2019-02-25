@@ -120,7 +120,7 @@ public class AttributeDeduplicatorE2E {
                     type("parent").sub("role"),
                     type("child").sub("role"),
                     type("person").sub("entity").has("name").plays("parent").plays("child"),
-                    type("parentchild").sub("relationship").relates("parent").relates("child")));
+                    type("parentchild").sub("relation").relates("parent").relates("child")));
             tx.commit();
         }
     }
