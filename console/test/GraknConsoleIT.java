@@ -71,9 +71,9 @@ public class GraknConsoleIT {
     private static InputStream trueIn;
     private static int keyspaceSuffix = 0;
 
-    private final static String analyticsDataset = "define obj sub entity, plays rel; relation sub relationship, relates rel; " +
+    private final static String analyticsDataset = "define obj sub entity, plays rol; rel sub relation, relates rol; " +
             "insert $a isa obj; $b isa obj; $c isa obj; $d isa obj; " +
-            "(rel: $a, rel: $b) isa relation; (rel: $a, rel: $c) isa relation; (rel: $a, rel: $d) isa relation; ";
+            "(rol: $a, rol: $b) isa rel; (rol: $a, rol: $c) isa rel; (rol: $a, rol: $d) isa rel; ";
 
     @BeforeClass
     public static void setUpClass() throws IOException {
@@ -189,7 +189,7 @@ public class GraknConsoleIT {
         assertConsoleSessionMatches(
                 "define name sub attribute, datatype string;",
                 anything(),
-                "define marriage sub relationship, relates spouse;",
+                "define marriage sub relation, relates spouse;",
                 anything(),
                 "define person sub entity, has name, plays spouse;",
                 anything(),
@@ -335,7 +335,7 @@ public class GraknConsoleIT {
     }
 
     @Test
-    public void when_commingInvalidData_expect_commitError() {
+    public void when_committingInvalidData_expect_commitError() {
         Response response = runConsoleSession("insert bob sub relation;\ncommit");
         assertFalse(response.out(), response.err().isEmpty());
     }
