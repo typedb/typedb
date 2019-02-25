@@ -481,6 +481,12 @@ public class TransactionOLTP implements Transaction {
         return supplier.get();
     }
 
+    /**
+     * @param label A unique label for the EntityType
+     * @return A new or existing EntityType with the provided label
+     * @throws TransactionException       if the graph is closed
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-EntityType.
+     */
     @Override
     public EntityType putEntityType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false,
@@ -565,6 +571,12 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
+    /**
+     * @param label A unique label for the RelationType
+     * @return A new or existing RelationType with the provided label.
+     * @throws TransactionException       if the graph is closed
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-RelationType.
+     */
     @Override
     public RelationType putRelationType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false,
@@ -576,6 +588,12 @@ public class TransactionOLTP implements Transaction {
                                 v -> factory().buildRelationType(v, getMetaRelationType()));
     }
 
+    /**
+     * @param label A unique label for the Role
+     * @return new or existing Role with the provided Id.
+     * @throws TransactionException       if the graph is closed
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Role.
+     */
     @Override
     public Role putRole(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ROLE, false,
@@ -587,6 +605,18 @@ public class TransactionOLTP implements Transaction {
                                 v -> factory().buildRole(v, getMetaRole()));
     }
 
+    /**
+     *
+     * @param label    A unique label for the AttributeType
+     * @param dataType The data type of the AttributeType.
+     *                 Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
+     * @param <V>
+     * @return A new or existing AttributeType with the provided label and data type.
+     * @throws TransactionException       if the graph is closed
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
+     * @throws TransactionException       if the {@param label} is already in use by an existing AttributeType which is
+     *                                    unique or has a different datatype.
+     */
     @SuppressWarnings("unchecked")
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
@@ -604,6 +634,14 @@ public class TransactionOLTP implements Transaction {
         return attributeType;
     }
 
+    /**
+     * @param label A unique label for the Rule
+     * @param when
+     * @param then
+     * @return new or existing Rule with the provided label.
+     * @throws TransactionException       if the graph is closed
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Rule.
+     */
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
         Rule rule = putSchemaConcept(label, Schema.BaseType.RULE, false,
@@ -623,6 +661,14 @@ public class TransactionOLTP implements Transaction {
     }
 
     //------------------------------------ Lookup
+
+    /**
+     * @param id A unique identifier for the Concept in the graph.
+     * @param <T>
+     * @return The Concept with the provided id or null if no such Concept exists.
+     * @throws TransactionException if the graph is closed
+     * @throws ClassCastException   if the concept is not an instance of T
+     */
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
         return operateOnOpenGraph(() -> {
@@ -660,6 +706,12 @@ public class TransactionOLTP implements Transaction {
         return this.<T>getConcept(Schema.VertexProperty.LABEL_ID, id.getValue()).orElse(null);
     }
 
+    /**
+     * @param value A value which an Attribute in the graph may be holding.
+     * @param <V>
+     * @return The Attributes holding the provided value or an empty collection if no such Attribute exists.
+     * @throws TransactionException if the graph is closed
+     */
     @Override
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
         if (value == null) return Collections.emptySet();
@@ -682,6 +734,13 @@ public class TransactionOLTP implements Transaction {
         return attributes;
     }
 
+    /**
+     * @param label A unique label which identifies the SchemaConcept in the graph.
+     * @param <T>
+     * @return The SchemaConcept with the provided label or null if no such SchemaConcept exists.
+     * @throws TransactionException if the graph is closed
+     * @throws ClassCastException   if the type is not an instance of T
+     */
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
         Schema.MetaSchema meta = Schema.MetaSchema.valueOf(label);
@@ -689,31 +748,64 @@ public class TransactionOLTP implements Transaction {
         return getSchemaConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
     }
 
+    /**
+     * @param label A unique label which identifies the grakn.core.concept.type.Type in the graph.
+     * @param <T>
+     * @return The grakn.core.concept.type.Type with the provided label or null if no such grakn.core.concept.type.Type exists.
+     * @throws TransactionException if the graph is closed
+     * @throws ClassCastException   if the type is not an instance of T
+     */
     @Override
     public <T extends grakn.core.concept.type.Type> T getType(Label label) {
         return getSchemaConcept(label, Schema.BaseType.TYPE);
     }
 
+    /**
+     * @param label A unique label which identifies the Entity Type in the graph.
+     * @return The Entity Type  with the provided label or null if no such Entity Type exists.
+     * @throws TransactionException if the graph is closed
+     */
     @Override
     public EntityType getEntityType(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.ENTITY_TYPE);
     }
 
+    /**
+     * @param label A unique label which identifies the RelationType in the graph.
+     * @return The RelationType with the provided label or null if no such RelationType exists.
+     * @throws TransactionException if the graph is closed
+     */
     @Override
     public RelationType getRelationType(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RELATION_TYPE);
     }
 
+    /**
+     * @param label A unique label which identifies the AttributeType in the graph.
+     * @param <V>
+     * @return The AttributeType with the provided label or null if no such AttributeType exists.
+     * @throws TransactionException if the graph is closed
+     */
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.ATTRIBUTE_TYPE);
     }
 
+    /**
+     * @param label A unique label which identifies the Role Type in the graph.
+     * @return The Role Type  with the provided label or null if no such Role Type exists.
+     * @throws TransactionException if the graph is closed
+     */
     @Override
     public Role getRole(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.ROLE);
     }
 
+    /**
+     * @param label A unique label which identifies the Rule in the graph.
+     * @return The Rule with the provided label or null if no such Rule Type exists.
+     * @throws TransactionException if the graph is closed
+     */
     @Override
     public Rule getRule(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);

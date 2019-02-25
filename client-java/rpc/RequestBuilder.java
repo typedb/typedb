@@ -60,7 +60,7 @@ public class RequestBuilder {
         public static SessionProto.Transaction.Req open(String sessionId, grakn.core.server.Transaction.Type txType) {
             SessionProto.Transaction.Open.Req openRequest = SessionProto.Transaction.Open.Req.newBuilder()
                     .setSessionId(sessionId)
-                    .setType(SessionProto.Transaction.Type.valueOf(txType.getId()))
+                    .setType(SessionProto.Transaction.Type.valueOf(txType.id()))
                     .build();
 
             return SessionProto.Transaction.Req.newBuilder().setOpenReq(openRequest).build();
