@@ -514,7 +514,7 @@ public class GraqlInsertIT {
     @Test
     public void whenInsertingWithAMatch_ProjectMatchResultsOnVariablesInTheInsert() {
         tx.execute(Graql.define(
-                type("maybe-friends").relates("friend").sub("relationship"),
+                type("maybe-friends").relates("friend").sub("relation"),
                 type("person").plays("friend")
         ));
 
