@@ -93,7 +93,7 @@ public class QueryIT {
                 tx.putRule("rule1",
                         Graql.parsePattern(
                                 "{" +
-                                        "($x, $y) isa relation; " +
+                                        "($x, $y) isa relation0; " +
                                         "($y, $z) isa inferredBase;" +
                                         "};"
                         ),

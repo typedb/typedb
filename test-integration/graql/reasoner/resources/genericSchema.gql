@@ -52,7 +52,7 @@ subSubRoleEntity sub subRoleEntity,
     plays subSubRole2,
     plays subSubRole3;
 
-baseRelation sub relationship, abstract,
+baseRelation sub relation, abstract,
     has resource;
 
 binary sub baseRelation,

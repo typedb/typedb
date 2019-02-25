@@ -19,23 +19,23 @@ yetAnotherEntity sub baseEntity;
 
 #Relations
 
-relation sub relationship,
+relation0 sub relation,
     relates someRole,
     relates otherRole;
 
-anotherRelation sub relationship,
+anotherRelation sub relation,
     relates someRole,
     relates otherRole;
 
-yetAnotherRelation sub relationship,
+yetAnotherRelation sub relation,
     relates someRole,
     relates otherRole;
 
-derivedRelation sub relationship,
+derivedRelation sub relation,
     relates someRole,
     relates otherRole;
 
-anotherDerivedRelation sub relationship,
+anotherDerivedRelation sub relation,
     relates someRole,
     relates otherRole;
 
@@ -48,7 +48,7 @@ anotherDerivedResource sub attribute, datatype string;
 
 simple-relation-rule
 when {
-(someRole: $x, otherRole: $y) isa relation;},
+(someRole: $x, otherRole: $y) isa relation0;},
 then {
 (someRole: $x, otherRole: $y) isa derivedRelation;};
 

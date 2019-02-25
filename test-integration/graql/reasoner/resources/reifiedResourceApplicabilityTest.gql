@@ -21,7 +21,7 @@ res-boolean sub attribute, datatype boolean,
 resource-owner sub role;
 resource-value sub role;
 
-resource-relation sub relationship,
+resource-relation sub relation,
     relates resource-owner,
     relates resource-value;
 

@@ -10,17 +10,17 @@ q sub entity2;
 
 N-TC-roleA sub role;
 N-TC-roleB sub role;
-N-TC sub relationship, relates N-TC-roleB, relates N-TC-roleA;
+N-TC sub relation, relates N-TC-roleB, relates N-TC-roleA;
 entity2 plays N-TC-roleB, plays N-TC-roleA;
 
 TC-roleA sub role;
 TC-roleB sub role;
-TC sub relationship, relates TC-roleA, relates TC-roleB;
+TC sub relation, relates TC-roleA, relates TC-roleB;
 entity2 plays TC-roleA, plays TC-roleB;
 
 P-roleA sub role;
 P-roleB sub role;
-P sub relationship, relates P-roleA, relates P-roleB;
+P sub relation, relates P-roleA, relates P-roleB;
 entity2 plays P-roleA, plays P-roleB;
 
 index sub attribute, datatype string;

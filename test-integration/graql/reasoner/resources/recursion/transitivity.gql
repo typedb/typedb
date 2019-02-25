@@ -9,27 +9,27 @@ define
 
 "R-role-A" sub role;
 "R-role-B" sub role;
-"R" sub relationship, relates R-role-A, relates R-role-B;
+"R" sub relation, relates R-role-A, relates R-role-B;
 entity2 plays R-role-A, plays R-role-B;
 
 "E-role-A" sub role;
 "E-role-B" sub role;
-"E" sub relationship, relates E-role-A, relates E-role-B;
+"E" sub relation, relates E-role-A, relates E-role-B;
 entity2 plays E-role-A, plays E-role-B;
 
 "F-role-A" sub role;
 "F-role-B" sub role;
-"F" sub relationship, relates F-role-A, relates F-role-B;
+"F" sub relation, relates F-role-A, relates F-role-B;
 entity2 plays F-role-A, plays F-role-B;
 
 "G-role-A" sub role;
 "G-role-B" sub role;
-"G" sub relationship, relates G-role-A, relates G-role-B;
+"G" sub relation, relates G-role-A, relates G-role-B;
 entity2 plays G-role-A, plays G-role-B;
 
 "H-role-A" sub role;
 "H-role-B" sub role;
-"H" sub relationship, relates H-role-A, relates H-role-B;
+"H" sub relation, relates H-role-A, relates H-role-B;
 entity2 plays H-role-A, plays H-role-B;
 
 "index" sub attribute, datatype string;
