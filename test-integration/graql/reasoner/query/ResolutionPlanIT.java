@@ -156,7 +156,7 @@ public class ResolutionPlanIT {
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
-                getAtomOfType(query, "relation", tx)
+                getAtomOfType(query, "relation0", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -173,7 +173,7 @@ public class ResolutionPlanIT {
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "derivedRelation", tx),
-                getAtomOfType(query, "relation", tx)
+                getAtomOfType(query, "relation0", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -193,7 +193,7 @@ public class ResolutionPlanIT {
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
-                getAtomOfType(query, "relation", tx)
+                getAtomOfType(query, "relation0", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -210,7 +210,7 @@ public class ResolutionPlanIT {
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
-                getAtomOfType(query, "relation", tx),
+                getAtomOfType(query, "relation0", tx),
                 getAtomOfType(query, "derivedRelation", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
@@ -246,7 +246,7 @@ public class ResolutionPlanIT {
                 getAtomOfType(query, "resource", tx),
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
-                getAtomOfType(query, "relation", tx)
+                getAtomOfType(query, "relation0", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -285,7 +285,7 @@ public class ResolutionPlanIT {
                 getAtomOfType(query, "resource", tx),
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
-                getAtomOfType(query, "relation", tx),
+                getAtomOfType(query, "relation0", tx),
                 getAtomOfType(query, "anotherResource", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);

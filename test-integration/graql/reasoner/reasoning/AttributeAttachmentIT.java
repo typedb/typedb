@@ -197,7 +197,7 @@ public class AttributeAttachmentIT {
                     }
             );
 
-            String queryString2 = "match $x isa relation, has reattachable-resource-string $y; get;";
+            String queryString2 = "match $x isa relation0, has reattachable-resource-string $y; get;";
             List<ConceptMap> answers2 = tx.execute(Graql.parse(queryString2).asGet());
             assertEquals(1, answers2.size());
             answers2.forEach(ans ->

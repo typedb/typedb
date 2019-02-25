@@ -81,7 +81,7 @@ public class QueryIT {
             try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
 
                 Role someRole = tx.putRole("someRole");
-                tx.putRelationType("relation")
+                tx.putRelationType("relation0")
                         .relates(someRole);
                 RelationType inferredBase = tx.putRelationType("inferredBase")
                         .relates(someRole);
