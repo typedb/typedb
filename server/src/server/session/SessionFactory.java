@@ -37,16 +37,18 @@ import java.util.concurrent.locks.Lock;
  * it is possible to also update the Keyspace Store (which tracks all existing keyspaces).
  */
 public class SessionFactory {
-    private final Config config;
+    private final JanusGraphFactory janusGraphFactory;
     private final KeyspaceManager keyspaceStore;
+    private Config config;
     private final LockManager lockManager;
 
     private final ConcurrentHashMap<Keyspace, KeyspaceCacheContainer> keyspaceCacheMap;
 
-    public SessionFactory(LockManager lockManager, Config config, KeyspaceManager keyspaceStore) {
-        this.config = config;
+    public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, KeyspaceManager keyspaceStore, Config config) {
+        this.janusGraphFactory = janusGraphFactory;
         this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
+        this.config = config;
         this.keyspaceCacheMap = new ConcurrentHashMap<>();
     }
 
@@ -60,9 +62,8 @@ public class SessionFactory {
     public SessionImpl session(Keyspace keyspace) {
         if (!keyspaceStore.containsKeyspace(keyspace)) {
             return initialiseNewKeyspace(keyspace);
-            // TODO could return new session directly here so we don't close and re-open right away
         } else {
-            return newSessionImpl(keyspace, config);
+            return newSessionImpl(keyspace);
         }
     }
 
@@ -85,10 +86,9 @@ public class SessionFactory {
         keyspaceCacheMap.compute(keyspace, (ksp, keyspaceCacheContainer) -> {
             // if a concurrent delete has not occurred already
             if (keyspaceCacheContainer != null) {
-                // atomically clear the graph, blocking concurrent users from creating
+                // atomically close the shared graph, blocking concurrent users from re-creating it
                 JanusGraph graph = keyspaceCacheContainer.retrieveGraph();
                 graph.close();
-                JanusGraphFactory.drop(graph);
             }
             // null out the value so others can re-create keyspace
             return null;
@@ -109,7 +109,7 @@ public class SessionFactory {
         SessionImpl session;
         try {
             // opening a session initialises the keyspace with meta concepts, protect with lock so doesn't get initialised twice
-            session = newSessionImpl(keyspace, config);
+            session = newSessionImpl(keyspace);
             // Add current keyspace to list of available Grakn keyspaces
             keyspaceStore.addKeyspace(keyspace);
         } finally {
@@ -123,10 +123,10 @@ public class SessionFactory {
      * for reference counting keyspace cache usage to ensure proper keyspaceCache eviction
      *
      * @param keyspace
-     * @param config
      * @return
      */
-    private SessionImpl newSessionImpl(Keyspace keyspace, Config config) {
+    private SessionImpl newSessionImpl(Keyspace keyspace) {
+
 
         SessionImpl session;
         keyspaceCacheMap.compute(keyspace, (ksp, keyspaceCacheContainer) -> {
@@ -134,7 +134,7 @@ public class SessionFactory {
             // AND increment the reference count atomically
             KeyspaceCacheContainer cacheContainer;
             if (keyspaceCacheContainer == null) {
-                JanusGraph graph = JanusGraphFactory.openGraph(keyspace.getName(), config);
+                JanusGraph graph = janusGraphFactory.openGraph(keyspace.getName());
                 cacheContainer = new KeyspaceCacheContainer(new KeyspaceCache(config), graph);
             } else {
                 cacheContainer = keyspaceCacheContainer;
