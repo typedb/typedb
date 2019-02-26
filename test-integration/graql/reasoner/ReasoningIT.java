@@ -722,9 +722,13 @@ public class ReasoningIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet30.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                String queryString = "match $p isa pair, has name 'ff'; get;";
-                List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
+                String specificPairs = "match $p isa pair, has name 'ff'; get;";
+                List<ConceptMap> answers = tx.execute(Graql.parse(specificPairs).asGet());
                 assertEquals(16, answers.size());
+
+                String pairQuery = "match $p isa pair; get;";
+                List<ConceptMap> pairs = tx.execute(Graql.parse(pairQuery).asGet());
+                assertEquals(64, pairs.size());
             }
         }
     }

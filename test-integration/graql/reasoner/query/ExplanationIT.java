@@ -25,6 +25,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import graql.lang.Graql;
@@ -279,9 +280,44 @@ public class ExplanationIT {
         }
     }
 
+    //
+
+    /**
+     * Validates issue#3061 is fixed.
+     *
+     * The test illustrates the following issue. The `pair` and `has name` rules are mutually recursive - one fires the other.
+     * As a result, when resolving the second top atom of the input conjunctive query the answer is already in the cache.
+     * The answer contains a `RuleExplanation`.
+     * However, the query to be checked in cache is:
+     *
+     * `$p isa pair;`,
+     *
+     * whereas the cache contains:
+     *
+     * `$p (prep: $prep, pobj: $pobj) isa pair;`,
+     *
+     * which are not equivalent. The capture the answer correctly and recognise it as inferred the cache needs to be able
+     * to recognise the subsumption between queries`.
+     */
+    @Test
+    public void whenRulesAreMutuallyRecursive_explanationsAreRecognisedAsRuleOnes() {
+        try (Session session = server.sessionWithNewKeyspace()) {
+            loadFromFileAndCommit(resourcePath, "testSet30.gql", session);
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                String queryString = "match $p isa pair, has name 'ff'; get;";
+                List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
+                answers.forEach(joinedAnswer -> {
+                    testExplanation(joinedAnswer);
+                    joinedAnswer.explanation().getAnswers()
+                            .forEach(inferredAnswer -> assertTrue(inferredAnswer.explanation().isRuleExplanation()));
+                });
+            }
+        }
+    }
+
 
     private void testExplanation(Collection<ConceptMap> answers){
-        answers.forEach(ans -> testExplanation(ans));
+        answers.forEach(this::testExplanation);
     }
 
     private void testExplanation(ConceptMap answer){
