@@ -1134,4 +1134,35 @@ public class GraknClientIT {
             assertEquals(date, dateAttribute.value());
         }
     }
+
+    @Test
+    public void retrievingExistingKeyspaces_onlyRemoteSessionKeyspaceIsReturned(){
+        List<String> keyspaces = graknClient.keyspaces().retrieve();
+        assertEquals(1, keyspaces.size());
+        assertEquals(remoteSession.keyspace().getName(), keyspaces.get(0));
+    }
+
+    @Test
+    public void whenCreatingNewKeyspace_itIsVisibileInListOfExistingKeyspaces(){
+        graknClient.session("newkeyspace").transaction(Transaction.Type.WRITE).close();
+        List<String> keyspaces = graknClient.keyspaces().retrieve();
+
+        assertEquals(2, keyspaces.size());
+        assertTrue(keyspaces.contains("newkeyspace"));
+    }
+
+    @Test
+    public void whenDeletingKeyspace_notListedInExistingKeyspaces(){
+        graknClient.session("newkeyspace").transaction(Transaction.Type.WRITE).close();
+        List<String> keyspaces = graknClient.keyspaces().retrieve();
+
+        assertEquals(2, keyspaces.size());
+        assertTrue(keyspaces.contains("newkeyspace"));
+
+        graknClient.keyspaces().delete("newkeyspace");
+        List<String> keyspacesNoNew = graknClient.keyspaces().retrieve();
+
+        assertEquals(1, keyspacesNoNew.size());
+        assertFalse(keyspacesNoNew.contains("newkeyspace"));
+    }
 }
