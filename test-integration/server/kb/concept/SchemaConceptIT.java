@@ -19,15 +19,15 @@
 package grakn.core.server.kb.concept;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.Label;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -105,18 +105,18 @@ public class SchemaConceptIT {
 
         entityType.has(attributeType);
 
-        RelationType relationshipType = tx.getRelationType(hasResourceLabel.getValue());
-        Assert.assertEquals(hasResourceLabel, relationshipType.label());
+        RelationType relationType = tx.getRelationType(hasResourceLabel.getValue());
+        Assert.assertEquals(hasResourceLabel, relationType.label());
 
-        Set<Label> roleLabels = relationshipType.roles().map(SchemaConcept::label).collect(toSet());
+        Set<Label> roleLabels = relationType.roles().map(SchemaConcept::label).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
         assertThat(entityType.playing().collect(toSet()), containsInAnyOrder(tx.getRole(hasResourceOwnerLabel.getValue())));
         assertThat(attributeType.playing().collect(toSet()), containsInAnyOrder(tx.getRole(hasResourceValueLabel.getValue())));
 
         //Check everything is implicit
-        assertTrue(relationshipType.isImplicit());
-        relationshipType.roles().forEach(role -> assertTrue(role.isImplicit()));
+        assertTrue(relationType.isImplicit());
+        relationType.roles().forEach(role -> assertTrue(role.isImplicit()));
 
         // Check that resource is not required
         EdgeElement entityPlays = ((EntityTypeImpl) entityType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();

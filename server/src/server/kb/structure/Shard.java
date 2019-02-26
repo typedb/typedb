@@ -18,8 +18,8 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.thing.Thing;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.ConceptImpl;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 

@@ -20,16 +20,19 @@ package grakn.core.server.keyspace;
 
 import com.google.common.base.Stopwatch;
 import grakn.core.common.config.Config;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.session.cache.KeyspaceCache;
+import org.janusgraph.core.JanusGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +43,6 @@ import java.util.stream.Collectors;
 /**
  * Default implementation of {@link KeyspaceManager} that uses an {@link SessionImpl} to access a knowledge
  * base and store keyspace information.
- *
  */
 public class KeyspaceManager {
     // This will eventually be configurable and obtained the same way the factory is obtained
@@ -53,11 +55,13 @@ public class KeyspaceManager {
     private static final Logger LOG = LoggerFactory.getLogger(KeyspaceManager.class);
     private final Set<Keyspace> existingKeyspaces;
     private final SessionImpl systemKeyspaceSession;
-    private final Config config;
 
-    public KeyspaceManager(Config config){
-        this.config = config;
-        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config);
+    public KeyspaceManager(JanusGraphFactory janusGraphFactory, Config config) {
+        KeyspaceCache keyspaceCache = new KeyspaceCache(config);
+        JanusGraph graph = janusGraphFactory.openGraph(SYSTEM_KB_KEYSPACE.getName());
+        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, graph, () -> {
+            graph.close();
+        });
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 
@@ -66,8 +70,8 @@ public class KeyspaceManager {
      *
      * @param keyspace The new {@link Keyspace} we have just created
      */
-    public void addKeyspace(Keyspace keyspace){
-        if(containsKeyspace(keyspace)) return;
+    public void addKeyspace(Keyspace keyspace) {
+        if (containsKeyspace(keyspace)) return;
 
         try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
@@ -91,38 +95,34 @@ public class KeyspaceManager {
         this.systemKeyspaceSession.close();
     }
 
-    public boolean containsKeyspace(Keyspace keyspace){
+    public boolean containsKeyspace(Keyspace keyspace) {
         //Check the local cache to see which keyspaces we already have open
-        if(existingKeyspaces.contains(keyspace)){
+        if (existingKeyspaces.contains(keyspace)) {
             return true;
         }
 
         try (Transaction tx = systemKeyspaceSession.transaction(Transaction.Type.READ)) {
             boolean keyspaceExists = (tx.getAttributeType(KEYSPACE_RESOURCE.getValue()).attribute(keyspace) != null);
-            if(keyspaceExists) existingKeyspaces.add(keyspace);
+            if (keyspaceExists) existingKeyspaces.add(keyspace);
             return keyspaceExists;
         }
     }
 
-    public boolean deleteKeyspace(Keyspace keyspace){
-        if(keyspace.equals(SYSTEM_KB_KEYSPACE)){
-           return false;
+    public boolean deleteKeyspace(Keyspace keyspace) {
+        if (keyspace.equals(SYSTEM_KB_KEYSPACE)) {
+            return false;
         }
-
-        SessionImpl session = new SessionImpl(keyspace, config);
-        session.clearGraph();
-        session.close();
         return deleteReferenceInSystemKeyspace(keyspace);
     }
 
-    private boolean deleteReferenceInSystemKeyspace(Keyspace keyspace){
+    private boolean deleteReferenceInSystemKeyspace(Keyspace keyspace) {
         try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             Attribute<String> attribute = keyspaceName.attribute(keyspace.getName());
 
-            if(attribute == null) return false;
+            if (attribute == null) return false;
             Thing thing = attribute.owner();
-            if(thing != null) thing.delete();
+            if (thing != null) thing.delete();
             attribute.delete();
 
             existingKeyspaces.remove(keyspace);
@@ -165,7 +165,7 @@ public class KeyspaceManager {
      *
      * @param tx The tx to contain the system schema
      */
-    private void loadSystemSchema(Transaction tx){
+    private void loadSystemSchema(Transaction tx) {
         //Keyspace data
         AttributeType<String> keyspaceName = tx.putAttributeType("keyspace-name", AttributeType.DataType.STRING);
         tx.putEntityType("keyspace").key(keyspaceName);

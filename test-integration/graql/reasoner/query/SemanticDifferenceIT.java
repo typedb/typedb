@@ -21,18 +21,16 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.internal.reasoner.atom.Atom;
-import grakn.core.graql.internal.reasoner.atom.binary.AttributeAtom;
-import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
-import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
-import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.internal.reasoner.utils.Pair;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.Role;
+import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
+import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.cache.SemanticDifference;
+import grakn.core.graql.reasoner.cache.VariableDefinition;
+import grakn.core.graql.reasoner.unifier.Unifier;
+import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -309,7 +307,7 @@ public class SemanticDifferenceIT {
 
     private Set<ConceptMap> projectAnswersToChild(ReasonerAtomicQuery child, ReasonerAtomicQuery parent, Unifier parentToChildUnifier, SemanticDifference diff){
         return parent.tx().stream(parent.getQuery(), false)
-                .map(ans -> ans.projectToChild(child.getRoleSubstitution(), child.getVarNames(), parentToChildUnifier, diff))
+                .map(ans -> diff.applyToAnswer(ans, child.getRoleSubstitution(), child.getVarNames(), parentToChildUnifier))
                 .filter(ans -> !ans.isEmpty())
                 .collect(Collectors.toSet());
     }

@@ -11,11 +11,11 @@ resource sub attribute, datatype string,
 resource-owner sub role;
 resource-value sub role;
 
-resource-relation sub relationship,
+resource-relation sub relation,
     relates resource-value,
     relates resource-owner;
 
-another-resource-relation sub relationship,
+another-resource-relation sub relation,
     relates resource-value,
     relates resource-owner;
 

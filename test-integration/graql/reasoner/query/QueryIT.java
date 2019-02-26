@@ -18,17 +18,14 @@
 
 package grakn.core.graql.reasoner.query;
 
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import grakn.core.graql.internal.reasoner.rule.RuleUtils;
+import grakn.core.concept.Concept;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.graph.GeoGraph;
+import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -84,7 +81,7 @@ public class QueryIT {
             try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
 
                 Role someRole = tx.putRole("someRole");
-                tx.putRelationType("relation")
+                tx.putRelationType("relation0")
                         .relates(someRole);
                 RelationType inferredBase = tx.putRelationType("inferredBase")
                         .relates(someRole);
@@ -96,7 +93,7 @@ public class QueryIT {
                 tx.putRule("rule1",
                         Graql.parsePattern(
                                 "{" +
-                                        "($x, $y) isa relation; " +
+                                        "($x, $y) isa relation0; " +
                                         "($y, $z) isa inferredBase;" +
                                         "};"
                         ),
@@ -327,8 +324,8 @@ public class QueryIT {
             Conjunction<Statement> pattern2 = conjunction(patternString2, tx);
             ReasonerQueryImpl query = ReasonerQueries.create(pattern, tx);
             ReasonerQueryImpl query2 = ReasonerQueries.create(pattern2, tx);
-            assertFalse(query.getAtoms(RelationshipAtom.class).findFirst().orElse(null).isUserDefined());
-            assertTrue(query2.getAtoms(RelationshipAtom.class).findFirst().orElse(null).isUserDefined());
+            assertFalse(query.getAtoms(RelationAtom.class).findFirst().orElse(null).isUserDefined());
+            assertTrue(query2.getAtoms(RelationAtom.class).findFirst().orElse(null).isUserDefined());
             assertEquals(query.getAtoms().size(), 1);
             assertEquals(query2.getAtoms().size(), 2);
         }

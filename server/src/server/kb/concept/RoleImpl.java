@@ -19,10 +19,10 @@
 package grakn.core.server.kb.concept;
 
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Type;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.Casting;
@@ -71,20 +71,20 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      * Caches a new relation type which this role will be part of. This may result in a DB hit if the cache has not been
      * initialised.
      *
-     * @param newRelationshipType The new relation type to cache in the role.
+     * @param newRelationType The new relation type to cache in the role.
      */
-    void addCachedRelationType(RelationType newRelationshipType) {
-        cachedRelationTypes.ifPresent(set -> set.add(newRelationshipType));
+    void addCachedRelationType(RelationType newRelationType) {
+        cachedRelationTypes.ifPresent(set -> set.add(newRelationType));
     }
 
     /**
      * Removes an old relation type which this role is no longer part of. This may result in a DB hit if the cache has
      * not been initialised.
      *
-     * @param oldRelationshipType The new relation type to cache in the role.
+     * @param oldRelationType The new relation type to cache in the role.
      */
-    void deleteCachedRelationType(RelationType oldRelationshipType) {
-        cachedRelationTypes.ifPresent(set -> set.remove(oldRelationshipType));
+    void deleteCachedRelationType(RelationType oldRelationType) {
+        cachedRelationTypes.ifPresent(set -> set.remove(oldRelationType));
     }
 
     /**

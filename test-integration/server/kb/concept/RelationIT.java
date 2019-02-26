@@ -20,21 +20,21 @@ package grakn.core.server.kb.concept;
 
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -68,7 +68,7 @@ public class RelationIT {
     private ThingImpl rolePlayer2;
     private RoleImpl role3;
     private EntityType type;
-    private RelationType relationshipType;
+    private RelationType relationType;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -87,12 +87,12 @@ public class RelationIT {
         role3 = (RoleImpl) tx.putRole("Role 3");
 
         type = tx.putEntityType("Main concept Type").plays(role1).plays(role2).plays(role3);
-        relationshipType = tx.putRelationType("Main relation type").relates(role1).relates(role2).relates(role3);
+        relationType = tx.putRelationType("Main relation type").relates(role1).relates(role2).relates(role3);
 
         rolePlayer1 = (ThingImpl) type.create();
         rolePlayer2 = (ThingImpl) type.create();
 
-        relation = (RelationImpl) relationshipType.create();
+        relation = (RelationImpl) relationType.create();
 
         relation.assign(role1, rolePlayer1);
         relation.assign(role2, rolePlayer2);
@@ -106,22 +106,22 @@ public class RelationIT {
 
     @Test
     public void whenAddingRolePlayerToRelation_RelationIsExpanded(){
-        Relation relationship = relationshipType.create();
+        Relation relation = relationType.create();
         Role role = tx.putRole("A role");
         Entity entity1 = type.create();
 
-        relationship.assign(role, entity1);
-        assertThat(relationship.rolePlayersMap().keySet(), containsInAnyOrder(role1, role2, role3, role));
-        assertThat(relationship.rolePlayersMap().get(role), containsInAnyOrder(entity1));
+        relation.assign(role, entity1);
+        assertThat(relation.rolePlayersMap().keySet(), containsInAnyOrder(role1, role2, role3, role));
+        assertThat(relation.rolePlayersMap().get(role), containsInAnyOrder(entity1));
     }
 
     @Test
-    public void whenCreatingAnInferredRelationship_EnsureMarkedAsInferred(){
+    public void whenCreatingAnInferredRelation_EnsureMarkedAsInferred(){
         RelationTypeImpl rt = RelationTypeImpl.from(tx.putRelationType("rt"));
-        Relation relationship = rt.create();
-        Relation relationshipInferred = rt.addRelationshipInferred();
-        assertFalse(relationship.isInferred());
-        assertTrue(relationshipInferred.isInferred());
+        Relation relation = rt.create();
+        Relation relationInferred = rt.addRelationInferred();
+        assertFalse(relation.isInferred());
+        assertTrue(relationInferred.isInferred());
     }
 
     @Test
@@ -141,17 +141,17 @@ public class RelationIT {
         EntityImpl entity5r1 = (EntityImpl) entType.create();
         EntityImpl entity6r1r2r3 = (EntityImpl) entType.create();
 
-        //Relationship
-        Relation relationship = relationshipType.create();
-        relationship.assign(role1, entity1r1);
-        relationship.assign(role1, entity2r1);
-        relationship.assign(role1, entity5r1);
-        relationship.assign(role1, entity6r1r2r3);
-        relationship.assign(role2, entity3r2r3);
-        relationship.assign(role2, entity6r1r2r3);
-        relationship.assign(role3, entity3r2r3);
-        relationship.assign(role3, entity4r3);
-        relationship.assign(role3, entity6r1r2r3);
+        //Relation
+        Relation relation = relationType.create();
+        relation.assign(role1, entity1r1);
+        relation.assign(role1, entity2r1);
+        relation.assign(role1, entity5r1);
+        relation.assign(role1, entity6r1r2r3);
+        relation.assign(role2, entity3r2r3);
+        relation.assign(role2, entity6r1r2r3);
+        relation.assign(role3, entity3r2r3);
+        relation.assign(role3, entity4r3);
+        relation.assign(role3, entity6r1r2r3);
 
         //Check the structure of the NEW role-player edges
         assertThat(followRolePlayerEdgesToNeighbours(tx, entity1r1),
@@ -186,20 +186,20 @@ public class RelationIT {
     public void ensureRelationToStringContainsRolePlayerInformation(){
         Role role1 = tx.putRole("role type 1");
         Role role2 = tx.putRole("role type 2");
-        RelationType relationshipType = tx.putRelationType("A relationship Type").relates(role1).relates(role2);
+        RelationType relationType = tx.putRelationType("A relation Type").relates(role1).relates(role2);
         EntityType type = tx.putEntityType("concept type").plays(role1).plays(role2);
         Thing thing1 = type.create();
         Thing thing2 = type.create();
 
-        Relation relationship = relationshipType.create().assign(role1, thing1).assign(role2, thing2);
+        Relation relation = relationType.create().assign(role1, thing1).assign(role2, thing2);
 
-        String mainDescription = "ID [" + relationship.id() +  "] Type [" + relationship.type().label() + "] Roles and Role Players:";
+        String mainDescription = "ID [" + relation.id() +  "] Type [" + relation.type().label() + "] Roles and Role Players:";
         String rolerp1 = "    Role [" + role1.label() + "] played by [" + thing1.id() + ",]";
         String rolerp2 = "    Role [" + role2.label() + "] played by [" + thing2.id() + ",]";
 
-        assertTrue("Relationship toString missing main description", relationship.toString().contains(mainDescription));
-        assertTrue("Relationship toString missing role and role player definition", relationship.toString().contains(rolerp1));
-        assertTrue("Relationship toString missing role and role player definition", relationship.toString().contains(rolerp2));
+        assertTrue("Relation toString missing main description", relation.toString().contains(mainDescription));
+        assertTrue("Relation toString missing role and role player definition", relation.toString().contains(rolerp1));
+        assertTrue("Relation toString missing role and role player definition", relation.toString().contains(rolerp2));
     }
 
     @Test
@@ -215,12 +215,12 @@ public class RelationIT {
         Attribute<Long> degree1 = degreeType.create(100L);
         Attribute<Long> degree2 = degreeType.create(101L);
 
-        Relation relationship1 = hasDegree.create().assign(entityRole, entity).assign(degreeRole, degree1);
+        Relation relation1 = hasDegree.create().assign(entityRole, entity).assign(degreeRole, degree1);
         hasDegree.create().assign(entityRole, entity).assign(degreeRole, degree2);
 
         assertEquals(2, entity.relations().count());
 
-        relationship1.delete();
+        relation1.delete();
 
         assertEquals(1, entity.relations().count());
     }
@@ -251,7 +251,7 @@ public class RelationIT {
     @Test
     public void whenAddingNullRolePlayerToRelation_Throw(){
         expectedException.expect(NullPointerException.class);
-        relationshipType.create().assign(null, rolePlayer1);
+        relationType.create().assign(null, rolePlayer1);
     }
 
     @Test
@@ -260,12 +260,12 @@ public class RelationIT {
         Attribute<String> attribute = attributeType.create("a real pain");
 
         EntityType entityType = tx.putEntityType("yay").has(attributeType);
-        Relation implicitRelationship = Iterables.getOnlyElement(entityType.create().has(attribute).relations().collect(Collectors.toSet()));
+        Relation implicitRelation = Iterables.getOnlyElement(entityType.create().has(attribute).relations().collect(Collectors.toSet()));
 
         expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.hasNotAllowed(implicitRelationship, attribute).getMessage());
+        expectedException.expectMessage(TransactionException.hasNotAllowed(implicitRelation, attribute).getMessage());
 
-        implicitRelationship.has(attribute);
+        implicitRelation.has(attribute);
     }
 
 
@@ -274,7 +274,7 @@ public class RelationIT {
         Role role1 = tx.putRole("dark");
         Role role2 = tx.putRole("souls");
         AttributeType<Long> attributeType = tx.putAttributeType("Death Number", AttributeType.DataType.LONG);
-        RelationType relationshipType = tx.putRelationType("Dark Souls").relates(role1).relates(role2).key(attributeType);
+        RelationType relationType = tx.putRelationType("Dark Souls").relates(role1).relates(role2).key(attributeType);
         EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.create();
@@ -283,8 +283,8 @@ public class RelationIT {
         Attribute<Long> r1 = attributeType.create(1000000L);
         Attribute<Long> r2 = attributeType.create(2000000L);
 
-        Relation rel1 = relationshipType.create().assign(role1, e1).assign(role2, e2);
-        Relation rel2 = relationshipType.create().assign(role1, e1).assign(role2, e2);
+        Relation rel1 = relationType.create().assign(role1, e1).assign(role2, e2);
+        Relation rel2 = relationType.create().assign(role1, e1).assign(role2, e2);
 
         //Set the keys and commit. Without this step it should fail
         rel1.has(r1);
@@ -298,10 +298,10 @@ public class RelationIT {
     }
 
     @Test
-    public void whenRemovingRolePlayerFromRelationship_EnsureRolePlayerIsRemoved(){
+    public void whenRemovingRolePlayerFromRelation_EnsureRolePlayerIsRemoved(){
         Role role1 = tx.putRole("dark");
         Role role2 = tx.putRole("souls");
-        RelationType relationshipType = tx.putRelationType("Dark Souls").relates(role1).relates(role2);
+        RelationType relationType = tx.putRelationType("Dark Souls").relates(role1).relates(role2);
         EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.create();
@@ -311,39 +311,39 @@ public class RelationIT {
         Entity e5 = entityType.create();
         Entity e6 = entityType.create();
 
-        Relation relationship = relationshipType.create().
+        Relation relation = relationType.create().
                 assign(role1, e1).assign(role1, e2).assign(role1, e3).
                 assign(role2, e4).assign(role2, e5).assign(role2, e6);
 
-        assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e2, e3, e4, e5, e6));
-        relationship.unassign(role1, e2);
-        relationship.unassign(role2, e1);
-        assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5, e6));
-        relationship.unassign(role2, e6);
-        assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5));
+        assertThat(relation.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e2, e3, e4, e5, e6));
+        relation.unassign(role1, e2);
+        relation.unassign(role2, e1);
+        assertThat(relation.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5, e6));
+        relation.unassign(role2, e6);
+        assertThat(relation.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5));
     }
 
     @Test
-    public void whenAttributeLinkedToRelationshipIsInferred_EnsureItIsMarkedAsInferred(){
+    public void whenAttributeLinkedToRelationIsInferred_EnsureItIsMarkedAsInferred(){
         AttributeType attributeType = tx.putAttributeType("Another thing of sorts", AttributeType.DataType.STRING);
-        RelationType relationshipType = tx.putRelationType("A thing of sorts").has(attributeType);
+        RelationType relationType = tx.putRelationType("A thing of sorts").has(attributeType);
 
         Attribute attribute = attributeType.create("Things");
-        Relation relationship = relationshipType.create();
+        Relation relation = relationType.create();
 
-        RelationImpl.from(relationship).attributeInferred(attribute);
-        assertTrue(relationship.relations().findAny().get().isInferred());
+        RelationImpl.from(relation).attributeInferred(attribute);
+        assertTrue(relation.relations().findAny().get().isInferred());
     }
 
     @Test
-    public void whenAddingRelationshipWithNoRolePlayers_Throw(){
+    public void whenAddingRelationWithNoRolePlayers_Throw(){
         Role role1 = tx.putRole("r1");
         Role role2 = tx.putRole("r2");
-        RelationType relationshipType = tx.putRelationType("A thing of sorts").relates(role1).relates(role2);
-        Relation relationship = relationshipType.create();
+        RelationType relationType = tx.putRelationType("A thing of sorts").relates(role1).relates(role2);
+        Relation relation = relationType.create();
 
         expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATIONSHIP_WITH_NO_ROLE_PLAYERS.getMessage(relationship.id(), relationship.type().label())));
+        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_WITH_NO_ROLE_PLAYERS.getMessage(relation.id(), relation.type().label())));
 
         tx.commit();
     }

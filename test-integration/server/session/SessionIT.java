@@ -18,9 +18,8 @@
 
 package grakn.core.server.session;
 
-import grakn.core.common.config.Config;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.concept.Label;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.SessionException;
@@ -51,13 +50,11 @@ public class SessionIT {
     public static final GraknTestServer server = new GraknTestServer();
 
     private SessionImpl session;
-    private Config config;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUp() {
-        config = server.config();
         session = server.sessionWithNewKeyspace();
     }
 
@@ -141,7 +138,7 @@ public class SessionIT {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
         executor.submit(() -> {
-            SessionImpl localSession = new SessionImpl(session.keyspace(), config);
+            SessionImpl localSession = server.sessionFactory().session(session.keyspace());
             Transaction tx2 = localSession.transaction(WRITE);
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
@@ -150,7 +147,7 @@ public class SessionIT {
         }).get();
 
         executor.submit(() -> {
-            SessionImpl localSession = new SessionImpl(session.keyspace(), config);
+            SessionImpl localSession = server.sessionFactory().session(session.keyspace());
             Transaction tx2 = localSession.transaction(WRITE);
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
@@ -162,7 +159,7 @@ public class SessionIT {
 
     @Test
     public void whenClosingSession_transactionIsAlsoClosed() {
-        SessionImpl localSession = new SessionImpl(Keyspace.of("test"), config);
+        SessionImpl localSession = server.sessionFactory().session(Keyspace.of("test"));
         Transaction tx1 = localSession.transaction(WRITE);
         assertFalse(tx1.isClosed());
         localSession.close();
@@ -171,7 +168,7 @@ public class SessionIT {
 
     @Test
     public void whenClosingSession_tryingToUseTransactionThrowsException() {
-        SessionImpl localSession = new SessionImpl(Keyspace.of("test"), config);
+        SessionImpl localSession = server.sessionFactory().session(Keyspace.of("test"));
         Transaction tx1 = localSession.transaction(WRITE);
         assertFalse(tx1.isClosed());
         localSession.close();

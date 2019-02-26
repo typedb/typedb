@@ -20,12 +20,12 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
-import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
-import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
+import grakn.core.graql.reasoner.utils.Pair;
+import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;

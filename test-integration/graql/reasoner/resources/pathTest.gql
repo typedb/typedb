@@ -11,13 +11,13 @@ start-vertex sub entity,
 
 arc-from sub role;
 arc-to sub role;
-arc sub relationship, relates arc-from, relates arc-to;
+arc sub relation, relates arc-from, relates arc-to;
 vertex plays arc-from, plays arc-to;
 start-vertex plays arc-from;
 
 path-from sub role;
 path-to sub role;
-path sub relationship, relates path-from, relates path-to;
+path sub relation, relates path-from, relates path-to;
 vertex plays path-from, plays path-to;
 start-vertex plays path-from;
 

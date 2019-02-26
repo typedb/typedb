@@ -55,13 +55,13 @@ genericEntity sub entity,
     plays role2,
     plays role3;
 
-binary sub relationship,
+binary sub relation,
     relates role1,
     relates role2,
     relates subRole1,
     relates subRole2;
 
-ternary sub relationship,
+ternary sub relation,
     relates role1,
     relates role2,
     relates role3,

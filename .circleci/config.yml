@@ -116,7 +116,7 @@ jobs:
       - bazel:
           command: bazel test //test-integration/server/... --test_output=errors
       - bazel:
-          command: bazel test //test-integration/graql/internal/... --test_output=errors
+          command: bazel test //test-integration/graql/executor/... --test_output=errors
       - bazel:
           command: bazel test //test-integration/graql/query/... --test_output=errors
 

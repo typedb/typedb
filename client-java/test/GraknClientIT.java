@@ -24,34 +24,35 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.client.GraknClient;
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.AttributeType.DataType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptList;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.AttributeType.DataType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.printer.Printer;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.exception.SessionException;
+import grakn.core.server.keyspace.Keyspace;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDelete;
@@ -80,6 +81,8 @@ import java.util.stream.Stream;
 import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
 import static graql.lang.Graql.Token.Compute.Algorithm.K_CORE;
+import static graql.lang.Graql.and;
+import static graql.lang.Graql.rel;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
@@ -106,36 +109,40 @@ public class GraknClientIT {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
+    private GraknClient graknClient;
 
     @Before
     public void setUp() {
         localSession = server.sessionWithNewKeyspace();
-        remoteSession = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().getName());
+        graknClient = new GraknClient(server.grpcUri().toString());
+        remoteSession = graknClient.session(localSession.keyspace().getName());
     }
 
     @After
     public void tearDown() {
         localSession.close();
         remoteSession.close();
+        graknClient.keyspaces().delete(localSession.keyspace().getName());
+        graknClient.close();
     }
 
     @Test
     public void testOpeningASession_ReturnARemoteGraknSession() {
-        try (Session session = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().getName())) {
+        try (Session session = graknClient.session(localSession.keyspace().getName())) {
             assertTrue(GraknClient.Session.class.isAssignableFrom(session.getClass()));
         }
     }
 
     @Test
     public void testOpeningASessionWithAGivenUriAndKeyspace_TheUriAndKeyspaceAreSet() {
-        try (Session session = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().getName())) {
+        try (Session session = graknClient.session(localSession.keyspace().getName())) {
             assertEquals(localSession.keyspace(), session.keyspace());
         }
     }
 
     @Test
     public void testOpeningATransactionFromASession_ReturnATransactionWithParametersSet() {
-        try (Session session = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().getName())) {
+        try (Session session = graknClient.session(localSession.keyspace().getName())) {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 assertEquals(session, tx.session());
                 assertEquals(localSession.keyspace(), tx.keyspace());
@@ -229,65 +236,49 @@ public class GraknClientIT {
     }
 
     @Test
-    @Ignore
     public void testExecutingAQuery_ExplanationsAreReturned() {
-        Session reasonerLocalSession = server.sessionWithNewKeyspace();
-        try (Transaction tx = reasonerLocalSession.transaction(Transaction.Type.WRITE)) {
-//            GenealogyKB.get().accept(tx);
+        try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.define(
+                    type("name").sub("attribute").datatype("string"),
+                    type("content").sub("entity").has("name").plays("contained").plays("container"),
+                    type("contains").sub("relation").relates("contained").relates("container"),
+                    type("transitive-location").sub("rule")
+                    .when(and(
+                            rel("contained", "x").rel("container", "y").isa("contains"),
+                            rel("contained", "y").rel("container", "z").isa("contains")
+                    ))
+                    .then(rel("contained", "x").rel("container", "z").isa("contains"))
+            ));
+            tx.execute(Graql.insert(
+                    var("x").isa("content").has("name", "x"),
+                    var("y").isa("content").has("name", "y"),
+                    var("z").isa("content").has("name", "z"),
+                    rel("contained", "x").rel("container", "y").isa("contains"),
+                    rel("contained", "y").rel("container", "z").isa("contains")
+            ));
             tx.commit();
         }
+        try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
+            List<Pattern> patterns = Lists.newArrayList(
+                    Graql.var("x").isa("content").has("name", "x"),
+                    var("z").isa("content").has("name", "z"),
+                    var("infer").rel("x").rel("z").isa("contains")
+            );
+            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
+            final int ruleStatements = tx.getRule("transitive-location").when().statements().size();
 
-        GraknClient.Session reasonerRemoteSession = new GraknClient(server.grpcUri().toString()).session(reasonerLocalSession.keyspace().getName());
-
-        List<ConceptMap> remoteAnswers;
-        List<ConceptMap> localAnswers;
-
-        final long limit = 3;
-        String queryString = "match " +
-                "($x, $y) isa cousins;" +
-                "limit " + limit + ";" +
-                "get;";
-
-        try (GraknClient.Transaction tx = reasonerRemoteSession.transaction(Transaction.Type.READ)) {
-            remoteAnswers = tx.execute(Graql.parse(queryString).asGet());
-        }
-
-        try (Transaction tx = reasonerLocalSession.transaction(Transaction.Type.READ)) {
-            localAnswers = tx.execute(Graql.parse(queryString).asGet());
-        }
-
-        assertEquals(remoteAnswers.size(), limit);
-        remoteAnswers.forEach(answer -> {
+            assertEquals(patterns.size() + ruleStatements, answer.explanation().deductions().size());
+            assertEquals(patterns.size(), answer.explanation().getAnswers().size());
+            answer.explanation().getAnswers().stream()
+                    .filter(a -> a.containsVar(var("infer").var()))
+                    .forEach(a -> assertEquals(ruleStatements, a.explanation().getAnswers().size()));
             testExplanation(answer);
-
-            String specificQuery = "match " +
-                    "$x id '" + answer.get("x").id().getValue() + "';" +
-                    "$y id '" + answer.get("y").id().getValue() + "';" +
-                    "(cousin: $x, cousin: $y) isa cousins;" +
-                    "limit 1; get;";
-
-            ConceptMap specificAnswer;
-            try (GraknClient.Transaction tx = reasonerRemoteSession.transaction(Transaction.Type.READ)) {
-                specificAnswer = Iterables.getOnlyElement(tx.execute(Graql.parse(specificQuery).asGet()));
-            }
-            assertEquals(answer, specificAnswer);
-            testExplanation(specificAnswer);
-        });
+        }
     }
 
     private void testExplanation(ConceptMap answer) {
         answerHasConsistentExplanations(answer);
-        checkExplanationCompleteness(answer);
         checkAnswerConnectedness(answer);
-    }
-
-    //ensures that each branch ends up with an lookup explanation
-    private void checkExplanationCompleteness(ConceptMap answer) {
-        assertFalse("Non-lookup explanation misses children",
-                    answer.explanations().stream()
-                            .filter(e -> !e.isLookupExplanation())
-                            .anyMatch(e -> e.getAnswers().isEmpty())
-        );
     }
 
     private void checkAnswerConnectedness(ConceptMap answer) {
@@ -303,15 +294,18 @@ public class GraknClientIT {
 
     private void answerHasConsistentExplanations(ConceptMap answer) {
         Set<ConceptMap> answers = answer.explanation().deductions().stream()
-                .filter(a -> !a.explanation().isJoinExplanation())
+                .filter(a -> a.explanation().getPattern() != null)
                 .collect(Collectors.toSet());
 
         answers.forEach(a -> TestCase.assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
     }
 
-    private boolean explanationConsistentWithAnswer(ConceptMap ans) {
-        ReasonerQuery query = ans.explanation().getQuery();
-        Set<Variable> vars = query != null ? query.getVarNames() : new HashSet<>();
+    private boolean explanationConsistentWithAnswer(ConceptMap ans){
+        Pattern queryPattern = ans.explanation().getPattern();
+        Set<Variable> vars = new HashSet<>();
+        if (queryPattern != null){
+            queryPattern.statements().forEach(s -> vars.addAll(s.variables()));
+        }
         return vars.containsAll(ans.map().keySet());
     }
 
@@ -574,8 +568,8 @@ public class GraknClientIT {
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
             GraqlGet query = Graql.match(var("x").type("expectation-rule")).get();
-            grakn.core.graql.concept.Rule remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRule();
-            grakn.core.graql.concept.Rule localConcept = localTx.getConcept(remoteConcept.id()).asRule();
+            grakn.core.concept.type.Rule remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRule();
+            grakn.core.concept.type.Rule localConcept = localTx.getConcept(remoteConcept.id()).asRule();
 
             assertEquals(localConcept.when(), remoteConcept.when());
             assertEquals(localConcept.then(), remoteConcept.then());
@@ -948,9 +942,10 @@ public class GraknClientIT {
         }
     }
 
+
     @Test
-    public void testDeletingAKeyspace_TheKeyspaceIsDeleted() {
-        GraknClient client = new GraknClient(server.grpcUri().toString());
+    public void testDeletingAKeyspace_TheKeyspaceIsRecreatedInNewSession() {
+        GraknClient client = graknClient;
         Session localSession = server.sessionWithNewKeyspace();
         String keyspace = localSession.keyspace().getName();
         GraknClient.Session remoteSession = client.session(keyspace);
@@ -967,12 +962,65 @@ public class GraknClientIT {
             client.keyspaces().delete(tx.keyspace().getName());
         }
 
-        Session newLocalSession = new SessionImpl(localSession.keyspace(), server.config());
+        // Opening a new session will re-create the keyspace
+        Session newLocalSession = server.sessionFactory().session(localSession.keyspace());
         try (Transaction tx = newLocalSession.transaction(Transaction.Type.READ)) {
             assertNull(tx.getEntityType("easter"));
+            assertNotNull(tx.getEntityType("entity"));
         }
         newLocalSession.close();
     }
+
+
+    @Test
+    public void whenDeletingKeyspace_OpenTransactionFails() {
+        // get open session
+        Keyspace keyspace = localSession.keyspace();
+
+        // Hold on to an open tx
+        Transaction tx = localSession.transaction(Transaction.Type.READ);
+
+        // delete keyspace
+        graknClient.keyspaces().delete(keyspace.getName());
+
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("Graph has been closed");
+
+        // try to operate on an open tx
+        tx.getEntityType("entity");
+
+    }
+
+    @Test
+    public void whenDeletingKeyspace_OpenSessionFails() {
+        // get open session
+        Keyspace keyspace = localSession.keyspace();
+
+        // Hold on to an open tx
+        Transaction tx = localSession.transaction(Transaction.Type.READ);
+
+        // delete keyspace
+        graknClient.keyspaces().delete(keyspace.getName());
+
+        exception.expect(SessionException.class);
+        exception.expectMessage("session for graph");
+        exception.expectMessage("is closed");
+
+        // try to open a new tx
+        Transaction tx2 = localSession.transaction(Transaction.Type.READ);
+    }
+
+    @Test
+    public void whenDeletingSameKeyspaceTwice_NoErrorThrown() {
+        // open a session
+        Keyspace keyspace = localSession.keyspace();
+
+        // delete keyspace twice
+        graknClient.keyspaces().delete(keyspace.getName());
+        graknClient.keyspaces().delete(keyspace.getName());
+
+    }
+
 
     private <T extends Concept> void assertEqualConcepts(
             T concept1, T concept2, Function<T, Stream<? extends Concept>> function
@@ -1063,5 +1111,32 @@ public class GraknClientIT {
             Attribute<LocalDateTime> dateAttribute = birthDateType.create(date);
             assertEquals(date, dateAttribute.value());
         }
+    }
+
+    @Test
+    public void retrievingExistingKeyspaces_onlyRemoteSessionKeyspaceIsReturned(){
+        List<String> keyspaces = graknClient.keyspaces().retrieve();
+        assertTrue(keyspaces.contains(remoteSession.keyspace().getName()));
+    }
+
+    @Test
+    public void whenCreatingNewKeyspace_itIsVisibileInListOfExistingKeyspaces(){
+        graknClient.session("newkeyspace").transaction(Transaction.Type.WRITE).close();
+        List<String> keyspaces = graknClient.keyspaces().retrieve();
+
+        assertTrue(keyspaces.contains("newkeyspace"));
+    }
+
+    @Test
+    public void whenDeletingKeyspace_notListedInExistingKeyspaces(){
+        graknClient.session("newkeyspace").transaction(Transaction.Type.WRITE).close();
+        List<String> keyspaces = graknClient.keyspaces().retrieve();
+
+        assertTrue(keyspaces.contains("newkeyspace"));
+
+        graknClient.keyspaces().delete("newkeyspace");
+        List<String> keyspacesNoNew = graknClient.keyspaces().retrieve();
+
+        assertFalse(keyspacesNoNew.contains("newkeyspace"));
     }
 }

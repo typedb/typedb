@@ -18,11 +18,11 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.Concept;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.VertexElement;
@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 /**
  * An ontological element which categorises how instances may relate to each other.
  * A relation type defines how Type may relate to one another.
- * They are used to model and categorise n-ary relationships.
+ * They are used to model and categorise n-ary relations.
  */
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     private final Cache<Set<Role>> cachedRelates = Cache.createSessionCache(this, Cacheable.set(), () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
@@ -58,24 +58,24 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
         return relationType;
     }
 
-    public static RelationTypeImpl from(RelationType relationshipType) {
-        return (RelationTypeImpl) relationshipType;
+    public static RelationTypeImpl from(RelationType relationType) {
+        return (RelationTypeImpl) relationType;
     }
 
     @Override
     public Relation create() {
-        return addRelationship(false);
+        return addRelation(false);
     }
 
-    public Relation addRelationshipInferred() {
-        return addRelationship(true);
+    public Relation addRelationInferred() {
+        return addRelation(true);
     }
 
-    public Relation addRelationship(boolean isInferred) {
-        Relation relationship = addInstance(Schema.BaseType.RELATIONSHIP,
+    public Relation addRelation(boolean isInferred) {
+        Relation relation = addInstance(Schema.BaseType.RELATION,
                                             (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), isInferred);
-        vertex().tx().cache().addNewRelationship(relationship);
-        return relationship;
+        vertex().tx().cache().addNewRelation(relation);
+        return relation;
     }
 
     @Override
@@ -116,7 +116,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
         //Add the Role Type itself
         vertex().tx().cache().trackForValidation(roleTypeImpl);
 
-        //Add the Relationship Type
+        //Add the Relation Type
         vertex().tx().cache().trackForValidation(this);
 
         //Remove from internal cache
@@ -170,7 +170,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
                             in(Schema.EdgeLabel.SHARD.getLabel()).
                             in(Schema.EdgeLabel.ISA.getLabel()).
                             outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).
-                            has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), labelId().getValue()).
+                            has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), labelId().getValue()).
                             toStream().
                             map(edge -> vertex().tx().factory().buildConcept(edge));
                 });

@@ -21,11 +21,11 @@ package grakn.core.server.deduplicator;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
-import grakn.core.graql.concept.ConceptId;
+import grakn.core.concept.ConceptId;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.RocksDbQueue;
 import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.SessionStore;
+import grakn.core.server.session.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ public class AttributeDeduplicatorDaemon {
 
     private ExecutorService executorServiceForDaemon = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("attribute-deduplicator-daemon-%d").build());
 
-    private SessionStore sessionStore;
+    private SessionFactory sessionFactory;
     private RocksDbQueue queue;
 
     private boolean stopDaemon = false;
@@ -71,13 +71,13 @@ public class AttributeDeduplicatorDaemon {
     /**
      * Instantiates {@link AttributeDeduplicatorDaemon}
      * @param config a reference to an instance of {@link Config} which is initialised from a grakn.properties.
-     * @param sessionStore an {@link SessionStore} instance which provides access to write into the database
+     * @param sessionFactory an {@link SessionFactory} instance which provides access to write into the database
      */
-    public AttributeDeduplicatorDaemon(Config config, SessionStore sessionStore) {
+    public AttributeDeduplicatorDaemon(Config config, SessionFactory sessionFactory) {
         Path dataDir = Paths.get(config.getProperty(ConfigKey.DATA_DIR));
         Path queueDataDir = dataDir.resolve(queueDataDirRelative);
         this.queue = new RocksDbQueue(queueDataDir);
-        this.sessionStore = sessionStore;
+        this.sessionFactory = sessionFactory;
     }
 
     /**
@@ -97,7 +97,7 @@ public class AttributeDeduplicatorDaemon {
     /**
      * Starts a daemon which performs deduplication on incoming attributes in real-time.
      * The thread listens to the {@link RocksDbQueue} queue for incoming attributes and applies
-     * the {@link AttributeDeduplicator#deduplicate(SessionStore, KeyspaceIndexPair)} algorithm.
+     * the {@link AttributeDeduplicator#deduplicate(SessionFactory, KeyspaceIndexPair)} algorithm.
      *
      */
     public CompletableFuture<Void> startDeduplicationDaemon() {
@@ -117,7 +117,7 @@ public class AttributeDeduplicatorDaemon {
 
                     // perform deduplicate for each (keyspace -> value)
                     for (KeyspaceIndexPair keyspaceIndexPair : uniqueKeyValuePairs) {
-                        deduplicate(sessionStore, keyspaceIndexPair);
+                        deduplicate(sessionFactory, keyspaceIndexPair);
                     }
 
                     LOG.trace("new attributes processed.");

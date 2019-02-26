@@ -20,11 +20,11 @@ package grakn.core.graql.reasoner;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.RelationType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RelationType;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -39,9 +39,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS_OWNER;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS_VALUE;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -568,7 +568,7 @@ public class ReasoningIT {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                List<ConceptMap> persistedRelations = tx.execute(Graql.parse("match $r isa relation; get;").asGet(), false);
+                List<ConceptMap> persistedRelations = tx.execute(Graql.parse("match $r isa relation0; get;").asGet(), false);
 
                 List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;"));
                 assertEquals(1, answers.size());
@@ -595,7 +595,7 @@ public class ReasoningIT {
                         "get;"));
                 assertEquals(2, answers5.size());
 
-                assertEquals("New relations were created!", persistedRelations, tx.execute(Graql.parse("match $r isa relation; get;").asGet(), false));
+                assertEquals("New relations were created!", persistedRelations, tx.execute(Graql.parse("match $r isa relation0; get;").asGet(), false));
             }
         }
     }
@@ -606,8 +606,8 @@ public class ReasoningIT {
             loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
-                List<ConceptMap> persistedRelations = tx.execute(Graql.parse("match $r isa relation; get;").asGet(), false);
-                List<ConceptMap> inferredRelations = tx.execute(Graql.parse("match $r isa relation; get;").asGet());
+                List<ConceptMap> persistedRelations = tx.execute(Graql.parse("match $r isa relation0; get;").asGet(), false);
+                List<ConceptMap> inferredRelations = tx.execute(Graql.parse("match $r isa relation0; get;").asGet());
                 assertCollectionsNonTriviallyEqual("New relations were created!", persistedRelations, inferredRelations);
 
                 Set<ConceptMap> variants = Stream.of(

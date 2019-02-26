@@ -18,14 +18,14 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
@@ -88,7 +88,7 @@ public class KCoreIT {
     }
 
     @Test
-    public void testOnGraphWithoutRelationships_ReturnsEmptyMap() {
+    public void testOnGraphWithoutRelations_ReturnsEmptyMap() {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType(thing).create();
             tx.putEntityType(anotherThing).create();
@@ -98,7 +98,7 @@ public class KCoreIT {
     }
 
     @Test
-    public void testOnGraphWithTwoEntitiesAndTwoRelationships() {
+    public void testOnGraphWithTwoEntitiesAndTwoRelations() {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType = tx.putEntityType(thing);
             Entity entity1 = entityType.create();
@@ -128,7 +128,7 @@ public class KCoreIT {
     }
 
     @Test
-    public void testOnGraphWithFourEntitiesAndSixRelationships() {
+    public void testOnGraphWithFourEntitiesAndSixRelations() {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -221,12 +221,12 @@ public class KCoreIT {
 
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            RelationType relationshipType1 = tx.putRelationType(related)
+            RelationType relationType1 = tx.putRelationType(related)
                     .relates(role1).relates(role2);
 
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
-            RelationType relationshipType2 = tx.putRelationType(veryRelated)
+            RelationType relationType2 = tx.putRelationType(veryRelated)
                     .relates(role3).relates(role4);
 
             entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
@@ -242,48 +242,48 @@ public class KCoreIT {
             Entity entity7 = entityType1.create();
             Entity entity8 = entityType1.create();
 
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity1)
                     .assign(role2, entity2);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity2)
                     .assign(role2, entity3);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity3)
                     .assign(role2, entity4);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity1)
                     .assign(role2, entity3);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity1)
                     .assign(role2, entity4);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity2)
                     .assign(role2, entity4);
 
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity5)
                     .assign(role2, entity6);
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity5)
                     .assign(role4, entity7);
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity5)
                     .assign(role4, entity8);
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity6)
                     .assign(role4, entity7);
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity6)
                     .assign(role4, entity8);
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity7)
                     .assign(role4, entity8);
 
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity0)
                     .assign(role2, entity1);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity0)
                     .assign(role2, entity8);
 
@@ -331,12 +331,12 @@ public class KCoreIT {
 
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            RelationType relationshipType1 = tx.putRelationType(related)
+            RelationType relationType1 = tx.putRelationType(related)
                     .relates(role1).relates(role2);
 
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
-            RelationType relationshipType2 = tx.putRelationType(veryRelated)
+            RelationType relationType2 = tx.putRelationType(veryRelated)
                     .relates(role3).relates(role4);
 
             entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
@@ -347,23 +347,23 @@ public class KCoreIT {
             Entity entity3 = entityType1.create();
             Entity entity4 = entityType1.create();
 
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity1)
                     .assign(role2, entity2);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity2)
                     .assign(role2, entity3);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity3)
                     .assign(role2, entity4);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity4)
                     .assign(role2, entity1);
 
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity1)
                     .assign(role4, entity3);
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity2)
                     .assign(role4, entity4);
 

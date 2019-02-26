@@ -5,8 +5,10 @@ java_test(
   srcs = ["CastingIT.java"],
   test_class = "grakn.core.server.kb.structure.CastingIT",
   deps = [
-      "//server",
+      "//concept:concept",
+      "//server:server",
       "//test-integration/rule:grakn-test-server",
+
       "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
   ],
   size = "medium",
@@ -18,8 +20,10 @@ java_test(
   srcs = ["EdgeIT.java"],
   test_class = "grakn.core.server.kb.structure.EdgeIT",
   deps = [
-      "//server",
+      "//concept:concept",
+      "//server:server",
       "//test-integration/rule:grakn-test-server",
+
       "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
   ],
   size = "medium",

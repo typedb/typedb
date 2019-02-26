@@ -23,15 +23,15 @@ import brave.Span;
 import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
@@ -128,6 +128,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         public TransactionListener(StreamObserver<Transaction.Res> responseSender, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, Map<String, SessionImpl> openSessions) {
             this.responseSender = responseSender;
+
             ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
             this.threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
             this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
@@ -215,7 +216,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     putAttributeType(request.getPutAttributeTypeReq());
                     break;
                 case PUTRELATIONTYPE_REQ:
-                    putRelationshipType(request.getPutRelationTypeReq());
+                    putRelationType(request.getPutRelationTypeReq());
                     break;
                 case PUTROLE_REQ:
                     putRole(request.getPutRoleReq());
@@ -268,9 +269,24 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
 
-            tx = openSessions.get(request.getSessionId()).transaction(Type.of(request.getType().getNumber()));
+            ScopedSpan span = null;
+            if (ServerTracingInstrumentation.tracingActive()) { span = ServerTracingInstrumentation.createScopedChildSpan("SessionService.open"); }
+
+            Span getSession = null;
+            if (span != null) { getSession = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting session", span.context()).start(); }
+            SessionImpl sess = openSessions.get(request.getSessionId());
+            if (getSession != null) getSession.finish();
+
+            Span txSpan = null;
+            if (span != null) { txSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting transaction", span.context()).start(); }
+            tx = sess.transaction(Type.of(request.getType().getNumber()));
+            if (txSpan != null) { txSpan.finish(); }
+
             Transaction.Res response = ResponseBuilder.Transaction.open();
+            if (span != null) { span.finish(); }
+
             onNextResponse(response);
+
         }
 
         private void commit() {
@@ -327,9 +343,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
-        private void putRelationshipType(Transaction.PutRelationType.Req request) {
-            RelationType relationshipType = tx().putRelationType(Label.of(request.getLabel()));
-            Transaction.Res response = ResponseBuilder.Transaction.putRelationshipType(relationshipType);
+        private void putRelationType(Transaction.PutRelationType.Req request) {
+            RelationType relationType = tx().putRelationType(Label.of(request.getLabel()));
+            Transaction.Res response = ResponseBuilder.Transaction.putRelationType(relationType);
             onNextResponse(response);
         }
 

@@ -64,12 +64,12 @@ threeRoleEntity sub noRoleEntity,
 
 #Relations
 
-ternary sub relationship,
+ternary sub relation,
     relates someRole,
     relates subRole,
     relates anotherRole;
 
-reifiable-relation sub relationship,
+reifiable-relation sub relation,
     relates someRole,
     relates subRole,
     plays someRole,
@@ -80,18 +80,18 @@ binary sub reifiable-relation,
     relates someRole,
     relates subRole;
 
-reifying-relation sub relationship,
+reifying-relation sub relation,
     relates someRole,
     relates subRole,
     relates symmetricRole;
 
-typed-relation sub relationship,
+typed-relation sub relation,
     relates someRole,
     relates subRole,
     relates anotherRole,
     has description;
 
-attributed-relation sub relationship,
+attributed-relation sub relation,
     relates someRole,
     relates subRole,
     relates anotherRole;

@@ -19,15 +19,15 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -230,7 +230,7 @@ public class DegreeIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
 
-            // create a subgraph excluding attributes and their relationship
+            // create a subgraph excluding attributes and their relation
             HashSet<String> subGraphTypes = Sets.newHashSet("animal", "person", "mans-best-friend");
             List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE)
                     .in(subGraphTypes));
@@ -275,7 +275,7 @@ public class DegreeIT {
     }
 
     @Test
-    public void testRelationshipPlaysARole() throws InvalidKBException {
+    public void testRelationPlaysARole() throws InvalidKBException {
 
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
@@ -314,8 +314,8 @@ public class DegreeIT {
     }
 
     @Test
-    public void testDegreeTernaryRelationships() throws InvalidKBException {
-        // make relationship
+    public void testDegreeTernaryRelations() throws InvalidKBException {
+        // make relation
         Role productionWithCast = tx.putRole("production-with-cast");
         Role actor = tx.putRole("actor");
         Role characterBeingPlayed = tx.putRole("character-being-played");

@@ -12,22 +12,22 @@ S sub entity2;
 
 R-rA sub role;
 R-rB sub role;
-R sub relationship, relates R-rA, relates R-rB;
+R sub relation, relates R-rA, relates R-rB;
 entity2 plays R-rA, plays R-rB;
 
 N-rA sub role;
 N-rB sub role;
-N sub relationship, relates N-rA, relates N-rB;
+N sub relation, relates N-rA, relates N-rB;
 entity2 plays N-rA, plays N-rB;
 
 Q-rA sub role;
 Q-rB sub role;
-Q sub relationship, relates Q-rA, relates Q-rB;
+Q sub relation, relates Q-rA, relates Q-rB;
 entity2 plays Q-rA, plays Q-rB;
 
 P-rA sub role;
 P-rB sub role;
-P sub relationship, relates P-rA, relates P-rB;
+P sub relation, relates P-rA, relates P-rB;
 entity2 plays P-rA, plays P-rB;
 
 index sub attribute, datatype string;

@@ -2,53 +2,59 @@ load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
     name = "benchmark-big-it",
-    test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkBigIT",
-    srcs = ["BenchmarkBigIT.java"],
-    deps = [
-            "//client-java",
-            "@graknlabs_graql//java:graql",
-            "//server:server",
-            "//test-integration/rule:grakn-test-server",
-            "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-            "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-            "//dependencies/maven/artifacts/com/google/guava:guava",
-        ],
     size = "large",
+    srcs = ["BenchmarkBigIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
     data = [
-           "//test-integration/graql/reasoner/resources:multi-join",
-           "//test-integration/graql/reasoner/resources:linear-transivity"
-           ],
-    classpath_resources = ["//test-integration/resources:logback-test"]
+        "//test-integration/graql/reasoner/resources:linear-transivity",
+        "//test-integration/graql/reasoner/resources:multi-join",
+    ],
+    test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkBigIT",
+    deps = [
+        "//client-java",
+        "//concept:concept",
+        "//server:server",
+        "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
+
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+    ],
 )
 
 java_test(
     name = "benchmark-small-it",
-    test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkSmallIT",
-    srcs = ["BenchmarkSmallIT.java"],
-    deps = [
-        "//client-java",
-        "@graknlabs_graql//java:graql",
-        "//server:server",
-        "//test-integration/rule:grakn-test-server",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//test-integration/graql/reasoner/graph:linear-transitivity-matrix-graph",
-        "//test-integration/graql/reasoner/graph:transitivity-chain-graph",
-        "//test-integration/graql/reasoner/graph:diagonal-graph",
-        "//test-integration/graql/reasoner/graph:path-tree-graph",
-        "//test-integration/graql/reasoner/graph:transitivity-matrix-graph",
-    ],
     size = "large",
+    srcs = ["BenchmarkSmallIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
     resources = [
         "//test-integration/graql/reasoner/resources:generic-schema",
-        "//test-integration/graql/reasoner/resources:unification-with-types"
-        ],
-    classpath_resources = ["//test-integration/resources:logback-test"]
+        "//test-integration/graql/reasoner/resources:unification-with-types",
+    ],
+    test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkSmallIT",
+    deps = [
+        "//client-java:client-java",
+        "//concept:concept",
+        "//server:server",
+        "//test-integration/graql/reasoner/graph:diagonal-graph",
+        "//test-integration/graql/reasoner/graph:linear-transitivity-matrix-graph",
+        "//test-integration/graql/reasoner/graph:path-tree-graph",
+        "//test-integration/graql/reasoner/graph:transitivity-chain-graph",
+        "//test-integration/graql/reasoner/graph:transitivity-matrix-graph",
+        "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
+
+        "//dependencies/maven/artifacts/com/google/guava",
+    ],
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":benchmark-big-it",
-        ":benchmark-small-it"
-    ]
+        ":benchmark-small-it",
+    ],
 )

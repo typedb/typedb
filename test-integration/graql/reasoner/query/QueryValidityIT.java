@@ -143,13 +143,13 @@ public class QueryValidityIT {
 
     @Test (expected = GraqlQueryException.class)
     public void whenQueryingForRelationWithNonRoleRoles_Throws() throws GraqlQueryException{
-                String queryString = "match (entity: $x, entity: $y) isa relationship; get;";
+                String queryString = "match (entity: $x, entity: $y) isa relation; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
     @Test (expected = GraqlQueryException.class)
     public void whenQueryingForRelationWithNonExistentRoles_Throws() throws GraqlQueryException{
-                String queryString = "match (rola: $x, rola: $y) isa relationship; get;";
+                String queryString = "match (rola: $x, rola: $y) isa relation; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 

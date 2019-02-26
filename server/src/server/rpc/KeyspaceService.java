@@ -22,6 +22,8 @@ import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
+import grakn.core.server.session.JanusGraphFactory;
+import grakn.core.server.session.SessionFactory;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -34,9 +36,13 @@ import java.util.stream.Collectors;
 public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase {
 
     private final KeyspaceManager keyspaceStore;
+    private SessionFactory sessionFactory;
+    private JanusGraphFactory janusGraphFactory;
 
-    public KeyspaceService(KeyspaceManager keyspaceStore) {
+    public KeyspaceService(KeyspaceManager keyspaceStore, SessionFactory sessionFactory, JanusGraphFactory janusGraphFactory) {
         this.keyspaceStore = keyspaceStore;
+        this.sessionFactory = sessionFactory;
+        this.janusGraphFactory = janusGraphFactory;
     }
 
     @Override
@@ -59,7 +65,13 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     @Override
     public void delete(KeyspaceProto.Keyspace.Delete.Req request, StreamObserver<KeyspaceProto.Keyspace.Delete.Res> response) {
         try {
-            keyspaceStore.deleteKeyspace(Keyspace.of(request.getName()));
+            Keyspace keyspace = Keyspace.of(request.getName());
+            // removing references to open keyspaces JanusGraph instances
+            sessionFactory.deleteKeyspace(keyspace);
+            // remove the keyspace from the system keyspace
+            keyspaceStore.deleteKeyspace(keyspace);
+            // actually remove the keyspace
+            janusGraphFactory.drop(keyspace.getName());
 
             response.onNext(KeyspaceProto.Keyspace.Delete.Res.getDefaultInstance());
             response.onCompleted();

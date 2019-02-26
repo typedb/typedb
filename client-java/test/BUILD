@@ -31,12 +31,16 @@ java_test(
         # Package dependencies
         "//client-java",
 
-        # Grakn Core dependencies
+        # Internal dependencies
         "//common:common",
+        "//concept:concept",
         "//protocol:protocol-java",
-        "@graknlabs_graql//java:graql",
         "//server:server", # NEEDS TO GO
 
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java:graql",
+
+        # External dependencies from Maven
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-testing",
@@ -55,11 +59,15 @@ java_test(
         # Package dependencies
         "//client-java",
 
-        # Grakn Core dependencies
-        "@graknlabs_graql//java:graql",
+        # Internal dependencies
+        "//concept:concept",
         "//server:server", # TODO: NEEDS TO GO
         "//test-integration/rule:grakn-test-server",
 
+        # External depencies from @graknlabs
+        "@graknlabs_graql//java:graql",
+
+        # External depencncies from Maven
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/com/google/guava:guava"

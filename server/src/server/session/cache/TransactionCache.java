@@ -20,18 +20,17 @@ package grakn.core.server.session.cache;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
-import grakn.core.server.Transaction;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
 import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
@@ -51,7 +50,7 @@ import java.util.Set;
  */
 public class TransactionCache {
     //Cache which is shared across multiple transactions
-    private final GlobalCache globalCache;
+    private final KeyspaceCache keyspaceCache;
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
@@ -59,13 +58,13 @@ public class TransactionCache {
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
-    private final Set<Relation> newRelationships = new HashSet<>();
+    private final Set<Relation> newRelations = new HashSet<>();
     private final Set<Thing> modifiedThings = new HashSet<>();
 
     private final Set<Role> modifiedRoles = new HashSet<>();
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
-    private final Set<RelationType> modifiedRelationshipTypes = new HashSet<>();
+    private final Set<RelationType> modifiedRelationTypes = new HashSet<>();
 
     private final Set<Rule> modifiedRules = new HashSet<>();
 
@@ -78,26 +77,26 @@ public class TransactionCache {
     private Multimap<String, ConceptId> newAttributes = ArrayListMultimap.create();
 
     //Transaction Specific Meta Data
-    private boolean isTxOpen = false;
     private boolean writeOccurred = false;
-    private Transaction.Type txType;
-    private String closedReason = null;
 
-    public TransactionCache(GlobalCache globalCache) {
-        this.globalCache = globalCache;
+    public TransactionCache(KeyspaceCache keyspaceCache) {
+        this.keyspaceCache = keyspaceCache;
     }
 
     /**
-     * A helper method which writes back into the graph cache at the end of a transaction.
      *
-     * @param isSafe true only if it is safe to copy the cache completely without any checks
      */
-    public void writeToGraphCache(boolean isSafe) {
-        //When a commit has occurred or a transaction is read only all types can be overridden this is because we know they are valid.
-        //When it is not safe to simply flush we have to check that no mutations were made
-        if (isSafe || !writeOccurred) {
-            globalCache.readTxCache(this);
+    public void refreshKeyspaceCache() {
+        // This is used to prevent the keyspace cache from expiring its stored concept cache
+        // This method is NOT used to actually change things in the keyspace cache
+        if (!writeOccurred) {
+            keyspaceCache.readTxCache(this);
         }
+    }
+
+    public void flushToKeyspaceCache() {
+        // This method is used to actually flush to the keyspace cache
+        keyspaceCache.readTxCache(this);
     }
 
     /**
@@ -109,19 +108,12 @@ public class TransactionCache {
     }
 
     /**
-     * @return true if ths schema labels have been cached. The graph cannot operate if this is false.
-     */
-    public boolean schemaNotCached() {
-        return labelCache.isEmpty();
-    }
-
-    /**
-     * Refreshes the transaction schema cache by reading the central schema cache is read into this transaction cache.
+     * Refreshes the transaction schema cache by reading the keyspace schema cache into this transaction cache.
      * This method performs this operation whilst making a deep clone of the cached concepts to ensure transactions
      * do not accidentally break the central schema cache.
      */
-    public void refreshSchemaCache() {
-        globalCache.populateSchemaTxCache(this);
+    public void updateSchemaCacheFromKeyspaceCache() {
+        keyspaceCache.populateSchemaTxCache(this);
     }
 
     /**
@@ -133,7 +125,7 @@ public class TransactionCache {
         } else if (concept.isRole()) {
             modifiedRoles.add(concept.asRole());
         } else if (concept.isRelationType()) {
-            modifiedRelationshipTypes.add(concept.asRelationType());
+            modifiedRelationTypes.add(concept.asRelationType());
         } else if (concept.isRule()) {
             modifiedRules.add(concept.asRule());
         }
@@ -145,7 +137,7 @@ public class TransactionCache {
 
     public void removeFromValidation(Type type) {
         if (type.isRelationType()) {
-            modifiedRelationshipTypes.remove(type.asRelationType());
+            modifiedRelationTypes.remove(type.asRelationType());
         }
     }
 
@@ -170,12 +162,6 @@ public class TransactionCache {
         return labelCache;
     }
 
-    /**
-     * @return All the concepts which have been accessed in this transaction
-     */
-    Map<ConceptId, Concept> getConceptCache() {
-        return conceptCache;
-    }
 
     /**
      * @param concept The concept to no longer track
@@ -184,7 +170,7 @@ public class TransactionCache {
     public void remove(Concept concept) {
         modifiedThings.remove(concept);
         modifiedRoles.remove(concept);
-        modifiedRelationshipTypes.remove(concept);
+        modifiedRelationTypes.remove(concept);
         modifiedRules.remove(concept);
 
         if (concept.isAttribute()) {
@@ -192,7 +178,7 @@ public class TransactionCache {
         }
 
         if (concept.isRelation()) {
-            newRelationships.remove(concept.asRelation());
+            newRelations.remove(concept.asRelation());
         }
 
         conceptCache.remove(concept.id());
@@ -320,8 +306,8 @@ public class TransactionCache {
         return modifiedRoles;
     }
 
-    public Set<RelationType> getModifiedRelationshipTypes() {
-        return modifiedRelationshipTypes;
+    public Set<RelationType> getModifiedRelationTypes() {
+        return modifiedRelationTypes;
     }
 
     public Set<Rule> getModifiedRules() {
@@ -332,52 +318,31 @@ public class TransactionCache {
         return modifiedCastings;
     }
 
-    public void addNewRelationship(Relation relationship) {
-        newRelationships.add(relationship);
+    public void addNewRelation(Relation relation) {
+        newRelations.add(relation);
     }
 
-    public Set<Relation> getNewRelationships() {
-        return newRelationships;
+    public Set<Relation> getNewRelations() {
+        return newRelations;
     }
 
     //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
-    public void closeTx(String closedReason) {
-        isTxOpen = false;
-        this.closedReason = closedReason;
-
+    public void closeTx() {
         //Clear Concept Caches
         conceptCache.values().forEach(concept -> CacheOwner.from(concept).txCacheClear());
 
         //Clear Collection Caches
         modifiedThings.clear();
         modifiedRoles.clear();
-        modifiedRelationshipTypes.clear();
+        modifiedRelationTypes.clear();
         modifiedRules.clear();
         modifiedCastings.clear();
         newAttributes.clear();
-        newRelationships.clear();
+        newRelations.clear();
         shardingCount.clear();
         conceptCache.clear();
         schemaConceptCache.clear();
         labelCache.clear();
-    }
-
-    public void open(Transaction.Type type) {
-        isTxOpen = true;
-        this.txType = type;
-        closedReason = null;
-    }
-
-    public boolean isTxOpen() {
-        return isTxOpen;
-    }
-
-    public Transaction.Type txType() {
-        return txType;
-    }
-
-    public String getClosedReason() {
-        return closedReason;
     }
 
 }

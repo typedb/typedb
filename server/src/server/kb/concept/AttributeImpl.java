@@ -18,11 +18,11 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -42,7 +42,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
         super(vertexElement);
     }
 
-    private AttributeImpl(VertexElement vertexElement, AttributeType<D> type, Object value) {
+    private AttributeImpl(VertexElement vertexElement, AttributeType<D> type, D value) {
         super(vertexElement, type);
         setValue(value);
     }
@@ -51,9 +51,12 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
         return new AttributeImpl<>(vertexElement);
     }
 
-    public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, Object value) {
-        Object persistenceValue = castValue(type.dataType(), value);
-        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, persistenceValue);
+    public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, D value) {
+        if (!type.dataType().dataClass().isInstance(value)) {
+            throw TransactionException.invalidAttributeValue(value, type.dataType());
+        }
+
+        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, value);
 
         //Generate the index again. Faster than reading
         String index = Schema.generateAttributeIndex(type.label(), value.toString());
@@ -62,31 +65,6 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
         //Track the attribute by index
         vertexElement.tx().cache().addNewAttribute(index, attribute.id());
         return attribute;
-    }
-
-    /**
-     * This is to handle casting longs and doubles when the type allows for the data type to be a number
-     *
-     * @param value The value of the resource
-     * @return The value casted to the correct type
-     */
-    private static Object castValue(AttributeType.DataType dataType, Object value) {
-        try {
-            if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-                return ((Number) value).doubleValue();
-            } else if (dataType.equals(AttributeType.DataType.LONG)) {
-                if (value instanceof Double) {
-                    throw new ClassCastException();
-                }
-                return ((Number) value).longValue();
-            } else if (dataType.equals(AttributeType.DataType.DATE) && (value instanceof Long)) {
-                return value;
-            } else {
-                return dataType.getPersistedValue(value);
-            }
-        } catch (ClassCastException e) {
-            throw TransactionException.invalidAttributeValue(value, dataType);
-        }
     }
 
     public static AttributeImpl from(Attribute attribute) {
@@ -117,10 +95,10 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     /**
      * @param value The value to store on the resource
      */
-    private void setValue(Object value) {
-        Schema.VertexProperty property = dataType().getVertexProperty();
-        //noinspection unchecked
-        vertex().propertyImmutable(property, value, vertex().property(property));
+    private void setValue(D value) {
+        Object valueToPersist = Serialiser.of(dataType()).serialise(value);
+        Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType());
+        vertex().propertyImmutable(property, valueToPersist, vertex().property(property));
     }
 
     /**
@@ -128,7 +106,9 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      */
     @Override
     public D value() {
-        return dataType().getValue(vertex().property(dataType().getVertexProperty()));
+        return Serialiser.of(dataType()).deserialise(
+                vertex().property(Schema.VertexProperty.ofDataType(dataType()))
+        );
     }
 
     @Override

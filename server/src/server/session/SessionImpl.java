@@ -18,17 +18,21 @@
 
 package grakn.core.server.session;
 
+import brave.ScopedSpan;
+import com.google.common.annotations.VisibleForTesting;
+import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.session.cache.KeyspaceCache;
 import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.util.JanusGraphCleanup;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
 
@@ -54,49 +58,112 @@ public class SessionImpl implements Session {
     private final Keyspace keyspace;
     private final Config config;
     private final JanusGraph graph;
+    private final KeyspaceCache keyspaceCache;
+    private final Runnable onClose;
 
+    private boolean isClosed = false;
 
     /**
      * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
      * using provided Grakn configuration
      *
      * @param keyspace to which keyspace the session should be bound to
-     * @param config   config to be used. If null is supplied, it will be created
+     * @param config   config to be used.
      */
-    public SessionImpl(Keyspace keyspace, Config config) {
+    public SessionImpl(Keyspace keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, Runnable onClose) {
         this.keyspace = keyspace;
         this.config = config;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
         // be an expensive operation TODO: refactor in the future
         this.hadoopGraphFactory = new HadoopGraphFactory(this);
         // Open Janus Graph
-        this.graph = JanusGraphFactory.openGraph(this);
-    }
+        this.graph = graph;
 
+        this.keyspaceCache = keyspaceCache;
+        this.onClose = onClose;
+
+        TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
+        // copy schema to session cache if there are any schema concepts
+        if (!keyspaceHasBeenInitialised(tx)) {
+            initialiseMetaConcepts(tx);
+        }
+        copyMetaConceptsToKeyspaceCache(tx);
+        tx.commit();
+
+    }
 
     @Override
     public TransactionOLTP transaction(Transaction.Type type) {
-        // If graph is closed it means the session was already closed
-        if (graph.isClosed()) throw new SessionException(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
 
+        ScopedSpan span = null;
+        if (ServerTracingInstrumentation.tracingActive()) { span = ServerTracingInstrumentation.createScopedChildSpan("SessionImpl.transaction"); }
+
+        // If graph is closed it means the session was already closed
+        if (graph.isClosed()) { throw new SessionException(ErrorMessage.SESSION_CLOSED.getMessage(keyspace())); }
+
+        if (span != null) { span.annotate("Getting local thread to see if need to throw exception"); }
         TransactionOLTP localTx = localOLTPTransactionContainer.get();
         // If transaction is already open in current thread throw exception
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
+        if (span != null) { span.annotate("Getting new tx"); }
         // We are passing the graph to Transaction because there is the need to access graph tinkerpop traversal
-        TransactionOLTP tx = new TransactionOLTP(this, graph);
+        TransactionOLTP tx = new TransactionOLTP(this, graph, keyspaceCache);
+
+        if (span != null) { span.annotate("Opening tx with type"); }
         tx.open(type);
+
+        if (span != null) { span.annotate("Saving tx to local container"); }
+
         localOLTPTransactionContainer.set(tx);
+
+        if (span != null) { span.finish(); }
         return tx;
     }
 
-    public void clearGraph() {
-        try {
-            JanusGraphCleanup.clear(graph);
-        } catch (BackendException e) {
-            throw new RuntimeException(e);
-        }
+    private void initialiseMetaConcepts(TransactionOLTP tx) {
+        VertexElement type = tx.addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
+        VertexElement entityType = tx.addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
+        VertexElement relationType = tx.addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
+        VertexElement resourceType = tx.addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
+        tx.addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
+        tx.addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
+
+        relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+        resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+        entityType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+
+        relationType.addEdge(type, Schema.EdgeLabel.SUB);
+        resourceType.addEdge(type, Schema.EdgeLabel.SUB);
+        entityType.addEdge(type, Schema.EdgeLabel.SUB);
     }
+
+    protected void copyMetaConceptsToKeyspaceCache(TransactionOLTP tx) {
+        copyToCache(tx.getMetaConcept());
+        copyToCache(tx.getMetaRole());
+        copyToCache(tx.getMetaRule());
+    }
+
+
+    /**
+     * @return The graph cache which contains all the data cached and accessible by all transactions.
+     */
+    @VisibleForTesting
+    public KeyspaceCache getKeyspaceCache() {
+        return keyspaceCache;
+    }
+
+    private void copyToCache(SchemaConcept schemaConcept) {
+        schemaConcept.subs().forEach(concept -> {
+            keyspaceCache.cacheLabel(concept.label(), concept.labelId());
+//            keyspaceCache.cacheType(concept.label(), concept);
+        });
+    }
+
+    private boolean keyspaceHasBeenInitialised(TransactionOLTP tx) {
+        return tx.getMetaConcept() != null;
+    }
+
 
     /**
      * Get a new or existing TransactionOLAP.
@@ -111,19 +178,25 @@ public class SessionImpl implements Session {
 
     /**
      * Close JanusGraph, it will not be possible to create new transactions using current instance of Session.
-     * If there is a transaction open, close it before closing the graph.
+     * This closes local transaction before closing the graph.
+     *
      * @throws TransactionException
      */
     @Override
     public void close() {
+        if (isClosed) {
+            return;
+        }
+
         TransactionOLTP localTx = localOLTPTransactionContainer.get();
         if (localTx != null) {
             localTx.close(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
             localOLTPTransactionContainer.set(null);
         }
 
-        ((StandardJanusGraph) graph).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close);
-        graph.close();
+
+        this.onClose.run();
+        isClosed = true;
     }
 
     @Override

@@ -8,10 +8,12 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.NeqIdPredicateIT",
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
     ],
 )
 
@@ -23,11 +25,14 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.NeqValuePredicateIT",
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
-        "//dependencies/maven/artifacts/com/google/guava",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
+
+        "//dependencies/maven/artifacts/com/google/guava",
     ],
 )
 
@@ -45,10 +50,8 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.reasoning.RecursionIT",
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//test-integration/graql/reasoner/graph:dual-linear-transitivity-graph",
         "//test-integration/graql/reasoner/graph:linear-transitivity-matrix-graph",
         "//test-integration/graql/reasoner/graph:nguyen-graph",
@@ -59,6 +62,11 @@ java_test(
         "//test-integration/graql/reasoner/graph:tail-recursion-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
+
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
 )
 
@@ -70,12 +78,15 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.AttributeAttachmentIT",
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
+
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
 )
 
@@ -87,10 +98,12 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.TypeGenerationIT",
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
     ],
 )
 
@@ -102,11 +115,14 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.TypeHierarchiesIT",
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
+
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
 )
 
@@ -118,12 +134,15 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.VariableRolesIT",
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/org/apache/commons:commons-math3",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
+
+        "//dependencies/maven/artifacts/commons-collections",
+        "//dependencies/maven/artifacts/org/apache/commons:commons-math3",
     ],
 )
 

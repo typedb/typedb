@@ -22,22 +22,22 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.graql.internal.Schema;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -65,7 +65,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.graql.internal.Schema.MetaSchema.ENTITY;
+import static grakn.core.server.kb.Schema.MetaSchema.ENTITY;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static graql.lang.Graql.type;
@@ -362,7 +362,7 @@ public class GraqlInsertIT {
     }
 
     @Test
-    public void whenAddingAnAttributeRelationshipWithProvenance_TheAttributeAndProvenanceAreAdded() {
+    public void whenAddingAnAttributeRelationWithProvenance_TheAttributeAndProvenanceAreAdded() {
         GraqlInsert query = Graql.insert(
                 y.has("provenance", z.val("Someone told me")),
                 w.isa("movie").has(title, x.val("My Movie"), y)
@@ -380,7 +380,7 @@ public class GraqlInsertIT {
     }
 
     @Test
-    public void whenAddingProvenanceToAnExistingRelationship_TheProvenanceIsAdded() {
+    public void whenAddingProvenanceToAnExistingRelation_TheProvenanceIsAdded() {
         GraqlInsert query = Graql.match(w.isa("movie").has(title, x.val("The Muppets"), y))
                 .insert(x, w, y.has("provenance", z.val("Someone told me")));
 
@@ -501,20 +501,20 @@ public class GraqlInsertIT {
         Thing cluster = results.get(0).get("c").asThing();
         Thing godfather = results.get(0).get("g").asThing();
         Thing muppets = results.get(0).get("m").asThing();
-        Relation relationship = results.get(0).get("r").asRelation();
+        Relation relation = results.get(0).get("r").asRelation();
 
         Role clusterOfProduction = tx.getRole("cluster-of-production");
         Role productionWithCluster = tx.getRole("production-with-cluster");
 
-        assertEquals(relationship.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
-        assertEquals(relationship.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
-        assertEquals(relationship.rolePlayers(productionWithCluster).collect(toSet()), ImmutableSet.of(godfather, muppets));
+        assertEquals(relation.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
+        assertEquals(relation.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
+        assertEquals(relation.rolePlayers(productionWithCluster).collect(toSet()), ImmutableSet.of(godfather, muppets));
     }
 
     @Test
     public void whenInsertingWithAMatch_ProjectMatchResultsOnVariablesInTheInsert() {
         tx.execute(Graql.define(
-                type("maybe-friends").relates("friend").sub("relationship"),
+                type("maybe-friends").relates("friend").sub("relation"),
                 type("person").plays("friend")
         ));
 

@@ -18,16 +18,16 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.AbstractElement;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
@@ -44,7 +44,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
+import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
 
 /**
  * Constructs Concepts And Edges
@@ -87,12 +87,12 @@ public final class ElementFactory {
     }
 
     // ------------------------------------------ Building Attribute
-    <V> AttributeImpl<V> buildAttribute(VertexElement vertex, AttributeType<V> type, Object persitedValue) {
-        return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persitedValue));
+    <V> AttributeImpl<V> buildAttribute(VertexElement vertex, AttributeType<V> type, V persistedValue) {
+        return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persistedValue));
     }
 
-    // ---------------------------------------- Building Relationship Types  -----------------------------------------------
-    public RelationTypeImpl buildRelationshipType(VertexElement vertex, RelationType type) {
+    // ---------------------------------------- Building Relation Types  -----------------------------------------------
+    public RelationTypeImpl buildRelationType(VertexElement vertex, RelationType type) {
         return getOrBuildConcept(vertex, (v) -> RelationTypeImpl.create(v, type));
     }
 
@@ -157,7 +157,7 @@ public final class ElementFactory {
         if (!tx.cache().isConceptCached(conceptId)) {
             Concept concept;
             switch (type) {
-                case RELATIONSHIP:
+                case RELATION:
                     concept = RelationImpl.create(RelationReified.get(vertexElement));
                     break;
                 case TYPE:
@@ -166,7 +166,7 @@ public final class ElementFactory {
                 case ROLE:
                     concept = RoleImpl.get(vertexElement);
                     break;
-                case RELATIONSHIP_TYPE:
+                case RELATION_TYPE:
                     concept = RelationTypeImpl.get(vertexElement);
                     break;
                 case ENTITY:
@@ -240,7 +240,7 @@ public final class ElementFactory {
             if (type.isPresent()) {
                 String label = type.get().label();
                 if (label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
-                if (label.equals(RELATIONSHIP_TYPE.name())) return Schema.BaseType.RELATIONSHIP;
+                if (label.equals(RELATION_TYPE.name())) return Schema.BaseType.RELATION;
                 if (label.equals(Schema.BaseType.ATTRIBUTE_TYPE.name())) return Schema.BaseType.ATTRIBUTE;
             }
         }

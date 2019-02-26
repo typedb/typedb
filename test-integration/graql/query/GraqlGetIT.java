@@ -18,11 +18,11 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.printer.Printer;
 import grakn.core.rule.GraknTestServer;

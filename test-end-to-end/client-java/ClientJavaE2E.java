@@ -1,7 +1,7 @@
 package grakn.core.client;
 
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSet;
 import grakn.core.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlCompute;
@@ -10,7 +10,9 @@ import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -38,31 +40,30 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 
 /**
- *
  * Performs various queries with the client-java library:
- *  - define a schema with a rule
- *  - match; get;
- *  - match; get of an inferred relationship
- *  - match; insert;
- *  - match; delete;
- *  - match; aggregate;
- *  - and compute count
- *
+ * - define a schema with a rule
+ * - match; get;
+ * - match; get of an inferred relation
+ * - match; insert;
+ * - match; delete;
+ * - match; aggregate;
+ * - and compute count
+ * <p>
  * The tests are highly interconnected hence why they are grouped into a single test.
  * If you split them into multiple tests, there is no guarantee that they are ran in the order they are defined,
  * and there is a chance that the match; get; test is performed before the define a schema test, which would cause it to fail.
- *
+ * <p>
  * The schema describes a lion family which consists of a lion, lioness, and the offspring - three young lions. The mating
- * relationship captures the mating act between the male and female partners (ie., the lion and lioness). The child-bearing
- * relationship captures the child-bearing act which results from the mating act.
- *
+ * relation captures the mating act between the male and female partners (ie., the lion and lioness). The child-bearing
+ * relation captures the child-bearing act which results from the mating act.
+ * <p>
  * The rule is one such that if there is an offspring which is the result of a certain child-bearing act, then
  * that offspring is the child of the male and female partners which are involved in the mating act.
- *
  */
 @SuppressWarnings("Duplicates")
 public class ClientJavaE2E {
     private static Logger LOG = LoggerFactory.getLogger(ClientJavaE2E.class);
+    private GraknClient graknClient;
 
     @BeforeClass
     public static void setup_prepareDistribution() throws IOException, InterruptedException, TimeoutException {
@@ -101,15 +102,26 @@ public class ClientJavaE2E {
         LOG.info("cleanup_cleanupDistribution() - cleanup successful.");
     }
 
+    @Before
+    public void createClient() {
+        String host = "localhost:48555";
+        graknClient = new GraknClient(host);
+    }
+
+    @After
+    public void closeClient(){
+        graknClient.close();
+    }
+
     @Test
     public void clientJavaE2E() {
         LOG.info("clientJavaE2E() - starting client-java E2E...");
 
         localhostGraknTx(tx -> {
             GraqlDefine defineQuery = Graql.define(
-                    type("child-bearing").sub("relationship").relates("offspring").relates("child-bearer"),
-                    type("mating").sub("relationship").relates("male-partner").relates("female-partner").plays("child-bearer"),
-                    type("parentship").sub("relationship").relates("parent").relates("child"),
+                    type("child-bearing").sub("relation").relates("offspring").relates("child-bearer"),
+                    type("mating").sub("relation").relates("male-partner").relates("female-partner").plays("child-bearer"),
+                    type("parentship").sub("relation").relates("parent").relates("child"),
 
                     type("name").sub("attribute").datatype(Graql.Token.DataType.STRING),
                     type("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring"),
@@ -136,7 +148,7 @@ public class ClientJavaE2E {
             LOG.info("clientJavaE2E() - '" + getThingQuery + "'");
             List<String> definedSchema = tx.execute(getThingQuery).stream()
                     .map(answer -> answer.get("t").asType().label().getValue()).collect(Collectors.toList());
-            String[] correctSchema = new String[] { "thing", "entity", "relationship", "attribute",
+            String[] correctSchema = new String[] { "thing", "entity", "relation", "attribute",
                     "lion", "mating", "parentship", "child-bearing", "@has-name", "name" };
             assertThat(definedSchema, hasItems(correctSchema));
             LOG.info("clientJavaE2E() - done.");
@@ -158,21 +170,21 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             String[] familyMembers = lionNames();
-            LOG.info("clientJavaE2E() - inserting mating relationships...");
+            LOG.info("clientJavaE2E() - inserting mating relations...");
             GraqlInsert insertMatingQuery = Graql.match(
-                            var("lion").isa("lion").has("name", familyMembers[0]),
-                            var("lioness").isa("lion").has("name", familyMembers[1]))
+                    var("lion").isa("lion").has("name", familyMembers[0]),
+                    var("lioness").isa("lion").has("name", familyMembers[1]))
                     .insert(var().isa("mating").rel("male-partner", var("lion")).rel("female-partner", var("lioness")));
             LOG.info("clientJavaE2E() - '" + insertMatingQuery + "'");
             List<ConceptMap> insertedMating = tx.execute(insertMatingQuery);
 
-            LOG.info("clientJavaE2E() - inserting child-bearing relationships...");
+            LOG.info("clientJavaE2E() - inserting child-bearing relations...");
             GraqlInsert insertChildBearingQuery = Graql.match(
-                            var("lion").isa("lion").has("name", familyMembers[0]),
-                            var("lioness").isa("lion").has("name", familyMembers[1]),
-                            var("offspring").isa("lion").has("name", familyMembers[2]),
-                            var("mating").rel("male-partner", var("lion")).rel("female-partner", var("lioness")).isa("mating")
-                    )
+                    var("lion").isa("lion").has("name", familyMembers[0]),
+                    var("lioness").isa("lion").has("name", familyMembers[1]),
+                    var("offspring").isa("lion").has("name", familyMembers[2]),
+                    var("mating").rel("male-partner", var("lion")).rel("female-partner", var("lioness")).isa("mating")
+            )
                     .insert(var("childbearing").rel("child-bearer", var("mating")).rel("offspring", var("offspring")).isa("child-bearing"));
             LOG.info("clientJavaE2E() - '" + insertChildBearingQuery + "'");
             List<ConceptMap> insertedChildBearing = tx.execute(insertChildBearingQuery);
@@ -192,7 +204,7 @@ public class ClientJavaE2E {
             List<String> insertedNames = insertedLions.stream().map(answer -> answer.get("n").asAttribute().value().toString()).collect(Collectors.toList());
             assertThat(insertedNames, containsInAnyOrder(lionNames()));
 
-            LOG.info("clientJavaE2E() - execute match get on the mating relationships...");
+            LOG.info("clientJavaE2E() - execute match get on the mating relations...");
             GraqlGet getMatingQuery = Graql.match(var().isa("mating")).get();
             LOG.info("clientJavaE2E() - '" + getMatingQuery + "'");
             List<ConceptMap> insertedMating = tx.execute(getMatingQuery);
@@ -207,7 +219,7 @@ public class ClientJavaE2E {
         });
 
         localhostGraknTx(tx -> {
-            LOG.info("clientJavaE2E() - match get inferred relationships...");
+            LOG.info("clientJavaE2E() - match get inferred relations...");
             GraqlGet getParentship = Graql.match(
                     var("parentship")
                             .isa("parentship")
@@ -251,14 +263,12 @@ public class ClientJavaE2E {
     }
 
     private String[] lionNames() {
-        return new String[] { "male-partner", "female-partner", "young-lion" };
+        return new String[]{"male-partner", "female-partner", "young-lion"};
     }
 
     private void localhostGraknTx(Consumer<GraknClient.Transaction> fn) {
-        String host = "localhost:48555";
         String keyspace = "grakn";
-
-        try (GraknClient.Session session = new GraknClient(host).session(keyspace)) {
+        try (GraknClient.Session session = graknClient.session(keyspace)) {
             try (GraknClient.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
                 fn.accept(transaction);
             }

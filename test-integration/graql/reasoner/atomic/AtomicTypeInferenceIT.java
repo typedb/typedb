@@ -21,24 +21,24 @@ package grakn.core.graql.reasoner.atomic;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
-import grakn.core.graql.internal.reasoner.atom.Atom;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
+import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.Atomic;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.util.GraqlTestUtil;
@@ -349,10 +349,10 @@ public class AtomicTypeInferenceIT {
 
         //determination of possible rel types for ($y, $z) relation depends on its neighbours which should be preserved
         //when resolving (and separating atoms) the query
-        RelationshipAtom XYatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(new Variable("x"), new Variable("y")));
-        RelationshipAtom YZatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(new Variable("y"), new Variable("z")));
-        RelationshipAtom ZWatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(new Variable("z"), new Variable("w")));
-        RelationshipAtom midAtom = (RelationshipAtom) ReasonerQueries.atomic(YZatom).getAtom();
+        RelationAtom XYatom = getAtom(conjQuery, RelationAtom.class, Sets.newHashSet(new Variable("x"), new Variable("y")));
+        RelationAtom YZatom = getAtom(conjQuery, RelationAtom.class, Sets.newHashSet(new Variable("y"), new Variable("z")));
+        RelationAtom ZWatom = getAtom(conjQuery, RelationAtom.class, Sets.newHashSet(new Variable("z"), new Variable("w")));
+        RelationAtom midAtom = (RelationAtom) ReasonerQueries.atomic(YZatom).getAtom();
 
         assertEquals(midAtom.getPossibleTypes(), YZatom.getPossibleTypes());
 
@@ -376,13 +376,13 @@ public class AtomicTypeInferenceIT {
     private void typeInference(List<Type> possibleTypes, String pattern, TransactionOLTP tx){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, tx), tx);
         Atom atom = query.getAtom();
-        List<Type> relationshipTypes = atom.getPossibleTypes();
+        List<Type> relationTypes = atom.getPossibleTypes();
 
         if (possibleTypes.size() == 1){
-            assertEquals(possibleTypes, relationshipTypes);
+            assertEquals(possibleTypes, relationTypes);
             assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
         } else {
-            GraqlTestUtil.assertCollectionsNonTriviallyEqual(possibleTypes, relationshipTypes);
+            GraqlTestUtil.assertCollectionsNonTriviallyEqual(possibleTypes, relationTypes);
             assertEquals(atom.getSchemaConcept(), null);
         }
 
@@ -395,16 +395,16 @@ public class AtomicTypeInferenceIT {
         Atom atom = query.getAtom();
         Atom subbedAtom = subbedQuery.getAtom();
 
-        List<Type> relationshipTypes = atom.getPossibleTypes();
-        List<Type> subbedRelationshipTypes = subbedAtom.getPossibleTypes();
+        List<Type> relationTypes = atom.getPossibleTypes();
+        List<Type> subbedRelationTypes = subbedAtom.getPossibleTypes();
         if (possibleTypes.size() == 1){
-            assertEquals(possibleTypes, relationshipTypes);
-            assertEquals(relationshipTypes, subbedRelationshipTypes);
+            assertEquals(possibleTypes, relationTypes);
+            assertEquals(relationTypes, subbedRelationTypes);
             assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
             assertEquals(subbedAtom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
         } else {
-            GraqlTestUtil.assertCollectionsEqual(possibleTypes, relationshipTypes);
-            GraqlTestUtil.assertCollectionsEqual(relationshipTypes, subbedRelationshipTypes);
+            GraqlTestUtil.assertCollectionsEqual(possibleTypes, relationTypes);
+            GraqlTestUtil.assertCollectionsEqual(relationTypes, subbedRelationTypes);
 
             assertNull(atom.getSchemaConcept());
             assertNull(subbedAtom.getSchemaConcept());
@@ -432,7 +432,7 @@ public class AtomicTypeInferenceIT {
     }
 
     private List<Type> allRelations(TransactionOLTP tx){
-        RelationType metaType = tx.getRelationType(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
+        RelationType metaType = tx.getRelationType(Schema.MetaSchema.RELATION.getLabel().getValue());
         return metaType.subs().filter(t -> !t.equals(metaType)).collect(Collectors.toList());
     }
 

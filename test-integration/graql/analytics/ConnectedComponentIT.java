@@ -19,20 +19,20 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.Schema;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -234,7 +234,7 @@ public class ConnectedComponentIT {
             Set<String> subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
                     resourceType3, resourceType4, resourceType5, resourceType6);
             clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).in(subTypes));
-            assertEquals(17, clusterList.size()); // No relationships, so this is the entity count;
+            assertEquals(17, clusterList.size()); // No relations, so this is the entity count;
         }
     }
 
@@ -279,15 +279,15 @@ public class ConnectedComponentIT {
             Role role2 = tx.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationshipType = tx.putRelationType(related).relates(role1).relates(role2);
+            RelationType relationType = tx.putRelationType(related).relates(role1).relates(role2);
 
-            relationshipType.create()
+            relationType.create()
                     .assign(role1, entity1)
                     .assign(role2, entity2).id();
-            relationshipType.create()
+            relationType.create()
                     .assign(role1, entity2)
                     .assign(role2, entity3).id();
-            relationshipType.create()
+            relationType.create()
                     .assign(role1, entity2)
                     .assign(role2, entity4).id();
 

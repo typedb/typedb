@@ -19,7 +19,7 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -36,9 +36,9 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS;
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.graql.internal.Schema.ImplicitType.HAS_VALUE;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS_OWNER;
+import static grakn.core.server.kb.Schema.ImplicitType.HAS_VALUE;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
@@ -186,7 +186,7 @@ public class AttributeAttachmentIT {
     public void reusingAttributes_attachingExistingAttributeToARelation() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
-            String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; $z isa relation; get;";
+            String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; $z isa relation0; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
             assertEquals(2, answers.size());
             answers.forEach(ans ->
@@ -197,7 +197,7 @@ public class AttributeAttachmentIT {
                     }
             );
 
-            String queryString2 = "match $x isa relation, has reattachable-resource-string $y; get;";
+            String queryString2 = "match $x isa relation0, has reattachable-resource-string $y; get;";
             List<ConceptMap> answers2 = tx.execute(Graql.parse(queryString2).asGet());
             assertEquals(1, answers2.size());
             answers2.forEach(ans ->

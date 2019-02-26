@@ -19,19 +19,19 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Type;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Label;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.graql.internal.Schema;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -70,7 +70,7 @@ public class GraqlUndefineIT {
 
     private static final Statement THING = type(Schema.MetaSchema.THING.getLabel().getValue());
     private static final Statement ENTITY = type(Schema.MetaSchema.ENTITY.getLabel().getValue());
-    private static final Statement RELATIONSHIP = type(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
+    private static final Statement RELATION = type(Schema.MetaSchema.RELATION.getLabel().getValue());
     private static final Statement ATTRIBUTE = type(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue());
     private static final Statement ROLE = type(Schema.MetaSchema.ROLE.getLabel().getValue());
     private static final Label NEW_TYPE = Label.of("new-type");
@@ -250,8 +250,8 @@ public class GraqlUndefineIT {
     }
 
     @Test
-    public void whenUndefiningRelatesPropertyWithoutCommit_TheRelationshipTypeNoLongerRelatesTheRole() {
-        tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(RELATIONSHIP).relates("actor")));
+    public void whenUndefiningRelatesPropertyWithoutCommit_TheRelationTypeNoLongerRelatesTheRole() {
+        tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(RELATION).relates("actor")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.<RelationType>getType(NEW_TYPE).roles().toArray(), hasItemInArray(tx.getRole("actor")));
@@ -287,14 +287,14 @@ public class GraqlUndefineIT {
     }
 
     @Test
-    public void undefineRelationshipAndRoles() {
-        tx.execute(Graql.define(type("employment").sub("relationship").relates("employee")));
+    public void undefineRelationAndRoles() {
+        tx.execute(Graql.define(type("employment").sub("relation").relates("employee")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
         assertNotNull(tx.getType(Label.of("employment")));
 
         GraqlUndefine undefineQuery = Graql.undefine(
-                type("employment").sub("relationship").relates("employee"),
+                type("employment").sub("relation").relates("employee"),
                 type("employee").sub("role")
         );
 
@@ -328,11 +328,11 @@ public class GraqlUndefineIT {
     }
 
     @Test
-    public void undefineTypeAndTheirAttributeAndRolesAndRelationships() {
+    public void undefineTypeAndTheirAttributeAndRolesAndRelations() {
         Collection<Statement> schema = ImmutableList.of(
                 type("pokemon").sub(ENTITY).has("pokedex-no").plays("ancestor").plays("descendant"),
                 type("pokedex-no").sub(ATTRIBUTE).datatype(Graql.Token.DataType.LONG),
-                type("evolution").sub(RELATIONSHIP).relates("ancestor").relates("descendant"),
+                type("evolution").sub(RELATION).relates("ancestor").relates("descendant"),
                 type("ancestor").sub(ROLE),
                 type("descendant").sub(ROLE)
         );

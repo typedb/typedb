@@ -18,11 +18,11 @@ post sub entity,
 
 #Relations
 
-reply-of sub relationship,
+reply-of sub relation,
     relates original,
     relates reply;
 
-message-succession sub relationship,
+message-succession sub relation,
     relates predecessor,
     relates successor;
 

@@ -5,7 +5,8 @@ java_test(
      srcs = ["AttributeIT.java"],
      test_class = "grakn.core.server.kb.concept.AttributeIT",
      deps = [
-         "//server",
+         "//concept:concept",
+         "//server:server",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -19,7 +20,8 @@ java_test(
      srcs = ["AttributeTypeIT.java"],
      test_class = "grakn.core.server.kb.concept.AttributeTypeIT",
      deps = [
-         "//server",
+         "//concept:concept",
+         "//server:server",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
@@ -32,6 +34,7 @@ java_test(
      srcs = ["ConceptIT.java"],
      test_class = "grakn.core.server.kb.concept.ConceptIT",
      deps = [
+         "//concept:concept",
          "//server:server",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -46,8 +49,10 @@ java_test(
      srcs = ["EntityIT.java"],
      test_class = "grakn.core.server.kb.concept.EntityIT",
      deps = [
-         "//server",
+         "//concept:concept",
+         "//server:server",
          "//test-integration/rule:grakn-test-server",
+
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
@@ -59,9 +64,11 @@ java_test(
      srcs = ["EntityTypeIT.java"],
      test_class = "grakn.core.server.kb.concept.EntityTypeIT",
      deps = [
-         "//server",
-         "//common",
+         "//common:common",
+         "//concept:concept",
+         "//server:server",
          "//test-integration/rule:grakn-test-server",
+
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
      ],
@@ -70,12 +77,13 @@ java_test(
 )
 
 java_test(
-     name = "relationship-it",
+     name = "relation-it",
      srcs = ["RelationIT.java"],
      test_class = "grakn.core.server.kb.concept.RelationIT",
      deps = [
-         "//server",
-         "//common",
+         "//common:common",
+         "//concept:concept",
+         "//server:server",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
@@ -86,12 +94,14 @@ java_test(
 )
 
 java_test(
-     name = "relationship-type-it",
+     name = "relation-type-it",
      srcs = ["RelationTypeIT.java"],
      test_class = "grakn.core.server.kb.concept.RelationTypeIT",
      deps = [
-         "//server",
+         "//concept:concept",
+         "//server:server",
          "//test-integration/rule:grakn-test-server",
+
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
@@ -103,7 +113,8 @@ java_test(
      srcs = ["RoleIT.java"],
      test_class = "grakn.core.server.kb.concept.RoleIT",
      deps = [
-         "//server",
+         "//concept:concept",
+         "//server:server",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
@@ -116,8 +127,9 @@ java_test(
      srcs = ["SchemaConceptIT.java"],
      test_class = "grakn.core.server.kb.concept.SchemaConceptIT",
      deps = [
-         "//server",
-         "//common",
+         "//common:common",
+         "//concept:concept",
+         "//server:server",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
@@ -131,8 +143,9 @@ java_test(
      srcs = ["SchemaMutationIT.java"],
      test_class = "grakn.core.server.kb.concept.SchemaMutationIT",
      deps = [
-         "//server",
-         "//common",
+         "//common:common",
+         "//concept:concept",
+         "//server:server",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -149,8 +162,8 @@ checkstyle_test(
         ":concept-it",
         ":entity-it",
         ":entity-type-it",
-        ":relationship-it",
-        ":relationship-type-it",
+        ":relation-it",
+        ":relation-type-it",
         ":role-it",
         ":schema-concept-it",
         ":schema-mutation-it",

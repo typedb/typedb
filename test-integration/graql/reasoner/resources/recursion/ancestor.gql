@@ -10,12 +10,12 @@ person sub entity,
 
 parent sub role;
 child sub role;
-Parent sub relationship, relates parent, relates child;
+Parent sub relation, relates parent, relates child;
 person plays parent, plays child;
 
 ancestor sub role;
 descendant sub role;
-Ancestor sub relationship, relates ancestor, relates descendant;
+Ancestor sub relation, relates ancestor, relates descendant;
 person plays ancestor, plays descendant;
 
 name sub attribute, datatype string;

@@ -20,6 +20,7 @@
 package grakn.core.client;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ImmutableList;
 import grakn.benchmark.lib.clientinstrumentation.ClientTracingInstrumentationInterceptor;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.exception.GraknClientException;
@@ -29,22 +30,22 @@ import grakn.core.client.rpc.Transceiver;
 import grakn.core.common.exception.Validator;
 import grakn.core.common.http.SimpleURI;
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptList;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
@@ -68,7 +69,9 @@ import io.grpc.ManagedChannelBuilder;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -79,7 +82,7 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
  * Entry-point which communicates with a running Grakn server using gRPC.
  * For now, only a subset of grakn.core.server.Session and grakn.core.server.Transaction features are supported.
  */
-public final class GraknClient {
+public final class GraknClient implements AutoCloseable {
 
     public static final String DEFAULT_URI = "localhost:48555";
 
@@ -112,6 +115,16 @@ public final class GraknClient {
         return this;
     }
 
+    @Override
+    public void close() {
+        channel.shutdown();
+        try {
+            channel.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     public Session session(String keyspace) {
         return new Session(keyspace);
     }
@@ -131,6 +144,7 @@ public final class GraknClient {
         private final String keyspace;
         private final SessionServiceGrpc.SessionServiceBlockingStub sessionStub;
         private final String sessionId;
+        private boolean isOpen;
 
         private Session(String keyspace) {
             if (!Validator.isValidKeyspaceName(keyspace)) {
@@ -140,6 +154,7 @@ public final class GraknClient {
             sessionStub = SessionServiceGrpc.newBlockingStub(channel);
             SessionProto.Session.Open.Res response = sessionStub.open(RequestBuilder.Session.open(keyspace));
             sessionId = response.getSessionId();
+            isOpen = true;
         }
 
         @Override
@@ -149,8 +164,9 @@ public final class GraknClient {
 
         @Override
         public void close() throws TransactionException {
+            if (!isOpen) return;
             sessionStub.close(RequestBuilder.Session.close(sessionId));
-            channel.shutdown();
+            isOpen = false;
         }
 
         @Override // TODO: remove this method once we no longer implement grakn.core.server.Session
@@ -177,6 +193,11 @@ public final class GraknClient {
             }
             KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(name);
             keyspaceBlockingStub.delete(request);
+        }
+
+        public List<String> retrieve(){
+            KeyspaceProto.Keyspace.Retrieve.Req request = RequestBuilder.Keyspace.retrieve();
+            return ImmutableList.copyOf(keyspaceBlockingStub.retrieve(request).getNamesList().iterator());
         }
     }
 
@@ -295,7 +316,7 @@ public final class GraknClient {
 
         @Nullable
         @Override
-        public <T extends grakn.core.graql.concept.Type> T getType(Label label) {
+        public <T extends grakn.core.concept.type.Type> T getType(Label label) {
             SchemaConcept concept = getSchemaConcept(label);
             if (concept == null || !concept.isType()) return null;
             return (T) concept.asType();

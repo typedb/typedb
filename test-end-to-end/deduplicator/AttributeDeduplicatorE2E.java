@@ -20,7 +20,7 @@ package grakn.core.deduplicator;
 
 
 import grakn.core.client.GraknClient;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.server.Transaction;
 import graql.lang.Graql;
 import org.apache.commons.io.FileUtils;
@@ -120,7 +120,7 @@ public class AttributeDeduplicatorE2E {
                     type("parent").sub("role"),
                     type("child").sub("role"),
                     type("person").sub("entity").has("name").plays("parent").plays("child"),
-                    type("parentchild").sub("relationship").relates("parent").relates("child")));
+                    type("parentchild").sub("relation").relates("parent").relates("child")));
             tx.commit();
         }
     }
