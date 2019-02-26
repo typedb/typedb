@@ -90,18 +90,18 @@ public class SemanticDifference {
 
         //check for role compatibility
         Iterator<Map.Entry<Variable, Set<Role>>> reqIterator = roleRequirements.entrySet().iterator();
-        Set<Relation> relationships;
+        Set<Relation> relations;
         if (reqIterator.hasNext()) {
             Map.Entry<Variable, Set<Role>> req = reqIterator.next();
-            relationships = rolesToRels(req.getKey(), req.getValue(), answer);
+            relations = rolesToRels(req.getKey(), req.getValue(), answer);
         } else {
-            relationships = new HashSet<>();
+            relations = new HashSet<>();
         }
-        while (!relationships.isEmpty() && reqIterator.hasNext()) {
+        while (!relations.isEmpty() && reqIterator.hasNext()) {
             Map.Entry<Variable, Set<Role>> req = reqIterator.next();
-            relationships = Sets.intersection(relationships, rolesToRels(req.getKey(), req.getValue(), answer));
+            relations = Sets.intersection(relations, rolesToRels(req.getKey(), req.getValue(), answer));
         }
-        if (relationships.isEmpty() && !roleRequirements.isEmpty()) return false;
+        if (relations.isEmpty() && !roleRequirements.isEmpty()) return false;
 
         return definition.stream().allMatch(vd -> {
             Variable var = vd.var();

@@ -230,7 +230,7 @@ public class DegreeIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
 
-            // create a subgraph excluding attributes and their relationship
+            // create a subgraph excluding attributes and their relation
             HashSet<String> subGraphTypes = Sets.newHashSet("animal", "person", "mans-best-friend");
             List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE)
                     .in(subGraphTypes));
@@ -275,7 +275,7 @@ public class DegreeIT {
     }
 
     @Test
-    public void testRelationshipPlaysARole() throws InvalidKBException {
+    public void testRelationPlaysARole() throws InvalidKBException {
 
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
@@ -314,8 +314,8 @@ public class DegreeIT {
     }
 
     @Test
-    public void testDegreeTernaryRelationships() throws InvalidKBException {
-        // make relationship
+    public void testDegreeTernaryRelations() throws InvalidKBException {
+        // make relation
         Role productionWithCast = tx.putRole("production-with-cast");
         Role actor = tx.putRole("actor");
         Role characterBeingPlayed = tx.putRole("character-being-played");

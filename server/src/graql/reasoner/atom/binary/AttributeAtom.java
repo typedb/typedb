@@ -117,12 +117,12 @@ public abstract class AttributeAtom extends Binary{
     public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
 
     @Override
-    public RelationshipAtom toRelationshipAtom(){
+    public RelationAtom toRelationAtom(){
         SchemaConcept type = getSchemaConcept();
-        if (type == null) throw GraqlQueryException.illegalAtomConversion(this, RelationshipAtom.class);
+        if (type == null) throw GraqlQueryException.illegalAtomConversion(this, RelationAtom.class);
         Transaction tx = getParentQuery().tx();
         Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
-        return RelationshipAtom.create(
+        return RelationAtom.create(
                 Graql.var()
                         .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), new Statement(getVarName()))
                         .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), new Statement(getAttributeVariable()))

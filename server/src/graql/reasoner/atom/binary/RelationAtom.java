@@ -100,17 +100,17 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * Atom implementation defining a relation atom corresponding to a combined {@link RelationProperty}
- * and (optional) {@link IsaProperty}. The relation atom is a {@link TypeAtom} with relationship players.
+ * and (optional) {@link IsaProperty}. The relation atom is a {@link TypeAtom} with relation players.
  */
 @AutoValue
-public abstract class RelationshipAtom extends IsaAtomBase {
+public abstract class RelationAtom extends IsaAtomBase {
 
     abstract ImmutableList<RelationProperty.RolePlayer> getRelationPlayers();
     abstract ImmutableSet<Label> getRoleLabels();
 
     private ImmutableList<Type> possibleTypes = null;
 
-    public static RelationshipAtom create(Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
+    public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
         List<RelationProperty.RolePlayer> rps = new ArrayList<>();
         pattern.getProperty(RelationProperty.class)
                 .ifPresent(prop -> prop.relationPlayers().stream().sorted(Comparator.comparing(Object::hashCode)).forEach(rps::add));
@@ -123,17 +123,17 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                         .flatMap(CommonUtil::optionalToStream)
                         .map(Label::of).iterator()
         ).build();
-        return new AutoValue_RelationshipAtom(pattern.var(), pattern, parent, predicateVar, predicateId, relationPlayers, roleLabels);
+        return new AutoValue_RelationAtom(pattern.var(), pattern, parent, predicateVar, predicateId, relationPlayers, roleLabels);
     }
 
-    private static RelationshipAtom create(Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, @Nullable ImmutableList<Type> possibleTypes, ReasonerQuery parent) {
-        RelationshipAtom atom = create(pattern, predicateVar, predicateId, parent);
+    private static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, @Nullable ImmutableList<Type> possibleTypes, ReasonerQuery parent) {
+        RelationAtom atom = create(pattern, predicateVar, predicateId, parent);
         atom.possibleTypes = possibleTypes;
         return atom;
     }
 
-    private static RelationshipAtom create(RelationshipAtom a, ReasonerQuery parent) {
-        RelationshipAtom atom = new AutoValue_RelationshipAtom( a.getVarName(), a.getPattern(), parent, a.getPredicateVariable(), a.getTypeId(), a.getRelationPlayers(), a.getRoleLabels());
+    private static RelationAtom create(RelationAtom a, ReasonerQuery parent) {
+        RelationAtom atom = new AutoValue_RelationAtom(a.getVarName(), a.getPattern(), parent, a.getPredicateVariable(), a.getTypeId(), a.getRelationPlayers(), a.getRoleLabels());
         atom.possibleTypes = a.possibleTypes;
         return atom;
     }
@@ -143,7 +143,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public final boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
-        RelationshipAtom that = (RelationshipAtom) obj;
+        RelationAtom that = (RelationAtom) obj;
         return Objects.equals(this.getTypeId(), that.getTypeId())
                 && this.isUserDefined() == that.isUserDefined()
                 && this.isDirect() == that.isDirect()
@@ -176,7 +176,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public RelationshipAtom toRelationshipAtom(){ return this;}
+    public RelationAtom toRelationAtom(){ return this;}
 
     @Override
     public IsaAtom toIsaAtom(){ return IsaAtom.create(getVarName(), getPredicateVariable(), getTypeId(), false, getParentQuery()); }
@@ -271,7 +271,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     private boolean isBaseEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        RelationshipAtom that = (RelationshipAtom) obj;
+        RelationAtom that = (RelationAtom) obj;
         return this. isUserDefined() == that.isUserDefined()
                 && this.getPredicateVariable().isUserDefinedName() == that.getPredicateVariable().isUserDefinedName()
                 && this.isDirect() == that.isDirect()
@@ -292,7 +292,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public boolean isAlphaEquivalent(Object obj) {
         if (!isBaseEquivalent(obj) || !super.isAlphaEquivalent(obj)) return false;
-        RelationshipAtom that = (RelationshipAtom) obj;
+        RelationAtom that = (RelationAtom) obj;
         //check role-type and id predicate bindings
         return this.getRoleTypeMap().equals(that.getRoleTypeMap())
                 && this.predicateBindingsAlphaEquivalent(that);
@@ -301,13 +301,13 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
         if (!isBaseEquivalent(obj) || !super.isStructurallyEquivalent(obj)) return false;
-        RelationshipAtom that = (RelationshipAtom) obj;
+        RelationAtom that = (RelationAtom) obj;
         // check bindings
         return this.getRoleTypeMap(false).equals(that.getRoleTypeMap(false))
                 && this.predicateBindingsStructurallyEquivalent(that);
     }
 
-    private boolean predicateBindingsEquivalent(RelationshipAtom atom,
+    private boolean predicateBindingsEquivalent(RelationAtom atom,
                                                 BiFunction<String, String, Boolean> conceptComparison,
                                                 AtomicEquivalence equivalence) {
         Multimap<Role, String> thisIdMap = this.getRoleConceptIdMap();
@@ -324,11 +324,11 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 && thisValueMap.keySet().stream().allMatch(k -> ReasonerUtils.isEquivalentCollection(thisValueMap.get(k), thatValueMap.get(k), equivalence));
     }
 
-    private boolean predicateBindingsAlphaEquivalent(RelationshipAtom atom) {
+    private boolean predicateBindingsAlphaEquivalent(RelationAtom atom) {
         return predicateBindingsEquivalent(atom, String::equals, AtomicEquivalence.AlphaEquivalence);
     }
 
-    private boolean predicateBindingsStructurallyEquivalent(RelationshipAtom atom) {
+    private boolean predicateBindingsStructurallyEquivalent(RelationAtom atom) {
         return predicateBindingsEquivalent(atom, (a, b) -> true, AtomicEquivalence.StructuralEquivalence);
     }
 
@@ -543,20 +543,20 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        if (!(ruleAtom instanceof RelationshipAtom)) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
-        RelationshipAtom atomWithType = this.addType(ruleAtom.getSchemaConcept()).inferRoles(new ConceptMap());
+        if (!(ruleAtom instanceof RelationAtom)) return isRuleApplicableViaAtom(ruleAtom.toRelationAtom());
+        RelationAtom atomWithType = this.addType(ruleAtom.getSchemaConcept()).inferRoles(new ConceptMap());
         return ruleAtom.isUnifiableWith(atomWithType);
     }
 
     @Override
-    public RelationshipAtom addType(SchemaConcept type) {
+    public RelationAtom addType(SchemaConcept type) {
         if (getTypeId() != null) return this;
         //NB: do not cache possible types
         return create(this.getPattern(), this.getPredicateVariable(), type.id(), this.getParentQuery());
     }
 
     /**
-     * infer {@link RelationType}s that this {@link RelationshipAtom} can potentially have
+     * infer {@link RelationType}s that this {@link RelationAtom} can potentially have
      * NB: {@link EntityType}s and link {@link Role}s are treated separately as they behave differently:
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
      * @return list of {@link RelationType}s this atom can have ordered by the number of compatible {@link Role}s
@@ -571,7 +571,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     /**
-     * @return a map of relationships and corresponding roles that could be played by this atom
+     * @return a map of relations and corresponding roles that could be played by this atom
      */
     private Multimap<RelationType, Role> inferPossibleRelationConfigurations(ConceptMap sub){
         Set<Role> roles = getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.label())).collect(toSet());
@@ -609,7 +609,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public ImmutableList<Type> getPossibleTypes(){ return inferPossibleTypes(new ConceptMap());}
 
     /**
-     * infer {@link RelationType}s that this {@link RelationshipAtom} can potentially have
+     * infer {@link RelationType}s that this {@link RelationAtom} can potentially have
      * NB: {@link EntityType}s and link {@link Role}s are treated separately as they behave differently:
      * NB: Not using Memoized as memoized methods can't have parameters
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
@@ -621,7 +621,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
             Multimap<RelationType, Role> compatibleConfigurations = inferPossibleRelationConfigurations(sub);
             Set<Variable> untypedRoleplayers = Sets.difference(getRolePlayers(), getParentQuery().getVarTypeMap().keySet());
-            Set<RelationshipAtom> untypedNeighbours = getNeighbours(RelationshipAtom.class)
+            Set<RelationAtom> untypedNeighbours = getNeighbours(RelationAtom.class)
                     .filter(at -> !Sets.intersection(at.getVarNames(), untypedRoleplayers).isEmpty())
                     .collect(toSet());
 
@@ -638,7 +638,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     .map(e -> {
                         if (untypedNeighbours.isEmpty()) return new Pair<>(e.getKey(), 0L);
 
-                        Iterator<RelationshipAtom> neighbourIterator = untypedNeighbours.iterator();
+                        Iterator<RelationAtom> neighbourIterator = untypedNeighbours.iterator();
                         Set<Type> typesFromNeighbour = neighbourIterator.next().inferPossibleEntityTypePlayers(sub);
                         while (neighbourIterator.hasNext()) {
                             typesFromNeighbour = Sets.intersection(typesFromNeighbour, neighbourIterator.next().inferPossibleEntityTypePlayers(sub));
@@ -666,22 +666,22 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     /**
-     * attempt to infer the relation type of this relationship
+     * attempt to infer the relation type of this relation
      * @param sub extra instance information to aid entity type inference
-     * @return either this if relation type can't be inferred or a fresh relationship with inferred relationship type
+     * @return either this if relation type can't be inferred or a fresh relation with inferred relation type
      */
-    private RelationshipAtom inferRelationshipType(ConceptMap sub){
+    private RelationAtom inferRelationType(ConceptMap sub){
         if (getTypePredicate() != null) return this;
         if (sub.containsVar(getPredicateVariable())) return addType(sub.get(getPredicateVariable()).asType());
-        List<Type> relationshipTypes = inferPossibleTypes(sub);
-        if (relationshipTypes.size() == 1) return addType(Iterables.getOnlyElement(relationshipTypes));
+        List<Type> relationTypes = inferPossibleTypes(sub);
+        if (relationTypes.size() == 1) return addType(Iterables.getOnlyElement(relationTypes));
         return this;
     }
 
     @Override
-    public RelationshipAtom inferTypes(ConceptMap sub) {
+    public RelationAtom inferTypes(ConceptMap sub) {
         return this
-                .inferRelationshipType(sub)
+                .inferRelationType(sub)
                 .inferRoles(sub);
     }
 
@@ -722,10 +722,10 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     /**
-     * attempt to infer role types of this relation and return a fresh relationship with inferred role types
+     * attempt to infer role types of this relation and return a fresh relation with inferred role types
      * @return either this if nothing/no roles can be inferred or fresh relation with inferred role types
      */
-    private RelationshipAtom inferRoles(ConceptMap sub){
+    private RelationAtom inferRoles(ConceptMap sub){
         //return if all roles known and non-meta
         List<Role> explicitRoles = getExplicitRoles().collect(Collectors.toList());
         Map<Variable, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
@@ -862,7 +862,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * @param matchType type of match to be performed
      * @return set of possible COMPLETE mappings between this (child) and parent relation players
      */
-    private Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom, UnifierComparison matchType) {
+    private Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> getRelationPlayerMappings(RelationAtom parentAtom, UnifierComparison matchType) {
         Multimap<Role, RelationProperty.RolePlayer> childRoleRPMap = this.getRoleRelationPlayerMap();
         Map<Variable, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(matchType.inferTypes());
         Map<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(matchType.inferTypes());
@@ -967,7 +967,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
         Set<Unifier> unifiers = new HashSet<>();
         if (parentAtom.isRelation()) {
-            RelationshipAtom parent = parentAtom.toRelationshipAtom();
+            RelationAtom parent = parentAtom.toRelationAtom();
 
             //NB: if two atoms are equal and their sub and type mappings are equal we return the identity unifier
             //this is important for cases like unifying ($r1: $x, $r2: $y) with itself
@@ -1014,7 +1014,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public SemanticDifference semanticDifference(Atom p, Unifier unifier) {
         SemanticDifference baseDiff = super.semanticDifference(p, unifier);
         if (!p.isRelation()) return baseDiff;
-        RelationshipAtom parentAtom = (RelationshipAtom) p;
+        RelationAtom parentAtom = (RelationAtom) p;
         Set<VariableDefinition> diff = new HashSet<>();
 
         Set<Variable> parentRoleVars= parentAtom.getRoleExpansionVariables();
@@ -1046,17 +1046,17 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         ConceptMap substitution = getParentQuery().getSubstitution();
 
         //if the relation already exists, only assign roleplayers, otherwise create a new relation
-        Relation relationship = substitution.containsVar(getVarName())?
+        Relation relation = substitution.containsVar(getVarName())?
                 substitution.get(getVarName()).asRelation() :
-                RelationTypeImpl.from(relationType).addRelationshipInferred();
+                RelationTypeImpl.from(relationType).addRelationInferred();
 
         roleVarMap.asMap()
-                .forEach((key, value) -> value.forEach(var -> relationship.assign(key, substitution.get(var).asThing())));
+                .forEach((key, value) -> value.forEach(var -> relation.assign(key, substitution.get(var).asThing())));
 
         ConceptMap relationSub = ConceptUtils.mergeAnswers(
                 getRoleSubstitution(),
                 getVarName().isUserDefinedName()?
-                        new ConceptMap(ImmutableMap.of(getVarName(), relationship)) :
+                        new ConceptMap(ImmutableMap.of(getVarName(), relation)) :
                         new ConceptMap()
         );
 
@@ -1068,7 +1068,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * @param parentAtom parent atom that triggers rewrite
      * @return new relation atom with user defined {@link Role} variables if necessary or this
      */
-    private RelationshipAtom rewriteWithVariableRoles(Atom parentAtom){
+    private RelationAtom rewriteWithVariableRoles(Atom parentAtom){
         if (!parentAtom.requiresRoleExpansion()) return this;
 
         Statement relVar = getPattern().getProperty(IsaProperty.class)
@@ -1092,13 +1092,13 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * @param parentAtom parent atom that triggers rewrite
      * @return new relation atom with user defined name if necessary or this
      */
-    private RelationshipAtom rewriteWithRelationVariable(Atom parentAtom){
+    private RelationAtom rewriteWithRelationVariable(Atom parentAtom){
         if (this.getVarName().isUserDefinedName() || !parentAtom.getVarName().isUserDefinedName()) return this;
         return rewriteWithRelationVariable();
     }
 
     @Override
-    public RelationshipAtom rewriteWithRelationVariable(){
+    public RelationAtom rewriteWithRelationVariable(){
         StatementInstance newVar = new StatementThing(new Variable().asUserDefined());
         Statement relVar = getPattern().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.type()))
@@ -1116,7 +1116,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public RelationshipAtom rewriteWithTypeVariable(){
+    public RelationAtom rewriteWithTypeVariable(){
         return create(this.getPattern(), this.getPredicateVariable().asUserDefined(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
     }
 

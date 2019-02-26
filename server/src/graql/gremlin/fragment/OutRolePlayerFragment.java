@@ -35,9 +35,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 
 import static grakn.core.server.kb.Schema.EdgeLabel.ROLE_PLAYER;
-import static grakn.core.server.kb.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
-import static grakn.core.server.kb.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
-import static grakn.core.server.kb.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
 import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
@@ -56,8 +56,8 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
         return Fragments.union(traversal, ImmutableSet.of(
                 reifiedRelationTraversal(graph, vars),
-                edgeRelationTraversal(graph, Direction.OUT, RELATIONSHIP_ROLE_OWNER_LABEL_ID, vars),
-                edgeRelationTraversal(graph, Direction.IN, RELATIONSHIP_ROLE_VALUE_LABEL_ID, vars)
+                edgeRelationTraversal(graph, Direction.OUT, RELATION_ROLE_OWNER_LABEL_ID, vars),
+                edgeRelationTraversal(graph, Direction.IN, RELATION_ROLE_VALUE_LABEL_ID, vars)
         ));
     }
 
@@ -68,7 +68,7 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), tx);
-        applyLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), tx);
+        applyLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, relationTypeLabels(), tx);
 
         traverseToRole(edgeTraversal, role(), ROLE_LABEL_ID, vars);
 
@@ -81,11 +81,11 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), tx);
-        applyLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), tx);
+        applyLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, relationTypeLabels(), tx);
 
         traverseToRole(edgeTraversal, role(), roleProperty, vars);
 
-        // Identify the relation - role-player pair by combining the relationship edge and direction into a map
+        // Identify the relation - role-player pair by combining the relation edge and direction into a map
         edgeTraversal.as(RELATION_EDGE.symbol()).constant(direction).as(RELATION_DIRECTION.symbol());
         edgeTraversal.select(Pop.last, RELATION_EDGE.symbol(), RELATION_DIRECTION.symbol()).as(edge().symbol()).select(RELATION_EDGE.symbol());
 

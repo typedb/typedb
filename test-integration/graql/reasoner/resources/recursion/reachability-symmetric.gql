@@ -8,10 +8,10 @@ vertex sub entity,
     has index;
 
 coordinate sub role;
-link sub relationship, relates coordinate;
+link sub relation, relates coordinate;
 vertex plays coordinate;
 
-reachable sub relationship, relates coordinate;
+reachable sub relation, relates coordinate;
 vertex plays coordinate;
 
 index sub attribute, datatype string;

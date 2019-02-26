@@ -73,7 +73,7 @@ public class ValidatorIT {
     }
 
     @Test
-    public void whenCreatingAbstractRelationshipWithSubType_EnsureValidationRuleForMatchingSubRolesIsSkipped(){
+    public void whenCreatingAbstractRelationWithSubType_EnsureValidationRuleForMatchingSubRolesIsSkipped(){
         Role role1 = tx.putRole("my role");
         Role role2 = tx.putRole("my role 2");
 
@@ -126,13 +126,13 @@ public class ValidatorIT {
     @Test
     public void whenCommittingRelationWithoutSpecifyingSchema_ThrowOnCommit(){
         EntityType fakeType = tx.putEntityType("Fake Concept");
-        RelationType relationshipType = tx.putRelationType("kicks");
+        RelationType relationType = tx.putRelationType("kicks");
         Role kicker = tx.putRole("kicker");
         Role kickee = tx.putRole("kickee");
         Thing kyle = fakeType.create();
         Thing icke = fakeType.create();
 
-        relationshipType.create().assign(kicker, kyle).assign(kickee, icke);
+        relationType.create().assign(kicker, kyle).assign(kickee, icke);
 
         String error1 = ErrorMessage.VALIDATION_CASTING.getMessage(kyle.type().label(), kyle.id(), kicker.label());
         String error2 = ErrorMessage.VALIDATION_CASTING.getMessage(icke.type().label(), icke.id(), kickee.label());
@@ -379,7 +379,7 @@ public class ValidatorIT {
         tx.commit();
     }
 
-    /*------------------------------- Relationship Type to Role Type Validation (Schema) ---------------------------------*/
+    /*------------------------------- Relation Type to Role Type Validation (Schema) ---------------------------------*/
     @Test
     public void whenARelationTypeHasASubTypeHierarchy_EnsureThatWhenARelationTypeHasMatchingRoleTypes1() throws InvalidKBException {
         Role relative = tx.putRole("relative");
@@ -513,11 +513,11 @@ public class ValidatorIT {
     public void whenARoleInARelationIsNotPlayed_TheGraphIsValid() {
         Role role1 = tx.putRole("role-1");
         Role role2 = tx.putRole("role-2");
-        RelationType relationshipType = tx.putRelationType("my-relation").relates(role1).relates(role2);
+        RelationType relationType = tx.putRelationType("my-relation").relates(role1).relates(role2);
 
         Thing thing = tx.putEntityType("my-entity").plays(role1).create();
 
-        relationshipType.create().assign(role1, thing);
+        relationType.create().assign(role1, thing);
 
         tx.commit();
     }
@@ -526,17 +526,17 @@ public class ValidatorIT {
     public void whenARoleInARelationIsPlayedTwice_TheGraphIsValid() {
         Role role1 = tx.putRole("role-1");
         Role role2 = tx.putRole("role-2");
-        RelationType relationshipType = tx.putRelationType("my-relationship").relates(role1).relates(role2);
+        RelationType relationType = tx.putRelationType("my-relation").relates(role1).relates(role2);
 
         EntityType entityType = tx.putEntityType("my-entity").plays(role1);
         Thing thing1 = entityType.create();
         Thing thing2 = entityType.create();
 
-        Relation relationship = relationshipType.create();
-        relationship.assign(role1, thing1);
-        relationship.assign(role1, thing2);
+        Relation relation = relationType.create();
+        relation.assign(role1, thing1);
+        relation.assign(role1, thing2);
 
-        assertThat(relationship.rolePlayers(role1).collect(toSet()), hasItems(thing1, thing2));
+        assertThat(relation.rolePlayers(role1).collect(toSet()), hasItems(thing1, thing2));
 
         tx.commit();
     }
@@ -545,11 +545,11 @@ public class ValidatorIT {
     public void whenARoleInARelationIsPlayedAZillionTimes_TheGraphIsValid() {
         Role role1 = tx.putRole("role-1");
         Role role2 = tx.putRole("role-2");
-        RelationType relationshipType = tx.putRelationType("my-relationship").relates(role1).relates(role2);
+        RelationType relationType = tx.putRelationType("my-relation").relates(role1).relates(role2);
 
         EntityType entityType = tx.putEntityType("my-entity").plays(role1);
 
-        Relation relationship = relationshipType.create();
+        Relation relation = relationType.create();
 
         Set<Thing> things = new HashSet<>();
 
@@ -557,10 +557,10 @@ public class ValidatorIT {
         for (int i = 0 ; i < oneZillion; i ++) {
             Thing thing = entityType.create();
             things.add(thing);
-            relationship.assign(role1, thing);
+            relation.assign(role1, thing);
         }
 
-        assertEquals(things, relationship.rolePlayers(role1).collect(toSet()));
+        assertEquals(things, relation.rolePlayers(role1).collect(toSet()));
 
         tx.commit();
     }

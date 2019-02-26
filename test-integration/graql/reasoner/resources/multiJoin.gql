@@ -12,15 +12,15 @@ genericEntity sub entity,
     plays fromRole,
     plays toRole;
 
-A sub relationship, relates fromRole, relates toRole;
-B1 sub relationship, relates fromRole, relates toRole;
-B2 sub relationship, relates fromRole, relates toRole;
-C1 sub relationship, relates fromRole, relates toRole;
-C2 sub relationship, relates fromRole, relates toRole;
-C3 sub relationship, relates fromRole, relates toRole;
-C4 sub relationship, relates fromRole, relates toRole;
-D1 sub relationship, relates fromRole, relates toRole;
-D2 sub relationship, relates fromRole, relates toRole;
+A sub relation, relates fromRole, relates toRole;
+B1 sub relation, relates fromRole, relates toRole;
+B2 sub relation, relates fromRole, relates toRole;
+C1 sub relation, relates fromRole, relates toRole;
+C2 sub relation, relates fromRole, relates toRole;
+C3 sub relation, relates fromRole, relates toRole;
+C4 sub relation, relates fromRole, relates toRole;
+D1 sub relation, relates fromRole, relates toRole;
+D2 sub relation, relates fromRole, relates toRole;
 
 index sub attribute, datatype long;
 

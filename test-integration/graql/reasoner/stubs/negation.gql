@@ -17,19 +17,19 @@ someRole sub role;
 anotherRole sub role;
 otherRole sub role;
 
-binary sub relationship,
+binary sub relation,
     relates someRole,
     relates otherRole;
 
-ternary sub relationship,
+ternary sub relation,
     relates someRole,
     relates otherRole,
     relates anotherRole;
 
-derived-binary sub relationship,
+derived-binary sub relation,
     relates someRole,
     relates otherRole;
-derived-ternary sub relationship,
+derived-ternary sub relation,
     relates someRole,
     relates otherRole,
     relates anotherRole;

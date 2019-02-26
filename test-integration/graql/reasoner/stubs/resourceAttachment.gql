@@ -18,7 +18,7 @@ anotherEntity sub entity,
 yetAnotherEntity sub entity,
     has derived-resource-string;
 
-relation sub relationship,
+relation0 sub relation,
     relates someRole,
     relates otherRole,
     has reattachable-resource-string;
@@ -45,7 +45,7 @@ transferResourceToEntity sub rule,
 transferResourceToRelation sub rule,
     when {
         $x isa genericEntity, has reattachable-resource-string $y;
-        $z isa relation;
+        $z isa relation0;
     },
     then {
         $z has reattachable-resource-string $y;
@@ -93,7 +93,7 @@ insert
 
 $geX isa genericEntity, has reattachable-resource-string "value";
 $geY isa genericEntity;
-(someRole:$geX, otherRole:$geX) isa relation;
+(someRole:$geX, otherRole:$geX) isa relation0;
 
 $se isa anotherEntity, has resource-long 1;
 

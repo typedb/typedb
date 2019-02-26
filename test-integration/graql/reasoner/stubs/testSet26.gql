@@ -14,16 +14,16 @@ entity2 sub entity,
     plays role2,
     has res1;
 
-relation1 sub relationship,
+relation1 sub relation,
     relates role1,
     relates role2,
     has res2;
 
-relation2 sub relationship,
+relation2 sub relation,
     relates role1,
     relates role2;
 
-relation3 sub relationship,
+relation3 sub relation,
     relates role1,
     relates role2;
 

@@ -59,15 +59,15 @@ threeRoleEntity sub anotherTwoRoleEntity,
 
 #Relations
 
-twoRoleBinary sub relationship,
+twoRoleBinary sub relation,
     relates role1,
     relates role2;
 
-anotherTwoRoleBinary sub relationship,
+anotherTwoRoleBinary sub relation,
     relates role2,
     relates role3;
 
-threeRoleBinary sub relationship,
+threeRoleBinary sub relation,
     relates subRole2,
     relates role3,
     relates role4;

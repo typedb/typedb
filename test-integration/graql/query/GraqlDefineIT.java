@@ -58,7 +58,7 @@ import static grakn.core.server.kb.Schema.ImplicitType.KEY;
 import static grakn.core.server.kb.Schema.ImplicitType.KEY_OWNER;
 import static grakn.core.server.kb.Schema.ImplicitType.KEY_VALUE;
 import static grakn.core.server.kb.Schema.MetaSchema.ENTITY;
-import static grakn.core.server.kb.Schema.MetaSchema.RELATIONSHIP;
+import static grakn.core.server.kb.Schema.MetaSchema.RELATION;
 import static grakn.core.server.kb.Schema.MetaSchema.ROLE;
 import static grakn.core.server.kb.Schema.MetaSchema.RULE;
 import static grakn.core.util.GraqlTestUtil.assertExists;
@@ -118,7 +118,7 @@ public class GraqlDefineIT {
     public void testDefineSchema() {
         tx.execute(Graql.define(
                 type("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                type("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
+                type("evolution").sub(Schema.MetaSchema.RELATION.getLabel().getValue()),
                 type("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 type("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 type("evolution").relates("evolves-from").relates("evolves-to"),
@@ -126,7 +126,7 @@ public class GraqlDefineIT {
         ));
 
         assertExists(tx, type("pokemon").sub(ENTITY.getLabel().getValue()));
-        assertExists(tx, type("evolution").sub(RELATIONSHIP.getLabel().getValue()));
+        assertExists(tx, type("evolution").sub(RELATION.getLabel().getValue()));
         assertExists(tx, type("evolves-from").sub(ROLE.getLabel().getValue()));
         assertExists(tx, type("evolves-to").sub(ROLE.getLabel().getValue()));
         assertExists(tx, type("evolution").relates("evolves-from").relates("evolves-to"));
@@ -172,7 +172,7 @@ public class GraqlDefineIT {
     @Test
     public void testDefineSubRole() {
         tx.execute(Graql.define(
-                type("marriage").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()).relates("spouse1").relates("spouse2"),
+                type("marriage").sub(Schema.MetaSchema.RELATION.getLabel().getValue()).relates("spouse1").relates("spouse2"),
                 type("spouse").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 type("spouse1").sub("spouse"),
                 type("spouse2").sub("spouse")
@@ -239,7 +239,7 @@ public class GraqlDefineIT {
         Statement hasResourceValue = type(HAS_VALUE.getLabel(resourceType).getValue());
 
         // Make sure the expected ontology elements are created
-        assertExists(tx, hasResource.sub(RELATIONSHIP.getLabel().getValue()));
+        assertExists(tx, hasResource.sub(RELATION.getLabel().getValue()));
         assertExists(tx, hasResourceOwner.sub(ROLE.getLabel().getValue()));
         assertExists(tx, hasResourceValue.sub(ROLE.getLabel().getValue()));
         assertExists(tx, hasResource.relates(hasResourceOwner));
@@ -268,7 +268,7 @@ public class GraqlDefineIT {
         Statement keyValue = type(KEY_VALUE.getLabel(resourceType).getValue());
 
         // Make sure the expected ontology elements are created
-        assertExists(tx, key.sub(RELATIONSHIP.getLabel().getValue()));
+        assertExists(tx, key.sub(RELATION.getLabel().getValue()));
         assertExists(tx, keyOwner.sub(ROLE.getLabel().getValue()));
         assertExists(tx, keyValue.sub(ROLE.getLabel().getValue()));
         assertExists(tx, key.relates(keyOwner));
@@ -464,8 +464,8 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenDefiningARelationship_SubRoleDeclarationsCanBeSkipped() {
-        tx.execute(Graql.define(type("marriage").sub(type(RELATIONSHIP.getLabel().getValue())).relates("husband").relates("wife")));
+    public void whenDefiningARelation_SubRoleDeclarationsCanBeSkipped() {
+        tx.execute(Graql.define(type("marriage").sub(type(RELATION.getLabel().getValue())).relates("husband").relates("wife")));
 
         RelationType marriage = tx.getRelationType("marriage");
         Role husband = tx.getRole("husband");
@@ -474,11 +474,11 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenDefiningARelationship_SubRoleCasUseAs() {
-        tx.execute(Graql.define(type("parentship").sub(type(RELATIONSHIP.getLabel().getValue()))
+    public void whenDefiningARelation_SubRoleCasUseAs() {
+        tx.execute(Graql.define(type("parentship").sub(type(RELATION.getLabel().getValue()))
                           .relates("parent")
                           .relates("child")));
-        tx.execute(Graql.define(type("fatherhood").sub(type(RELATIONSHIP.getLabel().getValue()))
+        tx.execute(Graql.define(type("fatherhood").sub(type(RELATION.getLabel().getValue()))
                           .relates("father", "parent")
                           .relates("son", "child")));
 
@@ -501,9 +501,9 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenDefiningARelationship_SubRoleDeclarationsCanBeSkipped_EvenWhenRoleInReferredToInOtherContexts() {
+    public void whenDefiningARelation_SubRoleDeclarationsCanBeSkipped_EvenWhenRoleInReferredToInOtherContexts() {
         tx.execute(Graql.define(
-                type("marriage").sub(type(RELATIONSHIP.getLabel().getValue())).relates("husband").relates("wife"),
+                type("marriage").sub(type(RELATION.getLabel().getValue())).relates("husband").relates("wife"),
                 type("person").plays("husband").plays("wife")
         ));
 
@@ -517,11 +517,11 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenDefiningARelationshipWithNonRoles_Throw() {
+    public void whenDefiningARelationWithNonRoles_Throw() {
         exception.expect(GraknException.class);
 
         tx.execute(Graql.define(
-                type("marriage").sub(type(RELATIONSHIP.getLabel().getValue())).relates("husband").relates("wife"),
+                type("marriage").sub(type(RELATION.getLabel().getValue())).relates("husband").relates("wife"),
                 type("wife").sub(type(ENTITY.getLabel().getValue()))
         ));
     }

@@ -35,7 +35,7 @@ import grakn.core.graql.reasoner.atom.AtomicFactory;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtomBase;
-import grakn.core.graql.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.reasoner.cache.Index;
@@ -254,7 +254,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
 
         Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
-        return getAtoms(RelationshipAtom.class)
+        return getAtoms(RelationAtom.class)
                 .filter(ra -> ra.getVarNames().contains(typedVar))
                 .noneMatch(ra -> ra.getRoleVarMap().entries().stream()
                         //get roles this type needs to play
@@ -443,8 +443,8 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     public ConceptMap getRoleSubstitution(){
         Map<Variable, Concept> roleSub = new HashMap<>();
-        getAtoms(RelationshipAtom.class)
-                .flatMap(RelationshipAtom::getRolePredicates)
+        getAtoms(RelationAtom.class)
+                .flatMap(RelationAtom::getRolePredicates)
                 .forEach(p -> {
                     Concept concept = tx().getConcept(p.getPredicate());
                     if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());

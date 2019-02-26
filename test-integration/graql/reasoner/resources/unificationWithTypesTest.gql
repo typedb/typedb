@@ -39,11 +39,11 @@ subSubThreeRoleEntity sub subThreeRoleEntity;
 
 #Relations
 
-binary sub relationship,
+binary sub relation,
     relates role1,
     relates role2;
 
-ternary sub relationship,
+ternary sub relation,
     relates role1,
     relates role2,
     relates role3;

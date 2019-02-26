@@ -11,7 +11,7 @@ model-name sub name,
   plays action,
   has specific-indicator;
 
-diagnosis sub relationship,
+diagnosis sub relation,
   relates subject,
   relates action;
 

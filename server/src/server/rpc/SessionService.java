@@ -215,7 +215,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     putAttributeType(request.getPutAttributeTypeReq());
                     break;
                 case PUTRELATIONTYPE_REQ:
-                    putRelationshipType(request.getPutRelationTypeReq());
+                    putRelationType(request.getPutRelationTypeReq());
                     break;
                 case PUTROLE_REQ:
                     putRole(request.getPutRoleReq());
@@ -327,9 +327,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
-        private void putRelationshipType(Transaction.PutRelationType.Req request) {
-            RelationType relationshipType = tx().putRelationType(Label.of(request.getLabel()));
-            Transaction.Res response = ResponseBuilder.Transaction.putRelationshipType(relationshipType);
+        private void putRelationType(Transaction.PutRelationType.Req request) {
+            RelationType relationType = tx().putRelationType(Label.of(request.getLabel()));
+            Transaction.Res response = ResponseBuilder.Transaction.putRelationType(relationType);
             onNextResponse(response);
         }
 

@@ -87,7 +87,7 @@ public final class Schema {
         ENTITY("entity", 2),
         ROLE("role", 3),
         ATTRIBUTE("attribute", 4),
-        RELATIONSHIP("relationship", 5),
+        RELATION("relation", 5),
         RULE("rule", 6);
 
         private final Label label;
@@ -131,13 +131,13 @@ public final class Schema {
         SCHEMA_CONCEPT(SchemaConcept.class),
         TYPE(Type.class),
         ENTITY_TYPE(EntityType.class),
-        RELATIONSHIP_TYPE(RelationType.class),
+        RELATION_TYPE(RelationType.class),
         ATTRIBUTE_TYPE(AttributeType.class),
         ROLE(Role.class),
         RULE(Rule.class),
 
         //Instances
-        RELATIONSHIP(Relation.class),
+        RELATION(Relation.class),
         ENTITY(Entity.class),
         ATTRIBUTE(Attribute.class),
 
@@ -207,10 +207,10 @@ public final class Schema {
      * A property enum defining the possible labels that can go on the edge label.
      */
     public enum EdgeProperty {
-        RELATIONSHIP_ROLE_OWNER_LABEL_ID(Integer.class),
-        RELATIONSHIP_ROLE_VALUE_LABEL_ID(Integer.class),
+        RELATION_ROLE_OWNER_LABEL_ID(Integer.class),
+        RELATION_ROLE_VALUE_LABEL_ID(Integer.class),
         ROLE_LABEL_ID(Integer.class),
-        RELATIONSHIP_TYPE_LABEL_ID(Integer.class),
+        RELATION_TYPE_LABEL_ID(Integer.class),
         REQUIRED(Boolean.class),
         IS_INFERRED(Boolean.class);
 
@@ -236,7 +236,7 @@ public final class Schema {
         RESERVED("@"),
 
         /**
-         * The label of the generic has-Attribute relationship, used for attaching Attributes to instances with the 'has' syntax
+         * The label of the generic has-Attribute relation, used for attaching Attributes to instances with the 'has' syntax
          */
         HAS("@has-%s"),
 
@@ -251,7 +251,7 @@ public final class Schema {
         HAS_VALUE("@has-%s-value"),
 
         /**
-         * The label of the generic key relationship, used for attaching Attributes to instances with the 'has' syntax and additionally constraining them to be unique
+         * The label of the generic key relation, used for attaching Attributes to instances with the 'has' syntax and additionally constraining them to be unique
          */
         KEY("@key-%s"),
 

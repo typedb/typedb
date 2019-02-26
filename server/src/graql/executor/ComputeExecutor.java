@@ -436,7 +436,7 @@ class ComputeExecutor {
                         Label typeLabel = Label.of(t);
                         Type type = tx.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
-                        if (type.isRelationType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
+                        if (type.isRelationType()) throw GraqlQueryException.kCoreOnRelationType(typeLabel);
                         return type.subs();
                     })
                     .map(SchemaConcept::label)
@@ -620,7 +620,7 @@ class ComputeExecutor {
     }
 
     /**
-     * Helper method to get the label IDs of role players in a relationship
+     * Helper method to get the label IDs of role players in a relation
      *
      * @return a set of type label IDs
      */
@@ -636,7 +636,7 @@ class ComputeExecutor {
     }
 
     /**
-     * Helper method to get implicit relationship types of attributes
+     * Helper method to get implicit relation types of attributes
      *
      * @param types
      * @return a set of type Labels
@@ -728,7 +728,7 @@ class ComputeExecutor {
      */
     private Stream<Type> scopeTypes(GraqlCompute query) {
         // Get all types if query.inTypes() is empty, else get all scoped types of each meta type.
-        // Only include attributes and implicit "has-xxx" relationships when user specifically asked for them.
+        // Only include attributes and implicit "has-xxx" relations when user specifically asked for them.
         if (query.in().isEmpty()) {
             ImmutableSet.Builder<Type> typeBuilder = ImmutableSet.builder();
 
@@ -737,7 +737,7 @@ class ComputeExecutor {
             } else {
                 tx.getMetaEntityType().subs().forEach(typeBuilder::add);
                 tx.getMetaRelationType().subs()
-                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(typeBuilder::add);
+                        .filter(relationType -> !relationType.isImplicit()).forEach(typeBuilder::add);
             }
 
             return typeBuilder.build().stream();
@@ -750,7 +750,7 @@ class ComputeExecutor {
             }).flatMap(Type::subs);
 
             if (!scopeIncludesAttributes(query)) {
-                subTypes = subTypes.filter(relationshipType -> !relationshipType.isImplicit());
+                subTypes = subTypes.filter(relationType -> !relationType.isImplicit());
             }
 
             return subTypes;

@@ -38,11 +38,11 @@ abstract class RelatesFragmentSet extends EquivalentFragmentSet {
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(
-                Fragments.outRelates(varProperty(), relationshipType(), role()),
-                Fragments.inRelates(varProperty(), role(), relationshipType())
+                Fragments.outRelates(varProperty(), relationType(), role()),
+                Fragments.inRelates(varProperty(), role(), relationType())
         );
     }
 
-    abstract Variable relationshipType();
+    abstract Variable relationType();
     abstract Variable role();
 }

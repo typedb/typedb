@@ -9,17 +9,17 @@ person sub entity,
     has name;
 
 friend sub role;
-Friend sub relationship, relates friend;
+Friend sub relation, relates friend;
 person plays friend, plays friend;
 
 parent sub role;
 child sub role;
-Parent sub relationship, relates parent, relates child;
+Parent sub relation, relates parent, relates child;
 person plays parent, plays child;
 
 ancestor sub role;
 ancestor-friend sub role;
-Ancestor-friend sub relationship, relates ancestor, relates ancestor-friend;
+Ancestor-friend sub relation, relates ancestor, relates ancestor-friend;
 person plays ancestor, plays ancestor-friend;
 
 name sub attribute, datatype string;

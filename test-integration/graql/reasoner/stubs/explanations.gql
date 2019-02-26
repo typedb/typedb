@@ -14,15 +14,15 @@ genericEntity sub entity,
 
 #Relations
 
-baseRelation sub relationship,
+baseRelation sub relation,
     relates role1,
     relates role2;
 
-anotherBaseRelation sub relationship,
+anotherBaseRelation sub relation,
     relates role1,
     relates role2;
 
-inferredRelation sub relationship,
+inferredRelation sub relation,
     relates role1,
     relates role2;
 
@@ -72,19 +72,19 @@ factor sub entity,
     has value,
     plays object;
 
-carried-relation sub relationship,
+carried-relation sub relation,
     relates object,
     relates subject;
 
-coordinates sub relationship,
+coordinates sub relation,
     relates location,
     relates place;
 
-operates sub relationship,
+operates sub relation,
     relates operated,
     relates operator;
 
-owns sub relationship,
+owns sub relation,
     relates owned,
     relates owner;
 
@@ -124,11 +124,11 @@ tag sub entity,
     has tag-type,
     plays tagger;
 
-tagging sub relationship,
+tagging sub relation,
     relates tagged,
     relates tagger;
 
-same-tag-column-link sub relationship,
+same-tag-column-link sub relation,
     relates linked-column;
 
 tag-type sub attribute, datatype string;

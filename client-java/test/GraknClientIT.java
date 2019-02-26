@@ -236,7 +236,7 @@ public class GraknClientIT {
             tx.execute(Graql.define(
                     type("name").sub("attribute").datatype("string"),
                     type("content").sub("entity").has("name").plays("contained").plays("container"),
-                    type("contains").sub("relationship").relates("contained").relates("container"),
+                    type("contains").sub("relation").relates("contained").relates("container"),
                     type("transitive-location").sub("rule")
                     .when(and(
                             rel("contained", "x").rel("container", "y").isa("contains"),

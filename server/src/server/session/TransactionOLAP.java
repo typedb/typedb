@@ -116,9 +116,9 @@ public class TransactionOLAP {
                     __.union(
                             __.<Vertex>bothE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()),
                             __.<Vertex>bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
-                                    .has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), P.within(labelIds))) :
+                                    .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), P.within(labelIds))) :
                     __.<Vertex>bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
-                            .has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), P.within(labelIds));
+                            .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), P.within(labelIds));
         }
 
         graphComputer.vertices(vertexFilter).edges(edgeFilter);

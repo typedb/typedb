@@ -37,7 +37,7 @@ import java.util.Set;
 
 import static grakn.core.server.kb.Schema.EdgeLabel.ISA;
 import static grakn.core.server.kb.Schema.EdgeLabel.SHARD;
-import static grakn.core.server.kb.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
 
 /**
  * A fragment representing traversing an isa edge from instance to type.
@@ -62,7 +62,7 @@ public abstract class OutIsaFragment extends Fragment {
     }
 
     private GraphTraversal<Element, Vertex> edgeTraversal() {
-        return Fragments.traverseSchemaConceptFromEdge(Fragments.isEdge(__.identity()), RELATIONSHIP_TYPE_LABEL_ID);
+        return Fragments.traverseSchemaConceptFromEdge(Fragments.isEdge(__.identity()), RELATION_TYPE_LABEL_ID);
     }
 
     @Override

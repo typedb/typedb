@@ -37,13 +37,13 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.server.kb.Schema.BaseType.RELATIONSHIP_TYPE;
+import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
 import static grakn.core.server.kb.Schema.EdgeLabel.ATTRIBUTE;
 import static grakn.core.server.kb.Schema.EdgeLabel.ISA;
 import static grakn.core.server.kb.Schema.EdgeLabel.PLAYS;
 import static grakn.core.server.kb.Schema.EdgeLabel.RELATES;
 import static grakn.core.server.kb.Schema.EdgeLabel.SHARD;
-import static grakn.core.server.kb.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
+import static grakn.core.server.kb.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
 import static grakn.core.server.kb.Schema.VertexProperty.IS_IMPLICIT;
 import static grakn.core.server.kb.Schema.VertexProperty.LABEL_ID;
 
@@ -68,7 +68,7 @@ public abstract class InIsaFragment extends Fragment {
 
         if (mayHaveEdgeInstances()) {
             GraphTraversal<Vertex, Vertex> isImplicitRelationType =
-                    __.<Vertex>hasLabel(RELATIONSHIP_TYPE.name()).has(IS_IMPLICIT.name(), true);
+                    __.<Vertex>hasLabel(RELATION_TYPE.name()).has(IS_IMPLICIT.name(), true);
 
             GraphTraversal<Vertex, Element> toVertexAndEdgeInstances = Fragments.union(ImmutableSet.of(
                     toVertexInstances(__.identity()),
@@ -122,7 +122,7 @@ public abstract class InIsaFragment extends Fragment {
 
         // Finally, navigate to all relation edges with the correct type attached to these instances
         return traversal.outE(ATTRIBUTE.getLabel())
-                .has(RELATIONSHIP_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.symbol())));
+                .has(RELATION_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.symbol())));
     }
 
     @Override

@@ -93,7 +93,7 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
 
     static void degreeStatisticsStepResourceRelation(Vertex vertex, Messenger<Long> messenger, Set<LabelId> ofLabelIds) {
         if (messenger.receiveMessages().hasNext()) {
-            if (vertex.label().equals(Schema.BaseType.RELATIONSHIP.name())) {
+            if (vertex.label().equals(Schema.BaseType.RELATION.name())) {
                 messenger.sendMessage(messageScopeOut, 1L);
             } else if (ofLabelIds.contains(Utility.getVertexTypeId(vertex))) {
                 vertex.property(DEGREE, getMessageCount(messenger));

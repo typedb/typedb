@@ -33,13 +33,13 @@ gender sub attribute, datatype string;
 
 # Roles and Relations
 
-marriage sub relationship,
+marriage sub relation,
     relates spouse,
     has picture;
 
 spouse sub role;
 
-parentship sub relationship,
+parentship sub relation,
     relates parent,
     relates child;
 
@@ -68,14 +68,14 @@ person
     plays grandmother,
     plays grandfather;
 
-marriage sub relationship,
+marriage sub relation,
     relates husband,
     relates wife;
 
 husband sub role;
 wife sub role;
 
-parentship sub relationship,
+parentship sub relation,
     relates mother,
     relates father,
     relates son,
@@ -86,12 +86,12 @@ father sub parent;
 son sub child;
 daughter sub child;
 
-siblings sub relationship,
+siblings sub relation,
     relates sibling;
 
 sibling sub role;
 
-grandparentship sub relationship,
+grandparentship sub relation,
     relates grandparent,
     relates grandfather,
     relates grandmother,
@@ -106,12 +106,12 @@ grandchild sub role;
 grandson sub grandchild;
 granddaughter sub grandchild;
 
-cousins sub relationship,
+cousins sub relation,
     relates cousin;
 
 cousin sub role;
 
-in-laws sub relationship,
+in-laws sub relation,
     relates child-in-law,
     relates son-in-law,
     relates daughter-in-law,

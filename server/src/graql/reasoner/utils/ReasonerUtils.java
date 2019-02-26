@@ -190,10 +190,10 @@ public class ReasonerUtils {
         Multimap<RelationType, Role> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> typeIterator = types.iterator();
-        compatibleTypes.putAll(schemaConceptConverter.toRelationshipMultimap(typeIterator.next()));
+        compatibleTypes.putAll(schemaConceptConverter.toRelationMultimap(typeIterator.next()));
 
         while(typeIterator.hasNext() && compatibleTypes.size() > 1) {
-            compatibleTypes = multimapIntersection(compatibleTypes, schemaConceptConverter.toRelationshipMultimap(typeIterator.next()));
+            compatibleTypes = multimapIntersection(compatibleTypes, schemaConceptConverter.toRelationMultimap(typeIterator.next()));
         }
         return compatibleTypes;
     }

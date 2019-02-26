@@ -79,7 +79,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         //       change the data structure so that we have meta-super-roles for attribute-owners and attribute-values
         Statement ownerRole = var().sub(role);
         Statement valueRole = var().sub(role);
-        Statement relationType = var().sub(Graql.type(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()));
+        Statement relationType = var().sub(Graql.type(Schema.MetaSchema.RELATION.getLabel().getValue()));
 
         // If a key, limit only to the implicit key type
         if (property.isKey()) {
@@ -123,7 +123,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         fragments.addAll(playsValueExecutor.matchFragments());
         fragments.addAll(neqExecutor.matchFragments());
 
-        // Add fragments for the implicit relationship property
+        // Add fragments for the implicit relation property
         // These implicit statements make sure that statement variable (owner) and the attribute type form a
         // connected (non-disjoint) set of fragments for match execution
         Stream.of(ownerRole, valueRole, relationOwner, relationValue)

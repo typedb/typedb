@@ -101,7 +101,7 @@ public class ValidateGlobalRulesIT {
     public void testValidatePlaysStructureUnique() {
         Role role1 = tx.putRole("role1");
         Role role2 = tx.putRole("role2");
-        RelationType relationshipType = tx.putRelationType("rt").relates(role1).relates(role2);
+        RelationType relationType = tx.putRelationType("rt").relates(role1).relates(role2);
 
         EntityType entityType = tx.putEntityType("et");
 
@@ -113,14 +113,14 @@ public class ValidateGlobalRulesIT {
 
         EntityImpl entity = (EntityImpl) entityType.create();
 
-        RelationImpl relation1 = (RelationImpl) relationshipType.create()
+        RelationImpl relation1 = (RelationImpl) relationType.create()
                 .assign(role2, other1).assign(role1, entity);
 
         // Valid with only a single relation
         relation1.reified().get().castingsRelation().forEach(rolePlayer ->
                 assertTrue(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
-        RelationImpl relation2 = (RelationImpl) relationshipType.create()
+        RelationImpl relation2 = (RelationImpl) relationType.create()
                 .assign(role2, other2).assign(role1, entity);
 
         // Invalid with multiple relations
@@ -150,14 +150,14 @@ public class ValidateGlobalRulesIT {
     @Test
     public void testAbstractConceptValidation(){
         Role role = tx.putRole("relates");
-        RelationType relationshipType = tx.putRelationType("relationTypes");
+        RelationType relationType = tx.putRelationType("relationTypes");
 
         assertTrue(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(role).isPresent());
-        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationshipType).isPresent());
+        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
 
-        relationshipType.isAbstract(true);
+        relationType.isAbstract(true);
 
         assertTrue(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(role).isPresent());
-        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationshipType).isPresent());
+        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
     }
 }

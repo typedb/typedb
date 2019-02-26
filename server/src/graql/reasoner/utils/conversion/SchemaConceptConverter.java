@@ -41,7 +41,7 @@ public interface SchemaConceptConverter<T extends SchemaConcept>{
      * @param entryConcept to be converted
      * @return map of relation types in which it can play roles and the corresponding role types
      */
-    default Multimap<RelationType, Role> toRelationshipMultimap(T entryConcept){
+    default Multimap<RelationType, Role> toRelationMultimap(T entryConcept){
         Multimap<RelationType, Role> relationMap = HashMultimap.create();
 
         toCompatibleRoles(entryConcept)

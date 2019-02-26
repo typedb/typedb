@@ -19,11 +19,11 @@ recipe sub recipeBase;
 ingredient sub ingredientBase;
 allergenic-ingredient sub ingredientBase;
 
-requires sub relationship,
+requires sub relation,
     relates required-ingredient,
     relates requiring-recipe;
 
-containes sub relationship,
+containes sub relation,
     relates contained-ingredient,
     relates containing-pantry;
 

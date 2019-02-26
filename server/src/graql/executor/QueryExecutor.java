@@ -364,7 +364,7 @@ public class QueryExecutor {
         } else if (varProperty instanceof HasAttributeProperty) {
             validateHasAttributeProperty((HasAttributeProperty) varProperty);
         } else if (varProperty instanceof RelationProperty) {
-            validateRelationshipProperty((RelationProperty) varProperty, statement);
+            validateRelationProperty((RelationProperty) varProperty, statement);
         }
 
         varProperty.statements()
@@ -397,7 +397,7 @@ public class QueryExecutor {
         }
     }
 
-    private void validateRelationshipProperty(RelationProperty varProperty, Statement statement) {
+    private void validateRelationProperty(RelationProperty varProperty, Statement statement) {
         Set<Label> roleTypes = varProperty.relationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole).flatMap(CommonUtil::optionalToStream)
                 .map(Statement::getType).flatMap(CommonUtil::optionalToStream)

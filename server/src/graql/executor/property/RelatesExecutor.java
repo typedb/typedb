@@ -176,11 +176,11 @@ public class RelatesExecutor implements PropertyExecutor.Definable {
 
         @Override
         public void execute(WriteExecutor executor) {
-            RelationType relationshipType = executor.getConcept(var).asRelationType();
+            RelationType relationType = executor.getConcept(var).asRelationType();
             Role role = executor.getConcept(property.role().var()).asRole();
 
-            if (!relationshipType.isDeleted() && !role.isDeleted()) {
-                relationshipType.unrelate(role);
+            if (!relationType.isDeleted() && !role.isDeleted()) {
+                relationType.unrelate(role);
             }
         }
     }

@@ -118,7 +118,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), this.id().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), this.type().labelId().getValue()).
+                has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), this.type().labelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue()).
                 as("edge").
                 inV().
@@ -131,7 +131,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
 
         //Role player edge does not exist create a new one
         EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
-        edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, this.type().labelId().getValue());
+        edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, this.type().labelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.labelId().getValue());
         Casting casting = Casting.create(edge, owner, role, toThing);
         vertex().tx().cache().trackForValidation(casting);
@@ -147,7 +147,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
         if (roleSet.isEmpty()) {
             return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER).
-                    map(edge -> Casting.withRelationship(edge, owner));
+                    map(edge -> Casting.withRelation(edge, owner));
         }
 
         //Traversal is used so we can potentially optimise on the index
@@ -155,11 +155,11 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         return vertex().tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), id().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), type().labelId().getValue()).
+                has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().labelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).
                 toStream().
                 map(edge -> vertex().tx().factory().buildEdgeElement(edge)).
-                map(edge -> Casting.withRelationship(edge, owner));
+                map(edge -> Casting.withRelation(edge, owner));
     }
 
     @Override
@@ -185,10 +185,10 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
      * Sets the owner of this structure to a specific RelationImpl.
      * This is so that the internal structure can use the Relation reference;
      *
-     * @param relationship the owner of this RelationReified
+     * @param relation the owner of this RelationReified
      */
-    public void owner(RelationImpl relationship) {
-        owner = relationship;
+    public void owner(RelationImpl relation) {
+        owner = relation;
     }
 
     @Override
