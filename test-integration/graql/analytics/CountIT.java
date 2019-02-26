@@ -182,10 +182,10 @@ public class CountIT {
             Role resourceValue = tx.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
             name.plays(resourceValue);
 
-            RelationType relationshipType =
+            RelationType relationType =
                     tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                             .relates(resourceOwner).relates(resourceValue);
-            relationshipType.create()
+            relationType.create()
                     .assign(resourceOwner, aPerson)
                     .assign(resourceValue, jason);
             tx.commit();
@@ -238,11 +238,11 @@ public class CountIT {
             Role resourceValue = tx.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
             name.plays(resourceValue);
 
-            RelationType relationshipType =
+            RelationType relationType =
                     tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                             .relates(resourceOwner).relates(resourceValue);
             // here relation type is still implicit
-            relationshipType.create()
+            relationType.create()
                     .assign(resourceOwner, aPerson)
                     .assign(resourceValue, jason);
 

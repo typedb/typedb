@@ -376,13 +376,13 @@ public class AtomicTypeInferenceIT {
     private void typeInference(List<Type> possibleTypes, String pattern, TransactionOLTP tx){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, tx), tx);
         Atom atom = query.getAtom();
-        List<Type> relationshipTypes = atom.getPossibleTypes();
+        List<Type> relationTypes = atom.getPossibleTypes();
 
         if (possibleTypes.size() == 1){
-            assertEquals(possibleTypes, relationshipTypes);
+            assertEquals(possibleTypes, relationTypes);
             assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
         } else {
-            GraqlTestUtil.assertCollectionsNonTriviallyEqual(possibleTypes, relationshipTypes);
+            GraqlTestUtil.assertCollectionsNonTriviallyEqual(possibleTypes, relationTypes);
             assertEquals(atom.getSchemaConcept(), null);
         }
 
@@ -395,16 +395,16 @@ public class AtomicTypeInferenceIT {
         Atom atom = query.getAtom();
         Atom subbedAtom = subbedQuery.getAtom();
 
-        List<Type> relationshipTypes = atom.getPossibleTypes();
-        List<Type> subbedRelationshipTypes = subbedAtom.getPossibleTypes();
+        List<Type> relationTypes = atom.getPossibleTypes();
+        List<Type> subbedRelationTypes = subbedAtom.getPossibleTypes();
         if (possibleTypes.size() == 1){
-            assertEquals(possibleTypes, relationshipTypes);
-            assertEquals(relationshipTypes, subbedRelationshipTypes);
+            assertEquals(possibleTypes, relationTypes);
+            assertEquals(relationTypes, subbedRelationTypes);
             assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
             assertEquals(subbedAtom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
         } else {
-            GraqlTestUtil.assertCollectionsEqual(possibleTypes, relationshipTypes);
-            GraqlTestUtil.assertCollectionsEqual(relationshipTypes, subbedRelationshipTypes);
+            GraqlTestUtil.assertCollectionsEqual(possibleTypes, relationTypes);
+            GraqlTestUtil.assertCollectionsEqual(relationTypes, subbedRelationTypes);
 
             assertNull(atom.getSchemaConcept());
             assertNull(subbedAtom.getSchemaConcept());

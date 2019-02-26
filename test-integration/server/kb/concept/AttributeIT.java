@@ -204,9 +204,9 @@ public class AttributeIT {
 
         entity.has(attribute);
 
-        RelationStructure relationshipStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
-        assertThat(relationshipStructure, instanceOf(RelationEdge.class));
-        assertTrue("Edge Relationship id not starting with [" + Schema.PREFIX_EDGE + "]", relationshipStructure.id().getValue().startsWith(Schema.PREFIX_EDGE));
+        RelationStructure relationStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
+        assertThat(relationStructure, instanceOf(RelationEdge.class));
+        assertTrue("Edge Relation id not starting with [" + Schema.PREFIX_EDGE + "]", relationStructure.id().getValue().startsWith(Schema.PREFIX_EDGE));
         assertEquals(entity, attribute.owner());
         assertThat(entity.attributes().collect(toSet()), containsInAnyOrder(attribute));
     }
@@ -222,11 +222,11 @@ public class AttributeIT {
         RelationImpl relation = RelationImpl.from(entity.relations().iterator().next());
 
         //Check it's a relation edge.
-        RelationStructure relationshipStructureBefore = relation.structure();
-        assertThat(relationshipStructureBefore, instanceOf(RelationEdge.class));
+        RelationStructure relationStructureBefore = relation.structure();
+        assertThat(relationStructureBefore, instanceOf(RelationEdge.class));
 
         //Get the roles and role players via the relation edge:
-        Map<Role, Set<Thing>> allRolePlayerBefore = relationshipStructureBefore.allRolePlayers();
+        Map<Role, Set<Thing>> allRolePlayerBefore = relationStructureBefore.allRolePlayers();
 
         //Expand Schema to allow new role
         Role newRole = tx.putRole("My New Role");
@@ -238,21 +238,21 @@ public class AttributeIT {
         relation.assign(newRole, newEntity);
 
         //Check it's a relation reified now.
-        RelationStructure relationshipStructureAfter = relation.structure();
-        assertThat(relationshipStructureAfter, instanceOf(RelationReified.class));
+        RelationStructure relationStructureAfter = relation.structure();
+        assertThat(relationStructureAfter, instanceOf(RelationReified.class));
 
         //Check IDs are equal
-        assertEquals(relationshipStructureBefore.id(), relation.id());
-        assertEquals(relationshipStructureBefore.id(), relationshipStructureAfter.id());
+        assertEquals(relationStructureBefore.id(), relation.id());
+        assertEquals(relationStructureBefore.id(), relationStructureAfter.id());
 
         //Check Role Players have been transferred
-        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationshipStructureAfter.rolePlayers(role).collect(toSet())));
+        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationStructureAfter.rolePlayers(role).collect(toSet())));
 
         //Check Type Has Been Transferred
-        assertEquals(relationshipStructureBefore.type(), relationshipStructureAfter.type());
+        assertEquals(relationStructureBefore.type(), relationStructureAfter.type());
 
         //Check new role player has been added as well
-        assertEquals(newEntity, Iterables.getOnlyElement(relationshipStructureAfter.rolePlayers(newRole).collect(toSet())));
+        assertEquals(newEntity, Iterables.getOnlyElement(relationStructureAfter.rolePlayers(newRole).collect(toSet())));
     }
 
     @Test

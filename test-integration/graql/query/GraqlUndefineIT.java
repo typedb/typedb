@@ -250,7 +250,7 @@ public class GraqlUndefineIT {
     }
 
     @Test
-    public void whenUndefiningRelatesPropertyWithoutCommit_TheRelationshipTypeNoLongerRelatesTheRole() {
+    public void whenUndefiningRelatesPropertyWithoutCommit_TheRelationTypeNoLongerRelatesTheRole() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(RELATION).relates("actor")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
@@ -287,7 +287,7 @@ public class GraqlUndefineIT {
     }
 
     @Test
-    public void undefineRelationshipAndRoles() {
+    public void undefineRelationAndRoles() {
         tx.execute(Graql.define(type("employment").sub("relation").relates("employee")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
@@ -328,7 +328,7 @@ public class GraqlUndefineIT {
     }
 
     @Test
-    public void undefineTypeAndTheirAttributeAndRolesAndRelationships() {
+    public void undefineTypeAndTheirAttributeAndRolesAndRelations() {
         Collection<Statement> schema = ImmutableList.of(
                 type("pokemon").sub(ENTITY).has("pokedex-no").plays("ancestor").plays("descendant"),
                 type("pokedex-no").sub(ATTRIBUTE).datatype(Graql.Token.DataType.LONG),

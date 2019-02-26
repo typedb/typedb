@@ -105,18 +105,18 @@ public class SchemaConceptIT {
 
         entityType.has(attributeType);
 
-        RelationType relationshipType = tx.getRelationType(hasResourceLabel.getValue());
-        Assert.assertEquals(hasResourceLabel, relationshipType.label());
+        RelationType relationType = tx.getRelationType(hasResourceLabel.getValue());
+        Assert.assertEquals(hasResourceLabel, relationType.label());
 
-        Set<Label> roleLabels = relationshipType.roles().map(SchemaConcept::label).collect(toSet());
+        Set<Label> roleLabels = relationType.roles().map(SchemaConcept::label).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
         assertThat(entityType.playing().collect(toSet()), containsInAnyOrder(tx.getRole(hasResourceOwnerLabel.getValue())));
         assertThat(attributeType.playing().collect(toSet()), containsInAnyOrder(tx.getRole(hasResourceValueLabel.getValue())));
 
         //Check everything is implicit
-        assertTrue(relationshipType.isImplicit());
-        relationshipType.roles().forEach(role -> assertTrue(role.isImplicit()));
+        assertTrue(relationType.isImplicit());
+        relationType.roles().forEach(role -> assertTrue(role.isImplicit()));
 
         // Check that resource is not required
         EdgeElement entityPlays = ((EntityTypeImpl) entityType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();

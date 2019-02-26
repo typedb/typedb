@@ -190,7 +190,7 @@ public class SchemaMutationIT {
         Attribute<String> puppy = name.create("puppy");
         dog.create().has(puppy);
 
-        //Get The Relationship which says that our dog is name puppy
+        //Get The Relation which says that our dog is name puppy
         Relation expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
         Role hasNameOwner = tx.getRole("@has-name-owner");
 

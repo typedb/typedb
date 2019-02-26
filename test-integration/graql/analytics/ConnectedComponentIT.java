@@ -234,7 +234,7 @@ public class ConnectedComponentIT {
             Set<String> subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
                     resourceType3, resourceType4, resourceType5, resourceType6);
             clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).in(subTypes));
-            assertEquals(17, clusterList.size()); // No relationships, so this is the entity count;
+            assertEquals(17, clusterList.size()); // No relations, so this is the entity count;
         }
     }
 
@@ -279,15 +279,15 @@ public class ConnectedComponentIT {
             Role role2 = tx.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationshipType = tx.putRelationType(related).relates(role1).relates(role2);
+            RelationType relationType = tx.putRelationType(related).relates(role1).relates(role2);
 
-            relationshipType.create()
+            relationType.create()
                     .assign(role1, entity1)
                     .assign(role2, entity2).id();
-            relationshipType.create()
+            relationType.create()
                     .assign(role1, entity2)
                     .assign(role2, entity3).id();
-            relationshipType.create()
+            relationType.create()
                     .assign(role1, entity2)
                     .assign(role2, entity4).id();
 

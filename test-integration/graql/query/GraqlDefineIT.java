@@ -464,7 +464,7 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenDefiningARelationship_SubRoleDeclarationsCanBeSkipped() {
+    public void whenDefiningARelation_SubRoleDeclarationsCanBeSkipped() {
         tx.execute(Graql.define(type("marriage").sub(type(RELATION.getLabel().getValue())).relates("husband").relates("wife")));
 
         RelationType marriage = tx.getRelationType("marriage");
@@ -474,7 +474,7 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenDefiningARelationship_SubRoleCasUseAs() {
+    public void whenDefiningARelation_SubRoleCasUseAs() {
         tx.execute(Graql.define(type("parentship").sub(type(RELATION.getLabel().getValue()))
                           .relates("parent")
                           .relates("child")));
@@ -501,7 +501,7 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenDefiningARelationship_SubRoleDeclarationsCanBeSkipped_EvenWhenRoleInReferredToInOtherContexts() {
+    public void whenDefiningARelation_SubRoleDeclarationsCanBeSkipped_EvenWhenRoleInReferredToInOtherContexts() {
         tx.execute(Graql.define(
                 type("marriage").sub(type(RELATION.getLabel().getValue())).relates("husband").relates("wife"),
                 type("person").plays("husband").plays("wife")
@@ -517,7 +517,7 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenDefiningARelationshipWithNonRoles_Throw() {
+    public void whenDefiningARelationWithNonRoles_Throw() {
         exception.expect(GraknException.class);
 
         tx.execute(Graql.define(

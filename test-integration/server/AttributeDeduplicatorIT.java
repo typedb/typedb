@@ -278,7 +278,7 @@ public class AttributeDeduplicatorIT {
             tx.commit();
         }
 
-        // insert relationships, each having an attribute as one of the role player
+        // insert relations, each having an attribute as one of the role player
         try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.insert(
                     var("erp").isa("owned-entity"), var("arp").isa(ownedAttributeLabel).val(ownedAttributeValue),

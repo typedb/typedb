@@ -609,11 +609,11 @@ public class NegationIT {
     }
 
     private boolean thingsRelated(Map<Thing, Role> thingMap, Label relation, Transaction tx){
-        RelationType relationshipType = tx.getRelationType(relation.getValue());
-        boolean inferrable = relationshipType.subs().flatMap(SchemaConcept::thenRules).findFirst().isPresent();
+        RelationType relationType = tx.getRelationType(relation.getValue());
+        boolean inferrable = relationType.subs().flatMap(SchemaConcept::thenRules).findFirst().isPresent();
 
         if (!inferrable){
-            return relationshipType
+            return relationType
                     .instances()
                     .anyMatch(r -> thingMap.entrySet().stream().allMatch(e -> r.rolePlayers(e.getValue()).anyMatch(rp -> rp.equals(e.getKey()))));
         }

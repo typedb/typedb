@@ -362,7 +362,7 @@ public class GraqlInsertIT {
     }
 
     @Test
-    public void whenAddingAnAttributeRelationshipWithProvenance_TheAttributeAndProvenanceAreAdded() {
+    public void whenAddingAnAttributeRelationWithProvenance_TheAttributeAndProvenanceAreAdded() {
         GraqlInsert query = Graql.insert(
                 y.has("provenance", z.val("Someone told me")),
                 w.isa("movie").has(title, x.val("My Movie"), y)
@@ -380,7 +380,7 @@ public class GraqlInsertIT {
     }
 
     @Test
-    public void whenAddingProvenanceToAnExistingRelationship_TheProvenanceIsAdded() {
+    public void whenAddingProvenanceToAnExistingRelation_TheProvenanceIsAdded() {
         GraqlInsert query = Graql.match(w.isa("movie").has(title, x.val("The Muppets"), y))
                 .insert(x, w, y.has("provenance", z.val("Someone told me")));
 
@@ -501,14 +501,14 @@ public class GraqlInsertIT {
         Thing cluster = results.get(0).get("c").asThing();
         Thing godfather = results.get(0).get("g").asThing();
         Thing muppets = results.get(0).get("m").asThing();
-        Relation relationship = results.get(0).get("r").asRelation();
+        Relation relation = results.get(0).get("r").asRelation();
 
         Role clusterOfProduction = tx.getRole("cluster-of-production");
         Role productionWithCluster = tx.getRole("production-with-cluster");
 
-        assertEquals(relationship.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
-        assertEquals(relationship.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
-        assertEquals(relationship.rolePlayers(productionWithCluster).collect(toSet()), ImmutableSet.of(godfather, muppets));
+        assertEquals(relation.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
+        assertEquals(relation.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
+        assertEquals(relation.rolePlayers(productionWithCluster).collect(toSet()), ImmutableSet.of(godfather, muppets));
     }
 
     @Test
