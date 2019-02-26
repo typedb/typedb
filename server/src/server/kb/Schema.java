@@ -31,6 +31,7 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
+import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
@@ -83,12 +84,12 @@ public final class Schema {
      * The concepts which represent our internal schema
      */
     public enum MetaSchema {
-        THING("thing", 1),
-        ENTITY("entity", 2),
-        ROLE("role", 3),
-        ATTRIBUTE("attribute", 4),
-        RELATION("relation", 5),
-        RULE("rule", 6);
+        THING(Graql.Token.Type.THING.toString(), 1),
+        ENTITY(Graql.Token.Type.ENTITY.toString(), 2),
+        ROLE(Graql.Token.Type.ROLE.toString(), 3),
+        ATTRIBUTE(Graql.Token.Type.ATTRIBUTE.toString(), 4),
+        RELATION(Graql.Token.Type.RELATION.toString(), 5),
+        RULE(Graql.Token.Type.RULE.toString(), 6);
 
         private final Label label;
         private final LabelId id;

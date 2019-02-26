@@ -36,7 +36,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.server.kb.Schema;
+import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -330,7 +330,7 @@ public interface Transaction extends AutoCloseable {
      */
     @CheckReturnValue
     default grakn.core.concept.type.Type getMetaConcept() {
-        return getSchemaConcept(Schema.MetaSchema.THING.getLabel());
+        return getSchemaConcept(Label.of(Graql.Token.Type.THING.toString()));
     }
 
     /**
@@ -340,7 +340,7 @@ public interface Transaction extends AutoCloseable {
      */
     @CheckReturnValue
     default RelationType getMetaRelationType() {
-        return getSchemaConcept(Schema.MetaSchema.RELATION.getLabel());
+        return getSchemaConcept(Label.of(Graql.Token.Type.RELATION.toString()));
     }
 
     /**
@@ -350,7 +350,7 @@ public interface Transaction extends AutoCloseable {
      */
     @CheckReturnValue
     default Role getMetaRole() {
-        return getSchemaConcept(Schema.MetaSchema.ROLE.getLabel());
+        return getSchemaConcept(Label.of(Graql.Token.Type.ROLE.toString()));
     }
 
     /**
@@ -360,7 +360,7 @@ public interface Transaction extends AutoCloseable {
      */
     @CheckReturnValue
     default AttributeType getMetaAttributeType() {
-        return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getLabel());
+        return getSchemaConcept(Label.of(Graql.Token.Type.ATTRIBUTE.toString()));
     }
 
     /**
@@ -370,7 +370,7 @@ public interface Transaction extends AutoCloseable {
      */
     @CheckReturnValue
     default EntityType getMetaEntityType() {
-        return getSchemaConcept(Schema.MetaSchema.ENTITY.getLabel());
+        return getSchemaConcept(Label.of(Graql.Token.Type.ENTITY.toString()));
     }
 
     /**
@@ -380,7 +380,7 @@ public interface Transaction extends AutoCloseable {
      */
     @CheckReturnValue
     default Rule getMetaRule() {
-        return getSchemaConcept(Schema.MetaSchema.RULE.getLabel());
+        return getSchemaConcept(Label.of(Graql.Token.Type.RULE.toString()));
     }
 
     //------------------------------------- Admin Specific Operations ----------------------------------
