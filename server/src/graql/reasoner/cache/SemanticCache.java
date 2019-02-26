@@ -99,7 +99,7 @@ public abstract class SemanticCache<
 
     private CacheEntry<ReasonerAtomicQuery, SE> addEntry(CacheEntry<ReasonerAtomicQuery, SE> entry){
         CacheEntry<ReasonerAtomicQuery, SE> cacheEntry = putEntry(entry);
-        ReasonerAtomicQuery query = entry.query();
+        ReasonerAtomicQuery query = cacheEntry.query();
         updateFamily(query);
         computeParents(query);
         propagateAnswersToQuery(query, cacheEntry, query.isGround());
