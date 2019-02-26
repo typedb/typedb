@@ -527,8 +527,6 @@ public class RuleIT {
 
             tx.commit();
         }
-
-        session.clearGraph();
     }
 
     @Test
@@ -569,8 +567,6 @@ public class RuleIT {
 
             tx.commit();
         }
-
-        session.clearGraph();
     }
 
     @Test
@@ -612,7 +608,6 @@ public class RuleIT {
             expected1.forEach(Concept::delete);
             tx.commit();
         }
-        session.clearGraph();
     }
 
     @Test
@@ -698,8 +693,6 @@ public class RuleIT {
             assertThat(rule.whenTypes().collect(Collectors.toSet()), containsInAnyOrder(t1));
             assertThat(rule.thenTypes().collect(Collectors.toSet()), containsInAnyOrder(t2));
         }
-
-        session.clearGraph();
     }
 
     @Test
@@ -732,8 +725,6 @@ public class RuleIT {
             assertEquals(rule.whenNegativeTypes().collect(Collectors.toSet()), Sets.newHashSet(r, s));
             assertThat(rule.thenTypes().collect(Collectors.toSet()), containsInAnyOrder(t));
         }
-
-        session.clearGraph();
     }
 
     @Test
@@ -778,8 +769,6 @@ public class RuleIT {
             assertEquals(s.thenRules().collect(Collectors.toSet()), Sets.newHashSet(rule));
             assertEquals(t.thenRules().collect(Collectors.toSet()), Sets.newHashSet(rule2));
         }
-
-        session.clearGraph();
     }
 
     @Test
@@ -851,7 +840,6 @@ public class RuleIT {
             tx.putRule(UUID.randomUUID().toString(), when, then);
             tx.commit();
         }
-        session.clearGraph();
     }
 
     private void initTx(Transaction tx){
