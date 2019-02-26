@@ -20,8 +20,8 @@ package grakn.core.server.rpc;
 
 import grakn.core.protocol.SessionProto;
 import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.SessionFactory;
+import grakn.core.server.session.SessionImpl;
 
 /**
  * A request transaction opener for RPC Services. It requires the keyspace and transaction type from the argument object
