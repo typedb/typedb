@@ -123,6 +123,7 @@ public class GraknClientIT {
     public void tearDown() {
         localSession.close();
         remoteSession.close();
+        graknClient.keyspaces().delete(localSession.keyspace().name());
         graknClient.close();
     }
 
@@ -943,29 +944,6 @@ public class GraknClientIT {
     }
 
 
-    @Ignore("(waiting for keyspaces.retrieve())")
-    @Test
-    public void testDeletingAKeyspace_TheKeyspaceIsDeleted() {
-        GraknClient client = graknClient;
-        Session localSession = server.sessionWithNewKeyspace();
-        String keyspace = localSession.keyspace().name();
-        GraknClient.Session remoteSession = client.session(keyspace);
-
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
-            tx.putEntityType("easter");
-            tx.commit();
-        }
-        localSession.close();
-
-        try (GraknClient.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
-            assertNotNull(tx.getEntityType("easter"));
-            client.keyspaces().delete(tx.keyspace().name());
-        }
-        remoteSession.close();
-
-//        assertTrue(client.keyspaces().retrieve().contains(keyspace));
-    }
-
     @Test
     public void testDeletingAKeyspace_TheKeyspaceIsRecreatedInNewSession() {
         GraknClient client = graknClient;
@@ -1134,5 +1112,32 @@ public class GraknClientIT {
             Attribute<LocalDateTime> dateAttribute = birthDateType.create(date);
             assertEquals(date, dateAttribute.value());
         }
+    }
+
+    @Test
+    public void retrievingExistingKeyspaces_onlyRemoteSessionKeyspaceIsReturned(){
+        List<String> keyspaces = graknClient.keyspaces().retrieve();
+        assertTrue(keyspaces.contains(remoteSession.keyspace().name()));
+    }
+
+    @Test
+    public void whenCreatingNewKeyspace_itIsVisibileInListOfExistingKeyspaces(){
+        graknClient.session("newkeyspace").transaction(Transaction.Type.WRITE).close();
+        List<String> keyspaces = graknClient.keyspaces().retrieve();
+
+        assertTrue(keyspaces.contains("newkeyspace"));
+    }
+
+    @Test
+    public void whenDeletingKeyspace_notListedInExistingKeyspaces(){
+        graknClient.session("newkeyspace").transaction(Transaction.Type.WRITE).close();
+        List<String> keyspaces = graknClient.keyspaces().retrieve();
+
+        assertTrue(keyspaces.contains("newkeyspace"));
+
+        graknClient.keyspaces().delete("newkeyspace");
+        List<String> keyspacesNoNew = graknClient.keyspaces().retrieve();
+
+        assertFalse(keyspacesNoNew.contains("newkeyspace"));
     }
 }

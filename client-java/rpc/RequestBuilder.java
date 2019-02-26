@@ -273,5 +273,9 @@ public class RequestBuilder {
         public static KeyspaceProto.Keyspace.Delete.Req delete(String name) {
             return KeyspaceProto.Keyspace.Delete.Req.newBuilder().setName(name).build();
         }
+
+        public static KeyspaceProto.Keyspace.Retrieve.Req retrieve() {
+            return KeyspaceProto.Keyspace.Retrieve.Req.newBuilder().build();
+        }
     }
 }
