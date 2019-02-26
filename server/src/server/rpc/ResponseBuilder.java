@@ -114,7 +114,7 @@ public class ResponseBuilder {
             return SessionProto.Transaction.Res.newBuilder().setPutAttributeTypeRes(res).build();
         }
 
-        static SessionProto.Transaction.Res putRelationshipType(grakn.core.concept.Concept concept) {
+        static SessionProto.Transaction.Res putRelationType(grakn.core.concept.Concept concept) {
             SessionProto.Transaction.PutRelationType.Res.Builder res = SessionProto.Transaction.PutRelationType.Res.newBuilder()
                     .setRelationType(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRelationTypeRes(res).build();

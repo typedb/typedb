@@ -31,7 +31,7 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.OntologicalAtom;
-import grakn.core.graql.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
@@ -66,8 +66,8 @@ public abstract class Atom extends AtomicBase {
 
     private Set<InferenceRule> applicableRules = null;
 
-    public RelationshipAtom toRelationshipAtom() {
-        throw GraqlQueryException.illegalAtomConversion(this, RelationshipAtom.class);
+    public RelationAtom toRelationAtom() {
+        throw GraqlQueryException.illegalAtomConversion(this, RelationAtom.class);
     }
 
     public IsaAtom toIsaAtom() {

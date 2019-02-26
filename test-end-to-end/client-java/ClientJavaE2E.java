@@ -158,7 +158,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             String[] familyMembers = lionNames();
-            LOG.info("clientJavaE2E() - inserting mating relationships...");
+            LOG.info("clientJavaE2E() - inserting mating relations...");
             GraqlInsert insertMatingQuery = Graql.match(
                             var("lion").isa("lion").has("name", familyMembers[0]),
                             var("lioness").isa("lion").has("name", familyMembers[1]))
@@ -166,7 +166,7 @@ public class ClientJavaE2E {
             LOG.info("clientJavaE2E() - '" + insertMatingQuery + "'");
             List<ConceptMap> insertedMating = tx.execute(insertMatingQuery);
 
-            LOG.info("clientJavaE2E() - inserting child-bearing relationships...");
+            LOG.info("clientJavaE2E() - inserting child-bearing relations...");
             GraqlInsert insertChildBearingQuery = Graql.match(
                             var("lion").isa("lion").has("name", familyMembers[0]),
                             var("lioness").isa("lion").has("name", familyMembers[1]),
@@ -192,7 +192,7 @@ public class ClientJavaE2E {
             List<String> insertedNames = insertedLions.stream().map(answer -> answer.get("n").asAttribute().value().toString()).collect(Collectors.toList());
             assertThat(insertedNames, containsInAnyOrder(lionNames()));
 
-            LOG.info("clientJavaE2E() - execute match get on the mating relationships...");
+            LOG.info("clientJavaE2E() - execute match get on the mating relations...");
             GraqlGet getMatingQuery = Graql.match(var().isa("mating")).get();
             LOG.info("clientJavaE2E() - '" + getMatingQuery + "'");
             List<ConceptMap> insertedMating = tx.execute(getMatingQuery);
@@ -207,7 +207,7 @@ public class ClientJavaE2E {
         });
 
         localhostGraknTx(tx -> {
-            LOG.info("clientJavaE2E() - match get inferred relationships...");
+            LOG.info("clientJavaE2E() - match get inferred relations...");
             GraqlGet getParentship = Graql.match(
                     var("parentship")
                             .isa("parentship")

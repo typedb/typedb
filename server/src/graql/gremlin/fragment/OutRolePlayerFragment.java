@@ -85,7 +85,7 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
         traverseToRole(edgeTraversal, role(), roleProperty, vars);
 
-        // Identify the relation - role-player pair by combining the relationship edge and direction into a map
+        // Identify the relation - role-player pair by combining the relation edge and direction into a map
         edgeTraversal.as(RELATION_EDGE.symbol()).constant(direction).as(RELATION_DIRECTION.symbol());
         edgeTraversal.select(Pop.last, RELATION_EDGE.symbol(), RELATION_DIRECTION.symbol()).as(edge().symbol()).select(RELATION_EDGE.symbol());
 

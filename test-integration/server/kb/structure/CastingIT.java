@@ -81,7 +81,7 @@ public class CastingIT {
         castings.forEach(rolePlayer -> {
             assertEquals(e1, rolePlayer.getRolePlayer());
             assertEquals(role1, rolePlayer.getRole());
-            assertEquals(relationshipType, rolePlayer.getRelationshipType());
+            assertEquals(relationshipType, rolePlayer.getRelationType());
             assertEquals(relation, rolePlayer.getRelation());
         });
     }

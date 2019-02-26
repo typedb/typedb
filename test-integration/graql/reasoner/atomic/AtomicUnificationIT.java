@@ -28,7 +28,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
@@ -354,7 +354,7 @@ public class AtomicUnificationIT {
                 tx)
                 .rewrite(parentAtom);
 
-        RelationshipAtom headAtom = (RelationshipAtom) testRule.getHead().getAtom();
+        RelationAtom headAtom = (RelationAtom) testRule.getHead().getAtom();
         Variable headVarName = headAtom.getVarName();
 
         Unifier unifier = Iterables.getOnlyElement(testRule.getMultiUnifier(parentAtom));
@@ -446,7 +446,7 @@ public class AtomicUnificationIT {
     }
 
     private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMAp, TransactionOLTP tx){
-        RelationshipAtom atom = (RelationshipAtom) ReasonerQueries.atomic(conjunction(patternString, tx), tx).getAtom();
+        RelationAtom atom = (RelationAtom) ReasonerQueries.atomic(conjunction(patternString, tx), tx).getAtom();
         Multimap<Role, Variable> roleMap = roleSetMap(atom.getRoleVarMap());
         assertEquals(expectedRoleMAp, roleMap);
 

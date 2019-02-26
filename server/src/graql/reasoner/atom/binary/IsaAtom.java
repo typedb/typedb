@@ -154,7 +154,7 @@ public abstract class IsaAtom extends IsaAtomBase {
         if (sub.containsVar(getPredicateVariable())) return ImmutableList.of(sub.get(getPredicateVariable()).asType());
 
         //determine compatible types from played roles
-        Set<Type> typesFromRoles = getParentQuery().getAtoms(RelationshipAtom.class)
+        Set<Type> typesFromRoles = getParentQuery().getAtoms(RelationAtom.class)
                 .filter(r -> r.getVarNames().contains(getVarName()))
                 .flatMap(r -> r.getRoleVarMap().entries().stream()
                         .filter(e -> e.getValue().equals(getVarName()))

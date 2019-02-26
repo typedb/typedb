@@ -22,8 +22,6 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.RelationType;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
@@ -110,15 +108,15 @@ public class ConceptMethod {
             case ENTITYTYPE_CREATE_REQ:
                 return con.asEntityType().create();
 
-            // RelationshipType methods
+            // RelationType methods
             case RELATIONTYPE_CREATE_REQ:
-                return con.asRelationshipType().create();
+                return con.asRelationType().create();
             case RELATIONTYPE_ROLES_REQ:
-                return con.asRelationshipType().roles();
+                return con.asRelationType().roles();
             case RELATIONTYPE_RELATES_REQ:
-                return con.asRelationshipType().relates(req.getRelationTypeRelatesReq().getRole());
+                return con.asRelationType().relates(req.getRelationTypeRelatesReq().getRole());
             case RELATIONTYPE_UNRELATE_REQ:
-                return con.asRelationshipType().unrelate(req.getRelationTypeUnrelateReq().getRole());
+                return con.asRelationType().unrelate(req.getRelationTypeUnrelateReq().getRole());
 
             // AttributeType methods
             case ATTRIBUTETYPE_CREATE_REQ:
@@ -150,15 +148,15 @@ public class ConceptMethod {
             case THING_UNHAS_REQ:
                 return con.asThing().unhas(req.getThingUnhasReq().getAttribute());
 
-            // Relationship methods
+            // Relation methods
             case RELATION_ROLEPLAYERSMAP_REQ:
-                return con.asRelationship().rolePlayersMap();
+                return con.asRelation().rolePlayersMap();
             case RELATION_ROLEPLAYERS_REQ:
-                return con.asRelationship().rolePlayers(req.getRelationRolePlayersReq().getRolesList());
+                return con.asRelation().rolePlayers(req.getRelationRolePlayersReq().getRolesList());
             case RELATION_ASSIGN_REQ:
-                return con.asRelationship().assign(req.getRelationAssignReq());
+                return con.asRelation().assign(req.getRelationAssignReq());
             case RELATION_UNASSIGN_REQ:
-                return con.asRelationship().unassign(req.getRelationUnassignReq());
+                return con.asRelation().unassign(req.getRelationUnassignReq());
 
             // Attribute Methods
             case ATTRIBUTE_VALUE_REQ:
@@ -215,8 +213,8 @@ public class ConceptMethod {
             return new EntityType();
         }
 
-        RelationshipType asRelationshipType() {
-            return new RelationshipType();
+        RelationType asRelationType() {
+            return new RelationType();
         }
 
         AttributeType asAttributeType() {
@@ -227,8 +225,8 @@ public class ConceptMethod {
             return new Thing();
         }
 
-        Relationship asRelationship() {
-            return new Relationship();
+        Relation asRelation() {
+            return new Relation();
         }
 
         Attribute asAttribute() {
@@ -394,7 +392,7 @@ public class ConceptMethod {
         private class Role {
 
             private Transaction.Res relations() {
-                Stream<RelationType> concepts = concept.asRole().relations();
+                Stream<grakn.core.concept.type.RelationType> concepts = concept.asRole().relations();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -576,16 +574,16 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link RelationType}
+         * A utility class to execute methods on {@link grakn.core.concept.type.RelationType}
          */
-        private class RelationshipType {
+        private class RelationType {
 
             private Transaction.Res create() {
-                Relation relationship = concept.asRelationType().create();
+                grakn.core.concept.thing.Relation relation = concept.asRelationType().create();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRelationTypeCreateRes(ConceptProto.RelationType.Create.Res.newBuilder()
-                                                          .setRelation(ResponseBuilder.Concept.concept(relationship))).build();
+                                                          .setRelation(ResponseBuilder.Concept.concept(relation))).build();
 
                 return transactionRes(response);
             }
@@ -777,7 +775,7 @@ public class ConceptMethod {
                 grakn.core.concept.type.Role[] roles = protoRoles.stream()
                         .map(rpcConcept -> convert(rpcConcept))
                         .toArray(grakn.core.concept.type.Role[]::new);
-                Stream<Relation> concepts = concept.asThing().relations(roles);
+                Stream<grakn.core.concept.thing.Relation> concepts = concept.asThing().relations(roles);
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -814,11 +812,11 @@ public class ConceptMethod {
 
             private Transaction.Res relhas(ConceptProto.Concept protoAttribute) {
                 grakn.core.concept.thing.Attribute<?> attribute = convert(protoAttribute).asAttribute();
-                Relation relationship = ConceptHolder.this.concept.asThing().relhas(attribute);
+                grakn.core.concept.thing.Relation relation = ConceptHolder.this.concept.asThing().relhas(attribute);
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingRelhasRes(ConceptProto.Thing.Relhas.Res.newBuilder()
-                                                   .setRelation(ResponseBuilder.Concept.concept(relationship))).build();
+                                                   .setRelation(ResponseBuilder.Concept.concept(relation))).build();
 
                 return transactionRes(response);
             }
@@ -831,9 +829,9 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link Relation}
+         * A utility class to execute methods on {@link grakn.core.concept.thing.Relation}
          */
-        private class Relationship {
+        private class Relation {
 
             private Transaction.Res rolePlayersMap() {
                 Map<grakn.core.concept.type.Role, Set<grakn.core.concept.thing.Thing>> rolePlayersMap = concept.asRelation().rolePlayersMap();

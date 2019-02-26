@@ -343,7 +343,7 @@ public class RelationIT {
         Relation relationship = relationshipType.create();
 
         expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATIONSHIP_WITH_NO_ROLE_PLAYERS.getMessage(relationship.id(), relationship.type().label())));
+        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_WITH_NO_ROLE_PLAYERS.getMessage(relationship.id(), relationship.type().label())));
 
         tx.commit();
     }

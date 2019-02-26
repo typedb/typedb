@@ -185,7 +185,7 @@ public class GraknConsoleIT {
     }
 
     @Test
-    public void when_writingRelationships_expect_dataIsWritten() throws Exception {
+    public void when_writingRelations_expect_dataIsWritten() throws Exception {
         assertConsoleSessionMatches(
                 "define name sub attribute, datatype string;",
                 anything(),

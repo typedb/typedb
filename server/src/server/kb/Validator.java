@@ -57,16 +57,16 @@ public class Validator {
         //Validate Things
         graknGraph.cache().getModifiedThings().forEach(this::validateThing);
 
-        //Validate Relationships
-        graknGraph.cache().getNewRelationships().forEach(this::validateRelationship);
+        //Validate Relations
+        graknGraph.cache().getNewRelations().forEach(this::validateRelation);
 
         //Validate RoleTypes
         graknGraph.cache().getModifiedRoles().forEach(this::validateRole);
         //Validate Role Players
         graknGraph.cache().getModifiedCastings().forEach(this::validateCasting);
 
-        //Validate Relationship Types
-        graknGraph.cache().getModifiedRelationshipTypes().forEach(this::validateRelationType);
+        //Validate Relation Types
+        graknGraph.cache().getModifiedRelationTypes().forEach(this::validateRelationType);
 
         //Validate Rules
         graknGraph.cache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
@@ -120,11 +120,11 @@ public class Validator {
     /**
      * Validation rules exclusive to relation types
      *
-     * @param relationshipType The relationTypes to validate
+     * @param relationType The relationTypes to validate
      */
-    private void validateRelationType(RelationType relationshipType) {
-        ValidateGlobalRules.validateHasMinimumRoles(relationshipType).ifPresent(errorsFound::add);
-        errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationshipType));
+    private void validateRelationType(RelationType relationType) {
+        ValidateGlobalRules.validateHasMinimumRoles(relationType).ifPresent(errorsFound::add);
+        errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationType));
     }
 
     /**
@@ -139,9 +139,9 @@ public class Validator {
     /**
      * Validates that Relations can be committed.
      *
-     * @param relationship The Relation to validate
+     * @param relation The Relation to validate
      */
-    private void validateRelationship(Relation relationship) {
-        ValidateGlobalRules.validateRelationshipHasRolePlayers(relationship).ifPresent(errorsFound::add);
+    private void validateRelation(Relation relation) {
+        ValidateGlobalRules.validateRelationHasRolePlayers(relation).ifPresent(errorsFound::add);
     }
 }

@@ -113,9 +113,9 @@ public class GreedyTraversalPlan {
         final Set<Fragment> allFragments = query.getEquivalentFragmentSets().stream()
                 .flatMap(EquivalentFragmentSet::stream).collect(Collectors.toSet());
 
-        // if role p[ayers' types are known, we can infer the types of the relationship
+        // if role p[ayers' types are known, we can infer the types of the relation
         // then add a label fragment to the fragment set
-        inferRelationshipTypes(tx, allFragments);
+        inferRelationTypes(tx, allFragments);
 
         // it's possible that some (or all) fragments are disconnect
         // e.g. $x isa person; $y isa dog;
@@ -194,38 +194,38 @@ public class GreedyTraversalPlan {
         return plan;
     }
 
-    // infer type of relationship type if we know the type of the role players
+    // infer type of relation type if we know the type of the role players
     // add label fragment and isa fragment if we can infer any
-    private static void inferRelationshipTypes(TransactionOLTP tx, Set<Fragment> allFragments) {
+    private static void inferRelationTypes(TransactionOLTP tx, Set<Fragment> allFragments) {
 
         Map<Variable, Type> labelVarTypeMap = getLabelVarTypeMap(tx, allFragments);
         if (labelVarTypeMap.isEmpty()) return;
 
         Multimap<Variable, Type> instanceVarTypeMap = getInstanceVarTypeMap(allFragments, labelVarTypeMap);
 
-        Multimap<Variable, Variable> relationshipRolePlayerMap = getRelationshipRolePlayerMap(allFragments, instanceVarTypeMap);
-        if (relationshipRolePlayerMap.isEmpty()) return;
+        Multimap<Variable, Variable> relationRolePlayerMap = getRelationRolePlayerMap(allFragments, instanceVarTypeMap);
+        if (relationRolePlayerMap.isEmpty()) return;
 
-        // for each type, get all possible relationship type it could be in
-        Multimap<Type, RelationType> relationshipMap = HashMultimap.create();
+        // for each type, get all possible relation type it could be in
+        Multimap<Type, RelationType> relationMap = HashMultimap.create();
         labelVarTypeMap.values().stream().distinct().forEach(
-                type -> addAllPossibleRelationships(relationshipMap, type));
+                type -> addAllPossibleRelations(relationMap, type));
 
         // inferred labels should be kept separately, even if they are already in allFragments set
         Map<Label, Statement> inferredLabels = new HashMap<>();
-        relationshipRolePlayerMap.asMap().forEach((relationshipVar, rolePlayerVars) -> {
+        relationRolePlayerMap.asMap().forEach((relationVar, rolePlayerVars) -> {
 
-            Set<Type> possibleRelationshipTypes = rolePlayerVars.stream()
+            Set<Type> possibleRelationTypes = rolePlayerVars.stream()
                     .filter(instanceVarTypeMap::containsKey)
-                    .map(rolePlayer -> getAllPossibleRelationshipTypes(
-                            instanceVarTypeMap.get(rolePlayer), relationshipMap))
+                    .map(rolePlayer -> getAllPossibleRelationTypes(
+                            instanceVarTypeMap.get(rolePlayer), relationMap))
                     .reduce(Sets::intersection).orElse(Collections.emptySet());
 
-            //TODO: if possibleRelationshipTypes here is empty, the query will not match any data
-            if (possibleRelationshipTypes.size() == 1) {
+            //TODO: if possibleRelationTypes here is empty, the query will not match any data
+            if (possibleRelationTypes.size() == 1) {
 
-                Type relationshipType = possibleRelationshipTypes.iterator().next();
-                Label label = relationshipType.label();
+                Type relationType = possibleRelationTypes.iterator().next();
+                Label label = relationType.label();
 
                 // add label fragment if this label has not been inferred
                 if (!inferredLabels.containsKey(label)) {
@@ -239,31 +239,31 @@ public class GreedyTraversalPlan {
                 Statement labelVar = inferredLabels.get(label);
                 IsaProperty isaProperty = new IsaProperty(labelVar);
                 EquivalentFragmentSet isaEquivalentFragmentSet = EquivalentFragmentSets.isa(isaProperty,
-                        relationshipVar, labelVar.var(), relationshipType.isImplicit());
+                        relationVar, labelVar.var(), relationType.isImplicit());
                 allFragments.addAll(isaEquivalentFragmentSet.fragments());
             }
         });
     }
 
-    private static Multimap<Variable, Variable> getRelationshipRolePlayerMap(
+    private static Multimap<Variable, Variable> getRelationRolePlayerMap(
             Set<Fragment> allFragments, Multimap<Variable, Type> instanceVarTypeMap) {
-        // relationship vars and its role player vars
-        Multimap<Variable, Variable> relationshipRolePlayerMap = HashMultimap.create();
+        // relation vars and its role player vars
+        Multimap<Variable, Variable> relationRolePlayerMap = HashMultimap.create();
         allFragments.stream().filter(OutRolePlayerFragment.class::isInstance)
-                .forEach(fragment -> relationshipRolePlayerMap.put(fragment.start(), fragment.end()));
+                .forEach(fragment -> relationRolePlayerMap.put(fragment.start(), fragment.end()));
 
-        // find all the relationships requiring type inference
-        Iterator<Variable> iterator = relationshipRolePlayerMap.keySet().iterator();
+        // find all the relation requiring type inference
+        Iterator<Variable> iterator = relationRolePlayerMap.keySet().iterator();
         while (iterator.hasNext()) {
-            Variable relationship = iterator.next();
+            Variable relation = iterator.next();
 
             // the relation should have at least 2 known role players so we can infer something useful
-            if (instanceVarTypeMap.containsKey(relationship) ||
-                    relationshipRolePlayerMap.get(relationship).size() < 2) {
+            if (instanceVarTypeMap.containsKey(relation) ||
+                    relationRolePlayerMap.get(relation).size() < 2) {
                 iterator.remove();
             } else {
                 int numRolePlayersHaveType = 0;
-                for (Variable rolePlayer : relationshipRolePlayerMap.get(relationship)) {
+                for (Variable rolePlayer : relationRolePlayerMap.get(relation)) {
                     if (instanceVarTypeMap.containsKey(rolePlayer)) {
                         numRolePlayersHaveType++;
                     }
@@ -273,7 +273,7 @@ public class GreedyTraversalPlan {
                 }
             }
         }
-        return relationshipRolePlayerMap;
+        return relationRolePlayerMap;
     }
 
     // find all vars with direct or indirect out isa edges
@@ -307,17 +307,17 @@ public class GreedyTraversalPlan {
         return labelVarTypeMap;
     }
 
-    private static Set<Type> getAllPossibleRelationshipTypes(
-            Collection<Type> instanceVarTypes, Multimap<Type, RelationType> relationshipMap) {
+    private static Set<Type> getAllPossibleRelationTypes(
+            Collection<Type> instanceVarTypes, Multimap<Type, RelationType> relationMap) {
 
         return instanceVarTypes.stream()
-                .map(rolePlayerType -> (Set<Type>) new HashSet<Type>(relationshipMap.get(rolePlayerType)))
+                .map(rolePlayerType -> (Set<Type>) new HashSet<Type>(relationMap.get(rolePlayerType)))
                 .reduce(Sets::intersection).orElse(Collections.emptySet());
     }
 
-    private static void addAllPossibleRelationships(Multimap<Type, RelationType> relationshipMap, Type metaType) {
+    private static void addAllPossibleRelations(Multimap<Type, RelationType> relationMap, Type metaType) {
         metaType.subs().forEach(type -> type.playing().flatMap(Role::relations)
-                .forEach(relationshipType -> relationshipMap.put(type, relationshipType)));
+                .forEach(relationType -> relationMap.put(type, relationType)));
     }
 
     // add unvisited node fragments to plan for each connected fragment set

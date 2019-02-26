@@ -116,9 +116,9 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                         }
                     }
                 } else {
-                    // relay message through relationship vertices in even iterations
+                    // relay message through relation vertices in even iterations
                     // send message from regular entities in odd iterations
-                    if (atRelationships(memory)) {
+                    if (atRelations(memory)) {
                         relayOrSaveMessages(vertex, messenger);
                     } else {
                         updateEntityAndAttribute(vertex, messenger, memory, false);
@@ -142,7 +142,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
             }
             memory.add(K_CORE_EXIST, true);
 
-            // send ids from now on, as we want to count connected entities, not relationships
+            // send ids from now on, as we want to count connected entities, not relations
             sendMessage(messenger, id);
         }
     }
@@ -211,7 +211,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
         memory.add(VOTE_TO_HALT, false);
     }
 
-    // count the messages from relationships, so need to filter its own msg
+    // count the messages from relations, so need to filter its own msg
     private static int getMessageCountExcludeSelf(Messenger<String> messenger, String id) {
         Set<String> messageSet = newHashSet(messenger.receiveMessages());
         messageSet.remove(id);
@@ -223,7 +223,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
         messenger.sendMessage(messageScopeOut, message);
     }
 
-    static boolean atRelationships(Memory memory) {
+    static boolean atRelations(Memory memory) {
         return memory.getIteration() % 2 == 0;
     }
 
@@ -246,7 +246,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                 return false;
             }
         } else {
-            if (!atRelationships(memory)) {
+            if (!atRelations(memory)) {
                 if (!memory.<Boolean>get(K_CORE_EXIST)) {
                     LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
                     LOGGER.debug("No Such Core Areas Found !!!!!!!!");

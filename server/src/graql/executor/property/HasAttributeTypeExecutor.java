@@ -123,7 +123,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         fragments.addAll(playsValueExecutor.matchFragments());
         fragments.addAll(neqExecutor.matchFragments());
 
-        // Add fragments for the implicit relationship property
+        // Add fragments for the implicit relation property
         // These implicit statements make sure that statement variable (owner) and the attribute type form a
         // connected (non-disjoint) set of fragments for match execution
         Stream.of(ownerRole, valueRole, relationOwner, relationValue)

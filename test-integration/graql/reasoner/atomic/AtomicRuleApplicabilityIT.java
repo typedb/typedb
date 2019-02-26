@@ -28,7 +28,7 @@ import grakn.core.concept.type.Role;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
-import grakn.core.graql.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.rule.GraknTestServer;
@@ -123,7 +123,7 @@ public class AtomicRuleApplicabilityIT {
         TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{ ($x, $y, $z);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity; $z isa twoRoleEntity; };";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
+        RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("role"), new Variable("x"),
                 tx.getRole("role"), new Variable("y"),
@@ -138,7 +138,7 @@ public class AtomicRuleApplicabilityIT {
         TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{ ($x, $y, $z);$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity; };";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
+        RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("role"), new Variable("x"),
                 tx.getRole("role"), new Variable("y"),
@@ -152,7 +152,7 @@ public class AtomicRuleApplicabilityIT {
     public void testRuleApplicability_AmbiguousRoleMapping_TypeHierarchyEnablesExtraRule(){
         TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
         String relationString = "{ ($x, $y, $z);$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity; };";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
+        RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
         assertEquals(2, relation.getApplicableRules().count());
         tx.close();
@@ -174,10 +174,10 @@ public class AtomicRuleApplicabilityIT {
         //generic relation with attributes not matching the rule ones
         String relationString4 = "{ ($x, $y);$x has resource-string 'valueOne'; $y has resource-string 'valueTwo'; };";
 
-        Atom relation = ReasonerQueries.create(conjunction(relationString, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
-        Atom relation2 = ReasonerQueries.create(conjunction(relationString2, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
-        Atom relation3 = ReasonerQueries.create(conjunction(relationString3, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
-        Atom relation4 = ReasonerQueries.create(conjunction(relationString4, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
+        Atom relation = ReasonerQueries.create(conjunction(relationString, tx), tx).getAtoms(RelationAtom.class).findFirst().orElse(null);
+        Atom relation2 = ReasonerQueries.create(conjunction(relationString2, tx), tx).getAtoms(RelationAtom.class).findFirst().orElse(null);
+        Atom relation3 = ReasonerQueries.create(conjunction(relationString3, tx), tx).getAtoms(RelationAtom.class).findFirst().orElse(null);
+        Atom relation4 = ReasonerQueries.create(conjunction(relationString4, tx), tx).getAtoms(RelationAtom.class).findFirst().orElse(null);
         Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(Collectors.toSet());
 
         assertEquals(rules.stream().filter(r -> r.getRule().label().equals(Label.of("attributed-relation-long-rule"))).collect(Collectors.toSet()), relation.getApplicableRules().collect(toSet()));
@@ -212,9 +212,9 @@ public class AtomicRuleApplicabilityIT {
                 "$z has resource-long < 2000; " +
                 "};";
 
-        Atom relation = ReasonerQueries.create(conjunction(relationString, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
-        Atom relation2 = ReasonerQueries.create(conjunction(relationString2, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
-        Atom relation3 = ReasonerQueries.create(conjunction(relationString3, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
+        Atom relation = ReasonerQueries.create(conjunction(relationString, tx), tx).getAtoms(RelationAtom.class).findFirst().orElse(null);
+        Atom relation2 = ReasonerQueries.create(conjunction(relationString2, tx), tx).getAtoms(RelationAtom.class).findFirst().orElse(null);
+        Atom relation3 = ReasonerQueries.create(conjunction(relationString3, tx), tx).getAtoms(RelationAtom.class).findFirst().orElse(null);
 
         Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(Collectors.toSet());
 
@@ -273,7 +273,7 @@ public class AtomicRuleApplicabilityIT {
         TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{ ($x, $y, $z);$y isa singleRoleEntity; $z isa twoRoleEntity; };";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
+        RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("role"), new Variable("x"),
                 tx.getRole("role"), new Variable("y"),
@@ -381,7 +381,7 @@ public class AtomicRuleApplicabilityIT {
         TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{ ($x, $y, $z);$y isa singleRoleEntity; $z isa singleRoleEntity; };";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
+        RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("role"), new Variable("x"),
                 tx.getRole("role"), new Variable("y"),
@@ -414,7 +414,7 @@ public class AtomicRuleApplicabilityIT {
         String relationString3 = "{ ($x, $y);$x isa relation; };";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         Atom relation2 = ReasonerQueries.atomic(conjunction(relationString2, tx), tx).getAtom();
-        Atom relation3 = ReasonerQueries.create(conjunction(relationString3, tx), tx).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
+        Atom relation3 = ReasonerQueries.create(conjunction(relationString3, tx), tx).getAtoms(RelationAtom.class).findFirst().orElse(null);
 
         assertEquals(7, relation.getApplicableRules().count());
         assertEquals(tx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isRelationType)).count(), relation2.getApplicableRules().count());

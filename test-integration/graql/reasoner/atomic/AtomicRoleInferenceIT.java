@@ -22,7 +22,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
@@ -226,7 +226,7 @@ public class AtomicRoleInferenceIT {
     public void testRoleInference_NoInformationPresent(){
         TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{ ($x, $y); };";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
+        RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
         tx.close();
     }
@@ -235,7 +235,7 @@ public class AtomicRoleInferenceIT {
     public void testRoleInference_MetaRelationType(){
         TransactionOLTP tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{ ($x, $y) isa relation; };";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
+        RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
         tx.close();
     }
@@ -245,8 +245,8 @@ public class AtomicRoleInferenceIT {
         TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
         String relationString = "{ ($p, subRole2: $gc) isa binary; };";
         String relationString2 = "{ (subRole1: $gp, $p) isa binary; };";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
-        RelationshipAtom relation2 = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString2, tx), tx).getAtom();
+        RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
+        RelationAtom relation2 = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString2, tx), tx).getAtom();
         Multimap<Role, Variable> roleMap = roleSetMap(relation.getRoleVarMap());
         Multimap<Role, Variable> roleMap2 = roleSetMap(relation2.getRoleVarMap());
 
@@ -265,7 +265,7 @@ public class AtomicRoleInferenceIT {
     public void testRoleInference_WithMetaType(){
         TransactionOLTP tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{ ($x, $y, $z) isa ternary; $x isa singleRoleEntity; $y isa twoRoleEntity; $z isa entity; };";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
+        RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("someRole"), new Variable("x"),
                 tx.getRole("role"), new Variable("y"),
@@ -278,7 +278,7 @@ public class AtomicRoleInferenceIT {
     public void testRoleInference_RoleMappingUnambiguous(){
         TransactionOLTP tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{ ($x, $y, $z) isa ternary;$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity; };";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
+        RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("someRole"), new Variable("x"),
                 tx.getRole("role"), new Variable("y"),
@@ -291,7 +291,7 @@ public class AtomicRoleInferenceIT {
     public void testRoleInference_AllRolePlayersHaveAmbiguousRoles(){
         TransactionOLTP tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{ ($x, $y, $z) isa ternary;$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity; };";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
+        RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
         tx.close();
     }
@@ -300,7 +300,7 @@ public class AtomicRoleInferenceIT {
     public void testRoleInference_RelationHasVerticalRoleHierarchy(){
         TransactionOLTP tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         String relationString = "{ ($x, $y) isa reifying-relation; };";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
+        RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                 tx.getRole("someRole"), new Variable("x"),
                 tx.getRole("someRole"), new Variable("y"));
@@ -309,7 +309,7 @@ public class AtomicRoleInferenceIT {
     }
 
     private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMAp, TransactionOLTP tx){
-        RelationshipAtom atom = (RelationshipAtom) ReasonerQueries.atomic(conjunction(patternString, tx), tx).getAtom();
+        RelationAtom atom = (RelationAtom) ReasonerQueries.atomic(conjunction(patternString, tx), tx).getAtom();
         Multimap<Role, Variable> roleMap = roleSetMap(atom.getRoleVarMap());
         assertEquals(expectedRoleMAp, roleMap);
     }
