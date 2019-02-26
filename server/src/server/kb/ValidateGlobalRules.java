@@ -262,22 +262,22 @@ class ValidateGlobalRules {
     }
 
     /**
-     * @param graph
-     * @param rules
+     * @param graph graph used to ensure rules are stratifiable
+     * @return Error messages if the rules in the db are not stratifiable (cycles with negation are present)
      */
-    static Set<String> validateRuleStratifiability(TransactionOLTP graph, Set<Rule> rules) {
+    static Set<String> validateRuleStratifiability(TransactionOLTP graph){
         Set<String> errors = new HashSet<>();
-        List<Set<Type>> negativeCycles = RuleUtils.negativeCycles(rules, graph);
-        if (!negativeCycles.isEmpty()) {
+        List<Set<Type>> negativeCycles = RuleUtils.negativeCycles(graph);
+        if (!negativeCycles.isEmpty()){
             errors.add(ErrorMessage.VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE.getMessage(negativeCycles));
         }
         return errors;
     }
 
     /**
-     * @param graph graph used to ensure the rule is a valid Horn clause
-     * @param rule  the rule to be validated
-     * @return Error messages if the rule is not a valid Horn clause (in implication form, conjunction in the body, single-atom conjunction in the head)
+     * @param graph graph used to ensure the rule is a valid clause
+     * @param rule the rule to be validated
+     * @return Error messages if the rule is not a valid clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
     static Set<String> validateRuleIsValidClause(TransactionOLTP graph, Rule rule) {
         Set<String> errors = new HashSet<>();
@@ -378,27 +378,33 @@ class ValidateGlobalRules {
     private static Set<String> checkRuleSideInvalid(Transaction graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
-        pattern.statements().stream()
-                .flatMap(statement -> statement.innerStatements().stream())
-                .flatMap(statement -> statement.getTypes().stream()).forEach(type -> {
-            SchemaConcept schemaConcept = graph.getSchemaConcept(Label.of(type));
-            if (schemaConcept == null) {
-                errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.label(), type));
-            } else {
-                if (Schema.VertexProperty.RULE_WHEN.equals(side)) {
-                    if (schemaConcept.isType()) {
-                        RuleImpl.from(rule).addHypothesis(schemaConcept.asType());
-                    }
-                } else if (Schema.VertexProperty.RULE_THEN.equals(side)) {
-                    if (schemaConcept.isType()) {
-                        RuleImpl.from(rule).addConclusion(schemaConcept.asType());
-                    }
-                } else {
-                    throw TransactionException.invalidPropertyUse(rule, side);
-                }
-            }
-        });
-
+        pattern.getNegationDNF().getPatterns().stream()
+                .flatMap(conj -> conj.getPatterns().stream())
+                .forEach(p -> p.statements().stream()
+                        .flatMap(statement -> statement.innerStatements().stream())
+                        .flatMap(statement -> statement.getTypes().stream())
+                        .forEach(type -> {
+                            SchemaConcept schemaConcept = graph.getSchemaConcept(Label.of(type));
+                            if(schemaConcept == null){
+                                errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.label(), type));
+                            } else {
+                                if(Schema.VertexProperty.RULE_WHEN.equals(side)){
+                                    if (schemaConcept.isType()){
+                                        if (p.isNegation()){
+                                            RuleImpl.from(rule).addNegativeHypothesis(schemaConcept.asType());
+                                        } else {
+                                            RuleImpl.from(rule).addPositiveHypothesis(schemaConcept.asType());
+                                        }
+                                    }
+                                } else if (Schema.VertexProperty.RULE_THEN.equals(side)){
+                                    if (schemaConcept.isType()) {
+                                        RuleImpl.from(rule).addConclusion(schemaConcept.asType());
+                                    }
+                                } else {
+                                    throw TransactionException.invalidPropertyUse(rule, side);
+                                }
+                            }
+                        }));
         return errors;
     }
 

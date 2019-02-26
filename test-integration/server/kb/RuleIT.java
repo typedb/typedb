@@ -19,6 +19,7 @@
 package grakn.core.server.kb;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.Concept;
 import grakn.core.concept.type.AttributeType;
@@ -490,6 +491,85 @@ public class RuleIT {
     }
 
     @Test
+    public void whenAdditionOfRuleWithMetaTypeMakesRulesNonstratifiable_Throw() throws InvalidKBException{
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.putEntityType("p");
+            tx.putEntityType("q");
+            tx.putEntityType("r");
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x isa p;"),
+                    Graql.parsePattern("$x isa q;"));
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x isa q;"),
+                    Graql.parsePattern("$x isa r;"));
+
+            tx.commit();
+        }
+
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            EntityType p = tx.putEntityType("p");
+            EntityType q = tx.putEntityType("q");
+            EntityType r = tx.putEntityType("r");
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("{$x isa entity;not{ $x isa r;};};"),
+                    Graql.parsePattern("$x isa p;"));
+
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(allOf(
+                containsString("The rule graph is not stratifiable"),
+                containsString(p.toString()),
+                containsString(q.toString()),
+                containsString(r.toString()))
+            );
+
+            tx.commit();
+        }
+    }
+
+    @Test
+    public void whenAdditionOfRuleMakesRulesNonstratifiable_Throw() throws InvalidKBException{
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.putEntityType("p");
+            tx.putEntityType("q");
+            tx.putEntityType("r");
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x isa p;"),
+                    Graql.parsePattern("$x isa q;"));
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x isa q;"),
+                    Graql.parsePattern("$x isa r;"));
+
+            tx.commit();
+        }
+
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            EntityType p = tx.putEntityType("p");
+            EntityType q = tx.putEntityType("q");
+            EntityType r = tx.putEntityType("r");
+            EntityType z = tx.putEntityType("z");
+
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("{$x isa z;not{ $x isa r;};};"),
+                    Graql.parsePattern("$x isa p;"));
+
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(allOf(
+                    containsString("The rule graph is not stratifiable"),
+                    containsString(p.toString()),
+                    containsString(q.toString()),
+                    containsString(r.toString()))
+            );
+
+            tx.commit();
+        }
+    }
+
+    @Test
     public void whenAddingAddingStratifiableRules_correctStratificationIsProduced(){
         List<Rule> expected1;
         List<Rule> expected2;
@@ -612,6 +692,82 @@ public class RuleIT {
 
             assertThat(rule.whenTypes().collect(Collectors.toSet()), containsInAnyOrder(t1));
             assertThat(rule.thenTypes().collect(Collectors.toSet()), containsInAnyOrder(t2));
+        }
+    }
+
+    @Test
+    public void whenCreatingRules_EnsureWhenTypesAndSignAreLinkedCorrectlyOnCommit() throws InvalidKBException {
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            Type p = tx.putEntityType("p");
+            Type q = tx.putEntityType("q");
+            Type r = tx.putEntityType("r");
+            Type s = tx.putEntityType("s");
+            Type t = tx.putEntityType("t");
+
+            Rule rule = tx.putRule("Rule",
+                    Graql.parsePattern("{" +
+                            "$x isa p;" +
+                            "$x isa q;" +
+                            "not{ " +
+                            "$x isa r;" +
+                            "$x isa s;" +
+                            "};" +
+                            "};"),
+                    Graql.parsePattern("$x isa t;"));
+
+            assertThat(rule.whenTypes().collect(Collectors.toSet()), empty());
+            assertThat(rule.thenTypes().collect(Collectors.toSet()), empty());
+
+            tx.commit();
+
+            assertEquals(rule.whenTypes().collect(Collectors.toSet()), Sets.newHashSet(p, q, r, s));
+            assertEquals(rule.whenPositiveTypes().collect(Collectors.toSet()), Sets.newHashSet(p, q));
+            assertEquals(rule.whenNegativeTypes().collect(Collectors.toSet()), Sets.newHashSet(r, s));
+            assertThat(rule.thenTypes().collect(Collectors.toSet()), containsInAnyOrder(t));
+        }
+    }
+
+    @Test
+    public void whenCreatingRules_EnsureTypesAreCorrectlyConnectedToRulesOnCommit() throws InvalidKBException {
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            Type p = tx.putEntityType("p");
+            Type q = tx.putEntityType("q");
+            Type r = tx.putEntityType("r");
+            Type s = tx.putEntityType("s");
+            Type t = tx.putEntityType("t");
+
+            Rule rule = tx.putRule("Rule1",
+                    Graql.parsePattern("{" +
+                            "$x isa p;" +
+                            "$x isa q;" +
+                            "not{$x isa r;};" +
+                            "};"),
+                    Graql.parsePattern("$x isa s;"));
+
+            Rule rule2 = tx.putRule("Rule2",
+                    Graql.parsePattern("{" +
+                            "$x isa q;" +
+                            "$x isa r;" +
+                            "not{$x isa s;};" +
+                            "};"),
+                    Graql.parsePattern("$x isa t;"));
+
+            Sets.newHashSet(p, q, r, s, t).forEach(type -> {
+                assertTrue(!type.whenRules().findFirst().isPresent());
+                assertTrue(!type.thenRules().findFirst().isPresent());
+            });
+
+            tx.commit();
+
+            assertEquals(p.whenRules().collect(Collectors.toSet()), Sets.newHashSet(rule));
+            assertEquals(q.whenRules().collect(Collectors.toSet()), Sets.newHashSet(rule, rule2));
+            assertEquals(r.whenRules().collect(Collectors.toSet()), Sets.newHashSet(rule, rule2));
+            assertEquals(s.whenRules().collect(Collectors.toSet()), Sets.newHashSet(rule2));
+            assertThat(t.whenRules().collect(Collectors.toSet()), empty());
+
+            Sets.newHashSet(p, q, r).forEach(type -> assertTrue(!type.thenRules().findFirst().isPresent()));
+            assertEquals(s.thenRules().collect(Collectors.toSet()), Sets.newHashSet(rule));
+            assertEquals(t.thenRules().collect(Collectors.toSet()), Sets.newHashSet(rule2));
         }
     }
 

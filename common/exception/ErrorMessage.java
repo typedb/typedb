@@ -110,6 +110,8 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_MULTIPLE_NEGATION_BLOCKS("The rule [%s] contains multiple negation blocks\n"),
 
+    VALIDATION_RULE_CONTRADICTION_IN_TYPEGRAPH("The rule graph contains a contradiction - there is a positive and negative path between the types: [%s]-[%s]\n"),
+
     VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE("The rule graph is not stratifiable - it contains following cycles with negation: [%s]\n"),
 
     VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] refers to type [%s] which does not exist in the graph \n"),
