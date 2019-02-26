@@ -25,7 +25,6 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -58,7 +57,7 @@ public class MovieGraph {
 
 
     public static void load(SessionImpl session) {
-        try (TransactionOLTP transaction = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP transaction = session.transaction().write()) {
             buildSchema(transaction);
             buildInstances(transaction);
             buildRelations();

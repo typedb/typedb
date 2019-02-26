@@ -2,7 +2,6 @@ package grakn.core.client;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
-import grakn.core.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -269,7 +268,7 @@ public class ClientJavaE2E {
     private void localhostGraknTx(Consumer<GraknClient.Transaction> fn) {
         String keyspace = "grakn";
         try (GraknClient.Session session = graknClient.session(keyspace)) {
-            try (GraknClient.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
+            try (GraknClient.Transaction transaction = session.transaction().write()) {
                 fn.accept(transaction);
             }
         }

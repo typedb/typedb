@@ -25,7 +25,6 @@ import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.JanusGraphFactory;
@@ -73,7 +72,7 @@ public class KeyspaceManager {
     public void addKeyspace(KeyspaceImpl keyspace) {
         if (containsKeyspace(keyspace)) return;
 
-        try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = systemKeyspaceSession.transaction().write()) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
                 throw GraknServerException.initializationException(keyspace);
@@ -101,7 +100,7 @@ public class KeyspaceManager {
             return true;
         }
 
-        try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = systemKeyspaceSession.transaction().read()) {
             boolean keyspaceExists = (tx.getAttributeType(KEYSPACE_RESOURCE.getValue()).attribute(keyspace) != null);
             if (keyspaceExists) existingKeyspaces.add(keyspace);
             return keyspaceExists;
@@ -116,7 +115,7 @@ public class KeyspaceManager {
     }
 
     private boolean deleteReferenceInSystemKeyspace(KeyspaceImpl keyspace) {
-        try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = systemKeyspaceSession.transaction().write()) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             Attribute<String> attribute = keyspaceName.attribute(keyspace.name());
 
@@ -133,7 +132,7 @@ public class KeyspaceManager {
     }
 
     public Set<KeyspaceImpl> keyspaces() {
-        try (TransactionOLTP graph = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP graph = systemKeyspaceSession.transaction().write()) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
 
             return graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).instances()
@@ -146,7 +145,7 @@ public class KeyspaceManager {
 
     public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
-        try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = systemKeyspaceSession.transaction().write()) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
                 return;
             }

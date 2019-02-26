@@ -82,7 +82,7 @@ public class SessionImpl implements Session {
         this.keyspaceCache = keyspaceCache;
         this.onClose = onClose;
 
-        TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = this.transaction().write();
         // copy schema to session cache if there are any schema concepts
         if (!keyspaceHasBeenInitialised(tx)) {
             initialiseMetaConcepts(tx);
@@ -93,7 +93,11 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public TransactionOLTP transaction(Transaction.Type type) {
+    public TransactionOLTP.Builder transaction() {
+        return new TransactionOLTP.Builder(this);
+    }
+
+    TransactionOLTP transaction(Transaction.Type type) {
 
         ScopedSpan span = null;
         if (ServerTracingInstrumentation.tracingActive()) { span = ServerTracingInstrumentation.createScopedChildSpan("SessionImpl.transaction"); }

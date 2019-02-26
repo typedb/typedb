@@ -35,8 +35,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static grakn.core.server.Transaction.Type.READ;
-import static grakn.core.server.Transaction.Type.WRITE;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -68,9 +66,9 @@ public class SessionIT {
      */
     @Test
     public void sessionProducesDifferentTransactionObjects() {
-        TransactionOLTP tx1 = session.transaction(WRITE);
+        TransactionOLTP tx1 = session.transaction().write();
         tx1.close();
-        TransactionOLTP tx2 = session.transaction(WRITE);
+        TransactionOLTP tx2 = session.transaction().write();
         assertNotEquals(tx1, tx2);
     }
 
@@ -79,10 +77,10 @@ public class SessionIT {
      */
     @Test
     public void tryingToOpenTwoTransactionsInSameThread_throwsException() {
-        TransactionOLTP tx1 = session.transaction(WRITE);
+        TransactionOLTP tx1 = session.transaction().write();
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage("A transaction is already open on this thread for graph [" + session.keyspace() + "]. Close the current transaction before opening a new one in the same thread.");
-        TransactionOLTP tx2 = session.transaction(WRITE);
+        TransactionOLTP tx2 = session.transaction().write();
     }
 
 
@@ -91,7 +89,7 @@ public class SessionIT {
      */
     @Test
     public void sharingSameTransactionInDifferentThread_transactionIsNotUsable() throws InterruptedException {
-        TransactionOLTP tx1 = session.transaction(WRITE);
+        TransactionOLTP tx1 = session.transaction().write();
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
         try {
@@ -112,13 +110,13 @@ public class SessionIT {
     public void sessionOpeningTransactionsInDifferentThreads_transactionsAreUsable() throws ExecutionException, InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         executor.submit(() -> {
-            TransactionOLTP tx1 = session.transaction(WRITE);
+            TransactionOLTP tx1 = session.transaction().write();
             SchemaConcept concept = tx1.getSchemaConcept(Label.of("thing"));
             assertEquals("thing", concept.label().toString());
             tx1.close();
         }).get();
         executor.submit(() -> {
-            TransactionOLTP tx1 = session.transaction(WRITE);
+            TransactionOLTP tx1 = session.transaction().write();
             SchemaConcept concept = tx1.getSchemaConcept(Label.of("thing"));
             assertEquals("thing", concept.label().toString());
             tx1.close();
@@ -131,14 +129,14 @@ public class SessionIT {
      */
     @Test
     public void sessionsInDifferentThreadsShouldBeAbleToAccessSameKeyspace() throws ExecutionException, InterruptedException {
-        TransactionOLTP tx1 = session.transaction(WRITE);
+        TransactionOLTP tx1 = session.transaction().write();
         tx1.putEntityType("person");
         tx1.commit();
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
         executor.submit(() -> {
             SessionImpl localSession = server.sessionFactory().session(session.keyspace());
-            TransactionOLTP tx2 = localSession.transaction(WRITE);
+            TransactionOLTP tx2 = localSession.transaction().write();
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
             tx2.close();
@@ -147,7 +145,7 @@ public class SessionIT {
 
         executor.submit(() -> {
             SessionImpl localSession = server.sessionFactory().session(session.keyspace());
-            TransactionOLTP tx2 = localSession.transaction(WRITE);
+            TransactionOLTP tx2 = localSession.transaction().write();
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
             tx2.close();
@@ -159,7 +157,7 @@ public class SessionIT {
     @Test
     public void whenClosingSession_transactionIsAlsoClosed() {
         SessionImpl localSession = server.sessionFactory().session(KeyspaceImpl.of("test"));
-        TransactionOLTP tx1 = localSession.transaction(WRITE);
+        TransactionOLTP tx1 = localSession.transaction().write();
         assertFalse(tx1.isClosed());
         localSession.close();
         assertTrue(tx1.isClosed());
@@ -168,7 +166,7 @@ public class SessionIT {
     @Test
     public void whenClosingSession_tryingToUseTransactionThrowsException() {
         SessionImpl localSession = server.sessionFactory().session(KeyspaceImpl.of("test"));
-        TransactionOLTP tx1 = localSession.transaction(WRITE);
+        TransactionOLTP tx1 = localSession.transaction().write();
         assertFalse(tx1.isClosed());
         localSession.close();
         expectedException.expect(TransactionException.class);
@@ -184,7 +182,7 @@ public class SessionIT {
         session.close();
         expectedException.expect(SessionException.class);
         expectedException.expectMessage("The session for graph [" + session.keyspace() + "] is closed. Create a new session to interact with the graph.");
-        TransactionOLTP tx1 = session.transaction(WRITE);
+        TransactionOLTP tx1 = session.transaction().write();
 
         SchemaConcept concept = tx1.getSchemaConcept(Label.of("thing"));
         assertEquals("thing", concept.label().toString());
@@ -192,7 +190,7 @@ public class SessionIT {
 
     @Test
     public void whenTransactionIsClosed_notUsable(){
-        TransactionOLTP tx1 = session.transaction(WRITE);
+        TransactionOLTP tx1 = session.transaction().write();
         tx1.close();
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage("The transaction for keyspace [" + session.keyspace() + "] is closed.");
@@ -202,14 +200,14 @@ public class SessionIT {
 
     @Test
     public void transactionRead_checkMutationsAllowedThrows(){
-        TransactionOLTP tx1 = session.transaction(READ);
+        TransactionOLTP tx1 = session.transaction().read();
         expectedException.expect(TransactionException.class);
         tx1.checkMutationAllowed();
         tx1.close();
-        TransactionOLTP tx2 = session.transaction(WRITE);
+        TransactionOLTP tx2 = session.transaction().write();
         tx2.checkMutationAllowed();
         tx2.close();
-        TransactionOLTP tx3 = session.transaction(READ);
+        TransactionOLTP tx3 = session.transaction().read();
         expectedException.expect(TransactionException.class);
         tx3.checkMutationAllowed();
         tx3.close();

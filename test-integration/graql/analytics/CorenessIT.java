@@ -28,7 +28,6 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -75,14 +74,14 @@ public class CorenessIT {
 
     @Test(expected = GraqlQueryException.class)
     public void testKSmallerThan2_ThrowsException() {
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             tx.execute(Graql.compute().centrality().using(K_CORE).where(min_k(1)));
         }
     }
 
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             List<ConceptSetMeasure> result = tx.execute(Graql.compute().centrality().using(K_CORE));
             assertTrue(result.isEmpty());
         }
@@ -90,7 +89,7 @@ public class CorenessIT {
 
     @Test
     public void testOnGraphWithoutRelations_ReturnsEmptyMap() {
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.putEntityType(thing).create();
             tx.putEntityType(anotherThing).create();
             List<ConceptSetMeasure> result = tx.execute(Graql.compute().centrality().using(K_CORE));
@@ -100,7 +99,7 @@ public class CorenessIT {
 
     @Test
     public void testOnGraphWithTwoEntitiesAndTwoRelations() {
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType = tx.putEntityType(thing);
             Entity entity1 = entityType.create();
             Entity entity2 = entityType.create();
@@ -132,7 +131,7 @@ public class CorenessIT {
     public void testOnGraphWithFourEntitiesAndSixRelations() {
         addSchemaAndEntities();
 
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             List<ConceptSetMeasure> result = tx.execute(Graql.compute().centrality().using(K_CORE));
             assertEquals(1, result.size());
             assertEquals(4, result.get(0).set().size());
@@ -154,7 +153,7 @@ public class CorenessIT {
     public void testImplicitTypeShouldBeIncluded() {
         addSchemaAndEntities();
 
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
                     tx.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
@@ -176,7 +175,7 @@ public class CorenessIT {
         }
 
         List<ConceptSetMeasure> result;
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             result = tx.execute(Graql.compute().centrality().using(K_CORE));
             System.out.println("result = " + result);
             assertEquals(2, result.size());
@@ -196,7 +195,7 @@ public class CorenessIT {
 
     @Test
     public void testDisconnectedCores() {
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 
@@ -272,7 +271,7 @@ public class CorenessIT {
         }
 
         List<ConceptSetMeasure> result;
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             result = tx.execute(Graql.compute().centrality().using(K_CORE));
             assertEquals(2, result.size());
 
@@ -300,7 +299,7 @@ public class CorenessIT {
         }
 
         Set<List<ConceptSetMeasure>> result = list.parallelStream().map(i -> {
-            try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 return tx.execute(Graql.compute().centrality().using(K_CORE).where(min_k(3L)));
             }
         }).collect(Collectors.toSet());
@@ -313,7 +312,7 @@ public class CorenessIT {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 

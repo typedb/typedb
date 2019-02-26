@@ -31,7 +31,6 @@ import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.NeqFragment;
 import grakn.core.graql.gremlin.fragment.OutIsaFragment;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Pattern;
@@ -78,7 +77,7 @@ public class QueryPlannerIT {
     @BeforeClass
     public static void newSession() {
         session = graknServer.sessionWithNewKeyspace();
-        TransactionOLTP graph = session.transaction(Transaction.Type.WRITE);
+        TransactionOLTP graph = session.transaction().write();
 
         EntityType entityType0 = graph.putEntityType(thingy0);
         EntityType entityType1 = graph.putEntityType(thingy1);
@@ -125,7 +124,7 @@ public class QueryPlannerIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After

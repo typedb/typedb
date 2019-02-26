@@ -107,7 +107,7 @@ public final class GraknClient implements AutoCloseable {
             channel = ManagedChannelBuilder.forAddress(parsedURI.getHost(), parsedURI.getPort())
                     .usePlaintext(true).build();
         }
-        keyspaces = new Keyspaces();
+        keyspaces = new Keyspaces(channel);
     }
 
     public GraknClient overrideChannel(ManagedChannel channel) {
@@ -126,7 +126,7 @@ public final class GraknClient implements AutoCloseable {
     }
 
     public Session session(String keyspace) {
-        return new Session(keyspace);
+        return new Session(channel, keyspace);
     }
 
     public Keyspaces keyspaces() {
@@ -139,27 +139,30 @@ public final class GraknClient implements AutoCloseable {
      * @see Transaction
      * @see GraknClient
      */
-    public class Session implements grakn.core.server.Session {
+    public static class Session implements grakn.core.server.Session {
 
+        private final ManagedChannel channel;
         private final String keyspace;
         private final SessionServiceGrpc.SessionServiceBlockingStub sessionStub;
         private final String sessionId;
         private boolean isOpen;
 
-        private Session(String keyspace) {
+        private Session(ManagedChannel channel, String keyspace) {
             if (!Validator.isValidKeyspaceName(keyspace)) {
                 throw GraknClientException.invalidKeyspaceName(keyspace);
             }
             this.keyspace = keyspace;
-            sessionStub = SessionServiceGrpc.newBlockingStub(channel);
+            this.channel = channel;
+            this.sessionStub = SessionServiceGrpc.newBlockingStub(channel);
+
             SessionProto.Session.Open.Res response = sessionStub.open(RequestBuilder.Session.open(keyspace));
             sessionId = response.getSessionId();
             isOpen = true;
         }
 
         @Override
-        public Transaction transaction(grakn.core.server.Transaction.Type type) {
-            return new Transaction(this, sessionId, type);
+        public GraknClient.Transaction.Builder transaction() {
+            return new Transaction.Builder(channel, this, sessionId);
         }
 
         @Override
@@ -179,11 +182,11 @@ public final class GraknClient implements AutoCloseable {
      * Internal class used to handle keyspace related operations
      */
 
-    public final class Keyspaces {
+    public static final class Keyspaces {
 
         private KeyspaceServiceBlockingStub keyspaceBlockingStub;
 
-        private Keyspaces() {
+        private Keyspaces(ManagedChannel channel) {
             keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
         }
 
@@ -204,13 +207,35 @@ public final class GraknClient implements AutoCloseable {
     /**
      * Remote implementation of grakn.core.server.Transaction that communicates with a Grakn server using gRPC.
      */
-    public final class Transaction implements grakn.core.server.Transaction {
+    public static class Transaction implements grakn.core.server.Transaction {
 
         private final Session session;
         private final Type type;
         private final Transceiver transceiver;
 
-        private Transaction(Session session, String sessionId, Type type) {
+        public static class Builder implements grakn.core.server.Transaction.Builder {
+
+            private ManagedChannel channel;
+            private GraknClient.Session session;
+            private String sessionId;
+
+            Builder(ManagedChannel channel, GraknClient.Session session, String sessionId) {
+                this.channel = channel;
+                this.session = session;
+                this.sessionId = sessionId;
+            }
+            @Override
+            public GraknClient.Transaction read() {
+                return new GraknClient.Transaction(channel, session, sessionId, Transaction.Type.READ);
+            }
+
+            @Override
+            public GraknClient.Transaction write() {
+                return new GraknClient.Transaction(channel, session, sessionId, Transaction.Type.WRITE);
+            }
+        }
+
+        private Transaction(ManagedChannel channel, Session session, String sessionId, Type type) {
             this.session = session;
             this.type = type;
             this.transceiver = Transceiver.create(SessionServiceGrpc.newStub(channel));

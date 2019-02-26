@@ -20,7 +20,6 @@ package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -49,7 +48,7 @@ public class QueryValidityIT {
         try {
             InputStream inputStream = QueryValidityIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            TransactionOLTP tx = session.transaction(Transaction.Type.WRITE);
+            TransactionOLTP tx = session.transaction().write();
             Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e){
@@ -64,7 +63,7 @@ public class QueryValidityIT {
     public static void loadContext(){
         genericSchemaSession = server.sessionWithNewKeyspace();
         loadFromFile("ruleApplicabilityTest.gql", genericSchemaSession);
-        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
+        tx = genericSchemaSession.transaction().write();
     }
 
     @AfterClass

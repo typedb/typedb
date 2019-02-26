@@ -33,7 +33,6 @@ import grakn.core.graql.gremlin.fragment.OutIsaFragment;
 import grakn.core.graql.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.gremlin.fragment.OutSubFragment;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -60,7 +59,7 @@ public class IsaExplicitIT {
 
     @Before
     public void loadSimpleData() {
-        tx = server.sessionWithNewKeyspace().transaction(Transaction.Type.WRITE);
+        tx = server.sessionWithNewKeyspace().transaction().write();
         EntityType entityType0 = tx.putEntityType("entityType0");
         EntityType entityType1 = tx.putEntityType("entityType1");
         EntityType entityType2 = tx.putEntityType("entityType2");

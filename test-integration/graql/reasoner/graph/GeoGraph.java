@@ -25,7 +25,6 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -53,7 +52,7 @@ public class GeoGraph {
     }
 
     public void load() {
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         buildSchema();
         buildInstances();
         buildRelations();

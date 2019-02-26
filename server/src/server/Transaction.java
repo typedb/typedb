@@ -95,6 +95,13 @@ public interface Transaction extends AutoCloseable {
         }
     }
 
+    interface Builder {
+
+        Transaction read();
+
+        Transaction write();
+    }
+
     // Define Query
 
     default List<ConceptMap> execute(GraqlDefine query) {

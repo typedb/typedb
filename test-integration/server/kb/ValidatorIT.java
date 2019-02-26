@@ -27,7 +27,6 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -64,7 +63,7 @@ public class ValidatorIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After
@@ -206,7 +205,7 @@ public class ValidatorIT {
         }
 
         tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
 
         // now try to delete all assertions and then the movie
         godfather = tx.getEntityType("movie").instances().iterator().next();
@@ -220,7 +219,7 @@ public class ValidatorIT {
         godfather.delete();
 
         tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
 
         assertionIds.forEach(id -> assertNull(tx.getConcept(id)));
 

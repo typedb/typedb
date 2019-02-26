@@ -51,7 +51,7 @@ public class QueryCacheIT {
         try {
             InputStream inputStream = QueryCacheIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            TransactionOLTP tx = session.transaction(Transaction.Type.WRITE);
+            TransactionOLTP tx = session.transaction().write();
             Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e) {
@@ -82,7 +82,7 @@ public class QueryCacheIT {
 
     @Before
     public void onStartup(){
-        tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        tx = ruleApplicabilitySession.transaction().write();
         String recordPatternString = "{(someRole: $x, subRole: $y) isa reifiable-relation;}";
         String retrievePatternString = "{(someRole: $p1, subRole: $p2) isa reifiable-relation;}";
         Conjunction<VarPatternAdmin> recordPattern = conjunction(recordPatternString, tx);

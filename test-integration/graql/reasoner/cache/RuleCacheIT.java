@@ -24,7 +24,6 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.session.cache.RuleCache;
@@ -60,7 +59,7 @@ public class RuleCacheIT {
         try {
             InputStream inputStream = RuleCacheIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            TransactionOLTP tx = session.transaction(Transaction.Type.WRITE);
+            TransactionOLTP tx = session.transaction().write();
             Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e) {
@@ -83,7 +82,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenGettingRulesWithType_correctRulesAreObtained(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
             RuleCache ruleCache = tx.ruleCache();
 
             Type reifyingRelation = tx.getType(Label.of("reifying-relation"));
@@ -105,7 +104,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenAddingARule_cacheContainsUpdatedEntry(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
             Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
             Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
             Rule dummyRule = tx.putRule("dummyRule", when, then);
@@ -118,7 +117,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenAddingARuleAfterClosingTx_cacheContainsConsistentEntry(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
 
             Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
             Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
@@ -133,11 +132,11 @@ public class RuleCacheIT {
 
     @Test
     public void whenDeletingARule_cacheContainsUpdatedEntry(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
             tx.execute(Graql.undefine(type("rule-0").sub("rule")));
             tx.commit();
         }
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
             Type binary = tx.getType(Label.of("binary"));
             Set<Rule> rules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
             assertTrue(rules.isEmpty());

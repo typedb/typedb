@@ -20,7 +20,6 @@ package grakn.core.server.kb.structure;
 
 import grakn.core.concept.thing.Entity;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
@@ -49,7 +48,7 @@ public class EdgeIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         // Create Edge
         entityType = (EntityTypeImpl) tx.putEntityType("My Entity Type");
         entity = (EntityImpl) entityType.create();

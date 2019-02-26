@@ -23,7 +23,6 @@ import grakn.core.concept.Label;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 
@@ -53,7 +52,7 @@ public class PathTreeGraph{
     }
 
     public final void load(int n, int m) {
-        TransactionOLTP tx = session.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = session.transaction().write();
         loadFromFile(gqlPath, gqlFile, tx);
         buildExtensionalDB(n, m, tx);
         tx.commit();

@@ -26,7 +26,6 @@ import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
@@ -72,7 +71,7 @@ public class QueryErrorIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After
@@ -186,7 +185,7 @@ public class QueryErrorIT {
     public void testExceptionWhenNoHasResourceRelation() throws InvalidKBException {
         // Create a fresh graph, with no has between person and name
         SessionImpl newSession = graknServer.sessionWithNewKeyspace();
-        try (TransactionOLTP newTx = newSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP newTx = newSession.transaction().write()) {
             newTx.execute(Graql.define(
                     type("person").sub("entity"),
                     type("name").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING)

@@ -27,7 +27,6 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -66,30 +65,30 @@ public class CountIT {
         String nameAnotherThing = "another";
 
         // assert the tx is empty
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             assertEquals(0, tx.execute(Graql.compute().count()).get(0).number().intValue());
             assertEquals(0, tx.execute(Graql.compute().count().attributes(true)).get(0).number().intValue());
         }
 
         // add 2 instances
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType thingy = tx.putEntityType(nameThing);
             thingy.create();
             thingy.create();
             tx.commit();
         }
 
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             assertEquals(2, tx.execute(Graql.compute().count().in(nameThing)).get(0).number().intValue());
         }
 
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType anotherThing = tx.putEntityType(nameAnotherThing);
             anotherThing.create();
             tx.commit();
         }
 
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             // assert computer returns the correct count of instances
             assertEquals(2, tx.execute(Graql.compute().count().in(nameThing).attributes(true)).get(0).number().intValue());
             assertEquals(3, tx.execute(Graql.compute().count()).get(0).number().intValue());
@@ -101,7 +100,7 @@ public class CountIT {
         String nameThing = "thingy";
         String nameAnotherThing = "another";
 
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType thingy = tx.putEntityType(nameThing);
             thingy.create();
             thingy.create();
@@ -134,7 +133,7 @@ public class CountIT {
 
     @Test
     public void testHasResourceEdges() {
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType person = tx.putEntityType("person");
             AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
             person.has(name);
@@ -144,7 +143,7 @@ public class CountIT {
         }
 
         Numeric count;
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             count = tx.execute(Graql.compute().count()).get(0);
             assertEquals(1, count.number().intValue());
 
@@ -170,7 +169,7 @@ public class CountIT {
             assertEquals(1, count.number().intValue());
         }
 
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
 
             // manually construct the relation type and instance
             EntityType person = tx.getEntityType("person");
@@ -192,7 +191,7 @@ public class CountIT {
             tx.commit();
         }
 
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             count = tx.execute(Graql.compute().count()).get(0);
             assertEquals(2, count.number().intValue());
 
@@ -224,7 +223,7 @@ public class CountIT {
 
     @Test
     public void testHasResourceVerticesAndEdges() {
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
 
             // manually construct the relation type and instance
             EntityType person = tx.putEntityType("person");
@@ -251,7 +250,7 @@ public class CountIT {
         }
 
         Numeric count;
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             count = tx.execute(Graql.compute().count()).get(0);
             assertEquals(1, count.number().intValue());
 
@@ -274,7 +273,7 @@ public class CountIT {
             assertEquals(1, count.number().intValue());
         }
 
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType person = tx.getEntityType("person");
             AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
             Entity aPerson = person.create();
@@ -282,7 +281,7 @@ public class CountIT {
             tx.commit();
         }
 
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             count = tx.execute(Graql.compute().count().attributes(true)).get(0);
             assertEquals(5, count.number().intValue());
 
@@ -304,7 +303,7 @@ public class CountIT {
     }
 
     private Long executeCount(SessionImpl session) {
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             return tx.execute(Graql.compute().count()).get(0).number().longValue();
         }
     }

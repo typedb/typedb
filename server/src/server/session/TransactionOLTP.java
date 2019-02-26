@@ -127,7 +127,25 @@ public class TransactionOLTP implements Transaction {
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
 
-    public TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache) {
+    public static class Builder implements Transaction.Builder {
+
+        private SessionImpl session;
+
+        Builder(SessionImpl session) {
+            this.session = session;
+        }
+        @Override
+        public TransactionOLTP read() {
+            return session.transaction(Transaction.Type.READ);
+        }
+
+        @Override
+        public TransactionOLTP write() {
+            return session.transaction(Transaction.Type.WRITE);
+        }
+    }
+
+    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache) {
 
         createdInCurrentThread.set(true);
 

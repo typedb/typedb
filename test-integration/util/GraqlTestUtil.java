@@ -22,7 +22,6 @@ import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.EntityType;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -95,7 +94,7 @@ public class GraqlTestUtil {
     }
 
     public static void loadFromFileAndCommit(String gqlPath, String file, SessionImpl session) {
-        TransactionOLTP tx = session.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = session.transaction().write();
         loadFromFile(gqlPath, file, tx);
         tx.commit();
     }

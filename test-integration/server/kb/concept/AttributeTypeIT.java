@@ -21,7 +21,6 @@ package grakn.core.server.kb.concept;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -57,7 +56,7 @@ public class AttributeTypeIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
     }
 
@@ -174,7 +173,7 @@ public class AttributeTypeIT {
         LocalDateTime rightNow = LocalDateTime.now();
         // now add the timezone to the graph
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
-            try (TransactionOLTP graph = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP graph = session.transaction().write()) {
                 AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.DataType.DATE);
                 aTime.create(rightNow);
                 graph.commit();
@@ -182,7 +181,7 @@ public class AttributeTypeIT {
             // offset the time to GMT where the colleague is working
             TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
             // the colleague extracts the LocalTime which should be the same
-            try (TransactionOLTP graph = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP graph = session.transaction().write()) {
                 AttributeType aTime = graph.getAttributeType("aTime");
                 LocalDateTime databaseTime = (LocalDateTime) ((Attribute) aTime.instances().iterator().next()).value();
 

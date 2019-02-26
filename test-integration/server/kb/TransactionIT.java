@@ -75,7 +75,7 @@ public class TransactionIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After
@@ -166,7 +166,7 @@ public class TransactionIT {
         tx.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
-        tx = session.transaction(Transaction.Type.READ);
+        tx = session.transaction().read();
 
         Set<SchemaConcept> finalTypes = new HashSet<>();
         finalTypes.addAll(tx.getMetaConcept().subs().collect(toSet()));
@@ -218,7 +218,7 @@ public class TransactionIT {
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         tx.putEntityType("A Thing");
     }
 
@@ -247,7 +247,7 @@ public class TransactionIT {
         String relationType1 = "My Relation Type 1";
 
         //Fail Some Mutations
-        tx = session.transaction(Transaction.Type.READ);
+        tx = session.transaction().read();
         failMutation(tx, () -> tx.putEntityType(entityType));
         failMutation(tx, () -> tx.putRole(roleType1));
         failMutation(tx, () -> tx.putRelationType(relationType1));
@@ -281,7 +281,7 @@ public class TransactionIT {
         tx.close();
 
         //noinspection ResultOfMethodCallIgnored
-        session.transaction(Transaction.Type.WRITE);
+        session.transaction().write();
         failAtOpeningTx(session, Transaction.Type.READ, keyspace);
     }
 
@@ -289,7 +289,11 @@ public class TransactionIT {
         Exception exception = null;
         try {
             //noinspection ResultOfMethodCallIgnored
-            session.transaction(txType);
+            if (txType.equals(Transaction.Type.READ)) {
+                session.transaction().read();
+            } else {
+                session.transaction().write();
+            }
         } catch (TransactionException e) {
             exception = e;
         }
@@ -342,7 +346,7 @@ public class TransactionIT {
 
         executor.submit(() -> {
             //Resources
-            try (TransactionOLTP tx = localSession.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = localSession.transaction().write()) {
                 AttributeType<Long> int_ = tx.putAttributeType("int", AttributeType.DataType.LONG);
                 AttributeType<Long> foo = tx.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
                 tx.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
@@ -353,7 +357,7 @@ public class TransactionIT {
         }).get();
 
         //Relation Which Has Resources
-        try (TransactionOLTP tx = localSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = localSession.transaction().write()) {
             tx.putEntityType("BAR").has(tx.getAttributeType("bar"));
             tx.commit();
         }

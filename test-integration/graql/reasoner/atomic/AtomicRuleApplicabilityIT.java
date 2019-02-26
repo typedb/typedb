@@ -32,7 +32,6 @@ import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -74,7 +73,7 @@ public class AtomicRuleApplicabilityIT {
         try {
             InputStream inputStream = AtomicRuleApplicabilityIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            TransactionOLTP tx = session.transaction(Transaction.Type.WRITE);
+            TransactionOLTP tx = session.transaction().write();
             Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e){
@@ -103,7 +102,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_OntologicalAtomsDoNotMatchAnyRules(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         Atom subAtom = ReasonerQueries.atomic(conjunction("{ $x sub relation; };", tx), tx).getAtom();
         Atom hasAtom = ReasonerQueries.atomic(conjunction("{ $x has description; };", tx), tx).getAtom();
         Atom relatesAtom = ReasonerQueries.atomic(conjunction("{ reifiable-relation relates $x; };", tx), tx).getAtom();
@@ -119,7 +118,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_AmbiguousRoleMapping(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{ ($x, $y, $z);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity; $z isa twoRoleEntity; };";
         RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
@@ -134,7 +133,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_AmbiguousRoleMapping_RolePlayerTypeMismatch(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{ ($x, $y, $z);$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity; };";
         RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
@@ -149,7 +148,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test //threeRoleEntity subs twoRoleEntity -> (role, role, role)
     public void testRuleApplicability_AmbiguousRoleMapping_TypeHierarchyEnablesExtraRule(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String relationString = "{ ($x, $y, $z);$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity; };";
         RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
@@ -159,7 +158,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_attributeBoundRelationPlayers(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
 
         //attribute mismatch with the rule
         String relationString = "{ ($x, $y) isa attributed-relation;$x has resource-string 'valueOne'; $y has resource-string 'someValue'; };";
@@ -188,7 +187,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_nonSpecificattributeBoundRelationPlayers(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
 
         //attributes satisfy the ones from rule
         String relationString = "{ ($x, $y) isa attributed-relation; " +
@@ -231,7 +230,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_MissingRelationPlayers(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
 
         //inferred relation (role {role2, role3} : $x, role {role1, role2} : $y)
         String relationString = "{ ($x, $y);$x isa twoRoleEntity; $y isa anotherTwoRoleEntity; };";
@@ -269,7 +268,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test //should assign (role : $x, role1: $y, role: $z) which is compatible with 3 ternary rules
     public void testRuleApplicability_WithWildcard(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{ ($x, $y, $z);$y isa singleRoleEntity; $z isa twoRoleEntity; };";
         RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
@@ -284,7 +283,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_TypedResources(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String relationString = "{ $x isa reifiable-relation; $x has description $d; };";
         String relationString2 = "{ $x isa typed-relation; $x has description $d; };";
         String relationString3 = "{ $x isa relation; $x has description $d; };";
@@ -299,7 +298,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_DerivedTypes(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String typeString = "{ $x isa reifying-relation; };";
         String typeString2 = "{ $x isa typed-relation; };";
         String typeString3 = "{ $x isa description; };";
@@ -322,7 +321,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test //should assign (role: $x, role: $y) which is compatible with all rules
     public void testRuleApplicability_genericRelation(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String relationString = "{ ($x, $y); };";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         assertEquals(
@@ -334,7 +333,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_genericType(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String typeString = "{ $x isa $type; };";
         String typeString2 = "{ $x isa $type;$x isa entity; };";
         String typeString3 = "{ $x isa $type;$x isa relation; };";
@@ -350,7 +349,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_genericTypeAsARoleplayer(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String typeString = "{ (symmetricRole: $x); $x isa $type; };";
         String typeString2 = "{ (someRole: $x); $x isa $type; };";
         Atom type = ReasonerQueries.create(conjunction(typeString, tx), tx).getAtoms(IsaAtom.class).findFirst().orElse(null);
@@ -365,7 +364,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_genericTypeWithBounds(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String relationString = "{ $x isa $type; };";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
         assertEquals(
@@ -377,7 +376,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_WithWildcard_MissingMappings(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{ ($x, $y, $z);$y isa singleRoleEntity; $z isa singleRoleEntity; };";
         RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
@@ -392,7 +391,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test //NB: role2 sub role1
     public void testRuleApplicability_RepeatingRoleTypesWithHierarchy(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String relationString = "{ (someRole: $x1, someRole: $x2, subRole: $x3); };";
         String relationString2 = "{ (someRole: $x1, subRole: $x2, subRole: $x3); };";
         String relationString3 = "{ (subRole: $x1, subRole: $x2, subRole: $x3); };";
@@ -407,7 +406,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_genericRelationWithGenericType(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String relationString = "{ ($x, $y);$x isa noRoleEntity; };";
         String relationString2 = "{ ($x, $y);$x isa entity; };";
         String relationString3 = "{ ($x, $y);$x isa relation; };";
@@ -425,7 +424,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_ReifiedRelationsWithType(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String relationString = "{ (someRole: $x, subRole: $y) isa reifying-relation; };";
         String relationString2 = "{ $x isa entity;(someRole: $x, subRole: $y) isa reifying-relation; };";
         String relationString3 = "{ $x isa anotherTwoRoleEntity;(someRole: $x, subRole: $y) isa reifying-relation; };";
@@ -444,7 +443,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_TypePlayabilityDeterminesApplicability(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String relationString = "{ $y isa singleRoleEntity;(someRole:$x, role:$y, anotherRole: $z) isa ternary; };";
         String relationString2 = "{ $y isa twoRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
         String relationString3 = "{ $y isa anotherTwoRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
@@ -466,7 +465,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_TypeRelation(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String typeString = "{ $x isa reifying-relation; };";
         String typeString2 = "{ $x isa ternary; };";
         String typeString3 = "{ $x isa binary; };";
@@ -481,7 +480,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_OntologicalTypes(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         String typeString = "{ $x sub " + Schema.MetaSchema.RELATION.getLabel() + "; };";
         String typeString2 = "{ $x relates someRole; };";
         String typeString3 = "{ $x plays someRole; };";
@@ -499,7 +498,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_InstancesMakeRuleInapplicable_NoRoleTypes(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         Concept concept = getConcept(tx, "name", "noRoleEntity");
         String relationString = "{" +
                 "($x, $y) isa ternary;" +
@@ -512,7 +511,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_InstancesMakeRuleInapplicable_NoRoleTypes_NoRelationType(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().write();
         Concept concept = getConcept(tx, "name", "noRoleEntity");
         String relationString = "{" +
                 "($x, $y);" +
@@ -526,7 +525,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_ResourceDouble(){
-        TransactionOLTP tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = resourceApplicabilitySession.transaction().write();
         String resourceString = "{ $x has res-double > 3.0; };";
         String resourceString2 = "{ $x has res-double > 4.0; };";
         String resourceString3 = "{ $x has res-double < 3.0; };";
@@ -558,7 +557,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_ResourceLong(){
-        TransactionOLTP tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = resourceApplicabilitySession.transaction().write();
         String resourceString = "{ $x has res-long > 100; };";
         String resourceString2 = "{ $x has res-long > 150; };";
         String resourceString3 = "{ $x has res-long < 100; };";
@@ -590,7 +589,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_ResourceString(){
-        TransactionOLTP tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = resourceApplicabilitySession.transaction().write();
         String resourceString = "{ $x has res-string contains 'ing'; };";
         String resourceString2 = "{ $x has res-string 'test' ; };";
         String resourceString3 = "{ $x has res-string like \".*(fast|string).*\"; };";
@@ -610,7 +609,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_ResourceBoolean(){
-        TransactionOLTP tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = resourceApplicabilitySession.transaction().write();
         String resourceString = "{ $x has res-boolean 'true'; };";
         String resourceString2 = "{ $x has res-boolean 'false'; };";
 
@@ -624,7 +623,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_TypeResource(){
-        TransactionOLTP tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = resourceApplicabilitySession.transaction().write();
         String typeString = "{ $x isa resource; };";
         Atom type = ReasonerQueries.atomic(conjunction(typeString, tx), tx).getAtom();
         assertEquals(1, type.getApplicableRules().count());
@@ -633,7 +632,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_Resource_TypeMismatch(){
-        TransactionOLTP tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = resourceApplicabilitySession.transaction().write();
         String resourceString = "{ $x isa entity1, has resource $r; };";
         String resourceString2 = "{ $x isa entity2, has resource $r; };";
         String resourceString3 = "{ $x isa entity2, has resource 'test'; };";
@@ -650,7 +649,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_ReifiedResourceDouble(){
-        TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction().write();
         String queryString = "{ $x > 3.0 isa res-double; ($x, $y); };";
         String queryString2 = "{ $x > 4.0 isa res-double; ($x, $y); };";
         String queryString3 = "{ $x < 3.0 isa res-double; ($x, $y); };";
@@ -682,7 +681,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_ReifiedResourceLong(){
-        TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction().write();
         String queryString = "{ $x > 100 isa res-long; ($x, $y); };";
         String queryString2 = "{ $x > 150 isa res-long; ($x, $y); };";
         String queryString3 = "{ $x < 100 isa res-long; ($x, $y); };";
@@ -714,7 +713,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_ReifiedResourceString(){
-        TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction().write();
         String queryString = "{ $x contains 'val' isa res-string; ($x, $y); };";
         String queryString2 = "{ $x 'test' isa res-string; ($x, $y); };";
         String queryString3 = "{ $x like \".*(fast|value).*\" isa res-string; ($x, $y); };";
@@ -734,7 +733,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_ReifiedResourceBoolean() {
-        TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction().write();
         String queryString = "{ $x 'true' isa res-boolean;($x, $y); };";
         String queryString2 = "{ $x 'false' isa res-boolean;($x, $y); };";
 
@@ -748,7 +747,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_whenMatchingRulesForGroundAtomRedefinedViaRule_ruleIsMatched(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.READ);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().read();
         Relation instance = tx.getRelationType("reifiable-relation").instances().findFirst().orElse(null);
         String queryString = "{ $r has description 'typed-reified'; $r id '" + instance.id().getValue() + "'; };";
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
@@ -759,7 +758,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_whenMatchingRulesForGroundTypeWhichIsNotRedefined_noRulesAreMatched(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.READ);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().read();
         Relation instance = tx.getRelationType("binary").instances().findFirst().orElse(null);
         String queryString = "{ $x isa binary; $x id '" + instance.id().getValue() + "'; };";
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
@@ -770,7 +769,7 @@ public class AtomicRuleApplicabilityIT {
 
     @Test
     public void testRuleApplicability_whenMatchingRulesForASpecificRelation_noRulesAreMatched(){
-        TransactionOLTP tx = ruleApplicabilitySession.transaction(Transaction.Type.READ);
+        TransactionOLTP tx = ruleApplicabilitySession.transaction().read();
         Relation instance = tx.getRelationType("binary").instances().findFirst().orElse(null);
         String queryString = "{ $r ($x, $y) isa binary; $r id '" + instance.id().getValue() + "'; };";
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();

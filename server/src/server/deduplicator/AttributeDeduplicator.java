@@ -19,7 +19,6 @@
 package grakn.core.server.deduplicator;
 
 import com.google.common.collect.Lists;
-import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.session.SessionImpl;
@@ -53,7 +52,7 @@ public class AttributeDeduplicator {
      */
     public static void deduplicate(SessionFactory sessionFactory, KeyspaceIndexPair keyspaceIndexPair) {
         SessionImpl session = sessionFactory.session(keyspaceIndexPair.keyspace());
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             GraphTraversalSource tinker = tx.getTinkerTraversal();
             GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceIndexPair.index());
             Vertex mergeTargetV = duplicates.next();
