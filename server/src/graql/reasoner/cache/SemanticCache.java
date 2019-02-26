@@ -102,7 +102,7 @@ public abstract class SemanticCache<
         ReasonerAtomicQuery query = entry.query();
         updateFamily(query);
         computeParents(query);
-        propagateAnswersToQuery(query, query.isGround());
+        propagateAnswersToQuery(query, cacheEntry, query.isGround());
         return cacheEntry;
     }
 
@@ -173,26 +173,23 @@ public abstract class SemanticCache<
     /**
      * NB: uses getEntry
      * @param target query we want propagate the answers to
+     * @param childMatch entry to which we want to propagate answers
      * @param inferred true if inferred answers should be propagated
      */
-    private boolean propagateAnswersToQuery(ReasonerAtomicQuery target, boolean inferred){
-        CacheEntry<ReasonerAtomicQuery, SE> childMatch = getEntry(target);
-        if (childMatch != null) {
-            ReasonerAtomicQuery child = childMatch.query();
-            boolean[] newAnswersFound = {false};
-            parents.get(queryToKey(child))
-                    .stream()
-                    .filter(parent -> isDBComplete(keyToQuery(parent)))
-                    .map(this::keyToQuery)
-                    .map(this::getEntry)
-                    .forEach(parentMatch -> {
+    private boolean propagateAnswersToQuery(ReasonerAtomicQuery target, CacheEntry<ReasonerAtomicQuery, SE> childMatch, boolean inferred){
+        ReasonerAtomicQuery child = childMatch.query();
+        boolean[] newAnswersFound = {false};
+        parents.get(queryToKey(child))
+                .stream()
+                .filter(parent -> isDBComplete(keyToQuery(parent)))
+                .map(this::keyToQuery)
+                .map(this::getEntry)
+                .forEach(parentMatch -> {
                         boolean newAnswers = propagateAnswers(target, parentMatch, childMatch, inferred);
                         newAnswersFound[0] = newAnswers;
                         ackDBCompletenessFromParent(target, parentMatch.query());
-                    });
-            return newAnswersFound[0];
-        }
-        return false;
+                });
+        return newAnswersFound[0];
     }
 
     @Override
@@ -242,7 +239,7 @@ public abstract class SemanticCache<
         if (match != null) {
             boolean answersToGroundQuery = false;
             if (query.isGround()) {
-                answersToGroundQuery = propagateAnswersToQuery(query, true);
+                answersToGroundQuery = propagateAnswersToQuery(query, match,true);
             }
 
             //extra check is a quasi-completeness check if there's no parent present we have no guarantees about completeness with respect to the db.
