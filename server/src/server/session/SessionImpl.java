@@ -35,6 +35,7 @@ import grakn.core.server.session.cache.KeyspaceCache;
 import org.janusgraph.core.JanusGraph;
 
 import javax.annotation.CheckReturnValue;
+import java.util.function.Consumer;
 
 /**
  * This class represents a Grakn Session.
@@ -59,7 +60,7 @@ public class SessionImpl implements Session {
     private final Config config;
     private final JanusGraph graph;
     private final KeyspaceCache keyspaceCache;
-    private final Runnable onClose;
+    private final Consumer onClose;
 
     private boolean isClosed = false;
 
@@ -70,7 +71,7 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(Keyspace keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, Runnable onClose) {
+    public SessionImpl(Keyspace keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, Consumer onClose) {
         this.keyspace = keyspace;
         this.config = config;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
@@ -176,6 +177,19 @@ public class SessionImpl implements Session {
         return new TransactionOLAP(hadoopGraphFactory.getGraph());
     }
 
+
+    /**
+     * Method used by SessionFactory to invalidate current Session when the keyspace is deleted.
+     */
+    void invalidate(){
+        TransactionOLTP localTx = localOLTPTransactionContainer.get();
+        if (localTx != null) {
+            localTx.close(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
+            localOLTPTransactionContainer.set(null);
+        }
+        isClosed = true;
+    }
+
     /**
      * Close JanusGraph, it will not be possible to create new transactions using current instance of Session.
      * This closes local transaction before closing the graph.
@@ -195,7 +209,7 @@ public class SessionImpl implements Session {
         }
 
 
-        this.onClose.run();
+        this.onClose.accept(this);
         isClosed = true;
     }
 

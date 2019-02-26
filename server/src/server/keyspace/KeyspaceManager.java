@@ -70,7 +70,7 @@ public class KeyspaceManager {
      *
      * @param keyspace The new {@link Keyspace} we have just created
      */
-    public void addKeyspace(Keyspace keyspace) {
+    public void putKeyspace(Keyspace keyspace) {
         if (containsKeyspace(keyspace)) return;
 
         try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {

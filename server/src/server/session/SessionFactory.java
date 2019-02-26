@@ -28,6 +28,8 @@ import grakn.core.server.util.LockManager;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 
@@ -38,16 +40,16 @@ import java.util.concurrent.locks.Lock;
  */
 public class SessionFactory {
     private final JanusGraphFactory janusGraphFactory;
-    private final KeyspaceManager keyspaceStore;
+    private final KeyspaceManager keyspaceManager;
     private Config config;
     private final LockManager lockManager;
 
     private final ConcurrentHashMap<Keyspace, KeyspaceCacheContainer> keyspaceCacheMap;
 
-    public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, KeyspaceManager keyspaceStore, Config config) {
+    public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, KeyspaceManager keyspaceManager, Config config) {
         this.janusGraphFactory = janusGraphFactory;
         this.lockManager = lockManager;
-        this.keyspaceStore = keyspaceStore;
+        this.keyspaceManager = keyspaceManager;
         this.config = config;
         this.keyspaceCacheMap = new ConcurrentHashMap<>();
     }
@@ -60,110 +62,69 @@ public class SessionFactory {
      * @return a new or existing {@link Session} connecting to the provided {@link Keyspace}
      */
     public SessionImpl session(Keyspace keyspace) {
-        if (!keyspaceStore.containsKeyspace(keyspace)) {
-            return initialiseNewKeyspace(keyspace);
-        } else {
-            return newSessionImpl(keyspace);
-        }
-    }
+        JanusGraph graph;
+        KeyspaceCache cache;
+        KeyspaceCacheContainer cacheContainer;
 
-    public synchronized void deleteKeyspace(Keyspace keyspace) {
-
-        keyspaceCacheMap.compute(keyspace, (ksp, keyspaceCacheContainer) -> {
-            // if a concurrent delete has not occurred already
-            if (keyspaceCacheContainer != null) {
-                // atomically close the shared graph, blocking concurrent users from re-creating it
-                JanusGraph graph = keyspaceCacheContainer.retrieveGraph();
-                graph.close();
-            }
-            // null out the value so others can re-create keyspace
-            return null;
-        });
-
-        // don't delete the entry, in case it has already been recreated meanwhile, see comments above
-    }
-
-    /**
-     * Initialise a new {@link Keyspace} by opening and closing a transaction on it.
-     *
-     * @param keyspace the new {@link Keyspace} we want to create
-     */
-    private SessionImpl initialiseNewKeyspace(Keyspace keyspace) {
-        //If the keyspace does not exist lock and create it
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
         lock.lock();
-        SessionImpl session;
+
         try {
-            // opening a session initialises the keyspace with meta concepts, protect with lock so doesn't get initialised twice
-            session = newSessionImpl(keyspace);
-            // Add current keyspace to list of available Grakn keyspaces
-            keyspaceStore.addKeyspace(keyspace);
+            if (keyspaceCacheMap.contains(keyspace)) {
+                graph = keyspaceCacheMap.get(keyspace).graph();
+                cache = keyspaceCacheMap.get(keyspace).cache();
+                cacheContainer = keyspaceCacheMap.get(keyspace);
+            } else {
+                keyspaceManager.putKeyspace(keyspace);
+                graph = janusGraphFactory.openGraph(keyspace.getName());
+                cache = new KeyspaceCache(config);
+                cacheContainer = new KeyspaceCacheContainer(cache, graph);
+                keyspaceCacheMap.put(keyspace, cacheContainer);
+            }
+            cacheContainer.incrementReferenceCount();
+            SessionImpl session = new SessionImpl(keyspace, config, cache, graph, (sessionToClose) -> onSessionClose(sessionToClose));
+            cacheContainer.addSessionReference(session);
+
         } finally {
             lock.unlock();
         }
-        return session;
     }
 
-    /**
-     * Obtain a new session to a keyspace, while doing the required accounting
-     * for reference counting keyspace cache usage to ensure proper keyspaceCache eviction
-     *
-     * @param keyspace
-     * @return
-     */
-    private SessionImpl newSessionImpl(Keyspace keyspace) {
-
-
-        SessionImpl session;
-        keyspaceCacheMap.compute(keyspace, (ksp, keyspaceCacheContainer) -> {
-            // atomically upsert a new KeyspaceCacheContainer
-            // AND increment the reference count atomically
-            KeyspaceCacheContainer cacheContainer;
-            if (keyspaceCacheContainer == null) {
-                JanusGraph graph = janusGraphFactory.openGraph(keyspace.getName());
-                cacheContainer = new KeyspaceCacheContainer(new KeyspaceCache(config), graph);
-            } else {
-                cacheContainer = keyspaceCacheContainer;
+    public void deleteKeyspace(Keyspace keyspace) {
+        Lock lock = lockManager.getLock(getLockingKey(keyspace));
+        lock.lock();
+        try {
+            if (keyspaceCacheMap.contains(keyspace)) {
+                KeyspaceCacheContainer container = keyspaceCacheMap.remove(keyspace);
+                container.graph().close();
+                container.closeSessions();
             }
-            cacheContainer.incrementReferenceCount();
-            return cacheContainer;
-        });
-
-        KeyspaceCacheContainer keyspaceCacheContainer = keyspaceCacheMap.get(keyspace);
-        session = new SessionImpl(keyspace, config, keyspaceCacheContainer.retrieveCache(), keyspaceCacheContainer.retrieveGraph(), () -> onSessionClose(keyspace, keyspaceCacheContainer));
-        return session;
+        } finally {
+            lock.unlock();
+        }
     }
 
-    private void onSessionClose(Keyspace keyspace, KeyspaceCacheContainer cacheContainer) {
-        // require a reference to the ORIGINAL container, since the key it is mapped to
-        // may have been re-mapped to a new instance of KeyspaceCacheContainer
-        // eg. if someone subsequently deletes and re-creates the same keyspace
 
-        // when clearing an entry from the map we face the same issues as when deleting a session
-        // this would be much neater if sessions could not be deleted at arbitrary times!
+    private void onSessionClose(SessionImpl session) {
+        Lock lock = lockManager.getLock(getLockingKey(session.keyspace()));
+        lock.lock();
+        try {
+            KeyspaceCacheContainer mapCacheContainer = keyspaceCacheMap.get(session.keyspace());
 
-        keyspaceCacheMap.compute(keyspace, (ksp, mappedContainer) -> {
-
-            // only update accounting and possibly clear from map IF
-            // the container currently in the map is the same we initialised this session with
-
-            if (mappedContainer == cacheContainer) {
-                mappedContainer.decrementReferenceCount();
-                if (mappedContainer.referenceCount() == 0) {
-                    JanusGraph graph = mappedContainer.retrieveGraph();
-                    ((StandardJanusGraph) graph).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close);
-                    graph.close();
-                    // in this case only, we clear the entry in the map
-                    return null;
-                }
+            mapCacheContainer.decrementReferenceCount();
+            if (mapCacheContainer.referenceCount() == 0) {
+                //Time to close and delete reference in cache
+                JanusGraph graph = mapCacheContainer.graph();
+                ((StandardJanusGraph) graph).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close);
+                graph.close();
+                keyspaceCacheMap.remove(session.keyspace());
             } else {
-                // this means the keyspace has been cleared & recreated, through deletion
-                JanusGraph graph = cacheContainer.retrieveGraph();
-                // this graph must already have been closed
-                assert graph.isClosed();
+                mapCacheContainer.removeSessionReference();
             }
-            return mappedContainer;
-        });
+
+        } finally {
+            lock.unlock();
+        }
     }
 
     private static String getLockingKey(Keyspace keyspace) {
@@ -174,32 +135,48 @@ public class SessionFactory {
     private class KeyspaceCacheContainer {
 
         private KeyspaceCache keyspaceCache;
-        private JanusGraph graph; // cached here because concurrently created sessions don't see writes to JanusGraph DB cache
+        // Graph is cached here because concurrently created sessions don't see writes to JanusGraph DB cache
+        private JanusGraph graph;
         private int references;
+        // Keep track of sessions so that if a user deletes a keyspace we make sure to close all associated sessions
+        private List<SessionImpl> sessions;
 
         public KeyspaceCacheContainer(KeyspaceCache keyspaceCache, JanusGraph graph) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
             references = 0;
+            sessions = new ArrayList<>();
         }
 
-        public KeyspaceCache retrieveCache() {
+        public KeyspaceCache cache() {
             return keyspaceCache;
         }
 
-        public synchronized void incrementReferenceCount() {
+        void incrementReferenceCount() {
             references++;
         }
 
-        public synchronized void decrementReferenceCount() {
+        void decrementReferenceCount() {
             references--;
         }
 
-        public int referenceCount() {
+        int referenceCount() {
             return references;
         }
 
-        public JanusGraph retrieveGraph() {
+        void addSessionReference(SessionImpl session) {
+            sessions.add(session);
+        }
+
+        void removeSessionReference(SessionImpl session) {
+            sessions.remove(session);
+        }
+
+        void closeSessions() {
+            sessions.forEach(SessionImpl::invalidate);
+        }
+
+        public JanusGraph graph() {
             return graph;
         }
 
