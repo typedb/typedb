@@ -38,7 +38,6 @@ import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.util.GraqlTestUtil;
@@ -432,7 +431,7 @@ public class AtomicTypeInferenceIT {
     }
 
     private List<Type> allRelations(TransactionOLTP tx){
-        RelationType metaType = tx.getRelationType(Schema.MetaSchema.RELATION.getLabel().getValue());
+        RelationType metaType = tx.getRelationType(Graql.Token.Type.RELATION.toString());
         return metaType.subs().filter(t -> !t.equals(metaType)).collect(Collectors.toList());
     }
 

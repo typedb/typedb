@@ -31,7 +31,6 @@ import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -68,11 +67,11 @@ public class GraqlUndefineIT {
     // TODO: This test class should be cleaned up.
     //       Either use a shared dataset across all test, or make all tests independent.
 
-    private static final Statement THING = type(Schema.MetaSchema.THING.getLabel().getValue());
-    private static final Statement ENTITY = type(Schema.MetaSchema.ENTITY.getLabel().getValue());
-    private static final Statement RELATION = type(Schema.MetaSchema.RELATION.getLabel().getValue());
-    private static final Statement ATTRIBUTE = type(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue());
-    private static final Statement ROLE = type(Schema.MetaSchema.ROLE.getLabel().getValue());
+    private static final Statement THING = type(Graql.Token.Type.THING);
+    private static final Statement ENTITY = type(Graql.Token.Type.ENTITY);
+    private static final Statement RELATION = type(Graql.Token.Type.RELATION);
+    private static final Statement ATTRIBUTE = type(Graql.Token.Type.ATTRIBUTE);
+    private static final Statement ROLE = type(Graql.Token.Type.ROLE);
     private static final Label NEW_TYPE = Label.of("new-type");
     private static final Statement x = var("x");
 
