@@ -107,43 +107,6 @@ public class RuleUtils {
                     );
 
     /**
-     * @param tx graph context for rules
-     * @return stream of type pairs being in contradiction - having a positive and negative path in between
-     */
-    public static Stream<Pair<Type, Type>> findTypeGraphContradictions(TransactionOLTP tx){
-        HashMultimap<Type, Type> negativeGraph = HashMultimap.create();
-        HashMultimap<Type, Type> positiveGraph = HashMultimap.create();
-        tx.getMetaRule().subs()
-                .filter(rule -> !Schema.MetaSchema.isMetaLabel(rule.label()))
-                .forEach(rule ->
-                    rule.thenTypes().forEach(thenType -> {
-                        rule.whenNegativeTypes().forEach(whenType -> negativeGraph.put(whenType, thenType));
-                        rule.whenPositiveTypes().forEach(whenType -> positiveGraph.put(whenType, thenType));
-                    })
-                );
-        return negativeGraph.entries().stream()
-                .filter(e -> isTypeReachable(e.getKey(), e.getValue(), positiveGraph))
-                .map(e -> new Pair<>(e.getKey(), e.getValue()));
-    }
-
-    private static boolean isTypeReachable(Type start, Type end, HashMultimap<Type, Type> typeGraph){
-        Stack<Type> stack = new Stack<>();
-        Set<Type> visited = Sets.newHashSet();
-        boolean reachable = false;
-        stack.push(start);
-        while(!reachable && !stack.isEmpty()){
-            Type type = stack.pop();
-            if (!visited.contains(type)){
-                Set<Type> neighbours = typeGraph.get(type);
-                if (neighbours.contains(end)) reachable = true;
-                stack.addAll(neighbours);
-                visited.add(type);
-            }
-        }
-        return reachable;
-    }
-
-    /**
      * @param rules to be stratified (ordered)
      * @return stream of rules ordered in terms of priority (high priority first)
      */

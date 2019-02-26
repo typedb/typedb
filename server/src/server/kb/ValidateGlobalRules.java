@@ -263,18 +263,6 @@ class ValidateGlobalRules {
     }
 
     /**
-     * @param graph  graph used to ensure rules contain no contradictions
-     * @return Error messages if the rules in the db contain contradictions (positive and negative paths between types)
-     */
-    static Set<String> validateNoContradictions(TransactionOLTP graph){
-        Set<String> errors = new HashSet<>();
-        RuleUtils.findTypeGraphContradictions(graph).forEach(p ->
-            errors.add(ErrorMessage.VALIDATION_RULE_CONTRADICTION_IN_TYPEGRAPH.getMessage(p.getKey(), p.getValue()))
-        );
-        return errors;
-    }
-
-    /**
      * @param graph graph used to ensure rules are stratifiable
      * @return Error messages if the rules in the db are not stratifiable (cycles with negation are present)
      */

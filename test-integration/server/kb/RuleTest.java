@@ -617,66 +617,6 @@ public class RuleTest {
     }
 
     @Test
-    public void whenAddingRulesWithSimpleContradiction_Throw() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            EntityType p = tx.putEntityType("p");
-            EntityType q = tx.putEntityType("q");
-
-            tx.putRule("Rule",
-                    Graql.parsePattern("{$x isa entity; not{ $x isa q;};};"),
-                    Graql.parsePattern("$x isa p;"));
-            tx.putRule("Rule2",
-                    Graql.parsePattern("$x isa q;"),
-                    Graql.parsePattern("$x isa p;"));
-
-            expectedException.expect(InvalidKBException.class);
-
-            expectedException.expectMessage(allOf(
-                    containsString("The rule graph contains a contradiction"),
-                    containsString(p.toString()),
-                    containsString(q.toString())
-            ));
-
-            tx.commit();
-        }
-    }
-
-    @Test
-    public void whenAddingRulesWithNonTrivialContradiction_Throw() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            EntityType p = tx.putEntityType("p");
-            EntityType q = tx.putEntityType("q");
-            EntityType r = tx.putEntityType("r");
-            EntityType s = tx.putEntityType("s");
-            EntityType t = tx.putEntityType("t");
-
-            //negative path to r
-            tx.putRule("Rule1",
-                    Graql.parsePattern("{$x isa p; not{ $x isa q;};};"),
-                    Graql.parsePattern("$x isa r;"));
-
-            //positive path to r
-            tx.putRule("Rule2",
-                    Graql.parsePattern("{$x isa q;};"),
-                    Graql.parsePattern("$x isa t;"));
-
-            tx.putRule("Rule3",
-                    Graql.parsePattern("{$x isa t;};"),
-                    Graql.parsePattern("$x isa r;"));
-
-            expectedException.expect(InvalidKBException.class);
-
-            expectedException.expectMessage(allOf(
-                    containsString("The rule graph contains a contradiction"),
-                    containsString(q.toString()),
-                    containsString(r.toString())
-            ));
-
-            tx.commit();
-        }
-    }
-
-    @Test
     public void whenAddingARuleWithMultipleNegationBlocks_Throw() throws InvalidKBException {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             Pattern when = Graql.parsePattern(

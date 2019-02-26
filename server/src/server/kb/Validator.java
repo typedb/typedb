@@ -74,7 +74,6 @@ public class Validator {
         //Validate rule type graph
         if (!graknGraph.cache().getModifiedRules().isEmpty()) {
             errorsFound.addAll(ValidateGlobalRules.validateRuleStratifiability(graknGraph));
-            errorsFound.addAll(ValidateGlobalRules.validateNoContradictions(graknGraph));
         }
 
         return errorsFound.size() == 0;
