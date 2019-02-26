@@ -45,7 +45,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -177,14 +176,14 @@ public class TransactionIT {
 
         tx.abort();
 
-        for (SchemaConcept type : tx.getGlobalCache().getCachedTypes().values()) {
+        for (SchemaConcept type : session.getKeyspaceCache().getCachedTypes().values()) {
             assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", finalTypes.contains(type));
         }
     }
 
     private void assertCacheOnlyContainsMetaTypes() {
         Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(toSet());
-        tx.getGlobalCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
+        session.getKeyspaceCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
     }
 
     @Test
@@ -224,42 +223,6 @@ public class TransactionIT {
         tx.putEntityType("A Thing");
     }
 
-    @Test
-    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws InvalidKBException, ExecutionException, InterruptedException {
-        //Check Central cache is empty
-        assertCacheOnlyContainsMetaTypes();
-
-        Role r1 = tx.putRole("r1");
-        Role r2 = tx.putRole("r2");
-        EntityType e1 = tx.putEntityType("e1").plays(r1).plays(r2);
-        RelationType rel1 = tx.putRelationType("rel1").relates(r1).relates(r2);
-
-        //Purge the above concepts into the main cache
-        tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
-
-        //Check cache is in good order
-        Collection<SchemaConcept> cachedValues = tx.getGlobalCache().getCachedTypes().values();
-        assertTrue("Type [" + r1 + "] was not cached", cachedValues.contains(r1));
-        assertTrue("Type [" + r2 + "] was not cached", cachedValues.contains(r2));
-        assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
-        assertTrue("Type [" + rel1 + "] was not cached", cachedValues.contains(rel1));
-
-        assertThat(e1.playing().collect(toSet()), containsInAnyOrder(r1, r2));
-
-        ExecutorService pool = Executors.newSingleThreadExecutor();
-        //Mutate Schema in a separate thread
-        pool.submit(() -> {
-            Transaction innerGraph = session.transaction(Transaction.Type.WRITE);
-            EntityType entityType = innerGraph.getEntityType("e1");
-            Role role = innerGraph.getRole("r1");
-            entityType.unplay(role);
-        }).get();
-
-        //Check the above mutation did not affect central repo
-        SchemaConcept foundE1 = tx.getGlobalCache().getCachedTypes().get(e1.label());
-        assertTrue("Main cache was affected by transaction", foundE1.asType().playing().anyMatch(role -> role.equals(r1)));
-    }
 
     @Test
     public void whenClosingAGraphWhichWasJustCommitted_DoNothing() {

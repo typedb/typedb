@@ -27,48 +27,50 @@ import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
-import grakn.core.server.session.SessionStore;
+import grakn.core.server.session.JanusGraphFactory;
+import grakn.core.server.session.SessionFactory;
 import grakn.core.server.util.LockManager;
 import grakn.core.server.util.ServerID;
 import grakn.core.server.util.ServerLockManager;
 import io.grpc.ServerBuilder;
 
 /**
- * This is a factory class which contains methods for instantiating a {@link Server} in different ways.
- *
+ * This is a factory class which contains methods for instantiating a Server in different ways.
  */
 public class ServerFactory {
     /**
-     * Create a {@link Server} configured for Grakn Core. Grakn Queue (which is needed for post-processing and distributed locks) is implemented with Redis as the backend store
+     * Create a Server configured for Grakn Core. Grakn Queue (which is needed for post-processing and distributed locks) is implemented with Redis as the backend store
      *
-     * @return a {@link Server} instance configured for Grakn Core
+     * @return a Server instance configured for Grakn Core
      */
     public static Server createServer(boolean benchmark) {
         // Grakn Server configuration
         ServerID serverID = ServerID.me();
         Config config = Config.create();
 
-        // distributed locks
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
+
+        // locks
         LockManager lockManager = new ServerLockManager();
 
-        KeyspaceManager keyspaceStore = new KeyspaceManager(config);
+        KeyspaceManager keyspaceStore = new KeyspaceManager(janusGraphFactory, config);
 
         // session factory
-        SessionStore sessionStore = SessionStore.create(lockManager, config, keyspaceStore);
-
+        SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, keyspaceStore, config);
 
         // post-processing
-        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, sessionStore);
+        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, sessionFactory);
 
         // http services: gRPC server
-        io.grpc.Server serverRPC = createServerRPC(config, sessionStore, attributeDeduplicatorDaemon, keyspaceStore, benchmark);
+        io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, attributeDeduplicatorDaemon, keyspaceStore, janusGraphFactory, benchmark);
 
         return createServer(serverID, serverRPC, lockManager, attributeDeduplicatorDaemon, keyspaceStore);
     }
 
     /**
-     * Allows the creation of a {@link Server} instance with various configurations
-     * @return a {@link Server} instance
+     * Allows the creation of a Server instance with various configurations
+     *
+     * @return a Server instance
      */
 
     public static Server createServer(
@@ -83,9 +85,9 @@ public class ServerFactory {
         return server;
     }
 
-    private static io.grpc.Server createServerRPC(Config config, SessionStore sessionStore, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore, boolean benchmark){
+    private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore, JanusGraphFactory janusGraphFactory, boolean benchmark) {
         int grpcPort = config.getProperty(ConfigKey.GRPC_PORT);
-        OpenRequest requestOpener = new ServerOpenRequest(sessionStore);
+        OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
         if (benchmark) {
             ServerTracingInstrumentation.initInstrumentation("server-instrumentation");
@@ -93,7 +95,7 @@ public class ServerFactory {
 
         io.grpc.Server serverRPC = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))
-                .addService(new KeyspaceService(keyspaceStore))
+                .addService(new KeyspaceService(keyspaceStore, sessionFactory, janusGraphFactory))
                 .build();
 
         return serverRPC;

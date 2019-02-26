@@ -31,7 +31,6 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.server.Transaction;
 import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
@@ -46,12 +45,12 @@ import java.util.Set;
  * Validation Concepts - Concepts which need to undergo validation.
  * Built Concepts -  Prevents rebuilding when the same vertex is encountered
  * The Schema - Optimises validation checks by preventing db read.
- * {@link Label} - Allows mapping type labels to type Ids
+ * Label - Allows mapping type labels to type Ids
  * Transaction meta Data - Allows transactions to function in different ways
  */
 public class TransactionCache {
     //Cache which is shared across multiple transactions
-    private final GlobalCache globalCache;
+    private final KeyspaceCache keyspaceCache;
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
@@ -78,26 +77,26 @@ public class TransactionCache {
     private Multimap<String, ConceptId> newAttributes = ArrayListMultimap.create();
 
     //Transaction Specific Meta Data
-    private boolean isTxOpen = false;
     private boolean writeOccurred = false;
-    private Transaction.Type txType;
-    private String closedReason = null;
 
-    public TransactionCache(GlobalCache globalCache) {
-        this.globalCache = globalCache;
+    public TransactionCache(KeyspaceCache keyspaceCache) {
+        this.keyspaceCache = keyspaceCache;
     }
 
     /**
-     * A helper method which writes back into the graph cache at the end of a transaction.
      *
-     * @param isSafe true only if it is safe to copy the cache completely without any checks
      */
-    public void writeToGraphCache(boolean isSafe) {
-        //When a commit has occurred or a transaction is read only all types can be overridden this is because we know they are valid.
-        //When it is not safe to simply flush we have to check that no mutations were made
-        if (isSafe || !writeOccurred) {
-            globalCache.readTxCache(this);
+    public void refreshKeyspaceCache() {
+        // This is used to prevent the keyspace cache from expiring its stored concept cache
+        // This method is NOT used to actually change things in the keyspace cache
+        if (!writeOccurred) {
+            keyspaceCache.readTxCache(this);
         }
+    }
+
+    public void flushToKeyspaceCache() {
+        // This method is used to actually flush to the keyspace cache
+        keyspaceCache.readTxCache(this);
     }
 
     /**
@@ -109,19 +108,12 @@ public class TransactionCache {
     }
 
     /**
-     * @return true if ths schema labels have been cached. The graph cannot operate if this is false.
-     */
-    public boolean schemaNotCached() {
-        return labelCache.isEmpty();
-    }
-
-    /**
-     * Refreshes the transaction schema cache by reading the central schema cache is read into this transaction cache.
+     * Refreshes the transaction schema cache by reading the keyspace schema cache into this transaction cache.
      * This method performs this operation whilst making a deep clone of the cached concepts to ensure transactions
      * do not accidentally break the central schema cache.
      */
-    public void refreshSchemaCache() {
-        globalCache.populateSchemaTxCache(this);
+    public void updateSchemaCacheFromKeyspaceCache() {
+        keyspaceCache.populateSchemaTxCache(this);
     }
 
     /**
@@ -170,12 +162,6 @@ public class TransactionCache {
         return labelCache;
     }
 
-    /**
-     * @return All the concepts which have been accessed in this transaction
-     */
-    Map<ConceptId, Concept> getConceptCache() {
-        return conceptCache;
-    }
 
     /**
      * @param concept The concept to no longer track
@@ -341,10 +327,7 @@ public class TransactionCache {
     }
 
     //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
-    public void closeTx(String closedReason) {
-        isTxOpen = false;
-        this.closedReason = closedReason;
-
+    public void closeTx() {
         //Clear Concept Caches
         conceptCache.values().forEach(concept -> CacheOwner.from(concept).txCacheClear());
 
@@ -360,24 +343,6 @@ public class TransactionCache {
         conceptCache.clear();
         schemaConceptCache.clear();
         labelCache.clear();
-    }
-
-    public void open(Transaction.Type type) {
-        isTxOpen = true;
-        this.txType = type;
-        closedReason = null;
-    }
-
-    public boolean isTxOpen() {
-        return isTxOpen;
-    }
-
-    public Transaction.Type txType() {
-        return txType;
-    }
-
-    public String getClosedReason() {
-        return closedReason;
     }
 
 }

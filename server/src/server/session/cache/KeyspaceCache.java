@@ -34,31 +34,24 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
+ * Keyspace cache contains two caches:
+ * - Schema Cache - An expiring cache that stores Concept objects across transactions
+ * (currently disabled, shared concepts are not allowed)
+ * - Label Cache - Map labels to IDs for fast lookups
  * <p>
- *     Tracks Knowledge Base Specific Variables
- * </p>
- *
- * <p>
- *     Caches Knowledge Base or Session specific data which is shared across transactions:
- *     <ol>
- *         <li>Schema Cache - All the types which make up the schema. This cache expires</li>
- *         <li>
- *             Label Cache - All the labels which make up the schema. This can never expire and is needed in order
- *             to perform fast lookups. Essentially it is used for mapping labels to ids.
- *         </li>
- *     <ol/>
- * </p>
- *
- *
+ * These are shared across sessions and transactions to the same keyspace, and kept in sync
+ * on commit.
  */
-public class GlobalCache {
+public class KeyspaceCache {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    //Caches
+    // Concept cache
     private final Cache<Label, SchemaConcept> cachedTypes;
+
+    // Label cache
     private final Map<Label, LabelId> cachedLabels;
 
-    public GlobalCache(Config config) {
+    public KeyspaceCache(Config config) {
         cachedLabels = new ConcurrentHashMap<>();
 
         int cacheTimeout = config.getProperty(ConfigKey.SESSION_CACHE_TIMEOUT_MS);
@@ -68,7 +61,12 @@ public class GlobalCache {
                 .build();
     }
 
-    void populateSchemaTxCache(TransactionCache transactionCache){
+    /**
+     * Copy the contents of the Keyspace cache into a Transaction Cache
+     *
+     * @param transactionCache
+     */
+    void populateSchemaTxCache(TransactionCache transactionCache) {
         try {
             lock.writeLock().lock();
 
@@ -91,9 +89,9 @@ public class GlobalCache {
      * Caches a type so that we can retrieve ontological concepts without making a DB read.
      *
      * @param label The label of the type to cache
-     * @param type The type to cache
+     * @param type  The type to cache
      */
-    public void cacheType(Label label, SchemaConcept type) {
+    void cacheType(Label label, SchemaConcept type) {
         cachedTypes.put(label, type);
     }
 
@@ -102,22 +100,22 @@ public class GlobalCache {
      * indexed lookups.
      *
      * @param label The label of the type to cache
-     * @param id The id of the type to cache
+     * @param id    The id of the type to cache
      */
     public void cacheLabel(Label label, LabelId id) {
         cachedLabels.put(label, id);
     }
 
     /**
-     * Reads the {@link SchemaConcept} and their {@link Label} currently in the transaction cache
-     * into the graph cache. This usually happens when a commit occurs and allows us to track schema
+     * Reads the SchemaConcept and their Label currently in the transaction cache
+     * into the keyspace cache. This happens when a commit occurs and allows us to track schema
      * mutations without having to read the graph.
      *
      * @param transactionCache The transaction cache
      */
     void readTxCache(TransactionCache transactionCache) {
         //Check if the ontology has been changed and should be flushed into this cache
-        if(!cachedLabels.equals(transactionCache.getLabelCache())) {
+        if (!cachedLabels.equals(transactionCache.getLabelCache())) {
             try {
                 lock.readLock().lock();
 
@@ -127,7 +125,7 @@ public class GlobalCache {
 
                 //Add a new one
                 cachedLabels.putAll(transactionCache.getLabelCache());
-                cachedTypes.putAll(transactionCache.getSchemaConceptCache());
+//                cachedTypes.putAll(transactionCache.getSchemaConceptCache());
             } finally {
                 lock.readLock().unlock();
             }

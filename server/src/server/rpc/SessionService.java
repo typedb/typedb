@@ -109,8 +109,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
 
     /**
-     * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link io.grpc.Server}.
-     * Receives a stream of {@link Transaction.Req}s and returning a stream of {@link Transaction.Res}s.
+     * A StreamObserver that implements the transaction-handling behaviour for io.grpc.Server.
+     * Receives a stream of Transaction.Reqs and returning a stream of Transaction.Ress.
      */
     static class TransactionListener implements StreamObserver<Transaction.Req> {
         final Logger LOG = LoggerFactory.getLogger(TransactionListener.class);
@@ -128,6 +128,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         public TransactionListener(StreamObserver<Transaction.Res> responseSender, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, Map<String, SessionImpl> openSessions) {
             this.responseSender = responseSender;
+
             ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
             this.threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
             this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
@@ -268,9 +269,24 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
 
-            tx = openSessions.get(request.getSessionId()).transaction(Type.of(request.getType().getNumber()));
+            ScopedSpan span = null;
+            if (ServerTracingInstrumentation.tracingActive()) { span = ServerTracingInstrumentation.createScopedChildSpan("SessionService.open"); }
+
+            Span getSession = null;
+            if (span != null) { getSession = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting session", span.context()).start(); }
+            SessionImpl sess = openSessions.get(request.getSessionId());
+            if (getSession != null) getSession.finish();
+
+            Span txSpan = null;
+            if (span != null) { txSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting transaction", span.context()).start(); }
+            tx = sess.transaction(Type.of(request.getType().getNumber()));
+            if (txSpan != null) { txSpan.finish(); }
+
             Transaction.Res response = ResponseBuilder.Transaction.open();
+            if (span != null) { span.finish(); }
+
             onNextResponse(response);
+
         }
 
         private void commit() {
@@ -375,7 +391,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     }
 
     /**
-     * Contains a mutable map of iterators of {@link Transaction.Res}s for gRPC. These iterators are used for returning
+     * Contains a mutable map of iterators of Transaction.Ress for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
      */
     public static class Iterators {
