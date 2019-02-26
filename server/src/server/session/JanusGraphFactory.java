@@ -19,6 +19,7 @@
 package grakn.core.server.session;
 
 import com.google.common.collect.ImmutableMap;
+import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.server.kb.Schema;
@@ -80,6 +81,16 @@ final public class JanusGraphFactory {
         }
     }
 
+    private Config config;
+
+    public JanusGraphFactory(Config config) {
+        this.config = config;
+    }
+
+    public Config config() {
+        return config;
+    }
+
     /**
      * This map is used to override hidden config files.
      * The key of the map refers to the key of the properties file that gets passed in which provides the value to be injected.
@@ -95,8 +106,8 @@ final public class JanusGraphFactory {
     private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
 
 
-    public static synchronized JanusGraph openGraph(SessionImpl session) {
-        JanusGraph JanusGraph = configureGraph(session);
+    public synchronized JanusGraph openGraph(String keyspace) {
+        JanusGraph JanusGraph = configureGraph(keyspace, config);
         buildJanusIndexes(JanusGraph);
         JanusGraph.tx().onClose(org.apache.tinkerpop.gremlin.structure.Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         if (!strategiesApplied.getAndSet(true)) {
@@ -111,18 +122,28 @@ final public class JanusGraphFactory {
         return JanusGraph;
     }
 
+    public void drop(String keyspace) {
+        try {
+            JanusGraph graph = openGraph(keyspace);
+            graph.close();
+            org.janusgraph.core.JanusGraphFactory.drop(graph);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-    private static JanusGraph configureGraph(SessionImpl session) {
+
+    private static JanusGraph configureGraph(String keyspace, Config config) {
         org.janusgraph.core.JanusGraphFactory.Builder builder = org.janusgraph.core.JanusGraphFactory.build().
-                set(STORAGE_HOSTNAME, session.config().getProperty(ConfigKey.STORAGE_HOSTNAME)).
-                set(STORAGE_KEYSPACE, session.keyspace().getName()).
+                set(STORAGE_HOSTNAME, config.getProperty(ConfigKey.STORAGE_HOSTNAME)).
+                set(STORAGE_KEYSPACE, keyspace).
                 set(STORAGE_BATCH_LOADING, false);
 
         //Load Defaults
         DEFAULT_PROPERTIES.forEach((key, value) -> builder.set(key.toString(), value));
 
         //Load Passed in properties
-        session.config().properties().forEach((key, value) -> {
+        config.properties().forEach((key, value) -> {
 
             //Overwrite storage
             if (key.equals(STORAGE_BACKEND)) {
@@ -137,7 +158,7 @@ final public class JanusGraphFactory {
             builder.set(key.toString(), value);
         });
 
-        LOG.debug("Opening graph {}", session.keyspace().getName());
+        LOG.debug("Opening graph {}", keyspace);
         return builder.open();
     }
 
@@ -210,10 +231,10 @@ final public class JanusGraphFactory {
 
     private static void makePropertyKeys(JanusGraphManagement management) {
         stream(Schema.VertexProperty.values()).forEach(property ->
-                                                               makePropertyKey(management, property.name(), property.getPropertyClass()));
+                makePropertyKey(management, property.name(), property.getPropertyClass()));
 
         stream(Schema.EdgeProperty.values()).forEach(property ->
-                                                             makePropertyKey(management, property.name(), property.getPropertyClass()));
+                makePropertyKey(management, property.name(), property.getPropertyClass()));
     }
 
     private static void makePropertyKey(JanusGraphManagement management, String propertyKey, Class type) {

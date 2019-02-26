@@ -36,7 +36,8 @@ java_library(
         "//server:conf/grakn.properties",
         "//test-integration/resources:cassandra-embedded"
     ],
-    visibility = ["//visibility:public"]
+    visibility = ["//visibility:public"],
+    resources = ["//test-integration/resources:logback-test"]
 )
 
 checkstyle_test(

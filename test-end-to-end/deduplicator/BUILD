@@ -21,7 +21,8 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
-    data = ["//:distribution"]
+    data = ["//:distribution"],
+    classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
 checkstyle_test(

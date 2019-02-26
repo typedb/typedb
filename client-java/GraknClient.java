@@ -69,6 +69,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -79,7 +80,7 @@ import static grakn.core.common.util.CommonUtil.toImmutableSet;
  * Entry-point which communicates with a running Grakn server using gRPC.
  * For now, only a subset of grakn.core.server.Session and grakn.core.server.Transaction features are supported.
  */
-public final class GraknClient {
+public final class GraknClient implements AutoCloseable {
 
     public static final String DEFAULT_URI = "localhost:48555";
 
@@ -112,6 +113,16 @@ public final class GraknClient {
         return this;
     }
 
+    @Override
+    public void close() {
+        channel.shutdown();
+        try {
+            channel.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     public Session session(String keyspace) {
         return new Session(keyspace);
     }
@@ -131,6 +142,7 @@ public final class GraknClient {
         private final String keyspace;
         private final SessionServiceGrpc.SessionServiceBlockingStub sessionStub;
         private final String sessionId;
+        private boolean isOpen = false;
 
         private Session(String keyspace) {
             if (!Validator.isValidKeyspaceName(keyspace)) {
@@ -140,6 +152,7 @@ public final class GraknClient {
             sessionStub = SessionServiceGrpc.newBlockingStub(channel);
             SessionProto.Session.Open.Res response = sessionStub.open(RequestBuilder.Session.open(keyspace));
             sessionId = response.getSessionId();
+            isOpen = true;
         }
 
         @Override
@@ -149,8 +162,9 @@ public final class GraknClient {
 
         @Override
         public void close() throws TransactionException {
+            if (!isOpen) return;
             sessionStub.close(RequestBuilder.Session.close(sessionId));
-            channel.shutdown();
+            isOpen = false;
         }
 
         @Override // TODO: remove this method once we no longer implement grakn.core.server.Session

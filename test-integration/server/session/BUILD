@@ -23,7 +23,6 @@ java_test(
     test_class = "grakn.core.server.session.SessionIT",
     srcs = ["SessionIT.java"],
     deps = [
-        "//common:common",
         "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server"
@@ -31,9 +30,18 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
+java_test(
+    name = "keyspace-cache-it",
+    test_class = "grakn.core.server.session.KeyspaceCacheIT",
+    srcs = ["KeyspaceCacheIT.java"],
+    deps = ["//server", "//test-integration/rule:grakn-test-server", "//client-java", "//concept"],
+    classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":session-it"
+        ":session-it",
+        ":keyspace-cache-it"
     ],
 )

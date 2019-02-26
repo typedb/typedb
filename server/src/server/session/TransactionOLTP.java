@@ -18,6 +18,8 @@
 
 package grakn.core.server.session;
 
+import brave.ScopedSpan;
+import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.Concept;
@@ -55,7 +57,7 @@ import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.cache.GlobalCache;
+import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
 import graql.lang.pattern.Pattern;
@@ -101,45 +103,63 @@ import java.util.stream.Stream;
  * Wraps a TinkerPop transaction (the graph is still needed as we use to retrieve tinker traversals)
  *
  * With this vendor some issues to be aware of:
- * 1. Whenever a transaction is closed if none remain open then the connection to the graph is closed permanently.
  * 2. Clearing the graph explicitly closes the connection as well.
  */
 public class TransactionOLTP implements Transaction {
-    private final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
-    //----------------------------- Shared Variables
+    final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
+    // Shared Variables
     private final SessionImpl session;
     private final JanusGraph janusGraph;
     private final ElementFactory elementFactory;
-    private final GlobalCache globalCache;
-    //----------------------------- Transaction Specific
-    private final ThreadLocal<TransactionCache> localConceptLog;
+
+    // Caches
     private final RuleCache ruleCache;
+    private final KeyspaceCache keyspaceCache;
+    private final TransactionCache transactionCache;
+
+    // Transaction Specific
     private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
+    private Transaction.Type txType;
+    private String closedReason = null;
+    private boolean isTxOpen;
+
+    // Thread-local boolean which is set to true in the constructor. Used to check if current Tx is created in current Thread.
+    private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
 
-    public TransactionOLTP(SessionImpl session, JanusGraph janusGraph) {
+    public TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache) {
+
+        createdInCurrentThread.set(true);
+
+        ScopedSpan span = null;
+        if (ServerTracingInstrumentation.tracingActive()) { span = ServerTracingInstrumentation.createScopedChildSpan("TransactionOLTP constructor"); }
+
         this.session = session;
         this.janusGraph = janusGraph;
+
+        if (span != null) { span.annotate("Creating janusGraph Tx"); }
+
         this.janusTransaction = janusGraph.tx();
-        this.localConceptLog = new ThreadLocal<>();
+
+        if (span != null) { span.annotate("Creating ElementFactory"); }
         this.elementFactory = new ElementFactory(this, janusGraph);
+
+        if (span != null) { span.annotate("Creating RuleCache"); }
         this.ruleCache = new RuleCache(this);
 
-        //Initialise Graph Caches
-        this.globalCache = new GlobalCache(session.config());
+        this.keyspaceCache = keyspaceCache;
+        this.transactionCache = new TransactionCache(keyspaceCache);
 
-        //Initialise Graph
-        cache().open(Type.WRITE);
-
-        // TODO: We should initialise meta concepts every time we create a new transaction
-        if (initialiseMetaConcepts()) commit();
+        if (span != null) { span.finish(); }
     }
 
     void open(Type type) {
-        cache().open(type);
-        if (!janusTransaction.isOpen()) janusTransaction.open();
+        this.txType = type;
+        this.isTxOpen = true;
+        this.janusTransaction.open();
+        this.transactionCache.updateSchemaCacheFromKeyspaceCache();
     }
 
 
@@ -257,8 +277,8 @@ public class TransactionOLTP implements Transaction {
      * @return The matching type id
      */
     public LabelId convertToId(Label label) {
-        if (cache().isLabelCached(label)) {
-            return cache().convertLabelToId(label);
+        if (transactionCache.isLabelCached(label)) {
+            return transactionCache.convertLabelToId(label);
         }
         return LabelId.invalid();
     }
@@ -281,12 +301,6 @@ public class TransactionOLTP implements Transaction {
         return LabelId.of(currentValue);
     }
 
-    /**
-     * @return The graph cache which contains all the data cached and accessible by all transactions.
-     */
-    public GlobalCache getGlobalCache() {
-        return globalCache;
-    }
 
     /**
      * Gets the config option which determines the number of instances a {@link grakn.core.concept.type.Type} must have before the {@link grakn.core.concept.type.Type}
@@ -299,26 +313,17 @@ public class TransactionOLTP implements Transaction {
     }
 
     public TransactionCache cache() {
-        TransactionCache transactionCache = localConceptLog.get();
-        if (transactionCache == null) {
-            localConceptLog.set(transactionCache = new TransactionCache(getGlobalCache()));
-        }
-
-        if (transactionCache.isTxOpen() && transactionCache.schemaNotCached()) {
-            transactionCache.refreshSchemaCache();
-        }
-
         return transactionCache;
     }
 
     @Override
     public boolean isClosed() {
-        return !cache().isTxOpen();
+        return !isTxOpen;
     }
 
     @Override
     public Type type() {
-        return cache().txType();
+        return this.txType;
     }
 
     /**
@@ -337,56 +342,6 @@ public class TransactionOLTP implements Transaction {
      */
     public <T extends Concept> T buildConcept(Edge edge) {
         return factory().buildConcept(edge);
-    }
-
-    // TODO: We shouldn't initialising meta concepts from within a transaction
-    //       This should be a critical operation that is hidden in deeper
-    private boolean initialiseMetaConcepts() {
-        boolean schemaInitialised = false;
-        if (isMetaSchemaNotInitialised()) {
-            VertexElement type = addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
-            VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
-            VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
-            VertexElement resourceType = addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
-            addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
-            addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
-
-            relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-            resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-            entityType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-
-            relationType.addEdge(type, Schema.EdgeLabel.SUB);
-            resourceType.addEdge(type, Schema.EdgeLabel.SUB);
-            entityType.addEdge(type, Schema.EdgeLabel.SUB);
-
-            schemaInitialised = true;
-        }
-
-        //Copy entire schema to the graph cache. This may be a bad idea as it will slow down graph initialisation
-        copyToCache(getMetaConcept());
-
-        //Role and rule have to be copied separately due to not being connected to meta schema
-        copyToCache(getMetaRole());
-        copyToCache(getMetaRule());
-
-        return schemaInitialised;
-    }
-
-    /**
-     * Copies the {@link SchemaConcept} and it's subs into the {@link TransactionCache}.
-     * This is important as lookups for {@link SchemaConcept}s based on {@link Label} depend on this caching.
-     *
-     * @param schemaConcept the {@link SchemaConcept} to be copied into the {@link TransactionCache}
-     */
-    private void copyToCache(SchemaConcept schemaConcept) {
-        schemaConcept.subs().forEach(concept -> {
-            getGlobalCache().cacheLabel(concept.label(), concept.labelId());
-            getGlobalCache().cacheType(concept.label(), concept);
-        });
-    }
-
-    private boolean isMetaSchemaNotInitialised() {
-        return getMetaConcept() == null;
     }
 
     /**
@@ -457,7 +412,7 @@ public class TransactionOLTP implements Transaction {
      * @param baseType The base type of the new type
      * @return The new type vertex
      */
-    private VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
+    protected VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
         VertexElement vertexElement = addVertexElement(baseType);
         vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
@@ -472,8 +427,12 @@ public class TransactionOLTP implements Transaction {
      * @throws TransactionException if the graph is closed.
      */
     private <X> X operateOnOpenGraph(Supplier<X> supplier) {
-        if (isClosed()) throw TransactionException.transactionClosed(this, cache().getClosedReason());
+        if (!isLocal() || isClosed()) throw TransactionException.transactionClosed(this, this.closedReason);
         return supplier.get();
+    }
+
+    private boolean isLocal() {
+        return createdInCurrentThread.get();
     }
 
     @Override
@@ -553,11 +512,11 @@ public class TransactionOLTP implements Transaction {
      * @return The {@link SchemaConcept} which was either cached or built via a DB read or write
      */
     private SchemaConcept buildSchemaConcept(Label label, Supplier<SchemaConcept> dbBuilder) {
-        if (cache().isTypeCached(label)) {
-            return cache().getCachedSchemaConcept(label);
-        } else {
+//        if (transactionCache.isTypeCached(label)) {
+//            return transactionCache.getCachedSchemaConcept(label);
+//        } else {
             return dbBuilder.get();
-        }
+//        }
     }
 
     @Override
@@ -621,8 +580,8 @@ public class TransactionOLTP implements Transaction {
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
         return operateOnOpenGraph(() -> {
-            if (cache().isConceptCached(id)) {
-                return cache().getCachedConcept(id);
+            if (transactionCache.isConceptCached(id)) {
+                return transactionCache.getCachedConcept(id);
             } else {
                 if (id.getValue().startsWith(Schema.PREFIX_EDGE)) {
                     Optional<T> concept = getConceptEdge(id);
@@ -726,11 +685,8 @@ public class TransactionOLTP implements Transaction {
         if (isClosed()) {
             return;
         }
-        try {
-            cache().writeToGraphCache(type().equals(Type.READ));
-        } finally {
-            closeTransaction(closeMessage);
-        }
+        transactionCache.refreshKeyspaceCache();
+        closeTransaction(closeMessage);
     }
 
     /**
@@ -745,9 +701,12 @@ public class TransactionOLTP implements Transaction {
         }
         try {
             validateGraph();
-            commitTransactionInternal();
-            cache().writeToGraphCache(true);
-            //TODO update cache here
+            // lock on the keyspace cache shared between concurrent tx's to the same keyspace
+            // force serialization & atomic updates, keeping Janus and our KeyspaceCache in sync
+            synchronized (keyspaceCache) {
+                commitTransactionInternal();
+                transactionCache.flushToKeyspaceCache();
+            }
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
             closeTransaction(closeMessage);
@@ -778,7 +737,9 @@ public class TransactionOLTP implements Transaction {
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         } finally {
-            cache().closeTx(closedReason);
+            transactionCache.closeTx();
+            this.closedReason = closedReason;
+            this.isTxOpen = false;
             ruleCache().clear();
         }
     }
@@ -786,13 +747,16 @@ public class TransactionOLTP implements Transaction {
     private Optional<CommitLog> commitWithLogs() throws InvalidKBException {
         validateGraph();
 
-        Map<ConceptId, Long> newInstances = cache().getShardingCount();
-        Map<String, Set<ConceptId>> newAttributes = cache().getNewAttributes();
+        Map<ConceptId, Long> newInstances = transactionCache.getShardingCount();
+        Map<String, Set<ConceptId>> newAttributes = transactionCache.getNewAttributes();
         boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
-        commitTransactionInternal();
-
-        cache().writeToGraphCache(true);
+        // lock on the keyspace cache shared between concurrent tx's to the same keyspace
+        // force serialization & atomic updates, keeping Janus and our KeyspaceCache in sync
+        synchronized (keyspaceCache) {
+            commitTransactionInternal();
+            transactionCache.flushToKeyspaceCache();
+        }
 
         //If we have logs to commit get them and add them
         if (logsExist) {

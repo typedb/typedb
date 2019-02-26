@@ -108,7 +108,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
 
     ],
-    size = "medium"
+    size = "large"
 )
 
 java_test(
