@@ -20,7 +20,7 @@ load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
     name = "isa-explicit-it",
-    test_class = "grakn.core.graql.internal.IsaExplicitIT",
+    test_class = "grakn.core.graql.executor.IsaExplicitIT",
     srcs = ["IsaExplicitIT.java"],
     deps = [
         "//concept:concept",
