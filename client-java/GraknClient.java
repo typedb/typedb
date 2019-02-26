@@ -20,6 +20,7 @@
 package grakn.core.client;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ImmutableList;
 import grakn.benchmark.lib.clientinstrumentation.ClientTracingInstrumentationInterceptor;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.exception.GraknClientException;
@@ -68,6 +69,7 @@ import io.grpc.ManagedChannelBuilder;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -142,7 +144,7 @@ public final class GraknClient implements AutoCloseable {
         private final String keyspace;
         private final SessionServiceGrpc.SessionServiceBlockingStub sessionStub;
         private final String sessionId;
-        private boolean isOpen = false;
+        private boolean isOpen;
 
         private Session(String keyspace) {
             if (!Validator.isValidKeyspaceName(keyspace)) {
@@ -191,6 +193,11 @@ public final class GraknClient implements AutoCloseable {
             }
             KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(name);
             keyspaceBlockingStub.delete(request);
+        }
+
+        public List<String> retrieve(){
+            KeyspaceProto.Keyspace.Retrieve.Req request = RequestBuilder.Keyspace.retrieve();
+            return ImmutableList.copyOf(keyspaceBlockingStub.retrieve(request).getNamesList().iterator());
         }
     }
 
