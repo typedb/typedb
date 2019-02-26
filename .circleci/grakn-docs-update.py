@@ -2,6 +2,16 @@ import os
 import re
 import subprocess as sp
 
+repo_url = os.getenv('CIRCLE_REPOSITORY_URL')
+building_upstream = 'graknlabs' in repo_url
+
+if not building_upstream:
+    print('Not building the upstream repo, no need to update the docs')
+    exit(0)
+elif building_upstream and 'GRABL_CREDENTIAL' not in os.environ:
+    print('[ERROR]: Building the upstream repo requires having $GRABL_CREDENTIAL env variable')
+    exit(1)
+
 # TODO: consider not making grakn_master_branch configurable
 git_username = "Grabl"
 git_email = "grabl@grakn.ai"
