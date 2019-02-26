@@ -48,7 +48,7 @@ public class KeyspaceCacheIT {
     public void setUp() {
         localSession = server.sessionWithNewKeyspace();
         graknClient = new GraknClient(server.grpcUri().toString());
-        remoteSession = graknClient.session(localSession.keyspace().getName());
+        remoteSession = graknClient.session(localSession.keyspace().name());
     }
 
     @After
@@ -168,7 +168,7 @@ public class KeyspaceCacheIT {
             tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
-        GraknClient.Session testSession = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().getName());
+        GraknClient.Session testSession = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().name());
         try (Transaction tx = testSession.transaction(Transaction.Type.READ)) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
@@ -188,7 +188,7 @@ public class KeyspaceCacheIT {
             tx.commit();
         }
         remoteSession.close();
-        GraknClient.Session testSession = graknClient.session(localSession.keyspace().getName());
+        GraknClient.Session testSession = graknClient.session(localSession.keyspace().name());
         try (Transaction tx = testSession.transaction(Transaction.Type.READ)) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));

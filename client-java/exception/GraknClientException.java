@@ -40,6 +40,10 @@ public class GraknClientException extends GraknException {
         return create(ErrorMessage.INVALID_KEYSPACE_NAME.getMessage(keyspace));
     }
 
+    public static GraknClientException connectionClosed() {
+        return create(ErrorMessage.CONNECTION_CLOSED.getMessage());
+    }
+
     @Override
     public String getName() {
         return this.getClass().getName();

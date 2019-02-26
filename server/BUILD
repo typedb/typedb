@@ -33,13 +33,16 @@ java_library(
     name = "server",
     srcs = glob(["src/**/*.java"]),
     deps = [
-        # Grakn Core dependencies
+        # Internal dependencies
+        "//api:api",
         "//common:common",
         "//concept:concept",
-        "@graknlabs_graql//java:graql",
         "//protocol:protocol-java",
 
-        # External dependencies
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java:graql",
+
+        # External dependencies from Maven
         "//dependencies/maven/artifacts/grakn/benchmark:lib",
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",

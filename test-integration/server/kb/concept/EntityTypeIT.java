@@ -34,6 +34,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Before;
@@ -509,7 +510,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenAddingTypeUsingReservedWord_ThrowReadableError(){
-        String reservedWord = Schema.MetaSchema.THING.getLabel().getValue();
+        String reservedWord = Graql.Token.Type.THING.toString();
 
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(RESERVED_WORD.getMessage(reservedWord));

@@ -35,13 +35,13 @@ import grakn.core.server.util.ServerLockManager;
 import io.grpc.ServerBuilder;
 
 /**
- * This is a factory class which contains methods for instantiating a {@link Server} in different ways.
+ * This is a factory class which contains methods for instantiating a Server in different ways.
  */
 public class ServerFactory {
     /**
-     * Create a {@link Server} configured for Grakn Core. Grakn Queue (which is needed for post-processing and distributed locks) is implemented with Redis as the backend store
+     * Create a Server configured for Grakn Core. Grakn Queue (which is needed for post-processing and distributed locks) is implemented with Redis as the backend store
      *
-     * @return a {@link Server} instance configured for Grakn Core
+     * @return a Server instance configured for Grakn Core
      */
     public static Server createServer(boolean benchmark) {
         // Grakn Server configuration
@@ -68,9 +68,9 @@ public class ServerFactory {
     }
 
     /**
-     * Allows the creation of a {@link Server} instance with various configurations
+     * Allows the creation of a Server instance with various configurations
      *
-     * @return a {@link Server} instance
+     * @return a Server instance
      */
 
     public static Server createServer(

@@ -67,7 +67,7 @@ public class HadoopGraphFactory {
         String hostnameConf = "storage.hostname";
 
         // Values
-        String keyspaceValue = session.keyspace().getName();
+        String keyspaceValue = session.keyspace().name();
         String hostnameValue = session.config().getProperty(ConfigKey.STORAGE_HOSTNAME);
 
         session.config().properties().setProperty(graphMrPrefixConf + hostnameConf, hostnameValue);

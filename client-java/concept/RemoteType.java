@@ -28,7 +28,6 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
 import grakn.core.protocol.ConceptProto;
-import grakn.core.server.exception.TransactionException;
 
 import java.util.stream.Stream;
 
@@ -62,7 +61,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType isAbstract(Boolean isAbstract) throws TransactionException {
+    public final SomeType isAbstract(Boolean isAbstract) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeSetAbstractReq(ConceptProto.Type.SetAbstract.Req.newBuilder()
                                                .setAbstract(isAbstract)).build();
@@ -99,7 +98,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType key(AttributeType attributeType) throws TransactionException {
+    public final SomeType key(AttributeType attributeType) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeKeyReq(ConceptProto.Type.Key.Req.newBuilder()
                                        .setAttributeType(RequestBuilder.Concept.concept(attributeType))).build();
@@ -109,7 +108,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType has(AttributeType attributeType) throws TransactionException {
+    public final SomeType has(AttributeType attributeType) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeHasReq(ConceptProto.Type.Has.Req.newBuilder()
                                        .setAttributeType(RequestBuilder.Concept.concept(attributeType))).build();
@@ -119,7 +118,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType plays(Role role) throws TransactionException {
+    public final SomeType plays(Role role) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypePlaysReq(ConceptProto.Type.Plays.Req.newBuilder()
                                          .setRole(RequestBuilder.Concept.concept(role))).build();

@@ -109,8 +109,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
 
     /**
-     * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link io.grpc.Server}.
-     * Receives a stream of {@link Transaction.Req}s and returning a stream of {@link Transaction.Res}s.
+     * A StreamObserver that implements the transaction-handling behaviour for io.grpc.Server.
+     * Receives a stream of Transaction.Reqs and returning a stream of Transaction.Ress.
      */
     static class TransactionListener implements StreamObserver<Transaction.Req> {
         final Logger LOG = LoggerFactory.getLogger(TransactionListener.class);
@@ -391,7 +391,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     }
 
     /**
-     * Contains a mutable map of iterators of {@link Transaction.Res}s for gRPC. These iterators are used for returning
+     * Contains a mutable map of iterators of Transaction.Ress for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
      */
     public static class Iterators {

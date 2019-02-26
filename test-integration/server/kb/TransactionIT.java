@@ -277,7 +277,7 @@ public class TransactionIT {
 
     @Test
     public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw() {
-        String keyspace = tx.keyspace().getName();
+        String keyspace = tx.keyspace().name();
         failAtOpeningTx(session, Transaction.Type.WRITE, keyspace);
         tx.close();
 

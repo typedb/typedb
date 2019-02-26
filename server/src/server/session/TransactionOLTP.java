@@ -56,7 +56,7 @@ import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
@@ -98,7 +98,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A {@link Transaction} using {@link JanusGraph} as a vendor backend.
+ * A Transaction using JanusGraph as a vendor backend.
  *
  * Wraps a TinkerPop transaction (the graph is still needed as we use to retrieve tinker traversals)
  *
@@ -181,8 +181,8 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Executes a method which has the potential to throw a {@link TemporaryLockingException} or a {@link PermanentLockingException}.
-     * If the exception is thrown it is wrapped in a {@link GraknServerException} so that the transaction can be retried.
+     * Executes a method which has the potential to throw a TemporaryLockingException or a PermanentLockingException.
+     * If the exception is thrown it is wrapped in a GraknServerException so that the transaction can be retried.
      *
      * @param method The locking method to execute
      */
@@ -205,6 +205,11 @@ public class TransactionOLTP implements Transaction {
     @Override
     public SessionImpl session() {
         return session;
+    }
+
+    @Override
+    public KeyspaceImpl keyspace() {
+        return session.keyspace();
     }
 
     @Override
@@ -303,10 +308,10 @@ public class TransactionOLTP implements Transaction {
 
 
     /**
-     * Gets the config option which determines the number of instances a {@link grakn.core.concept.type.Type} must have before the {@link grakn.core.concept.type.Type}
+     * Gets the config option which determines the number of instances a grakn.core.concept.type.Type must have before the grakn.core.concept.type.Type
      * if automatically sharded.
      *
-     * @return the number of instances a {@link grakn.core.concept.type.Type} must have before it is shareded
+     * @return the number of instances a grakn.core.concept.type.Type must have before it is shareded
      */
     public long shardingThreshold() {
         return session().config().getProperty(ConfigKey.SHARDING_THRESHOLD);
@@ -336,9 +341,9 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * @param <T>  The type of the {@link Concept} being built
-     * @param edge An {@link Edge} which contains properties necessary to build a {@link Concept} from.
-     * @return A {@link Concept} built using the provided {@link Edge}
+     * @param <T>  The type of the Concept being built
+     * @param edge An Edge which contains properties necessary to build a Concept from.
+     * @return A Concept built using the provided Edge
      */
     public <T extends Concept> T buildConcept(Edge edge) {
         return factory().buildConcept(edge);
@@ -435,6 +440,12 @@ public class TransactionOLTP implements Transaction {
         return createdInCurrentThread.get();
     }
 
+    /**
+     * @param label A unique label for the EntityType
+     * @return A new or existing EntityType with the provided label
+     * @throws TransactionException       if the graph is closed
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-EntityType.
+     */
     @Override
     public EntityType putEntityType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false,
@@ -442,22 +453,22 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * This is a helper method which will either find or create a {@link SchemaConcept}.
-     * When a new {@link SchemaConcept} is created it is added for validation through it's own creation method for
-     * example {@link RoleImpl#create(VertexElement, Role)}.
+     * This is a helper method which will either find or create a SchemaConcept.
+     * When a new SchemaConcept is created it is added for validation through it's own creation method for
+     * example RoleImpl#create(VertexElement, Role).
      * <p>
-     * When an existing {@link SchemaConcept} is found it is build via it's get method such as
-     * {@link RoleImpl#get(VertexElement)} and skips validation.
+     * When an existing SchemaConcept is found it is build via it's get method such as
+     * RoleImpl#get(VertexElement) and skips validation.
      * <p>
-     * Once the {@link SchemaConcept} is found or created a few checks for uniqueness and correct
-     * {@link Schema.BaseType} are performed.
+     * Once the SchemaConcept is found or created a few checks for uniqueness and correct
+     * Schema.BaseType are performed.
      *
-     * @param label             The {@link Label} of the {@link SchemaConcept} to find or create
-     * @param baseType          The {@link Schema.BaseType} of the {@link SchemaConcept} to find or create
-     * @param isImplicit        a flag indicating if the label we are creating is for an implicit {@link grakn.core.concept.type.Type} or not
-     * @param newConceptFactory the factory to be using when creating a new {@link SchemaConcept}
-     * @param <T>               The type of {@link SchemaConcept} to return
-     * @return a new or existing {@link SchemaConcept}
+     * @param label             The Label of the SchemaConcept to find or create
+     * @param baseType          The Schema.BaseType of the SchemaConcept to find or create
+     * @param isImplicit        a flag indicating if the label we are creating is for an implicit grakn.core.concept.type.Type or not
+     * @param newConceptFactory the factory to be using when creating a new SchemaConcept
+     * @param <T>               The type of SchemaConcept to return
+     * @return a new or existing SchemaConcept
      */
     private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
         checkSchemaMutationAllowed();
@@ -486,7 +497,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Throws an exception when adding a {@link SchemaConcept} using a {@link Label} which is already taken
+     * Throws an exception when adding a SchemaConcept using a Label which is already taken
      */
     private TransactionException labelTaken(SchemaConcept schemaConcept) {
         if (Schema.MetaSchema.isMetaLabel(schemaConcept.label())) {
@@ -505,11 +516,11 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * A helper method which either retrieves the {@link SchemaConcept} from the cache or builds it using a provided supplier
+     * A helper method which either retrieves the SchemaConcept from the cache or builds it using a provided supplier
      *
-     * @param label     The {@link Label} of the {@link SchemaConcept} to retrieve or build
-     * @param dbBuilder A method which builds the {@link SchemaConcept} via a DB read or write
-     * @return The {@link SchemaConcept} which was either cached or built via a DB read or write
+     * @param label     The Label of the SchemaConcept to retrieve or build
+     * @param dbBuilder A method which builds the SchemaConcept via a DB read or write
+     * @return The SchemaConcept which was either cached or built via a DB read or write
      */
     private SchemaConcept buildSchemaConcept(Label label, Supplier<SchemaConcept> dbBuilder) {
 //        if (transactionCache.isTypeCached(label)) {
@@ -519,6 +530,12 @@ public class TransactionOLTP implements Transaction {
 //        }
     }
 
+    /**
+     * @param label A unique label for the RelationType
+     * @return A new or existing RelationType with the provided label.
+     * @throws TransactionException       if the graph is closed
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-RelationType.
+     */
     @Override
     public RelationType putRelationType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false,
@@ -530,6 +547,12 @@ public class TransactionOLTP implements Transaction {
                                 v -> factory().buildRelationType(v, getMetaRelationType()));
     }
 
+    /**
+     * @param label A unique label for the Role
+     * @return new or existing Role with the provided Id.
+     * @throws TransactionException       if the graph is closed
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Role.
+     */
     @Override
     public Role putRole(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ROLE, false,
@@ -541,6 +564,18 @@ public class TransactionOLTP implements Transaction {
                                 v -> factory().buildRole(v, getMetaRole()));
     }
 
+    /**
+     *
+     * @param label    A unique label for the AttributeType
+     * @param dataType The data type of the AttributeType.
+     *                 Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
+     * @param <V>
+     * @return A new or existing AttributeType with the provided label and data type.
+     * @throws TransactionException       if the graph is closed
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
+     * @throws TransactionException       if the {@param label} is already in use by an existing AttributeType which is
+     *                                    unique or has a different datatype.
+     */
     @SuppressWarnings("unchecked")
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
@@ -558,6 +593,14 @@ public class TransactionOLTP implements Transaction {
         return attributeType;
     }
 
+    /**
+     * @param label A unique label for the Rule
+     * @param when
+     * @param then
+     * @return new or existing Rule with the provided label.
+     * @throws TransactionException       if the graph is closed
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Rule.
+     */
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
         Rule rule = putSchemaConcept(label, Schema.BaseType.RULE, false,
@@ -577,6 +620,14 @@ public class TransactionOLTP implements Transaction {
     }
 
     //------------------------------------ Lookup
+
+    /**
+     * @param id A unique identifier for the Concept in the graph.
+     * @param <T>
+     * @return The Concept with the provided id or null if no such Concept exists.
+     * @throws TransactionException if the graph is closed
+     * @throws ClassCastException   if the concept is not an instance of T
+     */
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
         return operateOnOpenGraph(() -> {
@@ -614,6 +665,12 @@ public class TransactionOLTP implements Transaction {
         return this.<T>getConcept(Schema.VertexProperty.LABEL_ID, id.getValue()).orElse(null);
     }
 
+    /**
+     * @param value A value which an Attribute in the graph may be holding.
+     * @param <V>
+     * @return The Attributes holding the provided value or an empty collection if no such Attribute exists.
+     * @throws TransactionException if the graph is closed
+     */
     @Override
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
         if (value == null) return Collections.emptySet();
@@ -636,6 +693,13 @@ public class TransactionOLTP implements Transaction {
         return attributes;
     }
 
+    /**
+     * @param label A unique label which identifies the SchemaConcept in the graph.
+     * @param <T>
+     * @return The SchemaConcept with the provided label or null if no such SchemaConcept exists.
+     * @throws TransactionException if the graph is closed
+     * @throws ClassCastException   if the type is not an instance of T
+     */
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
         Schema.MetaSchema meta = Schema.MetaSchema.valueOf(label);
@@ -643,31 +707,64 @@ public class TransactionOLTP implements Transaction {
         return getSchemaConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
     }
 
+    /**
+     * @param label A unique label which identifies the grakn.core.concept.type.Type in the graph.
+     * @param <T>
+     * @return The grakn.core.concept.type.Type with the provided label or null if no such grakn.core.concept.type.Type exists.
+     * @throws TransactionException if the graph is closed
+     * @throws ClassCastException   if the type is not an instance of T
+     */
     @Override
     public <T extends grakn.core.concept.type.Type> T getType(Label label) {
         return getSchemaConcept(label, Schema.BaseType.TYPE);
     }
 
+    /**
+     * @param label A unique label which identifies the Entity Type in the graph.
+     * @return The Entity Type  with the provided label or null if no such Entity Type exists.
+     * @throws TransactionException if the graph is closed
+     */
     @Override
     public EntityType getEntityType(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.ENTITY_TYPE);
     }
 
+    /**
+     * @param label A unique label which identifies the RelationType in the graph.
+     * @return The RelationType with the provided label or null if no such RelationType exists.
+     * @throws TransactionException if the graph is closed
+     */
     @Override
     public RelationType getRelationType(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RELATION_TYPE);
     }
 
+    /**
+     * @param label A unique label which identifies the AttributeType in the graph.
+     * @param <V>
+     * @return The AttributeType with the provided label or null if no such AttributeType exists.
+     * @throws TransactionException if the graph is closed
+     */
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.ATTRIBUTE_TYPE);
     }
 
+    /**
+     * @param label A unique label which identifies the Role Type in the graph.
+     * @return The Role Type  with the provided label or null if no such Role Type exists.
+     * @throws TransactionException if the graph is closed
+     */
     @Override
     public Role getRole(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.ROLE);
     }
 
+    /**
+     * @param label A unique label which identifies the Rule in the graph.
+     * @return The Rule with the provided label or null if no such Rule Type exists.
+     * @throws TransactionException if the graph is closed
+     */
     @Override
     public Rule getRule(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
@@ -789,11 +886,11 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Returns the current number of shards the provided {@link grakn.core.concept.type.Type} has. This is used in creating more
+     * Returns the current number of shards the provided grakn.core.concept.type.Type has. This is used in creating more
      * efficient query plans.
      *
-     * @param concept The {@link grakn.core.concept.type.Type} which may contain some shards.
-     * @return the number of Shards the {@link grakn.core.concept.type.Type} currently has.
+     * @param concept The grakn.core.concept.type.Type which may contain some shards.
+     * @return the number of Shards the grakn.core.concept.type.Type currently has.
      */
     public long getShardCount(grakn.core.concept.type.Type concept) {
         return TypeImpl.from(concept).shardCount();
@@ -825,17 +922,17 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Stores the commit log of a {@link Transaction}.
-     * Stores the commit log of a {@link Transaction} which is uploaded to the jserver when the {@link Session} is closed.
+     * Stores the commit log of a Transaction.
+     * Stores the commit log of a Transaction which is uploaded to the jserver when the Session is closed.
      * The commit log is also uploaded periodically to make sure that if a failure occurs the counts are still roughly maintained.
      */
     public static class CommitLog {
 
-        private final Keyspace keyspace;
+        private final KeyspaceImpl keyspace;
         private final Map<ConceptId, Long> instanceCount;
         private final Map<String, Set<ConceptId>> attributes;
 
-        CommitLog(Keyspace keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> attributes) {
+        CommitLog(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> attributes) {
             if (keyspace == null) {
                 throw new NullPointerException("Null keyspace");
             }
@@ -850,7 +947,7 @@ public class TransactionOLTP implements Transaction {
             this.attributes = attributes;
         }
 
-        public Keyspace keyspace() {
+        public KeyspaceImpl keyspace() {
             return keyspace;
         }
 
@@ -862,7 +959,7 @@ public class TransactionOLTP implements Transaction {
             return attributes;
         }
 
-        public static CommitLog create(Keyspace keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> newAttributes) {
+        public static CommitLog create(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> newAttributes) {
             return new CommitLog(keyspace, instanceCount, newAttributes);
         }
 

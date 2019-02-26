@@ -24,7 +24,7 @@ import grakn.core.common.config.ConfigKey;
 import grakn.core.concept.ConceptId;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.RocksDbQueue;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,13 +44,13 @@ import static grakn.core.server.deduplicator.AttributeDeduplicator.deduplicate;
  * This class is responsible for de-duplicating attributes. It is done to ensure that every attribute in Grakn stays unique.
  *
  * Marking an attribute for deduplication:
- * When the {@link TransactionImpl#commit()} is invoked, it will trigger the {@link #markForDeduplication(Keyspace, String, ConceptId)}
+ * When the TransactionOLTP#commit() is invoked, it will trigger the#markForDeduplication(KeyspaceImpl, String, ConceptId)
  * which inserts the attribute to an internal queue for deduplication.
  *
  * De-duplicating attributes in the de-duplicator daemon:
  * The de-duplicator daemon is an always-on background thread which performs deduplication on incoming attributes.
  * When a new attribute is inserted, it will immediately trigger the deduplicate operation, meaning that duplicates are merged in almost real-time speed.
- * The daemon is started and stopped with {@link #startDeduplicationDaemon()} and {@link #stopDeduplicationDaemon()}
+ * The daemon is started and stopped with#startDeduplicationDaemon() and#stopDeduplicationDaemon()
  *
  * Fault tolerance:
  * The de-duplicator daemon is fault-tolerant and will re-process incoming attributes if Grakn crashes in the middle of a deduplication.
@@ -69,9 +69,9 @@ public class AttributeDeduplicatorDaemon {
     private boolean stopDaemon = false;
 
     /**
-     * Instantiates {@link AttributeDeduplicatorDaemon}
-     * @param config a reference to an instance of {@link Config} which is initialised from a grakn.properties.
-     * @param sessionFactory an {@link SessionFactory} instance which provides access to write into the database
+     * Instantiates AttributeDeduplicatorDaemon
+     * @param config a reference to an instance of Config which is initialised from a grakn.properties.
+     * @param sessionFactory an SessionFactory instance to create new Sessions
      */
     public AttributeDeduplicatorDaemon(Config config, SessionFactory sessionFactory) {
         Path dataDir = Paths.get(config.getProperty(ConfigKey.DATA_DIR));
@@ -88,7 +88,7 @@ public class AttributeDeduplicatorDaemon {
      * @param index the value of the attribute
      * @param conceptId the concept id of the attribute
      */
-    public void markForDeduplication(Keyspace keyspace, String index, ConceptId conceptId) {
+    public void markForDeduplication(KeyspaceImpl keyspace, String index, ConceptId conceptId) {
         Attribute attribute = Attribute.create(keyspace, index, conceptId);
         LOG.trace("insert(" + attribute + ")");
         queue.insert(attribute);
@@ -96,8 +96,8 @@ public class AttributeDeduplicatorDaemon {
 
     /**
      * Starts a daemon which performs deduplication on incoming attributes in real-time.
-     * The thread listens to the {@link RocksDbQueue} queue for incoming attributes and applies
-     * the {@link AttributeDeduplicator#deduplicate(SessionFactory, KeyspaceIndexPair)} algorithm.
+     * The thread listens to the RocksDbQueue queue for incoming attributes and applies
+     * the AttributeDeduplicator#deduplicate(SessionStore, KeyspaceIndexPair) algorithm.
      *
      */
     public CompletableFuture<Void> startDeduplicationDaemon() {

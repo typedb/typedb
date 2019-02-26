@@ -30,7 +30,7 @@ import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
 import org.janusgraph.core.JanusGraph;
 
@@ -55,7 +55,7 @@ public class SessionImpl implements Session {
     // Session can have at most 1 transaction per thread, so we keep a local reference here
     private final ThreadLocal<TransactionOLTP> localOLTPTransactionContainer = new ThreadLocal<>();
 
-    private final Keyspace keyspace;
+    private final KeyspaceImpl keyspace;
     private final Config config;
     private final JanusGraph graph;
     private final KeyspaceCache keyspaceCache;
@@ -64,13 +64,13 @@ public class SessionImpl implements Session {
     private boolean isClosed = false;
 
     /**
-     * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
+     * Instantiates SessionImpl specific for internal use (within Grakn Server),
      * using provided Grakn configuration
      *
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(Keyspace keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, Runnable onClose) {
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, Runnable onClose) {
         this.keyspace = keyspace;
         this.config = config;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
@@ -200,14 +200,14 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public Keyspace keyspace() {
+    public KeyspaceImpl keyspace() {
         return keyspace;
     }
 
     /**
-     * The config options of this {@link Session} which were passed in at the time of construction
+     * The config options of this Session which were passed in at the time of construction
      *
-     * @return The config options of this {@link Session}
+     * @return The config options of this Session
      */
     public Config config() {
         return config;

@@ -24,7 +24,6 @@ import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -114,7 +113,7 @@ public class AtomicEquivalenceIT {
     public void testEquality_DifferentHasVariants(){
         String patternString = "{ $x has resource; };";
         String patternString2 = "{ $y has resource; };";
-        String patternString3 = "{ $x has " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + "; };";
+        String patternString3 = "{ $x has " + Graql.Token.Type.ATTRIBUTE + "; };";
 
         atomicEquality(patternString, patternString, true, tx);
         atomicEquality(patternString, patternString2, false, tx);

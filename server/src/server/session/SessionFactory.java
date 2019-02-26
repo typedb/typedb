@@ -19,9 +19,7 @@
 package grakn.core.server.session;
 
 import grakn.core.common.config.Config;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.util.LockManager;
@@ -32,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 
 /**
- * Grakn Server's internal {@link SessionImpl} Factory
+ * Grakn Server's internal SessionImpl Factory
  * All components should use this factory so that every time a session to a new keyspace gets created
  * it is possible to also update the Keyspace Store (which tracks all existing keyspaces).
  */
@@ -42,7 +40,7 @@ public class SessionFactory {
     private Config config;
     private final LockManager lockManager;
 
-    private final ConcurrentHashMap<Keyspace, KeyspaceCacheContainer> keyspaceCacheMap;
+    private final ConcurrentHashMap<KeyspaceImpl, KeyspaceCacheContainer> keyspaceCacheMap;
 
     public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, KeyspaceManager keyspaceStore, Config config) {
         this.janusGraphFactory = janusGraphFactory;
@@ -53,13 +51,13 @@ public class SessionFactory {
     }
 
     /**
-     * Retrieves the {@link Session} needed to open the {@link Transaction}.
-     * This will open a new one {@link Session} if it hasn't been opened before
+     * Retrieves the Session needed to open the Transaction.
+     * This will open a new one Session if it hasn't been opened before
      *
-     * @param keyspace The {@link Keyspace} of the {@link Session} to retrieve
-     * @return a new or existing {@link Session} connecting to the provided {@link Keyspace}
+     * @param keyspace The Keyspace of the Session to retrieve
+     * @return a new or existing Session connecting to the provided Keyspace
      */
-    public SessionImpl session(Keyspace keyspace) {
+    public SessionImpl session(KeyspaceImpl keyspace) {
         if (!keyspaceStore.containsKeyspace(keyspace)) {
             return initialiseNewKeyspace(keyspace);
         } else {
@@ -67,7 +65,7 @@ public class SessionFactory {
         }
     }
 
-    public synchronized void deleteKeyspace(Keyspace keyspace) {
+    public synchronized void deleteKeyspace(KeyspaceImpl keyspace) {
 
         keyspaceCacheMap.compute(keyspace, (ksp, keyspaceCacheContainer) -> {
             // if a concurrent delete has not occurred already
@@ -84,11 +82,11 @@ public class SessionFactory {
     }
 
     /**
-     * Initialise a new {@link Keyspace} by opening and closing a transaction on it.
+     * Initialise a new Keyspace by opening and closing a transaction on it.
      *
-     * @param keyspace the new {@link Keyspace} we want to create
+     * @param keyspace the new Keyspace we want to create
      */
-    private SessionImpl initialiseNewKeyspace(Keyspace keyspace) {
+    private SessionImpl initialiseNewKeyspace(KeyspaceImpl keyspace) {
         //If the keyspace does not exist lock and create it
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
         lock.lock();
@@ -111,7 +109,7 @@ public class SessionFactory {
      * @param keyspace
      * @return
      */
-    private SessionImpl newSessionImpl(Keyspace keyspace) {
+    private SessionImpl newSessionImpl(KeyspaceImpl keyspace) {
 
 
         SessionImpl session;
@@ -120,7 +118,7 @@ public class SessionFactory {
             // AND increment the reference count atomically
             KeyspaceCacheContainer cacheContainer;
             if (keyspaceCacheContainer == null) {
-                JanusGraph graph = janusGraphFactory.openGraph(keyspace.getName());
+                JanusGraph graph = janusGraphFactory.openGraph(keyspace.name());
                 cacheContainer = new KeyspaceCacheContainer(new KeyspaceCache(config), graph);
             } else {
                 cacheContainer = keyspaceCacheContainer;
@@ -134,7 +132,7 @@ public class SessionFactory {
         return session;
     }
 
-    private void onSessionClose(Keyspace keyspace, KeyspaceCacheContainer cacheContainer) {
+    private void onSessionClose(KeyspaceImpl keyspace, KeyspaceCacheContainer cacheContainer) {
         // require a reference to the ORIGINAL container, since the key it is mapped to
         // may have been re-mapped to a new instance of KeyspaceCacheContainer
         // eg. if someone subsequently deletes and re-creates the same keyspace
@@ -166,8 +164,8 @@ public class SessionFactory {
         });
     }
 
-    private static String getLockingKey(Keyspace keyspace) {
-        return "/keyspace-lock/" + keyspace.getName();
+    private static String getLockingKey(KeyspaceImpl keyspace) {
+        return "/keyspace-lock/" + keyspace.name();
     }
 
 

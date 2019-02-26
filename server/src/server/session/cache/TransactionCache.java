@@ -45,7 +45,7 @@ import java.util.Set;
  * Validation Concepts - Concepts which need to undergo validation.
  * Built Concepts -  Prevents rebuilding when the same vertex is encountered
  * The Schema - Optimises validation checks by preventing db read.
- * {@link Label} - Allows mapping type labels to type Ids
+ * Label - Allows mapping type labels to type Ids
  * Transaction meta Data - Allows transactions to function in different ways
  */
 public class TransactionCache {

@@ -24,7 +24,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -159,7 +159,7 @@ public class SessionIT {
 
     @Test
     public void whenClosingSession_transactionIsAlsoClosed() {
-        SessionImpl localSession = server.sessionFactory().session(Keyspace.of("test"));
+        SessionImpl localSession = server.sessionFactory().session(KeyspaceImpl.of("test"));
         Transaction tx1 = localSession.transaction(WRITE);
         assertFalse(tx1.isClosed());
         localSession.close();
@@ -168,7 +168,7 @@ public class SessionIT {
 
     @Test
     public void whenClosingSession_tryingToUseTransactionThrowsException() {
-        SessionImpl localSession = server.sessionFactory().session(Keyspace.of("test"));
+        SessionImpl localSession = server.sessionFactory().session(KeyspaceImpl.of("test"));
         Transaction tx1 = localSession.transaction(WRITE);
         assertFalse(tx1.isClosed());
         localSession.close();

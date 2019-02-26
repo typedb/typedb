@@ -60,7 +60,7 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "Duplicates"})
 public class GraqlDeleteIT {
 
-    public static final Statement ENTITY = type(Schema.MetaSchema.ENTITY.getLabel().getValue());
+    public static final Statement ENTITY = type(Graql.Token.Type.ENTITY);
     public static final Statement x = var("x");
     public static final Statement y = var("y");
 
@@ -292,7 +292,7 @@ public class GraqlDeleteIT {
 
     @Test
     public void whenDeletingWithNoArguments_AllVariablesGetDeleted() {
-        tx.execute(Graql.define(type("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())));
+        tx.execute(Graql.define(type("fake-type").sub(Graql.Token.Type.ENTITY)));
         tx.execute(Graql.insert(x.isa("fake-type"), y.isa("fake-type")));
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());

@@ -22,10 +22,11 @@ import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.http.SimpleURI;
 import grakn.core.server.GraknStorage;
+import grakn.core.api.Keyspace;
 import grakn.core.server.Server;
 import grakn.core.server.ServerFactory;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
@@ -131,8 +132,16 @@ public class GraknTestServer extends ExternalResource {
     }
 
     public SessionImpl sessionWithNewKeyspace() {
-        Keyspace randomKeyspace = Keyspace.of("a" + UUID.randomUUID().toString().replaceAll("-", ""));
-        return sessionFactory.session(randomKeyspace);
+        KeyspaceImpl randomKeyspace = KeyspaceImpl.of("a" + UUID.randomUUID().toString().replaceAll("-", ""));
+        return session(randomKeyspace);
+    }
+
+    public SessionImpl session(String keyspace){
+        return session(KeyspaceImpl.of(keyspace));
+    }
+
+    public SessionImpl session(KeyspaceImpl keyspace) {
+        return sessionFactory.session(keyspace);
     }
 
     public SessionFactory sessionFactory(){

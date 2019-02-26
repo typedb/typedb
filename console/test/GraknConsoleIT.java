@@ -27,7 +27,7 @@ import com.google.common.collect.Sets;
 import grakn.core.common.util.GraknVersion;
 import grakn.core.console.GraknConsole;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.kb.Schema;
+import graql.lang.Graql;
 import io.grpc.Status;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.hamcrest.Matcher;
@@ -176,11 +176,11 @@ public class GraknConsoleIT {
     @Test
     public void when_writingMatchQueries_expect_resultsReturned() {
         String[] result = runConsoleSessionWithoutExpectingErrors(
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;\nexit"
+                "match $x sub " + Graql.Token.Type.THING + "; get;\nexit"
         ).split("\r\n?|\n");
 
         // Make sure we find a few results (don't be too fussy about the output here)
-        assertThat(result[4], endsWith("> match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;"));
+        assertThat(result[4], endsWith("> match $x sub " + Graql.Token.Type.THING + "; get;"));
         assertTrue(result.length > 5);
     }
 
@@ -231,7 +231,7 @@ public class GraknConsoleIT {
     public void when_writingAggregateCountQuery_expect_correctCount() throws Exception {
         int NUM_METATYPES = 4;
         assertConsoleSessionMatches(
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get; count;",
+                "match $x sub " + Graql.Token.Type.THING + "; get; count;",
                 is(Integer.toString(NUM_METATYPES))
         );
     }

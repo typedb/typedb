@@ -107,7 +107,7 @@ public class KeyspaceCache {
     }
 
     /**
-     * Reads the {@link SchemaConcept} and their {@link Label} currently in the transaction cache
+     * Reads the SchemaConcept and their Label currently in the transaction cache
      * into the keyspace cache. This happens when a commit occurs and allows us to track schema
      * mutations without having to read the graph.
      *

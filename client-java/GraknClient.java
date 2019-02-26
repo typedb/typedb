@@ -52,9 +52,7 @@ import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.KeyspaceServiceGrpc.KeyspaceServiceBlockingStub;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -68,6 +66,7 @@ import io.grpc.ManagedChannelBuilder;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -76,7 +75,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Entry-point which communicates with a running Grakn server using gRPC.
@@ -163,15 +163,15 @@ public final class GraknClient implements AutoCloseable {
         }
 
         @Override
-        public void close() throws TransactionException {
+        public void close() {
             if (!isOpen) return;
             sessionStub.close(RequestBuilder.Session.close(sessionId));
             isOpen = false;
         }
 
         @Override // TODO: remove this method once we no longer implement grakn.core.server.Session
-        public Keyspace keyspace() {
-            return Keyspace.of(keyspace);
+        public KeyspaceImpl keyspace() {
+            return KeyspaceImpl.of(keyspace);
         }
     }
 
@@ -224,8 +224,13 @@ public final class GraknClient implements AutoCloseable {
         }
 
         @Override
-        public grakn.core.server.Session session() {
+        public GraknClient.Session session() {
             return session;
+        }
+
+        @Override
+        public KeyspaceImpl keyspace() {
+            return session.keyspace();
         }
 
         @Override
@@ -308,7 +313,7 @@ public final class GraknClient implements AutoCloseable {
         }
 
         @Override
-        public void commit() throws InvalidKBException {
+        public void commit() {
             transceiver.send(RequestBuilder.Transaction.commit());
             responseOrThrow();
             close();
@@ -396,7 +401,8 @@ public final class GraknClient implements AutoCloseable {
                     this, iteratorId, response -> RemoteConcept.of(response.getGetAttributesIterRes().getAttribute(), this)
             );
 
-            return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute).collect(toImmutableSet());
+            return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute)
+                    .collect(collectingAndThen(toSet(), Collections::unmodifiableSet));
         }
 
         @Override
