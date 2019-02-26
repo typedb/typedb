@@ -82,7 +82,14 @@ public abstract class SemanticCache<
 
     UnifierType semanticUnifier(){ return UnifierType.RULE;}
 
-    protected abstract void propagateAnswers(ReasonerAtomicQuery target, CacheEntry<ReasonerAtomicQuery, SE> parentEntry, CacheEntry<ReasonerAtomicQuery, SE> childEntry, boolean inferred);
+    /**
+     * @param target query of interest we want to propagate answers for
+     * @param parentEntry parent entry we want to propagate answers from
+     * @param childEntry cache entry corresponding to target query (in general the queries do not match)
+     * @param inferred true if inferred answers should be propagated
+     * @return true if new answers were found during propagation
+     */
+    protected abstract boolean propagateAnswers(ReasonerAtomicQuery target, CacheEntry<ReasonerAtomicQuery, SE> parentEntry, CacheEntry<ReasonerAtomicQuery, SE> childEntry, boolean inferred);
 
     protected abstract Stream<ConceptMap> entryToAnswerStream(CacheEntry<ReasonerAtomicQuery, SE> entry);
 
@@ -95,7 +102,7 @@ public abstract class SemanticCache<
         ReasonerAtomicQuery query = entry.query();
         updateFamily(query);
         computeParents(query);
-        propagateAnswersTo(query, query.isGround());
+        propagateAnswersToQuery(query, query.isGround());
         return cacheEntry;
     }
 
@@ -123,7 +130,6 @@ public abstract class SemanticCache<
             LOG.trace("Cache db complete for: " + query);
         }
     }
-
 
     private Set<QE> getParents(ReasonerAtomicQuery child){
         Set<QE> parents = this.parents.get(queryToKey(child));
@@ -164,22 +170,29 @@ public abstract class SemanticCache<
         return computedParents;
     }
 
-    //NB: uses getEntry
-    private void propagateAnswersTo(ReasonerAtomicQuery target, boolean inferred){
+    /**
+     * NB: uses getEntry
+     * @param target query we want propagate the answers to
+     * @param inferred true if inferred answers should be propagated
+     */
+    private boolean propagateAnswersToQuery(ReasonerAtomicQuery target, boolean inferred){
         CacheEntry<ReasonerAtomicQuery, SE> childMatch = getEntry(target);
         if (childMatch != null) {
             ReasonerAtomicQuery child = childMatch.query();
+            boolean[] newAnswersFound = {false};
             parents.get(queryToKey(child))
                     .stream()
                     .filter(parent -> isDBComplete(keyToQuery(parent)))
                     .map(this::keyToQuery)
                     .map(this::getEntry)
                     .forEach(parentMatch -> {
-                                propagateAnswers(target, parentMatch, childMatch, inferred);
-                                ackDBCompletenessFromParent(target, parentMatch.query());
-                            }
-                    );
+                        boolean newAnswers = propagateAnswers(target, parentMatch, childMatch, inferred);
+                        newAnswersFound[0] = newAnswers;
+                        ackDBCompletenessFromParent(target, parentMatch.query());
+                    });
+            return newAnswersFound[0];
         }
+        return false;
     }
 
     @Override
@@ -221,16 +234,25 @@ public abstract class SemanticCache<
                 MultiUnifierImpl.trivial()
         );
     }
+
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(ReasonerAtomicQuery query) {
         CacheEntry<ReasonerAtomicQuery, SE> match = getEntry(query);
 
         if (match != null) {
+            boolean answersToGroundQuery = false;
+            if (query.isGround()) {
+                answersToGroundQuery = propagateAnswersToQuery(query, true);
+            }
+
             //extra check is a quasi-completeness check if there's no parent present we have no guarantees about completeness with respect to the db.
             Pair<Stream<ConceptMap>, MultiUnifier> cachePair = entryToAnswerStreamWithUnifier(query, match);
-            return isDBComplete(query)?
-                    cachePair :
-                    new Pair<>(
+
+            //if db complete or we found answers to ground query via propagation we don't need to hit the database
+            if (isDBComplete(query) || answersToGroundQuery) return cachePair;
+
+            //otherwise lookup and add inferred answers on top
+            return new Pair<>(
                             Stream.concat(
                                     getDBAnswerStreamWithUnifier(query).getKey(),
                                     cachePair.getKey().filter(ans -> ans.explanation().isRuleExplanation())
@@ -240,7 +262,9 @@ public abstract class SemanticCache<
 
         //if no match but db-complete parent exists, use parent to create entry
         Set<QE> parents = getParents(query);
-        if (!parents.isEmpty() && parents.stream().anyMatch(p -> isDBComplete(keyToQuery(p)))){
+        boolean fetchFromParent = !parents.isEmpty()
+                && parents.stream().anyMatch(p -> isDBComplete(keyToQuery(p)));
+        if (fetchFromParent){
             CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));
             return new Pair<>(entryToAnswerStream(newEntry), MultiUnifierImpl.trivial());
         }

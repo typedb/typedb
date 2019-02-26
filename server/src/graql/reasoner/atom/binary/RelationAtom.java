@@ -1060,7 +1060,11 @@ public abstract class RelationAtom extends IsaAtomBase {
                         new ConceptMap()
         );
 
-        return Stream.of(ConceptUtils.mergeAnswers(substitution, relationSub));
+        ConceptMap answer = ConceptUtils.mergeAnswers(substitution, relationSub);
+
+        System.out.println("materialise: " + this + " [" + answer + "]");
+
+        return Stream.of(answer);
     }
 
     /**
