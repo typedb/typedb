@@ -62,7 +62,7 @@ public class KeyspaceCache {
     }
 
     /**
-     * Copy the contents of the Keyspace cache into a Transaction Cache
+     * Copy the contents of the Keyspace cache into a TransactionOLTP Cache
      *
      * @param transactionCache
      */
@@ -131,7 +131,7 @@ public class KeyspaceCache {
             }
         }
 
-        //Flush All The Internal Transaction Caches
+        //Flush All The Internal TransactionOLTP Caches
         transactionCache.getSchemaConceptCache().values().forEach(schemaConcept
                 -> SchemaConceptImpl.from(schemaConcept).txCacheFlush());
     }

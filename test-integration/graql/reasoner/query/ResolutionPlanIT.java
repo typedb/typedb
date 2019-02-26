@@ -29,7 +29,6 @@ import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.plan.ResolutionPlan;
 import grakn.core.graql.reasoner.plan.ResolutionQueryPlan;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -83,11 +82,11 @@ public class ResolutionPlanIT {
 
     private static SessionImpl genericSchemaSession;
 
-    private static void loadFromFile(String fileName, Session session){
+    private static void loadFromFile(String fileName, SessionImpl session){
         try {
             InputStream inputStream = ResolutionPlanIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
+            TransactionOLTP tx = session.transaction(Transaction.Type.WRITE);
             Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e){
@@ -649,7 +648,7 @@ public class ResolutionPlanIT {
         return query.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(vars)).findFirst().orElse(null);
     }
 
-    private Atom getAtomOfType(ReasonerQueryImpl query, String typeString, Transaction tx){
+    private Atom getAtomOfType(ReasonerQueryImpl query, String typeString, TransactionOLTP tx){
         Type type = tx.getType(Label.of(typeString));
         return query.getAtoms(Atom.class).filter(at -> at.getTypeId().equals(type.id())).findFirst().orElse(null);
     }

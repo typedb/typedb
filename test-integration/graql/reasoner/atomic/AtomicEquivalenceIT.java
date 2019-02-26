@@ -22,7 +22,6 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -53,11 +52,11 @@ public class AtomicEquivalenceIT {
 
     private static SessionImpl genericSchemaSession;
 
-    private static void loadFromFile(String fileName, Session session){
+    private static void loadFromFile(String fileName, SessionImpl session){
         try {
             InputStream inputStream = AtomicEquivalenceIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
+            TransactionOLTP tx = session.transaction(Transaction.Type.WRITE);
             Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e){

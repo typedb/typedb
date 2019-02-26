@@ -91,7 +91,7 @@ public class NeqValuePredicateIT {
     @Test
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireNotHavingSpecificValue() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
             String neqVariant = "match " +
                     "$x has derived-resource-string $val;$val !== 'unattached';" +
                     "get;";
@@ -135,7 +135,7 @@ public class NeqValuePredicateIT {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireResourceValuesToBeDifferent() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
             String neqVersion = "match " +
                     "$x has derived-resource-string $val;" +
                     "$y has reattachable-resource-string $anotherVal;" +
@@ -158,7 +158,7 @@ public class NeqValuePredicateIT {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireInstanceValuesToBeDifferent() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
             String neqVersion = "match " +
                     "$val isa derived-resource-string;" +
                     "$anotherVal isa reattachable-resource-string;" +
@@ -183,7 +183,7 @@ public class NeqValuePredicateIT {
     @Ignore
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireAnEntityToHaveTwoDistinctResourcesOfNotAbstractType() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
             String queryString = "match " +
                     "$x has derivable-resource-string $value;" +
                     "$x has derivable-resource-string $unwantedValue;" +

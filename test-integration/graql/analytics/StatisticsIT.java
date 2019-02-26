@@ -30,10 +30,11 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.query.GraqlCompute;
@@ -73,7 +74,7 @@ public class StatisticsIT {
     private ConceptId entityId3;
     private ConceptId entityId4;
 
-    public Session session;
+    public SessionImpl session;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -91,7 +92,7 @@ public class StatisticsIT {
         addSchemaAndEntities();
         addResourceRelations();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             // resources-type is not set
             assertExceptionThrown(tx, Graql.compute().max().in(thing));
             assertExceptionThrown(tx, Graql.compute().min().in(thing));
@@ -143,7 +144,7 @@ public class StatisticsIT {
         }
     }
 
-    private void assertExceptionThrown(Transaction tx, GraqlCompute query) {
+    private void assertExceptionThrown(TransactionOLTP tx, GraqlCompute query) {
         boolean exceptionThrown = false;
         try {
             tx.execute(query);
@@ -160,7 +161,7 @@ public class StatisticsIT {
         // resource-type has no instance
         addSchemaAndEntities();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().min().of(resourceType1).in(Collections.emptyList()));
             assertTrue(result.isEmpty());
             result = tx.execute(Graql.compute().min().of(resourceType1));
@@ -199,7 +200,7 @@ public class StatisticsIT {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().min().of(resourceType1));
             assertTrue(result.isEmpty());
             result = tx.execute(Graql.compute().min().of(resourceType1));
@@ -222,7 +223,7 @@ public class StatisticsIT {
         // connect entity and resources
         addResourceRelations();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().min().of(resourceType1).in(Collections.emptySet()));
             assertEquals(1.2, result.get(0).number().doubleValue(), delta);
             result = tx.execute(Graql.compute().min().in(thing).of(resourceType2));
@@ -252,7 +253,7 @@ public class StatisticsIT {
         // resource-type has no instance
         addSchemaAndEntities();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().sum().of(resourceType1).in(Collections.emptyList()));
             assertTrue(result.isEmpty());
             result = tx.execute(Graql.compute().sum().of(resourceType1));
@@ -274,7 +275,7 @@ public class StatisticsIT {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().sum().of(resourceType1));
             assertTrue(result.isEmpty());
             result = tx.execute(Graql.compute().sum().of(resourceType1));
@@ -288,7 +289,7 @@ public class StatisticsIT {
         // connect entity and resources
         addResourceRelations();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().sum().of(resourceType1));
             assertEquals(4.5, result.get(0).number().doubleValue(), delta);
             result = tx.execute(Graql.compute().sum().of(resourceType2).in(thing));
@@ -308,7 +309,7 @@ public class StatisticsIT {
 
         // resource-type has no instance
         addSchemaAndEntities();
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().mean().of(resourceType1).in(Collections.emptyList()));
             assertTrue(result.isEmpty());
             result = tx.execute(Graql.compute().mean().of(resourceType1));
@@ -330,7 +331,7 @@ public class StatisticsIT {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().mean().of(resourceType1));
             assertTrue(result.isEmpty());
             result = tx.execute(Graql.compute().mean().of(resourceType1));
@@ -344,7 +345,7 @@ public class StatisticsIT {
         // connect entity and resources
         addResourceRelations();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().mean().of(resourceType1));
             assertEquals(1.5, result.get(0).number().doubleValue(), delta);
             result = tx.execute(Graql.compute().mean().of(resourceType2));
@@ -365,7 +366,7 @@ public class StatisticsIT {
         // resource-type has no instance
         addSchemaAndEntities();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().std().of(resourceType1).in(Collections.emptyList()));
             assertTrue(result.isEmpty());
             result = tx.execute(Graql.compute().std().of(resourceType1));
@@ -387,7 +388,7 @@ public class StatisticsIT {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().std().of(resourceType1));
             assertTrue(result.isEmpty());
             result = tx.execute(Graql.compute().std().of(resourceType1));
@@ -401,7 +402,7 @@ public class StatisticsIT {
         // connect entity and resources
         addResourceRelations();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().std().of(resourceType1));
             assertEquals(Math.sqrt(0.18 / 3), result.get(0).number().doubleValue(), delta);
             result = tx.execute(Graql.compute().std().of(resourceType2).in(anotherThing));
@@ -421,7 +422,7 @@ public class StatisticsIT {
         }
 
         List<Number> numberList = list.parallelStream().map(i -> {
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
                 return tx.execute(Graql.compute().std().of(resourceType2).in(thing)).get(0).number();
             }
         }).collect(Collectors.toList());
@@ -435,7 +436,7 @@ public class StatisticsIT {
         // resource-type has no instance
         addSchemaAndEntities();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().median().of(resourceType1).in(Collections.emptyList()));
             assertTrue(result.isEmpty());
             result = tx.execute(Graql.compute().median().of(resourceType1));
@@ -457,7 +458,7 @@ public class StatisticsIT {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().median().of(resourceType1));
             assertTrue(result.isEmpty());
             result = tx.execute(Graql.compute().median().of(resourceType1));
@@ -471,7 +472,7 @@ public class StatisticsIT {
         // connect entity and resources
         addResourceRelations();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().median().of(resourceType1));
             assertEquals(1.5D, result.get(0).number().doubleValue(), delta);
             result = tx.execute(Graql.compute().median().of(resourceType6));
@@ -495,7 +496,7 @@ public class StatisticsIT {
         }
 
         List<Number> numberList = list.parallelStream().map(i -> {
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
                 return tx.execute(Graql.compute().median().of(resourceType1)).get(0).number();
             }
         }).collect(Collectors.toList());
@@ -504,7 +505,7 @@ public class StatisticsIT {
 
     @Test
     public void testHasResourceVerticesAndEdges() {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
 
             // manually construct the relation type and instance
             AttributeType<Long> power = tx.putAttributeType("power", AttributeType.DataType.LONG);
@@ -539,7 +540,7 @@ public class StatisticsIT {
 
         Numeric result;
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
             // No need to test all statistics as most of them share the same vertex program
 
             result = tx.execute(Graql.compute().min().of("power")).get(0);
@@ -557,7 +558,7 @@ public class StatisticsIT {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 
@@ -615,7 +616,7 @@ public class StatisticsIT {
     }
 
     private void addResourcesInstances() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             tx.<Double>getAttributeType(resourceType1).create(1.2);
             tx.<Double>getAttributeType(resourceType1).create(1.5);
             tx.<Double>getAttributeType(resourceType1).create(1.8);
@@ -641,7 +642,7 @@ public class StatisticsIT {
     }
 
     private void addResourceRelations() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
             Entity entity1 = tx.getConcept(entityId1);
             Entity entity2 = tx.getConcept(entityId2);
             Entity entity3 = tx.getConcept(entityId3);

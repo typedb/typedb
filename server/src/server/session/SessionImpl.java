@@ -107,7 +107,7 @@ public class SessionImpl implements Session {
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
         if (span != null) { span.annotate("Getting new tx"); }
-        // We are passing the graph to Transaction because there is the need to access graph tinkerpop traversal
+        // We are passing the graph to TransactionOLTP because there is the need to access graph tinkerpop traversal
         TransactionOLTP tx = new TransactionOLTP(this, graph, keyspaceCache);
 
         if (span != null) { span.annotate("Opening tx with type"); }

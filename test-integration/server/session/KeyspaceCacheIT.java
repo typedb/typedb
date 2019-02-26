@@ -60,14 +60,14 @@ public class KeyspaceCacheIT {
 
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithSameLocalSession(){
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
-        try (Transaction tx = localSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = localSession.transaction(Transaction.Type.READ)) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
@@ -82,7 +82,7 @@ public class KeyspaceCacheIT {
      */
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewLocalSessionAfterSchemaIsDefined(){
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
@@ -90,7 +90,7 @@ public class KeyspaceCacheIT {
             tx.commit();
         }
         SessionImpl testSession = server.sessionFactory().session(localSession.keyspace());
-        try (Transaction tx = testSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = testSession.transaction(Transaction.Type.READ)) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
@@ -106,14 +106,14 @@ public class KeyspaceCacheIT {
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewLocalSessionBeforeSchemaIsDefined(){
         SessionImpl testSession = server.sessionFactory().session(localSession.keyspace());
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
-        try (Transaction tx = testSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = testSession.transaction(Transaction.Type.READ)) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
@@ -161,7 +161,7 @@ public class KeyspaceCacheIT {
 
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewRemoteSession(){
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
@@ -180,7 +180,7 @@ public class KeyspaceCacheIT {
 
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewRemoteSessionClosingPreviousOne(){
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");

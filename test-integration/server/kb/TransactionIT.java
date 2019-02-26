@@ -28,7 +28,6 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
@@ -286,7 +285,7 @@ public class TransactionIT {
         failAtOpeningTx(session, Transaction.Type.READ, keyspace);
     }
 
-    private void failAtOpeningTx(Session session, Transaction.Type txType, String keyspace) {
+    private void failAtOpeningTx(SessionImpl session, Transaction.Type txType, String keyspace) {
         Exception exception = null;
         try {
             //noinspection ResultOfMethodCallIgnored
@@ -337,13 +336,13 @@ public class TransactionIT {
 
     @Test
     public void whenCreatingAValidSchemaInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
-        Session localSession = server.sessionWithNewKeyspace();
+        SessionImpl localSession = server.sessionWithNewKeyspace();
 
         ExecutorService executor = Executors.newCachedThreadPool();
 
         executor.submit(() -> {
             //Resources
-            try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = localSession.transaction(Transaction.Type.WRITE)) {
                 AttributeType<Long> int_ = tx.putAttributeType("int", AttributeType.DataType.LONG);
                 AttributeType<Long> foo = tx.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
                 tx.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
@@ -354,7 +353,7 @@ public class TransactionIT {
         }).get();
 
         //Relation Which Has Resources
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("BAR").has(tx.getAttributeType("bar"));
             tx.commit();
         }

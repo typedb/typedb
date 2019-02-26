@@ -24,9 +24,10 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.RelationImpl;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -44,8 +45,8 @@ public class CastingIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private Transaction tx;
-    private Session session;
+    private TransactionOLTP tx;
+    private SessionImpl session;
 
     private RelationType relationType;
     private EntityType entityType;

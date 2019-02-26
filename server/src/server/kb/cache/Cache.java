@@ -56,14 +56,14 @@ public class Cache<V> {
     }
 
     /**
-     * Creates a Cache that will only exist within the context of a Transaction
+     * Creates a Cache that will only exist within the context of a TransactionOLTP
      */
     public static Cache createTxCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader) {
         return new Cache(owner, cacheable, false, true, databaseReader);
     }
 
     /**
-     * Creates a Cache that will only flush to a central shared cache then the Transaction is disposed off
+     * Creates a Cache that will only flush to a central shared cache then the TransactionOLTP is disposed off
      */
     public static Cache createSessionCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader) {
         return new Cache(owner, cacheable, true, true, databaseReader);

@@ -29,7 +29,6 @@ import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -66,11 +65,11 @@ public class AtomicQueryIT {
     private static SessionImpl materialisationTestSession;
     private static SessionImpl geoGraphSession;
 
-    private static void loadFromFile(String fileName, Session session) {
+    private static void loadFromFile(String fileName, SessionImpl session) {
         try {
             InputStream inputStream = AtomicQueryIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
+            TransactionOLTP tx = session.transaction(Transaction.Type.WRITE);
             Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e) {

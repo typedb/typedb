@@ -30,7 +30,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.kb.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -184,7 +184,7 @@ public class TransactionException extends GraknException {
     /**
      * Thrown when attempting to open a transaction which is already open
      */
-    public static TransactionException transactionOpen(Transaction tx) {
+    public static TransactionException transactionOpen(TransactionOLTP tx) {
         return create(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(tx.keyspace()));
     }
 
@@ -198,7 +198,7 @@ public class TransactionException extends GraknException {
     /**
      * Thrown when attempting to mutate a read only transaction
      */
-    public static TransactionException transactionReadOnly(Transaction tx) {
+    public static TransactionException transactionReadOnly(TransactionOLTP tx) {
         return create(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
     }
 
@@ -212,7 +212,7 @@ public class TransactionException extends GraknException {
     /**
      * Thrown when attempting to use the graph when the transaction is closed
      */
-    public static TransactionException transactionClosed(@Nullable Transaction tx, @Nullable String reason) {
+    public static TransactionException transactionClosed(@Nullable TransactionOLTP tx, @Nullable String reason) {
         if (reason == null) {
             Preconditions.checkNotNull(tx);
             return create(ErrorMessage.TX_CLOSED.getMessage(tx.keyspace()));
@@ -224,7 +224,7 @@ public class TransactionException extends GraknException {
     /**
      * Thrown when the graph can not be closed due to an unknown reason.
      */
-    public static TransactionException closingFailed(Transaction tx, Exception e) {
+    public static TransactionException closingFailed(TransactionOLTP tx, Exception e) {
         return new TransactionException(CLOSE_FAILURE.getMessage(tx.keyspace()), e);
     }
 

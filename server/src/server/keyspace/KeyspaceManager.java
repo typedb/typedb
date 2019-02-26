@@ -101,7 +101,7 @@ public class KeyspaceManager {
             return true;
         }
 
-        try (Transaction tx = systemKeyspaceSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = systemKeyspaceSession.transaction(Transaction.Type.READ)) {
             boolean keyspaceExists = (tx.getAttributeType(KEYSPACE_RESOURCE.getValue()).attribute(keyspace) != null);
             if (keyspaceExists) existingKeyspaces.add(keyspace);
             return keyspaceExists;
@@ -133,7 +133,7 @@ public class KeyspaceManager {
     }
 
     public Set<KeyspaceImpl> keyspaces() {
-        try (Transaction graph = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP graph = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
 
             return graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).instances()
@@ -165,7 +165,7 @@ public class KeyspaceManager {
      *
      * @param tx The tx to contain the system schema
      */
-    private void loadSystemSchema(Transaction tx) {
+    private void loadSystemSchema(TransactionOLTP tx) {
         //Keyspace data
         AttributeType<String> keyspaceName = tx.putAttributeType("keyspace-name", AttributeType.DataType.STRING);
         tx.putEntityType("keyspace").key(keyspaceName);

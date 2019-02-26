@@ -25,9 +25,10 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 
@@ -56,8 +57,8 @@ public class MovieGraph {
     private static Thing cluster0, cluster1;
 
 
-    public static void load(Session session) {
-        try (Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
+    public static void load(SessionImpl session) {
+        try (TransactionOLTP transaction = session.transaction(Transaction.Type.WRITE)) {
             buildSchema(transaction);
             buildInstances(transaction);
             buildRelations();
@@ -74,7 +75,7 @@ public class MovieGraph {
     }
 
 
-    private static void buildSchema(Transaction tx) {
+    private static void buildSchema(TransactionOLTP tx) {
         work = tx.putRole("work");
         author = tx.putRole("author");
         authoredBy = tx.putRelationType("authored-by").relates(work).relates(author);
@@ -152,7 +153,7 @@ public class MovieGraph {
         tx.getType(Schema.ImplicitType.HAS.getLabel("title")).has(provenance);
     }
 
-    private static void buildInstances(Transaction tx) {
+    private static void buildInstances(TransactionOLTP tx) {
         godfather = movie.create();
         putResource(godfather, title, "Godfather");
         putResource(godfather, tmdbVoteCount, 1000L);
@@ -295,7 +296,7 @@ public class MovieGraph {
         hasCluster(cluster1, theMuppets, hocusPocus);
     }
 
-    private static void buildRules(Transaction tx) {
+    private static void buildRules(TransactionOLTP tx) {
         // These rules are totally made up for testing purposes and don't work!
         Pattern when = Graql.parsePattern("$x has name 'expectation-when';");
         Pattern then = Graql.parsePattern("$x has name 'expectation-then';");

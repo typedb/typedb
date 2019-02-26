@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Represent a Vertex in a Transaction
+ * Represent a Vertex in a TransactionOLTP
  * Wraps a tinkerpop Vertex constraining it to the Grakn Object Model.
  * This is used to wrap common functionality between exposed Concept and unexposed
  * internal vertices.

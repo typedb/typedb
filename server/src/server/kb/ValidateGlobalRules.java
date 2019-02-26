@@ -34,7 +34,7 @@ import grakn.core.graql.reasoner.query.CompositeQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.rule.RuleUtils;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.concept.RelationTypeImpl;
 import grakn.core.server.kb.concept.RuleImpl;
@@ -361,7 +361,7 @@ class ValidateGlobalRules {
      * @param rule The rule to be validated
      * @return Error messages if the when or then of a rule refers to a non existent type
      */
-    static Set<String> validateRuleSchemaConceptExist(Transaction graph, Rule rule) {
+    static Set<String> validateRuleSchemaConceptExist(TransactionOLTP graph, Rule rule) {
         Set<String> errors = new HashSet<>();
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_WHEN, rule.when()));
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_THEN, rule.then()));
@@ -375,7 +375,7 @@ class ValidateGlobalRules {
      * @param pattern The pattern from which we will extract the types in the pattern
      * @return A list of errors if the pattern refers to any non-existent types in the graph
      */
-    private static Set<String> checkRuleSideInvalid(Transaction graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
+    private static Set<String> checkRuleSideInvalid(TransactionOLTP graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
         pattern.getNegationDNF().getPatterns().stream()

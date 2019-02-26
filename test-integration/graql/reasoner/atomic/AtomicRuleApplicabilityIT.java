@@ -32,7 +32,6 @@ import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
@@ -71,11 +70,11 @@ public class AtomicRuleApplicabilityIT {
     private static SessionImpl resourceApplicabilitySession;
     private static SessionImpl reifiedResourceApplicabilitySession;
 
-    private static void loadFromFile(String fileName, Session session){
+    private static void loadFromFile(String fileName, SessionImpl session){
         try {
             InputStream inputStream = AtomicRuleApplicabilityIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
+            TransactionOLTP tx = session.transaction(Transaction.Type.WRITE);
             Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e){

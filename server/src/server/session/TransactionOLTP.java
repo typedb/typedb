@@ -96,7 +96,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A Transaction using JanusGraph as a vendor backend.
+ * A TransactionOLTP using JanusGraph as a vendor backend.
  *
  * Wraps a TinkerPop transaction (the graph is still needed as we use to retrieve tinker traversals)
  *
@@ -115,7 +115,7 @@ public class TransactionOLTP implements Transaction {
     private final KeyspaceCache keyspaceCache;
     private final TransactionCache transactionCache;
 
-    // Transaction Specific
+    // TransactionOLTP Specific
     private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
     private Transaction.Type txType;
     private String closedReason = null;
@@ -920,8 +920,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Stores the commit log of a Transaction.
-     * Stores the commit log of a Transaction which is uploaded to the jserver when the Session is closed.
+     * Stores the commit log of a TransactionOLTP which is uploaded to the jserver when the Session is closed.
      * The commit log is also uploaded periodically to make sure that if a failure occurs the counts are still roughly maintained.
      */
     public static class CommitLog {

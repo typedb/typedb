@@ -23,8 +23,9 @@ import grakn.core.concept.Label;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.Session;
 import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import static grakn.core.util.GraqlTestUtil.getInstance;
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
@@ -36,33 +37,33 @@ import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 @SuppressWarnings("CheckReturnValue")
 public class PathTreeGraph{
 
-    private final Session session;
+    private final SessionImpl session;
     private final static String gqlPath = "test-integration/graql/reasoner/resources/";
     private final String gqlFile;
     private final static Label key = Label.of("index");
 
-    public PathTreeGraph(Session session){
+    public PathTreeGraph(SessionImpl session){
         this.session = session;
         this.gqlFile = "pathTest.gql";
     }
 
-    public PathTreeGraph(Session session, String schemaFile) {
+    public PathTreeGraph(SessionImpl session, String schemaFile) {
         this.session = session;
         this.gqlFile = schemaFile;
     }
 
     public final void load(int n, int m) {
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = session.transaction(Transaction.Type.WRITE);
         loadFromFile(gqlPath, gqlFile, tx);
         buildExtensionalDB(n, m, tx);
         tx.commit();
     }
 
-    protected void buildExtensionalDB(int n, int children, Transaction tx) {
+    protected void buildExtensionalDB(int n, int children, TransactionOLTP tx) {
         buildTree("arc-from", "arc-to", n , children, tx);
     }
 
-    void buildTree(String fromRoleValue, String toRoleValue, int n, int children, Transaction tx) {
+    void buildTree(String fromRoleValue, String toRoleValue, int n, int children, TransactionOLTP tx) {
         Role fromRole = tx.getRole(fromRoleValue);
         Role toRole = tx.getRole(toRoleValue);
 
