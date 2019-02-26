@@ -74,10 +74,10 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
 
         return ImmutableSet.of(
                 //owner rolePlayer edge
-                rolePlayer(property, property.relationship().var(), edge1, var, null,
+                rolePlayer(property, property.relation().var(), edge1, var, null,
                            ImmutableSet.of(hasOwnerRole, keyOwnerRole), ImmutableSet.of(has, key)),
                 //value rolePlayer edge
-                rolePlayer(property, property.relationship().var(), edge2, property.attribute().var(), null,
+                rolePlayer(property, property.relation().var(), edge2, property.attribute().var(), null,
                            ImmutableSet.of(hasValueRole, keyValueRole), ImmutableSet.of(has, key)),
                 neq(property, edge1, edge2)
         );
@@ -90,7 +90,7 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
 
         //NB: we always make the attribute variable explicit
         Variable attributeVariable = property.attribute().var().asUserDefined();
-        Variable relationVariable = property.relationship().var();
+        Variable relationVariable = property.relation().var();
         Variable predicateVariable = new Variable();
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements, parent).collect(Collectors.toSet());
 
@@ -134,7 +134,7 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
 
         @Override
         public Set<Variable> producedVars() {
-            return ImmutableSet.of(property.relationship().var());
+            return ImmutableSet.of(property.relation().var());
         }
 
         @Override
@@ -142,7 +142,7 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
             Attribute attributeConcept = executor.getConcept(property.attribute().var()).asAttribute();
             Thing thing = executor.getConcept(var).asThing();
             ConceptId relationId = thing.relhas(attributeConcept).id();
-            executor.getBuilder(property.relationship().var()).id(relationId);
+            executor.getBuilder(property.relation().var()).id(relationId);
         }
     }
 }
