@@ -49,7 +49,7 @@ interface RelationStructure extends CacheOwner {
     RelationReified reify();
 
     /**
-     * @return true if the Relation has been reified meaning it can support n-ary relationships
+     * @return true if the Relation has been reified meaning it can support n-ary relations
      */
     boolean isReified();
 
@@ -75,7 +75,7 @@ interface RelationStructure extends CacheOwner {
     void delete();
 
     /**
-     * Return whether the relationship has been deleted.
+     * Return whether the relation has been deleted.
      */
     boolean isDeleted();
 

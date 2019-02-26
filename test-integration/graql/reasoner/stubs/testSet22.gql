@@ -11,7 +11,7 @@ person sub entity,
 
 #Relations
 
-knows-trans sub relationship,
+knows-trans sub relation,
     relates friend;
 
 knows sub knows-trans,

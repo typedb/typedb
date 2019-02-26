@@ -12,7 +12,7 @@ a-entity sub entity2;
 
 Q-from sub role;
 Q-to sub role;
-Q sub relationship, relates Q-from, relates Q-to;
+Q sub relation, relates Q-from, relates Q-to;
 
 index sub attribute, datatype string;
 

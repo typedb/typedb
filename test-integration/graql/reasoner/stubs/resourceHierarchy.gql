@@ -8,7 +8,7 @@ genericEntity sub entity,
 
 genericRole sub role;
 
-relation sub relationship,
+relation0 sub relation,
     relates genericRole;
 
 baseResource sub attribute, datatype string,

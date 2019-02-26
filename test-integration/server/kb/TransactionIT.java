@@ -117,7 +117,7 @@ public class TransactionIT {
     @Test
     public void whenGettingTypesByName_ReturnTypes() {
         String entityTypeLabel = "My Entity Type";
-        String relationTypeLabel = "My Relationship Type";
+        String relationTypeLabel = "My Relation Type";
         String roleTypeLabel = "My Role Type";
         String resourceTypeLabel = "My Attribute Type";
         String ruleTypeLabel = "My Rule Type";
@@ -129,12 +129,12 @@ public class TransactionIT {
         assertNull(tx.getRule(ruleTypeLabel));
 
         EntityType entityType = tx.putEntityType(entityTypeLabel);
-        RelationType relationshipType = tx.putRelationType(relationTypeLabel);
+        RelationType relationType = tx.putRelationType(relationTypeLabel);
         Role role = tx.putRole(roleTypeLabel);
         AttributeType attributeType = tx.putAttributeType(resourceTypeLabel, AttributeType.DataType.STRING);
 
         assertEquals(entityType, tx.getEntityType(entityTypeLabel));
-        assertEquals(relationshipType, tx.getRelationType(relationTypeLabel));
+        assertEquals(relationType, tx.getRelationType(relationTypeLabel));
         assertEquals(role, tx.getRole(roleTypeLabel));
         assertEquals(attributeType, tx.getAttributeType(resourceTypeLabel));
     }
@@ -142,7 +142,7 @@ public class TransactionIT {
     @Test
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes() {
         EntityType sampleEntityType = tx.putEntityType("Sample Entity Type");
-        RelationType sampleRelationshipType = tx.putRelationType("Sample Relationship Type");
+        RelationType sampleRelationType = tx.putRelationType("Sample Relation Type");
 
         assertThat(tx.getMetaConcept().subs().collect(toSet()), containsInAnyOrder(
                 tx.getMetaConcept(),
@@ -150,7 +150,7 @@ public class TransactionIT {
                 tx.getMetaEntityType(),
                 tx.getMetaAttributeType(),
                 sampleEntityType,
-                sampleRelationshipType
+                sampleRelationType
         ));
     }
 
@@ -245,7 +245,7 @@ public class TransactionIT {
         tx.close();
         String entityType = "My Entity Type";
         String roleType1 = "My Role Type 1";
-        String relationType1 = "My Relationship Type 1";
+        String relationType1 = "My Relation Type 1";
 
         //Fail Some Mutations
         tx = session.transaction(Transaction.Type.READ);
@@ -353,7 +353,7 @@ public class TransactionIT {
             }
         }).get();
 
-        //Relationship Which Has Resources
+        //Relation Which Has Resources
         try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("BAR").has(tx.getAttributeType("bar"));
             tx.commit();

@@ -10,11 +10,11 @@ vertex sub entity,
 has index;
 
 coordinate sub role;
-arc sub relationship, relates coordinate;
+arc sub relation, relates coordinate;
 vertex plays coordinate;
 start-vertex plays coordinate;
 
-path sub relationship, relates coordinate;
+path sub relation, relates coordinate;
 vertex plays coordinate;
 start-vertex plays coordinate;
 

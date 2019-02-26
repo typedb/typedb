@@ -321,9 +321,9 @@ public class MovieGraph {
     }
 
     private static void hasCluster(Thing cluster, Thing... movies) {
-        Relation relationship = hasCluster.create().assign(clusterOfProduction, cluster);
+        Relation relation = hasCluster.create().assign(clusterOfProduction, cluster);
         for (Thing movie : movies) {
-            relationship.assign(productionWithCluster, movie);
+            relation.assign(productionWithCluster, movie);
         }
     }
 }

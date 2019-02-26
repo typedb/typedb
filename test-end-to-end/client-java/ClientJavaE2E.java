@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.hasSize;
  * Performs various queries with the client-java library:
  * - define a schema with a rule
  * - match; get;
- * - match; get of an inferred relationship
+ * - match; get of an inferred relation
  * - match; insert;
  * - match; delete;
  * - match; aggregate;
@@ -54,8 +54,8 @@ import static org.hamcrest.Matchers.hasSize;
  * and there is a chance that the match; get; test is performed before the define a schema test, which would cause it to fail.
  * <p>
  * The schema describes a lion family which consists of a lion, lioness, and the offspring - three young lions. The mating
- * relationship captures the mating act between the male and female partners (ie., the lion and lioness). The child-bearing
- * relationship captures the child-bearing act which results from the mating act.
+ * relation captures the mating act between the male and female partners (ie., the lion and lioness). The child-bearing
+ * relation captures the child-bearing act which results from the mating act.
  * <p>
  * The rule is one such that if there is an offspring which is the result of a certain child-bearing act, then
  * that offspring is the child of the male and female partners which are involved in the mating act.
@@ -119,9 +119,9 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             GraqlDefine defineQuery = Graql.define(
-                    type("child-bearing").sub("relationship").relates("offspring").relates("child-bearer"),
-                    type("mating").sub("relationship").relates("male-partner").relates("female-partner").plays("child-bearer"),
-                    type("parentship").sub("relationship").relates("parent").relates("child"),
+                    type("child-bearing").sub("relation").relates("offspring").relates("child-bearer"),
+                    type("mating").sub("relation").relates("male-partner").relates("female-partner").plays("child-bearer"),
+                    type("parentship").sub("relation").relates("parent").relates("child"),
 
                     type("name").sub("attribute").datatype(Graql.Token.DataType.STRING),
                     type("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring"),
@@ -148,8 +148,8 @@ public class ClientJavaE2E {
             LOG.info("clientJavaE2E() - '" + getThingQuery + "'");
             List<String> definedSchema = tx.execute(getThingQuery).stream()
                     .map(answer -> answer.get("t").asType().label().getValue()).collect(Collectors.toList());
-            String[] correctSchema = new String[]{"thing", "entity", "relationship", "attribute",
-                    "lion", "mating", "parentship", "child-bearing", "@has-name", "name"};
+            String[] correctSchema = new String[] { "thing", "entity", "relation", "attribute",
+                    "lion", "mating", "parentship", "child-bearing", "@has-name", "name" };
             assertThat(definedSchema, hasItems(correctSchema));
             LOG.info("clientJavaE2E() - done.");
         });
@@ -170,7 +170,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             String[] familyMembers = lionNames();
-            LOG.info("clientJavaE2E() - inserting mating relationships...");
+            LOG.info("clientJavaE2E() - inserting mating relations...");
             GraqlInsert insertMatingQuery = Graql.match(
                     var("lion").isa("lion").has("name", familyMembers[0]),
                     var("lioness").isa("lion").has("name", familyMembers[1]))
@@ -178,7 +178,7 @@ public class ClientJavaE2E {
             LOG.info("clientJavaE2E() - '" + insertMatingQuery + "'");
             List<ConceptMap> insertedMating = tx.execute(insertMatingQuery);
 
-            LOG.info("clientJavaE2E() - inserting child-bearing relationships...");
+            LOG.info("clientJavaE2E() - inserting child-bearing relations...");
             GraqlInsert insertChildBearingQuery = Graql.match(
                     var("lion").isa("lion").has("name", familyMembers[0]),
                     var("lioness").isa("lion").has("name", familyMembers[1]),
@@ -204,7 +204,7 @@ public class ClientJavaE2E {
             List<String> insertedNames = insertedLions.stream().map(answer -> answer.get("n").asAttribute().value().toString()).collect(Collectors.toList());
             assertThat(insertedNames, containsInAnyOrder(lionNames()));
 
-            LOG.info("clientJavaE2E() - execute match get on the mating relationships...");
+            LOG.info("clientJavaE2E() - execute match get on the mating relations...");
             GraqlGet getMatingQuery = Graql.match(var().isa("mating")).get();
             LOG.info("clientJavaE2E() - '" + getMatingQuery + "'");
             List<ConceptMap> insertedMating = tx.execute(getMatingQuery);
@@ -219,7 +219,7 @@ public class ClientJavaE2E {
         });
 
         localhostGraknTx(tx -> {
-            LOG.info("clientJavaE2E() - match get inferred relationships...");
+            LOG.info("clientJavaE2E() - match get inferred relations...");
             GraqlGet getParentship = Graql.match(
                     var("parentship")
                             .isa("parentship")

@@ -13,11 +13,11 @@ entity1 sub entity,
 
 #Relations
 
-reflexiveRelation sub relationship,
+reflexiveRelation sub relation,
     relates role1,
     relates role2;
 
-uniquePairRelation sub relationship,
+uniquePairRelation sub relation,
     relates role1,
     relates role2;
 

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal;
+package grakn.core.graql.executor;
 
 import com.google.common.collect.ImmutableList;
 import grakn.core.concept.thing.Entity;
@@ -76,13 +76,13 @@ public class IsaExplicitIT {
         superType1.plays(role1).plays(role2).plays(role3);
         entityType2.plays(role1).plays(role2).plays(role3);
         entityType3.plays(role1).plays(role2).plays(role3);
-        RelationType relationshipType = tx.putRelationType("related")
+        RelationType relationType = tx.putRelationType("related")
                 .relates(role1).relates(role2).relates(role3);
 
         Entity entity1 = entityType1.create();
         Entity entity2 = entityType2.create();
         Entity entity3 = entityType3.create();
-        relationshipType.create()
+        relationType.create()
                 .assign(role1, entity1)
                 .assign(role2, entity2)
                 .assign(role3, entity3);
@@ -130,7 +130,7 @@ public class IsaExplicitIT {
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
-                instanceOf(InIsaFragment.class), // start from relationship type
+                instanceOf(InIsaFragment.class), // start from relation type
                 instanceOf(OutRolePlayerFragment.class), // go to a role player
                 instanceOf(OutIsaFragment.class), // check the role player's type
                 instanceOf(OutRolePlayerFragment.class), // go to the other role player
@@ -170,7 +170,7 @@ public class IsaExplicitIT {
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
-                instanceOf(InIsaFragment.class), // start from relationship type
+                instanceOf(InIsaFragment.class), // start from relation type
                 instanceOf(OutRolePlayerFragment.class), // go to a role player
                 instanceOf(OutIsaFragment.class), // check the role player's type
                 instanceOf(OutRolePlayerFragment.class), // go to the other role player
@@ -192,7 +192,7 @@ public class IsaExplicitIT {
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
-                instanceOf(InIsaFragment.class), // start from relationship type
+                instanceOf(InIsaFragment.class), // start from relation type
                 instanceOf(OutRolePlayerFragment.class), // go to a role player
                 instanceOf(OutIsaFragment.class), // check the role player's type
                 instanceOf(OutRolePlayerFragment.class), // go to the other role player

@@ -90,9 +90,9 @@ public class AttributeDeduplicator {
 
     private static void mergeRolePlayerEdge(Vertex mergeTargetV, GraphTraversal<Vertex, Edge> rolePlayerEdge) {
         Edge edge = rolePlayerEdge.next();
-        Vertex relationshipVertex = edge.outVertex();
+        Vertex relationVertex = edge.outVertex();
         Object[] properties = propertiesToArray(Lists.newArrayList(edge.properties()));
-        relationshipVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mergeTargetV, properties);
+        relationVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mergeTargetV, properties);
         edge.remove();
     }
 

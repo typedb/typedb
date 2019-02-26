@@ -31,7 +31,7 @@ import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.IsaProperty;
@@ -102,7 +102,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         //set varName as user defined if reified
-        //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
+        //reified if contains more properties than the RelationProperty itself and potential IsaProperty
         boolean isReified = statement.properties().stream()
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
@@ -152,7 +152,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
         relVar = isaProp != null && isaProp.isExplicit() ?
                 relVar.isaX(new Statement(typeVariable.asUserDefined())) :
                 relVar.isa(new Statement(typeVariable.asUserDefined()));
-        return RelationshipAtom.create(relVar, typeVariable, predicateId, parent);
+        return RelationAtom.create(relVar, typeVariable, predicateId, parent);
     }
 
     @Override

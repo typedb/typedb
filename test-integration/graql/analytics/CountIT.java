@@ -162,10 +162,10 @@ public class CountIT {
             count = tx.execute(Graql.compute().count().in("@has-name", "name")).get(0);
             assertEquals(2, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship")).get(0);
+            count = tx.execute(Graql.compute().count().in("relation")).get(0);
             assertEquals(0, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship").attributes(true)).get(0);
+            count = tx.execute(Graql.compute().count().in("relation").attributes(true)).get(0);
             assertEquals(1, count.number().intValue());
         }
 
@@ -182,10 +182,10 @@ public class CountIT {
             Role resourceValue = tx.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
             name.plays(resourceValue);
 
-            RelationType relationshipType =
+            RelationType relationType =
                     tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                             .relates(resourceOwner).relates(resourceValue);
-            relationshipType.create()
+            relationType.create()
                     .assign(resourceOwner, aPerson)
                     .assign(resourceValue, jason);
             tx.commit();
@@ -213,10 +213,10 @@ public class CountIT {
             count = tx.execute(Graql.compute().count().in("@has-name", "name")).get(0);
             assertEquals(3, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship")).get(0);
+            count = tx.execute(Graql.compute().count().in("relation")).get(0);
             assertEquals(0, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship").attributes(true)).get(0);
+            count = tx.execute(Graql.compute().count().in("relation").attributes(true)).get(0);
             assertEquals(2, count.number().intValue());
         }
     }
@@ -238,11 +238,11 @@ public class CountIT {
             Role resourceValue = tx.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
             name.plays(resourceValue);
 
-            RelationType relationshipType =
+            RelationType relationType =
                     tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                             .relates(resourceOwner).relates(resourceValue);
-            // here relationship type is still implicit
-            relationshipType.create()
+            // here relation type is still implicit
+            relationType.create()
                     .assign(resourceOwner, aPerson)
                     .assign(resourceValue, jason);
 
@@ -266,10 +266,10 @@ public class CountIT {
             count = tx.execute(Graql.compute().count().in("@has-name", "name")).get(0);
             assertEquals(2, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship")).get(0);
+            count = tx.execute(Graql.compute().count().in("relation")).get(0);
             assertEquals(0, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship").attributes(true)).get(0);
+            count = tx.execute(Graql.compute().count().in("relation").attributes(true)).get(0);
             assertEquals(1, count.number().intValue());
         }
 
@@ -294,10 +294,10 @@ public class CountIT {
             count = tx.execute(Graql.compute().count().in("@has-name", "name")).get(0);
             assertEquals(3, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship")).get(0);
+            count = tx.execute(Graql.compute().count().in("relation")).get(0);
             assertEquals(0, count.number().intValue());
 
-            count = tx.execute(Graql.compute().count().in("relationship").attributes(true)).get(0);
+            count = tx.execute(Graql.compute().count().in("relation").attributes(true)).get(0);
             assertEquals(2, count.number().intValue());
         }
     }

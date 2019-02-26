@@ -5,15 +5,15 @@ entity1 sub entity,
     plays rel-to,
     has name;
 
-horizontal sub relationship,
+horizontal sub relation,
     relates rel-from,
     relates rel-to;
 
-vertical sub relationship,
+vertical sub relation,
     relates rel-from,
     relates rel-to;
 
-diagonal sub relationship,
+diagonal sub relation,
     relates rel-from,
     relates rel-to;
 

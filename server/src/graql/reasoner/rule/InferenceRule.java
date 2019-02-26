@@ -26,7 +26,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
-import grakn.core.graql.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
@@ -290,7 +290,7 @@ public class InferenceRule {
         SchemaConcept headType = headAtom.getSchemaConcept();
         if (headType.isRelationType()
                 && headAtom.getVarName().isUserDefinedName()) {
-            RelationshipAtom bodyAtom = getBody().getAtoms(RelationshipAtom.class)
+            RelationAtom bodyAtom = getBody().getAtoms(RelationAtom.class)
                     .filter(at -> Objects.nonNull(at.getSchemaConcept()))
                     .filter(at -> at.getSchemaConcept().equals(headType))
                     .filter(at -> at.getVarName().isUserDefinedName())
@@ -303,7 +303,7 @@ public class InferenceRule {
     private InferenceRule rewriteHeadToRelation(Atom parentAtom){
         if (parentAtom.isRelation() && getHead().getAtom().isResource()){
             return new InferenceRule(
-                    ReasonerQueries.atomic(getHead().getAtom().toRelationshipAtom()),
+                    ReasonerQueries.atomic(getHead().getAtom().toRelationAtom()),
                     getBody(),
                     rule,
                     tx

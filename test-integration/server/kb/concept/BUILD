@@ -77,7 +77,7 @@ java_test(
 )
 
 java_test(
-     name = "relationship-it",
+     name = "relation-it",
      srcs = ["RelationIT.java"],
      test_class = "grakn.core.server.kb.concept.RelationIT",
      deps = [
@@ -94,7 +94,7 @@ java_test(
 )
 
 java_test(
-     name = "relationship-type-it",
+     name = "relation-type-it",
      srcs = ["RelationTypeIT.java"],
      test_class = "grakn.core.server.kb.concept.RelationTypeIT",
      deps = [
@@ -162,8 +162,8 @@ checkstyle_test(
         ":concept-it",
         ":entity-it",
         ":entity-type-it",
-        ":relationship-it",
-        ":relationship-type-it",
+        ":relation-it",
+        ":relation-type-it",
         ":role-it",
         ":schema-concept-it",
         ":schema-mutation-it",

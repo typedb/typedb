@@ -326,11 +326,11 @@ public class NegationIT {
     @Test
     public void entitiesNotHavingRolePlayersInRelations(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
-            String connection = "relationship";
+            String connection = "relation";
             List<ConceptMap> fullAnswers = tx.execute(Graql.parse("match $x has attribute $r;get;").asGet());
             List<ConceptMap> answersNotPlayingInRelation = tx.execute(Graql.<GraqlGet>parse("match " +
                     "$x has attribute $r;"+
-                    "not {($x) isa relationship;};" +
+                    "not {($x) isa relation;};" +
                     "get;"
             ));
 
@@ -609,11 +609,11 @@ public class NegationIT {
     }
 
     private boolean thingsRelated(Map<Thing, Role> thingMap, Label relation, Transaction tx){
-        RelationType relationshipType = tx.getRelationType(relation.getValue());
-        boolean inferrable = relationshipType.subs().flatMap(SchemaConcept::thenRules).findFirst().isPresent();
+        RelationType relationType = tx.getRelationType(relation.getValue());
+        boolean inferrable = relationType.subs().flatMap(SchemaConcept::thenRules).findFirst().isPresent();
 
         if (!inferrable){
-            return relationshipType
+            return relationType
                     .instances()
                     .anyMatch(r -> thingMap.entrySet().stream().allMatch(e -> r.rolePlayers(e.getValue()).anyMatch(rp -> rp.equals(e.getKey()))));
         }

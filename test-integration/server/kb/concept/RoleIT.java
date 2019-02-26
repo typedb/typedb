@@ -45,7 +45,7 @@ import static org.junit.Assert.assertThat;
 
 public class RoleIT {
     private Role role;
-    private RelationType relationshipType;
+    private RelationType relationType;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -60,7 +60,7 @@ public class RoleIT {
         session = server.sessionWithNewKeyspace();
         tx = session.transaction(Transaction.Type.WRITE);
         role = tx.putRole("My Role");
-        relationshipType = tx.putRelationType("RelationshipType");
+        relationType = tx.putRelationType("RelationType");
     }
 
     @After
@@ -72,8 +72,8 @@ public class RoleIT {
     @Test
     public void whenGettingTheRelationTypesARoleIsInvolvedIn_ReturnTheRelationTypes() {
         assertThat(role.relations().collect(toSet()), empty());
-        relationshipType.relates(role);
-        assertThat(role.relations().collect(toSet()), containsInAnyOrder(relationshipType));
+        relationType.relates(role);
+        assertThat(role.relations().collect(toSet()), containsInAnyOrder(relationType));
     }
 
     @Test
@@ -116,13 +116,13 @@ public class RoleIT {
     public void whenDeletingRoleTypeWithRolePlayers_Throw(){
         Role roleA = tx.putRole("roleA");
         Role roleB = tx.putRole("roleB");
-        RelationType relationshipType = tx.putRelationType("relationTypes").relates(roleA).relates(roleB);
+        RelationType relationType = tx.putRelationType("relationTypes").relates(roleA).relates(roleB);
         EntityType entityType = tx.putEntityType("entityType").plays(roleA).plays(roleB);
 
         Entity a = entityType.create();
         Entity b = entityType.create();
 
-        relationshipType.create().assign(roleA, a).assign(roleB, b);
+        relationType.create().assign(roleA, a).assign(roleB, b);
 
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(TransactionException.cannotBeDeleted(roleA).getMessage());
@@ -134,12 +134,12 @@ public class RoleIT {
     public void whenAddingRoleTypeToMultipleRelationTypes_EnsureItLinkedToBothRelationTypes() throws InvalidKBException {
         Role roleA = tx.putRole("roleA");
         Role roleB = tx.putRole("roleB");
-        relationshipType.relates(roleA).relates(role);
-        RelationType relationshipType2 = tx.putRelationType("relationshipType2").relates(roleB).relates(role);
+        relationType.relates(roleA).relates(role);
+        RelationType relationType2 = tx.putRelationType("relationType2").relates(roleB).relates(role);
         tx.commit();
 
-        assertThat(roleA.relations().collect(toSet()), containsInAnyOrder(relationshipType));
-        assertThat(roleB.relations().collect(toSet()), containsInAnyOrder(relationshipType2));
-        assertThat(role.relations().collect(toSet()), containsInAnyOrder(relationshipType, relationshipType2));
+        assertThat(roleA.relations().collect(toSet()), containsInAnyOrder(relationType));
+        assertThat(roleB.relations().collect(toSet()), containsInAnyOrder(relationType2));
+        assertThat(role.relations().collect(toSet()), containsInAnyOrder(relationType, relationType2));
     }
 }

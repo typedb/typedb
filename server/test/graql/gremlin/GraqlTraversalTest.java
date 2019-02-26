@@ -99,7 +99,7 @@ public class GraqlTraversalTest {
         when(tx.getSchemaConcept(Label.of("wife"))).thenReturn(wife);
         //TODO: mock the following in a proper way
 //        Role wife = graph.putRole("wife");
-//        graph.putRelationshipType("marriage").relates(wife);
+//        graph.putRelationType("marriage").relates(wife);
     }
 
     @Test

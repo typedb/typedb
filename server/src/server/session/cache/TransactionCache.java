@@ -58,13 +58,13 @@ public class TransactionCache {
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
-    private final Set<Relation> newRelationships = new HashSet<>();
+    private final Set<Relation> newRelations = new HashSet<>();
     private final Set<Thing> modifiedThings = new HashSet<>();
 
     private final Set<Role> modifiedRoles = new HashSet<>();
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
-    private final Set<RelationType> modifiedRelationshipTypes = new HashSet<>();
+    private final Set<RelationType> modifiedRelationTypes = new HashSet<>();
 
     private final Set<Rule> modifiedRules = new HashSet<>();
 
@@ -125,7 +125,7 @@ public class TransactionCache {
         } else if (concept.isRole()) {
             modifiedRoles.add(concept.asRole());
         } else if (concept.isRelationType()) {
-            modifiedRelationshipTypes.add(concept.asRelationType());
+            modifiedRelationTypes.add(concept.asRelationType());
         } else if (concept.isRule()) {
             modifiedRules.add(concept.asRule());
         }
@@ -137,7 +137,7 @@ public class TransactionCache {
 
     public void removeFromValidation(Type type) {
         if (type.isRelationType()) {
-            modifiedRelationshipTypes.remove(type.asRelationType());
+            modifiedRelationTypes.remove(type.asRelationType());
         }
     }
 
@@ -170,7 +170,7 @@ public class TransactionCache {
     public void remove(Concept concept) {
         modifiedThings.remove(concept);
         modifiedRoles.remove(concept);
-        modifiedRelationshipTypes.remove(concept);
+        modifiedRelationTypes.remove(concept);
         modifiedRules.remove(concept);
 
         if (concept.isAttribute()) {
@@ -178,7 +178,7 @@ public class TransactionCache {
         }
 
         if (concept.isRelation()) {
-            newRelationships.remove(concept.asRelation());
+            newRelations.remove(concept.asRelation());
         }
 
         conceptCache.remove(concept.id());
@@ -306,8 +306,8 @@ public class TransactionCache {
         return modifiedRoles;
     }
 
-    public Set<RelationType> getModifiedRelationshipTypes() {
-        return modifiedRelationshipTypes;
+    public Set<RelationType> getModifiedRelationTypes() {
+        return modifiedRelationTypes;
     }
 
     public Set<Rule> getModifiedRules() {
@@ -318,12 +318,12 @@ public class TransactionCache {
         return modifiedCastings;
     }
 
-    public void addNewRelationship(Relation relationship) {
-        newRelationships.add(relationship);
+    public void addNewRelation(Relation relation) {
+        newRelations.add(relation);
     }
 
-    public Set<Relation> getNewRelationships() {
-        return newRelationships;
+    public Set<Relation> getNewRelations() {
+        return newRelations;
     }
 
     //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
@@ -334,11 +334,11 @@ public class TransactionCache {
         //Clear Collection Caches
         modifiedThings.clear();
         modifiedRoles.clear();
-        modifiedRelationshipTypes.clear();
+        modifiedRelationTypes.clear();
         modifiedRules.clear();
         modifiedCastings.clear();
         newAttributes.clear();
-        newRelationships.clear();
+        newRelations.clear();
         shardingCount.clear();
         conceptCache.clear();
         schemaConceptCache.clear();

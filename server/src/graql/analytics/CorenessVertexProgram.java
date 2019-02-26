@@ -35,7 +35,7 @@ import static grakn.core.graql.analytics.KCoreVertexProgram.K_CORE_EXIST;
 import static grakn.core.graql.analytics.KCoreVertexProgram.K_CORE_LABEL;
 import static grakn.core.graql.analytics.KCoreVertexProgram.K_CORE_STABLE;
 import static grakn.core.graql.analytics.KCoreVertexProgram.MESSAGE_COUNT;
-import static grakn.core.graql.analytics.KCoreVertexProgram.atRelationships;
+import static grakn.core.graql.analytics.KCoreVertexProgram.atRelations;
 import static grakn.core.graql.analytics.KCoreVertexProgram.filterByDegree;
 import static grakn.core.graql.analytics.KCoreVertexProgram.relayOrSaveMessages;
 import static grakn.core.graql.analytics.KCoreVertexProgram.sendMessage;
@@ -122,9 +122,9 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
                     }
                 }
 
-                // relay message through relationship vertices in even iterations
+                // relay message through relation vertices in even iterations
                 // send message from regular entities in odd iterations
-                if (atRelationships(memory)) {
+                if (atRelations(memory)) {
                     relayOrSaveMessages(vertex, messenger);
                 } else {
                     updateEntityAndAttribute(vertex, messenger, memory, true);
@@ -148,7 +148,7 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
         if (memory.<Boolean>get(PERSIST_CORENESS)) {
             memory.set(PERSIST_CORENESS, false);
         }
-        if (!atRelationships(memory)) {
+        if (!atRelations(memory)) {
             LOGGER.debug("UpdateEntityAndAttribute... Finished Iteration " + memory.getIteration());
             if (!memory.<Boolean>get(K_CORE_EXIST)) {
                 LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");

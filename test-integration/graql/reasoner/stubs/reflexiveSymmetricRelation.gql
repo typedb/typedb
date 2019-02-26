@@ -20,10 +20,10 @@ anotherGenericEntity sub entity,
 
 #Relations
 
-symmetricRelation sub relationship,
+symmetricRelation sub relation,
     relates symmetricRole;
 
-relation sub relationship,
+relation0 sub relation,
     relates role1,
     relates role2;
 
@@ -39,7 +39,7 @@ rule-1 sub rule,
 
 rule-2 sub rule,
     when {
-        (role1: $c, role2: $m) isa relation;
+        (role1: $c, role2: $m) isa relation0;
         (symmetricRole: $m, symmetricRole: $op) isa symmetricRelation;
     },
     then {
@@ -53,5 +53,5 @@ insert
 $a isa anotherGenericEntity;
 $b isa genericEntity;
 $c isa anotherGenericEntity;
-(role1: $a, role2: $b) isa relation;
+(role1: $a, role2: $b) isa relation0;
 (symmetricRole: $b, symmetricRole: $c) isa symmetricRelation;

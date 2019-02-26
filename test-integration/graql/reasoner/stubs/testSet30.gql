@@ -19,11 +19,11 @@ prep sub role;
 subtype sub role;
 supertype sub role;
 
-inheritance sub relationship,
+inheritance sub relation,
     relates supertype,
     relates subtype;
 
-pair sub relationship,
+pair sub relation,
     relates prep,
     relates pobj,
     has typ,

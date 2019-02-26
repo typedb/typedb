@@ -15,7 +15,7 @@ entity2 sub entity,
     plays role2,
     has resource;
 
-relation sub relationship,
+relation0 sub relation,
     relates role1,
     relates role2,
     has resource;

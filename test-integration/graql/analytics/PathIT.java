@@ -191,7 +191,7 @@ public class PathIT {
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             entityType.plays(role1).plays(role2);
-            RelationType relationshipType = tx.putRelationType(related).relates(role1).relates(role2);
+            RelationType relationType = tx.putRelationType(related).relates(role1).relates(role2);
 
             Entity start = entityType.create();
             Entity end = entityType.create();
@@ -206,14 +206,14 @@ public class PathIT {
 
                 Entity middle = entityType.create();
                 ConceptId middleId = middle.id();
-                ConceptId assertion1 = relationshipType.create()
+                ConceptId assertion1 = relationType.create()
                         .assign(role1, start)
                         .assign(role2, middle).id();
 
                 validPath.add(assertion1);
                 validPath.add(middleId);
 
-                ConceptId assertion2 = relationshipType.create()
+                ConceptId assertion2 = relationType.create()
                         .assign(role1, middle)
                         .assign(role2, end).id();
 
@@ -246,12 +246,12 @@ public class PathIT {
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             entityType.plays(role1).plays(role2);
-            RelationType relationshipType1 = tx.putRelationType(related).relates(role1).relates(role2);
+            RelationType relationType1 = tx.putRelationType(related).relates(role1).relates(role2);
 
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
             entityType.plays(role3).plays(role4);
-            RelationType relationshipType2 = tx.putRelationType(veryRelated).relates(role3).relates(role4);
+            RelationType relationType2 = tx.putRelationType(veryRelated).relates(role3).relates(role4);
 
             Entity start = entityType.create();
             Entity end = entityType.create();
@@ -261,19 +261,19 @@ public class PathIT {
             endId = end.id();
             ConceptId middleId = middle.id();
 
-            ConceptId assertion11 = relationshipType1.create()
+            ConceptId assertion11 = relationType1.create()
                     .assign(role1, start)
                     .assign(role2, middle).id();
 
-            ConceptId assertion12 = relationshipType1.create()
+            ConceptId assertion12 = relationType1.create()
                     .assign(role1, middle)
                     .assign(role2, end).id();
 
-            ConceptId assertion21 = relationshipType2.create()
+            ConceptId assertion21 = relationType2.create()
                     .assign(role3, start)
                     .assign(role4, middle).id();
 
-            ConceptId assertion22 = relationshipType2.create()
+            ConceptId assertion22 = relationType2.create()
                     .assign(role3, middle)
                     .assign(role4, end).id();
 
@@ -307,13 +307,13 @@ public class PathIT {
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             entityType.plays(role1).plays(role2);
-            RelationType relationshipType1 = tx.putRelationType(related).relates(role1).relates(role2);
+            RelationType relationType1 = tx.putRelationType(related).relates(role1).relates(role2);
 
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
             Role role5 = tx.putRole("role5");
             entityType.plays(role3).plays(role4).plays(role5);
-            RelationType relationshipType2 = tx.putRelationType(veryRelated)
+            RelationType relationType2 = tx.putRelationType(veryRelated)
                     .relates(role3).relates(role4).relates(role5);
 
             Entity start = entityType.create();
@@ -328,20 +328,20 @@ public class PathIT {
             ConceptId middleAId = middleA.id();
             ConceptId middleBId = middleB.id();
 
-            ConceptId assertion1 = relationshipType1.create()
+            ConceptId assertion1 = relationType1.create()
                     .assign(role1, start)
                     .assign(role2, middle).id();
 
-            ConceptId assertion2 = relationshipType2.create()
+            ConceptId assertion2 = relationType2.create()
                     .assign(role3, middle)
                     .assign(role4, middleA)
                     .assign(role5, middleB).id();
 
-            ConceptId assertion1A = relationshipType1.create()
+            ConceptId assertion1A = relationType1.create()
                     .assign(role1, middleA)
                     .assign(role2, end).id();
 
-            ConceptId assertion1B = relationshipType1.create()
+            ConceptId assertion1B = relationType1.create()
                     .assign(role1, middleB)
                     .assign(role2, end).id();
 
@@ -467,7 +467,7 @@ public class PathIT {
                     .assign(resourceOwner, person2)
                     .assign(resourceValue, power2).id();
 
-            // add implicit resource relationships as well
+            // add implicit resource relations as well
             person.has(power);
 
             person1.has(power2);
@@ -564,18 +564,18 @@ public class PathIT {
             Role role2 = tx.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationshipType = tx.putRelationType(related).relates(role1).relates(role2);
+            RelationType relationType = tx.putRelationType(related).relates(role1).relates(role2);
 
-            relationId12 = relationshipType.create()
+            relationId12 = relationType.create()
                     .assign(role1, entity1)
                     .assign(role2, entity2).id();
-            relationId13 = relationshipType.create()
+            relationId13 = relationType.create()
                     .assign(role1, entity1)
                     .assign(role2, entity3).id();
-            relationId24 = relationshipType.create()
+            relationId24 = relationType.create()
                     .assign(role1, entity2)
                     .assign(role2, entity4).id();
-            relationId34 = relationshipType.create()
+            relationId34 = relationType.create()
                     .assign(role1, entity3)
                     .assign(role2, entity4).id();
 

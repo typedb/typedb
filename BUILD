@@ -21,6 +21,7 @@ load("@graknlabs_bazel_distribution//brew:rules.bzl", deploy_brew = "deploy_brew
 load("@graknlabs_bazel_distribution//distribution:rules.bzl", "distribution_structure", "distribution_zip", "distribution_deb", "distribution_rpm")
 load("@graknlabs_bazel_distribution//rpm/deployment:rules.bzl", "deploy_rpm")
 load("@graknlabs_bazel_distribution//deb/deployment:rules.bzl", "deploy_deb")
+load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 
 
 py_binary(
@@ -120,6 +121,15 @@ deploy_brew(
     version_file = "//:VERSION"
 )
 
+container_image(
+    name = "distribution-docker",
+    base = "@openjdk_image//image",
+    tars = [":distribution-tgz"],
+    files = [":grakn-docker.sh"],
+    ports = ["48555"],
+    cmd = ["./grakn-docker.sh"],
+    volumes = ["/server/db"]
+)
 
 # When a Bazel build or test is executed with RBE, it will be executed using the following platform.
 # The platform is based on the standard rbe_ubuntu1604 from @bazel_toolchains,

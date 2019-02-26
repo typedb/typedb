@@ -73,7 +73,7 @@ def tools_dependencies():
     git_repository(
         name="com_github_google_bazel_common",
         remote="https://github.com/graknlabs/bazel-common",
-        commit="550f0490798a4e4b6c5ff8cac3b6f5c2a5e81e21",
+        commit="5cf83ccbb4b184f282380fe2c1f47b13336ffcdd",
     )
 
     http_archive(

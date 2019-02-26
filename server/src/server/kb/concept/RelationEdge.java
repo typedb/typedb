@@ -51,13 +51,13 @@ public class RelationEdge implements RelationStructure, CacheOwner {
     private final EdgeElement edgeElement;
 
     private final Cache<RelationType> relationType = Cache.createTxCache(this, Cacheable.concept(), () ->
-            edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
+            edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
 
     private final Cache<Role> ownerRole = Cache.createTxCache(this, Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
-            edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID))));
+            edge().property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
 
     private final Cache<Role> valueRole = Cache.createTxCache(this, Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
-            edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID))));
+            edge().property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
 
     private final Cache<Thing> owner = Cache.createTxCache(this, Cacheable.concept(), () ->
             edge().tx().factory().<Thing>buildConcept(edge().source())
@@ -71,14 +71,14 @@ public class RelationEdge implements RelationStructure, CacheOwner {
         this.edgeElement = edgeElement;
     }
 
-    private RelationEdge(RelationType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
+    private RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
         this(edgeElement);
 
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.labelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.labelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, relationshipType, null, t -> t.labelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.labelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.labelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType, null, t -> t.labelId().getValue());
 
-        this.relationType.set(relationshipType);
+        this.relationType.set(relationType);
         this.ownerRole.set(ownerRole);
         this.valueRole.set(valueRole);
     }
@@ -87,8 +87,8 @@ public class RelationEdge implements RelationStructure, CacheOwner {
         return new RelationEdge(edgeElement);
     }
 
-    public static RelationEdge create(RelationType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
-        return new RelationEdge(relationshipType, ownerRole, valueRole, edgeElement);
+    public static RelationEdge create(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
+        return new RelationEdge(relationType, ownerRole, valueRole, edgeElement);
     }
 
     private EdgeElement edge() {
@@ -103,8 +103,8 @@ public class RelationEdge implements RelationStructure, CacheOwner {
     @Override
     public RelationReified reify() {
         LOG.debug("Reifying concept [" + id() + "]");
-        //Build the Relationship Vertex
-        VertexElement relationVertex = edge().tx().addVertexElement(Schema.BaseType.RELATIONSHIP, id());
+        //Build the Relation Vertex
+        VertexElement relationVertex = edge().tx().addVertexElement(Schema.BaseType.RELATION, id());
         RelationReified relationReified = edge().tx().factory().buildRelationReified(relationVertex, type());
 
         //Delete the old edge

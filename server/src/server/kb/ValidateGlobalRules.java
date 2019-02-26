@@ -102,11 +102,11 @@ class ValidateGlobalRules {
         //Gets here to make sure we traverse/read only once
         Thing thing = casting.getRolePlayer();
         Role role = casting.getRole();
-        Relation relationship = casting.getRelationship();
+        Relation relation = casting.getRelation();
 
         //Actual checks
         roleNotAllowedToBePlayed(role, thing).ifPresent(errors::add);
-        roleNotLinkedToRelationShip(role, relationship.type(), relationship).ifPresent(errors::add);
+        roleNotLinkedToRelation(role, relation.type(), relation).ifPresent(errors::add);
 
         return errors;
     }
@@ -116,15 +116,15 @@ class ValidateGlobalRules {
      * the Relation which the Casting connects to.
      *
      * @param role             the Role which the Casting refers to
-     * @param relationshipType the RelationType which should connect to the role
-     * @param relationship     the Relation which the Casting refers to
+     * @param relationType the RelationType which should connect to the role
+     * @param relation     the Relation which the Casting refers to
      * @return an error if one is found
      */
-    private static Optional<String> roleNotLinkedToRelationShip(Role role, RelationType relationshipType, Relation relationship) {
+    private static Optional<String> roleNotLinkedToRelation(Role role, RelationType relationType, Relation relation) {
         boolean notFound = role.relations().
-                noneMatch(innerRelationType -> innerRelationType.label().equals(relationshipType.label()));
+                noneMatch(innerRelationType -> innerRelationType.label().equals(relationType.label()));
         if (notFound) {
-            return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relationship.id(), role.label(), relationshipType.label()));
+            return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.id(), role.label(), relationType.label()));
         }
         return Optional.empty();
     }
@@ -151,7 +151,7 @@ class ValidateGlobalRules {
                 if (rolePlayed.label().equals(role.label())) {
                     satisfiesPlays = true;
 
-                    // Assert unique relationship for this role type
+                    // Assert unique relation for this role type
                     if (required && !CommonUtil.containsOnly(thing.relations(role), 1)) {
                         return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(thing.id(), thing.type().label(), role.label(), thing.relations(role).count()));
                     }
@@ -179,23 +179,23 @@ class ValidateGlobalRules {
     }
 
     /**
-     * @param relationshipType The RelationType to validate
+     * @param relationType The RelationType to validate
      * @return An error message if the relationTypes does not have at least 1 role
      */
-    static Optional<String> validateHasMinimumRoles(RelationType relationshipType) {
-        if (relationshipType.isAbstract() || relationshipType.roles().iterator().hasNext()) {
+    static Optional<String> validateHasMinimumRoles(RelationType relationType) {
+        if (relationType.isAbstract() || relationType.roles().iterator().hasNext()) {
             return Optional.empty();
         } else {
-            return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationshipType.label()));
+            return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationType.label()));
         }
     }
 
     /**
-     * @param relationshipType the RelationType to be validated
+     * @param relationType the RelationType to be validated
      * @return Error messages if the role type sub structure does not match the RelationType sub structure
      */
-    static Set<String> validateRelationTypesToRolesSchema(RelationType relationshipType) {
-        RelationTypeImpl superRelationType = (RelationTypeImpl) relationshipType.sup();
+    static Set<String> validateRelationTypesToRolesSchema(RelationType relationType) {
+        RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.sup();
         if (Schema.MetaSchema.isMetaLabel(superRelationType.label()) || superRelationType.isAbstract()) { //If super type is a meta type no validation needed
             return Collections.emptySet();
         }
@@ -203,7 +203,7 @@ class ValidateGlobalRules {
         Set<String> errorMessages = new HashSet<>();
 
         Collection<Role> superRelates = superRelationType.roles().collect(Collectors.toSet());
-        Collection<Role> relates = relationshipType.roles().collect(Collectors.toSet());
+        Collection<Role> relates = relationType.roles().collect(Collectors.toSet());
         Set<Label> relatesLabels = relates.stream().map(SchemaConcept::label).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
@@ -217,7 +217,7 @@ class ValidateGlobalRules {
                         anyMatch(superRole -> allSuperRolesPlayed.contains(superRole.label()));
 
                 if (!validRoleTypeFound) {
-                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.label(), relationshipType.label(), "super", "super", superRelationType.label()));
+                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.label(), relationType.label(), "super", "super", superRelationType.label()));
                 }
             }
         }
@@ -227,7 +227,7 @@ class ValidateGlobalRules {
             boolean subRoleNotFoundInRelates = superRelate.subs().noneMatch(sub -> relatesLabels.contains(sub.label()));
 
             if (subRoleNotFoundInRelates) {
-                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.label(), superRelationType.label(), "sub", "sub", relationshipType.label()));
+                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.label(), superRelationType.label(), "sub", "sub", relationType.label()));
             }
         }
 
@@ -247,10 +247,10 @@ class ValidateGlobalRules {
             for (Map.Entry<Role, Boolean> playsEntry : plays.entrySet()) {
                 if (playsEntry.getValue()) {
                     Role role = playsEntry.getKey();
-                    // Assert there is a relationship for this type
-                    Stream<Relation> relationships = thing.relations(role);
+                    // Assert there is a relation for this type
+                    Stream<Relation> relations = thing.relations(role);
 
-                    if (!CommonUtil.containsOnly(relationships, 1)) {
+                    if (!CommonUtil.containsOnly(relations, 1)) {
                         Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.label());
                         return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.id(), resourceTypeLabel));
                     }
@@ -405,11 +405,11 @@ class ValidateGlobalRules {
     /**
      * Checks if a Relation has at least one role player.
      *
-     * @param relationship The Relation to check
+     * @param relation The Relation to check
      */
-    static Optional<String> validateRelationshipHasRolePlayers(Relation relationship) {
-        if (!relationship.rolePlayers().findAny().isPresent()) {
-            return Optional.of(ErrorMessage.VALIDATION_RELATIONSHIP_WITH_NO_ROLE_PLAYERS.getMessage(relationship.id(), relationship.type().label()));
+    static Optional<String> validateRelationHasRolePlayers(Relation relation) {
+        if (!relation.rolePlayers().findAny().isPresent()) {
+            return Optional.of(ErrorMessage.VALIDATION_RELATION_WITH_NO_ROLE_PLAYERS.getMessage(relation.id(), relation.type().label()));
         }
         return Optional.empty();
     }

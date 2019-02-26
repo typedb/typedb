@@ -150,7 +150,7 @@ public class TransactionException extends GraknException {
      * Thrown when creating an Attribute whose value {@link Object} does not match attribute data type
      */
     public static TransactionException invalidAttributeValue(Object object, AttributeType.DataType dataType) {
-        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.name()));
+        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, object.getClass().getSimpleName(), dataType.name()));
     }
 
     /**

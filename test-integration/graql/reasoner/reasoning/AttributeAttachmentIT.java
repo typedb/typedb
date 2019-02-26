@@ -186,7 +186,7 @@ public class AttributeAttachmentIT {
     public void reusingAttributes_attachingExistingAttributeToARelation() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
-            String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; $z isa relation; get;";
+            String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; $z isa relation0; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
             assertEquals(2, answers.size());
             answers.forEach(ans ->
@@ -197,7 +197,7 @@ public class AttributeAttachmentIT {
                     }
             );
 
-            String queryString2 = "match $x isa relation, has reattachable-resource-string $y; get;";
+            String queryString2 = "match $x isa relation0, has reattachable-resource-string $y; get;";
             List<ConceptMap> answers2 = tx.execute(Graql.parse(queryString2).asGet());
             assertEquals(1, answers2.size());
             answers2.forEach(ans ->

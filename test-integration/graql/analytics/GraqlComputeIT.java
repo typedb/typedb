@@ -106,13 +106,13 @@ public class GraqlComputeIT {
 
             Role degreeOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
             Role degreeValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
-            RelationType relationshipType = tx.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
+            RelationType relationType = tx.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(degreeOwner)
                     .relates(degreeValue);
             thingy.plays(degreeOwner);
 
             Entity thisThing = thingy.create();
-            relationshipType.create().assign(degreeOwner, thisThing);
+            relationType.create().assign(degreeOwner, thisThing);
 
             tx.commit();
         }
@@ -228,15 +228,15 @@ public class GraqlComputeIT {
 
             Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
             Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
-            RelationType relationshipType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId).getValue());
+            RelationType relationType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId).getValue());
 
-            relationshipType.create()
+            relationType.create()
                     .assign(resourceOwner, theResourceOwner)
                     .assign(resourceValue, resource.create(1L));
-            relationshipType.create()
+            relationType.create()
                     .assign(resourceOwner, theResourceOwner)
                     .assign(resourceValue, resource.create(2L));
-            relationshipType.create()
+            relationType.create()
                     .assign(resourceOwner, theResourceOwner)
                     .assign(resourceValue, resource.create(3L));
 
@@ -373,12 +373,12 @@ public class GraqlComputeIT {
             Role role2 = tx.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationshipType = tx.putRelationType(related).relates(role1).relates(role2);
+            RelationType relationType = tx.putRelationType(related).relates(role1).relates(role2);
 
-            relationId12 = relationshipType.create()
+            relationId12 = relationType.create()
                     .assign(role1, entity1)
                     .assign(role2, entity2).id().getValue();
-            relationId24 = relationshipType.create()
+            relationId24 = relationType.create()
                     .assign(role1, entity2)
                     .assign(role2, entity4).id().getValue();
 
