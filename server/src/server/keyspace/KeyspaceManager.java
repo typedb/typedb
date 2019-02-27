@@ -54,13 +54,12 @@ public class KeyspaceManager {
     private static final Logger LOG = LoggerFactory.getLogger(KeyspaceManager.class);
     private final Set<KeyspaceImpl> existingKeyspaces;
     private final SessionImpl systemKeyspaceSession;
+    private final JanusGraph graph;
 
     public KeyspaceManager(JanusGraphFactory janusGraphFactory, Config config) {
         KeyspaceCache keyspaceCache = new KeyspaceCache(config);
-        JanusGraph graph = janusGraphFactory.openGraph(SYSTEM_KB_KEYSPACE.name());
-        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, graph, () -> {
-            graph.close();
-        });
+        this.graph = janusGraphFactory.openGraph(SYSTEM_KB_KEYSPACE.name());
+        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, graph);
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 
@@ -69,7 +68,7 @@ public class KeyspaceManager {
      *
      * @param keyspace The new KeyspaceImpl we have just created
      */
-    public void addKeyspace(KeyspaceImpl keyspace) {
+    public void putKeyspace(KeyspaceImpl keyspace) {
         if (containsKeyspace(keyspace)) return;
 
         try (TransactionOLTP tx = systemKeyspaceSession.transaction().write()) {
@@ -92,6 +91,7 @@ public class KeyspaceManager {
 
     public void closeStore() {
         this.systemKeyspaceSession.close();
+        this.graph.close();
     }
 
     public boolean containsKeyspace(KeyspaceImpl keyspace) {
