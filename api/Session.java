@@ -16,9 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server;
-
-import grakn.core.api.Keyspace;
+package grakn.core.api;
 
 import javax.annotation.CheckReturnValue;
 
@@ -31,11 +29,10 @@ public interface Session extends AutoCloseable {
     /**
      * Gets a new transaction bound to the keyspace of this Session.
      *
-     * @param transactionType The type of transaction to open see Transaction.Type for more details
-     * @return A new Grakn graph transaction
+     * @return A a Transaction Builder object
      */
     @CheckReturnValue
-    Transaction transaction(Transaction.Type transactionType);
+    Transaction.Builder transaction();
 
     /**
      * Closes the main connection to the graph. This should be done at the end of using the graph.

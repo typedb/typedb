@@ -24,7 +24,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
@@ -60,7 +60,7 @@ class ConjunctionQuery {
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(Conjunction<Statement> patternConjunction, Transaction tx) {
+    ConjunctionQuery(Conjunction<Statement> patternConjunction, TransactionOLTP tx) {
         statements = patternConjunction.getPatterns();
 
         if (statements.size() == 0) {

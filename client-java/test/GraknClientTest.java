@@ -19,6 +19,7 @@
 
 package grakn.core.client.test;
 
+import grakn.core.api.Transaction;
 import grakn.core.client.GraknClient;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.exception.GraknClientException;
@@ -35,12 +36,10 @@ import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.keyspace.KeyspaceImpl;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
@@ -81,7 +80,7 @@ public class GraknClientTest {
 
     private final static SessionServiceGrpc.SessionServiceImplBase sessionService = mock(SessionServiceGrpc.SessionServiceImplBase.class);
     private final static KeyspaceServiceGrpc.KeyspaceServiceImplBase keyspaceService = mock(KeyspaceServiceGrpc.KeyspaceServiceImplBase.class);
-    private static final KeyspaceImpl KEYSPACE = KeyspaceImpl.of("grakn");
+    private static final GraknClient.Keyspace KEYSPACE = GraknClient.Keyspace.of("grakn");
     private static final String V123 = "V123";
     private static final int ITERATOR = 100;
     @Rule
@@ -106,21 +105,21 @@ public class GraknClientTest {
 
     @Test
     public void whenCreatingAGraknRemoteTx_MakeATxCallToGrpc() {
-        try (Transaction ignored = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Transaction ignored = session.transaction().write()) {
             verify(server.sessionService(), atLeast(1)).transaction(any());
         }
     }
 
     @Test
     public void whenCreatingAGraknRemoteTx_SendAnOpenMessageToGrpc() {
-        try (Transaction ignored = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Transaction ignored = session.transaction().write()) {
             verify(server.requestListener()).onNext(RequestBuilder.Transaction.open("randomID", Transaction.Type.WRITE));
         }
     }
 
     @Test
     public void whenClosingAGraknRemoteTx_SendCompletedMessageToGrpc() {
-        try (Transaction ignored = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Transaction ignored = session.transaction().write()) {
             verify(server.requestListener(), never()).onCompleted(); // Make sure transaction is still open here
         }
 
@@ -129,14 +128,14 @@ public class GraknClientTest {
 
     @Test
     public void whenCreatingAGraknRemoteTxWithSession_SetKeyspaceOnTx() {
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Transaction tx = session.transaction().write()) {
             assertEquals(session.keyspace(), tx.session().keyspace());
         }
     }
 
     @Test
     public void whenCreatingAGraknRemoteTxWithSession_SetTxTypeOnTx() {
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Transaction tx = session.transaction().write()) {
             assertEquals(Transaction.Type.WRITE, tx.type());
         }
     }
@@ -162,7 +161,7 @@ public class GraknClientTest {
         List<ConceptMap> answers;
         int numAnswers = 10;
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Transaction tx = session.transaction().write()) {
             verify(server.requestListener()).onNext(any()); // The open request
             answers = tx.stream(Graql.parse(queryString).asGet()).limit(numAnswers).collect(toList());
         }
@@ -177,7 +176,7 @@ public class GraknClientTest {
 
     @Test
     public void whenCommitting_SendACommitMessageToGrpc() {
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Transaction tx = session.transaction().write()) {
             verify(server.requestListener()).onNext(any()); // The open request
 
             tx.commit();
@@ -188,7 +187,7 @@ public class GraknClientTest {
 
     @Test
     public void whenCreatingAGraknRemoteTxWithKeyspace_SetsKeyspaceOnTx() {
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Transaction tx = session.transaction().write()) {
             assertEquals(KEYSPACE, tx.keyspace());
         }
     }
@@ -203,7 +202,7 @@ public class GraknClientTest {
         exception.expectMessage(expectedException.getName());
         exception.expectMessage(expectedException.getMessage());
 
-        GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE);
+        GraknClient.Transaction tx = session.transaction().write();
         tx.close();
     }
 
@@ -212,7 +211,7 @@ public class GraknClientTest {
         GraknException expectedException = GraknClientException.create("do it better next time");
         throwOn(RequestBuilder.Transaction.commit(), expectedException);
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Transaction tx = session.transaction().write()) {
             exception.expect(RuntimeException.class);
             exception.expectMessage(expectedException.getName());
             exception.expectMessage(expectedException.getMessage());
@@ -229,7 +228,7 @@ public class GraknClientTest {
         GraknException expectedException = GraqlQueryException.create("well something went wrong.");
         throwOn(execQueryRequest, expectedException);
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Transaction tx = session.transaction().write()) {
             try {
                 tx.execute(Graql.match(var("x").isa("thing")).get());
             } catch (RuntimeException e) {
@@ -249,7 +248,7 @@ public class GraknClientTest {
         GraknException expectedException = GraqlQueryException.create("well something went wrong.");
         throwOn(execQueryRequest, expectedException);
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Transaction tx = session.transaction().write()) {
             try {
                 tx.execute(Graql.match(var("x").isa("thing")).get());
             } catch (RuntimeException e) {
@@ -268,7 +267,7 @@ public class GraknClientTest {
         ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (GraknClient.Transaction tx = session.transaction().read()) {
             verify(server.requestListener()).onNext(any()); // The open request
 
             ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
@@ -287,7 +286,7 @@ public class GraknClientTest {
         ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (GraknClient.Transaction tx = session.transaction().read()) {
             verify(server.requestListener()).onNext(any()); // The open request
 
             ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
@@ -308,7 +307,7 @@ public class GraknClientTest {
         Label label = Label.of("foo");
         AttributeType.DataType<?> dataType = AttributeType.DataType.STRING;
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (GraknClient.Transaction tx = session.transaction().read()) {
             verify(server.requestListener()).onNext(any()); // The open request
 
             ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
@@ -328,7 +327,7 @@ public class GraknClientTest {
         ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (GraknClient.Transaction tx = session.transaction().read()) {
             verify(server.requestListener()).onNext(any()); // The open request
 
             ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
@@ -350,7 +349,7 @@ public class GraknClientTest {
         Pattern when = var("x").isa("person");
         Pattern then = var("y").isa("person");
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (GraknClient.Transaction tx = session.transaction().read()) {
             verify(server.requestListener()).onNext(any()); // The open request
 
             ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
@@ -369,7 +368,7 @@ public class GraknClientTest {
     public void whenGettingConceptViaID_EnsureCorrectRequestIsSent() {
         ConceptId id = ConceptId.of(V123);
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (GraknClient.Transaction tx = session.transaction().read()) {
             verify(server.requestListener()).onNext(any()); // The open request
 
             ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
@@ -388,7 +387,7 @@ public class GraknClientTest {
     public void whenGettingNonExistentConceptViaID_ReturnNull() {
         ConceptId id = ConceptId.of(V123);
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (GraknClient.Transaction tx = session.transaction().read()) {
             verify(server.requestListener()).onNext(any()); // The open request
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
@@ -406,7 +405,7 @@ public class GraknClientTest {
         Label label = Label.of("foo");
         ConceptId id = ConceptId.of(V123);
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (GraknClient.Transaction tx = session.transaction().read()) {
             verify(server.requestListener()).onNext(any()); // The open request
 
             ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
@@ -426,7 +425,7 @@ public class GraknClientTest {
     public void whenGettingNonExistentSchemaConceptViaLabel_ReturnNull() {
         Label label = Label.of("foo");
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (GraknClient.Transaction tx = session.transaction().read()) {
             verify(server.requestListener()).onNext(any()); // The open request
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
@@ -444,7 +443,7 @@ public class GraknClientTest {
     public void whenGettingAttributesViaID_EnsureCorrectRequestIsSent() {
         String value = "Hello Oli";
 
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (GraknClient.Transaction tx = session.transaction().read()) {
             verify(server.requestListener()).onNext(any()); // The open request
 
             ConceptProto.Concept attribute1 = ConceptProto.Concept.newBuilder()
@@ -458,21 +457,21 @@ public class GraknClientTest {
 
     @Test
     public void whenClosingTheTransaction_EnsureItIsFlaggedAsClosed() {
-        assertTransactionClosedAfterAction(Transaction::close);
+        assertTransactionClosedAfterAction(transaction -> transaction.close());
     }
 
     @Test
     public void whenCommittingTheTransaction_EnsureItIsFlaggedAsClosed() {
-        assertTransactionClosedAfterAction(Transaction::commit);
+        assertTransactionClosedAfterAction(transaction -> transaction.commit());
     }
 
     @Test
     public void whenAbortingTheTransaction_EnsureItIsFlaggedAsClosed() {
-        assertTransactionClosedAfterAction(Transaction::abort);
+        assertTransactionClosedAfterAction(transaction -> transaction.abort());
     }
 
-    private void assertTransactionClosedAfterAction(Consumer<Transaction> action) {
-        GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE);
+    private void assertTransactionClosedAfterAction(Consumer<GraknClient.Transaction> action) {
+        GraknClient.Transaction tx = session.transaction().write();
         assertFalse(tx.isClosed());
         action.accept(tx);
         assertTrue(tx.isClosed());

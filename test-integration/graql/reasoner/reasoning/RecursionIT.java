@@ -28,8 +28,8 @@ import grakn.core.graql.reasoner.graph.PathTreeSymmetricGraph;
 import grakn.core.graql.reasoner.graph.ReachabilityGraph;
 import grakn.core.graql.reasoner.graph.TailRecursionGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import grakn.core.util.GraqlTestUtil;
 import graql.lang.Graql;
 import org.junit.ClassRule;
@@ -50,9 +50,9 @@ public class RecursionIT {
      */
     @Test
     public void testTransitivity() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "transitivity.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match ($x, $y) isa R;$x has index 'i'; get $y;";
                 String explicitQuery = "match $y has index $ind;" +
                         "{$ind == 'j';} or {$ind == 's';} or {$ind == 'v';}; get $y;";
@@ -72,9 +72,9 @@ public class RecursionIT {
      */
     @Test
     public void testAncestor() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "ancestor.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String query = "match (ancestor: $X, descendant: $Y) isa Ancestor;$X has name 'aa';" +
                         "$Y has name $name;get $Y, $name;";
                 String explicitQuery = "match $Y isa person, has name $name;" +
@@ -127,9 +127,9 @@ public class RecursionIT {
      */
     @Test
     public void testAncestorFriend() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "ancestor-friend.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String ancestorVariant = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; $Y has name $name; get $Y;";
                 String explicitAncestorQuery = "match $Y has name $name;{$name == 'd';} or {$name == 'g';}; get $Y;";
                 GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitAncestorQuery).asGet(), false), tx.execute(Graql.parse(ancestorVariant).asGet()));
@@ -153,9 +153,9 @@ public class RecursionIT {
      */
     @Test
     public void testSameGeneration() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "recursivity-sg.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match ($x, $y) isa SameGen; $x has name 'a'; get $y;";
                 String explicitQuery = "match $y has name $name;{$name == 'f';} or {$name == 'a';};get $y;";
 
@@ -169,9 +169,9 @@ public class RecursionIT {
      */
     @Test
     public void testTC() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "recursivity-tc.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match ($x, $y) isa N-TC; $y has index 'a'; get $x;";
                 String explicitQuery = "match $x has index 'a2'; get;";
                 List<ConceptMap> expected = tx.execute(Graql.parse(explicitQuery).asGet(), false);
@@ -183,10 +183,10 @@ public class RecursionIT {
 
     @Test
     public void testReachability() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             ReachabilityGraph graph = new ReachabilityGraph(session);
             graph.load(2);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match $x isa node; $y isa node;(from: $x, to: $y) isa reachable; get;";
                 String explicitQuery = "match " +
                         "$x has index $indX;" +
@@ -209,9 +209,9 @@ public class RecursionIT {
 
     @Test
     public void testReachabilitySymmetric() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "reachability-symmetric.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match ($x, $y) isa reachable;$x has index 'a';get $y;";
                 String explicitQuery = "match $y has index $indY;" +
                         "{$indY == 'a';} or {$indY == 'b';} or {$indY == 'c';} or {$indY == 'd';};get $y;";
@@ -226,9 +226,9 @@ public class RecursionIT {
      */
     @Test
     public void testSameGenerationCao() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "same-generation.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match ($x, $y) isa SameGen;$x has name 'ann';get $y;";
                 String explicitQuery = "match $y has name $name;" +
                         "{$name == 'ann';} or {$name == 'bill';} or {$name == 'peter';};get $y;";
@@ -243,9 +243,9 @@ public class RecursionIT {
      */
     @Test
     public void testReverseSameGeneration() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "recursivity-rsg.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String specificQuery = "match (RSG-from: $x, RSG-to: $y) isa RevSG;$x has name 'a'; get $y;";
                 String explicitQuery = "match $y isa person, has name $name;" +
                         "{$name == 'b';} or {$name == 'c';} or {$name == 'd';};get $y;";
@@ -272,10 +272,10 @@ public class RecursionIT {
     @Test
     public void testDualLinearTransitivityMatrix() {
         final int N = 5;
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             DualLinearTransitivityMatrixGraph graph = new DualLinearTransitivityMatrixGraph(session);
             graph.load(N, N);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x has index 'a0'; get $y;";
                 String explicitQuery = "match { $y isa a-entity; } or { $y isa end; }; get;";
 
@@ -291,10 +291,10 @@ public class RecursionIT {
     public void testTailRecursion() {
         final int N = 10;
         final int M = 5;
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             TailRecursionGraph tailRecursionGraph = new TailRecursionGraph(session);
             tailRecursionGraph.load(N, M);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a0'; get $y;";
                 String explicitQuery = "match $y isa b-entity; get;";
 
@@ -327,10 +327,10 @@ public class RecursionIT {
     @Test
     public void testNguyen() {
         final int N = 9;
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             NguyenGraph graph = new NguyenGraph(session);
             graph.load(N);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; get $y;";
                 String explicitQuery = "match $y isa a-entity; get;";
 
@@ -346,10 +346,10 @@ public class RecursionIT {
     public void testLinearTransitivityMatrix() {
         final int N = 5;
         final int M = 5;
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             LinearTransitivityMatrixGraph graph = new LinearTransitivityMatrixGraph(session);
             graph.load(N, M);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a'; get $y;";
                 String explicitQuery = "match $y isa a-entity; get;";
 
@@ -362,10 +362,10 @@ public class RecursionIT {
     public void testPathSymmetric() {
         final int N = 2;
         final int depth = 3;
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             PathTreeSymmetricGraph graph = new PathTreeSymmetricGraph(session);
             graph.load(N, depth);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
                 String explicitQuery = "match {$y isa vertex;} or {$y isa start-vertex;}; get;";
 
@@ -379,12 +379,12 @@ public class RecursionIT {
      */
     @Test
     public void testPathTree() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             final int N = 2;
             final int depth = 3;
             PathTreeGraph graph = new PathTreeGraph(session);
             graph.load(N, depth);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String query = "match (path-from: $x, path-to: $y) isa path;" +
                         "$x has index 'a0';" +
                         "get $y;";
@@ -400,11 +400,11 @@ public class RecursionIT {
     @Test
     /*modified test 6.10 from Cao p. 82*/
     public void testPathMatrix() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             final int pathSize = 2;
             PathMatrixGraph graph = new PathMatrixGraph(session);
             graph.load(pathSize, pathSize);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String query = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; get $y;";
                 String explicit = "match $y isa vertex; get;";
 

@@ -30,7 +30,6 @@ import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -80,7 +79,7 @@ public class RuleIT {
     
     @Test
     public void whenCreatingRulesWithNullValues_Throw() throws NullPointerException {
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             expectedException.expect(NullPointerException.class);
             tx.putRule("A Thing", null, null);
         }
@@ -88,7 +87,7 @@ public class RuleIT {
 
     @Test
     public void whenCreatingRulesWithNonExistentEntityType_Throw() throws InvalidKBException {
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             tx.putEntityType("My-Type");
 
             Pattern when = Graql.parsePattern("$x isa Your-Type;");
@@ -105,7 +104,7 @@ public class RuleIT {
 
     @Test
     public void whenCreatingDistinctRulesWithSimilarStringHashes_EnsureRulesDoNotClash(){
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             String productRefused = "productRefused";
             Pattern when1 = Graql.parsePattern("{$step has step-id 9; $e (process-case: $case) isa process-record; $case has consent false;};");
             Pattern then1 = Graql.parsePattern("{(record: $e, step: $step) isa record-step;};");
@@ -440,7 +439,7 @@ public class RuleIT {
 
     @Test
     public void whenAddingASimpleRuleWithNegationCycle_Throw() throws InvalidKBException{
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             Pattern when = Graql.parsePattern(
                 "{" +
                         "$x isa entity;" +
@@ -462,7 +461,7 @@ public class RuleIT {
 
     @Test
     public void whenAddingNonStratifiableRules_Throw() throws InvalidKBException{
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             EntityType p = tx.putEntityType("p");
             EntityType q = tx.putEntityType("q");
             EntityType r = tx.putEntityType("r");
@@ -492,7 +491,7 @@ public class RuleIT {
 
     @Test
     public void whenAdditionOfRuleWithMetaTypeMakesRulesNonstratifiable_Throw() throws InvalidKBException{
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             tx.putEntityType("p");
             tx.putEntityType("q");
             tx.putEntityType("r");
@@ -508,7 +507,7 @@ public class RuleIT {
             tx.commit();
         }
 
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             EntityType p = tx.putEntityType("p");
             EntityType q = tx.putEntityType("q");
             EntityType r = tx.putEntityType("r");
@@ -531,7 +530,7 @@ public class RuleIT {
 
     @Test
     public void whenAdditionOfRuleMakesRulesNonstratifiable_Throw() throws InvalidKBException{
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             tx.putEntityType("p");
             tx.putEntityType("q");
             tx.putEntityType("r");
@@ -547,7 +546,7 @@ public class RuleIT {
             tx.commit();
         }
 
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             EntityType p = tx.putEntityType("p");
             EntityType q = tx.putEntityType("q");
             EntityType r = tx.putEntityType("r");
@@ -573,7 +572,7 @@ public class RuleIT {
     public void whenAddingAddingStratifiableRules_correctStratificationIsProduced(){
         List<Rule> expected1;
         List<Rule> expected2;
-        try(TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             EntityType p = tx.putEntityType("p");
             EntityType q = tx.putEntityType("q");
             EntityType r = tx.putEntityType("r");
@@ -601,7 +600,7 @@ public class RuleIT {
 
             tx.commit();
         }
-        try(TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             List<Rule> rules = RuleUtils.stratifyRules(tx.ruleCache().getRules().map(rule -> new InferenceRule(rule, tx)).collect(Collectors.toSet()))
                     .map(InferenceRule::getRule).collect(Collectors.toList());
             assertTrue(rules.equals(expected1) || rules.equals(expected2));
@@ -612,7 +611,7 @@ public class RuleIT {
 
     @Test
     public void whenAddingARuleWithMultipleNegationBlocks_Throw() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             Pattern when = Graql.parsePattern(
                     "{" +
                             "$x isa thing;" +
@@ -631,7 +630,7 @@ public class RuleIT {
 
     @Test
     public void whenAddingARuleWithNestedNegationBlock_Throw() throws InvalidKBException{
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             Pattern when = Graql.parsePattern(
                     "{" +
                             "$x isa entity;" +
@@ -653,7 +652,7 @@ public class RuleIT {
 
     @Test
     public void whenAddingARuleWithDisjunctiveNegationBlock_Throw() throws InvalidKBException{
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             Pattern when = Graql.parsePattern(
                     "{" +
                             "$x isa entity;" +
@@ -677,7 +676,7 @@ public class RuleIT {
 
     @Test
     public void whenCreatingRules_EnsureHypothesisAndConclusionTypesAreFilledOnCommit() throws InvalidKBException {
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             EntityType t1 = tx.putEntityType("someType");
             EntityType t2 = tx.putEntityType("anotherType");
 
@@ -697,7 +696,7 @@ public class RuleIT {
 
     @Test
     public void whenCreatingRules_EnsureWhenTypesAndSignAreLinkedCorrectlyOnCommit() throws InvalidKBException {
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             Type p = tx.putEntityType("p");
             Type q = tx.putEntityType("q");
             Type r = tx.putEntityType("r");
@@ -729,7 +728,7 @@ public class RuleIT {
 
     @Test
     public void whenCreatingRules_EnsureTypesAreCorrectlyConnectedToRulesOnCommit() throws InvalidKBException {
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             Type p = tx.putEntityType("p");
             Type q = tx.putEntityType("q");
             Type r = tx.putEntityType("r");
@@ -773,7 +772,7 @@ public class RuleIT {
 
     @Test
     public void whenAddingDuplicateRulesOfTheSameTypeWithTheSamePattern_ReturnTheSameRule(){
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             tx.putEntityType("someType");
             Pattern when = Graql.parsePattern("$x isa someType;");
             Pattern then = Graql.parsePattern("$x isa someType;");
@@ -788,7 +787,7 @@ public class RuleIT {
     @Ignore("This is ignored because we currently have no way to determine if patterns with different variables name are equivalent")
     @Test
     public void whenAddingDuplicateRulesOfTheSameTypeWithDifferentPatternVariables_ReturnTheSameRule(){
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             tx.putEntityType("someType");
             Pattern when = Graql.parsePattern("$x isa someType;");
             Pattern then = Graql.parsePattern("$y isa someType;");
@@ -801,7 +800,7 @@ public class RuleIT {
     }
 
     private void validateOntologicallyIllegalRule(Pattern when, Pattern then, String message){
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             initTx(tx);
             tx.putRule(UUID.randomUUID().toString(), when, then);
 
@@ -813,7 +812,7 @@ public class RuleIT {
     }
 
     private void validateIllegalRule(Pattern when, Pattern then, ErrorMessage message){
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             initTx(tx);
             Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
 
@@ -824,7 +823,7 @@ public class RuleIT {
     }
 
     private void validateIllegalHead(Pattern when, Pattern then, ErrorMessage message){
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             initTx(tx);
             Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
 
@@ -835,14 +834,14 @@ public class RuleIT {
     }
 
     private void validateLegalHead(Pattern when, Pattern then){
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             initTx(tx);
             tx.putRule(UUID.randomUUID().toString(), when, then);
             tx.commit();
         }
     }
 
-    private void initTx(Transaction tx){
+    private void initTx(TransactionOLTP tx){
         AttributeType<Integer> res1 = tx.putAttributeType("res1", AttributeType.DataType.INTEGER);
         AttributeType<Integer> res2 = tx.putAttributeType("res2", AttributeType.DataType.INTEGER);
         Role someRole = tx.putRole("someRole");

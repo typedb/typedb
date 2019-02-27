@@ -21,11 +21,11 @@ package grakn.core.server.session;
 import brave.ScopedSpan;
 import com.google.common.annotations.VisibleForTesting;
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
+import grakn.core.api.Session;
+import grakn.core.api.Transaction;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
@@ -82,7 +82,7 @@ public class SessionImpl implements Session {
         this.keyspaceCache = keyspaceCache;
         this.onClose = onClose;
 
-        TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = this.transaction().write();
         // copy schema to session cache if there are any schema concepts
         if (!keyspaceHasBeenInitialised(tx)) {
             initialiseMetaConcepts(tx);
@@ -93,7 +93,11 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public TransactionOLTP transaction(Transaction.Type type) {
+    public TransactionOLTP.Builder transaction() {
+        return new TransactionOLTP.Builder(this);
+    }
+
+    TransactionOLTP transaction(Transaction.Type type) {
 
         ScopedSpan span = null;
         if (ServerTracingInstrumentation.tracingActive()) { span = ServerTracingInstrumentation.createScopedChildSpan("SessionImpl.transaction"); }
@@ -107,7 +111,7 @@ public class SessionImpl implements Session {
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
         if (span != null) { span.annotate("Getting new tx"); }
-        // We are passing the graph to Transaction because there is the need to access graph tinkerpop traversal
+        // We are passing the graph to TransactionOLTP because there is the need to access graph tinkerpop traversal
         TransactionOLTP tx = new TransactionOLTP(this, graph, keyspaceCache);
 
         if (span != null) { span.annotate("Opening tx with type"); }

@@ -18,7 +18,7 @@
 #
 package(default_visibility = [
     "//server:__pkg__",
-    "//client:__pkg__",
+    "//client-java:__subpackages__",
     "//test-integration/rule:__pkg__", # TODO: remove this once we move GraknTestServer in //server/test
     # TODO: expose this package to "@graknlabs_grakn_kgms//server:__subpackages__"
 ])
@@ -31,6 +31,12 @@ java_library(
     srcs = glob(["**/*.java"]),
     deps = [
         "//concept:concept",
+
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java:graql",
+
+        # External dependencies from Maven
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
     ],
     tags = ["maven_coordinates=grakn.core:api:{pom_version}"],
 )

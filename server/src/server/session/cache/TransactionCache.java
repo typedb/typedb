@@ -41,12 +41,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Caches Transaction specific data this includes:
+ * Caches TransactionOLTP specific data this includes:
  * Validation Concepts - Concepts which need to undergo validation.
  * Built Concepts -  Prevents rebuilding when the same vertex is encountered
  * The Schema - Optimises validation checks by preventing db read.
  * Label - Allows mapping type labels to type Ids
- * Transaction meta Data - Allows transactions to function in different ways
+ * TransactionOLTP meta Data - Allows transactions to function in different ways
  */
 public class TransactionCache {
     //Cache which is shared across multiple transactions
@@ -326,7 +326,7 @@ public class TransactionCache {
         return newRelations;
     }
 
-    //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
+    //--------------------------------------- TransactionOLTP Specific Meta Data -------------------------------------------
     public void closeTx() {
         //Clear Concept Caches
         conceptCache.values().forEach(concept -> CacheOwner.from(concept).txCacheClear());

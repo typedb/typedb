@@ -22,7 +22,6 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -71,7 +70,7 @@ public class PatternIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After

@@ -20,6 +20,7 @@ package grakn.core.server.session;
 
 import brave.ScopedSpan;
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
+import grakn.core.api.Transaction;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.Concept;
@@ -40,8 +41,6 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.executor.QueryExecutor;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
@@ -51,7 +50,6 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Validator;
 import grakn.core.server.kb.concept.ConceptImpl;
 import grakn.core.server.kb.concept.ElementFactory;
-import grakn.core.server.kb.concept.RoleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.TypeImpl;
@@ -98,7 +96,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A Transaction using JanusGraph as a vendor backend.
+ * A TransactionOLTP using JanusGraph as a vendor backend.
  *
  * Wraps a TinkerPop transaction (the graph is still needed as we use to retrieve tinker traversals)
  *
@@ -117,7 +115,7 @@ public class TransactionOLTP implements Transaction {
     private final KeyspaceCache keyspaceCache;
     private final TransactionCache transactionCache;
 
-    // Transaction Specific
+    // TransactionOLTP Specific
     private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
     private Transaction.Type txType;
     private String closedReason = null;
@@ -129,7 +127,25 @@ public class TransactionOLTP implements Transaction {
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
 
-    public TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache) {
+    public static class Builder implements Transaction.Builder {
+
+        private SessionImpl session;
+
+        Builder(SessionImpl session) {
+            this.session = session;
+        }
+        @Override
+        public TransactionOLTP read() {
+            return session.transaction(Transaction.Type.READ);
+        }
+
+        @Override
+        public TransactionOLTP write() {
+            return session.transaction(Transaction.Type.WRITE);
+        }
+    }
+
+    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache) {
 
         createdInCurrentThread.set(true);
 
@@ -922,8 +938,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Stores the commit log of a Transaction.
-     * Stores the commit log of a Transaction which is uploaded to the jserver when the Session is closed.
+     * Stores the commit log of a TransactionOLTP which is uploaded to the jserver when the Session is closed.
      * The commit log is also uploaded periodically to make sure that if a failure occurs the counts are still roughly maintained.
      */
     public static class CommitLog {

@@ -145,7 +145,7 @@ public class RemoteConceptIT {
 
     @Before
     public void setUp() {
-        tx = session.transaction(GraknClient.Transaction.Type.WRITE);
+        tx = session.transaction().write();
 
         // Attribute Types
         email = tx.putAttributeType(EMAIL, DataType.STRING).regex(EMAIL_REGEX);

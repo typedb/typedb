@@ -22,8 +22,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.EntityType;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -82,7 +81,7 @@ public class GraqlTestUtil {
         assertCollectionsEqual(msg, c1, c2);
     }
 
-    public static void loadFromFile(String gqlPath, String file, Transaction tx) {
+    public static void loadFromFile(String gqlPath, String file, TransactionOLTP tx) {
         try {
             System.out.println("Loading... " + gqlPath + file);
             InputStream inputStream = GraqlTestUtil.class.getClassLoader().getResourceAsStream(gqlPath + file);
@@ -94,21 +93,21 @@ public class GraqlTestUtil {
         }
     }
 
-    public static void loadFromFileAndCommit(String gqlPath, String file, Session session) {
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
+    public static void loadFromFileAndCommit(String gqlPath, String file, SessionImpl session) {
+        TransactionOLTP tx = session.transaction().write();
         loadFromFile(gqlPath, file, tx);
         tx.commit();
     }
 
 
-    public static Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
+    public static Thing putEntityWithResource(TransactionOLTP tx, String id, EntityType type, Label key) {
         Thing inst = type.create();
         Attribute attributeInstance = tx.getAttributeType(key.getValue()).create(id);
         inst.has(attributeInstance);
         return inst;
     }
 
-    public static Thing getInstance(Transaction tx, String id){
+    public static Thing getInstance(TransactionOLTP tx, String id){
         Set<Thing> things = tx.getAttributesByValue(id)
                 .stream().flatMap(Attribute::owners).collect(toSet());
         if (things.size() != 1) {

@@ -28,8 +28,6 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.concept.EntityTypeImpl;
@@ -76,7 +74,7 @@ public class TransactionIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After
@@ -167,7 +165,7 @@ public class TransactionIT {
         tx.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
-        tx = session.transaction(Transaction.Type.READ);
+        tx = session.transaction().read();
 
         Set<SchemaConcept> finalTypes = new HashSet<>();
         finalTypes.addAll(tx.getMetaConcept().subs().collect(toSet()));
@@ -219,7 +217,7 @@ public class TransactionIT {
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         tx.putEntityType("A Thing");
     }
 
@@ -248,7 +246,7 @@ public class TransactionIT {
         String relationType1 = "My Relation Type 1";
 
         //Fail Some Mutations
-        tx = session.transaction(Transaction.Type.READ);
+        tx = session.transaction().read();
         failMutation(tx, () -> tx.putEntityType(entityType));
         failMutation(tx, () -> tx.putRole(roleType1));
         failMutation(tx, () -> tx.putRelationType(relationType1));
@@ -278,19 +276,22 @@ public class TransactionIT {
     @Test
     public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw() {
         String keyspace = tx.keyspace().name();
-        failAtOpeningTx(session, Transaction.Type.WRITE, keyspace);
+        failAtOpeningTx(session, true, keyspace);
         tx.close();
 
-        //noinspection ResultOfMethodCallIgnored
-        session.transaction(Transaction.Type.WRITE);
-        failAtOpeningTx(session, Transaction.Type.READ, keyspace);
+        session.transaction().write();
+        failAtOpeningTx(session, false, keyspace);
     }
 
-    private void failAtOpeningTx(Session session, Transaction.Type txType, String keyspace) {
+    private void failAtOpeningTx(SessionImpl session, boolean write, String keyspace) {
         Exception exception = null;
         try {
             //noinspection ResultOfMethodCallIgnored
-            session.transaction(txType);
+            if (write) {
+                session.transaction().write();
+            } else {
+                session.transaction().read();
+            }
         } catch (TransactionException e) {
             exception = e;
         }
@@ -337,13 +338,13 @@ public class TransactionIT {
 
     @Test
     public void whenCreatingAValidSchemaInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
-        Session localSession = server.sessionWithNewKeyspace();
+        SessionImpl localSession = server.sessionWithNewKeyspace();
 
         ExecutorService executor = Executors.newCachedThreadPool();
 
         executor.submit(() -> {
             //Resources
-            try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = localSession.transaction().write()) {
                 AttributeType<Long> int_ = tx.putAttributeType("int", AttributeType.DataType.LONG);
                 AttributeType<Long> foo = tx.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
                 tx.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
@@ -354,7 +355,7 @@ public class TransactionIT {
         }).get();
 
         //Relation Which Has Resources
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = localSession.transaction().write()) {
             tx.putEntityType("BAR").has(tx.getAttributeType("bar"));
             tx.commit();
         }

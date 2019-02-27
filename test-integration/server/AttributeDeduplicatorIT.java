@@ -24,8 +24,8 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.deduplicator.AttributeDeduplicator;
 import grakn.core.server.deduplicator.KeyspaceIndexPair;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.SessionFactory;
+import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.junit.After;
@@ -65,13 +65,13 @@ public class AttributeDeduplicatorIT {
         String testAttributeValue = "test-attribute-value";
 
         // define the schema
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
             tx.commit();
         }
 
         // insert 3 instances with the same value
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.insert(var().isa(testAttributeLabel).val(testAttributeValue)));
             tx.execute(Graql.insert(var().isa(testAttributeLabel).val(testAttributeValue)));
             tx.execute(Graql.insert(var().isa(testAttributeLabel).val(testAttributeValue)));
@@ -82,7 +82,7 @@ public class AttributeDeduplicatorIT {
         AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceIndexPair.create(session.keyspace(), Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue)));
 
         // verify if we only have 1 instances after deduplication
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(var(testAttributeLabel).isa(testAttributeLabel).val(testAttributeValue)).get());
             assertThat(conceptMaps, hasSize(1));
         }
@@ -94,7 +94,7 @@ public class AttributeDeduplicatorIT {
         String ownedAttributeValue = "owned-attribute-value";
 
         // define the schema
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.define(
                     type(ownedAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING),
                     type("owner").sub("entity").has(ownedAttributeLabel)
@@ -103,7 +103,7 @@ public class AttributeDeduplicatorIT {
         }
 
         // insert 3 "owner" (which is an entity) and "owned-attribute". each "owner" has an "owned-attribute"
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.insert(var().isa("owner").has(ownedAttributeLabel, ownedAttributeValue)));
             tx.execute(Graql.insert(var().isa("owner").has(ownedAttributeLabel, ownedAttributeValue)));
             tx.execute(Graql.insert(var().isa("owner").has(ownedAttributeLabel, ownedAttributeValue)));
@@ -114,7 +114,7 @@ public class AttributeDeduplicatorIT {
         AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceIndexPair.create(session.keyspace(), Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
 
         // verify
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             Set<String> owned = new HashSet<>();
             Set<String> owner = new HashSet<>();
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(
@@ -139,7 +139,7 @@ public class AttributeDeduplicatorIT {
         String ownerValue2 = "owner-value-2";
 
         // define the schema
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.define(
                     type(ownedAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING),
                     type(ownerLabel).sub("attribute").datatype(Graql.Token.DataType.STRING).has(ownedAttributeLabel)
@@ -148,7 +148,7 @@ public class AttributeDeduplicatorIT {
         }
 
         // insert 3 "owner" and 3 "owned-attribute". each "owner" has an "owned attribute"
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.insert(var().isa(ownerLabel).val(ownerValue1).has(ownedAttributeLabel, ownedAttributeValue)));
             tx.execute(Graql.insert(var().isa(ownerLabel).val(ownerValue1).has(ownedAttributeLabel, ownedAttributeValue)));
             tx.execute(Graql.insert(var().isa(ownerLabel).val(ownerValue2).has(ownedAttributeLabel, ownedAttributeValue)));
@@ -161,7 +161,7 @@ public class AttributeDeduplicatorIT {
         AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceIndexPair.create(session.keyspace(), Schema.generateAttributeIndex(Label.of(ownerLabel), ownerValue1)));
 
         // verify
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             Set<String> owned = new HashSet<>();
             Set<String> owner = new HashSet<>();
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(
@@ -183,7 +183,7 @@ public class AttributeDeduplicatorIT {
         String ownedAttributeValue = "owned-attribute-value";
 
         // define the schema
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.define(
                     type(ownedAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING),
                     type("owner").sub("entity").has(ownedAttributeLabel)
@@ -191,7 +191,7 @@ public class AttributeDeduplicatorIT {
             tx.commit();
         }
 
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("insert $owned \"" + ownedAttributeValue + "\"isa owned-attribute; $owner1 isa owner, has owned-attribute $owned; $owner2 isa owner, has owned-attribute $owned;").asInsert());
             tx.execute(Graql.parse("insert $owned \"" + ownedAttributeValue + "\" isa owned-attribute; $owner1 isa owner, has owned-attribute $owned; $owner2 isa owner, has owned-attribute $owned;").asInsert());
             tx.execute(Graql.parse("insert $owned \"" + ownedAttributeValue + "\" isa owned-attribute; $owner1 isa owner, has owned-attribute $owned;").asInsert());
@@ -203,7 +203,7 @@ public class AttributeDeduplicatorIT {
                 KeyspaceIndexPair.create(session.keyspace(), Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
 
         // verify
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             Set<String> owned = new HashSet<>();
             Set<String> owner = new HashSet<>();
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(
@@ -225,7 +225,7 @@ public class AttributeDeduplicatorIT {
         String ownedAttributeValue = "owned-attribute-value";
 
         // define the schema
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.define(
                     type(ownedAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING),
                     type("owner").sub("entity").has(ownedAttributeLabel)
@@ -234,7 +234,7 @@ public class AttributeDeduplicatorIT {
         }
 
         // use the 'via' feature when inserting to force reification
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;").asInsert());
             tx.execute(Graql.parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;").asInsert());
             tx.execute(Graql.parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;").asInsert());
@@ -246,7 +246,7 @@ public class AttributeDeduplicatorIT {
                 KeyspaceIndexPair.create(session.keyspace(), Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
 
         // verify
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             Set<String> owned = new HashSet<>();
             Set<String> owner = new HashSet<>();
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(
@@ -269,7 +269,7 @@ public class AttributeDeduplicatorIT {
         String ownedAttributeValue = "owned-attribute-value";
 
         // define the schema
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.define(
                     type("owner").sub("relation").relates("entity-role-player").relates("attribute-role-player"),
                     type("owned-entity").sub("entity").plays("entity-role-player"),
@@ -279,7 +279,7 @@ public class AttributeDeduplicatorIT {
         }
 
         // insert relations, each having an attribute as one of the role player
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.insert(
                     var("erp").isa("owned-entity"), var("arp").isa(ownedAttributeLabel).val(ownedAttributeValue),
                     var("owner").isa("owner").rel("entity-role-player", var("erp")).rel("attribute-role-player", var("arp"))));
@@ -297,7 +297,7 @@ public class AttributeDeduplicatorIT {
                 KeyspaceIndexPair.create(session.keyspace(), Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
 
         // verify
-        try (TransactionOLTP tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(var("owner").isa("owner")
                     .rel("attribute-role-player", var("arp"))
             ).get());

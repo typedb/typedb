@@ -26,10 +26,10 @@ java_library(
     srcs = glob(["**/*.java"], exclude = ["**/test/*.java"]),
     deps = [
         # Internal dependencies
+        "//api:api",
         "//common:common",
         "//concept:concept",
         "//protocol:protocol-java",
-        "//server:server",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",

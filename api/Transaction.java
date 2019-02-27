@@ -16,9 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server;
+package grakn.core.api;
 
-import grakn.core.api.Keyspace;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -93,6 +92,13 @@ public interface Transaction extends AutoCloseable {
             }
             return null;
         }
+    }
+
+    interface Builder {
+
+        Transaction read();
+
+        Transaction write();
     }
 
     // Define Query

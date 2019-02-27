@@ -25,7 +25,6 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -84,7 +83,7 @@ public class GraqlDeleteIT {
     }
     @Before
     public void newTransaction() {
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
 
         kurtz = Graql.match(x.has("name", "Colonel Walter E. Kurtz"));
         marlonBrando = Graql.match(x.has("name", "Marlon Brando"));
