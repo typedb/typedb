@@ -35,16 +35,10 @@ java_library(
         "@graknlabs_graql//java:graql",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/grakn/benchmark:lib", # TODO: This should be replaced with Bazel
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
-        "//dependencies/maven/artifacts/io/zipkin/brave:brave",
-        "//dependencies/maven/artifacts/io/zipkin/brave:brave-instrumentation-grpc",
-        "//dependencies/maven/artifacts/io/zipkin/reporter2:zipkin-sender-urlconnection",
-        "//dependencies/maven/artifacts/io/zipkin/reporter2:zipkin-reporter", # PREVIOUSLY UNDECLARED
-        "//dependencies/maven/artifacts/io/zipkin/zipkin2:zipkin", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
     runtime_deps = [

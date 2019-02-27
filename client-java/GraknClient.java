@@ -21,7 +21,6 @@ package grakn.core.client;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
-import grakn.benchmark.lib.clientinstrumentation.ClientTracingInstrumentationInterceptor;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.exception.GraknClientException;
 import grakn.core.client.rpc.RequestBuilder;
@@ -83,7 +82,7 @@ import static java.util.stream.Collectors.toSet;
  * Entry-point which communicates with a running Grakn server using gRPC.
  * For now, only a subset of grakn.core.api.Session and grakn.core.api.Transaction features are supported.
  */
-public final class GraknClient implements AutoCloseable {
+public class GraknClient implements AutoCloseable {
 
     public static final String DEFAULT_URI = "localhost:48555";
 
@@ -95,19 +94,9 @@ public final class GraknClient implements AutoCloseable {
     }
 
     public GraknClient(String address) {
-        this(address, false);
-    }
-
-    public GraknClient(String address, boolean benchmark) {
         SimpleURI parsedURI = new SimpleURI(address);
-        if (benchmark) {
-            channel = ManagedChannelBuilder.forAddress(parsedURI.getHost(), parsedURI.getPort())
-                    .intercept(new ClientTracingInstrumentationInterceptor("client-java-instrumentation"))
-                    .usePlaintext(true).build();
-        } else {
-            channel = ManagedChannelBuilder.forAddress(parsedURI.getHost(), parsedURI.getPort())
-                    .usePlaintext(true).build();
-        }
+        channel = ManagedChannelBuilder.forAddress(parsedURI.getHost(), parsedURI.getPort())
+                .usePlaintext(true).build();
         keyspaces = new Keyspaces(channel);
     }
 
