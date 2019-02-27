@@ -191,51 +191,42 @@ public class NegationIT {
 
     @Test
     public void conjunctionOfRelations_filteringSpecificResolvableConnection(){
-        for(int i = 0 ; i < 502 ; i++) {
-            try (TransactionOLTP tx = negationSession.transaction().write()) {
-                String unwantedLabel = "anotherType";
-                String connection = "derived-binary";
+        try (TransactionOLTP tx = negationSession.transaction().write()) {
+            String unwantedLabel = "anotherType";
+            String connection = "derived-binary";
 
-                System.out.println("#######################################################################");
-                System.out.println("i = " + i);
-                System.out.println();
+            List<ConceptMap> answersWithoutSpecificConnection = tx.execute(Graql.<GraqlGet>parse(
+                    "match " +
+                            "(someRole: $x, otherRole: $y) isa binary;" +
+                            "$q isa " + unwantedLabel + ";" +
+                            "not {(someRole: $y, otherRole: $q) isa " + connection + ";};" +
+                            "(someRole: $y, otherRole: $z) isa binary;" +
+                            "get;"
+            ));
 
-                List<ConceptMap> answersWithoutSpecificConnection = tx.execute(Graql.<GraqlGet>parse(
-                        "match " +
-                                "(someRole: $x, otherRole: $y) isa binary;" +
-                                "$q isa " + unwantedLabel + ";" +
-                                "not {(someRole: $y, otherRole: $q) isa " + connection + ";};" +
-                                "(someRole: $y, otherRole: $z) isa binary;" +
-                                "get;"
-                ));
+            List<ConceptMap> fullAnswers = tx.execute(Graql.<GraqlGet>parse(
+                    "match " +
+                            "$q isa " + unwantedLabel + ";" +
+                            "(someRole: $x, otherRole: $y) isa binary;" +
+                            "(someRole: $y, otherRole: $z) isa binary;" +
+                            "get;"
+            ));
 
-                List<ConceptMap> fullAnswers = tx.execute(Graql.<GraqlGet>parse(
-                        "match " +
-                                "$q isa " + unwantedLabel + ";" +
-                                "(someRole: $x, otherRole: $y) isa binary;" +
-                                "(someRole: $y, otherRole: $z) isa binary;" +
-                                "get;"
-                ));
+            List<ConceptMap> expectedAnswers = fullAnswers.stream()
+                    .filter(ans -> !thingsRelated(
+                            ImmutableMap.of(
+                                    ans.get("y").asThing(), tx.getRole("someRole"),
+                                    ans.get("q").asThing(), tx.getRole("otherRole"))
+                            ,
+                            Label.of(connection),
+                            tx)
+                    ).collect(toList());
 
-                List<ConceptMap> expectedAnswers = fullAnswers.stream()
-                        .filter(ans -> !thingsRelated(
-                                ImmutableMap.of(
-                                        ans.get("y").asThing(), tx.getRole("someRole"),
-                                        ans.get("q").asThing(), tx.getRole("otherRole"))
-                                ,
-                                Label.of(connection),
-                                tx)
-                        ).collect(toList());
-
-                if (!CollectionUtils.isEqualCollection(expectedAnswers, answersWithoutSpecificConnection)){
-                    System.out.println("FAIL!");
-                    assertCollectionsNonTriviallyEqual(
-                            expectedAnswers,
-                            answersWithoutSpecificConnection
-                    );
-                }
+            assertCollectionsNonTriviallyEqual(
+                    expectedAnswers,
+                    answersWithoutSpecificConnection
+            );
             }
-        }
     }
 
     @Test
