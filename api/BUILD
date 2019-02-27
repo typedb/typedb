@@ -39,6 +39,7 @@ java_library(
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
     ],
     tags = ["maven_coordinates=grakn.core:api:{pom_version}"],
+    visibility = ["//visibility:public"]
 )
 
 
