@@ -18,9 +18,7 @@
 
 package grakn.core.common.config;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.StandardSystemProperty;
-import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +31,6 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 
 /**
@@ -50,10 +47,9 @@ public class Config {
     private static final Path DEFAULT_CONFIG_FILE = Paths.get(".", "conf", "grakn.properties");
     private static final Logger LOG = LoggerFactory.getLogger(Config.class);
     private static Config defaultConfig = null;
+    private static final Path PROJECT_PATH = Config.getProjectPath();
 
-    public static final Path PROJECT_PATH = Config.getProjectPath();
     public static final Path CONFIG_FILE_PATH = getConfigFilePath(PROJECT_PATH);
-    public static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get(".", "services", "grakn", "grakn-core-ascii.txt"));
 
 
     public static Config create() {
@@ -67,7 +63,7 @@ public class Config {
      * @return The project path. If it is not specified as a JVM parameter it will be set equal to
      * user.dir folder.
      */
-    public static Path getProjectPath() {
+    private static Path getProjectPath() {
         if (SystemProperty.CURRENT_DIRECTORY.value() == null) {
             SystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
         }
@@ -129,15 +125,6 @@ public class Config {
         return projectPath.resolve(path);
     }
 
-    /**
-     * @param pathKey A config key for a path
-     * @return The requested string as a full path. If it is specified as a relative path,
-     * this method will return the path prepended with the project path.
-     */
-    public Path getPath(ConfigKey<Path> pathKey) {
-        return PROJECT_PATH.resolve(getProperty(pathKey));
-    }
-
     public Properties properties() {
         return prop;
     }
@@ -146,15 +133,4 @@ public class Config {
         return key.parse(prop.getProperty(key.name()), CONFIG_FILE_PATH);
     }
 
-    private static String loadGraknAsciiFile(Path projectPath, Path graknAsciiPath) {
-        Path asciiPath = projectPath.resolve(graknAsciiPath);
-        try {
-            File asciiFile = asciiPath.toFile();
-            return Files.readLines(asciiFile, Charsets.UTF_8).stream().collect(Collectors.joining("\n"));
-        } catch (IOException e) {
-            // couldn't find Grakn ASCII art. Let's just fail gracefully
-            LOG.warn("Oops, unable to find Grakn ASCII art. Will just display nothing then.");
-            return "";
-        }
-    }
 }
