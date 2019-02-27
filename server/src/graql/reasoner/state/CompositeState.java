@@ -75,9 +75,7 @@ public class CompositeState extends QueryStateBase {
 
     @Override
     public String toString(){
-        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" +
-                query.toString() +
-                (!complements.isEmpty()? "\nNOT{\n" + complements + "\n}" : "");
+        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" + query.toString();
     }
 
     @Override
@@ -87,9 +85,11 @@ public class CompositeState extends QueryStateBase {
     public ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap answer = state.getAnswer();
 
+        System.out.println(">>>>>>>>>>>Checking negation satisfied for " + answer);
         boolean isNegationSatisfied = complements.stream()
                 .map(q -> ReasonerQueries.resolvable(q, answer))
                 .noneMatch(q -> q.resolve(getVisitedSubGoals(), getCache(), q.requiresReiteration()).findFirst().isPresent());
+        System.out.println(">>>>>>>>>>>Negation satisfied: " + isNegationSatisfied);
 
         return isNegationSatisfied?
                 new AnswerState(answer, getUnifier(), getParentState()) :

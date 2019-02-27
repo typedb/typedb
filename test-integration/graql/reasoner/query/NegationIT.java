@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -55,7 +56,6 @@ import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
@@ -191,42 +191,51 @@ public class NegationIT {
 
     @Test
     public void conjunctionOfRelations_filteringSpecificResolvableConnection(){
-        try (TransactionOLTP tx = negationSession.transaction().write()) {
-            String unwantedLabel = "anotherType";
-            String connection = "derived-binary";
+        for(int i = 0 ; i < 502 ; i++) {
+            try (TransactionOLTP tx = negationSession.transaction().write()) {
+                String unwantedLabel = "anotherType";
+                String connection = "derived-binary";
 
-            List<ConceptMap> answersWithoutSpecificConnection = tx.execute(Graql.<GraqlGet>parse(
+                System.out.println("#######################################################################");
+                System.out.println("i = " + i);
+                System.out.println();
+
+                List<ConceptMap> answersWithoutSpecificConnection = tx.execute(Graql.<GraqlGet>parse(
                         "match " +
                                 "(someRole: $x, otherRole: $y) isa binary;" +
                                 "$q isa " + unwantedLabel + ";" +
                                 "not {(someRole: $y, otherRole: $q) isa " + connection + ";};" +
                                 "(someRole: $y, otherRole: $z) isa binary;" +
                                 "get;"
-            ));
+                ));
 
-            List<ConceptMap> fullAnswers = tx.execute(Graql.<GraqlGet>parse(
+                List<ConceptMap> fullAnswers = tx.execute(Graql.<GraqlGet>parse(
                         "match " +
                                 "$q isa " + unwantedLabel + ";" +
                                 "(someRole: $x, otherRole: $y) isa binary;" +
                                 "(someRole: $y, otherRole: $z) isa binary;" +
                                 "get;"
-            ));
+                ));
 
-            List<ConceptMap> expectedAnswers = fullAnswers.stream()
-                    .filter(ans -> !thingsRelated(
-                            ImmutableMap.of(
-                                    ans.get("y").asThing(), tx.getRole("someRole"),
-                                    ans.get("q").asThing(), tx.getRole("otherRole"))
-                            ,
-                            Label.of(connection),
-                            tx)
-                    ).collect(toList());
+                List<ConceptMap> expectedAnswers = fullAnswers.stream()
+                        .filter(ans -> !thingsRelated(
+                                ImmutableMap.of(
+                                        ans.get("y").asThing(), tx.getRole("someRole"),
+                                        ans.get("q").asThing(), tx.getRole("otherRole"))
+                                ,
+                                Label.of(connection),
+                                tx)
+                        ).collect(toList());
 
-            assertCollectionsNonTriviallyEqual(
-                        expectedAnswers,
-                        answersWithoutSpecificConnection
-                );
+                if (!CollectionUtils.isEqualCollection(expectedAnswers, answersWithoutSpecificConnection)){
+                    System.out.println("FAIL!");
+                    assertCollectionsNonTriviallyEqual(
+                            expectedAnswers,
+                            answersWithoutSpecificConnection
+                    );
+                }
             }
+        }
     }
 
     @Test
@@ -579,8 +588,6 @@ public class NegationIT {
         }
     }
 
-    //TODO fails
-    @Ignore
     @Test
     public void testStratifiedProgram(){
         try (TransactionOLTP tx = reachabilitySession.transaction().write()) {

@@ -115,10 +115,12 @@ $y isa someType;
 $z isa someType;
 $v isa someType, has resource-string "someString";
 (someRole: $x, otherRole: $y) isa binary;
-(someRole: $x, otherRole: $z) isa binary;
 (someRole: $y, otherRole: $q) isa binary;
-(someRole: $z, otherRole: $v) isa binary;
 (someRole: $y, otherRole: $v) isa binary;
+
+(someRole: $x, otherRole: $z) isa binary;
+(someRole: $z, otherRole: $v) isa binary;
+
 
 $q isa anotherType, has resource-long 1;
 

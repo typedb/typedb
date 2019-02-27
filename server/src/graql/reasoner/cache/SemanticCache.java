@@ -31,8 +31,6 @@ import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.Pair;
 import graql.lang.statement.Variable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -78,22 +76,27 @@ public abstract class SemanticCache<
     final private HashMultimap<SchemaConcept, QE> families = HashMultimap.create();
     final private HashMultimap<QE, QE> parents = HashMultimap.create();
 
-    private static final Logger LOG = LoggerFactory.getLogger(SemanticCache.class);
-
     UnifierType semanticUnifier(){ return UnifierType.RULE;}
 
     /**
-     * @param target query of interest we want to propagate answers for
+     * Propagate ALL answers between entries provided they satisfy the corresponding semantic difference.
+     *
      * @param parentEntry parent entry we want to propagate answers from
-     * @param childEntry cache entry corresponding to target query (in general the queries do not match)
+     * @param childEntry cache entry we want to propagate answers to
      * @param inferred true if inferred answers should be propagated
      * @return true if new answers were found during propagation
      */
-    protected abstract boolean propagateAnswers(ReasonerAtomicQuery target, CacheEntry<ReasonerAtomicQuery, SE> parentEntry, CacheEntry<ReasonerAtomicQuery, SE> childEntry, boolean inferred);
+    protected abstract boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, SE> parentEntry, CacheEntry<ReasonerAtomicQuery, SE> childEntry, boolean inferred);
 
     protected abstract Stream<ConceptMap> entryToAnswerStream(CacheEntry<ReasonerAtomicQuery, SE> entry);
 
     protected abstract Pair<Stream<ConceptMap>, MultiUnifier> entryToAnswerStreamWithUnifier(ReasonerAtomicQuery query, CacheEntry<ReasonerAtomicQuery, SE> entry);
+
+    /**
+     * @param query to be checked for answers
+     * @return true if cache answers the input query
+     */
+    protected abstract boolean answersQuery(ReasonerAtomicQuery query);
 
     abstract CacheEntry<ReasonerAtomicQuery, SE> createEntry(ReasonerAtomicQuery query, Set<ConceptMap> answers);
 
@@ -119,7 +122,6 @@ public abstract class SemanticCache<
             dbCompleteQueries.add(query);
         } else {
             dbCompleteEntries.add(queryToKey(query));
-            LOG.trace("Cache db complete for: " + query);
         }
     }
 
@@ -127,7 +129,6 @@ public abstract class SemanticCache<
         if (dbCompleteQueries.contains(parent)) dbCompleteQueries.add(query);
         if (dbCompleteEntries.contains(queryToKey(parent))){
             dbCompleteEntries.add(queryToKey(query));
-            LOG.trace("Cache db complete for: " + query);
         }
     }
 
@@ -185,7 +186,7 @@ public abstract class SemanticCache<
                 .map(this::keyToQuery)
                 .map(this::getEntry)
                 .forEach(parentMatch -> {
-                        boolean newAnswers = propagateAnswers(target, parentMatch, childMatch, inferred);
+                        boolean newAnswers = propagateAnswers(parentMatch, childMatch, inferred);
                         newAnswersFound[0] = newAnswers;
                         ackDBCompletenessFromParent(target, parentMatch.query());
                 });
@@ -239,7 +240,8 @@ public abstract class SemanticCache<
         if (match != null) {
             boolean answersToGroundQuery = false;
             if (query.isGround()) {
-                answersToGroundQuery = propagateAnswersToQuery(query, match,true);
+                boolean newAnswersPropagated = propagateAnswersToQuery(query, match, true);
+                if (newAnswersPropagated) answersToGroundQuery = answersQuery(query);
             }
 
             //extra check is a quasi-completeness check if there's no parent present we have no guarantees about completeness with respect to the db.
