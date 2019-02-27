@@ -28,8 +28,6 @@ import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.Pair;
 import graql.lang.statement.Variable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -44,8 +42,6 @@ import static java.util.stream.Collectors.toSet;
  *
  */
 public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<ReasonerAtomicQuery>, IndexedAnswerSet> {
-
-    private static final Logger LOG = LoggerFactory.getLogger(MultilevelSemanticCache.class);
 
     @Override public UnifierType unifierType() { return UnifierType.STRUCTURAL;}
 
@@ -68,33 +64,33 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
     }
 
     @Override
-    protected boolean propagateAnswers(ReasonerAtomicQuery target,
-                                    CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,
+    protected boolean answersQuery(ReasonerAtomicQuery query) {
+        CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry = getEntry(query);
+        if (entry == null) return false;
+        ReasonerAtomicQuery cacheQuery = entry.query();
+        IndexedAnswerSet answerSet = entry.cachedElement();
+        Set<Variable> cacheIndex = cacheQuery.getAnswerIndex().vars();
+        MultiUnifier queryToCacheUnifier = query.getMultiUnifier(cacheQuery, semanticUnifier());
+
+        return queryToCacheUnifier.apply(query.getAnswerIndex())
+                .anyMatch(sub ->
+                        answerSet.get(sub.project(cacheIndex)).stream()
+                                .anyMatch(ans -> ans.containsAll(sub)));
+    }
+
+    @Override
+    protected boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,
                                     CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> childEntry,
                                     boolean inferred) {
         ReasonerAtomicQuery parent = parentEntry.query();
         ReasonerAtomicQuery child = childEntry.query();
         IndexedAnswerSet parentAnswers = parentEntry.cachedElement();
         IndexedAnswerSet childAnswers = childEntry.cachedElement();
-        ConceptMap baseAnswerIndex = target.getAnswerIndex();
 
-        LOG.trace("Propagating answers \nfrom: " + parent + "\nto: " + target);
-
-        MultiUnifier targetToParentUnifier = target.getMultiUnifier(parent, semanticUnifier());
         Set<Pair<Unifier, SemanticDifference>> parentToChildUnifierDelta =
                 child.getMultiUnifierWithSemanticDiff(parent).stream()
                 .map(unifierDelta -> new Pair<>(unifierDelta.getKey().inverse(), unifierDelta.getValue()))
                 .collect(toSet());
-
-        Set<ConceptMap> parentAnswersToPropagate = targetToParentUnifier
-                .apply(baseAnswerIndex)
-                .flatMap(sub ->
-                        parentAnswers.getAll().stream()
-                                .filter(ans -> inferred || ans.explanation().isLookupExplanation()
-                                ))
-                .collect(toSet());
-
-        Set<ConceptMap> newAnswers = new HashSet<>();
 
         /*
          * propagate answers to child:
@@ -103,8 +99,10 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
          */
         Set<Variable> childVars = child.getVarNames();
         ConceptMap partialSub = child.getRoleSubstitution();
+        Set<ConceptMap> newAnswers = new HashSet<>();
 
-        parentAnswersToPropagate.stream()
+        parentAnswers.getAll().stream()
+                .filter(ans -> inferred || ans.explanation().isLookupExplanation())
                 .flatMap(ans -> parentToChildUnifierDelta.stream()
                                 .map(unifierDelta -> unifierDelta.getValue()
                                         .applyToAnswer(ans, partialSub, childVars, unifierDelta.getKey()))
@@ -118,7 +116,6 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                 .filter(childAnswers::add)
                 .forEach(newAnswers::add);
 
-        LOG.trace(newAnswers.size() + " new out of " + parentAnswersToPropagate.size() + " parent answers propagated: " + newAnswers);
         return !newAnswers.isEmpty();
     }
 

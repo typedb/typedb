@@ -75,9 +75,7 @@ public class CompositeState extends QueryStateBase {
 
     @Override
     public String toString(){
-        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" +
-                query.toString() +
-                (!complements.isEmpty()? "\nNOT{\n" + complements + "\n}" : "");
+        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" + query.toString();
     }
 
     @Override
