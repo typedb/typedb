@@ -40,7 +40,6 @@ import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.keyspace.KeyspaceImpl;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
@@ -81,7 +80,7 @@ public class GraknClientTest {
 
     private final static SessionServiceGrpc.SessionServiceImplBase sessionService = mock(SessionServiceGrpc.SessionServiceImplBase.class);
     private final static KeyspaceServiceGrpc.KeyspaceServiceImplBase keyspaceService = mock(KeyspaceServiceGrpc.KeyspaceServiceImplBase.class);
-    private static final KeyspaceImpl KEYSPACE = KeyspaceImpl.of("grakn");
+    private static final GraknClient.Keyspace KEYSPACE = GraknClient.Keyspace.of("grakn");
     private static final String V123 = "V123";
     private static final int ITERATOR = 100;
     @Rule
