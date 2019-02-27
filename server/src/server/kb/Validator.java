@@ -71,10 +71,10 @@ public class Validator {
         //Validate Rules
         graknGraph.cache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
 
-        //Validate rule stratification
-        errorsFound.addAll(
-                ValidateGlobalRules.validateRuleStratifiability(graknGraph, graknGraph.cache().getModifiedRules())
-        );
+        //Validate rule type graph
+        if (!graknGraph.cache().getModifiedRules().isEmpty()) {
+            errorsFound.addAll(ValidateGlobalRules.validateRuleStratifiability(graknGraph));
+        }
 
         return errorsFound.size() == 0;
     }

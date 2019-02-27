@@ -56,7 +56,7 @@ import static java.util.Arrays.stream;
 
 
 /**
- * This produces a {@link JanusGraph} with custom Grakn configurations.
+ * This produces a JanusGraph with custom Grakn configurations.
  */
 final public class JanusGraphFactory {
     private final static Logger LOG = LoggerFactory.getLogger(JanusGraphFactory.class);

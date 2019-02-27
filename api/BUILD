@@ -17,33 +17,40 @@
 #
 #
 package(default_visibility = [
-    "//server:__subpackages__",
-    "//client:__subpackages__",
+    "//server:__pkg__",
+    "//client-java:__subpackages__",
+    "//test-integration/rule:__pkg__", # TODO: remove this once we move GraknTestServer in //server/test
     # TODO: expose this package to "@graknlabs_grakn_kgms//server:__subpackages__"
 ])
 
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
-#java_library(
-#    name = "api",
-#    srcs = glob(["**/*.java"]),
-#    deps = [
-#
-#    ],
-#    tags = ["maven_coordinates=grakn.core:api:{pom_version}"],
-#)
-#
-#
-#deploy_maven_jar(
-#    name = "deploy-maven-jar",
-#    target = ":api",
-#    package = "api",
-#)
-#
-#checkstyle_test(
-#    name = "checkstyle",
-#    targets = [
-#        ":api"
-#    ],
-#)
+java_library(
+    name = "api",
+    srcs = glob(["**/*.java"]),
+    deps = [
+        "//concept:concept",
+
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java:graql",
+
+        # External dependencies from Maven
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+    ],
+    tags = ["maven_coordinates=grakn.core:api:{pom_version}"],
+)
+
+
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    target = ":api",
+    package = "api",
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":api"
+    ],
+)

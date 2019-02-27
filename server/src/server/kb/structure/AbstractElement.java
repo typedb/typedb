@@ -32,7 +32,7 @@ import java.util.function.Function;
 import static org.apache.tinkerpop.gremlin.structure.T.id;
 
 /**
- * Transaction AbstractElement
+ * TransactionOLTP AbstractElement
  * Base class used to represent a construct in the graph. This includes exposed constructs such as Concept
  * and hidden constructs such as EdgeElement and Casting
  *

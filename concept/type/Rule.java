@@ -60,6 +60,22 @@ public interface Rule extends SchemaConcept {
     Stream<Type> whenTypes();
 
     /**
+     * Retrieve a set of Types that constitute a positive part of the hypothesis of this Rule.
+     *
+     * @return A collection of Concept Types that constitute a positive part of the hypothesis of the Rule
+     */
+    @CheckReturnValue
+    Stream<Type> whenPositiveTypes();
+
+    /**
+     * Retrieve a set of Types that constitute a negative part of the hypothesis of this Rule.
+     *
+     * @return A collection of Concept Types that constitute a negative part of the hypothesis of the Rule
+     */
+    @CheckReturnValue
+    Stream<Type> whenNegativeTypes();
+
+    /**
      * Retrieve a set of Types that constitue a part of the conclusion of the Rule.
      *
      * @return A collection of Types that constitute a part of the conclusion of the Rule

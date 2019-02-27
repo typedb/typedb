@@ -31,7 +31,6 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
@@ -81,7 +80,7 @@ public class RelationIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         role1 = (RoleImpl) tx.putRole("Role 1");
         role2 = (RoleImpl) tx.putRole("Role 2");
         role3 = (RoleImpl) tx.putRole("Role 3");
@@ -291,7 +290,7 @@ public class RelationIT {
         rel2.has(r2);
 
         tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
 
         assertThat(tx.getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
         assertThat(tx.getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));

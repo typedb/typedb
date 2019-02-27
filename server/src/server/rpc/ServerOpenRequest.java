@@ -19,9 +19,9 @@
 package grakn.core.server.rpc;
 
 import grakn.core.protocol.SessionProto;
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.SessionFactory;
+import grakn.core.server.session.SessionImpl;
 
 /**
  * A request transaction opener for RPC Services. It requires the keyspace and transaction type from the argument object
@@ -37,7 +37,7 @@ public class ServerOpenRequest implements OpenRequest {
 
     @Override
     public SessionImpl open(SessionProto.Session.Open.Req request) {
-        Keyspace keyspace = Keyspace.of(request.getKeyspace());
+        KeyspaceImpl keyspace = KeyspaceImpl.of(request.getKeyspace());
         return sessionFactory.session(keyspace);
     }
 

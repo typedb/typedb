@@ -23,31 +23,31 @@ import grakn.core.concept.Label;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
 import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 
 public class DualLinearTransitivityMatrixGraph{
 
-    private final Session session;
+    private final SessionImpl session;
     private final static String gqlPath = "test-integration/graql/reasoner/resources/";
     private final static String gqlFile = "dualLinearTransitivity.gql";
     private final static Label key = Label.of("index");
 
-    public DualLinearTransitivityMatrixGraph(Session session){
+    public DualLinearTransitivityMatrixGraph(SessionImpl session){
         this.session = session;
     }
 
     public final void load(int n, int m) {
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = session.transaction().write();
         loadFromFile(gqlPath, gqlFile, tx);
         buildExtensionalDB(n, m, tx);
         tx.commit();
     }
 
-    protected void buildExtensionalDB(int n, int m, Transaction tx) {
+    protected void buildExtensionalDB(int n, int m, TransactionOLTP tx) {
         Role R1from = tx.getRole("R1-from");
         Role R1to = tx.getRole("R1-to");
         Role R2from = tx.getRole("R2-from");

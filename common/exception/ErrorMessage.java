@@ -58,6 +58,7 @@ public enum ErrorMessage {
     HAS_INVALID("The type [%s] is not allowed to have an attribute of type [%s]"),
     BACKEND_EXCEPTION("Backend Exception."),
     INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
+    CONNECTION_CLOSED("The connection to the database is closed"),
     TX_CLOSED("The transaction for keyspace [%s] is closed. Use the session to get a new transaction for the graph."),
     SESSION_CLOSED("The session for graph [%s] is closed. Create a new session to interact with the graph."),
     TX_CLOSED_ON_ACTION("The transaction was %s and closed for graph [%s]. Use the session to get a new transaction for the graph."),
@@ -108,6 +109,8 @@ public enum ErrorMessage {
     VALIDATION_RULE_NESTED_NEGATION("The rule [%s] contains a nested negation block\n"),
 
     VALIDATION_RULE_MULTIPLE_NEGATION_BLOCKS("The rule [%s] contains multiple negation blocks\n"),
+
+    VALIDATION_RULE_CONTRADICTION_IN_TYPEGRAPH("The rule graph contains a contradiction - there is a positive and negative path between the types: [%s]-[%s]\n"),
 
     VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE("The rule graph is not stratifiable - it contains following cycles with negation: [%s]\n"),
 

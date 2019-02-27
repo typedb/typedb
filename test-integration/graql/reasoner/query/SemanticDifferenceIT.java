@@ -32,7 +32,6 @@ import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -76,7 +75,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesType_typesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
             String base = "(baseRole1: $x, baseRole2: $y) isa binary;";
             String parentPattern = patternise(base);
@@ -101,7 +100,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesType_typesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
             String base = "(baseRole1: $x, baseRole2: $y) isa binary;";
@@ -127,7 +126,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesRole_rolesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             Role role = tx.getRole("baseRole1");
             String base = "($role: $x, baseRole2: $y) isa binary;";
             String parentPattern = patternise(base);
@@ -153,7 +152,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesRole_rolesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             Role baseRole = tx.getRole("baseRole1");
             Role subRole = tx.getRole("subRole1");
             String base = "($role: $x, baseRole2: $y) isa binary;";
@@ -179,7 +178,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesPlayedRole_RPsAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             Role subRole1 = tx.getRole("subRole1");
             Role subRole2 = tx.getRole("subSubRole2");
             String parentPattern = patternise("(baseRole1: $x, baseRole2: $y) isa binary;");
@@ -205,7 +204,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesResourceValuePredicate_valuesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             String parentPattern = patternise("$x has resource $r;");
             final String value = "m";
             String childPattern = patternise("$x has resource '" + value + "';");
@@ -231,7 +230,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesResourceValuePredicate_valuesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             String parentPattern = patternise("$x has resource !== 'm';");
             final String value = "b";
             String childPattern = patternise("$x has resource '" + value + "';");
@@ -257,7 +256,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesValuePredicateOnType_valuesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             String parentPattern = patternise("$x isa resource-long;");
             final long value = 0;
             String childPattern = patternise("$x == " + value + " isa resource-long ;");
@@ -282,7 +281,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesValuePredicateOnType_valuesAreFilteredCorrectly2(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             String parentPattern = patternise("$x > 0 isa resource-long;");
             final long value = 1;
             String childPattern = patternise("$x == " + value + " isa resource-long;");

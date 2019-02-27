@@ -23,7 +23,6 @@ import grakn.core.client.GraknClient;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.protocol.ConceptProto;
-import grakn.core.server.exception.TransactionException;
 
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -87,7 +86,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
     }
 
     @Override
-    public final void delete() throws TransactionException {
+    public final void delete() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setConceptDeleteReq(ConceptProto.Concept.Delete.Req.getDefaultInstance())
                 .build();

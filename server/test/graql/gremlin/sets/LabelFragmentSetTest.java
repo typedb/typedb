@@ -23,7 +23,7 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,11 +46,11 @@ public class LabelFragmentSetTest {
     private static final Label EXISTING_LABEL = Label.of("something");
     private static final Label NON_EXISTENT_LABEL = Label.of("doesn't exist");
 
-    private Transaction tx;
+    private TransactionOLTP tx;
 
     @Before
     public void setUp() {
-        tx = mock(Transaction.class);
+        tx = mock(TransactionOLTP.class);
 
         when(tx.getSchemaConcept(EXISTING_LABEL)).thenReturn(mock(Type.class));
         when(tx.getSchemaConcept(NON_EXISTENT_LABEL)).thenReturn(null);

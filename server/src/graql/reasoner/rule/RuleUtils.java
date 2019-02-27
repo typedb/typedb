@@ -20,28 +20,24 @@ package grakn.core.graql.reasoner.rule;
 
 import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
-import grakn.core.graql.reasoner.query.CompositeQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.graql.reasoner.utils.TarjanSCC;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
-
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -57,67 +53,58 @@ import static java.util.stream.Collectors.toSet;
  */
 public class RuleUtils {
 
-    private static HashMultimap<Type, Type> typeGraph(Set<InferenceRule> rules){
+    /**
+     * @param rules defining the subgraph by their when and then parts
+     * @return type subgraph created by the input rules
+     */
+    private static HashMultimap<Type, Type> persistedTypeSubGraph(Set<InferenceRule> rules){
         HashMultimap<Type, Type> graph = HashMultimap.create();
-        rules
-                .forEach(rule ->
-                        rule.getBody()
-                                .getAtoms(Atom.class)
-                                .flatMap(at -> at.getPossibleTypes().stream())
-                                .flatMap(type -> Stream.concat(
-                                        Stream.of(type),
-                                        type.subs().filter(t -> !Schema.MetaSchema.isMetaLabel(t.label())))
-                                )
-                                .filter(t -> !t.isAbstract())
-                                .forEach(whenType ->
-                                        rule.getHead()
-                                                .getAtom()
-                                                .getPossibleTypes().stream()
-                                                .flatMap(Type::sups)
-                                                .filter(t -> !t.isAbstract())
-                                                .forEach(thenType -> graph.put(whenType, thenType))
-                                )
-                );
+        rules.stream()
+                .flatMap(rule -> persistedRuleToTypePair.apply(rule))
+                .forEach(p -> graph.put(p.getKey(), p.getValue()));
         return graph;
     }
 
     /**
-     * @param rules to build the type graph from
      * @return a type graph from possibly uncommited/invalid rules (no mapping to InferenceRule may exist).
      */
-    private static HashMultimap<Type,Type> typeGraphFromUncommitedRules(Set<Rule> rules){
+    private static HashMultimap<Type,Type> typeGraph(TransactionOLTP tx){
         HashMultimap<Type, Type> graph = HashMultimap.create();
-        rules
-                .forEach(rule ->
-                        rule.whenTypes()
-                                .flatMap(Type::subs)
-                                .filter(t -> !t.isAbstract())
-                                .forEach(whenType ->
-                                        rule.thenTypes()
-                                                .flatMap(Type::sups)
-                                                .filter(t -> !t.isAbstract())
-                                                .forEach(thenType -> graph.put(whenType, thenType))
-                                )
-                );
+        tx.getMetaRule().subs()
+                .filter(rule -> !Schema.MetaSchema.isMetaLabel(rule.label()))
+                .flatMap(rule -> ruleToTypePair.apply(rule))
+                .forEach(p -> graph.put(p.getKey(), p.getValue()));
         return graph;
     }
 
-    /**
-     * @param rule of interest
-     * @param tx transaction of interest
-     * @return set of negated types in the provided rule
-     */
-    private static Set<Type> ruleNegativeTypes(Rule rule, TransactionOLTP tx){
-        CompositeQuery query = ReasonerQueries.composite(Iterables.getOnlyElement(rule.when().getNegationDNF().getPatterns()), tx);
-        return query.getComplementQueries().stream()
-                .flatMap(q -> q.getAtoms(Atom.class))
-                .map(Atom::getSchemaConcept)
-                .filter(Objects::nonNull)
-                .filter(Concept::isType)
-                .map(Concept::asType)
-                .collect(toSet());
-    }
+    private static Function<InferenceRule, Stream<Pair<Type, Type>>> persistedRuleToTypePair = rule ->
+            rule.getBody()
+                    .getAtoms(Atom.class)
+                    .flatMap(at -> at.getPossibleTypes().stream())
+                    .flatMap(type -> Stream.concat(
+                            Stream.of(type),
+                            type.subs().filter(t -> !Schema.MetaSchema.isMetaLabel(t.label())))
+                    )
+                    .filter(t -> !t.isAbstract())
+                    .flatMap(whenType ->
+                            rule.getHead()
+                                    .getAtom()
+                                    .getPossibleTypes().stream()
+                                    .flatMap(Type::sups)
+                                    .filter(t -> !t.isAbstract())
+                                    .map(thenType -> new Pair<>(whenType, thenType))
+                    );
 
+    private static Function<Rule, Stream<Pair<Type, Type>>> ruleToTypePair = rule ->
+            rule.whenTypes()
+                    .flatMap(Type::subs)
+                    .filter(t -> !t.isAbstract())
+                    .flatMap(whenType ->
+                            rule.thenTypes()
+                                    .flatMap(Type::sups)
+                                    .filter(t -> !t.isAbstract())
+                                    .map(thenType -> new Pair<>(whenType, thenType))
+                    );
 
     /**
      * @param rules to be stratified (ordered)
@@ -130,7 +117,7 @@ public class RuleUtils {
         }
         Multimap<Type, InferenceRule> typeMap = HashMultimap.create();
         rules.forEach(r -> r.getRule().thenTypes().flatMap(Type::sups).forEach(t -> typeMap.put(t, r)));
-        HashMultimap<Type, Type> typeGraph = typeGraph(rules);
+        HashMultimap<Type, Type> typeGraph = persistedTypeSubGraph(rules);
         List<Set<Type>> scc = new TarjanSCC<>(typeGraph).getSCC();
         return Lists.reverse(scc).stream()
                 .flatMap(strata -> strata.stream()
@@ -144,22 +131,21 @@ public class RuleUtils {
      * @return true if the rule subgraph formed from provided rules contains loops
      */
     public static boolean subGraphIsCyclical(Set<InferenceRule> rules){
-        return !new TarjanSCC<>(typeGraph(rules))
+        return !new TarjanSCC<>(persistedTypeSubGraph(rules))
                 .getCycles().isEmpty();
     }
 
     /**
      *
-     * @param rules set of rules of interest forming a rule subgraph
      * @return true if the rule subgraph is stratifiable (doesn't contain cycles with negation)
      */
-    public static List<Set<Type>> negativeCycles(Set<Rule> rules, TransactionOLTP tx){
-        HashMultimap<Type, Type> typeGraph = typeGraphFromUncommitedRules(rules);
+    public static List<Set<Type>> negativeCycles(TransactionOLTP tx){
+        HashMultimap<Type, Type> typeGraph = typeGraph(tx);
         return new TarjanSCC<>(typeGraph).getCycles().stream()
                 .filter(cycle ->
                         cycle.stream().anyMatch(type ->
                                 type.whenRules()
-                                        .filter(rule -> ruleNegativeTypes(rule, tx).contains(type))
+                                        .filter(rule -> rule.whenNegativeTypes().anyMatch(ntype -> ntype.equals(type)))
                                         .anyMatch(rule -> !Sets.intersection(cycle, rule.thenTypes().collect(toSet())).isEmpty())
                         )
                 ).collect(toList());

@@ -19,7 +19,7 @@
 package grakn.core.server.deduplicator;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 
 /**
  * A class to hold a keyspace and an index together.
@@ -27,10 +27,10 @@ import grakn.core.server.keyspace.Keyspace;
  */
 @AutoValue
 public abstract class KeyspaceIndexPair {
-    public abstract Keyspace keyspace();
+    public abstract KeyspaceImpl keyspace();
     public abstract String index();
 
-    public static KeyspaceIndexPair create(Keyspace keyspace, String index) {
+    public static KeyspaceIndexPair create(KeyspaceImpl keyspace, String index) {
         return new AutoValue_KeyspaceIndexPair(keyspace, index);
     }
 }

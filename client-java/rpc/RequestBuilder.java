@@ -57,10 +57,10 @@ public class RequestBuilder {
      */
     public static class Transaction {
 
-        public static SessionProto.Transaction.Req open(String sessionId, grakn.core.server.Transaction.Type txType) {
+        public static SessionProto.Transaction.Req open(String sessionId, grakn.core.api.Transaction.Type txType) {
             SessionProto.Transaction.Open.Req openRequest = SessionProto.Transaction.Open.Req.newBuilder()
                     .setSessionId(sessionId)
-                    .setType(SessionProto.Transaction.Type.valueOf(txType.getId()))
+                    .setType(SessionProto.Transaction.Type.valueOf(txType.id()))
                     .build();
 
             return SessionProto.Transaction.Req.newBuilder().setOpenReq(openRequest).build();
@@ -272,6 +272,10 @@ public class RequestBuilder {
 
         public static KeyspaceProto.Keyspace.Delete.Req delete(String name) {
             return KeyspaceProto.Keyspace.Delete.Req.newBuilder().setName(name).build();
+        }
+
+        public static KeyspaceProto.Keyspace.Retrieve.Req retrieve() {
+            return KeyspaceProto.Keyspace.Retrieve.Req.newBuilder().build();
         }
     }
 }

@@ -35,9 +35,7 @@ import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -65,7 +63,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.server.kb.Schema.MetaSchema.ENTITY;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static graql.lang.Graql.type;
@@ -110,7 +107,7 @@ public class GraqlInsertIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After
@@ -294,7 +291,7 @@ public class GraqlInsertIT {
     public void testKeyCorrectUsage() throws InvalidKBException {
         tx.execute(Graql.define(
                 type("a-new-type").sub("entity").key("a-new-resource-type"),
-                type("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Graql.Token.DataType.STRING)
+                type("a-new-resource-type").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING)
         ));
 
         tx.execute(Graql.insert(var().isa("a-new-type").has("a-new-resource-type", "hello")));
@@ -304,7 +301,7 @@ public class GraqlInsertIT {
     public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidKBException {
         tx.execute(Graql.define(
                 type("a-new-type").sub("entity").key("a-new-attribute-type"),
-                type("a-new-attribute-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Graql.Token.DataType.STRING)
+                type("a-new-attribute-type").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING)
         ));
 
         tx.execute(Graql.insert(
@@ -321,7 +318,7 @@ public class GraqlInsertIT {
         tx.execute(Graql.define(
                 type("a-new-type").sub("entity").key("a-new-resource-type"),
                 type("a-new-resource-type")
-                        .sub(type(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()))
+                        .sub(Graql.Token.Type.ATTRIBUTE)
                         .datatype(Graql.Token.DataType.STRING)
         ));
 
@@ -338,7 +335,7 @@ public class GraqlInsertIT {
     public void testKeyRequiredOwner() throws InvalidKBException {
         tx.execute(Graql.define(
                 type("a-new-type").sub("entity").key("a-new-resource-type"),
-                type("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(Graql.Token.DataType.STRING)
+                type("a-new-resource-type").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING)
         ));
 
         tx.execute(Graql.insert(var().isa("a-new-type")));
@@ -411,9 +408,9 @@ public class GraqlInsertIT {
     public void testErrorWhenAddingInstanceOfConcept() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(
-                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.THING.getLabel().getValue()))
+                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Graql.Token.Type.THING.toString()))
         );
-        tx.execute(Graql.insert(var("my-thing").isa(Schema.MetaSchema.THING.getLabel().getValue())));
+        tx.execute(Graql.insert(var("my-thing").isa(Graql.Token.Type.THING)));
     }
 
     @Test
@@ -612,7 +609,7 @@ public class GraqlInsertIT {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(Graql.Token.Property.SUB.toString()).getMessage());
 
-        tx.execute(Graql.insert(type("new-type").sub(type(ENTITY.getLabel().getValue()))));
+        tx.execute(Graql.insert(type("new-type").sub(Graql.Token.Type.ENTITY)));
     }
 
     @Test

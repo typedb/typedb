@@ -23,7 +23,7 @@ import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 /**
- * Represent an Edge in a Transaction
+ * Represent an Edge in a TransactionOLTP
  * Wraps a tinkerpop Edge constraining it to the Grakn Object Model.
  */
 public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
