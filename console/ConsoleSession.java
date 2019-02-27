@@ -119,39 +119,39 @@ public class ConsoleSession implements AutoCloseable {
         consoleReader.print(COPYRIGHT);
 
         tx = session.transaction().write();
-        String queryString;
+        String input;
 
-        while ((queryString = consoleReader.readLine()) != null) {
-            if (queryString.equals(EDITOR)) {
+        while ((input = consoleReader.readLine()) != null) {
+            if (input.equals(EDITOR)) {
                 executeQuery(openTextEditor());
 
-            } else if (queryString.startsWith(LOAD + ' ')) {
+            } else if (input.startsWith(LOAD + ' ')) {
                 try{
-                    queryString = readFile(Paths.get(unescapeJava(queryString.substring(LOAD.length() + 1))));
-                    executeQuery(queryString);
+                    input = readFile(Paths.get(unescapeJava(input.substring(LOAD.length() + 1))));
+                    executeQuery(input);
                 } catch (NoSuchFileException e) {
                     System.err.println("File not found: " + e.getMessage());
                 }
-            } else if (queryString.equals(COMMIT)) {
+            } else if (input.equals(COMMIT)) {
                 commit();
 
-            } else if (queryString.equals(ROLLBACK)) {
+            } else if (input.equals(ROLLBACK)) {
                 rollback();
 
-            } else if (queryString.equals(CLEAN)) {
+            } else if (input.equals(CLEAN)) {
                 clean();
                 consoleReader.flush();
                 return;
 
-            } else if (queryString.equals(CLEAR)) {
+            } else if (input.equals(CLEAR)) {
                 consoleReader.clearScreen();
 
-            } else if (queryString.equals(EXIT)) {
+            } else if (input.equals(EXIT)) {
                 consoleReader.flush();
                 return;
 
-            } else if (!queryString.isEmpty()) {
-                executeQuery(queryString);
+            } else if (!input.isEmpty()) {
+                executeQuery(input);
 
             } // We ignore empty commands
         }
