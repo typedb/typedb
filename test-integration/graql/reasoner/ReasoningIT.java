@@ -106,7 +106,7 @@ public class ReasoningIT {
     public void resourceHierarchiesAreRespected() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "resourceHierarchy.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
 
                 Set<RelationType> relTypes = tx.getMetaRelationType().subs().collect(toSet());
@@ -137,7 +137,7 @@ public class ReasoningIT {
     public void resourceOwnershipNotPropagatedWithinRelation() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "resourceOwnership.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
 
                 String attributeName = "name";
@@ -168,7 +168,7 @@ public class ReasoningIT {
     public void unificationOfReflexiveRelations() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "reflexiveRelation.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String queryString = "match (role1:$x, role2:$x) isa relation1; get;";
                 String queryString2 = "match (role1:$x, role2:$y) isa relation1; get;";
@@ -191,7 +191,7 @@ public class ReasoningIT {
     public void unificationOfReflexiveSymmetricRelations() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "reflexiveSymmetricRelation.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String queryString = "match (symmetricRole: $x, symmetricRole: $x) isa symmetricRelation; get;";
                 String queryString2 = "match (symmetricRole: $x, symmetricRole: $y) isa symmetricRelation; get;";
@@ -211,7 +211,7 @@ public class ReasoningIT {
     public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet7.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 
                 String queryString = "match $x isa relation1; get; limit 10;";
@@ -226,7 +226,7 @@ public class ReasoningIT {
     public void roleUnificationWithRepeatingRoleTypes() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet9.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String doubleRpQuery = "match (role1:$x, role1:$y) isa relation2; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(doubleRpQuery).asGet());
@@ -247,7 +247,7 @@ public class ReasoningIT {
     public void transRelationWithEntityGuardsAtBothEnds() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet10.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String queryString = "match (role1: $x, role2: $y) isa relation2; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -260,7 +260,7 @@ public class ReasoningIT {
     public void transRelationWithRelationGuardsAtBothEnds() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet11.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String queryString = "match (role1:$x, role2:$y) isa relation3; get;";
                 assertEquals(1, tx.execute(Graql.parse(queryString).asGet()).size());
@@ -272,7 +272,7 @@ public class ReasoningIT {
     public void circularRuleDependencies() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet12.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String queryString = "match (role1:$x, role2:$y) isa relation3; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -285,7 +285,7 @@ public class ReasoningIT {
     public void resourcesAsRolePlayers() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "resourcesAsRolePlayers.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
 
                 String queryString = "match $x 'partial bad flag' isa resource; ($x, resource-owner: $y) isa resource-relation; get;";
@@ -325,7 +325,7 @@ public class ReasoningIT {
     public void resourcesAsRolePlayers_vpPropagationTest() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "resourcesAsRolePlayers.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
 
                 String queryString = "match $x 'partial bad flag' isa resource; ($x, resource-owner: $y) isa another-resource-relation; get;";
@@ -363,7 +363,7 @@ public class ReasoningIT {
     public void reasoningWithRepeatingRoles(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet22.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String queryString = "match (friend:$x1, friend:$x2) isa knows-trans; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -376,7 +376,7 @@ public class ReasoningIT {
     public void reasoningWithLimitHigherThanNumberOfResults_ReturnsConsistentResults(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet23.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String queryString = "match (friend1:$x1, friend2:$x2) isa knows-trans; get; limit 60;";
                 List<ConceptMap> oldAnswers = tx.execute(Graql.parse(queryString).asGet());
@@ -393,7 +393,7 @@ public class ReasoningIT {
     public void reasoningWithEntityTypes() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet24.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String reflexiveQuery = "match (role1:$x1, role2:$x2) isa reflexiveRelation; get;";
                 List<ConceptMap> reflexive = tx.execute(Graql.parse(reflexiveQuery).asGet());
@@ -410,7 +410,7 @@ public class ReasoningIT {
     public void reasoningWithResourceValueComparison() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet25.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String queryString = "match (predecessor:$x1, successor:$x2) isa message-succession; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -424,7 +424,7 @@ public class ReasoningIT {
     public void reasoningWithReifiedRelations() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet26.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String queryString = "match (role1: $x1, role2: $x2) isa relation2; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -453,7 +453,7 @@ public class ReasoningIT {
     public void whenReasoningWithRelationConjunctions_duplicatesNotProducesAndTypesInferredCorrectly(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet28.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String queryWithTypes = "match " +
                         "(role1: $x, role2: $y);" +
@@ -477,7 +477,7 @@ public class ReasoningIT {
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet28b.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String queryString = "match " +
                         "$a isa entity1;" +
@@ -496,7 +496,7 @@ public class ReasoningIT {
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_DisconnectedQuery(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet28b.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
 
                 String pattern = "{$a isa entity1;($a, $b); $b isa entity3;};";
@@ -533,7 +533,7 @@ public class ReasoningIT {
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_WithRelationWithoutAnyBounds(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet28b.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
                 String entryPattern = "{" +
                         "$a isa entity1;" +
@@ -567,7 +567,7 @@ public class ReasoningIT {
     public void whenAppendingRolePlayers_queryIsRewrittenCorrectly(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 List<ConceptMap> persistedRelations = tx.execute(Graql.parse("match $r isa relation0; get;").asGet(), false);
 
                 List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;"));
@@ -604,7 +604,7 @@ public class ReasoningIT {
     public void whenAppendingRolePlayers_noNewRelationsAreCreated(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
 
                 List<ConceptMap> persistedRelations = tx.execute(Graql.parse("match $r isa relation0; get;").asGet(), false);
                 List<ConceptMap> inferredRelations = tx.execute(Graql.parse("match $r isa relation0; get;").asGet());
@@ -636,7 +636,7 @@ public class ReasoningIT {
     public void inferrableRelationWithRolePlayersSharingResource(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()){
+            try (TransactionOLTP tx = session.transaction().read()){
                 
                 String queryString = "match " +
                         "(role1: $x, role2: $y) isa binary-base;" +
@@ -680,7 +680,7 @@ public class ReasoningIT {
     public void ternaryRelationsRequiryingDifferentMultiunifiers(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 
 
                 String queryString = "match " +
@@ -721,7 +721,7 @@ public class ReasoningIT {
     public void mutuallyRecursiveRelationAndResource_queryForAttributedType(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet30.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 String specificPairs = "match $p isa pair, has name 'ff'; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(specificPairs).asGet());
                 assertEquals(16, answers.size());

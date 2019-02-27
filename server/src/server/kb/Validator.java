@@ -36,11 +36,11 @@ import java.util.Set;
  * type of the concept.
  */
 public class Validator {
-    private final TransactionOLTP graknGraph;
+    private final TransactionOLTP transaction;
     private final List<String> errorsFound = new ArrayList<>();
 
-    public Validator(TransactionOLTP graknGraph) {
-        this.graknGraph = graknGraph;
+    public Validator(TransactionOLTP transaction) {
+        this.transaction = transaction;
     }
 
     /**
@@ -55,25 +55,25 @@ public class Validator {
      */
     public boolean validate() {
         //Validate Things
-        graknGraph.cache().getModifiedThings().forEach(this::validateThing);
+        transaction.cache().getModifiedThings().forEach(this::validateThing);
 
         //Validate Relations
-        graknGraph.cache().getNewRelations().forEach(this::validateRelation);
+        transaction.cache().getNewRelations().forEach(this::validateRelation);
 
         //Validate RoleTypes
-        graknGraph.cache().getModifiedRoles().forEach(this::validateRole);
+        transaction.cache().getModifiedRoles().forEach(this::validateRole);
         //Validate Role Players
-        graknGraph.cache().getModifiedCastings().forEach(this::validateCasting);
+        transaction.cache().getModifiedCastings().forEach(this::validateCasting);
 
         //Validate Relation Types
-        graknGraph.cache().getModifiedRelationTypes().forEach(this::validateRelationType);
+        transaction.cache().getModifiedRelationTypes().forEach(this::validateRelationType);
 
         //Validate Rules
-        graknGraph.cache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
+        transaction.cache().getModifiedRules().forEach(rule -> validateRule(transaction, rule));
 
         //Validate rule type graph
-        if (!graknGraph.cache().getModifiedRules().isEmpty()) {
-            errorsFound.addAll(ValidateGlobalRules.validateRuleStratifiability(graknGraph));
+        if (!transaction.cache().getModifiedRules().isEmpty()) {
+            errorsFound.addAll(ValidateGlobalRules.validateRuleStratifiability(transaction));
         }
 
         return errorsFound.size() == 0;

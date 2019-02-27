@@ -19,16 +19,14 @@ java_test(
         "//dependencies/maven/artifacts/org/apache/commons:commons-math3",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
+    classpath_resources = ["//test-integration/resources:logback-test"],
 )
 
 java_test(
     name = "geo-inference-it",
     size = "medium",
     srcs = ["GeoInferenceIT.java"],
-    classpath_resources = [
-        "//test-integration/resources:logback-test",
-        "//test-integration/resources:cassandra-embedded",
-    ],
+    classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.reasoner.GeoInferenceIT",
     deps = [
         "//concept:concept",

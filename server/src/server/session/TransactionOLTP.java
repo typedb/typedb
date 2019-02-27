@@ -417,10 +417,6 @@ public class TransactionOLTP implements Transaction {
         return concepts;
     }
 
-    public void checkSchemaMutationAllowed() {
-        checkMutationAllowed();
-    }
-
     public void checkMutationAllowed() {
         if (Type.READ.equals(type())) throw TransactionException.transactionReadOnly(this);
     }
@@ -487,8 +483,6 @@ public class TransactionOLTP implements Transaction {
      * @return a new or existing SchemaConcept
      */
     private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
-        checkSchemaMutationAllowed();
-
         //Get the type if it already exists otherwise build a new one
         SchemaConceptImpl schemaConcept = getSchemaConcept(convertToId(label));
         if (schemaConcept == null) {
@@ -813,6 +807,7 @@ public class TransactionOLTP implements Transaction {
             return;
         }
         try {
+            checkMutationAllowed();
             validateGraph();
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialization & atomic updates, keeping Janus and our KeyspaceCache in sync
@@ -858,6 +853,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     private Optional<CommitLog> commitWithLogs() throws InvalidKBException {
+        checkMutationAllowed();
         validateGraph();
 
         Map<ConceptId, Long> newInstances = transactionCache.getShardingCount();
