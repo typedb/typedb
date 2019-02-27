@@ -18,9 +18,6 @@
 
 package grakn.core.server.session;
 
-import grakn.core.api.Keyspace;
-import grakn.core.api.Session;
-import grakn.core.api.Transaction;
 import grakn.core.common.config.Config;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
@@ -45,7 +42,7 @@ public class SessionFactory {
     private Config config;
     private final LockManager lockManager;
 
-    private final Map<Keyspace, KeyspaceCacheContainer> keyspaceCacheMap;
+    private final Map<KeyspaceImpl, KeyspaceCacheContainer> keyspaceCacheMap;
 
     public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, KeyspaceManager keyspaceManager, Config config) {
         this.janusGraphFactory = janusGraphFactory;
@@ -56,11 +53,11 @@ public class SessionFactory {
     }
 
     /**
-     * Retrieves the {@link Session} needed to open the {@link Transaction}.
-     * This will open a new one {@link Session} if it hasn't been opened before
+     * Retrieves the Session needed to open the Transaction.
+     * This will open a new one Session if it hasn't been opened before
      *
-     * @param keyspace The {@link Keyspace} of the {@link Session} to retrieve
-     * @return a new {@link Session} connecting to the provided {@link Keyspace}
+     * @param keyspace The keyspace of the Session to retrieve
+     * @return a new Session connecting to the provided keyspace
      */
     public SessionImpl session(KeyspaceImpl keyspace) {
         JanusGraph graph;
@@ -138,7 +135,7 @@ public class SessionFactory {
         }
     }
 
-    private static String getLockingKey(Keyspace keyspace) {
+    private static String getLockingKey(KeyspaceImpl keyspace) {
         return "/keyspace-lock/" + keyspace.name();
     }
 
