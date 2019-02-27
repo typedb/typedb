@@ -23,8 +23,6 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -73,7 +71,7 @@ public class AtomicQueryEquivalenceIT {
 
     @Before
     public void setUp(){
-        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
+        tx = genericSchemaSession.transaction().write();
     }
 
     @After
@@ -105,7 +103,7 @@ public class AtomicQueryEquivalenceIT {
     public void testEquivalence_DifferentHasVariants(){
         String query = "{ $x has resource; };";
         String query2 = "{ $y has resource; };";
-        String query3 = "{ $x has " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + "; };";
+        String query3 = "{ $x has " + Graql.Token.Type.ATTRIBUTE + "; };";
 
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3);
 

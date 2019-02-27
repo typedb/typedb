@@ -1,7 +1,8 @@
 package grakn.core.graql.reasoner.cache;
 /*
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
+import grakn.core.api.Transaction;
 import grakn.core.concept.instance.Entity;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Query;
@@ -46,11 +47,11 @@ public class QueryCacheIT {
 
     private static SessionImpl ruleApplicabilitySession;
 
-    private static void loadFromFile(String fileName, Session session) {
+    private static void loadFromFile(String fileName, SessionImpl session) {
         try {
             InputStream inputStream = QueryCacheIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
+            TransactionOLTP tx = session.transaction().write();
             Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e) {
@@ -81,7 +82,7 @@ public class QueryCacheIT {
 
     @Before
     public void onStartup(){
-        tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
+        tx = ruleApplicabilitySession.transaction().write();
         String recordPatternString = "{(someRole: $x, subRole: $y) isa reifiable-relation;}";
         String retrievePatternString = "{(someRole: $p1, subRole: $p2) isa reifiable-relation;}";
         Conjunction<VarPatternAdmin> recordPattern = conjunction(recordPatternString, tx);
@@ -195,7 +196,7 @@ public class QueryCacheIT {
         assertEquals(cache.getAnswer(retrieveQuery, answer), retrieveAnswer);
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, Transaction tx) {
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, TransactionOLTP tx) {
         Set<VarPatternAdmin> vars = Graql.parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

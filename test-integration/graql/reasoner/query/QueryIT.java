@@ -27,7 +27,6 @@ import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -68,7 +67,7 @@ public class QueryIT {
 
     @Test
     public void testQueryReiterationCondition_CyclicalRuleGraph(){
-        try(TransactionOLTP tx = geoSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = geoSession.transaction().write()) {
             String patternString = "{ ($x, $y) isa is-located-in; };";
             ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
             assertTrue(query.requiresReiteration());
@@ -78,7 +77,7 @@ public class QueryIT {
     @Test
     public void testQueryReiterationCondition_CyclicalRuleGraphWithTypeHierarchiesInBodies(){
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
-            try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
 
                 Role someRole = tx.putRole("someRole");
                 tx.putRelationType("relation0")
@@ -101,7 +100,7 @@ public class QueryIT {
 
                 tx.commit();
             }
-            try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String patternString = "{ ($x, $y) isa inferred; };";
                 ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
                 assertTrue(RuleUtils.subGraphIsCyclical(
@@ -115,7 +114,7 @@ public class QueryIT {
     @Test
     public void testQueryReiterationCondition_CyclicalRuleGraphWithTypeHierarchiesInHead(){
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
-            try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
 
                 tx.putEntityType("genericEntity");
                 EntityType baseEntity = tx.putEntityType("baseEntity");
@@ -130,7 +129,7 @@ public class QueryIT {
 
                 tx.commit();
             }
-            try (TransactionOLTP tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String patternString = "{ $x isa baseEntity;};";
                 ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
                 assertTrue(RuleUtils.subGraphIsCyclical(
@@ -143,7 +142,7 @@ public class QueryIT {
 
     @Test //simple equality tests between original and a copy of a query
     public void testAlphaEquivalence_QueryCopyIsAlphaEquivalent(){
-        try(TransactionOLTP tx = geoSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = geoSession.transaction().write()) {
             String patternString = "{ $x isa city;$y isa country;($x, $y) isa is-located-in; };";
             ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
             queryEquivalence(query, query.copy(), true);
@@ -152,7 +151,7 @@ public class QueryIT {
 
     @Test //check two queries are alpha-equivalent - equal up to the choice of free variables
     public void testAlphaEquivalence() {
-        try(TransactionOLTP tx = geoSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = geoSession.transaction().write()) {
             String patternString = "{ " +
                     "$x isa city, has name 'Warsaw';" +
                     "$y isa region;" +
@@ -177,7 +176,7 @@ public class QueryIT {
     @Ignore
     @Test
     public void testAlphaEquivalence_chainTreeAndLoopStructure() {
-        try(TransactionOLTP tx = geoSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = geoSession.transaction().write()) {
             String chainString = "{" +
                     "($x, $y) isa is-located-in;" +
                     "($y, $z) isa is-located-in;" +
@@ -207,7 +206,7 @@ public class QueryIT {
 
     @Test //tests various configurations of alpha-equivalence with extra type atoms present
     public void testAlphaEquivalence_nonMatchingTypes() {
-        try(TransactionOLTP tx = geoSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = geoSession.transaction().write()) {
             String polandId = getConcept(tx, "name", "Poland").id().getValue();
             String patternString = "{ $y id '" + polandId + "'; $y isa country; (geo-entity: $y1, entity-location: $y) isa is-located-in; };";
             String patternString2 = "{ $x1 id '" + polandId + "'; $y isa country; (geo-entity: $x1, entity-location: $x2) isa is-located-in; };";
@@ -234,7 +233,7 @@ public class QueryIT {
 
     @Test //tests alpha-equivalence of queries with indirect types
     public void testAlphaEquivalence_indirectTypes(){
-        try(TransactionOLTP tx = geoSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = geoSession.transaction().write()) {
             String patternString = "{ (entity-location: $x2, geo-entity: $x1) isa is-located-in;" +
                     "$x1 isa $t1; $t1 sub geoObject; };";
             String patternString2 = "{ (geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
@@ -248,7 +247,7 @@ public class QueryIT {
 
     @Test
     public void testAlphaEquivalence_RelationsWithSubstitution(){
-        try(TransactionOLTP tx = geoSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = geoSession.transaction().write()) {
             String patternString = "{ (role: $x, role: $y);$x id 'V666'; };";
             String patternString2 = "{ (role: $x, role: $y);$y id 'V666'; };";
             String patternString3 = "{ (role: $x, role: $y);$x id 'V666';$y id 'V667'; };";
@@ -316,7 +315,7 @@ public class QueryIT {
 
     @Test
     public void testWhenReifyingRelation_ExtraAtomIsCreatedWithUserDefinedName(){
-        try(TransactionOLTP tx = geoSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = geoSession.transaction().write()) {
             String patternString = "{ (geo-entity: $x, entity-location: $y) isa is-located-in; };";
             String patternString2 = "{ ($x, $y) has name 'Poland'; };";
 

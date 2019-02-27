@@ -23,7 +23,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.LabelId;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
@@ -112,7 +112,7 @@ public class Utility {
     /**
      * Check whether it is possible that there is a resource edge between the two given concepts.
      */
-    private static boolean mayHaveResourceEdge(Transaction graknGraph, ConceptId conceptId1, ConceptId conceptId2) {
+    private static boolean mayHaveResourceEdge(TransactionOLTP graknGraph, ConceptId conceptId1, ConceptId conceptId2) {
         Concept concept1 = graknGraph.getConcept(conceptId1);
         Concept concept2 = graknGraph.getConcept(conceptId2);
         return concept1 != null && concept2 != null && (concept1.isAttribute() || concept2.isAttribute());
@@ -121,7 +121,7 @@ public class Utility {
     /**
      * Get the resource edge id if there is one. Return null if not.
      */
-    public static ConceptId getResourceEdgeId(Transaction graph, ConceptId conceptId1, ConceptId conceptId2) {
+    public static ConceptId getResourceEdgeId(TransactionOLTP graph, ConceptId conceptId1, ConceptId conceptId2) {
         if (mayHaveResourceEdge(graph, conceptId1, conceptId2)) {
             Optional<Concept> firstConcept = graph.stream(Graql.match(
                     var("x").id(conceptId1.getValue()),

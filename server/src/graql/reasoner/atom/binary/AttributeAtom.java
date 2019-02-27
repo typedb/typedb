@@ -42,7 +42,7 @@ import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.concept.AttributeTypeImpl;
@@ -120,7 +120,7 @@ public abstract class AttributeAtom extends Binary{
     public RelationAtom toRelationAtom(){
         SchemaConcept type = getSchemaConcept();
         if (type == null) throw GraqlQueryException.illegalAtomConversion(this, RelationAtom.class);
-        Transaction tx = getParentQuery().tx();
+        TransactionOLTP tx = getParentQuery().tx();
         Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
         return RelationAtom.create(
                 Graql.var()

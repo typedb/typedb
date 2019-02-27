@@ -23,6 +23,7 @@ import brave.Span;
 import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
+import grakn.core.api.Transaction.Type;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -35,8 +36,8 @@ import grakn.core.concept.type.Rule;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
-import grakn.core.server.Transaction.Type;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -109,8 +110,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
 
     /**
-     * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link io.grpc.Server}.
-     * Receives a stream of {@link Transaction.Req}s and returning a stream of {@link Transaction.Res}s.
+     * A StreamObserver that implements the transaction-handling behaviour for io.grpc.Server.
+     * Receives a stream of Transaction.Reqs and returning a stream of Transaction.Ress.
      */
     static class TransactionListener implements StreamObserver<Transaction.Req> {
         final Logger LOG = LoggerFactory.getLogger(TransactionListener.class);
@@ -279,7 +280,16 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             Span txSpan = null;
             if (span != null) { txSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting transaction", span.context()).start(); }
-            tx = sess.transaction(Type.of(request.getType().getNumber()));
+
+            Type type = Type.of(request.getType().getNumber());
+            if (type != null && type.equals(Type.WRITE)) {
+                tx = sess.transaction().write();
+            } else if (type != null && type.equals(Type.READ)) {
+                tx = sess.transaction().read();
+            } else {
+                throw TransactionException.create("Invalid Transaction Type");
+            }
+
             if (txSpan != null) { txSpan.finish(); }
 
             Transaction.Res response = ResponseBuilder.Transaction.open();
@@ -391,7 +401,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     }
 
     /**
-     * Contains a mutable map of iterators of {@link Transaction.Res}s for gRPC. These iterators are used for returning
+     * Contains a mutable map of iterators of Transaction.Ress for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
      */
     public static class Iterators {

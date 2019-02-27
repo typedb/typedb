@@ -23,7 +23,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Variable;
@@ -48,7 +48,7 @@ public interface ReasonerQuery{
      * @return {@link Transaction} associated with this reasoner query
      */
     @CheckReturnValue
-    Transaction tx();
+    TransactionOLTP tx();
 
     /**
      * @return true if this query contains strictly non-negated atomics

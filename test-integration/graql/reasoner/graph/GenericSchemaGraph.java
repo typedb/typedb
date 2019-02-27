@@ -30,8 +30,8 @@ import grakn.core.graql.reasoner.pattern.AttributePattern;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.pattern.RelationPattern;
 import grakn.core.graql.reasoner.pattern.TypePattern;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -52,10 +52,10 @@ public class GenericSchemaGraph {
     private final QueryPattern differentTypeResourceVariants;
     private final QueryPattern differentTypeRelationVariants;
 
-    public GenericSchemaGraph(Session session){
+    public GenericSchemaGraph(SessionImpl session){
         loadFromFileAndCommit(gqlPath, gqlFile, session);
 
-        Transaction tx = session.transaction(Transaction.Type.READ);
+        TransactionOLTP tx = session.transaction().read();
         EntityType subRoleEntityType = tx.getEntityType("subRoleEntity");
 
         EntityType entityType = tx.getEntityType("baseRoleEntity");

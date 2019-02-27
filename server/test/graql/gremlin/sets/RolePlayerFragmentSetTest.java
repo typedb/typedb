@@ -24,7 +24,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,11 +45,11 @@ public class RolePlayerFragmentSetTest {
     private final Variable b = new Variable("b");
     private final Variable c = new Variable("c");
     private final Variable d = new Variable("d");
-    private Transaction tx;
+    private TransactionOLTP tx;
 
     @Before
     public void setUp(){
-        tx = mock(Transaction.class);
+        tx = mock(TransactionOLTP.class);
     }
 
     @Test

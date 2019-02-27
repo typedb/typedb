@@ -60,20 +60,25 @@ java_test(
 )
 
 java_test(
-     name = "entity-type-it",
-     srcs = ["EntityTypeIT.java"],
-     test_class = "grakn.core.server.kb.concept.EntityTypeIT",
-     deps = [
-         "//common:common",
-         "//concept:concept",
-         "//server:server",
-         "//test-integration/rule:grakn-test-server",
+    name = "entity-type-it",
+    srcs = ["EntityTypeIT.java"],
+    test_class = "grakn.core.server.kb.concept.EntityTypeIT",
+    deps = [
+        # Internal dependencies
+        "//common:common",
+        "//concept:concept",
+        "//server:server",
+        "//test-integration/rule:grakn-test-server",
 
-         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
-     ],
-     classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "large"
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java:graql",
+
+        # External dependencies from Maven
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
+    ],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    size = "large"
 )
 
 java_test(

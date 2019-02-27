@@ -13,18 +13,3 @@ java_library(
 )
 
 
-
-java_library(
-    name = "brave-instrumentation-grpc",
-    exports = [
-        "//external:jar/io/zipkin/brave/brave-instrumentation-grpc"
-    ],
-    runtime_deps = [
-        ":brave"
-    ],
-    visibility = [
-        "//visibility:public"
-    ]
-)
-
-

@@ -18,15 +18,15 @@
 
 package grakn.core.server.session;
 
+import grakn.core.api.Keyspace;
+import grakn.core.api.Session;
+import grakn.core.api.Transaction;
 import grakn.core.common.config.Config;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.util.LockManager;
 import org.janusgraph.core.JanusGraph;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,7 +62,7 @@ public class SessionFactory {
      * @param keyspace The {@link Keyspace} of the {@link Session} to retrieve
      * @return a new {@link Session} connecting to the provided {@link Keyspace}
      */
-    public SessionImpl session(Keyspace keyspace) {
+    public SessionImpl session(KeyspaceImpl keyspace) {
         JanusGraph graph;
         KeyspaceCache cache;
         KeyspaceCacheContainer cacheContainer;
@@ -78,7 +78,7 @@ public class SessionFactory {
                 cacheContainer = keyspaceCacheMap.get(keyspace);
             } else { // If keyspace reference not cached, put keyspace in keyspace manager, open new graph and instantiate new keyspace cache
                 keyspaceManager.putKeyspace(keyspace);
-                graph = janusGraphFactory.openGraph(keyspace.getName());
+                graph = janusGraphFactory.openGraph(keyspace.name());
                 cache = new KeyspaceCache(config);
                 cacheContainer = new KeyspaceCacheContainer(cache, graph);
                 keyspaceCacheMap.put(keyspace, cacheContainer);
@@ -96,9 +96,10 @@ public class SessionFactory {
      * Invoked when user deletes a keyspace.
      * Remove keyspace reference from internal cache, closes graph associated to it and
      * invalidates all the open sessions.
+     *
      * @param keyspace keyspace that is being deleted
      */
-    public void deleteKeyspace(Keyspace keyspace) {
+    public void deleteKeyspace(KeyspaceImpl keyspace) {
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
         lock.lock();
         try {
@@ -138,7 +139,7 @@ public class SessionFactory {
     }
 
     private static String getLockingKey(Keyspace keyspace) {
-        return "/keyspace-lock/" + keyspace.getName();
+        return "/keyspace-lock/" + keyspace.name();
     }
 
 
@@ -153,7 +154,7 @@ public class SessionFactory {
         // Keep track of sessions so that if a user deletes a keyspace we make sure to invalidate all associated sessions
         private List<SessionImpl> sessions;
 
-        public KeyspaceCacheContainer(KeyspaceCache keyspaceCache, JanusGraph graph) {
+        KeyspaceCacheContainer(KeyspaceCache keyspaceCache, JanusGraph graph) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
             sessions = new ArrayList<>();

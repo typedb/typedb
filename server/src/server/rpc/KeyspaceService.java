@@ -20,7 +20,7 @@ package grakn.core.server.rpc;
 
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
@@ -53,7 +53,7 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     @Override
     public void retrieve(KeyspaceProto.Keyspace.Retrieve.Req request, StreamObserver<KeyspaceProto.Keyspace.Retrieve.Res> response) {
         try {
-            Iterable<String> list = keyspaceStore.keyspaces().stream().map(Keyspace::getName)
+            Iterable<String> list = keyspaceStore.keyspaces().stream().map(KeyspaceImpl::name)
                     .collect(Collectors.toSet());
             response.onNext(KeyspaceProto.Keyspace.Retrieve.Res.newBuilder().addAllNames(list).build());
             response.onCompleted();
@@ -65,13 +65,13 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     @Override
     public void delete(KeyspaceProto.Keyspace.Delete.Req request, StreamObserver<KeyspaceProto.Keyspace.Delete.Res> response) {
         try {
-            Keyspace keyspace = Keyspace.of(request.getName());
+            KeyspaceImpl keyspace = KeyspaceImpl.of(request.getName());
             // removing references to open keyspaces JanusGraph instances
             sessionFactory.deleteKeyspace(keyspace);
             // remove the keyspace from the system keyspace
             keyspaceStore.deleteKeyspace(keyspace);
             // actually remove the keyspace
-            janusGraphFactory.drop(keyspace.getName());
+            janusGraphFactory.drop(keyspace.name());
 
             response.onNext(KeyspaceProto.Keyspace.Delete.Res.getDefaultInstance());
             response.onCompleted();

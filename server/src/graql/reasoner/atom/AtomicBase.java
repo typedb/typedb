@@ -109,7 +109,7 @@ public abstract class AtomicBase implements Atomic {
     public Atomic inferTypes(ConceptMap sub){ return this; }
 
     /**
-     * @return Transaction this atomic is defined in
+     * @return TransactionOLTP this atomic is defined in
      */
     protected TransactionOLTP tx(){
         // TODO: This cast is unsafe - ReasonerQuery should return an TransactionImpl

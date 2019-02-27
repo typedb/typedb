@@ -37,8 +37,6 @@ import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -74,11 +72,11 @@ public class AtomicUnificationIT {
 
     private static SessionImpl genericSchemaSession;
 
-    private static void loadFromFile(String fileName, Session session){
+    private static void loadFromFile(String fileName, SessionImpl session){
         try {
             InputStream inputStream = AtomicUnificationIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
+            TransactionOLTP tx = session.transaction().write();
             Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e){
@@ -102,7 +100,7 @@ public class AtomicUnificationIT {
 
     @Before
     public void setUp(){
-        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
+        tx = genericSchemaSession.transaction().write();
     }
 
     @After

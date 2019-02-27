@@ -21,7 +21,6 @@ package grakn.core.deduplicator;
 
 import grakn.core.client.GraknClient;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.server.Transaction;
 import graql.lang.Graql;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -114,7 +113,7 @@ public class AttributeDeduplicatorE2E {
     }
 
     private void defineParentChildSchema(GraknClient.Session session) {
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (GraknClient.Transaction tx = session.transaction().write()) {
             List<ConceptMap> answer = tx.execute(Graql.define(
                     type("name").sub("attribute").datatype(Graql.Token.DataType.STRING),
                     type("parent").sub("role"),
@@ -141,7 +140,7 @@ public class AttributeDeduplicatorE2E {
         List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
         for (String name: duplicatedNames) {
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                try (GraknClient.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                try (GraknClient.Transaction tx = session.transaction().write()) {
                     List<ConceptMap> answer = tx.execute(Graql.insert(var().isa("name").val(name)));
                     tx.commit();
                 }
@@ -188,7 +187,7 @@ public class AttributeDeduplicatorE2E {
     }
 
     private int countTotalNames(GraknClient.Session session) {
-        try (GraknClient.Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (GraknClient.Transaction tx = session.transaction().read()) {
             return tx.execute(Graql.match(var("x").isa("name")).get().count()).get(0).number().intValue();
         }
     }

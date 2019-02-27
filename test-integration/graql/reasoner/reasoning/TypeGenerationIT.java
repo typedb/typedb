@@ -20,8 +20,8 @@ package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -43,9 +43,9 @@ public class TypeGenerationIT {
 
     @Test //Expected result: The query should return a unique match.
     public void generatingMultipleIsaEdges() {
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivation.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String derivedTypeQuery = "match $x isa derivedEntity; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(derivedTypeQuery).asGet());
                 assertEquals(1, answers.size());
@@ -60,9 +60,9 @@ public class TypeGenerationIT {
 
     @Test //Expected result: Differentiated behaviour based on directedness of the isa.
     public void generatingIsaEdgesDirectly() {
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationWithDirect.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match $x isa derivedEntity; get;";
                 String queryString2 = "match $x isa! derivedEntity; get;";
                 String queryString3 = "match $x isa directDerivedEntity; get;";
@@ -78,9 +78,9 @@ public class TypeGenerationIT {
 
     @Test //Expected result: Differentiated behaviour based on directedness of the isa.
     public void generatingIsaEdgesForRelationsDirectly() {
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationRelationsWithDirect.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match ($x, $y) isa derivedRelation; get;";
                 String queryString2 = "match ($x, $y) isa! derivedRelation; get;";
                 String queryString3 = "match ($x, $y) isa directDerivedRelation; get;";
@@ -96,9 +96,9 @@ public class TypeGenerationIT {
 
     @Test //Expected result: The queries should return the same two matches.
     public void generatingIsaEdgeFromRelations() {
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationFromRelations.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa derivedEntity; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -112,9 +112,9 @@ public class TypeGenerationIT {
 
     @Test //Expected result: The queries should return the same two matches.
     public void generatingIsaEdgeFromAttribute() {
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationFromAttribute.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa derivedEntity; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -130,9 +130,9 @@ public class TypeGenerationIT {
     @Ignore
     @Test //Expected result: The queries should return different matches, unique per query.
     public void generatingFreshEntity() {
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "freshEntityDerivation.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa derivedEntity; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -149,9 +149,9 @@ public class TypeGenerationIT {
     @Test
     //Expected result: The query should return a unique match (or possibly nothing if we enforce range-restriction).
     public void generatingFreshEntity2() {
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "freshEntityDerivationFromRelations.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match $x isa derivedEntity; get;";
                 String explicitQuery = "match $x isa baseEntity; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -167,9 +167,9 @@ public class TypeGenerationIT {
     @Ignore
     @Test //Expected result: The query should return three different instances of relation1 with unique ids.
     public void generatingFreshRelation() {
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "freshRelationDerivation.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match $x isa baseRelation; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
                 assertEquals(3, answers.size());

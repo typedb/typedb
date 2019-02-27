@@ -29,8 +29,6 @@ import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -66,11 +64,11 @@ public class AtomicQueryIT {
     private static SessionImpl materialisationTestSession;
     private static SessionImpl geoGraphSession;
 
-    private static void loadFromFile(String fileName, Session session) {
+    private static void loadFromFile(String fileName, SessionImpl session) {
         try {
             InputStream inputStream = AtomicQueryIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
+            TransactionOLTP tx = session.transaction().write();
             Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e) {
@@ -96,7 +94,7 @@ public class AtomicQueryIT {
 
     @Test(expected = IllegalArgumentException.class)
     public void testWhenConstructingNonAtomicQuery_ExceptionIsThrown() {
-        try (TransactionOLTP tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
             String patternString = "{ $x isa university;$y isa country;($x, $y) isa is-located-in;($y, $z) isa is-located-in; };";
             ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(conjunction(patternString), tx);
         }
@@ -104,7 +102,7 @@ public class AtomicQueryIT {
 
     @Test(expected = GraqlQueryException.class)
     public void testWhenCreatingQueryWithNonexistentType_ExceptionIsThrown() {
-        try (TransactionOLTP tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
             String patternString = "{ $x isa someType; };";
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString), tx);
         }
@@ -112,7 +110,7 @@ public class AtomicQueryIT {
 
     @Test
     public void testWhenMaterialising_MaterialisedInformationIsPresentInGraph() {
-        TransactionOLTP tx = geoGraphSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = geoGraphSession.transaction().write();
                 String explicitGetQueryStr = "match (geo-entity: $x, entity-location: $y) isa is-located-in;$x has name 'Warsaw';$y has name 'Poland'; get;";
         GraqlGet explicitGetQuery = Graql.parse(explicitGetQueryStr).asGet();
         assertFalse(tx.stream(explicitGetQuery,false).iterator().hasNext());
@@ -136,7 +134,7 @@ public class AtomicQueryIT {
 
     @Test
     public void testWhenMaterialisingEntity_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
-        TransactionOLTP tx = materialisationTestSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = materialisationTestSession.transaction().write();
         ReasonerAtomicQuery entityQuery = ReasonerQueries.atomic(conjunction("$x isa newEntity;"), tx);
         assertEquals(entityQuery.materialise(new ConceptMap()).findFirst().orElse(null).get("x").asEntity().isInferred(), true);
         tx.close();
@@ -144,7 +142,7 @@ public class AtomicQueryIT {
 
     @Test
     public void testWhenMaterialisingResources_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
-        TransactionOLTP tx = materialisationTestSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = materialisationTestSession.transaction().write();
                 Concept firstEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa entity1; get;").asGet(), false)).get("x");
         Concept secondEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa entity2; get;").asGet(), false)).get("x");
         Concept resource = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa resource; get;").asGet(), false)).get("x");
@@ -179,7 +177,7 @@ public class AtomicQueryIT {
 
     @Test
     public void testWhenMaterialisingRelations_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
-        TransactionOLTP tx = materialisationTestSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = materialisationTestSession.transaction().write();
                 Concept firstEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa entity1; get;").asGet(), false)).get("x");
         Concept secondEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa entity2; get;").asGet(), false)).get("x");
 
@@ -199,7 +197,7 @@ public class AtomicQueryIT {
 
     @Test
     public void testWhenCopying_TheCopyIsAlphaEquivalent() {
-        TransactionOLTP tx = geoGraphSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = geoGraphSession.transaction().write();
         String patternString = "{ ($x, $y) isa is-located-in; };";
         Conjunction<Statement> pattern = conjunction(patternString);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, tx);
@@ -211,7 +209,7 @@ public class AtomicQueryIT {
 
     @Test
     public void testWhenRoleTypesAreAmbiguous_answersArePermutedCorrectly() {
-        TransactionOLTP tx = geoGraphSession.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = geoGraphSession.transaction().write();
         String childString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
         String parentString = "match ($x, $y) isa is-located-in; get;";
 

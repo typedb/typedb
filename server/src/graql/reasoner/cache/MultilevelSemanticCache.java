@@ -68,7 +68,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
     }
 
     @Override
-    protected void propagateAnswers(ReasonerAtomicQuery target,
+    protected boolean propagateAnswers(ReasonerAtomicQuery target,
                                     CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,
                                     CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> childEntry,
                                     boolean inferred) {
@@ -119,6 +119,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                 .forEach(newAnswers::add);
 
         LOG.trace(newAnswers.size() + " new out of " + parentAnswersToPropagate.size() + " parent answers propagated: " + newAnswers);
+        return !newAnswers.isEmpty();
     }
 
     @Override

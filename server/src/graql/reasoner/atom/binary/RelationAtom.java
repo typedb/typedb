@@ -63,7 +63,7 @@ import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.reasoner.utils.conversion.TypeConverter;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.kb.concept.RelationTypeImpl;
@@ -531,7 +531,7 @@ public abstract class RelationAtom extends IsaAtomBase {
 
     private Stream<Role> getExplicitRoles() {
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        Transaction graph = parent.tx();
+        TransactionOLTP graph = parent.tx();
 
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
@@ -733,7 +733,7 @@ public abstract class RelationAtom extends IsaAtomBase {
         boolean roleRecomputationViable = allRolesMeta && (!sub.isEmpty() || !Sets.intersection(varTypeMap.keySet(), getRolePlayers()).isEmpty());
         if (explicitRoles.size() == getRelationPlayers().size() && !roleRecomputationViable) return this;
 
-        Transaction graph = getParentQuery().tx();
+        TransactionOLTP graph = getParentQuery().tx();
         Role metaRole = graph.getMetaRole();
         List<RelationProperty.RolePlayer> allocatedRelationPlayers = new ArrayList<>();
         RelationType relType = getSchemaConcept() != null? getSchemaConcept().asRelationType() : null;
@@ -815,7 +815,7 @@ public abstract class RelationAtom extends IsaAtomBase {
     public Multimap<Role, Variable> getRoleVarMap() {
         ImmutableMultimap.Builder<Role, Variable> builder = ImmutableMultimap.builder();
 
-        Transaction graph = getParentQuery().tx();
+        TransactionOLTP graph = getParentQuery().tx();
         getRelationPlayers().forEach(c -> {
             Variable varName = c.getPlayer().var();
             Statement rolePattern = c.getRole().orElse(null);
@@ -1060,7 +1060,8 @@ public abstract class RelationAtom extends IsaAtomBase {
                         new ConceptMap()
         );
 
-        return Stream.of(ConceptUtils.mergeAnswers(substitution, relationSub));
+        ConceptMap answer = ConceptUtils.mergeAnswers(substitution, relationSub);
+        return Stream.of(answer);
     }
 
     /**

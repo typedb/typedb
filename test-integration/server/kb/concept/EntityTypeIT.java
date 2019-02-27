@@ -27,13 +27,13 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Before;
@@ -71,7 +71,7 @@ public class EntityTypeIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         EntityType top = tx.putEntityType("top");
         EntityType middle1 = tx.putEntityType("mid1");
         EntityType middle2 = tx.putEntityType("mid2");
@@ -509,7 +509,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenAddingTypeUsingReservedWord_ThrowReadableError(){
-        String reservedWord = Schema.MetaSchema.THING.getLabel().getValue();
+        String reservedWord = Graql.Token.Type.THING.toString();
 
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(RESERVED_WORD.getMessage(reservedWord));

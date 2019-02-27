@@ -19,16 +19,17 @@
 package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
+import grakn.core.api.Keyspace;
+import grakn.core.api.Session;
+import grakn.core.api.Transaction;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
 import org.janusgraph.core.JanusGraph;
 
@@ -53,7 +54,7 @@ public class SessionImpl implements Session {
     // Session can have at most 1 transaction per thread, so we keep a local reference here
     private final ThreadLocal<TransactionOLTP> localOLTPTransactionContainer = new ThreadLocal<>();
 
-    private final Keyspace keyspace;
+    private final KeyspaceImpl keyspace;
     private final Config config;
     private final JanusGraph graph;
     private final KeyspaceCache keyspaceCache;
@@ -68,7 +69,7 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(Keyspace keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph) {
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph) {
         this.keyspace = keyspace;
         this.config = config;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
@@ -93,7 +94,11 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public TransactionOLTP transaction(Transaction.Type type) {
+    public TransactionOLTP.Builder transaction() {
+        return new TransactionOLTP.Builder(this);
+    }
+
+    TransactionOLTP transaction(Transaction.Type type) {
 
         // If graph is closed it means the session was already closed
         if (graph.isClosed()) {
@@ -224,7 +229,7 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public Keyspace keyspace() {
+    public KeyspaceImpl keyspace() {
         return keyspace;
     }
 

@@ -87,6 +87,16 @@ public class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
     }
 
     @Override
+    public Stream<Type> whenPositiveTypes() {
+        throw new UnsupportedOperationException(); // TODO: remove from API
+    }
+
+    @Override
+    public Stream<Type> whenNegativeTypes() {
+        throw new UnsupportedOperationException(); // TODO: remove from API
+    }
+
+    @Override
     public final Stream<Type> thenTypes() {
         throw new UnsupportedOperationException(); // TODO: remove from API
     }

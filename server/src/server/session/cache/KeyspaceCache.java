@@ -62,7 +62,7 @@ public class KeyspaceCache {
     }
 
     /**
-     * Copy the contents of the Keyspace cache into a Transaction Cache
+     * Copy the contents of the Keyspace cache into a TransactionOLTP Cache
      *
      * @param transactionCache
      */
@@ -107,7 +107,7 @@ public class KeyspaceCache {
     }
 
     /**
-     * Reads the {@link SchemaConcept} and their {@link Label} currently in the transaction cache
+     * Reads the SchemaConcept and their Label currently in the transaction cache
      * into the keyspace cache. This happens when a commit occurs and allows us to track schema
      * mutations without having to read the graph.
      *
@@ -131,7 +131,7 @@ public class KeyspaceCache {
             }
         }
 
-        //Flush All The Internal Transaction Caches
+        //Flush All The Internal TransactionOLTP Caches
         transactionCache.getSchemaConceptCache().values().forEach(schemaConcept
                 -> SchemaConceptImpl.from(schemaConcept).txCacheFlush());
     }

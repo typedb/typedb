@@ -18,42 +18,62 @@
 
 package grakn.core.server.keyspace;
 
-import com.google.auto.value.AutoValue;
-import grakn.core.common.exception.Validator;
+import grakn.core.api.Keyspace;
 import grakn.core.server.exception.TransactionException;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
+import static grakn.core.api.Keyspace.isValidName;
+
 /**
  * An identifier for an isolated scope of a data in the database.
  */
-@AutoValue
-public abstract class Keyspace implements Comparable<Keyspace>, Serializable {
+public class KeyspaceImpl implements Keyspace, Serializable {
+
     private static final long serialVersionUID = 2726154016735929123L;
 
-    public abstract String getName();
+    private final String name;
 
-    @Override
-    public int compareTo(Keyspace o) {
-        if (equals(o)) return 0;
-        return getName().compareTo(o.getName());
+    public KeyspaceImpl(String name) {
+        if (name == null) {
+            throw new NullPointerException("Null name");
+        }
+        this.name = name;
     }
 
-    /**
-     * @param name The string which potentially represents a unique {@link Keyspace}
-     * @return The matching {@link Keyspace}
-     */
     @CheckReturnValue
-    public static Keyspace of(String name) {
-        if (!Validator.isValidKeyspaceName(name)) {
+    public static KeyspaceImpl of(String name) {
+        if (!isValidName(name)) {
             throw TransactionException.invalidKeyspaceName(name);
         }
-        return new AutoValue_Keyspace(name);
+        return new KeyspaceImpl(name);
+    }
+
+    @CheckReturnValue
+    public String name() {
+        return name;
     }
 
     @Override
     public final String toString() {
-        return getName();
+        return name();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        KeyspaceImpl that = (KeyspaceImpl) o;
+        return this.name.equals(that.name());
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.name.hashCode();
+        return h;
     }
 }

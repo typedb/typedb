@@ -28,7 +28,6 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
@@ -61,7 +60,7 @@ public class SchemaMutationIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         Role husband = tx.putRole("husband");
         Role wife = tx.putRole("wife");
         Role driver = tx.putRole("driver");
@@ -82,7 +81,7 @@ public class SchemaMutationIT {
         Entity bmw = car.create();
         drives.create().assign(driver, alice).assign(driven, bmw);
         tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After
@@ -150,7 +149,7 @@ public class SchemaMutationIT {
         tx.commit();
 
         //Now make animal have the same resource type
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         EntityType retrievedAnimal = tx.getEntityType("animal");
         AttributeType nameType = tx.getAttributeType("name");
         retrievedAnimal.has(nameType);
@@ -165,7 +164,7 @@ public class SchemaMutationIT {
         tx.commit();
 
         //Now delete the relation
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         RelationType relationInNewTx = tx.getRelationType("my wonderful relation");
         relationInNewTx.delete();
 

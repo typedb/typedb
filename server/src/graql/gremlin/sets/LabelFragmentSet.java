@@ -26,7 +26,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
@@ -56,7 +56,7 @@ abstract class LabelFragmentSet extends EquivalentFragmentSet {
      * Returns null if there is not exactly one label any of the {@link Label}s mentioned are not in the knowledge base.
      */
     @Nullable
-    LabelFragmentSet tryExpandSubs(Variable typeVar, Transaction tx) {
+    LabelFragmentSet tryExpandSubs(Variable typeVar, TransactionOLTP tx) {
         if (labels().size() != 1) return null;
 
         Label oldLabel = Iterables.getOnlyElement(labels());

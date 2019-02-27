@@ -20,8 +20,8 @@ package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -44,9 +44,9 @@ public class TypeHierarchiesIT {
 
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRoleHierarchiesInvolved() {
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet8.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                                 String queryString = "match (role2:$x, role3:$y) isa relation2; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
                 assertThat(answers, empty());
@@ -56,9 +56,9 @@ public class TypeHierarchiesIT {
 
     @Test //Expected result: The query should return a unique match
     public void rulesInteractingWithTypeHierarchy() {
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet13.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                                 String queryString = "match (role1:$x, role2:$y) isa relation2; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
                 assertEquals(1, answers.size());
@@ -68,9 +68,9 @@ public class TypeHierarchiesIT {
 
     @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
     public void instanceTypeHierarchyRespected_queryHasSuperTypes(){
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet19.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                                 String baseTypeQuery = "match " +
                         "$x isa entity1;" +
                         "$y isa entity1;" +
@@ -107,9 +107,9 @@ public class TypeHierarchiesIT {
 
     @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
     public void instanceTypeHierarchyRespected_queryHasSuperTypes_recursiveRule() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet19-recursive.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                                 String baseTypeQuery = "match " +
                         "$x isa entity1;" +
                         "$y isa entity1;" +
@@ -148,9 +148,9 @@ public class TypeHierarchiesIT {
 
     @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
     public void reasoningOverRelationHierarchy(){
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet20.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                                 String queryString = "match (role1: $x, role2: $y) isa relation1; get;";
                 String queryString2 = "match (role1: $x, role2: $y) isa sub-relation1; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -164,9 +164,9 @@ public class TypeHierarchiesIT {
 
     @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
     public void reasoningOverEntityHierarchy(){
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet21.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                                 String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa subEntity; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());

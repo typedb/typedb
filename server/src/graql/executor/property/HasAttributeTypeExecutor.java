@@ -30,7 +30,6 @@ import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.binary.HasAtom;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
-import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
 import graql.lang.property.HasAttributeTypeProperty;
 import graql.lang.property.NeqProperty;
@@ -70,7 +69,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
                 () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType.var())
         );
 
-        Statement role = Graql.type(Schema.MetaSchema.ROLE.getLabel().getValue());
+        Statement role = Graql.type(Graql.Token.Type.ROLE);
 
         // TODO: To fix issue #4664 (querying schema with variable attribute type), it's not enough to just remove the
         //       exception handling above. We need to be able to restrict the direcitonality of the following ownerRole
@@ -79,7 +78,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
         //       change the data structure so that we have meta-super-roles for attribute-owners and attribute-values
         Statement ownerRole = var().sub(role);
         Statement valueRole = var().sub(role);
-        Statement relationType = var().sub(Graql.type(Schema.MetaSchema.RELATION.getLabel().getValue()));
+        Statement relationType = var().sub(Graql.type(Graql.Token.Type.RELATION));
 
         // If a key, limit only to the implicit key type
         if (property.isKey()) {

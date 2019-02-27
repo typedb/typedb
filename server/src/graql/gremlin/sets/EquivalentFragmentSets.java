@@ -28,7 +28,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
@@ -172,7 +172,7 @@ public class EquivalentFragmentSets {
      * This involves substituting various {@link EquivalentFragmentSet} with other {@link EquivalentFragmentSet}.
      */
     public static void optimiseFragmentSets(
-            Collection<EquivalentFragmentSet> fragmentSets, Transaction tx) {
+            Collection<EquivalentFragmentSet> fragmentSets, TransactionOLTP tx) {
 
         // Repeatedly apply optimisations until they don't alter the query
         boolean changed = true;

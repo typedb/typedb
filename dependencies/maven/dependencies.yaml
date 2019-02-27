@@ -191,22 +191,6 @@ dependencies:
     brave:
       version: "5.1.2"
       lang: java
-    brave-instrumentation-grpc:
-      version: "5.1.2"
-      lang: java
-
-  io.zipkin.reporter2:
-    zipkin-reporter:
-      version: "2.7.6"
-      lang: java
-    zipkin-sender-urlconnection:
-      version: "2.7.6"
-      lang: java
-
-  io.zipkin.zipkin2:
-    zipkin:
-      version: "2.9.4"
-      lang: java
 
   javax.servlet:
     javax.servlet-api:
