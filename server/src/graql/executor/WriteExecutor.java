@@ -98,6 +98,7 @@ public class WriteExecutor {
     }
 
     static WriteExecutor create(TransactionOLTP transaction, ImmutableSet<Writer> writers) {
+        transaction.checkMutationAllowed();
         /*
             We build several many-to-many relations, indicated by a `Multimap<X, Y>`. These are used to represent
             the dependencies between properties and variables.

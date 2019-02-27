@@ -111,8 +111,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * It can also fail when attempting to attach an Attribute to a meta type
      */
     private void preCheckForInstanceCreation() {
-        vertex().tx().checkMutationAllowed();
-
         if (Schema.MetaSchema.isMetaLabel(label())) {
             throw TransactionException.metaTypeImmutable(label());
         }
