@@ -30,7 +30,6 @@ import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -492,7 +491,7 @@ public class RuleIT {
 
     @Test
     public void whenAdditionOfRuleWithMetaTypeMakesRulesNonstratifiable_Throw() throws InvalidKBException{
-        try(Transaction tx = session.transaction().write()) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             tx.putEntityType("p");
             tx.putEntityType("q");
             tx.putEntityType("r");
@@ -508,7 +507,7 @@ public class RuleIT {
             tx.commit();
         }
 
-        try(Transaction tx = session.transaction().write()) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             EntityType p = tx.putEntityType("p");
             EntityType q = tx.putEntityType("q");
             EntityType r = tx.putEntityType("r");
@@ -531,7 +530,7 @@ public class RuleIT {
 
     @Test
     public void whenAdditionOfRuleMakesRulesNonstratifiable_Throw() throws InvalidKBException{
-        try(Transaction tx = session.transaction().write()) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             tx.putEntityType("p");
             tx.putEntityType("q");
             tx.putEntityType("r");
@@ -547,7 +546,7 @@ public class RuleIT {
             tx.commit();
         }
 
-        try(Transaction tx = session.transaction().write()) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             EntityType p = tx.putEntityType("p");
             EntityType q = tx.putEntityType("q");
             EntityType r = tx.putEntityType("r");
@@ -697,7 +696,7 @@ public class RuleIT {
 
     @Test
     public void whenCreatingRules_EnsureWhenTypesAndSignAreLinkedCorrectlyOnCommit() throws InvalidKBException {
-        try(Transaction tx = session.transaction().write()) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             Type p = tx.putEntityType("p");
             Type q = tx.putEntityType("q");
             Type r = tx.putEntityType("r");
@@ -729,7 +728,7 @@ public class RuleIT {
 
     @Test
     public void whenCreatingRules_EnsureTypesAreCorrectlyConnectedToRulesOnCommit() throws InvalidKBException {
-        try(Transaction tx = session.transaction().write()) {
+        try(TransactionOLTP tx = session.transaction().write()) {
             Type p = tx.putEntityType("p");
             Type q = tx.putEntityType("q");
             Type r = tx.putEntityType("r");

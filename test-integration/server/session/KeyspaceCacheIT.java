@@ -21,7 +21,6 @@ package grakn.core.server.session;
 import grakn.core.client.GraknClient;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -36,6 +35,7 @@ import static org.junit.Assert.assertTrue;
  * Tests expected behavior of shared JanusGraph and caching between sessions to the same keyspace
  * as well as synchronizing the KeyspaceCache on commits
  */
+@SuppressWarnings("Duplicates")
 public class KeyspaceCacheIT {
 
     @ClassRule
@@ -124,7 +124,7 @@ public class KeyspaceCacheIT {
 
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewLocalSessionClosingPreviousOne(){
-        try (Transaction tx = localSession.transaction().write()) {
+        try (TransactionOLTP tx = localSession.transaction().write()) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
@@ -133,7 +133,7 @@ public class KeyspaceCacheIT {
         }
         localSession.close();
         SessionImpl testSession = server.sessionFactory().session(localSession.keyspace());
-        try (Transaction tx = testSession.transaction().read()) {
+        try (TransactionOLTP tx = testSession.transaction().read()) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
@@ -144,14 +144,14 @@ public class KeyspaceCacheIT {
 
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithRemoteSession(){
-        try (Transaction tx = localSession.transaction().write()) {
+        try (TransactionOLTP tx = localSession.transaction().write()) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
-        try (Transaction tx = remoteSession.transaction().read()) {
+        try (GraknClient.Transaction tx = remoteSession.transaction().read()) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(relationshipTypeSubs.contains("test-relationship"));
@@ -169,7 +169,7 @@ public class KeyspaceCacheIT {
             tx.commit();
         }
         GraknClient.Session testSession = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().name());
-        try (Transaction tx = testSession.transaction().read()) {
+        try (GraknClient.Transaction tx = testSession.transaction().read()) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
@@ -189,7 +189,7 @@ public class KeyspaceCacheIT {
         }
         remoteSession.close();
         GraknClient.Session testSession = graknClient.session(localSession.keyspace().name());
-        try (Transaction tx = testSession.transaction().read()) {
+        try (GraknClient.Transaction tx = testSession.transaction().read()) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());

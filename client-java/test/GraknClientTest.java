@@ -106,21 +106,21 @@ public class GraknClientTest {
 
     @Test
     public void whenCreatingAGraknRemoteTx_MakeATxCallToGrpc() {
-        try (Transaction ignored = session.transaction().write()) {
+        try (GraknClient.Transaction ignored = session.transaction().write()) {
             verify(server.sessionService(), atLeast(1)).transaction(any());
         }
     }
 
     @Test
     public void whenCreatingAGraknRemoteTx_SendAnOpenMessageToGrpc() {
-        try (Transaction ignored = session.transaction().write()) {
+        try (GraknClient.Transaction ignored = session.transaction().write()) {
             verify(server.requestListener()).onNext(RequestBuilder.Transaction.open("randomID", Transaction.Type.WRITE));
         }
     }
 
     @Test
     public void whenClosingAGraknRemoteTx_SendCompletedMessageToGrpc() {
-        try (Transaction ignored = session.transaction().write()) {
+        try (GraknClient.Transaction ignored = session.transaction().write()) {
             verify(server.requestListener(), never()).onCompleted(); // Make sure transaction is still open here
         }
 
@@ -458,20 +458,20 @@ public class GraknClientTest {
 
     @Test
     public void whenClosingTheTransaction_EnsureItIsFlaggedAsClosed() {
-        assertTransactionClosedAfterAction(Transaction::close);
+        assertTransactionClosedAfterAction(transaction -> transaction.close());
     }
 
     @Test
     public void whenCommittingTheTransaction_EnsureItIsFlaggedAsClosed() {
-        assertTransactionClosedAfterAction(Transaction::commit);
+        assertTransactionClosedAfterAction(transaction -> transaction.commit());
     }
 
     @Test
     public void whenAbortingTheTransaction_EnsureItIsFlaggedAsClosed() {
-        assertTransactionClosedAfterAction(Transaction::abort);
+        assertTransactionClosedAfterAction(transaction -> transaction.abort());
     }
 
-    private void assertTransactionClosedAfterAction(Consumer<Transaction> action) {
+    private void assertTransactionClosedAfterAction(Consumer<GraknClient.Transaction> action) {
         GraknClient.Transaction tx = session.transaction().write();
         assertFalse(tx.isClosed());
         action.accept(tx);

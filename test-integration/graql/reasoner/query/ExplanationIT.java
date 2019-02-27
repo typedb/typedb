@@ -25,7 +25,6 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -303,7 +302,7 @@ public class ExplanationIT {
     public void whenRulesAreMutuallyRecursive_explanationsAreRecognisedAsRuleOnes() {
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet30.gql", session);
-            try (Transaction tx = session.transaction().write()) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 String queryString = "match $p isa pair, has name 'ff'; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
                 answers.forEach(joinedAnswer -> {
