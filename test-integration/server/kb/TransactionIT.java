@@ -28,7 +28,6 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.concept.EntityTypeImpl;
@@ -277,22 +276,21 @@ public class TransactionIT {
     @Test
     public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw() {
         String keyspace = tx.keyspace().name();
-        failAtOpeningTx(session, Transaction.Type.WRITE, keyspace);
+        failAtOpeningTx(session, true, keyspace);
         tx.close();
 
-        //noinspection ResultOfMethodCallIgnored
         session.transaction().write();
-        failAtOpeningTx(session, Transaction.Type.READ, keyspace);
+        failAtOpeningTx(session, false, keyspace);
     }
 
-    private void failAtOpeningTx(SessionImpl session, Transaction.Type txType, String keyspace) {
+    private void failAtOpeningTx(SessionImpl session, boolean write, String keyspace) {
         Exception exception = null;
         try {
             //noinspection ResultOfMethodCallIgnored
-            if (txType.equals(Transaction.Type.READ)) {
-                session.transaction().read();
-            } else {
+            if (write) {
                 session.transaction().write();
+            } else {
+                session.transaction().read();
             }
         } catch (TransactionException e) {
             exception = e;

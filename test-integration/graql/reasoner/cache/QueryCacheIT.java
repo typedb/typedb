@@ -2,7 +2,7 @@ package grakn.core.graql.reasoner.cache;
 /*
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
-import grakn.core.server.Transaction;
+import grakn.core.api.Transaction;
 import grakn.core.concept.instance.Entity;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Query;

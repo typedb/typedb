@@ -52,7 +52,6 @@ import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.KeyspaceServiceGrpc.KeyspaceServiceBlockingStub;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
-import grakn.core.server.keyspace.KeyspaceImpl;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -64,7 +63,9 @@ import graql.lang.query.GraqlUndefine;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
+import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -80,7 +81,7 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * Entry-point which communicates with a running Grakn server using gRPC.
- * For now, only a subset of grakn.core.server.Session and grakn.core.server.Transaction features are supported.
+ * For now, only a subset of grakn.core.api.Session and grakn.core.api.Transaction features are supported.
  */
 public final class GraknClient implements AutoCloseable {
 
@@ -134,12 +135,12 @@ public final class GraknClient implements AutoCloseable {
     }
 
     /**
-     * Remote implementation of grakn.core.server.Session that communicates with a Grakn server using gRPC.
+     * Remote implementation of grakn.core.api.Session that communicates with a Grakn server using gRPC.
      *
      * @see Transaction
      * @see GraknClient
      */
-    public static class Session implements grakn.core.server.Session {
+    public static class Session implements grakn.core.api.Session {
 
         private final ManagedChannel channel;
         private final String keyspace;
@@ -172,48 +173,22 @@ public final class GraknClient implements AutoCloseable {
             isOpen = false;
         }
 
-        @Override // TODO: remove this method once we no longer implement grakn.core.server.Session
-        public KeyspaceImpl keyspace() {
-            return KeyspaceImpl.of(keyspace);
+        @Override // TODO: remove this method once we no longer implement grakn.core.api.Session
+        public Keyspace keyspace() {
+            return Keyspace.of(keyspace);
         }
     }
 
     /**
-     * Internal class used to handle keyspace related operations
+     * Remote implementation of grakn.core.api.Transaction that communicates with a Grakn server using gRPC.
      */
-
-    public static final class Keyspaces {
-
-        private KeyspaceServiceBlockingStub keyspaceBlockingStub;
-
-        private Keyspaces(ManagedChannel channel) {
-            keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
-        }
-
-        public void delete(String name) {
-            if (!Validator.isValidKeyspaceName(name)) {
-                throw GraknClientException.invalidKeyspaceName(name);
-            }
-            KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(name);
-            keyspaceBlockingStub.delete(request);
-        }
-
-        public List<String> retrieve(){
-            KeyspaceProto.Keyspace.Retrieve.Req request = RequestBuilder.Keyspace.retrieve();
-            return ImmutableList.copyOf(keyspaceBlockingStub.retrieve(request).getNamesList().iterator());
-        }
-    }
-
-    /**
-     * Remote implementation of grakn.core.server.Transaction that communicates with a Grakn server using gRPC.
-     */
-    public static class Transaction implements grakn.core.server.Transaction {
+    public static class Transaction implements grakn.core.api.Transaction {
 
         private final Session session;
         private final Type type;
         private final Transceiver transceiver;
 
-        public static class Builder implements grakn.core.server.Transaction.Builder {
+        public static class Builder implements grakn.core.api.Transaction.Builder {
 
             private ManagedChannel channel;
             private GraknClient.Session session;
@@ -254,7 +229,7 @@ public final class GraknClient implements AutoCloseable {
         }
 
         @Override
-        public KeyspaceImpl keyspace() {
+        public Keyspace keyspace() {
             return session.keyspace();
         }
 
@@ -566,6 +541,84 @@ public final class GraknClient implements AutoCloseable {
                         return responseReader.apply(response);
                 }
             }
+        }
+    }
+
+    /**
+     * Internal class used to handle keyspace related operations
+     */
+
+    public static final class Keyspaces {
+
+        private KeyspaceServiceBlockingStub keyspaceBlockingStub;
+
+        private Keyspaces(ManagedChannel channel) {
+            keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
+        }
+
+        public void delete(String name) {
+            if (!Validator.isValidKeyspaceName(name)) {
+                throw GraknClientException.invalidKeyspaceName(name);
+            }
+            KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(name);
+            keyspaceBlockingStub.delete(request);
+        }
+
+        public List<String> retrieve(){
+            KeyspaceProto.Keyspace.Retrieve.Req request = RequestBuilder.Keyspace.retrieve();
+            return ImmutableList.copyOf(keyspaceBlockingStub.retrieve(request).getNamesList().iterator());
+        }
+    }
+
+    /**
+     * An identifier for an isolated scope of a data in the database.
+     */
+    public static class Keyspace implements grakn.core.api.Keyspace, Serializable {
+
+        private static final long serialVersionUID = 2726154016735929123L;
+
+        private final String name;
+
+        public Keyspace(String name) {
+            if (name == null) {
+                throw new NullPointerException("Null name");
+            }
+            this.name = name;
+        }
+
+        @CheckReturnValue
+        public static Keyspace of(String name) {
+            if (!grakn.core.api.Keyspace.isValidName(name)) {
+                throw GraknClientException.invalidKeyspaceName(name);
+            }
+            return new Keyspace(name);
+        }
+
+        @CheckReturnValue
+        public String name() {
+            return name;
+        }
+
+        @Override
+        public final String toString() {
+            return name();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Keyspace that = (Keyspace) o;
+            return this.name.equals(that.name());
+        }
+
+        @Override
+        public int hashCode() {
+            int h = 1;
+            h *= 1000003;
+            h ^= this.name.hashCode();
+            return h;
         }
     }
 }

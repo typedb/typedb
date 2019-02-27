@@ -20,6 +20,7 @@ package grakn.core.server.session;
 
 import brave.ScopedSpan;
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
+import grakn.core.api.Transaction;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.Concept;
@@ -40,7 +41,6 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.executor.QueryExecutor;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;

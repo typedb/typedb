@@ -30,7 +30,7 @@ java_test(
 )
 
 java_test(
-    name = "grakn-tx-it",
+    name = "grakn-transaction-it",
     size = "medium",
     srcs = ["TransactionIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
@@ -70,7 +70,7 @@ checkstyle_test(
     targets = [
         ":validator-it",
         ":validate-global-rules-it",
-        ":grakn-tx-it",
+        ":grakn-transaction-it",
         ":rule-it",
     ],
 )

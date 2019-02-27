@@ -19,6 +19,7 @@
 
 package grakn.core.client.test;
 
+import grakn.core.api.Transaction;
 import grakn.core.client.GraknClient;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.exception.GraknClientException;
@@ -35,7 +36,6 @@ import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;

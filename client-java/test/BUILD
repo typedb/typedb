@@ -32,6 +32,7 @@ java_test(
         "//client-java",
 
         # Internal dependencies
+        "//api:api",
         "//common:common",
         "//concept:concept",
         "//protocol:protocol-java",
@@ -60,6 +61,7 @@ java_test(
         "//client-java",
 
         # Internal dependencies
+        "//api:api",
         "//concept:concept",
         "//server:server", # TODO: NEEDS TO GO
         "//test-integration/rule:grakn-test-server",
