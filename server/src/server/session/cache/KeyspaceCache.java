@@ -153,4 +153,8 @@ public class KeyspaceCache {
     public Map<Label, SchemaConcept> getCachedTypes() {
         return ImmutableMap.copyOf(cachedTypes.asMap());
     }
+
+    public boolean isEmpty(){
+        return cachedLabels.isEmpty() && (cachedTypes.size()==0);
+    }
 }
