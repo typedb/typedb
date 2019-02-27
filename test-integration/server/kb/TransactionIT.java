@@ -239,7 +239,7 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenAttemptingToMutateReadOnlyGraph_Throw() {
+    public void whenAttemptingToMutateSchemaWithReadOnlyTransaction_ThrowOnCommit() {
         tx.close();
         String entityType = "My Entity Type";
         String roleType1 = "My Role Type 1";
@@ -247,30 +247,36 @@ public class TransactionIT {
 
         //Fail Some Mutations
         tx = session.transaction().read();
-        failMutation(tx, () -> tx.putEntityType(entityType));
-        failMutation(tx, () -> tx.putRole(roleType1));
-        failMutation(tx, () -> tx.putRelationType(relationType1));
+        tx.putEntityType(entityType);
+        expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
+        tx.commit();
 
-        //Pass some mutations
-        tx.close();
+        tx = session.transaction().read();
+        tx.putRole(roleType1);
+        expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
+        tx.commit();
+
+        tx = session.transaction().read();
+        tx.putRelationType(relationType1);
+        expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
+        tx.commit();
+
     }
 
-    private void failMutation(TransactionOLTP graph, Runnable mutator) {
-        int vertexCount = graph.getTinkerTraversal().V().toList().size();
-        int eddgeCount = graph.getTinkerTraversal().E().toList().size();
+    @Test
+    public void whenAttemptingToMutateInstancesWithReadOnlyTransaction_ThrowOnCommit() {
+        tx.close();
+        String entityType = "person";
 
-        Exception caughtException = null;
-        try {
-            mutator.run();
-        } catch (Exception e) {
-            caughtException = e;
-        }
+        tx = session.transaction().write();
+        tx.putEntityType(entityType);
+        tx.commit();
 
-        assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
-        assertThat(caughtException, instanceOf(TransactionException.class));
-        assertEquals(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.keyspace()), caughtException.getMessage());
-        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.getTinkerTraversal().V().toList().size());
-        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.getTinkerTraversal().E().toList().size());
+        tx = session.transaction().read();
+        EntityType person = tx.getEntityType("person");
+        Entity human = person.create();
+        expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
+        tx.commit();
     }
 
     @Test
