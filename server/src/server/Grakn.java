@@ -18,6 +18,7 @@
 
 package grakn.core.server;
 
+import com.google.common.base.Stopwatch;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.server.util.PIDManager;
@@ -86,9 +87,12 @@ public class Grakn {
             PIDManager pidManager = new PIDManager(pidfile);
             pidManager.trackGraknPid();
 
-            // Start Server
+            // Start Server with timer
+            Stopwatch timer = Stopwatch.createStarted();
             Server server = ServerFactory.createServer(benchmark);
             server.start();
+
+            LOG.info("Grakn started in {}", timer.stop());
         } catch (RuntimeException | IOException e) {
             LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()), e);
             System.err.println(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()));
