@@ -49,8 +49,9 @@ java_library(
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/commons-configuration:commons-configuration", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-cli:commons-cli", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/commons-configuration:commons-configuration", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/commons-lang:commons-lang",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
         "//dependencies/maven/artifacts/io/zipkin/brave:brave",

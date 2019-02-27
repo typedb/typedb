@@ -36,7 +36,7 @@ java_test(
         "//common:common",
         "//concept:concept",
         "//protocol:protocol-java",
-        "//server:server", # NEEDS TO GO
+        "//server:server", # TODO: NEEDS TO GO
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
