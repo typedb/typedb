@@ -7,7 +7,7 @@ java_library(
         "//dependencies/maven/artifacts/io/zipkin/zipkin2:zipkin"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 
@@ -23,7 +23,7 @@ java_library(
         ":zipkin-reporter"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 
