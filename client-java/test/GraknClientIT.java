@@ -137,7 +137,7 @@ public class GraknClientIT {
     @Test
     public void testOpeningASessionWithAGivenUriAndKeyspace_TheUriAndKeyspaceAreSet() {
         try (GraknClient.Session session = graknClient.session(localSession.keyspace().name())) {
-            assertEquals(localSession.keyspace(), session.keyspace());
+            assertEquals(localSession.keyspace().name(), session.keyspace().name());
         }
     }
 
@@ -146,7 +146,7 @@ public class GraknClientIT {
         try (GraknClient.Session session = graknClient.session(localSession.keyspace().name())) {
             try (GraknClient.Transaction tx = session.transaction().read()) {
                 assertEquals(session, tx.session());
-                assertEquals(localSession.keyspace(), tx.keyspace());
+                assertEquals(localSession.keyspace().name(), tx.keyspace().name());
                 assertEquals(Transaction.Type.READ, tx.type());
             }
         }

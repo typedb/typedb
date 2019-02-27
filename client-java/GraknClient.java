@@ -610,7 +610,7 @@ public final class GraknClient implements AutoCloseable {
             if (o == null || getClass() != o.getClass()) return false;
 
             Keyspace that = (Keyspace) o;
-            return this.name.equals(that.name());
+            return this.name.equals(that.name);
         }
 
         @Override
