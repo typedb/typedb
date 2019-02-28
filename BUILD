@@ -21,15 +21,16 @@ load("@graknlabs_bazel_distribution//brew:rules.bzl", deploy_brew = "deploy_brew
 load("@graknlabs_bazel_distribution//distribution:rules.bzl", "distribution_structure", "distribution_zip", "distribution_deb", "distribution_rpm")
 load("@graknlabs_bazel_distribution//rpm/deployment:rules.bzl", "deploy_rpm")
 load("@graknlabs_bazel_distribution//deb/deployment:rules.bzl", "deploy_deb")
+load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 
-py_binary(
+deploy_github(
     name = "deploy-github-zip",
-    srcs = ["@graknlabs_bazel_distribution//github:deploy.py"],
-    data = [":distribution", ":VERSION", ":deployment.properties", "@ghr_osx_zip//file:file", "@ghr_linux_tar//file:file"],
-    main = "deploy.py"
+    target = ":distribution",
+    deployment_properties = ":deployment.properties",
+    version_file = "//:VERSION"
 )
 
 
