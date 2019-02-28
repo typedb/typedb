@@ -1,10 +1,7 @@
 ---
 name: Bug Report
 about: Report a bug here, or visit discuss.grakn.ai for troubleshooting discussions
-title: ''
 labels: bug
-assignees: ''
-
 ---
 
 Please replace every line in curly brackets ( { like this } ) with appropriate answers, and remove this line.
