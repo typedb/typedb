@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
@@ -196,6 +197,13 @@ public class CompositeQuery implements ResolvableQuery {
     }
 
     @Override
+    public Set<String> validateOntologically(Label ruleLabel) {
+        Set<String> validation = getConjunctiveQuery().validateOntologically(ruleLabel);
+        getComplementQueries().stream().map(q -> q.validateOntologically(ruleLabel)).forEach(validation::addAll);
+        return validation;
+    }
+
+    @Override
     public CompositeQuery withSubstitution(ConceptMap sub){
         return new CompositeQuery(
                 getConjunctiveQuery().withSubstitution(sub),
@@ -313,13 +321,6 @@ public class CompositeQuery implements ResolvableQuery {
             sub = ConceptUtils.mergeAnswers(sub, comp.getSubstitution());
         }
         return sub;
-    }
-
-    @Override
-    public Set<String> validateOntologically() {
-        Set<String> validation = getConjunctiveQuery().validateOntologically();
-        getComplementQueries().stream().map(ResolvableQuery::validateOntologically).forEach(validation::addAll);
-        return validation;
     }
 
     @Override

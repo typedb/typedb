@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.atom;
 
+import grakn.core.concept.Label;
 import grakn.core.concept.type.Rule;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import graql.lang.pattern.Pattern;
@@ -155,7 +156,7 @@ public interface Atomic {
      * @return error messages indicating ontological inconsistencies of this atomic
      */
     @CheckReturnValue
-    default Set<String> validateOntologically(){ return new HashSet<>();}
+    default Set<String> validateAsRuleBody(Label ruleLabel){ return new HashSet<>();}
 
     /**
      * @return the base pattern combined with possible predicate patterns

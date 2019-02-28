@@ -122,9 +122,7 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] does not form a valid clause, as it contains a multi-atom head\n"),
 
-
     VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("Atomic [%s] is not allowed to form a rule head of rule [%s]\n"),
-
 
     VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE("Atom [%s] is not allowed to form a rule head of rule [%s] as it contains an unbound variable\n"),
 
@@ -141,15 +139,15 @@ public enum ErrorMessage {
     VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_NONSPECIFIC_PREDICATE("Attribute [%s] is not allowed to form a rule head of rule [%s] as it has a non-specific value predicate\n"),
 
 
-    VALIDATION_RULE_INVALID_RELATION_TYPE("Attempting to define a rule containing a relation pattern with type [%s] which is not a relation type\n"),
+    VALIDATION_RULE_INVALID_RELATION_TYPE("Rule [%s] attempts to define a relation pattern with type [%s] which is not a relation type\n"),
 
-    VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE("Attempting to define a rule containing an attribute pattern with type [%s] which is not an attribute type\n"),
+    VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE("Rule [%s] attempts to define an attribute pattern with type [%s] which is not an attribute type\n"),
 
-    VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE("Attempting to define a rule containing an attribute pattern of type [%s] with type [%s] that cannot have this attribute\n"),
+    VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE("Rule [%s] attempts to define a rule containing an attribute pattern of type [%s] with type [%s] that cannot have this attribute\n"),
 
-    VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED("Attempting to define a rule containing a relation pattern with role [%s] which cannot be played in relation [%s]\n"),
+    VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED("Rule [%s] attempts to define a rule containing a relation pattern with role [%s] which cannot be played in relation [%s]\n"),
 
-    VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE("Attempting to define a rule containing a relation pattern with type [%s] that cannot play role [%s] in relation [%s]\n"),
+    VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE("Rule [%s] attempts to define a rule containing a relation pattern with type [%s] that cannot play role [%s] in relation [%s]\n"),
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),

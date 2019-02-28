@@ -413,11 +413,11 @@ public abstract class RelationAtom extends IsaAtomBase {
     }
 
     @Override
-    public Set<String> validateOntologically() {
+    public Set<String> validateAsRuleBody(Label ruleLabel) {
         Set<String> errors = new HashSet<>();
         SchemaConcept type = getSchemaConcept();
         if (type != null && !type.isRelationType()){
-            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage(type.label()));
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage(ruleLabel, type.label()));
             return errors;
         }
 
@@ -428,14 +428,14 @@ public abstract class RelationAtom extends IsaAtomBase {
             if (!Schema.MetaSchema.isMetaLabel(role.label())) {
                 //check whether this role can be played in this relation
                 if (type != null && type.asRelationType().roles().noneMatch(r -> r.equals(role))) {
-                    errors.add(ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage(role.label(), type.label()));
+                    errors.add(ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage(ruleLabel, role.label(), type.label()));
                 }
 
                 //check whether the role player's type allows playing this role
                 for (Variable player : e.getValue()) {
                     Type playerType = varTypeMap.get(player);
                     if (playerType != null && playerType.playing().noneMatch(plays -> plays.equals(role))) {
-                        errors.add(ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage(playerType.label(), role.label(), type == null? "" : type.label()));
+                        errors.add(ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage(ruleLabel, playerType.label(), role.label(), type == null? "" : type.label()));
                     }
                 }
             }

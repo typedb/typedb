@@ -41,7 +41,6 @@ import grakn.core.server.kb.concept.RuleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.Casting;
-import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -319,7 +318,7 @@ class ValidateGlobalRules {
         //as a result the rule can be ontologically validated by combining them into a conjunction
         //this additionally allows to cross check body-head references
         ReasonerQuery combinedQuery = combinedRuleQuery(graph, rule);
-        errors.addAll(combinedQuery.validateOntologically());
+        errors.addAll(combinedQuery.validateOntologically(rule.label()));
         return errors;
     }
 
