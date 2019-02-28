@@ -201,6 +201,9 @@ public abstract class SemanticCache<
             ConceptMap answer,
             @Nullable CacheEntry<ReasonerAtomicQuery, SE> entry,
             @Nullable MultiUnifier unifier) {
+
+        validateAnswer(answer, query, query.getVarNames());
+
         /*
          * find SE entry
          * - if entry exists - easy
@@ -253,8 +256,7 @@ public abstract class SemanticCache<
 
         if (match != null) {
             boolean answersToGroundQuery = false;
-            boolean queryDBComplete = isDBComplete(query);
-            if (query.isGround() && !queryDBComplete) {
+            if (query.isGround()) {
                 boolean newAnswersPropagated = propagateAnswersToQuery(query, match, true);
                 if (newAnswersPropagated) answersToGroundQuery = answersQuery(query);
             }
@@ -263,7 +265,7 @@ public abstract class SemanticCache<
             Pair<Stream<ConceptMap>, MultiUnifier> cachePair = entryToAnswerStreamWithUnifier(query, match);
 
             //if db complete or we found answers to ground query via propagation we don't need to hit the database
-            if (queryDBComplete || answersToGroundQuery) return cachePair;
+            if (isDBComplete(query) || answersToGroundQuery) return cachePair;
 
             //otherwise lookup and add inferred answers on top
             return new Pair<>(

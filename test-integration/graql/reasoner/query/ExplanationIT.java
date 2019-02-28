@@ -279,8 +279,6 @@ public class ExplanationIT {
         }
     }
 
-    //
-
     /**
      * Validates issue#3061 is fixed.
      *
@@ -302,18 +300,22 @@ public class ExplanationIT {
     public void whenRulesAreMutuallyRecursive_explanationsAreRecognisedAsRuleOnes() {
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet30.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
-                String queryString = "match $p isa pair, has name 'ff'; get;";
-                List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
-                answers.forEach(joinedAnswer -> {
-                    testExplanation(joinedAnswer);
-                    joinedAnswer.explanation().getAnswers()
-                            .forEach(inferredAnswer -> assertTrue(inferredAnswer.explanation().isRuleExplanation()));
-                });
+            for(int i = 0 ; i < 10 ; i++) {
+                try (TransactionOLTP tx = session.transaction().write()) {
+                    String queryString = "match $p isa pair, has name 'ff'; get;";
+                    List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
+                    answers.forEach(joinedAnswer -> {
+                        testExplanation(joinedAnswer);
+                        joinedAnswer.explanation().getAnswers()
+                                .forEach(inferredAnswer -> {
+                                            assertTrue(inferredAnswer.explanation().isRuleExplanation());
+                                        }
+                                );
+                    });
+                }
             }
         }
     }
-
 
     private void testExplanation(Collection<ConceptMap> answers){
         answers.forEach(this::testExplanation);
