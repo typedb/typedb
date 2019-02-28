@@ -19,10 +19,13 @@
 package grakn.core.graql.reasoner.cache;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 
+import graql.lang.statement.Variable;
+import java.util.Set;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
@@ -105,7 +108,7 @@ public abstract class QueryCacheBase<
      * @param query for which the entry is to be retrieved
      * @return corresponding cache entry if any or null
      */
-    CacheEntry<Q, SE> getEntry(Q query) {
+    public CacheEntry<Q, SE> getEntry(Q query) {
         return cache.get(queryToKey(query));
     }
 
@@ -123,5 +126,15 @@ public abstract class QueryCacheBase<
     CacheEntry<Q, SE> putEntry(CacheEntry<Q, SE> cacheEntry) {
         cache.put(queryToKey(cacheEntry.query()), cacheEntry);
         return cacheEntry;
+    }
+
+    public static <T extends ReasonerQueryImpl> void validateAnswer(ConceptMap answer, T query, Set<Variable> expectedVars){
+        if (!answer.vars().containsAll(expectedVars)
+                || answer.explanation() == null
+                || (
+                        !answer.explanation().isRuleExplanation()
+                                && !answer.explanation().isLookupExplanation())){
+            throw GraqlQueryException.invalidQueryCacheEntry(query, answer);
+        }
     }
 }

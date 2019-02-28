@@ -108,11 +108,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                                         .applyToAnswer(ans, partialSub, childVars, unifierDelta.getKey()))
                 )
                 .filter(ans -> !ans.isEmpty())
-                .peek(ans -> {
-                    if (!ans.vars().containsAll(childVars)){
-                        throw GraqlQueryException.invalidQueryCacheEntry(child, ans);
-                    }
-                })
+                .peek(ans -> validateAnswer(ans, child, childVars))
                 .filter(childAnswers::add)
                 .forEach(newAnswers::add);
 

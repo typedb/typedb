@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.explanation;
 
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import graql.lang.pattern.Pattern;
@@ -31,13 +32,13 @@ import java.util.List;
  */
 public class RuleExplanation extends Explanation {
 
-    private final String ruleId;
+    private final ConceptId ruleId;
 
-    public RuleExplanation(Pattern pattern, String ruleId){
+    public RuleExplanation(Pattern pattern, ConceptId ruleId){
         super(pattern);
         this.ruleId = ruleId;
     }
-    private RuleExplanation(Pattern queryPattern, List<ConceptMap> answers, String ruleId){
+    private RuleExplanation(Pattern queryPattern, List<ConceptMap> answers, ConceptId ruleId){
         super(queryPattern, answers);
         this.ruleId = ruleId;
     }
@@ -62,5 +63,5 @@ public class RuleExplanation extends Explanation {
     @Override
     public boolean isRuleExplanation(){ return true;}
 
-    public String getRuleId(){ return ruleId;}
+    public ConceptId getRuleId(){ return ruleId;}
 }

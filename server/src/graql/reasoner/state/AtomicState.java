@@ -114,7 +114,7 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
 
         return ConceptUtils.mergeAnswers(answer, query.getSubstitution())
                 .project(query.getVarNames())
-                .explain(new RuleExplanation(query.getPattern(), rule.getRule().id().getValue()));
+                .explain(new RuleExplanation(query.getPattern(), rule.getRule().id()));
     }
 
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
@@ -147,17 +147,20 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         if (headAnswer.isEmpty()
                 && queryAnswer.isEmpty()) {
             ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
-            if (!queryEquivalentToHead) cache.record(ruleHead, materialisedSub);
-            answer = unifier.apply(
-                    materialisedSub.project(queryVars)
-            );
+            if (materialisedSub != null) {
+                if (!queryEquivalentToHead) {
+                    cache.record(ruleHead, materialisedSub.explain(new RuleExplanation(query.getPattern(), rule.getRule().id())));
+                }
+                answer = unifier.apply(materialisedSub.project(queryVars));
+            }
         } else {
             answer = headAnswer.isEmpty() ? queryAnswer : headAnswer;
         }
 
         if (answer.isEmpty()) return answer;
 
-        return ConceptUtils.mergeAnswers(answer, query.getSubstitution())
-                .explain(new RuleExplanation(query.getPattern(), rule.getRule().id().getValue()));
+        return ConceptUtils
+                .mergeAnswers(answer, query.getSubstitution())
+                .explain(new RuleExplanation(query.getPattern(), rule.getRule().id()));
     }
 }

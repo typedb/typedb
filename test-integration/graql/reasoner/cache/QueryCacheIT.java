@@ -1,206 +1,336 @@
-package grakn.core.graql.reasoner.cache;
 /*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package grakn.core.graql.reasoner.cache;
+
+import com.google.common.collect.ImmutableMap;
+import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.explanation.LookupExplanation;
+import grakn.core.graql.reasoner.explanation.RuleExplanation;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
-import grakn.core.api.Transaction;
-import grakn.core.concept.instance.Entity;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.query.Query;
+import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
-import Unifier;
-import grakn.core.graql.query.pattern.VarPatternAdmin;
-import Patterns;
-import grakn.core.concept.answer.ConceptMap;
-import SimpleQueryCache;
-import QueryAnswers;
-import ReasonerAtomicQuery;
-import ReasonerQueries;
-import grakn.core.server.session.TransactionImpl;
-import grakn.core.rule.GraknTestServer;
-import com.google.common.collect.ImmutableMap;
-import org.junit.After;
+import graql.lang.query.GraqlGet;
+import graql.lang.statement.Statement;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static graql.lang.Graql.var;
+import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
-import static org.junit.Assert.assertEquals;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNull;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("CheckReturnValue")
-
 public class QueryCacheIT {
+
+    private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl ruleApplicabilitySession;
-
-    private static void loadFromFile(String fileName, SessionImpl session) {
-        try {
-            InputStream inputStream = QueryCacheIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/" + fileName);
-            String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            TransactionOLTP tx = session.transaction().write();
-            Graql.parseList(s).forEach(tx::execute);
-            tx.commit();
-        } catch (Exception e) {
-            System.err.println(e);
-            throw new RuntimeException(e);
-        }
-    }
+    private static SessionImpl genericSchemaSession;
 
     @BeforeClass
     public static void loadContext() {
-        ruleApplicabilitySession = server.sessionWithNewKeyspace();
-        loadFromFile("ruleApplicabilityTest.gql", ruleApplicabilitySession);
-
+        genericSchemaSession = server.sessionWithNewKeyspace();
+        loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
     }
+
 
     @AfterClass
     public static void closeSession() {
-        ruleApplicabilitySession.close();
-    }
-
-    private static ReasonerAtomicQuery recordQuery;
-    private static ReasonerAtomicQuery retrieveQuery;
-    private static ConceptMap singleAnswer;
-    private static Unifier retrieveToRecordUnifier;
-    private static Unifier recordToRetrieveUnifier;
-    private TransactionImpl tx;
-
-
-    @Before
-    public void onStartup(){
-        tx = ruleApplicabilitySession.transaction().write();
-        String recordPatternString = "{(someRole: $x, subRole: $y) isa reifiable-relation;}";
-        String retrievePatternString = "{(someRole: $p1, subRole: $p2) isa reifiable-relation;}";
-        Conjunction<VarPatternAdmin> recordPattern = conjunction(recordPatternString, tx);
-        Conjunction<VarPatternAdmin> retrievePattern = conjunction(retrievePatternString, tx);
-        recordQuery = ReasonerQueries.atomic(recordPattern, tx);
-        retrieveQuery = ReasonerQueries.atomic(retrievePattern, tx);
-        retrieveToRecordUnifier = retrieveQuery.getMultiUnifier(recordQuery).getUnifier();
-        recordToRetrieveUnifier = retrieveToRecordUnifier.inverse();
-
-        Entity entity = tx.getEntityType("anotherNoRoleEntity").instances().findFirst().orElse(null);
-        singleAnswer = new ConceptMap(
-                ImmutableMap.of(
-                        var("x"), entity,
-                        var("y"), entity
-                ));
-    }
-
-    @After
-    public void closeTx() {
-        tx.close();
+        genericSchemaSession.close();
     }
 
     @Test
-    public void recordRetrieveAnswers(){
-        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
-        QueryAnswers record = cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().execute()));
-        assertEquals(record, cache.getAnswers(retrieveQuery).unify(retrieveToRecordUnifier));
-        assertEquals(record, cache.getAnswers(recordQuery));
+    public void whenRecordingAndMatchExists_entryIsUpdated(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = new MultilevelSemanticCache();
+
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;", tx), tx);
+
+            //mock answer
+            ConceptMap specificAnswer = new ConceptMap(ImmutableMap.of(
+                    Graql.var("x").var(), tx.getEntityType("entity").instances().iterator().next(),
+                    Graql.var("y").var(), tx.getEntityType("entity").instances().iterator().next()),
+                    new LookupExplanation(query.getPattern())
+            );
+
+            //record parent
+            tx.execute(query.getQuery()).stream()
+                    .map(ans -> ans.explain(new LookupExplanation(query.getPattern())))
+                    .filter(ans -> !ans.equals(specificAnswer))
+                    .forEach(ans -> cache.record(query, ans));
+
+            CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = cache.getEntry(query);
+            assertFalse(cacheEntry.cachedElement().contains(specificAnswer));
+            cache.record(query, specificAnswer);
+            assertTrue(cacheEntry.cachedElement().contains(specificAnswer));
+        }
     }
 
     @Test
-    public void recordUpdateRetrieveAnswers(){
-        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
-        cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().execute()));
-        cache.record(recordQuery, singleAnswer);
-        assertTrue(cache.getAnswers(recordQuery).contains(singleAnswer));
-        assertTrue(cache.getAnswers(retrieveQuery).contains(singleAnswer.unify(recordToRetrieveUnifier)));
+    public void whenRecordingAndMatchDoesntExist_answersArePropagatedFromParents(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = new MultilevelSemanticCache();
+
+            Concept mConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'm';get;")).iterator().next().get("x");
+            Concept sConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 's';get;")).iterator().next().get("x");
+
+            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(subRole1: $x, subRole2: $y) isa binary;" +
+                            "$x id '" + mConcept.id().getValue() + "';" +
+                            "$y id '" + sConcept.id().getValue() + "';" +
+                            "};"
+                    , tx), tx);
+
+            //mock a specific answer
+            ConceptMap specificAnswer = new ConceptMap(ImmutableMap.of(
+                    Graql.var("x").var(), mConcept,
+                    Graql.var("y").var(), sConcept),
+                    new LookupExplanation(childQuery.getPattern())
+            );
+
+            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;", tx), tx);
+
+            //record parent
+            tx.execute(parentQuery.getQuery()).stream()
+                    .map(ans -> ans.explain(new LookupExplanation(parentQuery.getPattern())))
+                    .filter(ans -> !ans.equals(specificAnswer))
+                    .forEach(ans -> cache.record(parentQuery, ans));
+
+            assertNull(cache.getEntry(childQuery));
+            cache.record(childQuery, specificAnswer);
+            CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = cache.getEntry(childQuery);
+            assertEquals(tx.stream(Graql.<GraqlGet>parse("match (subRole1: $x, subRole2: $y) isa binary; get;")).collect(toSet()), cacheEntry.cachedElement().getAll());
+        }
     }
 
     @Test
-    public void recordRetrieveAnswerStream(){
-        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
-        Set<ConceptMap> record = cache.record(recordQuery, recordQuery.getQuery().stream()).collect(Collectors.toSet());
-        assertEquals(record, cache.getAnswerStream(retrieveQuery).map(ans -> ans.unify(retrieveToRecordUnifier)).collect(Collectors.toSet()));
-        assertEquals(record, cache.record(recordQuery, recordQuery.getQuery().stream()).collect(Collectors.toSet()));
+    public void whenGettingAndMatchDoesntExist_answersFetchedFromDB(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = new MultilevelSemanticCache();
+
+            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;", tx), tx);
+            Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
+            assertEquals(tx.stream(childQuery.getQuery()).collect(toSet()), cacheAnswers);
+
+            assertNull(cache.getEntry(childQuery));
+        }
     }
 
     @Test
-    public void recordUpdateRetrieveAnswerStream(){
-        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
-        cache.record(recordQuery, recordQuery.getQuery().stream());
-        cache.record(recordQuery, singleAnswer);
+    public void whenGettingAndMatchDoesntExist_parentAvailable_answersFetchedFromParents(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
-        assertTrue(cache.getAnswerStream(recordQuery).anyMatch(ans -> ans.equals(singleAnswer)));
-        assertTrue(cache.getAnswerStream(retrieveQuery).anyMatch(ans -> ans.equals(singleAnswer.unify(recordToRetrieveUnifier))));
+            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;", tx), tx);
+            //record parent
+            tx.execute(parentQuery.getQuery()).stream()
+                    .map(ans -> ans.explain(new LookupExplanation(parentQuery.getPattern())))
+                    .forEach(ans -> cache.record(parentQuery, ans));
+            cache.ackDBCompleteness(parentQuery);
+
+            //retrieve child
+            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;", tx), tx);
+            Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
+            assertEquals(tx.stream(childQuery.getQuery()).collect(toSet()), cacheAnswers);
+
+            assertEquals(cacheAnswers, cache.getEntry(childQuery).cachedElement().getAll());
+        }
     }
 
     @Test
-    public void getRetrieveAnswerStream() {
-        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
-        ConceptMap answer = recordQuery.getQuery().stream().findFirst().orElse(null);
-        ConceptMap retrieveAnswer = answer.unify(recordToRetrieveUnifier);
+    public void whenGettingAndMatchExists_queryNotGround_queryDBComplete_answersFetchedFromCache(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
-        Stream<ConceptMap> recordStream = cache.getAnswerStream(recordQuery);
-        Stream<ConceptMap> retrieveStream = cache.getAnswerStream(retrieveQuery);
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;", tx), tx);
+            //record
+            tx.execute(query.getQuery()).stream()
+                    .map(ans -> ans.explain(new LookupExplanation(query.getPattern())))
+                    .forEach(ans -> cache.record(query, ans));
+            cache.ackDBCompleteness(query);
 
-        QueryAnswers records = new QueryAnswers(recordStream.collect(Collectors.toSet()));
-        QueryAnswers retrieveAnswers = new QueryAnswers(retrieveStream.collect(Collectors.toSet()));
+            //retrieve
+            Set<ConceptMap> cacheAnswers = cache.getAnswers(query);
+            assertEquals(tx.stream(query.getQuery()).collect(toSet()), cacheAnswers);
 
-        assertTrue(records.contains(answer));
-        assertTrue(retrieveAnswers.contains(retrieveAnswer));
+            assertEquals(cacheAnswers, cache.getEntry(query).cachedElement().getAll());
+        }
     }
 
     @Test
-    public void getUpdateRetrieveAnswerStream() {
-        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
-        ConceptMap answer = recordQuery.getQuery().stream().findFirst().orElse(null);
-        ConceptMap retrieveAnswer = answer.unify(recordToRetrieveUnifier);
-        ConceptMap retrieveSingleAnswer = singleAnswer.unify(recordToRetrieveUnifier);
-        Stream<ConceptMap> recordStream = cache.getAnswerStream(recordQuery);
-        Stream<ConceptMap> retrieveStream = cache.getAnswerStream(retrieveQuery);
+    public void whenGettingAndMatchExists_queryNotGround_queryNotDBComplete_answersFetchedFromDBAndCache(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
-        cache.record(recordQuery, singleAnswer);
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;", tx), tx);
+            //record
+            tx.execute(query.getQuery()).stream()
+                    .map(ans -> ans.explain(new LookupExplanation(query.getPattern())))
+                    .forEach(ans -> cache.record(query, ans));
+            cache.ackDBCompleteness(query);
 
-        QueryAnswers records = new QueryAnswers(recordStream.collect(Collectors.toSet()));
-        QueryAnswers retrieveAnswers = new QueryAnswers(retrieveStream.collect(Collectors.toSet()));
+            //mock a rule explained answer
+            ConceptMap inferredAnswer = new ConceptMap(ImmutableMap.of(
+                    Graql.var("x").var(), tx.getEntityType("entity").instances().iterator().next(),
+                    Graql.var("y").var(), tx.getEntityType("entity").instances().iterator().next()),
+                    new RuleExplanation(query.getPattern(), tx.getMetaRule().id())
+            );
+            cache.record(query, inferredAnswer);
 
-        //NB: not expecting the update in the stream
-        assertTrue(records.contains(answer));
-        assertTrue(retrieveAnswers.contains(retrieveAnswer));
-        assertFalse(records.contains(singleAnswer));
-        assertFalse(retrieveAnswers.contains(retrieveSingleAnswer));
-
-        assertTrue(cache.getAnswers(recordQuery).contains(singleAnswer));
-        assertTrue(cache.getAnswers(retrieveQuery).contains(retrieveSingleAnswer));
+            //retrieve
+            Set<ConceptMap> cacheAnswers = cache.getAnswers(query);
+            assertTrue(cacheAnswers.containsAll(tx.stream(query.getQuery()).collect(toSet())));
+            assertTrue(cacheAnswers.contains(inferredAnswer));
+            assertEquals(cacheAnswers, cache.getEntry(query).cachedElement().getAll());
+        }
     }
 
     @Test
-    public void recordRetrieveSingleAnswer(){
-        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
-        ConceptMap answer = recordQuery.getQuery().stream().findFirst().orElse(null);
-        ConceptMap retrieveAnswer = answer.unify(recordToRetrieveUnifier);
-        cache.record(recordQuery, answer);
+    public void whenGettingAndMatchExists_queryGround_answerFound_answersFetchedFromCache(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
-        assertEquals(cache.getAnswer(recordQuery, new ConceptMap()), new ConceptMap());
-        assertEquals(cache.getAnswer(recordQuery, answer), answer);
-        assertEquals(cache.getAnswer(recordQuery, retrieveAnswer), answer);
+            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;", tx), tx);
+            //record parent
+            tx.stream(parentQuery.getQuery())
+                    .map(ans -> ans.explain(new LookupExplanation(parentQuery.getPattern())))
+                    .forEach(ans -> cache.record(parentQuery, ans));
+            cache.ackDBCompleteness(parentQuery);
 
-        assertEquals(cache.getAnswer(retrieveQuery, new ConceptMap()), new ConceptMap());
-        assertEquals(cache.getAnswer(retrieveQuery, retrieveAnswer), retrieveAnswer);
-        assertEquals(cache.getAnswer(retrieveQuery, answer), retrieveAnswer);
+            Concept mConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'm';get;")).iterator().next().get("x");
+            Concept sConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 's';get;")).iterator().next().get("x");
+            Concept fConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'f';get;")).iterator().next().get("x");
+
+            //record child
+            ReasonerAtomicQuery preChildQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(subRole1: $x, subRole2: $y) isa binary;" +
+                            "$x id '" + fConcept.id().getValue() + "';" +
+                            "$y id '" + sConcept.id().getValue() + "';" +
+                            "};"
+                    , tx), tx);
+            tx.stream(preChildQuery.getQuery())
+                    .map(ans -> ans.explain(new LookupExplanation(preChildQuery.getPattern())))
+                    .forEach(ans -> cache.record(preChildQuery, ans));
+
+            //retrieve child
+            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                    "(subRole1: $x, subRole2: $y) isa binary;" +
+                                "$x id '" + mConcept.id().getValue() + "';" +
+                                "$y id '" + sConcept.id().getValue() + "';" +
+                            "};"
+                    , tx), tx);
+
+            //mock a specific answer
+            ConceptMap specificAnswer = new ConceptMap(ImmutableMap.of(
+                    Graql.var("x").var(), mConcept,
+                    Graql.var("y").var(), sConcept),
+                    new LookupExplanation(childQuery.getPattern())
+            );
+            Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
+            assertEquals(tx.stream(childQuery.getQuery()).collect(toSet()), cacheAnswers);
+            assertTrue(cacheAnswers.contains(specificAnswer));
+        }
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, TransactionOLTP tx) {
-        Set<VarPatternAdmin> vars = Graql.parsePattern(patternString).admin()
+    @Test
+    public void whenGettingAndMatchExists_queryGround_queryNotDBComplete_answerNotFound_answersFetchedFromDbAndCache(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = new MultilevelSemanticCache();
+
+            Concept mConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'm';get;")).iterator().next().get("x");
+            Concept sConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 's';get;")).iterator().next().get("x");
+            Concept fConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'f';get;")).iterator().next().get("x");
+
+            //retrieve child
+            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(subRole1: $x, subRole2: $y) isa binary;" +
+                            "$x id '" + mConcept.id().getValue() + "';" +
+                            "};"
+                    , tx), tx);
+
+            //mock a specific answer
+            ConceptMap specificAnswer = new ConceptMap(ImmutableMap.of(
+                    Graql.var("x").var(), mConcept,
+                    Graql.var("y").var(), sConcept),
+                    new LookupExplanation(childQuery.getPattern())
+            );
+            //mock a rule explained answer
+            ConceptMap inferredAnswer = new ConceptMap(ImmutableMap.of(
+                    Graql.var("x").var(), mConcept,
+                    Graql.var("y").var(), tx.getEntityType("entity").instances().iterator().next()),
+                    new RuleExplanation(childQuery.getPattern(), tx.getMetaRule().id())
+            );
+
+            //record child, we record child first so that answers do not get propagated
+            ReasonerAtomicQuery preChildQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(subRole1: $x, subRole2: $y) isa binary;" +
+                            "$x id '" + fConcept.id().getValue() + "';" +
+                            "};"
+                    , tx), tx);
+            tx.stream(preChildQuery.getQuery())
+                    .map(ans -> ans.explain(new LookupExplanation(preChildQuery.getPattern())))
+                    .forEach(ans -> cache.record(preChildQuery, ans));
+
+            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;", tx), tx);
+            //record parent
+            tx.stream(parentQuery.getQuery())
+                    .map(ans -> ans.explain(new LookupExplanation(parentQuery.getPattern())))
+                    .filter(ans -> !ans.equals(specificAnswer))
+                    .filter(ans -> !ans.equals(inferredAnswer))
+                    .forEach(ans -> cache.record(parentQuery, ans));
+            cache.ackDBCompleteness(parentQuery);
+
+            cache.record(childQuery, inferredAnswer);
+
+            Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
+            assertEquals(
+                    Stream.concat(
+                            tx.stream(childQuery.getQuery()),
+                            Stream.of(inferredAnswer)
+                    ).collect(toSet()),
+                    cacheAnswers);
+            assertTrue(cacheAnswers.contains(specificAnswer));
+        }
+    }
+
+    private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx) {
+        Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
+        return Graql.and(vars);
     }
 }
-*/

@@ -103,7 +103,6 @@ public class QueryExecutor {
         //TODO
         // - handling of empty query is a hack, need to solve in another PR
         // - atom parsing doesn't recognise nested statements so we do not resolve if possible
-
         boolean doNotResolve = query.getAtoms().isEmpty()
                 || (query.isPositive() && !query.isRuleResolvable());
         return doNotResolve?

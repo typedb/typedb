@@ -28,41 +28,26 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.stream.Collectors;
-
+import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class QueryValidityIT {
 
+    private static String resourcePath = "test-integration/graql/reasoner/resources/";
+
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl genericSchemaSession;
-
-    private static void loadFromFile(String fileName, SessionImpl session){
-        try {
-            InputStream inputStream = QueryValidityIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
-            String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            TransactionOLTP tx = session.transaction().write();
-            Graql.parseList(s).forEach(tx::execute);
-            tx.commit();
-        } catch (Exception e){
-            System.err.println(e);
-            throw new RuntimeException(e);
-        }
-    }
 
     private static TransactionOLTP tx;
 
     @BeforeClass
     public static void loadContext(){
         genericSchemaSession = server.sessionWithNewKeyspace();
-        loadFromFile("ruleApplicabilityTest.gql", genericSchemaSession);
+        loadFromFileAndCommit(resourcePath, "ruleApplicabilityTest.gql", genericSchemaSession);
         tx = genericSchemaSession.transaction().write();
     }
 
@@ -72,22 +57,21 @@ public class QueryValidityIT {
         genericSchemaSession.close();
     }
 
-
     @Test
     public void whenQueryingForInexistentConceptId_emptyResultReturned(){
-                String queryString = "match $x id 'V1337'; $y id 'V456'; ($x, $y); get;";
+        String queryString = "match $x id 'V1337'; $y id 'V456'; ($x, $y); get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
     }
 
     @Test
     public void whenQueryingForInexistentEntityTypeId_emptyResultReturned(){
-                String queryString = "match $x isa $type; $type id 'V1337'; get;";
+        String queryString = "match $x isa $type; $type id 'V1337'; get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
     }
 
     @Test
     public void whenQueryingForInexistentRelationTypeId_emptyResultReturned(){
-                String queryString = "match ($x, $y) isa $type; $type id 'V1337'; get;";
+        String queryString = "match ($x, $y) isa $type; $type id 'V1337'; get;";
         String queryString2 = "match $r ($x, $y) isa $type; $r id 'V1337'; get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
         assertThat(tx.execute(Graql.parse(queryString2).asGet()), empty());
@@ -95,7 +79,7 @@ public class QueryValidityIT {
 
     @Test
     public void whenQueryingForInexistentResourceId_emptyResultReturned(){
-                String queryString = "match $x has name $y; $x id 'V1337'; get;";
+        String queryString = "match $x has name $y; $x id 'V1337'; get;";
         String queryString2 = "match $x has name $y; $y id 'V1337'; get;";
         String queryString3 = "match $x has name $y via $r; $r id 'V1337'; get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
@@ -105,67 +89,67 @@ public class QueryValidityIT {
 
     @Test (expected = GraqlQueryException.class)
     public void whenQueryingForInexistentEntityTypeLabel_Throws() throws GraqlQueryException{
-                String queryString = "match $x isa polok; get;";
+        String queryString = "match $x isa polok; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
     @Test
     public void whenQueryingForInexistentEntityTypeLabelViaVariable_emptyResultReturned(){
-                String queryString = "match $x isa $type; $type type polok; get;";
+        String queryString = "match $x isa $type; $type type polok; get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
     }
 
     @Test (expected = GraqlQueryException.class)
     public void whenQueryingForMismatchedResourceTypeLabel_Throws() throws GraqlQueryException{
-                String queryString = "match $x has binary $r; get;";
+        String queryString = "match $x has binary $r; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
     @Test (expected = GraqlQueryException.class)
     public void whenQueryingForInexistentRelationTypeLabel_Throws() throws GraqlQueryException{
-                String queryString = "match ($x, $y) isa jakas-relacja; get;";
+        String queryString = "match ($x, $y) isa jakas-relacja; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
     @Test (expected = GraqlQueryException.class)
     public void whenQueryingForMismatchedRelationTypeLabel_Throws() throws GraqlQueryException{
-                String queryString = "match ($x, $y) isa name; get;";
+        String queryString = "match ($x, $y) isa name; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
     @Test
     public void whenQueryingForInexistentRelationTypeLabelViaVariable_emptyResultReturned(){
-                String queryString = "match ($x, $y) isa $type; $type type jakas-relacja; get;";
+        String queryString = "match ($x, $y) isa $type; $type type jakas-relacja; get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
     }
 
     @Test (expected = GraqlQueryException.class)
     public void whenQueryingForRelationWithNonRoleRoles_Throws() throws GraqlQueryException{
-                String queryString = "match (entity: $x, entity: $y) isa relation; get;";
+        String queryString = "match (entity: $x, entity: $y) isa relation; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
     @Test (expected = GraqlQueryException.class)
     public void whenQueryingForRelationWithNonExistentRoles_Throws() throws GraqlQueryException{
-                String queryString = "match (rola: $x, rola: $y) isa relation; get;";
+        String queryString = "match (rola: $x, rola: $y) isa relation; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
     @Test
     public void whenQueryingForRelationWithIllegalRoles_emptyResultReturned(){
-                String queryString = "match (anotherRole: $x) isa binary; get;";
+        String queryString = "match (anotherRole: $x) isa binary; get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
     }
 
     @Test
     public void whenQueryingForIllegalRolePlayer_emptyResultReturned(){
-                String queryString = "match ($x, $y) isa binary; $x isa anotherNoRoleEntity; get;";
+        String queryString = "match ($x, $y) isa binary; $x isa anotherNoRoleEntity; get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
     }
 
     @Test
     public void whenQueryingForIllegalResource_emptyResultReturned(){
-                String queryString = "match $x has name $n; $x isa binary; get;";
+        String queryString = "match $x has name $n; $x isa binary; get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
     }
 }

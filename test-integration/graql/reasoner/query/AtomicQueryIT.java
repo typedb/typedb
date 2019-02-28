@@ -37,19 +37,16 @@ import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
+import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -58,29 +55,18 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AtomicQueryIT {
 
+    private static String resourcePath = "test-integration/graql/reasoner/resources/";
+
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl materialisationTestSession;
     private static SessionImpl geoGraphSession;
 
-    private static void loadFromFile(String fileName, SessionImpl session) {
-        try {
-            InputStream inputStream = AtomicQueryIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/" + fileName);
-            String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            TransactionOLTP tx = session.transaction().write();
-            Graql.parseList(s).forEach(tx::execute);
-            tx.commit();
-        } catch (Exception e) {
-            System.err.println(e);
-            throw new RuntimeException(e);
-        }
-    }
-
     @BeforeClass
     public static void loadContext() {
         materialisationTestSession = server.sessionWithNewKeyspace();
-        loadFromFile("materialisationTest.gql", materialisationTestSession);
+        loadFromFileAndCommit(resourcePath,"materialisationTest.gql", materialisationTestSession);
         geoGraphSession = server.sessionWithNewKeyspace();
         GeoGraph geoGraph = new GeoGraph(geoGraphSession);
         geoGraph.load();
