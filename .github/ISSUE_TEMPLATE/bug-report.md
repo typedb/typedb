@@ -4,7 +4,7 @@ about: Report a bug here, or visit discuss.grakn.ai for troubleshooting discussi
 labels: bug
 ---
 
-Please replace every line in curly brackets ( { like this } ) with appropriate answers, and remove this line.
+Please replace every line in curly brackets ( { like this } ) with an appropriate answer, and remove this line.
 
 ## Description
 
