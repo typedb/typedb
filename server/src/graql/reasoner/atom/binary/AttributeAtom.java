@@ -245,21 +245,13 @@ public abstract class AttributeAtom extends Binary{
     }
 
     @Override
-    public Set<Variable> getVarNames() {
-        Set<Variable> varNames = super.getVarNames();
-        varNames.add(getAttributeVariable());
-        if (getRelationVariable().isUserDefinedName()) varNames.add(getRelationVariable());
-        return varNames;
-    }
-
-    @Override
-    public Set<String> validateOntologically() {
+    public Set<String> validateAsRuleBody(Label ruleLabel) {
         SchemaConcept type = getSchemaConcept();
         Set<String> errors = new HashSet<>();
         if (type == null) return errors;
 
         if (!type.isAttributeType()){
-            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE.getMessage(type.label()));
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE.getMessage(ruleLabel, type.label()));
             return errors;
         }
 
@@ -267,9 +259,17 @@ public abstract class AttributeAtom extends Binary{
 
         if (ownerType != null
                 && ownerType.attributes().noneMatch(rt -> rt.equals(type.asAttributeType()))){
-            errors.add(ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage(type.label(), ownerType.label()));
+            errors.add(ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage(ruleLabel, type.label(), ownerType.label()));
         }
         return errors;
+    }
+
+    @Override
+    public Set<Variable> getVarNames() {
+        Set<Variable> varNames = super.getVarNames();
+        varNames.add(getAttributeVariable());
+        if (getRelationVariable().isUserDefinedName()) varNames.add(getRelationVariable());
+        return varNames;
     }
 
     @Override

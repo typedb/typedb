@@ -24,6 +24,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -225,9 +226,9 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     @Override
-    public Set<String> validateOntologically() {
+    public Set<String> validateOntologically(Label ruleLabel) {
         return getAtoms().stream()
-                .flatMap(at -> at.validateOntologically().stream())
+                .flatMap(at -> at.validateAsRuleBody(ruleLabel).stream())
                 .collect(Collectors.toSet());
     }
 

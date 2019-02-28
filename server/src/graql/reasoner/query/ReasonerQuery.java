@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
+import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -108,7 +109,7 @@ public interface ReasonerQuery{
      * @return error messages indicating ontological inconsistencies of the query
      */
     @CheckReturnValue
-    Set<String> validateOntologically();
+    Set<String> validateOntologically(Label ruleLabel);
 
     /**
      * @return true if any of the atoms constituting the query can be resolved through a rule

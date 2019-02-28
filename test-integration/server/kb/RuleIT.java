@@ -35,6 +35,7 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
+import java.util.Arrays;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -353,12 +354,14 @@ public class RuleIT {
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("(someRole: $x, singleRole: $y) isa anotherRelation;"),
                 Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage("someRole", "anotherRelation")
+                ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED,
+                "someRole", "anotherRelation"
         );
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
                 Graql.parsePattern("(someRole: $x, singleRole: $y) isa anotherRelation;"),
-                ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage("someRole", "anotherRelation")
+                ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED,
+                "someRole", "anotherRelation"
         );
     }
 
@@ -367,17 +370,20 @@ public class RuleIT {
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("{$x isa someEntity;$y isa someEntity; };"),
                 Graql.parsePattern("(singleRole: $x, singleRole: $y) isa anotherRelation;"),
-                ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage("someEntity", "singleRole", "anotherRelation")
+                ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE,
+                "someEntity", "singleRole", "anotherRelation"
         );
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("{$y isa someEntity; (singleRole: $x, singleRole: $y) isa anotherRelation;};"),
                 Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage("someEntity", "singleRole", "anotherRelation")
+                ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE,
+                "someEntity", "singleRole", "anotherRelation"
         );
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("{(someRole: $x, anotherRole: $y) isa some-relation;$y isa someEntity;};"),
                 Graql.parsePattern("{(singleRole: $x, singleRole: $y) isa anotherRelation;};"),
-                ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage("someEntity", "singleRole", "anotherRelation")
+                ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE,
+                "someEntity", "singleRole", "anotherRelation"
         );
     }
 
@@ -386,17 +392,20 @@ public class RuleIT {
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("$x isa some-relation;"),
                 Graql.parsePattern("$x has res1 'value';"),
-                ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage("res1", "some-relation")
+                ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE,
+                "res1", "some-relation"
         );
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("{$x isa some-relation, has res1 'value';};"),
                 Graql.parsePattern("$x isa anotherRelation;"),
-                ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage("res1", "some-relation")
+                ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE,
+                "res1", "some-relation"
         );
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("$x isa anotherRelation;"),
                 Graql.parsePattern("{$x isa some-relation, has res1 'value';"),
-                ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage("res1", "some-relation")
+                ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE,
+                "res1", "some-relation"
         );
     }
 
@@ -405,12 +414,14 @@ public class RuleIT {
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("(someRole: $x, singleRole: $y) isa res1;"),
                 Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage("res1")
+                ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE,
+                "res1"
         );
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
                 Graql.parsePattern("(someRole: $x, singleRole: $y) isa res1;"),
-                ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage("res1")
+                ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE,
+                "res1"
         );
     }
 
@@ -419,12 +430,14 @@ public class RuleIT {
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("$x has some-relation 'value';"),
                 Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE.getMessage("some-relation")
+                ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE,
+                "some-relation"
         );
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
                 Graql.parsePattern("$x has some-relation 'value';"),
-                ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE.getMessage("some-relation")
+                ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE,
+                "some-relation"
         );
     }
 
@@ -433,7 +446,8 @@ public class RuleIT {
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
                 Graql.parsePattern("(someRole: $x, singleRole: $y) isa anotherRelation;"),
-                ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage("someRole", "anotherRelation")
+                ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED,
+                "someRole", "anotherRelation"
         );
     }
 
@@ -799,13 +813,21 @@ public class RuleIT {
         }
     }
 
-    private void validateOntologicallyIllegalRule(Pattern when, Pattern then, String message){
+    public static <T> T[] concat(T[] first, T[] second) {
+        T[] result = Arrays.copyOf(first, first.length + second.length);
+        System.arraycopy(second, 0, result, first.length, second.length);
+        return result;
+    }
+
+    private void validateOntologicallyIllegalRule(Pattern when, Pattern then, ErrorMessage message, String... outputParams){
         try(TransactionOLTP tx = session.transaction().write()) {
             initTx(tx);
-            tx.putRule(UUID.randomUUID().toString(), when, then);
+            Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
 
+            String[] ruleParam = {rule.label().getValue()};
+            Object[] params = concat(ruleParam, outputParams);
             expectedException.expect(InvalidKBException.class);
-            expectedException.expectMessage(message);
+            expectedException.expectMessage(message.getMessage(params));
 
             tx.commit();
         }
