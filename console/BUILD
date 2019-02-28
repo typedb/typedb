@@ -30,7 +30,7 @@ java_library(
     deps = [
         # Grakn Core dependencies
         "//common:common",
-        "//client-java:client-java",
+        "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
         "//server:server", # NEEDS TO GO
 
