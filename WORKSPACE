@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-workspace(name = "grakn_core")
+workspace(name = "graknlabs_grakn_core")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
@@ -59,6 +59,9 @@ antlr_dependencies()
 load("@graknlabs_graql//dependencies/maven:dependencies.bzl", graql_dependencies = "maven_dependencies")
 graql_dependencies()
 
+
+load("//dependencies/git:dependencies.bzl", "graknlabs_client_java")
+graknlabs_client_java()
 
 #######################################
 # Load compiler dependencies for GRPC #

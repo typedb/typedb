@@ -11,7 +11,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkBigIT",
     deps = [
-        "//client-java",
+        "@graknlabs_client_java//:client-java",
         "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
@@ -35,7 +35,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkSmallIT",
     deps = [
-        "//client-java:client-java",
+        "@graknlabs_client_java//:client-java",
         "//concept:concept",
         "//server:server",
         "//test-integration/graql/reasoner/graph:diagonal-graph",

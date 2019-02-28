@@ -6,12 +6,12 @@ java_test(
     srcs = ["ClientJavaE2E.java", "ClientJavaE2EConstants.java"],
     deps = [
         # Internal dependencies
-        "//client-java:client-java",
         "//common:common",
         "//concept:concept",
         "//server:server",
 
         # External dependencies from @graknlabs
+        "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
 
         # External dependencies from Maven

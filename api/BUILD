@@ -16,12 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 #
-package(default_visibility = [
-    "//server:__pkg__",
-    "//client-java:__subpackages__",
-    "//test-integration/rule:__pkg__", # TODO: remove this once we move GraknTestServer in //server/test
-    # TODO: expose this package to "@graknlabs_grakn_kgms//server:__subpackages__"
-])
 
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")

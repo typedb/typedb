@@ -62,18 +62,6 @@ jobs:
           paths:
             - .
 
-  client-java:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - checkout
-      - bazel_install
-      - bazel_add_rbe_credential
-      - bazel:
-          command: bazel test //client-java/... --test_size_filters=small --test_output=errors
-      - bazel:
-          command: bazel test //client-java/... --test_size_filters=medium,large,enormous --test_output=errors
-
   common:
     machine: true
     working_directory: ~/grakn
@@ -196,10 +184,6 @@ workflows:
           filters:
             branches:
               ignore: grakn-core-release-branch
-      - client-java:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
       - common:
           filters:
             branches:
@@ -236,7 +220,6 @@ workflows:
               only: master
           requires:
             - build
-            - client-java
             - common
             - console
             - server
