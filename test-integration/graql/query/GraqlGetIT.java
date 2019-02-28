@@ -145,15 +145,22 @@ public class GraqlGetIT {
                 Graql.match(var("x").isa("name")).get().sort("x").limit(5)
         );
 
-        for(ConceptMap answer : answers) {
-            System.out.println(Printer.stringPrinter(false).toString(answer));
-        }
         assertEquals(5, answers.size());
         assertEquals("0", answers.get(0).get("x").asAttribute().value());
         assertEquals("1", answers.get(1).get("x").asAttribute().value());
         assertEquals("action", answers.get(2).get("x").asAttribute().value());
         assertEquals("Al Pacino", answers.get(3).get("x").asAttribute().value());
         assertEquals("Benjamin L. Willard", answers.get(4).get("x").asAttribute().value());
+    }
+
+    @Test
+    public void testGetContainsStringIgnoreCase() {
+        List<ConceptMap> answers = tx.execute(
+                Graql.match(var("x").isa("name").contains("jess")).get()
+        );
+
+        assertEquals(1, answers.size());
+        assertEquals("Sarah Jessica Parker", answers.get(0).get("x").asAttribute().value());
     }
 
     @Test

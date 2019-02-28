@@ -403,11 +403,27 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
             }
 
             static Function<java.lang.String, P<java.lang.String>> containsPredicate() {
-                return v -> new P<>(java.lang.String::contains, v);
+                return v -> new P<>(Comparison::containsIgnoreCase, v);
             }
 
             static Function<java.lang.String, P<java.lang.String>> regexPredicate() {
                 return v -> new P<>((value, regex) -> Pattern.matches(regex, value), v);
+            }
+
+            static boolean containsIgnoreCase(java.lang.String str1, java.lang.String str2) {
+                final int len2 = str2.length();
+                if (len2 == 0) return true; // Empty string is contained
+
+                final char first2L = Character.toLowerCase(str2.charAt(0));
+                final char first2U = Character.toUpperCase(str2.charAt(0));
+
+                for (int i = 0; i <= str1.length() - len2; i++) {
+                    // Quick check before calling the more expensive regionMatches() method:
+                    final char first1 = str1.charAt(i);
+                    if (first1 != first2L && first1 != first2U) continue;
+                    if (str1.regionMatches(true, i, str2, 0, len2)) return true;
+                }
+                return false;
             }
 
             @Override
