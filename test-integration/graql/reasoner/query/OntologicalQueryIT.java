@@ -28,6 +28,8 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -38,19 +40,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
+import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 @SuppressWarnings("CheckReturnValue")
 public class OntologicalQueryIT {
+
+    private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -60,25 +58,12 @@ public class OntologicalQueryIT {
 
     private static SessionImpl genericSchemaSession;
 
-    private static void loadFromFile(String fileName, SessionImpl session) {
-        try {
-            InputStream inputStream = new FileInputStream("test-integration/graql/reasoner/resources/" + fileName);
-            String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            TransactionOLTP tx = session.transaction().write();
-            Graql.parseList(s).forEach(tx::execute);
-            tx.commit();
-        } catch (Exception e) {
-            System.err.println(e);
-            throw new RuntimeException(e);
-        }
-    }
-
     private static TransactionOLTP tx;
 
     @BeforeClass
     public static void loadContext() {
         genericSchemaSession = server.sessionWithNewKeyspace();
-        loadFromFile("ruleApplicabilityTest.gql", genericSchemaSession);
+        loadFromFileAndCommit(resourcePath, "ruleApplicabilityTest.gql", genericSchemaSession);
     }
 
     @AfterClass

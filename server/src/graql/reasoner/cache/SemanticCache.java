@@ -180,9 +180,11 @@ public abstract class SemanticCache<
     private boolean propagateAnswersToQuery(ReasonerAtomicQuery target, CacheEntry<ReasonerAtomicQuery, SE> childMatch, boolean inferred){
         ReasonerAtomicQuery child = childMatch.query();
         boolean[] newAnswersFound = {false};
+        boolean childGround = child.isGround();
         parents.get(queryToKey(child))
                 .stream()
-                .filter(parent -> isDBComplete(keyToQuery(parent)))
+                //allow for partial propagation (propagation when parents are not complete) if query ground
+                .filter(parent -> childGround || isDBComplete(keyToQuery(parent)))
                 .map(this::keyToQuery)
                 .map(this::getEntry)
                 .forEach(parentMatch -> {
@@ -206,7 +208,6 @@ public abstract class SemanticCache<
          */
         CacheEntry<ReasonerAtomicQuery, SE> match = entry != null? entry : this.getEntry(query);
         if (match != null){
-
             ReasonerAtomicQuery equivalentQuery = match.query();
             SE answerSet = match.cachedElement();
             MultiUnifier multiUnifier = unifier == null? query.getMultiUnifier(equivalentQuery, unifierType()) : unifier;
@@ -225,6 +226,19 @@ public abstract class SemanticCache<
         return addEntry(createEntry(query, Sets.newHashSet(answer)));
     }
 
+    @Override
+    public CacheEntry<ReasonerAtomicQuery, SE> record(ReasonerAtomicQuery query, Set<ConceptMap> answers) {
+        ConceptMap first = answers.stream().findFirst().orElse(null);
+        if (first == null) return null;
+        CacheEntry<ReasonerAtomicQuery, SE> record = record(query, first);
+        Sets.difference(answers, Sets.newHashSet(first)).forEach(ans -> record(query, ans, record, null));
+        return record;
+    }
+
+    @Override
+    public CacheEntry<ReasonerAtomicQuery, SE> record(ReasonerAtomicQuery query, Stream<ConceptMap> answers) {
+        return record(query, answers.collect(toSet()));
+    }
 
     private Pair<Stream<ConceptMap>, MultiUnifier> getDBAnswerStreamWithUnifier(ReasonerAtomicQuery query){
         return new Pair<>(
@@ -239,7 +253,8 @@ public abstract class SemanticCache<
 
         if (match != null) {
             boolean answersToGroundQuery = false;
-            if (query.isGround()) {
+            boolean queryDBComplete = isDBComplete(query);
+            if (query.isGround() && !queryDBComplete) {
                 boolean newAnswersPropagated = propagateAnswersToQuery(query, match, true);
                 if (newAnswersPropagated) answersToGroundQuery = answersQuery(query);
             }
@@ -248,7 +263,7 @@ public abstract class SemanticCache<
             Pair<Stream<ConceptMap>, MultiUnifier> cachePair = entryToAnswerStreamWithUnifier(query, match);
 
             //if db complete or we found answers to ground query via propagation we don't need to hit the database
-            if (isDBComplete(query) || answersToGroundQuery) return cachePair;
+            if (queryDBComplete || answersToGroundQuery) return cachePair;
 
             //otherwise lookup and add inferred answers on top
             return new Pair<>(
@@ -268,21 +283,6 @@ public abstract class SemanticCache<
             return new Pair<>(entryToAnswerStream(newEntry), MultiUnifierImpl.trivial());
         }
         return getDBAnswerStreamWithUnifier(query);
-    }
-
-
-    @Override
-    public CacheEntry<ReasonerAtomicQuery, SE> record(ReasonerAtomicQuery query, Set<ConceptMap> answers) {
-        ConceptMap first = answers.stream().findFirst().orElse(null);
-        if (first == null) return null;
-        CacheEntry<ReasonerAtomicQuery, SE> record = record(query, first);
-        Sets.difference(answers, Sets.newHashSet(first)).forEach(ans -> record(query, ans, record, null));
-        return record;
-    }
-
-    @Override
-    public CacheEntry<ReasonerAtomicQuery, SE> record(ReasonerAtomicQuery query, Stream<ConceptMap> answers) {
-        return record(query, answers.collect(toSet()));
     }
 
     @Override

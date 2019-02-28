@@ -1,6 +1,23 @@
 load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
 
 java_test(
+    name = "query-cache-it",
+    size = "medium",
+    srcs = ["QueryCacheIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
+    test_class = "grakn.core.graql.reasoner.cache.QueryCacheIT",
+    deps = [
+        "//concept",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+java_test(
     name = "rule-cache-it",
     size = "medium",
     srcs = ["RuleCacheIT.java"],
@@ -8,19 +25,19 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],
     test_class = "grakn.core.graql.reasoner.cache.RuleCacheIT",
     deps = [
-        "//concept:concept",
-        "//server:server",
-
-        "@graknlabs_graql//java:graql",
-        
+        "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
+        "//server",
         "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+        "@graknlabs_graql//java:graql",
     ],
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":rule-cache-it"
+        ":query-cache-it",
+        ":rule-cache-it",
     ],
 )

@@ -31,17 +31,14 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Set;
-import java.util.stream.Collectors;
-
+import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.type;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -50,29 +47,17 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("CheckReturnValue")
 public class RuleCacheIT {
 
+    private static String resourcePath = "test-integration/graql/reasoner/resources/";
+
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl ruleApplicabilitySession;
 
-    private static void loadFromFile(String fileName, SessionImpl session) {
-        try {
-            InputStream inputStream = RuleCacheIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/" + fileName);
-            String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            TransactionOLTP tx = session.transaction().write();
-            Graql.parseList(s).forEach(tx::execute);
-            tx.commit();
-        } catch (Exception e) {
-            System.err.println(e);
-            throw new RuntimeException(e);
-        }
-    }
-
     @BeforeClass
     public static void loadContext() {
         ruleApplicabilitySession = server.sessionWithNewKeyspace();
-        loadFromFile("ruleApplicabilityTest.gql", ruleApplicabilitySession);
-
+        loadFromFileAndCommit(resourcePath, "ruleApplicabilityTest.gql", ruleApplicabilitySession);
     }
 
     @AfterClass
