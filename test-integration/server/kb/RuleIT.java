@@ -649,6 +649,27 @@ public class RuleIT {
     }
 
     @Test
+    public void whenAddingRuleWithContradictionWithinIt_Throw() throws InvalidKBException {
+        try (TransactionOLTP tx = session.transaction().write()) {
+            EntityType p = tx.putEntityType("p");
+            EntityType q = tx.putEntityType("q");
+
+            tx.putRule("Rule",
+                    Graql.parsePattern("{$x isa entity; $x isa q;not{ $x isa q;};};"),
+                    Graql.parsePattern("$x isa p;"));
+
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(allOf(
+                    containsString("The rule graph contains a contradiction"),
+                    containsString(p.toString()),
+                    containsString(q.toString())
+            ));
+
+            tx.commit();
+        }
+    }
+
+    @Test
     public void whenAddingRulesWithNonTrivialContradiction_Throw() throws InvalidKBException {
         try (TransactionOLTP tx = session.transaction().write()) {
             EntityType p = tx.putEntityType("p");

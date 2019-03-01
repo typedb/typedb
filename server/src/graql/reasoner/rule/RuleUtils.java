@@ -123,7 +123,8 @@ public class RuleUtils {
                     })
                 );
         return negativeGraph.entries().stream()
-                .filter(e -> isTypeReachable(e.getKey(), e.getValue().getKey(), positiveGraph, e.getValue().getValue()))
+                .filter(e -> isTypeReachable(e.getKey(), e.getValue().getKey(), positiveGraph, e.getValue().getValue())
+                        || positiveGraph.containsEntry(e.getKey(), e.getValue()))
                 .map(e -> new Pair<>(e.getKey(), e.getValue().getKey()));
     }
 
