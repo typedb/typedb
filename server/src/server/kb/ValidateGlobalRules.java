@@ -22,6 +22,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
@@ -34,13 +35,14 @@ import grakn.core.graql.reasoner.query.CompositeQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.rule.RuleUtils;
-import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.concept.RelationTypeImpl;
 import grakn.core.server.kb.concept.RuleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.Casting;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -54,9 +56,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_CASTING;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_MORE_THAN_ONE_USE_OF_KEY;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_TYPE;
@@ -238,24 +240,32 @@ class ValidateGlobalRules {
      * @return An error message if the thing does not have all the required resources
      */
     static Optional<String> validateInstancePlaysAllRequiredRoles(Thing thing) {
-        TypeImpl<?, ?> currentConcept = (TypeImpl) thing.type();
+        TypeImpl<?, ?> type = (TypeImpl) thing.type();
 
-        while (currentConcept != null) {
+        while (type != null) {
 
-            Map<Role, Boolean> plays = currentConcept.directPlays();
-            for (Map.Entry<Role, Boolean> playsEntry : plays.entrySet()) {
-                if (playsEntry.getValue()) {
-                    Role role = playsEntry.getKey();
+            Map<Role, Boolean> rolesAreRequired = type.directPlays();
+            for (Map.Entry<Role, Boolean> roleIsRequired : rolesAreRequired.entrySet()) {
+                if (roleIsRequired.getValue()) {
+                    Role role = roleIsRequired.getKey();
+                    Label attributeType = Schema.ImplicitType.explicitLabel(role.label());
+
                     // Assert there is a relation for this type
-                    Stream<Relation> relations = thing.relations(role);
+                    if (!CommonUtil.containsOnly(thing.relations(role), 1)) {
+                        return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.id(), attributeType));
+                    }
 
-                    if (!CommonUtil.containsOnly(relations, 1)) {
+                    Relation keyRelation = thing.relations(role).findFirst().get();
+                    final TypeImpl<?, ?> ownerType = type;
+                    final Role keyValueRole = type.vertex().tx().getRole(Schema.ImplicitType.KEY_VALUE.getLabel(attributeType).getValue());
+                    final Attribute<?> keyValue = keyRelation.rolePlayers(keyValueRole).findFirst().get().asAttribute();
+                    if (keyValue.owners().filter(owner -> owner.type().sups().anyMatch(t -> t.equals(ownerType))).limit(2).count() > 1) {
                         Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.label());
-                        return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.id(), resourceTypeLabel));
+                        return Optional.of(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage(type.label(), keyValue.value(), resourceTypeLabel));
                     }
                 }
             }
-            currentConcept = (TypeImpl) currentConcept.sup();
+            type = (TypeImpl) type.sup();
         }
         return Optional.empty();
     }
