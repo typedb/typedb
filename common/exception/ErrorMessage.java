@@ -96,6 +96,7 @@ public enum ErrorMessage {
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
 
     VALIDATION_NOT_EXACTLY_ONE_KEY("Thing [%s] does not have exactly one key of type [%s]. It either has no keys assigned to it, or it has more than one. \n"),
+    VALIDATION_MORE_THAN_ONE_USE_OF_KEY("There is more than one thing of type [%s] that owns the key [%s] of type [%s]. \n"),
 
     VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role [%s] which is connected to Relation Type [%s] " +
             "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),

@@ -63,6 +63,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_MORE_THAN_ONE_USE_OF_KEY;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static graql.lang.Graql.type;
@@ -227,6 +228,35 @@ public class GraqlInsertIT {
         ConceptMap result = results.iterator().next();
         assertEquals(ImmutableSet.of(new Variable("x"), new Variable("z")), result.vars());
         assertThat(result.concepts(), Matchers.everyItem(notNullValue(Concept.class)));
+    }
+
+    @Test
+    public void testInsertDuplicateUseOfKeysInOneCommit() {
+        GraqlInsert insert = Graql.insert(
+                var("x").isa("genre").has("name", "very-sad-comedy"),
+                var("y").isa("genre").has("name", "very-sad-comedy")
+        );
+        tx.execute(insert);
+
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage("genre", "very-sad-comedy", "name"));
+        tx.commit();
+    }
+
+    @Test
+    public void testInsertDuplicateUseOfKeysInSeparateCommits() {
+        GraqlInsert insert = Graql.insert(var("x").isa("genre").has("name", "very-sad-comedy"));
+        tx.execute(insert);
+        tx.commit();
+
+        tx = session.transaction().write();
+
+        insert = Graql.insert(var("y").isa("genre").has("name", "very-sad-comedy"));
+        tx.execute(insert);
+
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage("genre", "very-sad-comedy", "name"));
+        tx.commit();
     }
 
     @Test

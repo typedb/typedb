@@ -313,7 +313,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Schema.ImplicitType hasOwner = Schema.ImplicitType.HAS_OWNER;
 
         //Is this attribute a key to me?
-        if (type().keys().anyMatch(rt -> rt.equals(attribute.type()))) {
+        if (type().keys().anyMatch(key -> key.equals(attribute.type()))) {
             has = Schema.ImplicitType.KEY;
             hasValue = Schema.ImplicitType.KEY_VALUE;
             hasOwner = Schema.ImplicitType.KEY_OWNER;

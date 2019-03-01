@@ -97,7 +97,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     }
 
     /**
-     * @param direction the direction of the neigouring concept to get
+     * @param direction the direction of the neighbouring concept to get
      * @param label     The edge label to traverse
      * @return The neighbouring concepts found by traversing edges of a specific type
      */
