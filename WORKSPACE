@@ -63,6 +63,9 @@ graql_dependencies()
 load("//dependencies/git:dependencies.bzl", "graknlabs_client_java")
 graknlabs_client_java()
 
+load("//dependencies/git:dependencies.bzl", "graknlabs_grabl")
+graknlabs_grabl()
+
 #######################################
 # Load compiler dependencies for GRPC #
 #######################################
