@@ -145,11 +145,10 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Sync docs/development to the latest Grakn version
+          name: Sync docs:development client-java:development client-python:development client-nodejs:development to the latest Grakn version
           command: |
-            mkdir docs
-            cd docs
-            python ../.circleci/grakn-docs-update.py
+            bazel run @graknlabs_grabl//sync:dependency-update -- --dependency grakn:master \
+              --user docs:development client-java:development client-python:development client-nodejs:development
   
   approve-release:
     machine: true
