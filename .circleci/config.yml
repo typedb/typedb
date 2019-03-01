@@ -140,10 +140,11 @@ jobs:
       - bazel:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
-  grakn-docs-update:
+  dependency-update:
     machine: true
     steps:
       - checkout
+      - bazel_install
       - run:
           name: Sync docs:development client-java:development client-python:development client-nodejs:development to the latest Grakn version
           command: |
@@ -212,8 +213,8 @@ workflows:
             branches:
               ignore: grakn-core-release-branch
 
-      # sync docs/development to the latest grakn version
-      - grakn-docs-update:
+      # sync dependencies to the latest grakn version
+      - dependency-update:
           filters:
             branches:
               only: master
@@ -234,7 +235,7 @@ workflows:
             branches:
               only: master
           requires:
-            - grakn-docs-update
+            - dependency-update
 
   # the 'ci-release' workflow is triggered by the creation of 'grakn-core-release-branch' branch in graknlabs/grakn
   # it consists of jobs which:
