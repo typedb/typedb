@@ -36,5 +36,5 @@ def graknlabs_grabl():
     git_repository(
         name = "graknlabs_grabl",
         remote = "https://github.com/graknlabs/grabl",
-        commit = "4a7abd7f79f989424c6f13f625e9ce63a08d2af6",
+        commit = "0efb9bc672ce0ae3c31c0703858cda482a1bb829",
     )
