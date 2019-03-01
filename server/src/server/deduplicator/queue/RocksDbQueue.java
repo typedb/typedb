@@ -18,8 +18,8 @@
 
 package grakn.core.server.deduplicator.queue;
 
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.concept.ConceptId;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import mjson.Json;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
@@ -161,7 +161,7 @@ public class RocksDbQueue implements AutoCloseable {
         //TODO: figure out if we could not use/depend on Json, which brings in mjson.Json
         static byte[] serialiseAttributeUtf8(Attribute attribute) {
             Json json = Json.object(
-                    "attribute-keyspace", attribute.keyspace().getName(),
+                    "attribute-keyspace", attribute.keyspace().name(),
                     "attribute-index", attribute.index(),
                     "attribute-concept-id", attribute.conceptId().getValue()
             );
@@ -173,7 +173,7 @@ public class RocksDbQueue implements AutoCloseable {
             String keyspace = json.at("attribute-keyspace").asString();
             String value = json.at("attribute-index").asString();
             String conceptId = json.at("attribute-concept-id").asString();
-            return Attribute.create(Keyspace.of(keyspace), value, ConceptId.of(conceptId));
+            return Attribute.create(KeyspaceImpl.of(keyspace), value, ConceptId.of(conceptId));
         }
 
         static String deserializeStringUtf8(byte[] bytes) {

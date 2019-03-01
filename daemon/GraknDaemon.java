@@ -105,7 +105,7 @@ public class GraknDaemon {
     }
 
     private static void printGraknLogo() {
-        Path ascii = Paths.get(".", "services", "grakn", "grakn-core-ascii.txt");
+        Path ascii = Paths.get(".", "server", "services", "grakn", "grakn-core-ascii.txt");
         if (ascii.toFile().exists()) {
             try {
                 System.out.println(new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8));

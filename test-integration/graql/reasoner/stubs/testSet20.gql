@@ -13,7 +13,7 @@ entity1 sub entity,
 
 #Relations
 
-relation1 sub relationship,
+relation1 sub relation,
     relates role1,
     relates role2;
 
@@ -21,7 +21,7 @@ sub-relation1 sub relation1,
     relates role1,
     relates role2;
 
-relation2 sub relationship,
+relation2 sub relation,
     relates role1,
     relates role2;
 

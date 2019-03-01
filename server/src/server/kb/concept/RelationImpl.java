@@ -19,13 +19,13 @@
 package grakn.core.server.kb.concept;
 
 import com.google.common.collect.Iterables;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.structure.VertexElement;
@@ -38,25 +38,25 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * Encapsulates relationships between Thing
+ * Encapsulates relations between Thing
  * A relation which is an instance of a RelationType defines how instances may relate to one another.
  */
 public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
-    private RelationStructure relationshipStructure;
+    private RelationStructure relationStructure;
 
-    private RelationImpl(RelationStructure relationshipStructure) {
-        this.relationshipStructure = relationshipStructure;
-        if (relationshipStructure.isReified()) {
-            relationshipStructure.reify().owner(this);
+    private RelationImpl(RelationStructure relationStructure) {
+        this.relationStructure = relationStructure;
+        if (relationStructure.isReified()) {
+            relationStructure.reify().owner(this);
         }
     }
 
-    public static RelationImpl create(RelationStructure relationshipStructure) {
-        return new RelationImpl(relationshipStructure);
+    public static RelationImpl create(RelationStructure relationStructure) {
+        return new RelationImpl(relationStructure);
     }
 
-    public static RelationImpl from(Relation relationship) {
-        return (RelationImpl) relationship;
+    public static RelationImpl from(Relation relation) {
+        return (RelationImpl) relation;
     }
 
     /**
@@ -67,33 +67,33 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
      * @return The RelationReified if the Relation has been reified
      */
     public Optional<RelationReified> reified() {
-        if (!relationshipStructure.isReified()) return Optional.empty();
-        return Optional.of(relationshipStructure.reify());
+        if (!relationStructure.isReified()) return Optional.empty();
+        return Optional.of(relationStructure.reify());
     }
 
     /**
      * Reifys and returns the RelationReified
      */
     public RelationReified reify() {
-        if (relationshipStructure.isReified()) return relationshipStructure.reify();
+        if (relationStructure.isReified()) return relationStructure.reify();
 
         //Get the role players to transfer
         Map<Role, Set<Thing>> rolePlayers = structure().allRolePlayers();
 
         //Now Reify
-        relationshipStructure = relationshipStructure.reify();
+        relationStructure = relationStructure.reify();
 
-        //Transfer relationships
+        //Transfer relations
         rolePlayers.forEach((role, things) -> {
             Thing thing = Iterables.getOnlyElement(things);
             assign(role, thing);
         });
 
-        return relationshipStructure.reify();
+        return relationStructure.reify();
     }
 
     public RelationStructure structure() {
-        return relationshipStructure;
+        return relationStructure;
     }
 
     @Override
@@ -114,7 +114,7 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
 
     @Override
     public Stream<Attribute<?>> keys(AttributeType[] attributeTypes) {
-        return reified().map(relationshipReified -> relationshipReified.attributes(attributeTypes)).orElseGet(Stream::empty);
+        return reified().map(relationReified -> relationReified.attributes(attributeTypes)).orElseGet(Stream::empty);
     }
 
     @Override
@@ -182,7 +182,7 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
 
     @Override
     public void unassign(Role role, Thing player) {
-        reified().ifPresent(relationshipReified -> relationshipReified.removeRolePlayer(role, player));
+        reified().ifPresent(relationReified -> relationReified.removeRolePlayer(role, player));
     }
 
     /**

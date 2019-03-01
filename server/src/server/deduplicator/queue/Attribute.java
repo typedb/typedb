@@ -19,19 +19,19 @@
 package grakn.core.server.deduplicator.queue;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.concept.ConceptId;
+import grakn.core.server.keyspace.KeyspaceImpl;
 
 /**
  *
  */
 @AutoValue
 public abstract class Attribute {
-    public abstract Keyspace keyspace();
+    public abstract KeyspaceImpl keyspace();
     public abstract String index();
     public abstract ConceptId conceptId();
 
-    public static Attribute create(Keyspace keyspace, String index, ConceptId conceptId) {
+    public static Attribute create(KeyspaceImpl keyspace, String index, ConceptId conceptId) {
         return new AutoValue_Attribute(keyspace, index, conceptId);
     }
 }

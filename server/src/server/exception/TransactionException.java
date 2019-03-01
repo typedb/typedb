@@ -21,19 +21,17 @@ package grakn.core.server.exception;
 import com.google.common.base.Preconditions;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
-import grakn.core.server.Transaction;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
+import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.kb.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
@@ -76,7 +74,7 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when attempting to mutate a {@link Schema.MetaSchema}
+     * Thrown when attempting to mutate a Schema.MetaSchema
      */
     public static TransactionException metaTypeImmutable(Label metaLabel) {
         return create(META_TYPE_IMMUTABLE.getMessage(metaLabel));
@@ -90,29 +88,29 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when a {@link Thing} is not allowed to have {@link Attribute} of that {@link AttributeType}
+     * Thrown when a Thing is not allowed to have Attribute of that AttributeType
      */
     public static TransactionException hasNotAllowed(Thing thing, Attribute attribute) {
         return create(HAS_INVALID.getMessage(thing.type().label(), attribute.type().label()));
     }
 
     /**
-     * Thrown when attempting to set a regex on a {@link Attribute} whose type {@link AttributeType} is not of the
-     * data type {@link AttributeType.DataType#STRING}
+     * Thrown when attempting to set a regex on a Attribute whose type AttributeType is not of the
+     * data type AttributeType.DataType#STRING
      */
     public static TransactionException cannotSetRegex(AttributeType attributeType) {
         return create(REGEX_NOT_STRING.getMessage(attributeType.label()));
     }
 
     /**
-     * Thrown when a {@link Type} has incoming edges and therefore cannot be deleted
+     * Thrown when a Type has incoming edges and therefore cannot be deleted
      */
     public static TransactionException cannotBeDeleted(SchemaConcept schemaConcept) {
         return create(ErrorMessage.CANNOT_DELETE.getMessage(schemaConcept.label()));
     }
 
     /**
-     * Thrown when {@code type} has {@code attributeType} as a {@link Type#key(AttributeType)} and a {@link Type#has(AttributeType)}
+     * Thrown when {@code type} has {@code attributeType} as a Type#key(AttributeType) and a Type#has(AttributeType)
      */
     public static TransactionException duplicateHas(Type type, AttributeType attributeType) {
         return create(ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(type.label(), attributeType.label()));
@@ -147,25 +145,26 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when casting Grakn concepts/answers incorrectly.
-     */
-    public static TransactionException invalidCasting(Object concept, Class type) {
-        return create(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
-    }
-
-    /**
-     * Thrown when creating an Attribute whose value {@link Object} does not match attribute data type
+     * Thrown when creating an Attribute whose value Object does not match attribute data type
      */
     public static TransactionException invalidAttributeValue(Object object, AttributeType.DataType dataType) {
-        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.getName()));
+        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, object.getClass().getSimpleName(), dataType.name()));
     }
 
     /**
      * Thrown when using an unsupported datatype with resources
      */
     public static TransactionException unsupportedDataType(Object value) {
-        String supported = AttributeType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
-        return create(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
+        return unsupportedDataType(value.getClass());
+    }
+
+    public static TransactionException unsupportedDataType(Class<?> clazz) {
+        return unsupportedDataType(clazz.getName());
+    }
+
+    public static TransactionException unsupportedDataType(String name) {
+        String supported = AttributeType.DataType.values().stream().map(AttributeType.DataType::name).collect(Collectors.joining(","));
+        return create(ErrorMessage.INVALID_DATATYPE.getMessage(name, supported));
     }
 
     /**
@@ -185,7 +184,7 @@ public class TransactionException extends GraknException {
     /**
      * Thrown when attempting to open a transaction which is already open
      */
-    public static TransactionException transactionOpen(Transaction tx) {
+    public static TransactionException transactionOpen(TransactionOLTP tx) {
         return create(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(tx.keyspace()));
     }
 
@@ -199,7 +198,7 @@ public class TransactionException extends GraknException {
     /**
      * Thrown when attempting to mutate a read only transaction
      */
-    public static TransactionException transactionReadOnly(Transaction tx) {
+    public static TransactionException transactionReadOnly(TransactionOLTP tx) {
         return create(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
     }
 
@@ -213,7 +212,7 @@ public class TransactionException extends GraknException {
     /**
      * Thrown when attempting to use the graph when the transaction is closed
      */
-    public static TransactionException transactionClosed(@Nullable Transaction tx, @Nullable String reason) {
+    public static TransactionException transactionClosed(@Nullable TransactionOLTP tx, @Nullable String reason) {
         if (reason == null) {
             Preconditions.checkNotNull(tx);
             return create(ErrorMessage.TX_CLOSED.getMessage(tx.keyspace()));
@@ -225,7 +224,7 @@ public class TransactionException extends GraknException {
     /**
      * Thrown when the graph can not be closed due to an unknown reason.
      */
-    public static TransactionException closingFailed(Transaction tx, Exception e) {
+    public static TransactionException closingFailed(TransactionOLTP tx, Exception e) {
         return new TransactionException(CLOSE_FAILURE.getMessage(tx.keyspace()), e);
     }
 
@@ -251,36 +250,36 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when trying to add a {@link Schema.VertexProperty} to a {@link Concept} which does not accept that type
-     * of {@link Schema.VertexProperty}
+     * Thrown when trying to add a Schema.VertexProperty to a Concept which does not accept that type
+     * of Schema.VertexProperty
      */
     public static TransactionException invalidPropertyUse(Concept concept, Schema.VertexProperty property) {
         return create(INVALID_PROPERTY_USE.getMessage(concept, property));
     }
 
     /**
-     * Thrown when trying to build a {@link Concept} using an invalid graph construct
+     * Thrown when trying to build a Concept using an invalid graph construct
      */
     public static TransactionException unknownConcept(String type) {
         return create(UNKNOWN_CONCEPT.getMessage(type));
     }
 
     /**
-     * Thrown when changing the {@link Label} of an {@link SchemaConcept} which is owned by another {@link SchemaConcept}
+     * Thrown when changing the Label of an SchemaConcept which is owned by another SchemaConcept
      */
     public static TransactionException labelTaken(Label label) {
         return create(LABEL_TAKEN.getMessage(label));
     }
 
     /**
-     * Thrown when creating an invalid {@link Keyspace}
+     * Thrown when creating an invalid KeyspaceImpl
      */
     public static TransactionException invalidKeyspaceName(String keyspace) {
         return create(ErrorMessage.INVALID_KEYSPACE_NAME.getMessage(keyspace));
     }
 
     /**
-     * Thrown when changing the super of a {@link Type} will result in a {@link Role} disconnection which is in use.
+     * Thrown when changing the super of a Type will result in a Role disconnection which is in use.
      */
     public static TransactionException changingSuperWillDisconnectRole(Type oldSuper, Type newSuper, Role role) {
         return create(String.format("Cannot change the super type {%s} to {%s} because {%s} is connected to role {%s} which {%s} is not connected to.",
@@ -288,7 +287,7 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when a {@link Thing} is missing a {@link Type}
+     * Thrown when a Thing is missing a Type
      */
     public static TransactionException missingType(ConceptId id) {
         return create(String.format("Thing {%s} is missing a type", id));
@@ -302,15 +301,15 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when attempting to create a {@link Thing} via the execution of a {@link Rule} when
-     * the {@link Thing} already exists.
+     * Thrown when attempting to create a Thing via the execution of a Rule when
+     * the Thing already exists.
      */
     public static TransactionException nonInferredThingExists(Thing thing) {
         return create(String.format("Thing {%s} was already created and cannot be set to inferred", thing));
     }
 
     /**
-     * Thrown when trying to build a {@link Concept} from an invalid vertex or edge
+     * Thrown when trying to build a Concept from an invalid vertex or edge
      */
     public static TransactionException invalidElement(Element element) {
         return create(String.format("Cannot build a concept from element {%s} due to it being deleted.", element));

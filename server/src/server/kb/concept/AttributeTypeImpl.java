@@ -18,10 +18,10 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 
 import javax.annotation.Nullable;
@@ -49,7 +49,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
     private AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType) {
         super(vertexElement, type);
-        vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, dataType(), DataType::getName);
+        vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, dataType(), DataType::name);
     }
 
     public static <D> AttributeTypeImpl<D> get(VertexElement vertexElement) {
@@ -108,7 +108,6 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Attribute<D> create(D value) {
         return putAttribute(value, false);
@@ -122,7 +121,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         Objects.requireNonNull(value);
 
         BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
-            if (dataType().equals(DataType.STRING)) checkConformsToRegexes(value);
+            if (dataType().equals(DataType.STRING)) checkConformsToRegexes((String) value);
             return vertex().tx().factory().buildAttribute(vertex, type, value);
         };
 
@@ -155,12 +154,12 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      * @param value The value to check the regexes against.
      * @throws TransactionException when the value does not conform to the regex of its types
      */
-    private void checkConformsToRegexes(D value) {
+    private void checkConformsToRegexes(String value) {
         //Not checking the datatype because the regex will always be null for non strings.
         this.sups().forEach(sup -> {
             String regex = sup.regex();
-            if (regex != null && !Pattern.matches(regex, (String) value)) {
-                throw TransactionException.regexFailure(this, (String) value, regex);
+            if (regex != null && !Pattern.matches(regex, value)) {
+                throw TransactionException.regexFailure(this, value, regex);
             }
         });
     }
@@ -175,10 +174,18 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      * @return The data type which instances of this resource must conform to.
      */
     //This unsafe cast is suppressed because at this stage we do not know what the type is when reading from the rootGraph.
-    @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
+    @SuppressWarnings({"unchecked"})
+    @Nullable
     @Override
     public DataType<D> dataType() {
-        return (DataType<D>) DataType.SUPPORTED_TYPES.get(vertex().property(Schema.VertexProperty.DATA_TYPE));
+        String className = vertex().property(Schema.VertexProperty.DATA_TYPE);
+        if (className == null) return null;
+
+        try {
+            return (DataType<D>) DataType.of(Class.forName(className));
+        } catch (ClassNotFoundException e) {
+            throw TransactionException.unsupportedDataType(className);
+        }
     }
 
     /**

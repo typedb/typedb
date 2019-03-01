@@ -40,11 +40,12 @@ public enum ErrorMessage {
     COULD_NOT_GET_PID("Couldn't get the PID of Grakn Server. Received '%s'"),
 
     //--------------------------------------------- Core Errors -----------------------------------------------
+    VARIABLE_DOES_NOT_EXIST("the variable [%s] does not exist"),
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
     SUPER_LOOP_DETECTED("By setting the super of concept [%s] to [%s]. You will be creating a loop. This is prohibited"),
     INVALID_UNIQUE_PROPERTY_MUTATION("Property [%s] of Concept [%s] cannot be changed to [%s] as it is already taken by Concept [%s]"),
     UNIQUE_PROPERTY_TAKEN("Property [%s] with value [%s] is already taken by concept [%s]"),
-    INVALID_DATATYPE("The value [%s] must be of datatype [%s]"),
+    INVALID_DATATYPE("The value [%s] of type [%s] must be of datatype [%s]"),
     INVALID_OBJECT_TYPE("The concept [%s] is not of type [%s]"),
     REGEX_INSTANCE_FAILURE("The regex [%s] of Attribute Type [%s] cannot be applied because value [%s] " +
             "does not conform to the regular expression"),
@@ -57,6 +58,7 @@ public enum ErrorMessage {
     HAS_INVALID("The type [%s] is not allowed to have an attribute of type [%s]"),
     BACKEND_EXCEPTION("Backend Exception."),
     INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
+    CONNECTION_CLOSED("The connection to the database is closed"),
     TX_CLOSED("The transaction for keyspace [%s] is closed. Use the session to get a new transaction for the graph."),
     SESSION_CLOSED("The session for graph [%s] is closed. Create a new session to interact with the graph."),
     TX_CLOSED_ON_ACTION("The transaction was %s and closed for graph [%s]. Use the session to get a new transaction for the graph."),
@@ -87,16 +89,16 @@ public enum ErrorMessage {
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
     VALIDATION_RELATION_CASTING_LOOP_FAIL("The relation [%s] has a role player playing the role [%s] " +
             "which it's type [%s] is not connecting to via a relates connection \n"),
-    VALIDATION_RELATIONSHIP_WITH_NO_ROLE_PLAYERS("Cannot commit relationship [%s] of type [%s] because it does not have any role players. \n"),
+    VALIDATION_RELATION_WITH_NO_ROLE_PLAYERS("Cannot commit relation [%s] of type [%s] because it does not have any role players. \n"),
 
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play Role [%s] \n"),
-    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relationship Type. \n"),
-    VALIDATION_RELATION_TYPE("Relationship Type [%s] does not have one or more roles \n"),
+    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relation Type. \n"),
+    VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
 
     VALIDATION_NOT_EXACTLY_ONE_KEY("Thing [%s] does not have exactly one key of type [%s]. It either has no keys assigned to it, or it has more than one. \n"),
 
-    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role [%s] which is connected to Relationship Type [%s] " +
-            "does not have a %s Role Type which is connected to the %s Relationship Type [%s] \n"),
+    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role [%s] which is connected to Relation Type [%s] " +
+            "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),
 
     VALIDATION_REQUIRED_RELATION("The role player [%s] of type [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
 
@@ -120,9 +122,7 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] does not form a valid clause, as it contains a multi-atom head\n"),
 
-
     VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("Atomic [%s] is not allowed to form a rule head of rule [%s]\n"),
-
 
     VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE("Atom [%s] is not allowed to form a rule head of rule [%s] as it contains an unbound variable\n"),
 
@@ -130,24 +130,24 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT("Atom [%s] is not allowed to form a rule head of rule [%s] as it has an implicit schema concept\n"),
 
-    VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE("Relationship [%s] is not allowed to form a rule head of rule [%s] as it has an implicit role\n"),
+    VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE("Relation [%s] is not allowed to form a rule head of rule [%s] as it has an implicit role\n"),
 
-    VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE("Relationship [%s] is not allowed to form a rule head of rule [%s] as it has an ambiguous (unspecified, variable or meta) role\n"),
+    VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE("Relation [%s] is not allowed to form a rule head of rule [%s] as it has an ambiguous (unspecified, variable or meta) role\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES("Attribute [%s] is not allowed to form a rule head of rule [%s] as it has ambiguous value predicates\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_NONSPECIFIC_PREDICATE("Attribute [%s] is not allowed to form a rule head of rule [%s] as it has a non-specific value predicate\n"),
 
 
-    VALIDATION_RULE_INVALID_RELATION_TYPE("Attempting to define a rule containing a relation pattern with type [%s] which is not a relation type\n"),
+    VALIDATION_RULE_INVALID_RELATION_TYPE("Rule [%s] attempts to define a relation pattern with type [%s] which is not a relation type\n"),
 
-    VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE("Attempting to define a rule containing an attribute pattern with type [%s] which is not an attribute type\n"),
+    VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE("Rule [%s] attempts to define an attribute pattern with type [%s] which is not an attribute type\n"),
 
-    VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE("Attempting to define a rule containing an attribute pattern of type [%s] with type [%s] that cannot have this attribute\n"),
+    VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE("Rule [%s] attempts to define a rule containing an attribute pattern of type [%s] with type [%s] that cannot have this attribute\n"),
 
-    VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED("Attempting to define a rule containing a relation pattern with role [%s] which cannot be played in relation [%s]\n"),
+    VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED("Rule [%s] attempts to define a rule containing a relation pattern with role [%s] which cannot be played in relation [%s]\n"),
 
-    VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE("Attempting to define a rule containing a relation pattern with type [%s] that cannot play role [%s] in relation [%s]\n"),
+    VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE("Rule [%s] attempts to define a rule containing a relation pattern with type [%s] that cannot play role [%s] in relation [%s]\n"),
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),

@@ -65,8 +65,6 @@ public abstract class ConfigKey<T> {
     public static final ConfigKey<Integer> SESSION_CACHE_TIMEOUT_MS = key("knowledge-base.schema-cache-timeout-ms", INT);
 
     public static final ConfigKey<Long> SHARDING_THRESHOLD = key("knowledge-base.sharding-threshold", LONG);
-    public static final ConfigKey<String> KB_MODE = key("knowledge-base.mode");
-    public static final ConfigKey<String> KB_ANALYTICS = key("knowledge-base.analytics");
     public static final ConfigKey<String> DATA_DIR = key("data-dir");
     public static final ConfigKey<String> LOG_DIR = key("log.dirs");
 

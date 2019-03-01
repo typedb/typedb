@@ -32,7 +32,7 @@ import java.util.function.Function;
 import static org.apache.tinkerpop.gremlin.structure.T.id;
 
 /**
- * Transaction AbstractElement
+ * TransactionOLTP AbstractElement
  * Base class used to represent a construct in the graph. This includes exposed constructs such as Concept
  * and hidden constructs such as EdgeElement and Casting
  *
@@ -155,12 +155,11 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
     public <X> void propertyImmutable(P property, X newValue, @Nullable X foundValue, Function<X, Object> converter) {
         Objects.requireNonNull(property);
 
-        if (foundValue != null) {
-            if (!foundValue.equals(newValue)) {
-                throw TransactionException.immutableProperty(foundValue, newValue, property);
-            }
-        } else {
+        if (foundValue == null) {
             property(property, converter.apply(newValue));
+
+        } else if (!foundValue.equals(newValue)) {
+            throw TransactionException.immutableProperty(foundValue, newValue, property);
         }
     }
 

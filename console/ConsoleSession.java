@@ -85,7 +85,7 @@ public class ConsoleSession implements AutoCloseable {
         this.client = new GraknClient(serverAddress);
         this.session = client.session(keyspace);
         this.consoleReader = new ConsoleReader(System.in, printOut);
-        this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().getName() + ANSI_RESET + "> ");
+        this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().name() + ANSI_RESET + "> ");
         this.printErr = printErr;
 
         File file = new File(HISTORY_FILE);
@@ -99,7 +99,7 @@ public class ConsoleSession implements AutoCloseable {
         consoleReader.println("...");
         consoleReader.flush();
 
-        tx = session.transaction(GraknClient.Transaction.Type.WRITE);
+        tx = session.transaction().write();
 
         try {
             String queries = readFile(filePath);
@@ -118,40 +118,40 @@ public class ConsoleSession implements AutoCloseable {
         consoleReader.setExpandEvents(false); // Disable JLine feature when seeing a '!'
         consoleReader.print(COPYRIGHT);
 
-        tx = session.transaction(GraknClient.Transaction.Type.WRITE);
-        String queryString;
+        tx = session.transaction().write();
+        String input;
 
-        while ((queryString = consoleReader.readLine()) != null) {
-            if (queryString.equals(EDITOR)) {
+        while ((input = consoleReader.readLine()) != null) {
+            if (input.equals(EDITOR)) {
                 executeQuery(openTextEditor());
 
-            } else if (queryString.startsWith(LOAD + ' ')) {
+            } else if (input.startsWith(LOAD + ' ')) {
                 try{
-                    queryString = readFile(Paths.get(unescapeJava(queryString.substring(LOAD.length() + 1))));
-                    executeQuery(queryString);
+                    input = readFile(Paths.get(unescapeJava(input.substring(LOAD.length() + 1))));
+                    executeQuery(input);
                 } catch (NoSuchFileException e) {
                     System.err.println("File not found: " + e.getMessage());
                 }
-            } else if (queryString.equals(COMMIT)) {
+            } else if (input.equals(COMMIT)) {
                 commit();
 
-            } else if (queryString.equals(ROLLBACK)) {
+            } else if (input.equals(ROLLBACK)) {
                 rollback();
 
-            } else if (queryString.equals(CLEAN)) {
+            } else if (input.equals(CLEAN)) {
                 clean();
                 consoleReader.flush();
                 return;
 
-            } else if (queryString.equals(CLEAR)) {
+            } else if (input.equals(CLEAR)) {
                 consoleReader.clearScreen();
 
-            } else if (queryString.equals(EXIT)) {
+            } else if (input.equals(EXIT)) {
                 consoleReader.flush();
                 return;
 
-            } else if (!queryString.isEmpty()) {
-                executeQuery(queryString);
+            } else if (!input.isEmpty()) {
+                executeQuery(input);
 
             } // We ignore empty commands
         }
@@ -250,7 +250,7 @@ public class ConsoleSession implements AutoCloseable {
 
     private void reopenTransaction() {
         if (!tx.isClosed()) tx.close();
-        tx = session.transaction(GraknClient.Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @Override

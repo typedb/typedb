@@ -20,27 +20,28 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.Explanation;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
+import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Variable;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.var;
@@ -75,7 +76,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingNonRuleResolvableQuery_explanationsAreEmpty(){
-        try (Transaction tx = geoSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = geoSession.transaction().read()) {
             String queryString = "match $x isa city, has name $n; get;";
 
             GraqlGet query = Graql.parse(queryString);
@@ -86,7 +87,7 @@ public class ExplanationIT {
 
     @Test
     public void whenQueryingWithReasoningOff_explanationsAreEmpty(){
-        try (Transaction tx = geoSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = geoSession.transaction().read()) {
             String queryString = "match $x isa city, has name $n; get;";
 
             GraqlGet query = Graql.parse(queryString);
@@ -97,7 +98,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingTransitiveClosure_explanationsAreCorrectlyNested() {
-        try (Transaction tx = geoSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = geoSession.transaction().read()) {
             String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
             Concept polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
@@ -146,7 +147,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingTransitiveClosureWithSpecificResourceAndTypes_explanationsAreCorrect() {
-        try (Transaction tx = geoSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = geoSession.transaction().read()) {
             String queryString = "match $x isa university;" +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                     "$y isa country;$y has name 'Poland'; get;";
@@ -185,7 +186,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingAGroundQuery_explanationsAreCorrect(){
-        try (Transaction tx = geoSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = geoSession.transaction().read()) {
             Concept polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
             Concept europe = getConcept(tx, "name", "Europe");
             String queryString = "match " +
@@ -208,7 +209,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingConjunctiveQueryWithTwoIdPredicates_explanationsAreCorrect(){
-        try (Transaction tx = geoSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = geoSession.transaction().read()) {
             Concept polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
@@ -227,7 +228,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingConjunctions_explanationsAreCorrect(){
-        try (Transaction tx = explanationSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = explanationSession.transaction().read()) {
             String queryString = "match " +
                     "(role1: $x, role2: $w) isa inferredRelation;" +
                     "$x has name $xName;" +
@@ -241,7 +242,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingMixedAtomicQueries_explanationsAreCorrect(){
-        try (Transaction tx = explanationSession.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = explanationSession.transaction().read()) {
             String queryString = "match " +
                     "$x has value 'high';" +
                     "($x, $y) isa carried-relation;" +
@@ -262,7 +263,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingEquivalentPartialQueries_explanationsAreCorrect(){
-        try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = explanationSession.transaction().write()) {
             String queryString = "match $x isa same-tag-column-link; get;";
 
             GraqlGet query = Graql.parse(queryString);
@@ -278,6 +279,43 @@ public class ExplanationIT {
         }
     }
 
+    /**
+     * Validates issue#3061 is fixed.
+     *
+     * The test illustrates the following issue. The `pair` and `has name` rules are mutually recursive - one fires the other.
+     * As a result, when resolving the second top atom of the input conjunctive query the answer is already in the cache.
+     * The answer contains a `RuleExplanation`.
+     * However, the query to be checked in cache is:
+     *
+     * `$p isa pair;`,
+     *
+     * whereas the cache contains:
+     *
+     * `$p (prep: $prep, pobj: $pobj) isa pair;`,
+     *
+     * which are not equivalent. The capture the answer correctly and recognise it as inferred the cache needs to be able
+     * to recognise the subsumption between queries`.
+     */
+    @Test
+    public void whenRulesAreMutuallyRecursive_explanationsAreRecognisedAsRuleOnes() {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+            loadFromFileAndCommit(resourcePath, "testSet30.gql", session);
+            for(int i = 0 ; i < 10 ; i++) {
+                try (TransactionOLTP tx = session.transaction().write()) {
+                    String queryString = "match $p isa pair, has name 'ff'; get;";
+                    List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
+                    answers.forEach(joinedAnswer -> {
+                        testExplanation(joinedAnswer);
+                        joinedAnswer.explanation().getAnswers()
+                                .forEach(inferredAnswer -> {
+                                            assertTrue(inferredAnswer.explanation().isRuleExplanation());
+                                        }
+                                );
+                    });
+                }
+            }
+        }
+    }
 
     private void testExplanation(Collection<ConceptMap> answers){
         answers.forEach(this::testExplanation);
@@ -317,7 +355,7 @@ public class ExplanationIT {
         answers.forEach(a -> assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
     }
 
-    private static Concept getConcept(Transaction tx, String typeLabel, String val){
+    private static Concept getConcept(TransactionOLTP tx, String typeLabel, String val){
         return tx.stream(Graql.match(var("x").has(typeLabel, val)).get("x"))
                 .map(ans -> ans.get("x")).findAny().orElse(null);
     }
@@ -338,8 +376,11 @@ public class ExplanationIT {
     }
 
     private boolean explanationConsistentWithAnswer(ConceptMap ans){
-        ReasonerQuery query = ans.explanation().getQuery();
-        Set<Variable> vars = query != null? query.getVarNames() : new HashSet<>();
+        Pattern queryPattern = ans.explanation().getPattern();
+        Set<Variable> vars = new HashSet<>();
+        if (queryPattern != null){
+            queryPattern.statements().forEach(s -> vars.addAll(s.variables()));
+        }
         return vars.containsAll(ans.map().keySet());
     }
 }

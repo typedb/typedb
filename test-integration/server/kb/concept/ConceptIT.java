@@ -18,15 +18,14 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.Concept;
+import grakn.core.concept.exception.GraknConceptException;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.Type;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
-import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -64,7 +63,7 @@ public class ConceptIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After
@@ -134,8 +133,8 @@ public class ConceptIT {
         EntityType thingType = tx.putEntityType("thing type");
         Entity thing = thingType.create();
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.invalidCasting(thing, Type.class).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.invalidCasting(thing, Type.class).getMessage());
 
         //noinspection ResultOfMethodCallIgnored
         thing.asType();

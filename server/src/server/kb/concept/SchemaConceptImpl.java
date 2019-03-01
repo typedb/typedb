@@ -18,13 +18,13 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.VertexElement;
@@ -194,7 +194,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * 2. The graph is not batch loading
      */
     void checkSchemaMutationAllowed() {
-        vertex().tx().checkSchemaMutationAllowed();
         if (Schema.MetaSchema.isMetaLabel(label())) {
             throw TransactionException.metaTypeImmutable(label());
         }

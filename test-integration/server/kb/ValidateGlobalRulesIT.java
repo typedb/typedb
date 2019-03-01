@@ -18,20 +18,20 @@
 
 package grakn.core.server.kb;
 
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.concept.RelationImpl;
 import grakn.core.server.kb.concept.RoleImpl;
 import grakn.core.server.kb.concept.ThingImpl;
 import grakn.core.server.kb.structure.Casting;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -47,13 +47,13 @@ public class ValidateGlobalRulesIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private Transaction tx;
-    private Session session;
+    private TransactionOLTP tx;
+    private SessionImpl session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After
@@ -101,7 +101,7 @@ public class ValidateGlobalRulesIT {
     public void testValidatePlaysStructureUnique() {
         Role role1 = tx.putRole("role1");
         Role role2 = tx.putRole("role2");
-        RelationType relationshipType = tx.putRelationType("rt").relates(role1).relates(role2);
+        RelationType relationType = tx.putRelationType("rt").relates(role1).relates(role2);
 
         EntityType entityType = tx.putEntityType("et");
 
@@ -113,14 +113,14 @@ public class ValidateGlobalRulesIT {
 
         EntityImpl entity = (EntityImpl) entityType.create();
 
-        RelationImpl relation1 = (RelationImpl) relationshipType.create()
+        RelationImpl relation1 = (RelationImpl) relationType.create()
                 .assign(role2, other1).assign(role1, entity);
 
         // Valid with only a single relation
         relation1.reified().get().castingsRelation().forEach(rolePlayer ->
                 assertTrue(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
-        RelationImpl relation2 = (RelationImpl) relationshipType.create()
+        RelationImpl relation2 = (RelationImpl) relationType.create()
                 .assign(role2, other2).assign(role1, entity);
 
         // Invalid with multiple relations
@@ -150,14 +150,14 @@ public class ValidateGlobalRulesIT {
     @Test
     public void testAbstractConceptValidation(){
         Role role = tx.putRole("relates");
-        RelationType relationshipType = tx.putRelationType("relationTypes");
+        RelationType relationType = tx.putRelationType("relationTypes");
 
         assertTrue(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(role).isPresent());
-        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationshipType).isPresent());
+        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
 
-        relationshipType.isAbstract(true);
+        relationType.isAbstract(true);
 
         assertTrue(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(role).isPresent());
-        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationshipType).isPresent());
+        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
     }
 }

@@ -9,17 +9,17 @@ define
 
 "parent" sub role;
 "child" sub role;
-"Parent" sub relationship, relates parent, relates child;
+"Parent" sub relation, relates parent, relates child;
 person plays parent, plays child;
 
 "sibA" sub role;
 "sibB" sub role;
-"Sibling" sub relationship, relates sibA, relates sibB;
+"Sibling" sub relation, relates sibA, relates sibB;
 person plays sibA, plays sibB;
 
 "SG-role-A" sub role;
 "SG-role-B" sub role;
-"SameGen" sub relationship, relates SG-role-A, relates SG-role-B;
+"SameGen" sub relation, relates SG-role-A, relates SG-role-B;
 person plays SG-role-A, plays SG-role-B;
 
 "name" sub attribute, datatype string;

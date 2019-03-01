@@ -17,19 +17,19 @@ someRole sub role;
 anotherRole sub role;
 otherRole sub role;
 
-binary sub relationship,
+binary sub relation,
     relates someRole,
     relates otherRole;
 
-ternary sub relationship,
+ternary sub relation,
     relates someRole,
     relates otherRole,
     relates anotherRole;
 
-derived-binary sub relationship,
+derived-binary sub relation,
     relates someRole,
     relates otherRole;
-derived-ternary sub relationship,
+derived-ternary sub relation,
     relates someRole,
     relates otherRole,
     relates anotherRole;
@@ -115,10 +115,12 @@ $y isa someType;
 $z isa someType;
 $v isa someType, has resource-string "someString";
 (someRole: $x, otherRole: $y) isa binary;
-(someRole: $x, otherRole: $z) isa binary;
 (someRole: $y, otherRole: $q) isa binary;
-(someRole: $z, otherRole: $v) isa binary;
 (someRole: $y, otherRole: $v) isa binary;
+
+(someRole: $x, otherRole: $z) isa binary;
+(someRole: $z, otherRole: $v) isa binary;
+
 
 $q isa anotherType, has resource-long 1;
 

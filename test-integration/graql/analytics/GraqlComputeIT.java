@@ -19,23 +19,23 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Lists;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.answer.ConceptList;
+import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.Schema;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.kb.Schema;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.query.GraqlCompute;
@@ -78,7 +78,7 @@ public class GraqlComputeIT {
     private String relationId12;
     private String relationId24;
 
-    public Session session;
+    public SessionImpl session;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -96,7 +96,7 @@ public class GraqlComputeIT {
 
     @Test
     public void testNullResourceDoesNotBreakAnalytics() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             // make slightly odd graph
             Label resourceTypeId = Label.of("degree");
             EntityType thingy = tx.putEntityType("thingy");
@@ -106,19 +106,19 @@ public class GraqlComputeIT {
 
             Role degreeOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
             Role degreeValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
-            RelationType relationshipType = tx.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
+            RelationType relationType = tx.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(degreeOwner)
                     .relates(degreeValue);
             thingy.plays(degreeOwner);
 
             Entity thisThing = thingy.create();
-            relationshipType.create().assign(degreeOwner, thisThing);
+            relationType.create().assign(degreeOwner, thisThing);
 
             tx.commit();
         }
 
         // the null role-player caused analytics to fail at some stage
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             tx.execute(Graql.compute().centrality().using(DEGREE));
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -130,7 +130,7 @@ public class GraqlComputeIT {
     public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("rule")).getMessage());
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             tx.execute(Graql.compute().count().in("rule", "thing"));
         }
     }
@@ -139,7 +139,7 @@ public class GraqlComputeIT {
     public void testSubgraphContainingRoleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("role")).getMessage());
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             tx.execute(Graql.compute().count().in("role"));
         }
     }
@@ -157,7 +157,7 @@ public class GraqlComputeIT {
         queryList.add("compute path from \"" + entityId1 + "\", to \"" + entityId4 + "\";");
 
         List<?> result = queryList.parallelStream().map(query -> {
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 return tx.execute(Graql.<GraqlCompute>parse(query)).toString();
             }
         }).collect(Collectors.toList());
@@ -167,7 +167,7 @@ public class GraqlComputeIT {
     @Test
     public void testGraqlCount() throws InvalidKBException {
         addSchemaAndEntities();
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             assertEquals(6, tx.execute(Graql.parse("compute count;").asComputeStatistics())
                     .get(0).number().intValue());
 
@@ -179,7 +179,7 @@ public class GraqlComputeIT {
     @Test
     public void testDegrees() {
         addSchemaAndEntities();
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             List<ConceptSetMeasure> degrees =
                     tx.execute(Graql.parse("compute centrality using degree;").asComputeCentrality());
 
@@ -203,21 +203,21 @@ public class GraqlComputeIT {
 
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithStatistics() {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("compute sum of thingy;").asComputeStatistics());
         }
     }
 
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithDegree() {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("compute centrality of thingy, using degree;").asComputeCentrality());
         }
     }
 
     @Test
     public void testStatisticsMethods() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             Label resourceTypeId = Label.of("my-resource");
 
             AttributeType<Long> resource = tx.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
@@ -228,22 +228,22 @@ public class GraqlComputeIT {
 
             Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
             Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
-            RelationType relationshipType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId).getValue());
+            RelationType relationType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId).getValue());
 
-            relationshipType.create()
+            relationType.create()
                     .assign(resourceOwner, theResourceOwner)
                     .assign(resourceValue, resource.create(1L));
-            relationshipType.create()
+            relationType.create()
                     .assign(resourceOwner, theResourceOwner)
                     .assign(resourceValue, resource.create(2L));
-            relationshipType.create()
+            relationType.create()
                     .assign(resourceOwner, theResourceOwner)
                     .assign(resourceValue, resource.create(3L));
 
             tx.commit();
         }
 
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             // use graql to compute various statistics
             Numeric result = tx.execute(Graql.parse("compute sum of my-resource;").asComputeStatistics()).get(0);
             assertEquals(6, result.number().intValue());
@@ -261,7 +261,7 @@ public class GraqlComputeIT {
 
     @Test
     public void testConnectedComponents() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             List<ConceptSet> clusterList =
                     tx.execute(Graql.parse("compute cluster using connected-component;").asComputeCluster());
             assertTrue(clusterList.isEmpty());
@@ -276,7 +276,7 @@ public class GraqlComputeIT {
     public void testSinglePath() throws InvalidKBException {
         addSchemaAndEntities();
 
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             GraqlCompute.Path query = Graql.parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';").asComputePath();
             List<ConceptList> paths = tx.execute(query);
 
@@ -293,7 +293,7 @@ public class GraqlComputeIT {
     public void testPath() throws InvalidKBException {
         addSchemaAndEntities();
 
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             GraqlCompute.Path query = Graql.parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';").asComputePath();
             List<ConceptList> paths = tx.execute(query);
             assertEquals(1, paths.size());
@@ -306,19 +306,19 @@ public class GraqlComputeIT {
 
     @Test(expected = GraqlQueryException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.putEntityType(thingy);
             tx.commit();
         }
 
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("compute sum of thingy;").asComputeStatistics());
         }
     }
 
     @Test(expected = GraqlException.class)
     public void testErrorWhenNoSubgraphForAnalytics() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("compute sum;").asComputeStatistics());
             tx.execute(Graql.parse("compute min;").asComputeStatistics());
             tx.execute(Graql.parse("compute max;").asComputeStatistics());
@@ -329,7 +329,7 @@ public class GraqlComputeIT {
 
     @Test
     public void testAnalyticsDoesNotCommitByMistake() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.putAttributeType("number", AttributeType.DataType.LONG);
             tx.commit();
         }
@@ -340,14 +340,14 @@ public class GraqlComputeIT {
                 "compute mean of number;"));
 
         analyticsCommands.forEach(command -> {
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 // insert a node but do not commit it
                 tx.execute(Graql.parse("define thingy sub entity;").asDefine());
                 // use analytics
                 tx.execute(Graql.<GraqlCompute>parse(command));
             }
 
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 // see if the node was commited
                 assertNull(tx.getEntityType("thingy"));
             }
@@ -355,7 +355,7 @@ public class GraqlComputeIT {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType1 = tx.putEntityType(thingy);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 
@@ -373,12 +373,12 @@ public class GraqlComputeIT {
             Role role2 = tx.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationshipType = tx.putRelationType(related).relates(role1).relates(role2);
+            RelationType relationType = tx.putRelationType(related).relates(role1).relates(role2);
 
-            relationId12 = relationshipType.create()
+            relationId12 = relationType.create()
                     .assign(role1, entity1)
                     .assign(role2, entity2).id().getValue();
-            relationId24 = relationshipType.create()
+            relationId24 = relationType.create()
                     .assign(role1, entity2)
                     .assign(role2, entity4).id().getValue();
 

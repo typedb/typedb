@@ -18,7 +18,7 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.graql.internal.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Represent a Vertex in a Transaction
+ * Represent a Vertex in a TransactionOLTP
  * Wraps a tinkerpop Vertex constraining it to the Grakn Object Model.
  * This is used to wrap common functionality between exposed Concept and unexposed
  * internal vertices.

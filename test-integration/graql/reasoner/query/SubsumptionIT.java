@@ -18,14 +18,11 @@
 
 package grakn.core.graql.reasoner.query;
 
-import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
+import grakn.core.graql.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -64,7 +61,7 @@ public class SubsumptionIT {
     
     @Test
     public void testSubsumption_differentRelationVariants(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ){
             QueryPattern differentRelationVariants = genericSchemaGraph.differentRelationVariants();
             int[][] subsumptionMatrix = new int[][]{
                     //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
@@ -104,7 +101,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentRelationVariantsWithMetaRoles(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ){
             QueryPattern differentRelationVariantsWithMetaRoles = genericSchemaGraph.differentRelationVariantsWithMetaRoles();
             int[][] subsumptionMatrix = new int[][]{
                     //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
@@ -145,7 +142,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentRelationVariants_differentRelationVariantsWithMetaRoles(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
             QueryPattern differentRelationVariants = genericSchemaGraph.differentRelationVariants();
             QueryPattern differentRelationVariantsWithMetaRoles = genericSchemaGraph.differentRelationVariantsWithMetaRoles();
             int[][] subsumptionMatrix = new int[][]{
@@ -186,7 +183,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentRelationVariants_differentRelationVariantsWithRelationVariable(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
             QueryPattern differentRelationVariants = genericSchemaGraph.differentRelationVariants();
             QueryPattern differentRelationVariantsWithRelationVariable = genericSchemaGraph.differentRelationVariantsWithRelationVariable();
             int[][] subsumptionMatrix = new int[][]{
@@ -228,7 +225,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentTypeRelationVariants_differentRelationVariants(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
             QueryPattern differentTypeRelationVariants = genericSchemaGraph.differentTypeRelationVariants();
             QueryPattern differentRelationVariants = genericSchemaGraph.differentRelationVariants();
             int[][] subsumptionMatrix = new int[differentTypeRelationVariants.size()][differentRelationVariants.size()];
@@ -244,7 +241,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentTypeRelationVariants_differentRelationVariantsWithRelationVariable(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
             QueryPattern differentTypeRelationVariants = genericSchemaGraph.differentTypeRelationVariants();
             QueryPattern differentRelationVariantsWithRelationVariable = genericSchemaGraph.differentRelationVariantsWithRelationVariable();
             int[][] subsumptionMatrix = new int[][]{
@@ -286,7 +283,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentResourceVariants(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
             QueryPattern differentResourceVariants = genericSchemaGraph.differentResourceVariants();
             int[][] subsumptionMatrix = new int[][]{
                     //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28
@@ -350,7 +347,7 @@ public class SubsumptionIT {
 
     @Test
     public void testSubsumption_differentTypeResourceVariants(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ) ) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
             QueryPattern differentTypeVariants = genericSchemaGraph.differentTypeResourceVariants();
             int[][] subsumptionMatrix = new int[][]{
                     //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17

@@ -18,19 +18,19 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -59,7 +59,7 @@ public class CorenessIT {
     private ConceptId entityId3;
     private ConceptId entityId4;
 
-    public Session session;
+    public SessionImpl session;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -74,22 +74,22 @@ public class CorenessIT {
 
     @Test(expected = GraqlQueryException.class)
     public void testKSmallerThan2_ThrowsException() {
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             tx.execute(Graql.compute().centrality().using(K_CORE).where(min_k(1)));
         }
     }
 
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             List<ConceptSetMeasure> result = tx.execute(Graql.compute().centrality().using(K_CORE));
             assertTrue(result.isEmpty());
         }
     }
 
     @Test
-    public void testOnGraphWithoutRelationships_ReturnsEmptyMap() {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+    public void testOnGraphWithoutRelations_ReturnsEmptyMap() {
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.putEntityType(thing).create();
             tx.putEntityType(anotherThing).create();
             List<ConceptSetMeasure> result = tx.execute(Graql.compute().centrality().using(K_CORE));
@@ -98,8 +98,8 @@ public class CorenessIT {
     }
 
     @Test
-    public void testOnGraphWithTwoEntitiesAndTwoRelationships() {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+    public void testOnGraphWithTwoEntitiesAndTwoRelations() {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType = tx.putEntityType(thing);
             Entity entity1 = entityType.create();
             Entity entity2 = entityType.create();
@@ -128,10 +128,10 @@ public class CorenessIT {
     }
 
     @Test
-    public void testOnGraphWithFourEntitiesAndSixRelationships() {
+    public void testOnGraphWithFourEntitiesAndSixRelations() {
         addSchemaAndEntities();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             List<ConceptSetMeasure> result = tx.execute(Graql.compute().centrality().using(K_CORE));
             assertEquals(1, result.size());
             assertEquals(4, result.get(0).set().size());
@@ -153,7 +153,7 @@ public class CorenessIT {
     public void testImplicitTypeShouldBeIncluded() {
         addSchemaAndEntities();
 
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
                     tx.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
@@ -175,7 +175,7 @@ public class CorenessIT {
         }
 
         List<ConceptSetMeasure> result;
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             result = tx.execute(Graql.compute().centrality().using(K_CORE));
             System.out.println("result = " + result);
             assertEquals(2, result.size());
@@ -195,18 +195,18 @@ public class CorenessIT {
 
     @Test
     public void testDisconnectedCores() {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            RelationType relationshipType1 = tx.putRelationType(related)
+            RelationType relationType1 = tx.putRelationType(related)
                     .relates(role1).relates(role2);
 
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
-            RelationType relationshipType2 = tx.putRelationType(veryRelated)
+            RelationType relationType2 = tx.putRelationType(veryRelated)
                     .relates(role3).relates(role4);
 
             entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
@@ -222,48 +222,48 @@ public class CorenessIT {
             Entity entity7 = entityType1.create();
             Entity entity8 = entityType1.create();
 
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity1)
                     .assign(role2, entity2);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity2)
                     .assign(role2, entity3);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity3)
                     .assign(role2, entity4);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity1)
                     .assign(role2, entity3);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity1)
                     .assign(role2, entity4);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity2)
                     .assign(role2, entity4);
 
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity5)
                     .assign(role2, entity6);
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity5)
                     .assign(role4, entity7);
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity5)
                     .assign(role4, entity8);
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity6)
                     .assign(role4, entity7);
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity6)
                     .assign(role4, entity8);
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity7)
                     .assign(role4, entity8);
 
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity0)
                     .assign(role2, entity1);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity0)
                     .assign(role2, entity8);
 
@@ -271,7 +271,7 @@ public class CorenessIT {
         }
 
         List<ConceptSetMeasure> result;
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             result = tx.execute(Graql.compute().centrality().using(K_CORE));
             assertEquals(2, result.size());
 
@@ -299,7 +299,7 @@ public class CorenessIT {
         }
 
         Set<List<ConceptSetMeasure>> result = list.parallelStream().map(i -> {
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 return tx.execute(Graql.compute().centrality().using(K_CORE).where(min_k(3L)));
             }
         }).collect(Collectors.toSet());
@@ -312,18 +312,18 @@ public class CorenessIT {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            RelationType relationshipType1 = tx.putRelationType(related)
+            RelationType relationType1 = tx.putRelationType(related)
                     .relates(role1).relates(role2);
 
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
-            RelationType relationshipType2 = tx.putRelationType(veryRelated)
+            RelationType relationType2 = tx.putRelationType(veryRelated)
                     .relates(role3).relates(role4);
 
             entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
@@ -334,23 +334,23 @@ public class CorenessIT {
             Entity entity3 = entityType2.create();
             Entity entity4 = entityType2.create();
 
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity1)
                     .assign(role2, entity2);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity2)
                     .assign(role2, entity3);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity3)
                     .assign(role2, entity4);
-            relationshipType1.create()
+            relationType1.create()
                     .assign(role1, entity4)
                     .assign(role2, entity1);
 
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity1)
                     .assign(role4, entity3);
-            relationshipType2.create()
+            relationType2.create()
                     .assign(role3, entity2)
                     .assign(role4, entity4);
 

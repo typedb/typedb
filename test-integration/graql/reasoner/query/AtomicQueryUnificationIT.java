@@ -22,19 +22,15 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
-import grakn.core.graql.internal.reasoner.unifier.Unifier;
-import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
+import grakn.core.graql.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.graql.reasoner.unifier.Unifier;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -88,7 +84,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_RULE_BinaryRelationWithSubs(){
-        try(TransactionOLTP tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = unificationWithTypesSession.transaction().read()) {
 
             Concept x1 = getConceptByResourceValue(tx, "x1");
             Concept x2 = getConceptByResourceValue(tx, "x2");
@@ -133,7 +129,7 @@ public class AtomicQueryUnificationIT {
 
     @Test //only a single unifier exists
     public void testUnification_EXACT_BinaryRelationWithTypes_SomeVarsHaveTypes_UnifierMatchesTypes(){
-        try(TransactionOLTP tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = unificationWithTypesSession.transaction().read()) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ $x1 isa twoRoleEntity;($x1, $x2) isa binary; };"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ $y1 isa twoRoleEntity;($y1, $y2) isa binary; };"), tx);
 
@@ -148,7 +144,7 @@ public class AtomicQueryUnificationIT {
 
     @Test //only a single unifier exists
     public void testUnification_EXACT_BinaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes(){
-        try(TransactionOLTP tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = unificationWithTypesSession.transaction().read()) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ $x1 isa twoRoleEntity;$x2 isa twoRoleEntity2;($x1, $x2) isa binary; };"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ $y1 isa twoRoleEntity;$y2 isa twoRoleEntity2;($y1, $y2) isa binary; };"), tx);
 
@@ -163,7 +159,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_EXACT_TernaryRelation_ParentRepeatsRoles(){
-        try(TransactionOLTP tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = unificationWithTypesSession.transaction().read()) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ (role1: $x, role1: $y, role2: $z) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role3: $q) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role2: $q) isa ternary; };"), tx);
@@ -196,7 +192,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_EXACT_TernaryRelation_ParentRepeatsMetaRoles_ParentRepeatsRPs(){
-        try(TransactionOLTP tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = unificationWithTypesSession.transaction().read()) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ (role: $x, role: $x, role2: $y) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role3: $q) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role2: $q) isa ternary; };"), tx);
@@ -246,7 +242,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_EXACT_TernaryRelationWithTypes_SomeVarsHaveTypes_UnifierMatchesTypes(){
-        try(TransactionOLTP tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = unificationWithTypesSession.transaction().read()) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ $x1 isa threeRoleEntity;$x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary; };"), tx);
@@ -265,7 +261,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_RULE_TernaryRelation_ParentRepeatsMetaRoles(){
-        try(TransactionOLTP tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = unificationWithTypesSession.transaction().read()) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ (role: $x, role: $y, role2: $z) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role3: $q) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role2: $q) isa ternary; };"), tx);
@@ -334,7 +330,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_RULE_TernaryRelation_ParentRepeatsRoles_ParentRepeatsRPs(){
-        try(TransactionOLTP tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = unificationWithTypesSession.transaction().read()) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ (role1: $x, role1: $x, role2: $y) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role3: $q) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role2: $q) isa ternary; };"), tx);
@@ -366,7 +362,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_RULE_TernaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes(){
-        try(TransactionOLTP tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = unificationWithTypesSession.transaction().read()) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ $x1 isa threeRoleEntity;$x2 isa threeRoleEntity2; $x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary; };"), tx);
@@ -385,7 +381,7 @@ public class AtomicQueryUnificationIT {
 
     @Test // subSubThreeRoleEntity sub subThreeRoleEntity sub threeRoleEntity3
     public void testUnification_RULE_TernaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes_TypeHierarchyInvolved(){
-        try(TransactionOLTP tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = unificationWithTypesSession.transaction().read()) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ $x1 isa threeRoleEntity;$x2 isa subThreeRoleEntity; $x3 isa subSubThreeRoleEntity;($x1, $x2, $x3) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ $y1 isa threeRoleEntity;$y2 isa subThreeRoleEntity;$y3 isa subSubThreeRoleEntity;($y2, $y3, $y1) isa ternary; };"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ $y1 isa threeRoleEntity;$y2 isa subThreeRoleEntity;$y3 isa subSubThreeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary; };"), tx);
@@ -426,7 +422,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_RULE_ResourcesWithTypes(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             String parentQuery = "{ $x has resource $r; $x isa baseRoleEntity; };";
 
             String childQuery = "{ $r has resource $x; $r isa subRoleEntity; };";
@@ -441,7 +437,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_RULE_BinaryRelationWithRoleAndTypeHierarchy_MetaTypeParent(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             String parentRelation = "{ (baseRole1: $x, baseRole2: $y); $x isa entity; $y isa entity; };";
 
             String specialisedRelation = "{ (subRole1: $u, anotherSubRole2: $v); $u isa baseRoleEntity; $v isa baseRoleEntity; };";
@@ -462,7 +458,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_RULE_BinaryRelationWithRoleAndTypeHierarchy_BaseRoleParent(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             String baseParentRelation = "{ (baseRole1: $x, baseRole2: $y); $x isa baseRoleEntity; $y isa baseRoleEntity; };";
             String parentRelation = "{ (baseRole1: $x, baseRole2: $y); $x isa subSubRoleEntity; $y isa subSubRoleEntity; };";
 
@@ -485,7 +481,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_RULE_BinaryRelationWithRoleAndTypeHierarchy_BaseRoleParent_middleTypes(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             String parentRelation = "{ (baseRole1: $x, baseRole2: $y); $x isa subRoleEntity; $y isa subRoleEntity; };";
 
             String specialisedRelation = "{ (subRole1: $u, anotherSubRole2: $v); $u isa subRoleEntity; $v isa subSubRoleEntity; };";
@@ -502,7 +498,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentRelationVariants_EXACT(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentRelationVariants().patterns(),
                     genericSchemaGraph.differentRelationVariants().exactMatrix(),
@@ -512,7 +508,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentRelationVariants_STRUCTURAL(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentRelationVariants().patterns(),
                     genericSchemaGraph.differentRelationVariants().structuralMatrix(),
@@ -522,7 +518,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentRelationVariants_RULE(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentRelationVariants().patterns(),
                     genericSchemaGraph.differentRelationVariants().ruleMatrix(),
@@ -532,7 +528,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentRelationVariantsWithMetaRoles_EXACT(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentRelationVariantsWithMetaRoles().patterns(),
                     genericSchemaGraph.differentRelationVariantsWithMetaRoles().exactMatrix(),
@@ -542,7 +538,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentRelationVariantsWithMetaRoles_STRUCTURAL(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentRelationVariantsWithMetaRoles().patterns(),
                     genericSchemaGraph.differentRelationVariantsWithMetaRoles().structuralMatrix(),
@@ -552,14 +548,14 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentRelationVariantsWithMetaRoles_RULE(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(genericSchemaGraph.differentRelationVariantsWithMetaRoles().patterns(), genericSchemaGraph.differentRelationVariantsWithMetaRoles().ruleMatrix(), UnifierType.RULE, tx);
         }
     }
 
     @Test
     public void testUnification_differentRelationVariantsWithRelationVariable_EXACT(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentRelationVariantsWithRelationVariable().patterns(),
                     genericSchemaGraph.differentRelationVariantsWithRelationVariable().exactMatrix(),
@@ -569,7 +565,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentRelationVariantsWithRelationVariable_STRUCTURAL(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentRelationVariantsWithRelationVariable().patterns(),
                     genericSchemaGraph.differentRelationVariantsWithRelationVariable().structuralMatrix(),
@@ -579,7 +575,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentRelationVariantsWithRelationVariable_RULE(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentRelationVariantsWithRelationVariable().patterns(),
                     genericSchemaGraph.differentRelationVariantsWithRelationVariable().ruleMatrix(),
@@ -589,7 +585,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentTypeVariants_EXACT(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             List<String> qs = genericSchemaGraph.differentTypeResourceVariants().patterns();
             qs.forEach(q -> exactUnification(q, qs, new ArrayList<>(), tx));
         }
@@ -597,7 +593,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentTypeVariants_STRUCTURAL(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentTypeResourceVariants().patterns(),
                     genericSchemaGraph.differentTypeResourceVariants().patterns(),
@@ -610,7 +606,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentTypeVariants_RULE(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentTypeResourceVariants().patterns(),
                     genericSchemaGraph.differentTypeResourceVariants().patterns(),
@@ -623,7 +619,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentResourceVariants_EXACT(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentResourceVariants().patterns(),
                     genericSchemaGraph.differentResourceVariants().patterns(),
@@ -635,7 +631,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentResourceVariants_STRUCTURAL(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentResourceVariants().patterns(),
                     genericSchemaGraph.differentResourceVariants().patterns(),
@@ -647,7 +643,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentResourceVariants_RULE(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
                     genericSchemaGraph.differentResourceVariants().patterns(),
                     genericSchemaGraph.differentResourceVariants().patterns(),
@@ -659,7 +655,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_orthogonalityOfVariants_EXACT(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             List<List<String>> queryTypes = Lists.newArrayList(
                     genericSchemaGraph.differentRelationVariants().patterns(),
                     genericSchemaGraph.differentRelationVariantsWithRelationVariable().patterns(),
@@ -672,7 +668,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_orthogonalityOfVariants_STRUCTURAL(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             List<List<String>> queryTypes = Lists.newArrayList(
                     genericSchemaGraph.differentRelationVariants().patterns(),
                     genericSchemaGraph.differentRelationVariantsWithRelationVariable().patterns(),
@@ -744,7 +740,7 @@ public class AtomicQueryUnificationIT {
 
         List<ConceptMap> childAnswers = tx.execute(child.getQuery(), false);
         List<ConceptMap> unifiedAnswers = childAnswers.stream()
-                .map(a -> a.unify(unifier))
+                .map(unifier::apply)
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
         List<ConceptMap> parentAnswers = tx.execute(parent.getQuery(), false);
@@ -773,7 +769,7 @@ public class AtomicQueryUnificationIT {
             Unifier inverse = unifier.inverse();
             if(!ignoreTypes) {
                 assertCollectionsNonTriviallyEqual(parentAnswers, unifiedAnswers);
-                List<ConceptMap> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
+                List<ConceptMap> parentToChild = parentAnswers.stream().map(inverse::apply).collect(Collectors.toList());
                 assertCollectionsNonTriviallyEqual(parentToChild, childAnswers);
             } else {
                 Set<Variable> childNonTypeVariables = Sets.difference(child.getAtom().getVarNames(), Sets.newHashSet(child.getAtom().getPredicateVariable()));
@@ -783,7 +779,7 @@ public class AtomicQueryUnificationIT {
 
                 assertCollectionsNonTriviallyEqual(projectedParentAnswers, projectedUnified);
                 List<ConceptMap> projectedParentToChild = projectedParentAnswers.stream()
-                        .map(a -> a.unify(inverse))
+                        .map(inverse::apply)
                         .map(ans -> ans.project(childNonTypeVariables))
                         .collect(Collectors.toList());
                 assertCollectionsNonTriviallyEqual(projectedParentToChild, projectedChild);

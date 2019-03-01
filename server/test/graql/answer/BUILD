@@ -23,8 +23,11 @@ java_test(
     test_class = "grakn.core.graql.answer.ConceptMapTest",
     srcs = ["ConceptMapTest.java"],
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
+
+        "@graknlabs_graql//java:graql",
+
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
     ],

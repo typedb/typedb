@@ -18,16 +18,16 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.Numeric;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.graql.printer.Printer;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.query.GraqlGet;
@@ -60,8 +60,8 @@ public class GraqlGetIT {
 
     @ClassRule
     public static GraknTestServer graknServer = new GraknTestServer();
-    private static Session session;
-    private Transaction tx;
+    private static SessionImpl session;
+    private TransactionOLTP tx;
 
     @BeforeClass
     public static void newSession() {
@@ -71,7 +71,7 @@ public class GraqlGetIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After
@@ -145,15 +145,22 @@ public class GraqlGetIT {
                 Graql.match(var("x").isa("name")).get().sort("x").limit(5)
         );
 
-        for(ConceptMap answer : answers) {
-            System.out.println(Printer.stringPrinter(false).toString(answer));
-        }
         assertEquals(5, answers.size());
         assertEquals("0", answers.get(0).get("x").asAttribute().value());
         assertEquals("1", answers.get(1).get("x").asAttribute().value());
         assertEquals("action", answers.get(2).get("x").asAttribute().value());
         assertEquals("Al Pacino", answers.get(3).get("x").asAttribute().value());
         assertEquals("Benjamin L. Willard", answers.get(4).get("x").asAttribute().value());
+    }
+
+    @Test
+    public void testGetContainsStringIgnoreCase() {
+        List<ConceptMap> answers = tx.execute(
+                Graql.match(var("x").isa("name").contains("jess")).get()
+        );
+
+        assertEquals(1, answers.size());
+        assertEquals("Sarah Jessica Parker", answers.get(0).get("x").asAttribute().value());
     }
 
     @Test

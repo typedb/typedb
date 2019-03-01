@@ -20,14 +20,13 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
-import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
-import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
+import grakn.core.graql.reasoner.utils.Pair;
+import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -68,7 +67,7 @@ public class NeqValuePredicateIT {
 
     @Test
     public void whenParsingNeqValueVPS_equivalentPatternsMakeEquivalentQueries() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
             Conjunction<Pattern> neqOutsideAttribute = Iterables.getOnlyElement(
                     Graql.parsePattern("{$x has derived-resource-string $val;$val !== 'unattached';};").getNegationDNF().getPatterns()
             );
@@ -91,7 +90,7 @@ public class NeqValuePredicateIT {
     @Test
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireNotHavingSpecificValue() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
             String neqVariant = "match " +
                     "$x has derived-resource-string $val;$val !== 'unattached';" +
                     "get;";
@@ -135,7 +134,7 @@ public class NeqValuePredicateIT {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireResourceValuesToBeDifferent() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
             String neqVersion = "match " +
                     "$x has derived-resource-string $val;" +
                     "$y has reattachable-resource-string $anotherVal;" +
@@ -158,7 +157,7 @@ public class NeqValuePredicateIT {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireInstanceValuesToBeDifferent() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
             String neqVersion = "match " +
                     "$val isa derived-resource-string;" +
                     "$anotherVal isa reattachable-resource-string;" +
@@ -183,7 +182,7 @@ public class NeqValuePredicateIT {
     @Ignore
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireAnEntityToHaveTwoDistinctResourcesOfNotAbstractType() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
             String queryString = "match " +
                     "$x has derivable-resource-string $value;" +
                     "$x has derivable-resource-string $unwantedValue;" +

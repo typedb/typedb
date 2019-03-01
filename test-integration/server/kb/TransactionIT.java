@@ -19,18 +19,15 @@
 package grakn.core.server.kb;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.concept.EntityTypeImpl;
@@ -46,7 +43,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -78,7 +74,7 @@ public class TransactionIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After
@@ -119,7 +115,7 @@ public class TransactionIT {
     @Test
     public void whenGettingTypesByName_ReturnTypes() {
         String entityTypeLabel = "My Entity Type";
-        String relationTypeLabel = "My Relationship Type";
+        String relationTypeLabel = "My Relation Type";
         String roleTypeLabel = "My Role Type";
         String resourceTypeLabel = "My Attribute Type";
         String ruleTypeLabel = "My Rule Type";
@@ -131,12 +127,12 @@ public class TransactionIT {
         assertNull(tx.getRule(ruleTypeLabel));
 
         EntityType entityType = tx.putEntityType(entityTypeLabel);
-        RelationType relationshipType = tx.putRelationType(relationTypeLabel);
+        RelationType relationType = tx.putRelationType(relationTypeLabel);
         Role role = tx.putRole(roleTypeLabel);
         AttributeType attributeType = tx.putAttributeType(resourceTypeLabel, AttributeType.DataType.STRING);
 
         assertEquals(entityType, tx.getEntityType(entityTypeLabel));
-        assertEquals(relationshipType, tx.getRelationType(relationTypeLabel));
+        assertEquals(relationType, tx.getRelationType(relationTypeLabel));
         assertEquals(role, tx.getRole(roleTypeLabel));
         assertEquals(attributeType, tx.getAttributeType(resourceTypeLabel));
     }
@@ -144,7 +140,7 @@ public class TransactionIT {
     @Test
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes() {
         EntityType sampleEntityType = tx.putEntityType("Sample Entity Type");
-        RelationType sampleRelationshipType = tx.putRelationType("Sample Relationship Type");
+        RelationType sampleRelationType = tx.putRelationType("Sample Relation Type");
 
         assertThat(tx.getMetaConcept().subs().collect(toSet()), containsInAnyOrder(
                 tx.getMetaConcept(),
@@ -152,7 +148,7 @@ public class TransactionIT {
                 tx.getMetaEntityType(),
                 tx.getMetaAttributeType(),
                 sampleEntityType,
-                sampleRelationshipType
+                sampleRelationType
         ));
     }
 
@@ -169,7 +165,7 @@ public class TransactionIT {
         tx.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
-        tx = session.transaction(Transaction.Type.READ);
+        tx = session.transaction().read();
 
         Set<SchemaConcept> finalTypes = new HashSet<>();
         finalTypes.addAll(tx.getMetaConcept().subs().collect(toSet()));
@@ -178,14 +174,14 @@ public class TransactionIT {
 
         tx.abort();
 
-        for (SchemaConcept type : tx.getGlobalCache().getCachedTypes().values()) {
+        for (SchemaConcept type : session.getKeyspaceCache().getCachedTypes().values()) {
             assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", finalTypes.contains(type));
         }
     }
 
     private void assertCacheOnlyContainsMetaTypes() {
         Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(toSet());
-        tx.getGlobalCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
+        session.getKeyspaceCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
     }
 
     @Test
@@ -221,46 +217,10 @@ public class TransactionIT {
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         tx.putEntityType("A Thing");
     }
 
-    @Test
-    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws InvalidKBException, ExecutionException, InterruptedException {
-        //Check Central cache is empty
-        assertCacheOnlyContainsMetaTypes();
-
-        Role r1 = tx.putRole("r1");
-        Role r2 = tx.putRole("r2");
-        EntityType e1 = tx.putEntityType("e1").plays(r1).plays(r2);
-        RelationType rel1 = tx.putRelationType("rel1").relates(r1).relates(r2);
-
-        //Purge the above concepts into the main cache
-        tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
-
-        //Check cache is in good order
-        Collection<SchemaConcept> cachedValues = tx.getGlobalCache().getCachedTypes().values();
-        assertTrue("Type [" + r1 + "] was not cached", cachedValues.contains(r1));
-        assertTrue("Type [" + r2 + "] was not cached", cachedValues.contains(r2));
-        assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
-        assertTrue("Type [" + rel1 + "] was not cached", cachedValues.contains(rel1));
-
-        assertThat(e1.playing().collect(toSet()), containsInAnyOrder(r1, r2));
-
-        ExecutorService pool = Executors.newSingleThreadExecutor();
-        //Mutate Schema in a separate thread
-        pool.submit(() -> {
-            Transaction innerGraph = session.transaction(Transaction.Type.WRITE);
-            EntityType entityType = innerGraph.getEntityType("e1");
-            Role role = innerGraph.getRole("r1");
-            entityType.unplay(role);
-        }).get();
-
-        //Check the above mutation did not affect central repo
-        SchemaConcept foundE1 = tx.getGlobalCache().getCachedTypes().get(e1.label());
-        assertTrue("Main cache was affected by transaction", foundE1.asType().playing().anyMatch(role -> role.equals(r1)));
-    }
 
     @Test
     public void whenClosingAGraphWhichWasJustCommitted_DoNothing() {
@@ -279,56 +239,65 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenAttemptingToMutateReadOnlyGraph_Throw() {
+    public void whenAttemptingToMutateSchemaWithReadOnlyTransaction_ThrowOnCommit() {
         tx.close();
         String entityType = "My Entity Type";
         String roleType1 = "My Role Type 1";
-        String relationType1 = "My Relationship Type 1";
+        String relationType1 = "My Relation Type 1";
 
         //Fail Some Mutations
-        tx = session.transaction(Transaction.Type.READ);
-        failMutation(tx, () -> tx.putEntityType(entityType));
-        failMutation(tx, () -> tx.putRole(roleType1));
-        failMutation(tx, () -> tx.putRelationType(relationType1));
+        tx = session.transaction().read();
+        tx.putEntityType(entityType);
+        expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
+        tx.commit();
 
-        //Pass some mutations
-        tx.close();
+        tx = session.transaction().read();
+        tx.putRole(roleType1);
+        expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
+        tx.commit();
+
+        tx = session.transaction().read();
+        tx.putRelationType(relationType1);
+        expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
+        tx.commit();
+
     }
 
-    private void failMutation(TransactionOLTP graph, Runnable mutator) {
-        int vertexCount = graph.getTinkerTraversal().V().toList().size();
-        int eddgeCount = graph.getTinkerTraversal().E().toList().size();
+    @Test
+    public void whenAttemptingToMutateInstancesWithReadOnlyTransaction_ThrowOnCommit() {
+        tx.close();
+        String entityType = "person";
 
-        Exception caughtException = null;
-        try {
-            mutator.run();
-        } catch (Exception e) {
-            caughtException = e;
-        }
+        tx = session.transaction().write();
+        tx.putEntityType(entityType);
+        tx.commit();
 
-        assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
-        assertThat(caughtException, instanceOf(TransactionException.class));
-        assertEquals(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.keyspace()), caughtException.getMessage());
-        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.getTinkerTraversal().V().toList().size());
-        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.getTinkerTraversal().E().toList().size());
+        tx = session.transaction().read();
+        EntityType person = tx.getEntityType("person");
+        Entity human = person.create();
+        expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
+        tx.commit();
     }
 
     @Test
     public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw() {
-        String keyspace = tx.keyspace().getName();
-        failAtOpeningTx(session, Transaction.Type.WRITE, keyspace);
+        String keyspace = tx.keyspace().name();
+        failAtOpeningTx(session, true, keyspace);
         tx.close();
 
-        //noinspection ResultOfMethodCallIgnored
-        session.transaction(Transaction.Type.WRITE);
-        failAtOpeningTx(session, Transaction.Type.READ, keyspace);
+        session.transaction().write();
+        failAtOpeningTx(session, false, keyspace);
     }
 
-    private void failAtOpeningTx(Session session, Transaction.Type txType, String keyspace) {
+    private void failAtOpeningTx(SessionImpl session, boolean write, String keyspace) {
         Exception exception = null;
         try {
             //noinspection ResultOfMethodCallIgnored
-            session.transaction(txType);
+            if (write) {
+                session.transaction().write();
+            } else {
+                session.transaction().read();
+            }
         } catch (TransactionException e) {
             exception = e;
         }
@@ -375,13 +344,13 @@ public class TransactionIT {
 
     @Test
     public void whenCreatingAValidSchemaInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
-        Session localSession = server.sessionWithNewKeyspace();
+        SessionImpl localSession = server.sessionWithNewKeyspace();
 
         ExecutorService executor = Executors.newCachedThreadPool();
 
         executor.submit(() -> {
             //Resources
-            try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+            try (TransactionOLTP tx = localSession.transaction().write()) {
                 AttributeType<Long> int_ = tx.putAttributeType("int", AttributeType.DataType.LONG);
                 AttributeType<Long> foo = tx.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
                 tx.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
@@ -391,8 +360,8 @@ public class TransactionIT {
             }
         }).get();
 
-        //Relationship Which Has Resources
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+        //Relation Which Has Resources
+        try (TransactionOLTP tx = localSession.transaction().write()) {
             tx.putEntityType("BAR").has(tx.getAttributeType("bar"));
             tx.commit();
         }

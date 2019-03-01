@@ -25,6 +25,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:materialisation"],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryIT",
     deps = [
+        "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
@@ -47,6 +48,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.query.ExplanationIT",
     deps = [
+        "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -71,6 +73,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.query.NegationIT",
     deps = [
+        "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -95,6 +98,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryUnificationIT",
     deps = [
+        "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -112,6 +116,22 @@ java_test(
 )
 
 java_test(
+    name = "query-it",
+    size = "medium",
+    srcs = ["QueryIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.reasoner.query.QueryIT",
+    deps = [
+        "//concept",
+        "//server",
+        "//test-integration/graql/reasoner/graph:geo-graph",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+java_test(
     name = "query-validity-it",
     size = "medium",
     srcs = ["QueryValidityIT.java"],
@@ -122,20 +142,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/rule:grakn-test-server",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
-java_test(
-    name = "query-it",
-    size = "medium",
-    srcs = ["QueryIT.java"],
-    classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.graql.reasoner.query.QueryIT",
-    deps = [
-        "//server",
-        "//test-integration/graql/reasoner/graph:geo-graph",
-        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -145,9 +152,10 @@ java_test(
     size = "large",
     srcs = ["OntologicalQueryIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    data = ["//test-integration/graql/reasoner/resources:rule-applicability"],
+    resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],
     test_class = "grakn.core.graql.reasoner.query.OntologicalQueryIT",
     deps = [
+        "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
@@ -165,6 +173,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:resolution-plan"],
     test_class = "grakn.core.graql.reasoner.query.ResolutionPlanIT",
     deps = [
+        "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
@@ -183,6 +192,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.query.SemanticDifferenceIT",
     deps = [
+        "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
         "//test-integration/rule:grakn-test-server",

@@ -7,35 +7,39 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.ReasoningIT",
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
+
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/apache/commons:commons-math3",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//test-integration/rule:grakn-test-server",
-        "//test-integration/util:graql-test-util",
     ],
+    classpath_resources = ["//test-integration/resources:logback-test"],
 )
 
 java_test(
     name = "geo-inference-it",
     size = "medium",
     srcs = ["GeoInferenceIT.java"],
-    classpath_resources = [
-        "//test-integration/resources:logback-test",
-        "//test-integration/resources:cassandra-embedded",
-    ],
+    classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.reasoner.GeoInferenceIT",
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//test-integration/graql/reasoner/graph:geo-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+
+        "@graknlabs_graql//java:graql",
+
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/commons-collections",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
 )
 

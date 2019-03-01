@@ -19,20 +19,20 @@
 package grakn.core.server.kb.concept;
 
 import com.google.common.collect.Iterables;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -63,13 +63,13 @@ public class AttributeIT {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    private Transaction tx;
-    private Session session;
+    private TransactionOLTP tx;
+    private SessionImpl session;
 
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
     }
 
     @After
@@ -204,9 +204,9 @@ public class AttributeIT {
 
         entity.has(attribute);
 
-        RelationStructure relationshipStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
-        assertThat(relationshipStructure, instanceOf(RelationEdge.class));
-        assertTrue("Edge Relationship id not starting with [" + Schema.PREFIX_EDGE + "]", relationshipStructure.id().getValue().startsWith(Schema.PREFIX_EDGE));
+        RelationStructure relationStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
+        assertThat(relationStructure, instanceOf(RelationEdge.class));
+        assertTrue("Edge Relation id not starting with [" + Schema.PREFIX_EDGE + "]", relationStructure.id().getValue().startsWith(Schema.PREFIX_EDGE));
         assertEquals(entity, attribute.owner());
         assertThat(entity.attributes().collect(toSet()), containsInAnyOrder(attribute));
     }
@@ -222,11 +222,11 @@ public class AttributeIT {
         RelationImpl relation = RelationImpl.from(entity.relations().iterator().next());
 
         //Check it's a relation edge.
-        RelationStructure relationshipStructureBefore = relation.structure();
-        assertThat(relationshipStructureBefore, instanceOf(RelationEdge.class));
+        RelationStructure relationStructureBefore = relation.structure();
+        assertThat(relationStructureBefore, instanceOf(RelationEdge.class));
 
         //Get the roles and role players via the relation edge:
-        Map<Role, Set<Thing>> allRolePlayerBefore = relationshipStructureBefore.allRolePlayers();
+        Map<Role, Set<Thing>> allRolePlayerBefore = relationStructureBefore.allRolePlayers();
 
         //Expand Schema to allow new role
         Role newRole = tx.putRole("My New Role");
@@ -238,21 +238,21 @@ public class AttributeIT {
         relation.assign(newRole, newEntity);
 
         //Check it's a relation reified now.
-        RelationStructure relationshipStructureAfter = relation.structure();
-        assertThat(relationshipStructureAfter, instanceOf(RelationReified.class));
+        RelationStructure relationStructureAfter = relation.structure();
+        assertThat(relationStructureAfter, instanceOf(RelationReified.class));
 
         //Check IDs are equal
-        assertEquals(relationshipStructureBefore.id(), relation.id());
-        assertEquals(relationshipStructureBefore.id(), relationshipStructureAfter.id());
+        assertEquals(relationStructureBefore.id(), relation.id());
+        assertEquals(relationStructureBefore.id(), relationStructureAfter.id());
 
         //Check Role Players have been transferred
-        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationshipStructureAfter.rolePlayers(role).collect(toSet())));
+        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationStructureAfter.rolePlayers(role).collect(toSet())));
 
         //Check Type Has Been Transferred
-        assertEquals(relationshipStructureBefore.type(), relationshipStructureAfter.type());
+        assertEquals(relationStructureBefore.type(), relationStructureAfter.type());
 
         //Check new role player has been added as well
-        assertEquals(newEntity, Iterables.getOnlyElement(relationshipStructureAfter.rolePlayers(newRole).collect(toSet())));
+        assertEquals(newEntity, Iterables.getOnlyElement(relationStructureAfter.rolePlayers(newRole).collect(toSet())));
     }
 
     @Test

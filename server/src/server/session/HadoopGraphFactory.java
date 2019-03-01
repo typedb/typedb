@@ -20,7 +20,6 @@ package grakn.core.server.session;
 
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.server.Transaction;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.slf4j.Logger;
@@ -67,7 +66,7 @@ public class HadoopGraphFactory {
         String hostnameConf = "storage.hostname";
 
         // Values
-        String keyspaceValue = session.keyspace().getName();
+        String keyspaceValue = session.keyspace().name();
         String hostnameValue = session.config().getProperty(ConfigKey.STORAGE_HOSTNAME);
 
         session.config().properties().setProperty(graphMrPrefixConf + hostnameConf, hostnameValue);

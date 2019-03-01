@@ -22,6 +22,7 @@ java_library(
     name = "grakn-test-server",
     srcs = ["GraknTestServer.java"],
     deps = [
+        "//api:api",
         "//server",
         "//common",
         "//dependencies/maven/artifacts/junit:junit",
@@ -36,7 +37,8 @@ java_library(
         "//server:conf/grakn.properties",
         "//test-integration/resources:cassandra-embedded"
     ],
-    visibility = ["//visibility:public"]
+    visibility = ["//visibility:public"],
+    resources = ["//test-integration/resources:logback-test"]
 )
 
 checkstyle_test(

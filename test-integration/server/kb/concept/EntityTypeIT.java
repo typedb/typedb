@@ -18,22 +18,22 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Type;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Before;
@@ -71,7 +71,7 @@ public class EntityTypeIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         EntityType top = tx.putEntityType("top");
         EntityType middle1 = tx.putEntityType("mid1");
         EntityType middle2 = tx.putEntityType("mid2");
@@ -509,7 +509,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenAddingTypeUsingReservedWord_ThrowReadableError(){
-        String reservedWord = Schema.MetaSchema.THING.getLabel().getValue();
+        String reservedWord = Graql.Token.Type.THING.toString();
 
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(RESERVED_WORD.getMessage(reservedWord));

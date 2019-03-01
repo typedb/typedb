@@ -28,10 +28,13 @@ java_test(
         # Package dependencies
         "//console",
 
-        # Grakn Core dependencies
+        # Internal dependencies
         "//common",
         "//server",
         "//test-integration/rule:grakn-test-server",
+
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java:graql",
 
         # External dependencies
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",

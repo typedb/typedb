@@ -17,8 +17,6 @@
  */
 package grakn.core.server;
 
-import com.google.common.base.Stopwatch;
-import grakn.core.common.config.Config;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.util.LockManager;
@@ -30,11 +28,8 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
-
 /**
- * Main class in charge to start a web server and all the REST controllers.
- *
+ * Main class in charge to start gRPC server and initialise Grakn system keyspace.
  */
 public class Server implements AutoCloseable {
     private static final String LOAD_SYSTEM_SCHEMA_LOCK_NAME = "load-system-schema";
@@ -48,7 +43,6 @@ public class Server implements AutoCloseable {
     private final KeyspaceManager keyspaceStore;
 
     public Server(ServerID serverID, LockManager lockManager, io.grpc.Server serverRPC, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
-        // Redis connection pool
         // Lock provider
         this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
@@ -58,14 +52,11 @@ public class Server implements AutoCloseable {
     }
 
     public void start() throws IOException {
-        Stopwatch timer = Stopwatch.createStarted();
-        printGraknASCII();
-        synchronized (this){
+        synchronized (this) {
             lockAndInitializeSystemSchema();
             serverRPC.start();
         }
         attributeDeduplicatorDaemon.startDeduplicationDaemon();
-        LOG.info("Grakn started in {}", timer.stop());
     }
 
     @Override
@@ -74,8 +65,8 @@ public class Server implements AutoCloseable {
             try {
                 serverRPC.shutdown();
                 serverRPC.awaitTermination();
-            } catch (InterruptedException e){
-                LOG.error(getFullStackTrace(e)); //TODO: remove commons-lang dependency
+            } catch (InterruptedException e) {
+                LOG.error("Exception while closing Server:", e);
                 Thread.currentThread().interrupt();
             }
             attributeDeduplicatorDaemon.stopDeduplicationDaemon();
@@ -101,11 +92,5 @@ public class Server implements AutoCloseable {
         }
     }
 
-
-    private void printGraknASCII() {
-        LOG.info("\n==================================================");
-        LOG.info("\n" + Config.GRAKN_ASCII);
-        LOG.info("\n==================================================");
-    }
 }
 

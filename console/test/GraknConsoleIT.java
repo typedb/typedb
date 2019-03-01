@@ -26,8 +26,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.GraknVersion;
 import grakn.core.console.GraknConsole;
-import grakn.core.graql.internal.Schema;
 import grakn.core.rule.GraknTestServer;
+import graql.lang.Graql;
 import io.grpc.Status;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.hamcrest.Matcher;
@@ -71,9 +71,9 @@ public class GraknConsoleIT {
     private static InputStream trueIn;
     private static int keyspaceSuffix = 0;
 
-    private final static String analyticsDataset = "define obj sub entity, plays rel; relation sub relationship, relates rel; " +
+    private final static String analyticsDataset = "define obj sub entity, plays rol; rel sub relation, relates rol; " +
             "insert $a isa obj; $b isa obj; $c isa obj; $d isa obj; " +
-            "(rel: $a, rel: $b) isa relation; (rel: $a, rel: $c) isa relation; (rel: $a, rel: $d) isa relation; ";
+            "(rol: $a, rol: $b) isa rel; (rol: $a, rol: $c) isa rel; (rol: $a, rol: $d) isa rel; ";
 
     @BeforeClass
     public static void setUpClass() throws IOException {
@@ -176,20 +176,20 @@ public class GraknConsoleIT {
     @Test
     public void when_writingMatchQueries_expect_resultsReturned() {
         String[] result = runConsoleSessionWithoutExpectingErrors(
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;\nexit"
+                "match $x sub " + Graql.Token.Type.THING + "; get;\nexit"
         ).split("\r\n?|\n");
 
         // Make sure we find a few results (don't be too fussy about the output here)
-        assertThat(result[4], endsWith("> match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;"));
+        assertThat(result[4], endsWith("> match $x sub " + Graql.Token.Type.THING + "; get;"));
         assertTrue(result.length > 5);
     }
 
     @Test
-    public void when_writingRelationships_expect_dataIsWritten() throws Exception {
+    public void when_writingRelations_expect_dataIsWritten() throws Exception {
         assertConsoleSessionMatches(
                 "define name sub attribute, datatype string;",
                 anything(),
-                "define marriage sub relationship, relates spouse;",
+                "define marriage sub relation, relates spouse;",
                 anything(),
                 "define person sub entity, has name, plays spouse;",
                 anything(),
@@ -231,7 +231,7 @@ public class GraknConsoleIT {
     public void when_writingAggregateCountQuery_expect_correctCount() throws Exception {
         int NUM_METATYPES = 4;
         assertConsoleSessionMatches(
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get; count;",
+                "match $x sub " + Graql.Token.Type.THING + "; get; count;",
                 is(Integer.toString(NUM_METATYPES))
         );
     }
@@ -335,7 +335,7 @@ public class GraknConsoleIT {
     }
 
     @Test
-    public void when_commingInvalidData_expect_commitError() {
+    public void when_committingInvalidData_expect_commitError() {
         Response response = runConsoleSession("insert bob sub relation;\ncommit");
         assertFalse(response.out(), response.err().isEmpty());
     }

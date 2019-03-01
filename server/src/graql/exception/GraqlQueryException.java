@@ -20,16 +20,16 @@ package grakn.core.graql.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.reasoner.atom.Atomic;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.internal.reasoner.query.ResolvableQuery;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
+import grakn.core.graql.reasoner.atom.Atomic;
+import grakn.core.graql.reasoner.query.ReasonerQuery;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
@@ -78,8 +78,8 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
     }
 
-    public static GraqlQueryException kCoreOnRelationshipType(Label label) {
-        return create("cannot compute coreness of relationship type %s.", label.getValue());
+    public static GraqlQueryException kCoreOnRelationType(Label label) {
+        return create("cannot compute coreness of relation type %s.", label.getValue());
     }
 
     public static GraqlQueryException deleteSchemaConcept(SchemaConcept schemaConcept) {
@@ -220,7 +220,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException attributeMustBeANumber(AttributeType.DataType dataType, Label attributeType) {
-        return new GraqlQueryException(attributeType + " must have data type of `long` or `double`, but was " + dataType.getName());
+        return new GraqlQueryException(attributeType + " must have data type of `long` or `double`, but was " + dataType.name());
     }
 
     public static GraqlQueryException attributesWithDifferentDataTypes(Collection<String> attributeTypes) {

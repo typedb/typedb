@@ -33,21 +33,25 @@ java_library(
     name = "server",
     srcs = glob(["src/**/*.java"]),
     deps = [
-        # Grakn Core dependencies
+        # Internal dependencies
+        "//api:api",
         "//common:common",
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//protocol:protocol-java",
 
-        # External dependencies
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java:graql",
+
+        # External dependencies from Maven
         "//dependencies/maven/artifacts/grakn/benchmark:lib",
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/commons-cli:commons-cli", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/commons-cli:commons-cli", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
         "//dependencies/maven/artifacts/io/zipkin/brave:brave",

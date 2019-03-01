@@ -21,19 +21,14 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Type;
-import grakn.core.graql.internal.reasoner.atom.Atom;
-import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.internal.reasoner.plan.ResolutionPlan;
-import grakn.core.graql.internal.reasoner.plan.ResolutionQueryPlan;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.graql.internal.reasoner.query.ReasonerQuery;
-import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Label;
+import grakn.core.concept.type.Type;
+import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.reasoner.plan.ResolutionPlan;
+import grakn.core.graql.reasoner.plan.ResolutionQueryPlan;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -86,11 +81,11 @@ public class ResolutionPlanIT {
 
     private static SessionImpl genericSchemaSession;
 
-    private static void loadFromFile(String fileName, Session session){
+    private static void loadFromFile(String fileName, SessionImpl session){
         try {
             InputStream inputStream = ResolutionPlanIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
+            TransactionOLTP tx = session.transaction().write();
             Graql.parseList(s).forEach(tx::execute);
             tx.commit();
         } catch (Exception e){
@@ -114,7 +109,7 @@ public class ResolutionPlanIT {
 
     @Before
     public void setUp(){
-        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
+        tx = genericSchemaSession.transaction().write();
     }
 
     @After
@@ -128,7 +123,7 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "$x isa someEntity;" +
                 "$y isa resource;$y 'value';" +
-                "$z isa relation;" +
+                "$z isa relation0;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
@@ -140,7 +135,7 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "$x isa someEntity;$x id 'V123';" +
                 "$y isa resource;" +
-                "$z isa relation;" +
+                "$z isa relation0;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
@@ -150,7 +145,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseSubbedRelationsOverNonSubbedOnes() {
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation0;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$w id 'sampleId';" +
@@ -159,7 +154,7 @@ public class ResolutionPlanIT {
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
-                getAtomOfType(query, "relation", tx)
+                getAtomOfType(query, "relation0", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -169,14 +164,14 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseSubbedResolvableRelationsOverNonSubbedNonResolvableOnes() {
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation0;" +
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
                 "$z id 'sampleId';" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "derivedRelation", tx),
-                getAtomOfType(query, "relation", tx)
+                getAtomOfType(query, "relation0", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -186,7 +181,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseMostSubbedRelations() {
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation0;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$z id 'sampleId';" +
@@ -196,7 +191,7 @@ public class ResolutionPlanIT {
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
-                getAtomOfType(query, "relation", tx)
+                getAtomOfType(query, "relation0", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -208,12 +203,12 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseNonResolvableRelations_OnlyAtomicQueriesPresent() {
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation0;" +
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
-                getAtomOfType(query, "relation", tx),
+                getAtomOfType(query, "relation0", tx),
                 getAtomOfType(query, "derivedRelation", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
@@ -226,7 +221,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseNonResolvableRelations_SandwichedResolvableRelation() {
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation0;" +
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "};";
@@ -239,7 +234,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseSpecificResourcesOverRelations(){
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation0;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$w has resource 'test';" +
@@ -249,7 +244,7 @@ public class ResolutionPlanIT {
                 getAtomOfType(query, "resource", tx),
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
-                getAtomOfType(query, "relation", tx)
+                getAtomOfType(query, "relation0", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -277,7 +272,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseSpecificResourcesOverNonSpecific(){
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation0;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$x has anotherResource $r;" +
@@ -288,7 +283,7 @@ public class ResolutionPlanIT {
                 getAtomOfType(query, "resource", tx),
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
-                getAtomOfType(query, "relation", tx),
+                getAtomOfType(query, "relation0", tx),
                 getAtomOfType(query, "anotherResource", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
@@ -321,7 +316,7 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "$start id 'someSampleId';" +
                 "$end id 'anotherSampleId';" +
-                "(someRole: $link, otherRole: $start) isa relation;" +
+                "(someRole: $link, otherRole: $start) isa relation0;" +
                 "(someRole: $link, otherRole: $anotherlink) isa derivedRelation;" +
                 "(someRole: $anotherlink, otherRole: $end) isa anotherRelation;" +
                 "$link isa someEntity;" +
@@ -351,7 +346,7 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "$start id 'someSampleId';" +
                 "$end id 'anotherSampleId';" +
-                "(someRole: $link, otherRole: $start) isa relation;" +
+                "(someRole: $link, otherRole: $start) isa relation0;" +
                 "(someRole: $anotherlink, otherRole: $link) isa anotherRelation;" +
                 "(someRole: $end, otherRole: $anotherlink) isa derivedRelation;" +
                 "$link isa someEntity;" +
@@ -387,7 +382,7 @@ public class ResolutionPlanIT {
                 "$start has anotherResource 'someValue';" +
                 "$start has resource $res;" +
                 "$end has resource $res;" +
-                "(someRole: $link, otherRole: $start) isa relation;" +
+                "(someRole: $link, otherRole: $start) isa relation0;" +
                 "(someRole: $link, otherRole: $anotherlink) isa derivedRelation;" +
                 "(someRole: $anotherlink, otherRole: $end) isa anotherDerivedRelation;" +
                 "};";
@@ -422,7 +417,7 @@ public class ResolutionPlanIT {
         Concept concept = tx.stream(Graql.match(var("x").isa("baseEntity")).get("x"))
                 .map(ans -> ans.get("x")).findAny().orElse(null);
         String basePatternString =
-                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation0;" +
                         "$x has resource 'this';" +
                         "$y has anotherResource 'that';";
 
@@ -448,11 +443,11 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent(){
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation0;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
-                "(someRole:$z, otherRole: $w) isa relation;" +
+                "(someRole:$z, otherRole: $w) isa relation0;" +
                 "(someRole:$w, otherRole: $u) isa anotherRelation;" +
-                "(someRole:$u, otherRole: $v) isa relation;" +
+                "(someRole:$u, otherRole: $v) isa relation0;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
@@ -462,10 +457,10 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_longerChain(){
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation0;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
-                "(someRole:$w, otherRole: $u) isa relation;" +
+                "(someRole:$w, otherRole: $u) isa relation0;" +
                 "(someRole:$u, otherRole: $v) isa anotherRelation;" +
                 "(someRole:$v, otherRole: $q) isa yetAnotherRelation;"+
                 "};";
@@ -485,7 +480,7 @@ public class ResolutionPlanIT {
 
         String basePatternString =
                 "($a, $b) isa derivedRelation;" +
-                        "($b, $c) isa relation;" +
+                        "($b, $c) isa relation0;" +
                         "($c, $d) isa anotherDerivedRelation;" +
 
                         "($d, $e) isa anotherRelation;" +
@@ -523,7 +518,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void makeSureBranchedQueryChainsWithResolvableRelationsDoNotProduceDisconnectedPlans_anotherVariant(){
         String basePatternString =
-                "($a, $b) isa relation;" +
+                "($a, $b) isa relation0;" +
                         "($b, $g) isa anotherRelation;" +
 
                         "($b, $c) isa derivedRelation;" +
@@ -558,7 +553,7 @@ public class ResolutionPlanIT {
                 "$a isa baseEntity;" +
                 "($a, $b) isa derivedRelation; $b isa someEntity;" +
                 "$c isa baseEntity;" +
-                "($c, $d) isa relation; $d isa someOtherEntity;" +
+                "($c, $d) isa relation0; $d isa someOtherEntity;" +
                 "$e isa baseEntity;" +
                 "($e, $f) isa anotherRelation; $f isa yetAnotherEntity;" +
                 "};";
@@ -574,11 +569,11 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "$a isa baseEntity;" +
                 "($a, $b) isa derivedRelation; $b isa someEntity;" +
-                "($b, $c) isa relation; $c isa someEntity;" +
+                "($b, $c) isa relation0; $c isa someEntity;" +
                 "($c, $d) isa anotherRelation; $d isa someOtherEntity;" +
 
                 "$e isa baseEntity;" +
-                "($e, $f) isa relation; $f isa baseEntity;" +
+                "($e, $f) isa relation0; $f isa baseEntity;" +
                 "($f, $g) isa anotherRelation; $g isa yetAnotherEntity;" +
                 "($g, $h) isa derivedRelation; $h isa yetAnotherEntity;" +
                 "};";
@@ -638,10 +633,10 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "$f has resource 'value'; $f isa someEntity;" +
                 "($e, $f) isa derivedRelation; $e isa someOtherEntity;" +
-                "($a, $b) isa relation; $a isa baseEntity;" +
+                "($a, $b) isa relation0; $a isa baseEntity;" +
                 "($b, $c) isa anotherRelation; $b isa someEntity;" +
                 "($c, $d) isa yetAnotherRelation; $c isa someOtherEntity;" +
-                "($d, $e) isa relation; $d isa yetAnotherEntity;" +
+                "($d, $e) isa relation0; $d isa yetAnotherEntity;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
@@ -652,7 +647,7 @@ public class ResolutionPlanIT {
         return query.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(vars)).findFirst().orElse(null);
     }
 
-    private Atom getAtomOfType(ReasonerQueryImpl query, String typeString, Transaction tx){
+    private Atom getAtomOfType(ReasonerQueryImpl query, String typeString, TransactionOLTP tx){
         Type type = tx.getType(Label.of(typeString));
         return query.getAtoms(Atom.class).filter(at -> at.getTypeId().equals(type.id())).findFirst().orElse(null);
     }

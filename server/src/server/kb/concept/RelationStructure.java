@@ -18,11 +18,11 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
 import grakn.core.server.kb.cache.CacheOwner;
 
 import java.util.Map;
@@ -49,7 +49,7 @@ interface RelationStructure extends CacheOwner {
     RelationReified reify();
 
     /**
-     * @return true if the Relation has been reified meaning it can support n-ary relationships
+     * @return true if the Relation has been reified meaning it can support n-ary relations
      */
     boolean isReified();
 
@@ -75,7 +75,7 @@ interface RelationStructure extends CacheOwner {
     void delete();
 
     /**
-     * Return whether the relationship has been deleted.
+     * Return whether the relation has been deleted.
      */
     boolean isDeleted();
 

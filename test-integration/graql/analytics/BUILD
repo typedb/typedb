@@ -5,9 +5,12 @@ java_test(
     test_class = "grakn.core.graql.analytics.GraqlComputeIT",
     srcs = ["GraqlComputeIT.java"],
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
+
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
@@ -19,9 +22,12 @@ java_test(
     test_class = "grakn.core.graql.analytics.ConnectedComponentIT",
     srcs = ["ConnectedComponentIT.java"],
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
+
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
@@ -33,9 +39,11 @@ java_test(
     test_class = "grakn.core.graql.analytics.CorenessIT",
     srcs = ["CorenessIT.java"],
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -46,9 +54,10 @@ java_test(
     test_class = "grakn.core.graql.analytics.CountIT",
     srcs = ["CountIT.java"],
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -59,9 +68,12 @@ java_test(
     test_class = "grakn.core.graql.analytics.DegreeIT",
     srcs = ["DegreeIT.java"],
     deps = [
-        "@graknlabs_graql//java:graql",
-                "//server:server",
+        "//concept:concept",
+        "//server:server",
         "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
+
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
@@ -73,9 +85,11 @@ java_test(
     test_class = "grakn.core.graql.analytics.KCoreIT",
     srcs = ["KCoreIT.java"],
     deps = [
-        "@graknlabs_graql//java:graql",
-                "//server:server",
+        "//concept:concept",
+        "//server:server",
         "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -86,9 +100,12 @@ java_test(
     test_class = "grakn.core.graql.analytics.PathIT",
     srcs = ["PathIT.java"],
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
+
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
@@ -100,9 +117,12 @@ java_test(
     test_class = "grakn.core.graql.analytics.StatisticsIT",
     srcs = ["StatisticsIT.java"],
     deps = [
-        "@graknlabs_graql//java:graql",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
+
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",

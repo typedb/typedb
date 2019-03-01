@@ -18,12 +18,12 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.graql.concept.LabelId;
-import grakn.core.graql.concept.Relation;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.internal.Schema;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.cache.Cacheable;
@@ -46,34 +46,34 @@ public class Casting implements CacheOwner {
             edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
     private final Cache<Thing> cachedInstance = Cache.createTxCache(this, Cacheable.concept(), () ->
             edge().tx().factory().<Thing>buildConcept(edge().target()));
-    private final Cache<Relation> cachedRelationship = Cache.createTxCache(this, Cacheable.concept(), () ->
+    private final Cache<Relation> cachedRelation = Cache.createTxCache(this, Cacheable.concept(), () ->
             edge().tx().factory().<Thing>buildConcept(edge().source()));
 
-    private final Cache<RelationType> cachedRelationshipType = Cache.createTxCache(this, Cacheable.concept(), () -> {
-        if (cachedRelationship.isPresent()) {
-            return cachedRelationship.get().type();
+    private final Cache<RelationType> cachedRelationType = Cache.createTxCache(this, Cacheable.concept(), () -> {
+        if (cachedRelation.isPresent()) {
+            return cachedRelation.get().type();
         } else {
-            return edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID)));
+            return edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID)));
         }
     });
 
-    private Casting(EdgeElement edgeElement, @Nullable Relation relationship, @Nullable Role role, @Nullable Thing thing) {
+    private Casting(EdgeElement edgeElement, @Nullable Relation relation, @Nullable Role role, @Nullable Thing thing) {
         this.edgeElement = edgeElement;
-        if (relationship != null) this.cachedRelationship.set(relationship);
+        if (relation != null) this.cachedRelation.set(relation);
         if (role != null) this.cachedRole.set(role);
         if (thing != null) this.cachedInstance.set(thing);
     }
 
-    public static Casting create(EdgeElement edgeElement, Relation relationship, Role role, Thing thing) {
-        return new Casting(edgeElement, relationship, role, thing);
+    public static Casting create(EdgeElement edgeElement, Relation relation, Role role, Thing thing) {
+        return new Casting(edgeElement, relation, role, thing);
     }
 
     public static Casting withThing(EdgeElement edgeElement, Thing thing) {
         return new Casting(edgeElement, null, null, thing);
     }
 
-    public static Casting withRelationship(EdgeElement edgeElement, Relation relationship) {
-        return new Casting(edgeElement, relationship, null, null);
+    public static Casting withRelation(EdgeElement edgeElement, Relation relation) {
+        return new Casting(edgeElement, relation, null, null);
     }
 
     private EdgeElement edge() {
@@ -95,15 +95,15 @@ public class Casting implements CacheOwner {
     /**
      * @return The RelationType the Thing is taking part in
      */
-    public RelationType getRelationshipType() {
-        return cachedRelationshipType.get();
+    public RelationType getRelationType() {
+        return cachedRelationType.get();
     }
 
     /**
      * @return The Relation which is linking the Role and the instance
      */
-    public Relation getRelationship() {
-        return cachedRelationship.get();
+    public Relation getRelation() {
+        return cachedRelation.get();
     }
 
     /**

@@ -19,21 +19,21 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Lists;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.answer.ConceptList;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.Schema;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.kb.Schema;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.internal.analytics.Utility.getResourceEdgeId;
+import static grakn.core.graql.analytics.Utility.getResourceEdgeId;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
@@ -67,7 +67,7 @@ public class PathIT {
     private ConceptId relationId24;
     private ConceptId relationId34;
 
-    public Session session;
+    public SessionImpl session;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -83,7 +83,7 @@ public class PathIT {
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFound() {
         // test on an empty tx
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             tx.execute(Graql.compute().path().from("V123").to("V234"));
         }
     }
@@ -91,7 +91,7 @@ public class PathIT {
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFoundSubgraph() {
         addSchemaAndEntities();
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             tx.execute(Graql.compute().path().from(entityId1.getValue()).to(entityId4.getValue()).in(thing, related));
         }
     }
@@ -99,7 +99,7 @@ public class PathIT {
     @Test
     public void whenThereIsNoPath_PathReturnsEmptyOptional() {
         addSchemaAndEntities();
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             assertEquals(Collections.emptyList(), tx.execute(Graql.compute().path().from(entityId1.getValue()).to(entityId5.getValue())));
         }
     }
@@ -110,7 +110,7 @@ public class PathIT {
         List<ConceptList> allPaths;
         addSchemaAndEntities();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             // directly connected vertices
             correctPath = Lists.newArrayList(entityId1, relationId12);
             ConceptList path = tx.execute(Graql.compute().path().from(entityId1.getValue()).to(relationId12.getValue())).get(0);
@@ -167,7 +167,7 @@ public class PathIT {
             list.add(i);
         }
         List<List<ConceptList>> result = list.parallelStream().map(i -> {
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            try (TransactionOLTP tx = session.transaction().read()) {
                 return tx.execute(((Graql.compute().path().in(thing, related)).from(entityId2.getValue())).to(entityId1.getValue()));
             }
         }).collect(Collectors.toList());
@@ -185,13 +185,13 @@ public class PathIT {
         ConceptId endId;
 
         int numberOfPaths = 3;
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType = tx.putEntityType(thing);
 
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             entityType.plays(role1).plays(role2);
-            RelationType relationshipType = tx.putRelationType(related).relates(role1).relates(role2);
+            RelationType relationType = tx.putRelationType(related).relates(role1).relates(role2);
 
             Entity start = entityType.create();
             Entity end = entityType.create();
@@ -206,14 +206,14 @@ public class PathIT {
 
                 Entity middle = entityType.create();
                 ConceptId middleId = middle.id();
-                ConceptId assertion1 = relationshipType.create()
+                ConceptId assertion1 = relationType.create()
                         .assign(role1, start)
                         .assign(role2, middle).id();
 
                 validPath.add(assertion1);
                 validPath.add(middleId);
 
-                ConceptId assertion2 = relationshipType.create()
+                ConceptId assertion2 = relationType.create()
                         .assign(role1, middle)
                         .assign(role2, end).id();
 
@@ -225,7 +225,7 @@ public class PathIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             List<ConceptList> allPaths = tx.execute(Graql.compute().path().from(startId.getValue()).to(endId.getValue()));
             assertEquals(numberOfPaths, allPaths.size());
 
@@ -240,18 +240,18 @@ public class PathIT {
         ConceptId endId;
         Set<List<ConceptId>> correctPaths = new HashSet<>();
 
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType = tx.putEntityType(thing);
 
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             entityType.plays(role1).plays(role2);
-            RelationType relationshipType1 = tx.putRelationType(related).relates(role1).relates(role2);
+            RelationType relationType1 = tx.putRelationType(related).relates(role1).relates(role2);
 
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
             entityType.plays(role3).plays(role4);
-            RelationType relationshipType2 = tx.putRelationType(veryRelated).relates(role3).relates(role4);
+            RelationType relationType2 = tx.putRelationType(veryRelated).relates(role3).relates(role4);
 
             Entity start = entityType.create();
             Entity end = entityType.create();
@@ -261,19 +261,19 @@ public class PathIT {
             endId = end.id();
             ConceptId middleId = middle.id();
 
-            ConceptId assertion11 = relationshipType1.create()
+            ConceptId assertion11 = relationType1.create()
                     .assign(role1, start)
                     .assign(role2, middle).id();
 
-            ConceptId assertion12 = relationshipType1.create()
+            ConceptId assertion12 = relationType1.create()
                     .assign(role1, middle)
                     .assign(role2, end).id();
 
-            ConceptId assertion21 = relationshipType2.create()
+            ConceptId assertion21 = relationType2.create()
                     .assign(role3, start)
                     .assign(role4, middle).id();
 
-            ConceptId assertion22 = relationshipType2.create()
+            ConceptId assertion22 = relationType2.create()
                     .assign(role3, middle)
                     .assign(role4, end).id();
 
@@ -286,7 +286,7 @@ public class PathIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             List<ConceptList> allPaths = tx.execute(Graql.compute().path().from(startId.getValue()).to(endId.getValue()));
             assertEquals(correctPaths.size(), allPaths.size());
 
@@ -301,19 +301,19 @@ public class PathIT {
         ConceptId endId;
         Set<List<ConceptId>> correctPaths = new HashSet<>();
 
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType = tx.putEntityType(thing);
 
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             entityType.plays(role1).plays(role2);
-            RelationType relationshipType1 = tx.putRelationType(related).relates(role1).relates(role2);
+            RelationType relationType1 = tx.putRelationType(related).relates(role1).relates(role2);
 
             Role role3 = tx.putRole("role3");
             Role role4 = tx.putRole("role4");
             Role role5 = tx.putRole("role5");
             entityType.plays(role3).plays(role4).plays(role5);
-            RelationType relationshipType2 = tx.putRelationType(veryRelated)
+            RelationType relationType2 = tx.putRelationType(veryRelated)
                     .relates(role3).relates(role4).relates(role5);
 
             Entity start = entityType.create();
@@ -328,20 +328,20 @@ public class PathIT {
             ConceptId middleAId = middleA.id();
             ConceptId middleBId = middleB.id();
 
-            ConceptId assertion1 = relationshipType1.create()
+            ConceptId assertion1 = relationType1.create()
                     .assign(role1, start)
                     .assign(role2, middle).id();
 
-            ConceptId assertion2 = relationshipType2.create()
+            ConceptId assertion2 = relationType2.create()
                     .assign(role3, middle)
                     .assign(role4, middleA)
                     .assign(role5, middleB).id();
 
-            ConceptId assertion1A = relationshipType1.create()
+            ConceptId assertion1A = relationType1.create()
                     .assign(role1, middleA)
                     .assign(role2, end).id();
 
-            ConceptId assertion1B = relationshipType1.create()
+            ConceptId assertion1B = relationType1.create()
                     .assign(role1, middleB)
                     .assign(role2, end).id();
 
@@ -356,7 +356,7 @@ public class PathIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             List<ConceptList> allPaths = tx.execute(Graql.compute().path().from(startId.getValue()).to(endId.getValue()));
             assertEquals(correctPaths.size(), allPaths.size());
             Set<List<ConceptId>> allPathsSet = allPaths.stream().map(ConceptList::list).collect(Collectors.toSet());
@@ -370,7 +370,7 @@ public class PathIT {
         List<ConceptList> allPaths;
         addSchemaAndEntities();
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             allPaths = tx.execute(((Graql.compute().path().in(thing, anotherThing)).to(entityId1.getValue())).from(entityId4.getValue()));
             assertEquals(0, allPaths.size());
 
@@ -389,7 +389,7 @@ public class PathIT {
     public void testResourceEdges() {
         ConceptId startId;
         ConceptId endId;
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType person = tx.putEntityType("person");
             AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
             person.has(name);
@@ -402,7 +402,7 @@ public class PathIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             List<ConceptList> allPaths = tx.execute(Graql.compute().path().from(startId.getValue()).to(endId.getValue()).attributes(true));
             assertEquals(1, allPaths.size());
             assertEquals(3, allPaths.get(0).list().size());
@@ -433,7 +433,7 @@ public class PathIT {
         List<ConceptId> pathPower3Power1 = new ArrayList<>();
         List<ConceptId> pathPerson3Power3 = new ArrayList<>();
 
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType person = tx.putEntityType("person");
             AttributeType<Long> power = tx.putAttributeType("power", AttributeType.DataType.LONG);
 
@@ -467,7 +467,7 @@ public class PathIT {
                     .assign(resourceOwner, person2)
                     .assign(resourceValue, power2).id();
 
-            // add implicit resource relationships as well
+            // add implicit resource relations as well
             person.has(power);
 
             person1.has(power2);
@@ -484,7 +484,7 @@ public class PathIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+        try (TransactionOLTP tx = session.transaction().read()) {
             List<ConceptList> allPaths;
 
             // Path from power3 to power3
@@ -544,7 +544,7 @@ public class PathIT {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 
@@ -564,18 +564,18 @@ public class PathIT {
             Role role2 = tx.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationshipType = tx.putRelationType(related).relates(role1).relates(role2);
+            RelationType relationType = tx.putRelationType(related).relates(role1).relates(role2);
 
-            relationId12 = relationshipType.create()
+            relationId12 = relationType.create()
                     .assign(role1, entity1)
                     .assign(role2, entity2).id();
-            relationId13 = relationshipType.create()
+            relationId13 = relationType.create()
                     .assign(role1, entity1)
                     .assign(role2, entity3).id();
-            relationId24 = relationshipType.create()
+            relationId24 = relationType.create()
                     .assign(role1, entity2)
                     .assign(role2, entity4).id();
-            relationId34 = relationshipType.create()
+            relationId34 = relationType.create()
                     .assign(role1, entity3)
                     .assign(role2, entity4).id();
 

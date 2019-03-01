@@ -18,15 +18,15 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.RelationImpl;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -44,10 +44,10 @@ public class CastingIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private Transaction tx;
-    private Session session;
+    private TransactionOLTP tx;
+    private SessionImpl session;
 
-    private RelationType relationshipType;
+    private RelationType relationType;
     private EntityType entityType;
     private Role role3;
     private Role role2;
@@ -56,12 +56,12 @@ public class CastingIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         role1 = tx.putRole("role1");
         role2 = tx.putRole("role2");
         role3 = tx.putRole("role3");
         entityType = tx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
-        relationshipType = tx.putRelationType("Relationship Type").relates(role1).relates(role2).relates(role3);
+        relationType = tx.putRelationType("Relation Type").relates(role1).relates(role2).relates(role3);
     }
 
     @After
@@ -73,7 +73,7 @@ public class CastingIT {
     public void whenCreatingRelation_EnsureRolePlayerContainsInstanceRoleTypeRelationTypeAndRelation(){
         Entity e1 = entityType.create();
 
-        RelationImpl relation = (RelationImpl) relationshipType.create().
+        RelationImpl relation = (RelationImpl) relationType.create().
                 assign(role1, e1);
 
         Set<Casting> castings = relation.reified().get().castingsRelation().collect(Collectors.toSet());
@@ -81,8 +81,8 @@ public class CastingIT {
         castings.forEach(rolePlayer -> {
             assertEquals(e1, rolePlayer.getRolePlayer());
             assertEquals(role1, rolePlayer.getRole());
-            assertEquals(relationshipType, rolePlayer.getRelationshipType());
-            assertEquals(relation, rolePlayer.getRelationship());
+            assertEquals(relationType, rolePlayer.getRelationType());
+            assertEquals(relation, rolePlayer.getRelation());
         });
     }
 
@@ -91,7 +91,7 @@ public class CastingIT {
         Entity e1 = entityType.create();
         Entity e3 = entityType.create();
 
-        RelationImpl relation = (RelationImpl) relationshipType.create().
+        RelationImpl relation = (RelationImpl) relationType.create().
                 assign(role1, e1);
 
         Set<Thing> things = relation.reified().get().castingsRelation().map(Casting::getRolePlayer).collect(Collectors.toSet());

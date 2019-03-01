@@ -18,22 +18,22 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.RelationType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 
 public class GeoGraph {
 
-    private Transaction tx;
-    private final Session session;
+    private TransactionOLTP tx;
+    private final SessionImpl session;
     private AttributeType<String> key;
 
     private EntityType university, city, region, country, continent, geographicalObject;
@@ -47,12 +47,12 @@ public class GeoGraph {
     private static Thing Poland, England, Germany, France, Italy;
     private static Thing UW, PW, Imperial, UCL;
 
-    public GeoGraph(Session session) {
+    public GeoGraph(SessionImpl session) {
         this.session = session;
     }
 
     public void load() {
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction().write();
         buildSchema();
         buildInstances();
         buildRelations();
@@ -210,7 +210,7 @@ public class GeoGraph {
         tx.putRule("Geo Rule", transitivity_LHS, transitivity_RHS);
     }
 
-    private Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
+    private Thing putEntityWithResource(TransactionOLTP tx, String id, EntityType type, Label key) {
         Thing inst = type.create();
         putResource(inst, tx.getSchemaConcept(key), id);
         return inst;

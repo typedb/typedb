@@ -20,7 +20,7 @@ package grakn.core.server.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 
 import static grakn.core.common.exception.ErrorMessage.BACKEND_EXCEPTION;
 import static grakn.core.common.exception.ErrorMessage.INITIALIZATION_EXCEPTION;
@@ -59,7 +59,7 @@ public class GraknServerException extends GraknException {
         return new GraknServerException(BACKEND_EXCEPTION.getMessage(), e);
     }
 
-    public static GraknServerException initializationException(Keyspace keyspace) {
+    public static GraknServerException initializationException(KeyspaceImpl keyspace) {
         return create(INITIALIZATION_EXCEPTION.getMessage(keyspace));
     }
 
