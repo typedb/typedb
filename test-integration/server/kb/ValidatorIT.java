@@ -30,6 +30,9 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
+import graql.lang.query.GraqlDefine;
+import graql.lang.query.GraqlInsert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -42,6 +45,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_MORE_THAN_ONE_USE_OF_KEY;
+import static graql.lang.Graql.type;
+import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -56,7 +62,7 @@ public class ValidatorIT {
     public static final GraknTestServer server = new GraknTestServer();
 
     @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+    public final ExpectedException exception = ExpectedException.none();
     private TransactionOLTP tx;
     private SessionImpl session;
 
@@ -137,8 +143,8 @@ public class ValidatorIT {
         String error1 = ErrorMessage.VALIDATION_CASTING.getMessage(kyle.type().label(), kyle.id(), kicker.label());
         String error2 = ErrorMessage.VALIDATION_CASTING.getMessage(icke.type().label(), icke.id(), kickee.label());
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(allOf(containsString(error1), containsString(error2)));
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(allOf(containsString(error1), containsString(error2)));
 
         tx.commit();
     }
@@ -147,8 +153,8 @@ public class ValidatorIT {
     public void whenCommittingNonAbstractRoleTypeNotLinkedToAnyRelationType_Throw(){
         Role alone = tx.putRole("alone");
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(alone.label())));
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(containsString(ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(alone.label())));
 
         tx.commit();
     }
@@ -157,8 +163,8 @@ public class ValidatorIT {
     public void whenCommittingNonAbstractRelationTypeNotLinkedToAnyRoleType_Throw(){
         RelationType alone = tx.putRelationType("alone");
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(alone.label())));
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(alone.label())));
 
         tx.commit();
     }
@@ -175,8 +181,8 @@ public class ValidatorIT {
 
         Relation relation = kills.create().assign(hunter, myHunter).assign(monster, myMonster);
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.id(), monster.label(), kills.label())));
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.id(), monster.label(), kills.label())));
 
         tx.commit();
     }
@@ -332,8 +338,8 @@ public class ValidatorIT {
 
         parenthood.create().assign(parent, x).assign(child, y);
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(
                 ErrorMessage.VALIDATION_CASTING.getMessage(man.label(), x.id(), parent.label()));
 
         tx.commit();
@@ -352,8 +358,8 @@ public class ValidatorIT {
 
         parenthood.create().assign(parent, x).assign(child, y);
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(
                 ErrorMessage.VALIDATION_CASTING.getMessage(person.label(), x.id(), parent.label()));
 
         tx.commit();
@@ -372,8 +378,8 @@ public class ValidatorIT {
         Entity y = person.create();
         parenthood.create().assign(parent, x).assign(child, y);
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(
                 ErrorMessage.VALIDATION_CASTING.getMessage(person.label(), x.id(), parent.label()));
 
         tx.commit();
@@ -471,8 +477,8 @@ public class ValidatorIT {
         RelationType parenthood = tx.putRelationType("parenthood").relates(parent).relates(pChild);
         RelationType fatherhood = tx.putRelationType("fatherhood").sup(parenthood).relates(father).relates(fChild).relates(inContext);
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(
                 ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.label(), fatherhood.label(), "super", "super", parenthood.label()));
 
         tx.commit();
@@ -492,8 +498,8 @@ public class ValidatorIT {
         RelationType parenthood = tx.putRelationType("parenthood").relates(parent).relates(pChild).relates(inContext);
         RelationType fatherhood = tx.putRelationType("fatherhood").sup(parenthood).relates(father).relates(fChild);
 
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(
                 ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.label(), parenthood.label(), "sub", "sub", fatherhood.label()));
 
         tx.commit();
@@ -590,4 +596,62 @@ public class ValidatorIT {
         tx.commit();
     }
 
+    @Test
+    public void testInsertDuplicateUseOfKeysInOneCommit() {
+        GraqlDefine define = Graql.define(
+                type("email").sub("attribute").datatype("string"),
+                type("person").sub("entity").key("email")
+        );
+        tx.execute(define);
+        GraqlInsert insert = Graql.insert(
+                var().isa("person").has("email", "unique@email.com"),
+                var().isa("person").has("email", "unique@email.com")
+        );
+        tx.execute(insert);
+
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage("person", "unique@email.com", "email"));
+        tx.commit();
+    }
+
+    @Test
+    public void testInsertDuplicateUseOfKeysInSeparateCommits() {
+        GraqlDefine define = Graql.define(
+                type("email").sub("attribute").datatype("string"),
+                type("person").sub("entity").key("email")
+        );
+        tx.execute(define);
+        GraqlInsert insert = Graql.insert(var().isa("person").has("email", "unique@email.com"));
+        tx.execute(insert);
+        tx.commit();
+
+        tx = session.transaction().write();
+
+        insert = Graql.insert(var().isa("person").has("email", "unique@email.com"));
+        tx.execute(insert);
+
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage("person", "unique@email.com", "email"));
+        tx.commit();
+    }
+
+    @Test
+    public void testInsertDuplicateUseOfKeysAmongSubTypes() {
+        GraqlDefine define = Graql.define(
+                type("email").sub("attribute").datatype("string"),
+                type("person").sub("entity").key("email"),
+                type("man").sub("person"),
+                type("woman").sub("person")
+        );
+        tx.execute(define);
+        GraqlInsert insert = Graql.insert(
+                var().isa("woman").has("email", "unique@email.com"),
+                var().isa("man").has("email", "unique@email.com")
+        );
+        tx.execute(insert);
+
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage("person", "unique@email.com", "email"));
+        tx.commit();
+    }
 }

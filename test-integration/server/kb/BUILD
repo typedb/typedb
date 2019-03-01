@@ -10,8 +10,10 @@ java_test(
         "//common:common",
         "//concept:concept",
         "//server:server",
-
         "//test-integration/rule:grakn-test-server",
+
+        "@graknlabs_graql//java:graql",
+
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
 )
