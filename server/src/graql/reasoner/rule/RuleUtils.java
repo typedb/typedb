@@ -111,22 +111,23 @@ public class RuleUtils {
      * @return stream of type pairs being in contradiction - having a positive and negative path in between
      */
     public static Stream<Pair<Type, Type>> findTypeGraphContradictions(TransactionOLTP tx){
-        HashMultimap<Type, Type> negativeGraph = HashMultimap.create();
-        HashMultimap<Type, Type> positiveGraph = HashMultimap.create();
+        HashMultimap<Type, Pair<Type, Rule>> negativeGraph = HashMultimap.create();
+        HashMultimap<Type, Pair<Type, Rule>> positiveGraph = HashMultimap.create();
         tx.getMetaRule().subs()
                 .filter(rule -> !Schema.MetaSchema.isMetaLabel(rule.label()))
                 .forEach(rule ->
                     rule.thenTypes().forEach(thenType -> {
-                        rule.whenNegativeTypes().forEach(whenType -> negativeGraph.put(whenType, thenType));
-                        rule.whenPositiveTypes().forEach(whenType -> positiveGraph.put(whenType, thenType));
+                        Pair<Type, Rule> edge = new Pair<>(thenType, rule);
+                        rule.whenNegativeTypes().forEach(whenType -> negativeGraph.put(whenType, edge));
+                        rule.whenPositiveTypes().forEach(whenType -> positiveGraph.put(whenType, edge));
                     })
                 );
         return negativeGraph.entries().stream()
-                .filter(e -> isTypeReachable(e.getKey(), e.getValue(), positiveGraph))
-                .map(e -> new Pair<>(e.getKey(), e.getValue()));
+                .filter(e -> isTypeReachable(e.getKey(), e.getValue().getKey(), positiveGraph, e.getValue().getValue()))
+                .map(e -> new Pair<>(e.getKey(), e.getValue().getKey()));
     }
 
-    private static boolean isTypeReachable(Type start, Type end, HashMultimap<Type, Type> typeGraph){
+    private static boolean isTypeReachable(Type start, Type end, HashMultimap<Type, Pair<Type, Rule>> typeGraph, Rule ruleToExclude){
         Stack<Type> stack = new Stack<>();
         Set<Type> visited = Sets.newHashSet();
         boolean reachable = false;
@@ -134,7 +135,10 @@ public class RuleUtils {
         while(!reachable && !stack.isEmpty()){
             Type type = stack.pop();
             if (!visited.contains(type)){
-                Set<Type> neighbours = typeGraph.get(type);
+                Set<Type> neighbours = typeGraph.get(type).stream()
+                        .filter(edge -> !edge.getValue().equals(ruleToExclude))
+                        .map(Pair::getKey)
+                        .collect(toSet());
                 if (neighbours.contains(end)) reachable = true;
                 stack.addAll(neighbours);
                 visited.add(type);
