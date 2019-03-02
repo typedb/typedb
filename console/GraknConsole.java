@@ -20,7 +20,7 @@ package grakn.core.console;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import grakn.core.client.GraknClient;
+import grakn.client.GraknClient;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.util.GraknVersion;

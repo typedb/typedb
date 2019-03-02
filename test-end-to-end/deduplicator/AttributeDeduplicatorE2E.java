@@ -19,7 +19,7 @@
 package grakn.core.deduplicator;
 
 
-import grakn.core.client.GraknClient;
+import grakn.client.GraknClient;
 import grakn.core.concept.answer.ConceptMap;
 import graql.lang.Graql;
 import org.apache.commons.io.FileUtils;
