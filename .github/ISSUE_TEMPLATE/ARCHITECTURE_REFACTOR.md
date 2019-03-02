@@ -1,10 +1,7 @@
 ---
 name: Architecture Refactor
 about: Propose an architecture refactor here
-title: ''
 labels: refactor
-assignees: ''
-
 ---
 
 Please replace every line in curly brackets { like this } with appropriate answers, and remove this line.
