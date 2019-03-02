@@ -1,5 +1,5 @@
 ---
-name: Architecture Refactor
+name: Refactor
 about: Propose an architecture refactor here
 labels: refactor
 ---
