@@ -1,5 +1,6 @@
 package grakn.core.client;
 
+import grakn.client.GraknClient;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import graql.lang.Graql;

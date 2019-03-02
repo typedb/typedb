@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.benchmark;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
-import grakn.core.client.GraknClient;
+import grakn.client.GraknClient;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.AttributeType;

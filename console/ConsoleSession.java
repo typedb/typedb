@@ -19,7 +19,7 @@
 package grakn.core.console;
 
 import com.google.common.base.StandardSystemProperty;
-import grakn.core.client.GraknClient;
+import grakn.client.GraknClient;
 import grakn.core.common.exception.GraknException;
 import grakn.core.console.exception.GraknConsoleException;
 import grakn.core.graql.printer.Printer;

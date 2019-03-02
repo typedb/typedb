@@ -18,7 +18,7 @@
 
 package grakn.core.server.session;
 
-import grakn.core.client.GraknClient;
+import grakn.client.GraknClient;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import org.junit.After;
