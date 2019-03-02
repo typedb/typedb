@@ -148,14 +148,14 @@ jobs:
       - run:
           name: Sync docs:development workbase:master client-java:master client-python:master client-nodejs:master to the latest Grakn version
           command: |
-            bazel run @graknlabs_grabl//sync:dependency-update -- --dependency grakn:master \
+            bazel run @graknlabs_grabl//ci:update-dependency -- --dependency grakn:master \
               --user docs:development workbase:master client-java:master client-python:master client-nodejs:master
   
   approve-release:
     machine: true
     steps:
       - checkout
-      - run: python .circleci/approve-release.py
+      - run: bazel run @graknlabs_grabl//ci:approve-release
 
   release-cleanup:
     machine: true
