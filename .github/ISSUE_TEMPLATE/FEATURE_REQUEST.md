@@ -1,10 +1,13 @@
 ---
 name: Feature Request
 about: Request a feature here, or visit discuss.grakn.ai for ideas and questions
+title: ''
 labels: feature
+assignees: ''
+
 ---
 
-Please replace every line in curly brackets ( { like this } ) with appropriate answers, and remove this line.
+Please replace every line in curly brackets { like this } with appropriate answers, and remove this line.
 
 ## Problem to Solve
 

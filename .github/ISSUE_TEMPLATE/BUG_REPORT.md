@@ -1,10 +1,13 @@
 ---
 name: Bug Report
 about: Report a bug here, or visit discuss.grakn.ai for troubleshooting discussions
+title: ''
 labels: bug
+assignees: ''
+
 ---
 
-Please replace every line in curly brackets ( { like this } ) with an appropriate answer, and remove this line.
+Please replace every line in curly brackets { like this } with an appropriate answer, and remove this line.
 
 ## Description
 
