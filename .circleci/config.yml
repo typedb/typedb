@@ -56,7 +56,7 @@ jobs:
       - rpm_install
       - bazel:
           command: bazel build //...
-      - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all.zip dist/
+      - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all-mac.zip dist/
       - persist_to_workspace: # TODO: share Grakn with other jobs by putting it in the workspace
           root: ~/grakn
           paths:
@@ -136,7 +136,7 @@ jobs:
       - bazel_install
       - bazel_add_rbe_credential
       - bazel:
-          command: bazel build //:distribution
+          command: bazel build //:distribution-zip-mac
       - bazel:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 

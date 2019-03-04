@@ -11,7 +11,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
     ],
-    data = ["//:distribution"],
+    data = ["//:distribution-zip-mac"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
@@ -26,7 +26,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec"
     ],
-    data = ["//:distribution"],
+    data = ["//:distribution-zip-mac"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 

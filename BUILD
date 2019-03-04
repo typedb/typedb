@@ -28,7 +28,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 deploy_github(
     name = "deploy-github-zip",
-    target = ":distribution",
+    target = ":distribution-zip-mac",
     deployment_properties = ":deployment.properties",
     version_file = "//:VERSION"
 )
@@ -150,7 +150,7 @@ deploy_brew(
 container_image(
     name = "distribution-docker",
     base = "@openjdk_image//image",
-    tars = [":distribution-tgz"],
+    tars = [":distribution-zip-mac-tgz"],
     files = [":grakn-docker.sh"],
     ports = ["48555"],
     cmd = ["./grakn-docker.sh"],
