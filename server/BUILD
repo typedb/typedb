@@ -132,7 +132,22 @@ distribution_structure(
 )
 
 distribution_zip(
-    name = "distribution",
+    name = "distribution-zip-windows",
+    distribution_structures = [":grakn-core-server", "//:grakn-core-bin-windows"],
+    empty_directories = [
+        "server/db/cassandra",
+        "server/db/queue"
+    ],
+    permissions = {
+      "server/services/cassandra/cassandra.yaml": "0777",
+      "server/db/cassandra": "0777",
+      "server/db/queue": "0777",
+    },
+    output_filename = "grakn-core-server-windows",
+)
+
+distribution_zip(
+    name = "distribution-zip-mac",
     distribution_structures = [":grakn-core-server", "//:grakn-core-bin"],
     empty_directories = [
         "server/db/cassandra",
@@ -143,7 +158,7 @@ distribution_zip(
       "server/db/cassandra": "0777",
       "server/db/queue": "0777",
     },
-    output_filename = "grakn-core-server",
+    output_filename = "grakn-core-server-mac",
 )
 
 distribution_deb(

@@ -86,14 +86,25 @@ distribution_structure(
 )
 
 distribution_zip(
-    name = "distribution",
+    name = "distribution-zip-mac",
     distribution_structures = [":grakn-core-console", "//:grakn-core-bin"],
     additional_files = {
         "//:grakn": 'grakn',
         "//server:conf/logback.xml": "conf/logback.xml",
         "//server:conf/grakn.properties": "conf/grakn.properties",
     },
-    output_filename = "grakn-core-console",
+    output_filename = "grakn-core-console-mac",
+)
+
+distribution_zip(
+    name = "distribution-zip-windows",
+    distribution_structures = [":grakn-core-console", "//:grakn-core-bin-windows"],
+    additional_files = {
+        "//:grakn": 'grakn',
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+    },
+    output_filename = "grakn-core-console-windows",
 )
 
 distribution_deb(
