@@ -83,13 +83,13 @@ distribution_structure(
 
 distribution_zip(
     name = "distribution-zip-mac",
-    distribution_structures = [":grakn-core-console", "//:grakn-core-conf", "//:grakn-core-script-bash"],
+    distribution_structures = [":grakn-core-console", "//:grakn-core-conf", "//:bootup-script-bash"],
     output_filename = "grakn-core-console-mac",
 )
 
 distribution_zip(
     name = "distribution-zip-windows",
-    distribution_structures = [":grakn-core-console", "//:grakn-core-conf", "//:grakn-core-script-bat"],
+    distribution_structures = [":grakn-core-console", "//:grakn-core-conf", "//:bootup-script-bat"],
     output_filename = "grakn-core-console-windows",
 )
 
