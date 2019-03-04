@@ -33,7 +33,6 @@ deploy_github(
     version_file = "//:VERSION"
 )
 
-
 distribution_structure(
     name = "grakn-core-bin",
     additional_files = {
@@ -44,6 +43,15 @@ distribution_structure(
     visibility = ["//server:__pkg__", "//console:__pkg__"]
 )
 
+distribution_structure(
+    name = "grakn-core-bin-windows",
+    additional_files = {
+        "//:grakn.bat": 'grakn.bat',
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+    },
+    visibility = ["//server:__pkg__", "//console:__pkg__"]
+)
 
 distribution_deb(
     name = "distribution-deb",
@@ -101,7 +109,7 @@ deploy_rpm(
 )
 
 distribution_zip(
-    name = "distribution",
+    name = "distribution-zip-mac",
     distribution_structures = ["//:grakn-core-bin",
                                "//server:grakn-core-server",
                                "//console:grakn-core-console"],
@@ -114,9 +122,25 @@ distribution_zip(
         "server/db/cassandra": "0777",
         "server/db/queue": "0777",
     },
-    output_filename = "grakn-core-all",
+    output_filename = "grakn-core-all-mac",
 )
 
+distribution_zip(
+    name = "distribution-zip-windows",
+    distribution_structures = ["//:grakn-core-bin-windows",
+                               "//server:grakn-core-server",
+                               "//console:grakn-core-console"],
+    empty_directories = [
+        "server/db/cassandra",
+        "server/db/queue"
+    ],
+    permissions = {
+        "server/services/cassandra/cassandra.yaml": "0777",
+        "server/db/cassandra": "0777",
+        "server/db/queue": "0777",
+    },
+    output_filename = "grakn-core-all-windows",
+)
 
 deploy_brew(
     name = "deploy-brew",
