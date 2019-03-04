@@ -34,19 +34,20 @@ deploy_github(
 )
 
 distribution_structure(
-    name = "grakn-core-bin",
-    additional_files = {
-        "//:grakn": 'grakn',
-        "//server:conf/logback.xml": "conf/logback.xml",
-        "//server:conf/grakn.properties": "conf/grakn.properties",
-    },
+    name = "grakn-core-script-bash",
+    additional_files = { "//:grakn": 'grakn' },
     visibility = ["//server:__pkg__", "//console:__pkg__"]
 )
 
 distribution_structure(
-    name = "grakn-core-bin-windows",
+    name = "grakn-core-script-bat",
+    additional_files = { "//:grakn.bat": 'grakn.bat' },
+    visibility = ["//server:__pkg__", "//console:__pkg__"]
+)
+
+distribution_structure(
+    name = "grakn-core-conf",
     additional_files = {
-        "//:grakn.bat": 'grakn.bat',
         "//server:conf/logback.xml": "conf/logback.xml",
         "//server:conf/grakn.properties": "conf/grakn.properties",
     },
@@ -59,7 +60,7 @@ distribution_deb(
     maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (binaries)",
     version_file = "//:VERSION",
-    distribution_structures = [":grakn-core-bin"],
+    distribution_structures = [":grakn-core-script-bash", ":grakn-core-conf"],
     installation_dir = "/opt/grakn/core/",
     empty_dirs = [
         "var/log/grakn/",
@@ -92,7 +93,7 @@ distribution_rpm(
     empty_dirs = [
         "var/log/grakn/",
     ],
-    distribution_structures = [":grakn-core-bin"],
+    distribution_structures = [":grakn-core-script-bash", ":grakn-core-conf"],
     permissions = {
         "var/log/grakn/": "0777",
     },
@@ -110,9 +111,12 @@ deploy_rpm(
 
 distribution_zip(
     name = "distribution-zip-mac",
-    distribution_structures = ["//:grakn-core-bin",
-                               "//server:grakn-core-server",
-                               "//console:grakn-core-console"],
+    distribution_structures = [
+        "//:grakn-core-script-bash",
+        "//:grakn-core-conf",
+        "//server:grakn-core-server",
+        "//console:grakn-core-console"
+    ],
     empty_directories = [
         "server/db/cassandra",
         "server/db/queue"
@@ -127,9 +131,12 @@ distribution_zip(
 
 distribution_zip(
     name = "distribution-zip-windows",
-    distribution_structures = ["//:grakn-core-bin-windows",
-                               "//server:grakn-core-server",
-                               "//console:grakn-core-console"],
+    distribution_structures = [
+        "//:grakn-core-script-bat",
+        "//:grakn-core-conf",
+        "//server:grakn-core-server",
+        "//console:grakn-core-console"
+    ],
     empty_directories = [
         "server/db/cassandra",
         "server/db/queue"

@@ -133,7 +133,7 @@ distribution_structure(
 
 distribution_zip(
     name = "distribution-zip-windows",
-    distribution_structures = [":grakn-core-server", "//:grakn-core-bin-windows"],
+    distribution_structures = [":grakn-core-server", "//:grakn-core-conf", "//:grakn-core-script-bat"],
     empty_directories = [
         "server/db/cassandra",
         "server/db/queue"
@@ -148,7 +148,7 @@ distribution_zip(
 
 distribution_zip(
     name = "distribution-zip-mac",
-    distribution_structures = [":grakn-core-server", "//:grakn-core-bin"],
+    distribution_structures = [":grakn-core-server", "//:grakn-core-conf", "//:grakn-core-script-bash"],
     empty_directories = [
         "server/db/cassandra",
         "server/db/queue"
