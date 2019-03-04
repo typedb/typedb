@@ -78,32 +78,18 @@ distribution_structure(
     targets = {
         "//console:console-binary": "console/services/lib/"
     },
-    additional_files = {
-        "//server:conf/logback.xml": "console/conf/logback.xml",
-        "//server:conf/grakn.properties": "console/conf/grakn.properties",
-    },
     visibility = ["//:__pkg__"]
 )
 
 distribution_zip(
     name = "distribution-zip-mac",
     distribution_structures = [":grakn-core-console", "//:grakn-core-bin"],
-    additional_files = {
-        "//:grakn": 'grakn',
-        "//server:conf/logback.xml": "conf/logback.xml",
-        "//server:conf/grakn.properties": "conf/grakn.properties",
-    },
     output_filename = "grakn-core-console-mac",
 )
 
 distribution_zip(
     name = "distribution-zip-windows",
     distribution_structures = [":grakn-core-console", "//:grakn-core-bin-windows"],
-    additional_files = {
-        "//:grakn": 'grakn',
-        "//server:conf/logback.xml": "conf/logback.xml",
-        "//server:conf/grakn.properties": "conf/grakn.properties",
-    },
     output_filename = "grakn-core-console-windows",
 )
 
@@ -150,7 +136,5 @@ deploy_rpm(
 
 test_suite(
     name = "console-test-integration",
-    tests = [
-
-    ]
+    tests = []
 )
