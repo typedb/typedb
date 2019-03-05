@@ -96,7 +96,7 @@ github_dependencies_for_deployment()
 load("@com_github_google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
 google_common_workspace_rules()
 
-load("//dependencies/docker:dependencies.bzl", "docker_dependencies")
+load("//dependencies/distribution/docker:dependencies.bzl", "docker_dependencies")
 docker_dependencies()
 
 load("@io_bazel_rules_docker//repositories:repositories.bzl", container_repositories = "repositories")
