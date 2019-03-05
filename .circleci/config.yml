@@ -5,6 +5,7 @@ commands:
       - run:
           name: Install build-tools
           command: |
+            bazel build @graknlabs_build_tools//...
             cp -r bazel-bin/external/graknlabs_build_tools build-tools
   rpm_install:
     steps:
