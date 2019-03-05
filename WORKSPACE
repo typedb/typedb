@@ -45,8 +45,11 @@ maven_dependencies()
 # Load Graql dependencies #
 ###########################
 
-load("//dependencies/git:dependencies.bzl", "graknlabs_graql")
-graknlabs_graql()
+git_repository(
+    name = "graknlabs_graql",
+    remote = "https://github.com/graknlabs/graql",
+    commit = "8b21baff544db206443cc953c22767563e42dd99", # grabl-marker: do not remove this comment, this is used for dependency-update by @graknlabs_graql
+)
 
 # Load ANTLR dependencies for Bazel
 load("@graknlabs_graql//dependencies/compilers:dependencies.bzl", "antlr_dependencies")
